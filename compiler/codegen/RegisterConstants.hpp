@@ -50,7 +50,6 @@ enum TR_RegisterKinds
    TR_GPR_Mask    = TO_KIND_MASK(TR_GPR),
    TR_FPR_Mask    = TO_KIND_MASK(TR_FPR),
    TR_CCR_Mask    = TO_KIND_MASK(TR_CCR),
-   TR_X87_Mask    = TO_KIND_MASK(TR_X87),
    TR_VRF_Mask    = TO_KIND_MASK(TR_VRF),
    TR_VSX_SCALAR_Mask    = TO_KIND_MASK(TR_VSX_SCALAR),
    TR_VSX_VECTOR_Mask    = TO_KIND_MASK(TR_VSX_VECTOR),
