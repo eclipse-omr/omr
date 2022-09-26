@@ -197,30 +197,31 @@ OMR::CodeCacheManager::destroy()
    // if code cache should be written out as shared object, do that now before destroying anything
 
    if (_elfRelocatableGenerator)
-   {
-         TR_ASSERT(_elfRelocatableGenerator->emitELF((const char*)_objectFileName,
-                                              _relocatableSymbolContainer->_head,
-                                              _relocatableSymbolContainer->_numSymbols,
-                                              _relocatableSymbolContainer->_totalSymbolNameLength,
-                                              _relocations->_head,
-                                              _relocations->_numRelocations),
-                                          "Failed to write code cache symbols to executable ELF file.");
-   }
+      {
+      TR_ASSERT(_elfRelocatableGenerator->emitELF((const char*)_objectFileName,
+                                                  _relocatableSymbolContainer->_head,
+                                                  _relocatableSymbolContainer->_numSymbols,
+                                                  _relocatableSymbolContainer->_totalSymbolNameLength,
+                                                  _relocations->_head,
+                                                  _relocations->_numRelocations),
+                "Failed to write code cache symbols to executable ELF file.");
+      }
 
    if (_elfExecutableGenerator)
-   {
+      {
       pid_t jvmPid = getpid();
       static const int maxElfFilenameSize = 15 + sizeof(jvmPid)* 3; // "written to file: /tmp/perf-%d.jit, where d is the pid"
       char elfFilename[maxElfFilenameSize] = { 0 };
 
       int numCharsWritten = snprintf(elfFilename, maxElfFilenameSize, "/tmp/perf-%d.jit", jvmPid);
       if (numCharsWritten > 0 && numCharsWritten < maxElfFilenameSize)
-      {
+         {
          TR_ASSERT(_elfExecutableGenerator->emitELF((const char*) &elfFilename,
                                 _symbolContainer->_head,
                                 _symbolContainer->_numSymbols,
                                 _symbolContainer->_totalSymbolNameLength),
                               "Failed to write code cache symbols to relocatable ELF file.");
+         }
       }
    }
 #endif // HOST_OS == OMR_LINUX
@@ -237,6 +238,8 @@ OMR::CodeCacheManager::destroy()
    if (self()->usingRepository())
       {
       self()->freeCodeCacheSegment(_codeCacheRepositorySegment);
+      if (_repositoryCodeCache)
+         self()->freeMemory(_repositoryCodeCache);
       }
 
    _initialized = false;
@@ -1104,7 +1107,7 @@ OMR::CodeCacheManager::setupMemorySegmentFromRepository(uint8_t * start,
                                                       size_t  & codeCacheSizeToAllocate)
    {
    TR::CodeCacheMemorySegment *memorySegment = static_cast<TR::CodeCacheMemorySegment *> (self()->getMemory(sizeof(TR::CodeCacheMemorySegment)));
-   new (static_cast<TR::CodeCacheMemorySegment*>(memorySegment)) TR::CodeCacheMemorySegment(start, end);
+   new (memorySegment) TR::CodeCacheMemorySegment(start, end);
    return memorySegment;
    }
 
@@ -1220,6 +1223,7 @@ OMR::CodeCacheManager::allocateCodeCacheFromNewSegment(
             TR_VerboseLog::writeLineLocked(TR_Vlog_CODECACHE, "CodeCache allocated %p @ " POINTER_PRINTF_FORMAT "-" POINTER_PRINTF_FORMAT " HelperBase:" POINTER_PRINTF_FORMAT, codeCache, codeCache->getCodeBase(), codeCache->getCodeTop(), codeCache->_helperBase);
             }
 
+	 self()->freeMemory(codeCacheSegment); // free the segment itself not backing memory
          return codeCache;
          }
 
@@ -1229,6 +1233,7 @@ OMR::CodeCacheManager::allocateCodeCacheFromNewSegment(
          {
          // return back the portion we carved
          self()->undoCarvingFromRepository(codeCacheSegment);
+	 self()->freeMemory(codeCacheSegment); // free the segment itself not backing memory
          }
       else
          {

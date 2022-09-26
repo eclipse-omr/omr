@@ -295,7 +295,17 @@ OMR::MethodBuilder::connectTrees()
       _countBlocksWorklist = new (comp()->trHeapMemory()) List<TR::BytecodeBuilder>(comp()->trMemory());
       _connectTreesWorklist = new (comp()->trHeapMemory()) List<TR::BytecodeBuilder>(comp()->trMemory());
 
-      // this will go count everything up front
+      // following is needed by JB2 to ensure all builders are appropriately counted */
+      ListIterator<TR::BytecodeBuilder> iter(_allBytecodeBuilders);
+      for (TR::BytecodeBuilder *builder=iter.getFirst();
+           !iter.atEnd();
+           builder = iter.getNext())
+         {
+         TraceIL("[ %p ] Adding BytecodeBuilder %p to count block worklist\n", this, builder);
+         _countBlocksWorklist->add(builder);
+         }
+
+      // count everything up front
       _count = countBlocks();
       }
 

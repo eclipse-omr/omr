@@ -143,6 +143,8 @@ OMR::CodeCache::destroy(TR::CodeCacheManager *manager)
          manager->freeMemory(_unresolvedMethodHT);
          }
       }
+
+   TR::Monitor::destroy(_mutex);
    }
 
 

@@ -59,6 +59,12 @@ OMR::CompilerEnv::initialize()
    _initialized = true;
    }
 
+void
+OMR::CompilerEnv::destroy()
+   {
+   self()->destroyTargetEnvironment();
+   _initialized = false;
+   }
 
 void
 OMR::CompilerEnv::initializeHostEnvironment()
@@ -146,6 +152,12 @@ OMR::CompilerEnv::initializeTargetEnvironment()
 
    target.setNumberOfProcessors(2);
    target.setSMP(true);
+   }
+
+void
+OMR::CompilerEnv::destroyTargetEnvironment()
+   {
+   TR::CPU::destroyTargetProcessorInfo();
    }
 
 
