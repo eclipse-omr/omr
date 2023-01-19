@@ -134,6 +134,16 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
+   void freeFields()
+      {
+      FieldInfo *f=_firstField;
+      while (f)
+         {
+         FieldInfo *n = f->_next;
+         jitPersistentFree(f);
+         f = n;
+         }
+      }
 
 protected:
    FieldInfo * findField(const char *fieldName);
@@ -173,6 +183,16 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
+   void freeFields()
+      {
+      FieldInfo *f=_firstField;
+      while (f)
+         {
+         FieldInfo *n = f->_next;
+         jitPersistentFree(f);
+         f = n;
+         }
+      }
 
 protected:
    FieldInfo *  findField(const char *fieldName);
@@ -452,6 +472,7 @@ OMR::TypeDictionary::MemoryManager::~MemoryManager()
 
 OMR::TypeDictionary::TypeDictionary() :
    _client(0),
+   _pointersByName(str_comparator, trMemory()->heapMemoryRegion()),
    _structsByName(str_comparator, trMemory()->heapMemoryRegion()),
    _unionsByName(str_comparator, trMemory()->heapMemoryRegion())
    {
@@ -510,8 +531,55 @@ OMR::TypeDictionary::~TypeDictionary() throw()
    {
    // Cleanup allocations in _memoryRegion *before* its destroyed in
    // the TypeDictionary::MemoryManager destructor
+   for (auto it=_pointersByName.begin(); it != _pointersByName.end();it++)
+      {
+      TR::IlType *t = it->second;
+      jitPersistentFree(static_cast<OMR::PointerType *>(t));
+      }
+   for (auto it=_structsByName.begin(); it != _structsByName.end();it++)
+      {
+      StructType *t = it->second;
+      t->freeFields();
+      jitPersistentFree(t);
+      }
    _structsByName.clear();
+   for (auto it=_unionsByName.begin(); it != _unionsByName.end();it++)
+      {
+      UnionType *t = it->second;
+      t->freeFields();
+      jitPersistentFree(t);
+      }
    _unionsByName.clear();
+
+   jitPersistentFree(pVectorDouble);
+   jitPersistentFree(pVectorFloat);
+   jitPersistentFree(pVectorInt64);
+   jitPersistentFree(pVectorInt32);
+   jitPersistentFree(pVectorInt16);
+   jitPersistentFree(pVectorInt8);
+   jitPersistentFree(pAddress);
+   jitPersistentFree(pDouble);
+   jitPersistentFree(pFloat);
+   jitPersistentFree(pInt64);
+   jitPersistentFree(pInt32);
+   jitPersistentFree(pInt16);
+   jitPersistentFree(pInt8);
+   jitPersistentFree(pNoType);
+
+   jitPersistentFree(VectorDouble);
+   jitPersistentFree(VectorFloat);
+   jitPersistentFree(VectorInt64);
+   jitPersistentFree(VectorInt32);
+   jitPersistentFree(VectorInt16);
+   jitPersistentFree(VectorInt8);
+   jitPersistentFree(Address);
+   jitPersistentFree(Double);
+   jitPersistentFree(Float);
+   jitPersistentFree(Int64);
+   jitPersistentFree(Int32);
+   jitPersistentFree(Int16);
+   jitPersistentFree(Int8);
+   jitPersistentFree(NoType);
    }
 
 TR::IlType *
@@ -611,7 +679,9 @@ OMR::TypeDictionary::PointerTo(const char *structName)
 TR::IlType *
 OMR::TypeDictionary::PointerTo(TR::IlType *baseType)
    {
-   return new (PERSISTENT_NEW) OMR::PointerType(baseType);
+   OMR::PointerType *ptrType = new (PERSISTENT_NEW) OMR::PointerType(baseType);
+   _pointersByName.insert(std::make_pair(ptrType->getName(), ptrType));
+   return ptrType;
    }
 
 TR::IlReference *

@@ -582,6 +582,7 @@ OMR::MethodBuilder::DefineFunction(const char* const name,
    va_end(parms);
 
    DefineFunction(name, fileName, lineNumber, entryPoint, returnType, numParms, parmTypes);
+   trMemory()->trPersistentMemory()->freePersistentMemory(parmTypes);
    }
 
 void
@@ -596,7 +597,7 @@ OMR::MethodBuilder::DefineFunction(const char* const name,
    TR_ASSERT_FATAL(_functions.find(name) == _functions.end(), "Function '%s' already defined", name);
 
    // copy parameter types so don't have to force caller to keep the parmTypes array alive
-   TR::IlType **copiedParmTypes = (TR::IlType **) trMemory()->trPersistentMemory()->allocatePersistentMemory(numParms * sizeof(TR::IlType *));
+   TR::IlType **copiedParmTypes = (TR::IlType **) trMemory()->heapMemoryRegion().allocate(numParms * sizeof(TR::IlType *));
    for (int32_t p=0;p < numParms;p++)
       copiedParmTypes[p] = parmTypes[p];
 

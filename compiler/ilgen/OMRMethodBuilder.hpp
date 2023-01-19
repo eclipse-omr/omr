@@ -284,10 +284,11 @@ class MethodBuilder : public TR::IlBuilder
       _getImpl = getter;
       }
 
+   TR_Memory *trMemory() { return memoryManager._trMemory; }
+
    protected:
    virtual uint32_t countBlocks();
    virtual bool connectTrees();
-   TR_Memory *trMemory() { return memoryManager._trMemory; }
 
    /*
     * @brief adjusts a local variable name so that it will be unique to the current inlined site to prevent inlining-induced name aliasing

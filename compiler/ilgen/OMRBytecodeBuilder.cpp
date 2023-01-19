@@ -46,7 +46,7 @@ OMR::BytecodeBuilder::BytecodeBuilder(TR::MethodBuilder *methodBuilder,
    _initialVMState(0),
    _vmState(0)
    {
-   _successorBuilders = new (PERSISTENT_NEW) List<TR::BytecodeBuilder>(_types->trMemory());
+   _successorBuilders = new (_types->trMemory()->heapMemoryRegion()) List<TR::BytecodeBuilder>(_types->trMemory());
    initialize(methodBuilder->details(), methodBuilder->methodSymbol(),
               methodBuilder->fe(), methodBuilder->symRefTab());
    initSequence();

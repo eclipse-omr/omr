@@ -782,6 +782,7 @@ OMR::IlBuilder::StoreIndirect(const char *type, const char *field, TR::IlValue *
    TraceIL("IlBuilder[ %p ]::StoreIndirect %s.%s = %d (base is %d)\n", this, type, field, value->getID(), object->getID());
    TR::ILOpCodes storeOp = comp()->il.opCodeForIndirectStore(fieldType);
    genTreeTop(TR::Node::createWithSymRef(storeOp, 2, loadValue(object), loadValue(value), 0, symRef));
+   jitPersistentFree(fieldRef);
    }
 
 TR::IlValue *
@@ -816,6 +817,7 @@ OMR::IlBuilder::LoadIndirect(const char *type, const char *field, TR::IlValue *o
    TR::DataType fieldType = symRef->getSymbol()->getDataType();
    TR::IlValue *returnValue = newValue(fieldType, TR::Node::createWithSymRef(comp()->il.opCodeForIndirectLoad(fieldType), 1, loadValue(object), 0, symRef));
    TraceIL("IlBuilder[ %p ]::%d is LoadIndirect %s.%s from (%d)\n", this, returnValue->getID(), type, field, object->getID());
+   jitPersistentFree(fieldRef);
    return returnValue;
    }
 

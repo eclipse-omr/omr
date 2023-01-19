@@ -231,6 +231,10 @@ protected:
 
    typedef bool (*StrComparator)(const char *, const char *);
 
+   typedef TR::typed_allocator<std::pair<const char * const, TR::IlType *>, TR::Region &> PointerMapAllocator;
+   typedef std::map<const char *, TR::IlType *, StrComparator, PointerMapAllocator> PointerMap;
+   PointerMap          _pointersByName;
+
    typedef TR::typed_allocator<std::pair<const char * const, OMR::StructType *>, TR::Region &> StructMapAllocator;
    typedef std::map<const char *, OMR::StructType *, StrComparator, StructMapAllocator> StructMap;
    StructMap          _structsByName;
