@@ -65,6 +65,8 @@
 #include "runtime/RuntimeAssumptions.hpp"
 #endif
 
+#define OPT_DETAILS "O^O REFINING ALIASES: "
+
 class TR_OpaqueClassBlock;
 namespace TR { class Register; }
 
@@ -957,7 +959,7 @@ addVeryRefinedCallAliasSets(TR::ResolvedMethodSymbol * methodSymbol, TR_BitVecto
 
    methodsPeeked->add(methodId);
 
-   dumpOptDetails(comp, "O^O REFINING ALIASES: Peeking into the IL to refine aliases \n");
+   dumpOptDetails(comp, "%sPeeking into the IL to refine aliases \n", OPT_DETAILS);
 
    if (!methodSymbol->getResolvedMethod()->genMethodILForPeeking(methodSymbol, comp, true))
       return 0;
