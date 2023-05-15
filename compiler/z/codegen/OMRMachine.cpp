@@ -86,7 +86,7 @@
 #define S390_REGISTER_PRESERVED_WEIGHT              0x00000002
 #define S390_REGISTER_PAIR_SIBLING                  0x00008000
 
-#define OPT_DETAILS_RANDOM_CODEGEN "O^O Random Codegen: "
+#define OPT_DETAILS_RANDOM_CODEGEN "0^0 S390 Machine Codegen: "
 
 ////////////////////////////////////////////////////////////////////////////////
 // OMR::Z::Machine memeber functions

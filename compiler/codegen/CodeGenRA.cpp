@@ -76,9 +76,7 @@
 #include "optimizer/Structure.hpp"
 #include "ras/Debug.hpp"
 
-#define OPT_DETAILS "O^O CODE GENERATION: "
-#define OPT_DETAILS_SPILL_TEMPS "O^O SPILL TEMPS: "
-#define OPT_DETAILS_HALF_SLOT_SPILLS "O^O HALF-SLOT SPILLS: "
+#define OPT_DETAILS "O^O CODE GENERATION REGISTER ALLOCATION: "
 #define OPT_DETAILS_GLOBAL_REGISTER_ALLOCATION "O^O GLOBAL REGISTER ALLOCATION: "
 
 #define NUM_REGS_USED_BY_COMPLEX_OPCODES 3
@@ -493,7 +491,7 @@ OMR::CodeGenerator::allocateSpill(int32_t dataSize, bool containsCollectedRefere
          }
 
      if (
-         (spill && self()->comp()->getOption(TR_TraceRA) && !performTransformation(self()->comp(), "%sReuse spill temp %s\n", OPT_DETAILS_SPILL_TEMPS, self()->getDebug()->getName(spill->getSymbolReference()))))
+         (spill && self()->comp()->getOption(TR_TraceRA) && !performTransformation(self()->comp(), "%sReuse spill temp %s\n", OPT_DETAILS, self()->getDebug()->getName(spill->getSymbolReference()))))
        {
        // Discard the spill temp we popped and never use it again; allocate a
        // new one instead, and later, where we would have returned this spill
@@ -538,7 +536,7 @@ OMR::CodeGenerator::allocateSpill(int32_t dataSize, bool containsCollectedRefere
       //
       if (  offset == NULL
          || spill->secondHalfIsOccupied()
-            || !performTransformation(self()->comp(), "%sUse second half of %s\n", OPT_DETAILS_HALF_SLOT_SPILLS, self()->getDebug()->getName(spill->getSymbolReference())))
+            || !performTransformation(self()->comp(), "%sUse second half of %s\n", OPT_DETAILS, self()->getDebug()->getName(spill->getSymbolReference())))
          {
          spill->setFirstHalfIsOccupied();
          }

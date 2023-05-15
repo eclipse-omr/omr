@@ -1714,7 +1714,7 @@ void TR_InlinerBase::rematerializeCallArguments(TR_TransformInlinedFunction & ti
                TR::Node *duplicateStore = argStore->duplicateTree();
                TR::SparseBitVector visitedNodes(comp()->allocator());
                rematPoint = fixRdBarInDuplicatedNode(duplicateStore, rematPoint, visitedNodes, comp());
-               if (performTransformation(comp(), "O^O GUARDED CALL REMAT: Rematerialize [%p] as [%p]\n", argStore, duplicateStore))
+               if (performTransformation(comp(), "%sRematerialize [%p] as [%p]\n", OPT_DETAILS_GUARDED_CALL_REMAT, argStore, duplicateStore))
                   {
                   rematPoint = TR::TreeTop::create(comp(), rematPoint, duplicateStore);
                   }
@@ -1724,7 +1724,7 @@ void TR_InlinerBase::rematerializeCallArguments(TR_TransformInlinedFunction & ti
                {
                TR::Node *duplicateStore = TR::Node::createStore(argStore->getSymbolReference(), TR::Node::createLoad(argStore, rematTree->getNode()->getSymbolReference()));
                duplicateStore->setByteCodeInfo(argStore->getByteCodeInfo());
-               if (performTransformation(comp(), "%sPartial rematerialize of [%p] as [%p] - load of [%d]\n", OPT_DETAILS_GUARDED_CALL_REMAT, argStore, duplicateStore, rematTree->getNode()->getSymbolReference()->getReferenceNumber()))
+               if (performTransformation(comp(), "%sGuarded call partial rematerialize of [%p] as [%p] - load of [%d]\n", OPT_DETAILS, argStore, duplicateStore, rematTree->getNode()->getSymbolReference()->getReferenceNumber()))
                   {
                   rematPoint = TR::TreeTop::create(comp(), rematPoint, duplicateStore);
                   }

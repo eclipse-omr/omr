@@ -70,7 +70,7 @@
 #include "runtime/Runtime.hpp"
 #include "infra/SimpleRegex.hpp"
 
-#define OPT_DETAILS "O^O OSR: "
+#define OPT_DETAILS "O^O IL Resolved Method Symbol: "
 
 TR::ResolvedMethodSymbol *
 OMR::ResolvedMethodSymbol::self()

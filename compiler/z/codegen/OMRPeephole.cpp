@@ -1590,7 +1590,7 @@ OMR::Z::Peephole::tryToRemoveDuplicateNILF()
             {
             if (currInst->getSourceImmediate() == nextInst->getSourceImmediate())
                {
-               if (performTransformation(self()->comp(), "%sdeleting duplicate NILF from pair %p %p*\n", OPT_DETAILS_S390_PEEPHOLE, currInst, nextInst))
+               if (performTransformation(self()->comp(), "%sDeleting duplicate NILF from pair %p %p*\n", OPT_DETAILS_S390_PEEPHOLE, currInst, nextInst))
                   {
                   nextInst->remove();
 
@@ -1614,7 +1614,7 @@ OMR::Z::Peephole::tryToRemoveDuplicateNILF()
             else if (((currInst->getSourceImmediate() & nextInst->getSourceImmediate()) == currInst->getSourceImmediate()) &&
                ((nextInst->getSourceImmediate() & currInst->getSourceImmediate()) != nextInst->getSourceImmediate()))
                {
-               if (performTransformation(self()->comp(), "%sdeleting unnecessary NILF from pair %p %p*\n", OPT_DETAILS_S390_PEEPHOLE, currInst, nextInst))
+               if (performTransformation(self()->comp(), "%sDeleting unnecessary NILF from pair %p %p*\n", OPT_DETAILS_S390_PEEPHOLE, currInst, nextInst))
                   {
                   nextInst->remove();
 
@@ -1645,7 +1645,7 @@ OMR::Z::Peephole::tryToRemoveDuplicateNILH()
                if (currInst->matchesTargetRegister(nextInst->getRegisterOperand(1)) &&
                    nextInst->matchesTargetRegister(currInst->getRegisterOperand(1)))
                   {
-                  if (performTransformation(self()->comp(), "%sdeleting duplicate NILH from pair %p %p*\n", OPT_DETAILS_S390_PEEPHOLE, currInst, nextInst))
+                  if (performTransformation(self()->comp(), "%sDeleting duplicate NILH from pair %p %p*\n", OPT_DETAILS_S390_PEEPHOLE, currInst, nextInst))
                      {
                      nextInst->remove();
 
@@ -1783,7 +1783,7 @@ OMR::Z::Peephole::tryToRemoveRedundantShift()
             uint32_t newShift = currRSInst->getSourceImmediate() + nextRSInst->getSourceImmediate();
             if (newShift < 64)
                {
-               if (performTransformation(self()->comp(), "%smerging SRL/SLL pair [%p] [%p]\n", OPT_DETAILS_S390_PEEPHOLE, cursor, cursor->getNext()))
+               if (performTransformation(self()->comp(), "%sMerging SRL/SLL pair [%p] [%p]\n", OPT_DETAILS_S390_PEEPHOLE, cursor, cursor->getNext()))
                   {
                   currRSInst->setSourceImmediate(newShift);
                   nextInst->remove();

@@ -65,7 +65,7 @@
 #include "runtime/RuntimeAssumptions.hpp"
 #endif
 
-#define OPT_DETAILS "O^O REFINING ALIASES: "
+#define OPT_DETAILS "O^O IL ALIASES: "
 
 class TR_OpaqueClassBlock;
 namespace TR { class Register; }

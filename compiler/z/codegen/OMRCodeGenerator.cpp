@@ -140,9 +140,6 @@ namespace TR { class DebugCounterBase; }
 namespace TR { class SimpleRegex; }
 
 #define OPT_DETAILS "O^O CODE GENERATION: "
-#define OPT_DETAILS_IS_ACTIVE_COMPARE_CC "O^O isActiveCompareCC: "
-#define OPT_DETAILS_ARITHMETIC_CC "O^O Arithmetic CC: "
-#define OPT_DETAILS_LOGICAL_CC_INFO "O^O Logical CC Info: "
 
 void
 OMR::Z::CodeGenerator::preLowerTrees()
@@ -4152,7 +4149,7 @@ bool OMR::Z::CodeGenerator::isActiveCompareCC(TR::InstOpCode::Mnemonic opcd, TR:
 
       if (opcd == ccInst->getOpCodeValue() && tReg == ccTgtReg &&  sReg == ccSrcReg &&
           performTransformation(self()->comp(), "%sRR Compare Op [%s\t %s, %s] can reuse CC from ccInstr [%p]\n",
-             OPT_DETAILS_IS_ACTIVE_COMPARE_CC, ccInst->getOpCode().getMnemonicName(), self()->getDebug()->getName(tReg),self()->getDebug()->getName(sReg), ccInst))
+             OPT_DETAILS, ccInst->getOpCode().getMnemonicName(), self()->getDebug()->getName(tReg),self()->getDebug()->getName(sReg), ccInst))
          {
          return true;
          }
@@ -4166,8 +4163,8 @@ bool OMR::Z::CodeGenerator::isActiveCompareCC(TR::InstOpCode::Mnemonic opcd, TR:
 bool OMR::Z::CodeGenerator::isActiveArithmeticCC(TR::Register* tstReg)
    {
    if (self()->hasCCInfo() && self()->hasCCSigned() && !self()->hasCCOverflow() && !self()->hasCCCarry() &&
-         performTransformation(self()->comp(), "%sCCInfo(%d) CCSigned(%d) CCOverflow(%d) CCCarry(%d)\n",
-            OPT_DETAILS_ARITHMETIC_CC, self()->hasCCInfo(), self()->hasCCSigned(), self()->hasCCOverflow(), self()->hasCCCarry())
+         performTransformation(self()->comp(), "%sArithemtic op CC result matches CC of a compare immediate op\n",
+            OPT_DETAILS)
       )
       {
       TR::Instruction* inst = self()->ccInstruction();
@@ -4186,7 +4183,7 @@ bool OMR::Z::CodeGenerator::isActiveLogicalCC(TR::Node* ccNode, TR::Register* ts
 
    if (self()->hasCCInfo() && self()->hasCCZero() && !self()->hasCCOverflow() &&
        (TR::ILOpCode::isEqualCmp(op) || TR::ILOpCode::isNotEqualCmp(op)) &&
-       performTransformation(self()->comp(), "%sCCInfo(%d) CCZero(%d) CCOverflow(%d)\n", OPT_DETAILS_LOGICAL_CC_INFO, self()->hasCCInfo(), self()->hasCCZero(), self()->hasCCOverflow())
+       performTransformation(self()->comp(), "%sCC (CCInfo(%d) CCZero(%d) CCOverflow(%d)) can be reused from logical instruction [%p]\n", OPT_DETAILS, self()->hasCCInfo(), self()->hasCCZero(), self()->hasCCOverflow(), self()->ccInstruction())
       )
       {
       TR::Instruction* inst = self()->ccInstruction();

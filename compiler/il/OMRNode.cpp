@@ -6505,7 +6505,7 @@ OMR::Node::setArrayChkPrimitiveArray2(bool v)
    {
    TR::Compilation * c = TR::comp();
    TR_ASSERT(self()->getOpCodeValue() == TR::ArrayCHK, "Opcode must be ArrayCHK");
-   if (performNodeTransformation3(c, "%s Setting arrayChkPrimitiveArray2 flag on node %p to %d\n", OPT_DETAILS, self(), v))
+   if (performNodeTransformation3(c, "%sSetting arrayChkPrimitiveArray2 flag on node %p to %d\n", OPT_DETAILS, self(), v))
       _flags.set(arrayChkPrimitiveArray2, v);
    }
 
