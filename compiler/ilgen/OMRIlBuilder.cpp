@@ -510,7 +510,7 @@ OMR::IlBuilder::OrphanBuilder()
    }
 
 TR::BytecodeBuilder *
-OMR::IlBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
+OMR::IlBuilder::OrphanBytecodeBuilder(int32_t bcIndex, const char *name)
    {
    TR::BytecodeBuilder *orphan = new (comp()->trHeapMemory()) TR::BytecodeBuilder(_methodBuilder, bcIndex, name);
    orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);

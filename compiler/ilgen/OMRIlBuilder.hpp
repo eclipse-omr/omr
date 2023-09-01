@@ -231,7 +231,7 @@ public:
 
    TR::IlBuilder *createBuilderIfNeeded(TR::IlBuilder *builder);
    TR::IlBuilder *OrphanBuilder();
-   TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, char *name=NULL);
+   TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, const char *name=NULL);
 
    bool TraceEnabled_log();
    void TraceIL_log(const char *s, ...);
