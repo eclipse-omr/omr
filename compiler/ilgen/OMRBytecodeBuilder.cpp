@@ -37,7 +37,7 @@
 
 OMR::BytecodeBuilder::BytecodeBuilder(TR::MethodBuilder *methodBuilder,
                                       int32_t bcIndex,
-                                      char *name,
+                                      const char *name,
                                       int32_t bcLength)
    : TR::IlBuilder(methodBuilder, methodBuilder->typeDictionary(), bcIndex),
    _fallThroughBuilder(0),
