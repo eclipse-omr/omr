@@ -65,6 +65,7 @@ typedef OMR::Compilation CompilationConnector;
 #include "infra/Flags.hpp"
 #include "infra/Link.hpp"
 #include "infra/List.hpp"
+#include "infra/set.hpp"
 #include "infra/Stack.hpp"
 #include "infra/ThreadLocal.hpp"
 #include "optimizer/Optimizations.hpp"
@@ -91,8 +92,10 @@ class RegisterCandidates;
 class TR_ResolvedMethod;
 
 namespace OMR {
+class RetainedMethodSet;
 class RuntimeAssumption;
-}
+} // namespace OMR
+
 class TR_VirtualGuard;
 class TR_VirtualGuardSite;
 struct TR_VirtualGuardSelection;
@@ -1250,6 +1253,26 @@ public:
      */
     void setCurrentILGenCallTarget(TR_CallTarget *x) { _currentILGenCallTarget = x; }
 
+    /**
+     * \brief
+     *    Get the set of methods that will remain loaded while the JIT body
+     *    resulting from this compilation is still running.
+     *
+     * \return the root retained method set for this compilation
+     */
+    OMR::RetainedMethodSet *retainedMethods();
+
+    /**
+     * \brief
+     *    Create a root OMR::RetainedMethodSet for the given method.
+     *
+     * This is used to initialize _retainedMethods. A project can override this
+     * to instantiate a subclass instead.
+     *
+     * \return the newly created root retained method set
+     */
+    OMR::RetainedMethodSet *createRetainedMethods(TR_ResolvedMethod *method);
+
 private:
     void resetVisitCounts(vcount_t, TR::ResolvedMethodSymbol *);
     int16_t restoreInlineDepthUntil(int32_t stopIndex, TR_ByteCodeInfo &currentInfo);
@@ -1459,6 +1482,8 @@ private:
     TypeLayoutMap _typeLayoutMap;
 
     TR_CallTarget *_currentILGenCallTarget;
+
+    OMR::RetainedMethodSet *_retainedMethods;
 
     /*
      * This must be last

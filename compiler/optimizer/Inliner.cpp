@@ -55,6 +55,7 @@
 #include "env/CompilerEnv.hpp"
 #include "env/ObjectModel.hpp"
 #include "env/PersistentInfo.hpp"
+#include "env/OMRRetainedMethodSet.hpp"
 #include "env/StackMemoryRegion.hpp"
 #include "env/TRMemory.hpp"
 #include "env/jittypes.h"
@@ -3920,6 +3921,14 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
             }
         }
 
+        if (comp()->getOption(TR_DontInlineUnloadableMethods)
+            && !callsite->_retainedMethods->willRemainLoaded(calltarget->_calleeMethod)) {
+            tracer()->insertCounter(Unloadable_Callee, callsite->_callNodeTreeTop);
+            callsite->removecalltarget(i, tracer(), Unloadable_Callee);
+            i--;
+            continue;
+        }
+
         int32_t bytecodeSize
             = getPolicy()->getInitialBytecodeSize(calltarget->_calleeMethod, calltarget->_calleeSymbol, comp());
 
@@ -4607,6 +4616,18 @@ bool TR_InlinerBase::inlineCallTarget2(TR_CallStack *callStack, TR_CallTarget *c
         tracer()->getGuardKindString(guard), tracer()->getGuardTypeString(guard),
         !comp()->getOption(TR_DisablePartialInlining) && calltarget->_partialInline);
 
+    // NOTE: There could be both a bond and a keepalive here, if e.g. the call
+    // site is an indirect call site that was refined based on constant folding,
+    // but the keepalive doesn't cover the call target.
+
+    if (calltarget->_needsBond) {
+        calltarget->_retainedMethods->bond();
+    }
+
+    if (calltarget->_myCallSite->_needsKeepalive) {
+        calltarget->_myCallSite->_retainedMethods->keepalive();
+    }
+
     comp()->incInlinedCalls();
 
     if (comp()->trace(OMR::inlining))
@@ -5226,6 +5247,8 @@ TR_CallTarget::TR_CallTarget(TR::Region &memRegion, TR_CallSite *callsite, TR::R
     , _frequencyAdjustment(freqAdj)
     , _prexArgInfo(NULL)
     , _ecsPrexArgInfo(ecsPrexArgInfo)
+    , _retainedMethods(callsite->_retainedMethods)
+    , _needsBond(false)
     , _requiredConsts(memRegion)
 {
     TR_ASSERT_FATAL(_calleeMethod != NULL, "no _calleeMethod. What are we supposed to inline?");
@@ -5251,6 +5274,14 @@ TR_CallTarget::TR_CallTarget(TR::Region &memRegion, TR_CallSite *callsite, TR::R
     _failureReason = InlineableTarget;
     _size = -1;
     _calleeMethodKind = TR::MethodSymbol::Virtual;
+
+    TR_ASSERT_FATAL(_calleeMethod != NULL, "TR_CallTarget %p has no _calleeMethod. What are we supposed to inline?",
+        this);
+
+    if (!_retainedMethods->willRemainLoaded(_calleeMethod)) {
+        _retainedMethods = _retainedMethods->createChild(_calleeMethod);
+        _needsBond = true; // if this target is actually inlined
+    }
 }
 
 void TR_CallTarget::assertCalleeConsistency()
@@ -5272,7 +5303,7 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod, TR::TreeTop *c
     TR::Node *callNode, TR::Method *interfaceMethod, TR_OpaqueClassBlock *receiverClass, int32_t vftSlot,
     int32_t cpIndex, TR_ResolvedMethod *initialCalleeMethod, TR::ResolvedMethodSymbol *initialCalleeSymbol,
     bool isIndirectCall, bool isInterface, TR_ByteCodeInfo &bcInfo, TR::Compilation *comp, int32_t depth,
-    bool allConsts)
+    bool allConsts, OMR::RetainedMethodSet *retainedMethods, bool wasRefinedFromKnownObject)
     : _callerResolvedMethod(callerResolvedMethod)
     , _callNodeTreeTop(callNodeTreeTop)
     , _cursorTreeTop(NULL)
@@ -5297,6 +5328,8 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod, TR::TreeTop *c
     , _mytargets(0, comp->allocator())
     , _myRemovedTargets(0, comp->allocator())
     , _ecsPrexArgInfo(0)
+    , _retainedMethods(retainedMethods)
+    , _needsKeepalive(false)
 {
     if (_initialCalleeSymbol != NULL) {
         if (_initialCalleeMethod != NULL) {
@@ -5310,6 +5343,53 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod, TR::TreeTop *c
     _failureReason = InlineableTarget;
     _byteCodeIndex = bcInfo.getByteCodeIndex();
     _callerBlock = NULL;
+
+    // Because the retained method set is generally incomplete, look at the call
+    // site in the bytecode and take into account any linked callee.
+    //
+    // This inspects the call site independently of initialCalleeMethod so that
+    // it happens even if that hasn't been specified yet, and also to make sure
+    // that it's independent of any refinement that may have happened in the
+    // trees based on e.g. preexistence.
+    //
+    // However! this call site may be for a helper or intrinsic call node, which
+    // won't be inlined, and which doesn't necessarily correspond to a call in
+    // the bytecode. In that case, the bcInfo doesn't necessarily identify a
+    // call instruction, so avoid treating it as though it does.
+    //
+    if (callNode == NULL
+        || (!callNode->getSymbolReference()->getSymbol()->castToMethodSymbol()->isHelper()
+            && !comp->getSymRefTab()->isNonHelper(callNode->getSymbolReference()))) {
+        retainedMethods->attestLinkedCalleeWillRemainLoaded(bcInfo);
+    }
+
+    // Arrange to create a keepalive if needed based on known object refinement.
+    if (wasRefinedFromKnownObject) {
+        // initialCalleeMethod was refined based on known object information,
+        // i.e. constants that we're allowed to retain, so we can also retain the
+        // callee. However, note that (as usual) for an indirect call the best
+        // target might still not be guaranteed to remain loaded, if it's defined
+        // by a subtype of potentially shorter lifespan.
+        //
+        // If we have a call node, then we might not yet have initialCalleeMethod,
+        // but it must have been refined in the trees, and the refined method is
+        // found from the symbol.
+        //
+        TR_ResolvedMethod *refinedMethod = _initialCalleeMethod;
+        if (callNode != NULL) {
+            TR_ASSERT_FATAL_WITH_NODE(callNode, callNode->isCallThatWasRefinedFromKnownObject(),
+                "wasRefinedFromKnownObject parameter inconsistent with node flag");
+            refinedMethod = callNode->getSymbol()->getResolvedMethodSymbol()->getResolvedMethod();
+        }
+
+        TR_ASSERT_FATAL(refinedMethod != NULL,
+            "initialCalleeMethod unspecified despite supposed known object refinement");
+
+        if (!_retainedMethods->willRemainLoaded(refinedMethod)) {
+            _needsKeepalive = true;
+            _retainedMethods = retainedMethods->createChild(refinedMethod);
+        }
+    }
 }
 
 void TR_CallSite::assertInitialCalleeConsistency()

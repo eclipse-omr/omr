@@ -1203,6 +1203,8 @@ public:
     bool chkThrowInsertedByOSR();
 
     // Flags used by call nodes
+    bool isCallThatWasRefinedFromKnownObject();
+    void setCallWasRefinedFromKnownObject();
     bool isTheVirtualCallNodeForAGuardedInlinedCall();
     void setIsTheVirtualCallNodeForAGuardedInlinedCall();
     void resetIsTheVirtualCallNodeForAGuardedInlinedCall();
@@ -1919,6 +1921,7 @@ protected:
         ThrowInsertedByOSR = 0x00004000,
 
         // Flags used by call nodes
+        wasRefinedFromKnownObject = 0x00000400, // Symref came from constant folding.
         virtualCallNodeForAGuardedInlinedCall = 0x00000800, ///< virtual calls
         dontTransformArrayCopyCall = 0x00000800, ///< arraycopy call - static
         nodeIsRecognizedArrayCopyCall = 0x00010000,
