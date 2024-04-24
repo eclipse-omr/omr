@@ -1060,7 +1060,7 @@ omrshsem_openSemaphore(struct OMRPortLibrary *portLibrary, intptr_t fd, char *ba
 				goto failDontUnlink;
 			}
 		} else {
-#if defined(__GNUC__) || defined(AIXPPC) || defined(OMRZTPF)
+#if (defined(__GNUC__) || defined(AIXPPC) || defined(J9ZTPF)) && !defined(J9ZOS390)
 #if defined(OSX)
 			/*Use _key for OSX*/
 			if (buf.sem_perm._key != controlinfo->ftok_key)
@@ -1081,7 +1081,7 @@ omrshsem_openSemaphore(struct OMRPortLibrary *portLibrary, intptr_t fd, char *ba
 				rc = OMRPORT_ERROR_SHSEM_OPFAILED_SEM_KEY_MISMATCH;
 				goto fail;
 			}
-#endif
+#endif /* (defined(__GNUC__) || defined(AIXPPC) || defined(J9ZTPF)) && !defined(J9ZOS390) */
 #if defined (J9ZOS390)
 			if (omr_getipcWrapper(portLibrary, controlinfo->semid, &info, sizeof(IPCQPROC), IPCQALL) == -1) {
 				int32_t lastError = omrerror_last_error_number(portLibrary) | OMRPORT_ERROR_SYSTEM_CALL_ERRNO_MASK;
