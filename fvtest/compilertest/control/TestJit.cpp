@@ -131,7 +131,7 @@ initializeCodeCache(TR::CodeCacheManager & codeCacheManager)
 //
 
 
-
+static OMRPortLibrary portLibrary;
 
 // helperIDs is an array of helper id corresponding to the addresses passed in "helpers"
 // helpers is an array of pointers to helpers that compiled code for tests needs to reference
@@ -155,7 +155,15 @@ initializeTestJit(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t n
       {
       // Allocate the host environment structure
       //
-      TR::Compiler = new (rawAllocator) TR::CompilerEnv(rawAllocator, TR::PersistentAllocatorKit(rawAllocator));
+
+      if (0 == omrthread_init_library())
+         {
+         omrthread_t currentThread = NULL;
+         if (0 == omrthread_attach_ex(&currentThread, J9THREAD_ATTR_DEFAULT))
+            omrport_init_library(&portLibrary, sizeof(OMRPortLibrary));
+         }
+
+      TR::Compiler = new (rawAllocator) TR::CompilerEnv(rawAllocator, TR::PersistentAllocatorKit(rawAllocator), &portLibrary);
       }
    catch (const std::bad_alloc&)
       {
@@ -204,6 +212,14 @@ shutdownJit()
    codeCacheManager.destroy();
 
    TR::CompilationController::shutdown();
+
+   omrthread_t currentThread = NULL;
+   if (0 == omrthread_attach_ex(&currentThread, J9THREAD_ATTR_DEFAULT))
+      {
+      portLibrary.port_shutdown_library(&portLibrary);
+      omrthread_detach(currentThread);
+      omrthread_shutdown_library();
+      }
    }
 
 extern "C"
