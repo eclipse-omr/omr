@@ -129,65 +129,6 @@ struct TR_X86ProcessorInfo
       TR_GenuineIntel                  = 0x02,
       TR_UnknownVendor                 = 0x04
       };
-
-   bool enabledXSAVE()                     {return testFeatureFlags2(TR_OSXSAVE);}
-   bool hasBuiltInFPU()                    {return testFeatureFlags(TR_BuiltInFPU);}
-   bool supportsVirtualModeExtension()     {return testFeatureFlags(TR_VirtualModeExtension);}
-   bool supportsDebuggingExtension()       {return testFeatureFlags(TR_DebuggingExtension);}
-   bool supportsPageSizeExtension()        {return testFeatureFlags(TR_PageSizeExtension);}
-   bool supportsRDTSCInstruction()         {return testFeatureFlags(TR_RDTSCInstruction);}
-   bool hasModelSpecificRegisters()        {return testFeatureFlags(TR_ModelSpecificRegisters);}
-   bool supportsPhysicalAddressExtension() {return testFeatureFlags(TR_PhysicalAddressExtension);}
-   bool supportsMachineCheckException()    {return testFeatureFlags(TR_MachineCheckException);}
-   bool supportsCMPXCHG8BInstruction()     {return testFeatureFlags(TR_CMPXCHG8BInstruction);}
-   bool supportsCMPXCHG16BInstruction()    {return testFeatureFlags2(TR_CMPXCHG16BInstruction);}
-   bool hasAPICHardware()                  {return testFeatureFlags(TR_APICHardware);}
-   bool hasMemoryTypeRangeRegisters()      {return testFeatureFlags(TR_MemoryTypeRangeRegisters);}
-   bool supportsPageGlobalFlag()           {return testFeatureFlags(TR_PageGlobalFlag);}
-   bool hasMachineCheckArchitecture()      {return testFeatureFlags(TR_MachineCheckArchitecture);}
-   bool supportsCMOVInstructions()         {return testFeatureFlags(TR_CMOVInstructions);}
-   bool hasPageAttributeTable()            {return testFeatureFlags(TR_PageAttributeTable);}
-   bool has36BitPageSizeExtension()        {return testFeatureFlags(TR_36BitPageSizeExtension);}
-   bool hasProcessorSerialNumber()         {return testFeatureFlags(TR_ProcessorSerialNumber);}
-   bool supportsCLFLUSHInstruction()       {return testFeatureFlags(TR_CLFLUSHInstruction);}
-   bool supportsCLWBInstruction()          {return testFeatureFlags8(TR_CLWB);}
-   bool supportsDebugTraceStore()          {return testFeatureFlags(TR_DebugTraceStore);}
-   bool hasACPIRegisters()                 {return testFeatureFlags(TR_ACPIRegisters);}
-   bool supportsMMXInstructions()          {return testFeatureFlags(TR_MMXInstructions);}
-   bool supportsFastFPSavesRestores()      {return testFeatureFlags(TR_FastFPSavesRestores);}
-   bool supportsSSE()                      {return testFeatureFlags(TR_SSE);}
-   bool supportsSSE2()                     {return testFeatureFlags(TR_SSE2);}
-   bool supportsSSE3()                     {return testFeatureFlags2(TR_SSE3);}
-   bool supportsSSSE3()                    {return testFeatureFlags2(TR_SSSE3);}
-   bool supportsSSE4_1()                   {return testFeatureFlags2(TR_SSE4_1);}
-   bool supportsSSE4_2()                   {return testFeatureFlags2(TR_SSE4_2);}
-   bool supportsAVX()                      {return testFeatureFlags2(TR_AVX) && enabledXSAVE();}
-   bool supportsAVX2()                     {return testFeatureFlags8(TR_AVX2) && enabledXSAVE();}
-   bool supportsAVX512F()                  {return testFeatureFlags8(TR_AVX512F) && enabledXSAVE();}
-   bool supportsAVX512BW()                 {return testFeatureFlags8(TR_AVX512BW) && enabledXSAVE();}
-   bool supportsAVX512DQ()                 {return testFeatureFlags8(TR_AVX512DQ) && enabledXSAVE();}
-   bool supportsAVX512CD()                 {return testFeatureFlags8(TR_AVX512CD) && enabledXSAVE();}
-   bool supportsAVX512VL()                 {return testFeatureFlags8(TR_AVX512VL) && enabledXSAVE();}
-   bool supportsAVX512VBMI2()              {return testFeatureFlags10(TR_AVX512_VBMI2) && enabledXSAVE();}
-   bool supportsAVX512BITALG()             {return testFeatureFlags10(TR_AVX512_BITALG) && enabledXSAVE();}
-   bool supportsAVX512VPOPCNTDQ()          {return testFeatureFlags10(TR_AVX512_VPOPCNTDQ) && enabledXSAVE();}
-   bool supportsBMI1()                     {return testFeatureFlags8(TR_BMI1) && enabledXSAVE();}
-   bool supportsBMI2()                     {return testFeatureFlags8(TR_BMI2) && enabledXSAVE();}
-   bool supportsFMA()                      {return testFeatureFlags2(TR_FMA) && enabledXSAVE();}
-   bool supportsCLMUL()                    {return testFeatureFlags2(TR_CLMUL);}
-   bool supportsAESNI()                    {return testFeatureFlags2(TR_AESNI);}
-   bool supportsPOPCNT()                   {return testFeatureFlags2(TR_POPCNT);}
-   bool supportsSelfSnoop()                {return testFeatureFlags(TR_SelfSnoop);}
-   bool supportsTM()                       {return testFeatureFlags8(TR_RTM);}
-   bool supportsHyperThreading()           {return testFeatureFlags(TR_HyperThreading);}
-   bool supportsHLE()                      {return testFeatureFlags8(TR_HLE);}
-   bool hasThermalMonitor()                {return testFeatureFlags(TR_ThermalMonitor);}
-
-   bool supportsMFence()                   {return testFeatureFlags(TR_SSE2);}
-   bool supportsLFence()                   {return testFeatureFlags(TR_SSE2);}
-   bool supportsSFence()                   {return testFeatureFlags(TR_SSE | TR_MMXInstructions);}
-   bool prefersMultiByteNOP()              {return getX86Architecture() && isGenuineIntel() && !isIntelPentium();}
-
    uint32_t getCPUStepping(uint32_t signature)       {return (signature & CPUID_SIGNATURE_STEPPING_MASK);}
    uint32_t getCPUModel(uint32_t signature)          {return (signature & CPUID_SIGNATURE_MODEL_MASK) >> 4;}
    uint32_t getCPUFamily(uint32_t signature)         {return (signature & CPUID_SIGNATURE_FAMILY_MASK) >> 8;}
@@ -195,38 +136,8 @@ struct TR_X86ProcessorInfo
    uint32_t getCPUExtendedModel(uint32_t signature)  {return (signature & CPUID_SIGNATURE_EXTENDEDMODEL_MASK) >> 16;}
    uint32_t getCPUExtendedFamily(uint32_t signature) {return (signature & CPUID_SIGNATURE_EXTENDEDFAMILY_MASK) >> 20;}
 
-   bool isIntelPentium()        { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelPentium; }
-   bool isIntelP6()             { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelP6; }
-   bool isIntelPentium4()       { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelPentium4; }
-   bool isIntelCore2()          { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelCore2; }
-   bool isIntelTulsa()          { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelTulsa; }
-   bool isIntelNehalem()        { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelNehalem; }
-   bool isIntelWestmere()       { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelWestmere; }
-   bool isIntelSandyBridge()    { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelSandyBridge; }
-   bool isIntelIvyBridge()      { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelIvyBridge; }
-   bool isIntelHaswell()        { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelHaswell; }
-   bool isIntelBroadwell()      { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelBroadwell; }
-   bool isIntelSkylake()        { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelSkylake; }
-   bool isIntelCascadeLake()    { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelCascadeLake; }
-   bool isIntelCooperLake()     { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelCooperLake; }
-   bool isIntelIceLake()        { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelIceLake; }
-   bool isIntelSapphireRapids() { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelSapphireRapids; }
-   bool isIntelEmeraldRapids()  { return (_processorDescription & 0x000000ff) == TR_ProcessorIntelEmeraldRapids; }
-
-   bool isIntelOldMachine()     { return (isIntelPentium() || isIntelP6() || isIntelPentium4() || isIntelCore2() || isIntelTulsa() || isIntelNehalem()); }
-
-   bool isAMDK6()               { return (_processorDescription & 0x000000fe) == TR_ProcessorAMDK5; } // accept either K5 or K6
-   bool isAMDAthlonDuron()      { return (_processorDescription & 0x000000ff) == TR_ProcessorAMDAthlonDuron; }
-   bool isAMDOpteron()          { return (_processorDescription & 0x000000ff) == TR_ProcessorAMDOpteron; }
-   bool isAMD15h()              { return (_processorDescription & 0x000000ff) == TR_ProcessorAMDFamily15h; }
-
    bool isGenuineIntel() {return _vendorFlags.testAny(TR_GenuineIntel);}
    bool isAuthenticAMD() {return _vendorFlags.testAny(TR_AuthenticAMD);}
-
-   bool requiresLFENCE() { return false; /* Dummy for now, we may need TR::InstOpCode::LFENCE in future processors*/}
-
-   int32_t getX86Architecture() { return (_processorDescription & 0x000000ff);}
-
 private:
 
    flags8_t   _vendorFlags;

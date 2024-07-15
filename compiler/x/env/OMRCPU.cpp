@@ -218,9 +218,6 @@ OMR::X86::CPU::supportsTransactionalMemoryInstructions()
 bool
 OMR::X86::CPU::getSupportsHardware32bitCompress()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
-
    return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
    }
 
@@ -230,18 +227,12 @@ OMR::X86::CPU::getSupportsHardware64bitCompress()
    if (self()->isI386())
       return false;
 
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
-
    return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
    }
 
 bool
 OMR::X86::CPU::getSupportsHardware32bitExpand()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
-
    return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
    }
 
@@ -250,9 +241,6 @@ OMR::X86::CPU::getSupportsHardware64bitExpand()
    {
    if (self()->isI386())
       return false;
-
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
 
    return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
    }
@@ -284,54 +272,36 @@ OMR::X86::CPU::requiresLFence()
 bool
 OMR::X86::CPU::supportsMFence()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsMFence();
-
    return self()->supportsFeature(OMR_FEATURE_X86_SSE2);
    }
 
 bool
 OMR::X86::CPU::supportsLFence()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsLFence();
-
    return self()->supportsFeature(OMR_FEATURE_X86_SSE2);
    }
 
 bool
 OMR::X86::CPU::supportsSFence()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsSFence();
-
    return self()->supportsFeature(OMR_FEATURE_X86_SSE2) || self()->supportsFeature(OMR_FEATURE_X86_MMX);
    }
 
 bool
 OMR::X86::CPU::prefersMultiByteNOP()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().prefersMultiByteNOP();
-
    return self()->isGenuineIntel() && !self()->is(OMR_PROCESSOR_X86_INTEL_PENTIUM);
    }
 
 bool
 OMR::X86::CPU::supportsAVX()
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().supportsAVX();
-
    return self()->supportsFeature(OMR_FEATURE_X86_AVX) && self()->supportsFeature(OMR_FEATURE_X86_OSXSAVE);
    }
 
 bool
 OMR::X86::CPU::is(OMRProcessorArchitecture p)
    {
-   if (TR::Compiler->omrPortLib == NULL)
-      return self()->is_old_api(p);
-
    return _processorDescription.processor == p;
    }
 
@@ -396,79 +366,6 @@ OMR::X86::CPU::supportsFeature(uint32_t feature)
 
    OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
    return TRUE == omrsysinfo_processor_has_feature(&_processorDescription, feature);
-   }
-
-bool
-OMR::X86::CPU::is_old_api(OMRProcessorArchitecture p)
-   {
-   bool ans = false;
-   switch(p)
-      {
-      case OMR_PROCESSOR_X86_INTEL_WESTMERE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelWestmere();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_NEHALEM:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelNehalem();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_PENTIUM:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelPentium();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_P6:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelP6();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_PENTIUM4:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelPentium4();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_CORE2:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelCore2();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_TULSA:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelTulsa();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_SANDYBRIDGE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelSandyBridge();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_IVYBRIDGE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelIvyBridge();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_HASWELL:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelHaswell();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_BROADWELL:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelBroadwell();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_SKYLAKE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelSkylake();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_CASCADELAKE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelCascadeLake();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_COOPERLAKE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelCooperLake();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_ICELAKE:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelIceLake();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_SAPPHIRERAPIDS:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelSapphireRapids();
-         break;
-      case OMR_PROCESSOR_X86_INTEL_EMERALDRAPIDS:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isIntelEmeraldRapids();
-         break;
-      case OMR_PROCESSOR_X86_AMD_ATHLONDURON:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isAMDAthlonDuron();
-         break;
-      case OMR_PROCESSOR_X86_AMD_OPTERON:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isAMDOpteron();
-         break;
-      case OMR_PROCESSOR_X86_AMD_FAMILY15H:
-         ans = TR::CodeGenerator::getX86ProcessorInfo().isAMD15h();
-         break;
-      default:
-         TR_ASSERT_FATAL(false, "Unknown processor %d", p);
-         break;
-      }
-   return ans;
    }
 
 const char*
