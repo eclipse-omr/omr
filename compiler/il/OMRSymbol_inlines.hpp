@@ -855,12 +855,6 @@ OMR::Symbol::isRegularShadow()
    return self()->isShadow() && !self()->isAutoField() && !self()->isParmField();
    }
 
-bool
-OMR::Symbol::isSyncVolatile()
-   {
-   return self()->isVolatile();
-   }
-
 void
 OMR::Symbol::setDummyResolvedMethod()
    {

@@ -2402,10 +2402,6 @@ bool OMR::X86::I386::TreeEvaluator::lstoreEvaluatorIsNodeVolatile(TR::Node *node
    return false;
    }
 
-void OMR::X86::I386::TreeEvaluator::lStoreEvaluatorSetHighLowMRIfNeeded(TR::Node *node,
-                                                                        TR::MemoryReference *lowMR,
-                                                                        TR::MemoryReference *highMR,
-                                                                        TR::CodeGenerator *cg) {}
 
 // also handles ilstore
 TR::Register *OMR::X86::I386::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -2609,8 +2605,6 @@ TR::Register *OMR::X86::I386::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR:
    cg->decReferenceCount(valueChild);
    if (lowMR && !(valueChild->isDirectMemoryUpdate() && node->getOpCode().isIndirect()))
       lowMR->decNodeReferenceCounts(cg);
-
-   TR::TreeEvaluator::lStoreEvaluatorSetHighLowMRIfNeeded(node, lowMR, highMR, cg);
 
    if (instr && node->getOpCode().isIndirect())
       cg->setImplicitExceptionPoint(instr);

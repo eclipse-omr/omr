@@ -1015,23 +1015,6 @@ TR::Register *OMR::X86::TreeEvaluator::integerStoreEvaluator(TR::Node *node, TR:
       cg->recursivelyDecReferenceCount(node->getFirstChild());
       }
 
-#ifdef J9_PROJECT_SPECIFIC
-   if (node->getSymbolReference()->getSymbol()->isVolatile())
-      {
-      TR_OpaqueMethodBlock *caller = node->getOwningMethod();
-      if (tempMR && caller)
-         {
-         TR_ResolvedMethod *m = comp->fe()->createResolvedMethod(cg->trMemory(), caller, node->getSymbolReference()->getOwningMethod(comp));
-         if ((m->getRecognizedMethod() == TR::java_util_concurrent_atomic_AtomicInteger_lazySet) ||
-             (m->getRecognizedMethod() == TR::java_util_concurrent_atomic_AtomicReference_lazySet) ||
-             (m->getRecognizedMethod() == TR::java_util_concurrent_atomic_AtomicLong_lazySet))
-            {
-            tempMR->setIgnoreVolatile();
-            }
-         }
-      }
-#endif
-
    if (instr && node->getOpCode().isIndirect())
       cg->setImplicitExceptionPoint(instr);
 

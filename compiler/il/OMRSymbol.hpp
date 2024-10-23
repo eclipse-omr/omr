@@ -419,7 +419,6 @@ public:
 
    inline void setVolatile();
    inline bool isVolatile();
-   inline bool isSyncVolatile();
 
    // flag methods specific to labels
    //

@@ -409,7 +409,6 @@ class OMR_EXTENSIBLE TreeEvaluator: public OMR::X86::TreeEvaluator
    static TR::Register *lloadEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *lstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static bool lstoreEvaluatorIsNodeVolatile(TR::Node *node, TR::CodeGenerator *cg);
-   static void lStoreEvaluatorSetHighLowMRIfNeeded(TR::Node *node, TR::MemoryReference *lowMR, TR::MemoryReference *highMR, TR::CodeGenerator *cg);
    static TR::Register *landEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *lorEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *lxorEvaluator(TR::Node *node, TR::CodeGenerator *cg);
