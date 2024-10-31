@@ -491,6 +491,110 @@ OMR::Symbol::isMemoryTypeShadowSymbol()
    return self()->isShadow() && _flags.testAny(MemoryTypeShadow);
    }
 
+const char *
+OMR::Symbol::getAccessModeName(OMR::Symbol::AccessMode ordering)
+   {
+   switch (ordering)
+      {
+      case TransparentAccess: return "transparent";
+      case OptOpaqueAccess: return "opaque";
+      case AcqRelAccess: return "acquire/release";
+      case VolatileAccess: return "volatile";
+
+      default:
+         TR_ASSERT_FATAL(false, "Unrecognized memory access ordering type");
+         return NULL;
+      }
+   }
+
+void
+OMR::Symbol::setAccessMode(OMR::Symbol::AccessMode ordering)
+   {
+   switch (ordering)
+      {
+      case TransparentAccess:
+         setTransparent();
+         break;
+      case OptOpaqueAccess:
+         setOptOpaque();
+         break;
+      case AcqRelAccess:
+         setAcqRel();
+         break;
+      case VolatileAccess:
+         setVolatile();
+         break;
+
+      default:
+         TR_ASSERT_FATAL(false, "Unrecognized memory access ordering type");
+         break;
+      }
+   }
+
+OMR::Symbol::AccessMode
+OMR::Symbol::getAccessMode()
+   {
+   switch (_flags.getValue(AccessModeMask))
+      {
+      case Transparent: return TransparentAccess;
+      case OptOpaque: return OptOpaqueAccess;
+      case AcqRel: return AcqRelAccess;
+      case Volatile: return VolatileAccess;
+
+      default:
+         TR_ASSERT_FATAL(false, "This should be unreachable");
+         return TransparentAccess;
+      }
+   }
+
+void
+OMR::Symbol::setTransparent()
+   {
+   _flags.setValue(AccessModeMask, Transparent);
+   }
+
+bool
+OMR::Symbol::isTransparent()
+   {
+   return _flags.testValue(AccessModeMask, Transparent);
+   }
+
+void
+OMR::Symbol::setOptOpaque()
+   {
+   _flags.setValue(AccessModeMask, OptOpaque);
+   }
+
+bool
+OMR::Symbol::isOptOpaque()
+   {
+   return _flags.testValue(AccessModeMask, OptOpaque);
+   }
+
+void
+OMR::Symbol::setAcqRel()
+   {
+   _flags.setValue(AccessModeMask, AcqRel);
+   }
+
+bool
+OMR::Symbol::isAcqRel()
+   {
+   return _flags.testValue(AccessModeMask, AcqRel);
+   }
+
+void
+OMR::Symbol::setVolatile()
+   {
+   _flags.setValue(AccessModeMask, Volatile);
+   }
+
+bool
+OMR::Symbol::isVolatile()
+   {
+   return _flags.testValue(AccessModeMask, Volatile);
+   }
+
 void
 OMR::Symbol::setStartOfColdInstructionStream()
    {
@@ -883,5 +987,7 @@ OMR::Symbol::getVariableSizeSymbol()
    {
    return self()->isVariableSizeSymbol() ? (TR::AutomaticSymbol *)this : 0;
    }
+
+
 
 #endif // OMR_SYMBOL_INLINES_INCL
