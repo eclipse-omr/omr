@@ -206,7 +206,7 @@ OMR::Z::CodeGenerator::checkIsUnneededIALoad(TR::Node *parent, TR::Node *node, T
          }
       else // Not in list
          {
-         // We only need to track future references to this iaload if refcount  > 1
+         // We only need to track future references to this aloadi if refcount  > 1
          if (node->getReferenceCount() > 1)
             {
             uint32_t *temp ;

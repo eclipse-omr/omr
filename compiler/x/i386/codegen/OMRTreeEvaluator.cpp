@@ -2407,7 +2407,7 @@ void OMR::X86::I386::TreeEvaluator::lStoreEvaluatorSetHighLowMRIfNeeded(TR::Node
                                                                         TR::MemoryReference *highMR,
                                                                         TR::CodeGenerator *cg) {}
 
-// also handles ilstore
+// also handles lstorei
 TR::Register *OMR::X86::I386::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Compilation *comp = cg->comp();
@@ -4791,7 +4791,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::dstoreEvaluator(TR::Node *node, TR:
       //
       cg->recursivelyDecReferenceCount(valueChild);
 
-      TR::TreeEvaluator::lstoreEvaluator(node, cg); // The IA32 version, handles ilstore as well
+      TR::TreeEvaluator::lstoreEvaluator(node, cg); // The IA32 version, handles lstorei as well
       return NULL;
       }
    else
@@ -5029,7 +5029,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::performLload(TR::Node *node, TR::Me
    return longRegister;
    }
 
-// also handles ilload
+// also handles lloadi
 TR::Register *OMR::X86::I386::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::MemoryReference  *sourceMR = generateX86MemoryReference(node, cg);

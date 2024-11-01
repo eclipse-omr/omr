@@ -4240,13 +4240,13 @@ TR_GeneralLoopUnroller::canUnrollUnCountedLoop(TR_RegionStructure *loop,
    // Detect Small loops like:
    //   [0x37047e24] BBStart (block 133) (frequency 127) (is in loop 133)
    //   [0x37047f58]   astore #392[0x36e8c8e4]
-   //   [0x37047ef8]     iaload #549[0x37047c9c]+24
+   //   [0x37047ef8]     aloadi #549[0x37047c9c]+24
    //   [0x37047ed0]       aload #392[0x36e8c8e4]  Auto[<temp slot 8>]   <flags:"0x4" (X!=0 )/>
    //   [0x375191d4]   NULLCHK on [0x37047ef8] #18[0x36a24b1c]  Method[jitThrowNullPointerException]
-   //   [0x375191fc]     iaload #549[0x37047c9c]+24
-   //                      ==>iaload at [0x37047ef8]
+   //   [0x375191fc]     aloadi #549[0x37047c9c]+24
+   //                      ==>aloadi at [0x37047ef8]
    //   [0x3751925c]   ifacmpne --> block 133 BBStart at [0x37047e24]
-   //                    ==>iaload at [0x375191fc]
+   //                    ==>aloadi at [0x375191fc]
    //   [0x37519288]     aconst NULL   <flags:"0x2" (X==0 )/>
    //   [0x37519144]   BBEnd (block 133)
 

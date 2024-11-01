@@ -5082,8 +5082,8 @@ static bool isDeletedLabelLoadaddr(TR::Node * node)
 // They are for testing if a particular bit is ON or OFF
 // ifbcmpne                           ifbcmpne
 //  band                               band
-//    bshl                              ibload
-//      ibload           ===>             loadaddr
+//    bshl                              bloadi
+//      bloadi           ===>             loadaddr
 //        loadaddr                      bconst N>>s
 //      iconst s                       bconst M>>s
 //    bconst N
@@ -5748,7 +5748,7 @@ TR::Node *indirectStoreSimplifier(TR::Node * node, TR::Block * block, TR::Simpli
             }
 
          if (removeWrtBar && !s->comp()->getOptions()->realTimeGC() &&
-             performTransformation(s->comp(), "%sFolded indirect write barrier to iastore because GC could not have occurred enough times to require iwrtbar [" POINTER_PRINTF_FORMAT "]\n", s->optDetailString(), node))
+             performTransformation(s->comp(), "%sFolded indirect write barrier to astorei because GC could not have occurred enough times to require iwrtbar [" POINTER_PRINTF_FORMAT "]\n", s->optDetailString(), node))
             {
             TR::Node::recreate(node, TR::astorei);
             node->getChild(2)->recursivelyDecReferenceCount();
@@ -11733,19 +11733,19 @@ TR::Node *borSimplifier(TR::Node * node, TR::Block * block, TR::Simplifier * s)
    // bor
    //   band
    //      bshl
-   //         ibload (1)
+   //         bloadi (1)
    //         iconst
    //      bconst (1)
    //   band
-   //      ibload (2)
+   //      bloadi (2)
    //      bconst (2)
    //
    // Will get transformed to:
    // icall
-   //    ibload (1)
+   //    bloadi (1)
    //    iconst
    //    bconst (1)
-   //    ibload (2)
+   //    bloadi (2)
 
    //check for pattern like
    // bor                                  bor

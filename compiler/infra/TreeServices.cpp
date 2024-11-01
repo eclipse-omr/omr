@@ -168,7 +168,7 @@ TR_AddressTree::processMultiplyNode(TR::Node * multiplyNode)
 //       ixload
 //          aiadd <memory reference sub-tree>
 //    l2i
-//       ilload <DirectByteBuffer>
+//       lloadi <DirectByteBuffer>
 //          aload <Buffer>
 //
 // (64-bit)
@@ -176,7 +176,7 @@ TR_AddressTree::processMultiplyNode(TR::Node * multiplyNode)
 //    x2i
 //       ixload
 //          aladd <memory reference sub-tree>
-//    ilload <DirectByteBuffer>
+//    lloadi <DirectByteBuffer>
 //       aload <Buffer>
 bool
 TR_AddressTree::process(TR::Node * aiaddNode, bool onlyConsiderConstAiaddSecondChild)

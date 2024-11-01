@@ -121,10 +121,10 @@ OMR::CodeGenerator::evaluate(TR::Node * node)
       // As well, more insidious trees exist:
       //
       // ificmpeq
-      //    iiload
+      //    iloadi
       //       i2l
       //          x
-      //    iiload
+      //    iloadi
       //       ishl
       //          ==> i2l
       //          4
@@ -144,11 +144,11 @@ OMR::CodeGenerator::evaluate(TR::Node * node)
       // perform the function calls:
       //
       // ificmpeq
-      //    iiload
+      //    iloadi
       //       ishl
       //          ==> x
       //          7
-      //    iiload
+      //    iloadi
       //       ishl
       //          ==> x
       //          4

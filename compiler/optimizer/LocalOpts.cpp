@@ -2312,11 +2312,11 @@ bool TR_CompactNullChecks::replaceNullCheckIfPossible(TR::Node *cursorNode, TR::
             //    loadaddr
             // ...
             // NULLCHK #1
-            //    iaload
+            //    aloadi
             //      aload #1
             // ..
             // NULLCHK #2
-            //    iiload
+            //    iloadi
             //      aload #1
             if (!compactionDone)
                {
@@ -5118,7 +5118,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
         state->_currentlyCommonedLoads.getListHead()->getData()->isBigDecimalLoad()))
        considerRegPressure = false;
 
-    // rematerialize to generate TM's. ibload's are not evaluated
+    // rematerialize to generate TM's. bloadi's are not evaluated
     if (NULL != regPress)
         {
         considerRegPressure = false;

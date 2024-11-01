@@ -7062,7 +7062,7 @@ aloadHelper(TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempM
    if (node->isUnneededIALoad() &&
            (node->getFirstChild()->getNumChildren() == 0 || node->getFirstChild()->getRegister() != NULL))
       {
-      traceMsg (comp, "This iaload is not needed: %p\n", node);
+      traceMsg (comp, "This aloadi is not needed: %p\n", node);
 
       tempReg= cg->allocateRegister();
       node->setRegister(tempReg);
@@ -7845,7 +7845,7 @@ astoreHelper(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * aload Evaluator: load address
- *   - also handles aload and iaload
+ *   - also handles aload and aloadi
  */
 TR::Register *
 OMR::Z::TreeEvaluator::aloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
@@ -7913,14 +7913,14 @@ OMR::Z::TreeEvaluator::axaddEvaluator(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * Indirect Load Evaluators:
- *   iiload handled by iloadEvaluator
- *   ilload handled by lloadEvaluator
- *   ialoadEvaluator handled by aloadEvaluator
- *   ibloadEvaluator handled by bloadEvaluator
+ *   iloadi handled by iloadEvaluator
+ *   lloadi handled by lloadEvaluator
+ *   aloadiEvaluator handled by aloadEvaluator
+ *   bloadiEvaluator handled by bloadEvaluator
  *   isloadEvaluator handled by sloadEvaluator
  *
  * iload Evaluator: load integer
- *   - also handles iiload
+ *   - also handles iloadi
  */
 TR::Register *
 OMR::Z::TreeEvaluator::iloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
@@ -7931,7 +7931,7 @@ OMR::Z::TreeEvaluator::iloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * lload Evaluator: load long integer
- *   - also handles ilload
+ *   - also handles lloadi
  */
 TR::Register *
 OMR::Z::TreeEvaluator::lloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
@@ -7951,7 +7951,7 @@ OMR::Z::TreeEvaluator::sloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * bload Evaluator: load byte
- *   - also handles ibload
+ *   - also handles bloadi
  */
 TR::Register *
 OMR::Z::TreeEvaluator::bloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
@@ -7973,10 +7973,10 @@ OMR::Z::TreeEvaluator::bloadEvaluator(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * Indirect Store Evaluators:
- *  ilstore handled by lstoreEvaluator
- *  iistore handled by istoreEvaluator
- *  iastoreEvaluator handled by istoreEvaluator
- *  ibstoreEvaluator handled by bstoreEvaluator
+ *  lstorei handled by lstoreEvaluator
+ *  istorei handled by istoreEvaluator
+ *  astoreiEvaluator handled by istoreEvaluator
+ *  bstoreiEvaluator handled by bstoreEvaluator
  *  isstoreEvaluator handled by sstoreEvaluator
  */
 /**
@@ -8022,7 +8022,7 @@ OMR::Z::TreeEvaluator::sstoreEvaluator(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * astoreEvaluator - store address
- *  - also used for iastore
+ *  - also used for astorei
  */
 TR::Register *
 OMR::Z::TreeEvaluator::astoreEvaluator(TR::Node * node, TR::CodeGenerator * cg)
@@ -8033,7 +8033,7 @@ OMR::Z::TreeEvaluator::astoreEvaluator(TR::Node * node, TR::CodeGenerator * cg)
 
 /**
  * bstoreEvaluator - load byte
- *  - also handles ibstore
+ *  - also handles bstorei
  */
 TR::Register *
 OMR::Z::TreeEvaluator::bstoreEvaluator(TR::Node * node, TR::CodeGenerator * cg)
@@ -8073,10 +8073,10 @@ OMR::Z::TreeEvaluator::bstoreEvaluator(TR::Node * node, TR::CodeGenerator * cg)
       return NULL;
       }
    // Check for bit op pattern
-   // ibstore
+   // bstorei
    //   addr
    //   bor/band/bxor
-   //     ibload
+   //     bloadi
    //       =>addr
    //     bconst
    else if (((valueChild->getOpCodeValue() == TR::bor) ||
@@ -8386,7 +8386,7 @@ OMR::Z::TreeEvaluator::checkAndAllocateReferenceRegister(TR::Node * node,
       if (!symbol->isInternalPointer()  &&
           !symbol->isNotCollected()     &&
           !symbol->isAddressOfClassObject() &&
-          // LowerTrees transforms unloadable aconsts to iaload <gen. int shadow> / aconst NULL.  All aconsts are never collectable.
+          // LowerTrees transforms unloadable aconsts to aloadi <gen. int shadow> / aconst NULL.  All aconsts are never collectable.
           !(symRef->isLiteralPoolAddress() && (node->getOpCodeValue() == TR::aloadi) && constNode->isClassUnloadingConst()))
          {
          tempReg->setContainsCollectedReference();
