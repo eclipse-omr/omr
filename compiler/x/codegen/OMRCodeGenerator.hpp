@@ -570,7 +570,6 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    int32_t getMaximumNumbersOfAssignableGPRs();
    int32_t getMaximumNumbersOfAssignableFPRs();
    int32_t getMaximumNumbersOfAssignableVRs();
-   bool willBeEvaluatedAsCallByCodeGen(TR::Node *node, TR::Compilation *comp);
 
    uint8_t getSizeOfCombinedBuffer();
 
