@@ -226,7 +226,8 @@ class OMR_EXTENSIBLE TransformUtil
    static TR::Node *generateArrayElementAddressTrees(
       TR::Compilation *comp,
       TR::Node *arrayNode,
-      TR::Node *offsetNode = NULL);
+      TR::Node *offsetNode = NULL,
+      TR::Node *originatingByteCodeNode = NULL);
 
    /**
     * \brief

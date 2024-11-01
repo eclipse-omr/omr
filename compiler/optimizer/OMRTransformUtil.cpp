@@ -454,7 +454,7 @@ OMR::TransformUtil::generateDataAddrLoadTrees(TR::Compilation *comp, TR::Node *a
 #endif /* OMR_GC_SPARSE_HEAP_ALLOCATION */
 
 TR::Node *
-OMR::TransformUtil::generateArrayElementAddressTrees(TR::Compilation *comp, TR::Node *arrayNode, TR::Node *offsetNode)
+OMR::TransformUtil::generateArrayElementAddressTrees(TR::Compilation *comp, TR::Node *arrayNode, TR::Node *offsetNode, TR::Node *originatingByteCodeNode)
    {
    TR::Node *arrayAddressNode = NULL;
    TR::Node *totalOffsetNode = NULL;
@@ -468,24 +468,24 @@ OMR::TransformUtil::generateArrayElementAddressTrees(TR::Compilation *comp, TR::
       {
       arrayAddressNode = generateDataAddrLoadTrees(comp, arrayNode);
       if (offsetNode)
-         arrayAddressNode = TR::Node::create(TR::aladd, 2, arrayAddressNode, offsetNode);
+         arrayAddressNode = TR::Node::create(originatingByteCodeNode, TR::aladd, 2, arrayAddressNode, offsetNode);
       }
    else if (comp->target().is64Bit())
 #else
    if (comp->target().is64Bit())
 #endif /* OMR_GC_SPARSE_HEAP_ALLOCATION */
       {
-      totalOffsetNode = TR::Node::lconst(TR::Compiler->om.contiguousArrayHeaderSizeInBytes());
+      totalOffsetNode = TR::Node::lconst(originatingByteCodeNode, TR::Compiler->om.contiguousArrayHeaderSizeInBytes());
       if (offsetNode)
-         totalOffsetNode = TR::Node::create(TR::ladd, 2, offsetNode, totalOffsetNode);
-      arrayAddressNode = TR::Node::create(TR::aladd, 2, arrayNode, totalOffsetNode);
+         totalOffsetNode = TR::Node::create(originatingByteCodeNode, TR::ladd, 2, offsetNode, totalOffsetNode);
+      arrayAddressNode = TR::Node::create(originatingByteCodeNode, TR::aladd, 2, arrayNode, totalOffsetNode);
       }
    else
       {
-      totalOffsetNode = TR::Node::iconst(static_cast<int32_t>(TR::Compiler->om.contiguousArrayHeaderSizeInBytes()));
+      totalOffsetNode = TR::Node::iconst(originatingByteCodeNode, static_cast<int32_t>(TR::Compiler->om.contiguousArrayHeaderSizeInBytes()));
       if (offsetNode)
-         totalOffsetNode = TR::Node::create(TR::iadd, 2, offsetNode, totalOffsetNode);
-      arrayAddressNode = TR::Node::create(TR::aiadd, 2, arrayNode, totalOffsetNode);
+         totalOffsetNode = TR::Node::create(originatingByteCodeNode, TR::iadd, 2, offsetNode, totalOffsetNode);
+      arrayAddressNode = TR::Node::create(originatingByteCodeNode, TR::aiadd, 2, arrayNode, totalOffsetNode);
       }
 
    return arrayAddressNode;

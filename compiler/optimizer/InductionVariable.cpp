@@ -71,6 +71,7 @@
 #include "optimizer/LoopCanonicalizer.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "optimizer/TransformUtil.hpp"
 
 #define OPT_DETAILS "O^O INDUCTION VARIABLE ANALYSIS: "
 
@@ -926,22 +927,8 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
                traceMsg(comp(), "Found an reassociated induction var chance in %s\n", comp()->signature());
 
             TR::SymbolReference *origAuto = symRefTab->getSymRef(j);
-
-            TR::Node *arrayRefNode;
-            int32_t hdrSize = (int32_t)TR::Compiler->om.contiguousArrayHeaderSizeInBytes();
-            if (usingAladd)
-               {
-               TR::Node *constantNode = TR::Node::create(byteCodeInfoNode, TR::lconst);
-               //constantNode->setLongInt(16);
-               constantNode->setLongInt((int64_t)hdrSize);
-               arrayRefNode = TR::Node::create(TR::aladd, 2,
-                     TR::Node::createWithSymRef(byteCodeInfoNode,
-                           TR::aload, 0, origAuto), constantNode);
-               }
-            else
-               arrayRefNode = TR::Node::create(TR::aiadd, 2,
-                     TR::Node::createWithSymRef(byteCodeInfoNode, TR::aload, 0, origAuto),
-                     TR::Node::create(byteCodeInfoNode, TR::iconst, 0, hdrSize));
+            TR::Node *newArrayObjNode = TR::Node::createWithSymRef(byteCodeInfoNode, TR::aload, 0, origAuto);
+            TR::Node *arrayRefNode = TR::TransformUtil::generateArrayElementAddressTrees(comp(), newArrayObjNode, NULL, byteCodeInfoNode);
             arrayRefNode->setIsInternalPointer(true);
 
             if (!origAuto->getSymbol()->isInternalPointer())
@@ -3397,6 +3384,20 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
    int32_t originalInternalPointerSymbol = 0;
    TR::Node *originalNode = NULL;
    TR::Node *pinningArrayNode = NULL;
+   /* Tree structures eligible for reassociation and hoisting
+      non off-heap mode:
+         aladd (internal pointer)
+            array_obj (pinning array pointer)
+            add/sub offset
+               index
+               header_size/-header_size
+
+      off-heap mode:
+         aladd (internal pointer)
+            contiguousArrayDataAddrFieldSymbol (dataAddrPointer, internal pointer)
+               array_obj (pinning array pointer)
+            mul/shift/integer offset
+    */
    if (cg()->supportsInternalPointers() && reassociateAndHoistNonPacked() &&
       node->isInternalPointer() && !node->isDataAddrPointer())
       {
@@ -3404,6 +3405,8 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
          pinningArrayNode = node->getFirstChild()->getFirstChild();
       else
          pinningArrayNode = node->getFirstChild();
+
+      dumpOptDetails(comp(), "%s: Using %p as pinningArrayNode for internal pointer node %p\n", OPT_DETAILS, pinningArrayNode, node);
 
       if (pinningArrayNode->getOpCode().isLoadVar() &&
          pinningArrayNode->getSymbolReference()->getSymbol()->isAutoOrParm() &&
@@ -3652,10 +3655,12 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
       }
 
 #ifdef J9_PROJECT_SPECIFIC
-   // For OffHeap runs, the array access trees don't include headerSize addition
-   // Offset tree opcode is lmul/lshl to calculate offset from the index node.
-   if (TR::Compiler->om.isOffHeapAllocationEnabled() &&
-      (node->getOpCodeValue() == TR::lmul || node->getOpCodeValue() == TR::lshl))
+   /* For OffHeap runs, the array access trees don't include headerSize addition.
+    * Offset tree opcode can be either mul/shift or a number, if array stride is 1.
+    * If first child of originalNode is not dataAddr pointer we have already
+    * hoisted the array aload, no need to do it again.
+    */
+   if (TR::Compiler->om.isOffHeapAllocationEnabled() && originalNode && originalNode->getFirstChild()->isDataAddrPointer())
       {
       if ((isInternalPointer &&
             (comp()->getSymRefTab()->getNumInternalPointers() < maxInternalPointers())) &&
@@ -3709,20 +3714,11 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
 
          TR::SymbolReference *internalPointerSymRef = (*_reassociatedAutos)[originalInternalPointerSymbol];
          originalNode->getFirstChild()->recursivelyDecReferenceCount();
-         node->decReferenceCount();
-         _reassociatedNodes.add(node);
-
-         if (node->getReferenceCount() == 0)
-            {
-            node->getFirstChild()->decReferenceCount();
-            node->getSecondChild()->decReferenceCount();
-            }
 
          TR::Node *newLoad = TR::Node::createWithSymRef(node, TR::aload, 0, internalPointerSymRef);
          newLoad->setLocalIndex(~0);
          originalNode->setAndIncChild(0, newLoad);
-         originalNode->setAndIncChild(1, node->getFirstChild());
-         reassociatedComputation = true;
+         dumpOptDetails(comp(), "%s: Replaced array load in %p with %p\n", OPT_DETAILS, originalNode, newLoad);
          }
       }
 #endif /* J9_PROJECT_SPECIFIC */
