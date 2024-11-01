@@ -2032,8 +2032,8 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
 
    if (node->getOpCodeValue() == TR::loadaddr)
       {
-      // A loadaddr (USE) can be defined by an iistore.  Merging those
-      // constraints (the ones on the iistore) in would be dangerous.
+      // A loadaddr (USE) can be defined by an istorei.  Merging those
+      // constraints (the ones on the istorei) in would be dangerous.
       // There's no real point in merging in constraints from other
       // loadaddr defs, so just return NULL.
       return NULL;

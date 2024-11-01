@@ -212,11 +212,11 @@ OMR::Z::TreeEvaluator::l2aEvaluator(TR::Node * node, TR::CodeGenerator * cg)
    // if comp->useCompressedPointers
    //
    // pattern match the sequence under the l2a
-   //    iaload f      l2a                       <- node
+   //    aloadi f      l2a                       <- node
    //       aload O       ladd
    //                       lshl
    //                          i2l
-   //                            iiload f        <- load
+   //                            iloadi f        <- load
    //                               aload O
    //                          iconst shftKonst
    //                       lconst HB
@@ -224,7 +224,7 @@ OMR::Z::TreeEvaluator::l2aEvaluator(TR::Node * node, TR::CodeGenerator * cg)
    // -or- if the load is known to be null
    //  l2a
    //    i2l
-   //      iiload f
+   //      iloadi f
    //         aload O
    //
    TR::Node *firstChild = node->getFirstChild();

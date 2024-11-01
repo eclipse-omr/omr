@@ -227,7 +227,7 @@ OMR::Power::MemoryReference::MemoryReference(TR::Node *rootLoadOrStore, uint32_t
             self()->setUnresolvedSnippet(new (cg->trHeapMemory()) TR::UnresolvedDataSnippet(cg, rootLoadOrStore, ref, isStore, false));
             cg->addSnippet(self()->getUnresolvedSnippet());
             }
-         // if an aconst feeds a iaload, we need to load the constant
+         // if an aconst feeds a aloadi, we need to load the constant
          if (base->getOpCode().isLoadConst())
             {
             cg->evaluate(base);

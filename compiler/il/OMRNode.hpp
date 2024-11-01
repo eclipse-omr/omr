@@ -1373,7 +1373,7 @@ public:
    void setUnsigned(bool b);
    bool chkUnsigned();
 
-   // Flags used by aconst and iaload (on s390 iaload can be used after dynamic lit pool)
+   // Flags used by aconst and aloadi (on s390 aloadi can be used after dynamic lit pool)
    bool isClassPointerConstant();
    void setIsClassPointerConstant(bool b);
    bool chkClassPointerConstant();
@@ -1502,11 +1502,11 @@ public:
    void setReturnIsDummy();
    bool chkReturnIsDummy();
 
-   // Flag used by ilload nodes for DFP
+   // Flag used by lloadi nodes for DFP
    bool isBigDecimalLoad();
    void setIsBigDecimalLoad();
 
-   // Flag used by iload, iiload, lload, ilload, aload, iaload
+   // Flag used by iload, iloadi, lload, lloadi, aload, aloadi
    bool isLoadAndTest()          { return _flags.testAny(loadAndTest); }
    void setIsLoadAndTest(bool v) { _flags.set(loadAndTest, v); }
 
@@ -1938,7 +1938,7 @@ protected:
       // currently used for ldiv folding to idiv, when both children are with highWordZero
       Unsigned                              = 0x00004000,
 
-      // Flags used by TR::aconst and TR::iaload (on s390 iaload can be used after dynamic lit pool)
+      // Flags used by TR::aconst and TR::aloadi (on s390 aloadi can be used after dynamic lit pool)
       //
       classPointerConstant                  = 0x00010000,
       methodPointerConstant                 = 0x00002000,
@@ -2014,12 +2014,12 @@ protected:
       // Flag used by TR::Return
       returnIsDummy                         = 0x00001000,
 
-      // Flag used by ilload nodes for BigDecimal long field (DFP)
+      // Flag used by lloadi nodes for BigDecimal long field (DFP)
       // Active when disableDFP JIT option not specifiec, and running
       // on hardware Power or zSeries hardware that supports DFP
       bigDecimal_load                       = 0x00000002, // TODO: make J9_PROJECT_SPECIFIC
 
-      // Flag used by iload, iiload, lload, ilload, aload, iaload
+      // Flag used by iload, iloadi, lload, lloadi, aload, aloadi
       loadAndTest                           = 0x00008000,
 
       // Flag used by TR::New when the codegen supports

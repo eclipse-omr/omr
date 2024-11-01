@@ -3612,7 +3612,7 @@ bool TR_TransformInlinedFunction::findCallNodeInTree(TR::Node * callNode, TR::No
 bool TR_TransformInlinedFunction::findReturnValueInTree(TR::Node * rvStoreNode, TR::Node * node, TR::Compilation *comp)
    {
    TR::SymbolReference *rvSymRef = rvStoreNode->getSymbolReference();
-   // ibload
+   // bloadi
    //    loadaddr rvSymRef
    if (node->getOpCode().isLoadIndirect() &&
        node->getFirstChild()->getOpCodeValue() == TR::loadaddr &&

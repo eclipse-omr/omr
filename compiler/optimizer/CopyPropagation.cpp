@@ -1088,11 +1088,11 @@ void TR_CopyPropagation::commonIndirectLoadsFromAutos()
       if (!currentTree->getNextTreeTop())
           break;
       TR::Node *nextNode = currentTree->getNextTreeTop()->getNode();
-      //   iistore M
+      //   istorei M
       //      loadaddr A
       //      X
       //   istore TMP              ==> istore TMP
-      //        iiload M                   X
+      //        iloadi M                   X
       //           loadaddr A
 
       if (node->getOpCode().isStoreIndirect() &&
@@ -2320,7 +2320,7 @@ TR::Node * TR_CopyPropagation::isCheapRematerializationCandidate(TR::Node * defN
 
    // 1) indirect loads where the base ptr is on the stack or a location pointer
    //
-   //  iaload <refined-array-shadow> [id=238:"PSALIT2"] [#1.64 Shadow] [flags 0x80000607 0x0 ]  [0x2B026BFC] bci=[-1,37,329] rc=2 vc=9438 vn=- sti=- udi=331 nc=1 addr=4
+   //  aloadi <refined-array-shadow> [id=238:"PSALIT2"] [#1.64 Shadow] [flags 0x80000607 0x0 ]  [0x2B026BFC] bci=[-1,37,329] rc=2 vc=9438 vn=- sti=- udi=331 nc=1 addr=4
    //    aiadd (internalPtr )                                                            [0x2B016B20] bci=[-1,37,329] rc=1 vc=9438 vn=- sti=- udi=- nc=2 addr=4 flg=0x8000
    //      loadaddr <auto slot 40> [id=152:"PSA"] [#1.63 Auto] [flags 0x4000008 0x0 ]    [0x2B016AD0] bci=[-1,37,329] rc=1 vc=9438 vn=- sti=- udi=- nc=0 addr=4
    //      iconst 1212 (X!=0 X>=0 )                                                      [0x2B016B70] bci=[-1,37,329] rc=1 vc=9438 vn=- sti=- udi=- nc=0 flg=0x104

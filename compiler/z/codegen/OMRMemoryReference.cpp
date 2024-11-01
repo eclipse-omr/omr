@@ -364,7 +364,7 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator * 
    else // if (eventualNonConversion->getReferenceCount() == 1)
       {
       // aiadd
-      //    iaload
+      //    aloadi
       //       x
       //    iconst
       //
@@ -372,13 +372,13 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator * 
       //
       // aiadd
       //    conv
-      //       iaload
+      //       aloadi
       //          x
       //    iconst
       if (cg->traceBCDCodeGen())
          {
          traceMsg(comp,
-                  " inside setForceFoldingIfAdvantageous, eventualNonConversion %s (%p) has no register and refCount==1 and is an iaload+const so eval(%s - %p) and setForceFolding=true\n",
+                  " inside setForceFoldingIfAdvantageous, eventualNonConversion %s (%p) has no register and refCount==1 and is an aloadi+const so eval(%s - %p) and setForceFolding=true\n",
                   eventualNonConversion->getOpCode().getName(),eventualNonConversion,
                   eventualNonConversion->getFirstChild()->getOpCode().getName(),eventualNonConversion->getFirstChild());
          }
@@ -1328,7 +1328,7 @@ OMR::Z::MemoryReference::populateAddTree(TR::Node * subTree, TR::CodeGenerator *
             (integerChild->getOpCodeValue() == TR::isub || integerChild->getOpCodeValue() == TR::lsub))
       {
       //
-      // catch the pattern of aiadd on iaload <base> / isub of <expression> and -<constant> and
+      // catch the pattern of aiadd on aloadi <base> / isub of <expression> and -<constant> and
       // convert it into LA Rx,<constant>(R<expression>,R<base>)
       //
       bool usingAladd = (cg->comp()->target().is64Bit()) ? true : false;
@@ -1595,7 +1595,7 @@ OMR::Z::MemoryReference::populateLoadAddrTree(TR::Node * subTree, TR::CodeGenera
    // Need to associate symref of loadaddr to the memory reference
    // so that the resolution of any offsets (in particular autos on stack)
    // can be resolved.
-   //  i.e.  iaload <o.f>+12
+   //  i.e.  aloadi <o.f>+12
    //           loadaddr <auto>
    // will generate
    //       L  +12+?(GPR5)  <-- <auto> symref will resolve the ? offset.

@@ -3153,7 +3153,7 @@ TR::Instruction *loadAddressConstant(TR::CodeGenerator *cg, TR::Node * node, int
    return armLoadConstant(node, value, trgReg, cg, cursor);
    }
 
-// also handles iiload
+// also handles iloadi
 TR::Register *OMR::ARM::TreeEvaluator::iloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Register *tempReg;
@@ -3202,7 +3202,7 @@ static bool nodeIsNeeded(TR::Node *checkNode, TR::Node *node)
    return result;
    }
 
-// handles aload and iaload
+// handles aload and aloadi
 TR::Register *OMR::ARM::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Compilation *comp = cg->comp();
@@ -3298,7 +3298,7 @@ TR::Register *OMR::ARM::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGe
    return tempReg;
    }
 
-// also handles ilload
+// also handles lloadi
 TR::Register *OMR::ARM::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Register           *lowReg  = cg->allocateRegister();
@@ -3342,7 +3342,7 @@ TR::Register *OMR::ARM::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGe
 // aloadEvaluator handled by iloadEvaluator
 
 
-// also handles ibload
+// also handles bloadi
 TR::Register *OMR::ARM::TreeEvaluator::bloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return commonLoadEvaluator(node, TR::InstOpCode::ldrsb, 1, cg);
@@ -3469,7 +3469,7 @@ TR::Register *OMR::ARM::TreeEvaluator::awrtbariEvaluator(TR::Node *node, TR::Cod
 #endif
    }
 
-// also handles ilstore
+// also handles lstorei
 TR::Register *OMR::ARM::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *valueChild;
@@ -3527,7 +3527,7 @@ TR::Register *OMR::ARM::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeG
    return NULL;
    }
 
-// also handles ibstore
+// also handles bstorei
 TR::Register *OMR::ARM::TreeEvaluator::bstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return commonStoreEvaluator(node, TR::InstOpCode::strb, 1, cg);
@@ -3539,7 +3539,7 @@ TR::Register *OMR::ARM::TreeEvaluator::sstoreEvaluator(TR::Node *node, TR::CodeG
    return commonStoreEvaluator(node, TR::InstOpCode::strh, 2, cg);
    }
 
-// also handles astore, iastore, iistore
+// also handles astore, astorei, istorei
 TR::Register *OMR::ARM::TreeEvaluator::istoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return commonStoreEvaluator(node, TR::InstOpCode::str, 4, cg);

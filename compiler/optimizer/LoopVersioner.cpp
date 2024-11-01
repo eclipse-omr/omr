@@ -5616,7 +5616,7 @@ void TR_LoopVersioner::RemoveArrayStoreCheck::improveLoop()
    TR::TreeTop *firstNewTree = TR::TreeTop::create(comp(), TR::Node::create(TR::treetop, 1, arrayStoreCheckNode->getFirstChild()), NULL, NULL);
    TR::Node *child = arrayStoreCheckNode->getFirstChild();
    if (child->getOpCodeValue() == TR::awrtbari && TR::Compiler->om.writeBarrierType() == gc_modron_wrtbar_none &&
-      performTransformation(comp(), "%sChanging awrtbari node [%p] to an iastore\n", OPT_DETAILS_LOOP_VERSIONER, child))
+      performTransformation(comp(), "%sChanging awrtbari node [%p] to an astorei\n", OPT_DETAILS_LOOP_VERSIONER, child))
       {
       TR::Node::recreate(child, TR::astorei);
       child->getChild(2)->recursivelyDecReferenceCount();
@@ -5630,7 +5630,7 @@ void TR_LoopVersioner::RemoveArrayStoreCheck::improveLoop()
       secondNewTree = TR::TreeTop::create(comp(), TR::Node::create(TR::treetop, 1, arrayStoreCheckNode->getSecondChild()), NULL, NULL);
       child = arrayStoreCheckNode->getSecondChild();
       if (child->getOpCodeValue() == TR::awrtbari && TR::Compiler->om.writeBarrierType() == gc_modron_wrtbar_none &&
-          performTransformation(comp(), "%sChanging awrtbari node [%p] to an iastore\n", OPT_DETAILS_LOOP_VERSIONER, child))
+          performTransformation(comp(), "%sChanging awrtbari node [%p] to an astorei\n", OPT_DETAILS_LOOP_VERSIONER, child))
          {
          TR::Node::recreate(child, TR::astorei);
          child->getChild(2)->recursivelyDecReferenceCount();
@@ -6696,7 +6696,7 @@ void TR_LoopVersioner::RemoveSpineCheck::improveLoop()
 
    //fixup node to have arraylets.
    // aiadd
-   //   iaload
+   //   aloadi
    //       aiadd
    //          aload a
    //          iadd

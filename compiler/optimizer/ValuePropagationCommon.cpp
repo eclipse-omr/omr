@@ -1898,7 +1898,7 @@ void OMR::ValuePropagation::transformArrayCopyCall(TR::Node *node)
       else
          {
          //aiadd
-         //   iaload
+         //   aloadi
          //       aiadd
          //          aload a
          //          iadd

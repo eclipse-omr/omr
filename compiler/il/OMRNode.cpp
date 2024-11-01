@@ -7004,7 +7004,7 @@ OMR::Node::chkUnsigned()
 bool
 OMR::Node::isClassPointerConstant()
    {
-   TR_ASSERT((self()->getOpCodeValue() == TR::aconst)||(self()->getOpCodeValue() == TR::aloadi), "Can only call this for aconst or iaload\n");
+   TR_ASSERT((self()->getOpCodeValue() == TR::aconst)||(self()->getOpCodeValue() == TR::aloadi), "Can only call this for aconst or aloadi\n");
    return _flags.testAny(classPointerConstant);
    }
 
@@ -7027,7 +7027,7 @@ OMR::Node::chkClassPointerConstant()
 bool
 OMR::Node::isMethodPointerConstant()
    {
-   TR_ASSERT((self()->getOpCodeValue() == TR::aconst)||(self()->getOpCodeValue() == TR::aloadi), "Can only call this for aconst or iaload\n");
+   TR_ASSERT((self()->getOpCodeValue() == TR::aconst)||(self()->getOpCodeValue() == TR::aloadi), "Can only call this for aconst or aloadi\n");
    return _flags.testAny(methodPointerConstant);
    }
 
@@ -7056,7 +7056,7 @@ void
 OMR::Node::setUnneededIALoad(bool v)
    {
    TR::Compilation * c = TR::comp();
-   TR_ASSERT(self()->getOpCodeValue() == TR::aloadi, "Can only call this for iaload");
+   TR_ASSERT(self()->getOpCodeValue() == TR::aloadi, "Can only call this for aloadi");
    if (performNodeTransformation2(c, "O^O NODE FLAGS: Setting unneededIALoad flag on node %p to %d\n", self(), v))
       _flags.set(unneededIALoad, v);
    }

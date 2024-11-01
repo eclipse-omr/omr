@@ -1929,9 +1929,9 @@ OMR::CodeGenerator::addressesMatch(TR::Node *addr1, TR::Node *addr2, bool addres
       if (self()->isSupportedAdd(addr1) && self()->isSupportedAdd(addr2) &&
           self()->nodeMatches(addr1->getSecondChild(), addr2->getSecondChild(), addressesUnderSameTreeTop))
          {
-         // for the case where the iaload itself is below an addition, match the additions first
+         // for the case where the aloadi itself is below an addition, match the additions first
          // aiadd
-         //    iaload
+         //    aloadi
          //       aload
          //    iconst
          addr1 = addr1->getFirstChild();
@@ -3430,10 +3430,10 @@ OMR::CodeGenerator::isInMemoryInstructionCandidate(TR::Node * node)
    //
    // Examples:
    //
-   // ibstore
+   // bstorei
    //   addr
    //   bor/band/bxor
-   //     ibload
+   //     bloadi
    //       =>addr
    //     bconst
    //

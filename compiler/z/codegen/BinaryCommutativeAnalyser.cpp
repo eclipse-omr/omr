@@ -175,8 +175,8 @@ TR_S390BinaryCommutativeAnalyser::genericAnalyser(TR::Node * root, TR::InstOpCod
    //
    //     (0)  BNDCHK
    //     (1)    l2i [node >= 0] (in GPR_0063)
-   //     (1)      ilload #155[00000000801188C8] Shadow[<array-size>]24
-   //     (2)        iaload #177[000000008012C5E0] Shadow[java/lang/ThreadGroup.childrenGroups
+   //     (1)      lloadi #155[00000000801188C8] Shadow[<array-size>]24
+   //     (2)        aloadi #177[000000008012C5E0] Shadow[java/lang/ThreadGroup.childrenGroups
    //     (1)          ==>aload at [000000008012DBE8] (in &GPR_0058)
    //     (1)    l2i (in GPR_0067)
    //     (2)      ==>i2l at [0000000080117A70]

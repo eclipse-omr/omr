@@ -3079,13 +3079,13 @@ void TR::VPClass::typeIntersect(TR::VPClassPresence* &presence, TR::VPClassType*
             ///   dumpOptDetails(vp->comp(), "type is classobject: %d\n", TR_yes);
             //
             // the following cases are due to the fact that for loadaddrs
-            // and ialoads<vft-symbol> vp keeps track of the underlying type ;
+            // and aloadis<vft-symbol> vp keeps track of the underlying type ;
             // but these are actually of type java/lang/Class. when confronted
             // with the intersection between a loadaddr (whose underlying type is A)
             // and an aload (whose actual type is java/lang/Class), vp cannot intersect
             // types (when it should succeed) causing it to do wrong things
             // like fold branches etc. to detect this scenario, loadaddrs and
-            // iaload<vft-symbols> are primed with a ClassObject property.
+            // aloadi<vft-symbols> are primed with a ClassObject property.
             //
             // case 1: VPClass wrapper intersects with a VPClass wrapper (i)
             //e.g. <fixedClass, classObject> with <resolvedClass, non-null>
@@ -3855,7 +3855,7 @@ TR::VPConstraint *TR::VPObjectLocation::intersect1(TR::VPConstraint *other, OMR:
    VPObjectLocationKind result =
       (VPObjectLocationKind)(_kind & otherInfo->_kind);
 
-   //FIXME: since loadaddrs (or ialoads of vft-symbols) are primed
+   //FIXME: since loadaddrs (or aloadis of vft-symbols) are primed
    //with a ClassObject property, we could intersect ClassObject with a HeapObject
    //Leaving this here for now, in all cases where we previously would
    //have had ClassObject (and where we now have a subset of ClassObject).

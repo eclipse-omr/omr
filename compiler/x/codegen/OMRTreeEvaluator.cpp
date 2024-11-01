@@ -577,7 +577,7 @@ TR::Register *OMR::X86::TreeEvaluator::performIload(TR::Node *node, TR::MemoryRe
    return reg;
    }
 
-// also handles iaload
+// also handles aloadi
 TR::Register *OMR::X86::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::MemoryReference  *sourceMR = generateX86MemoryReference(node, cg);
@@ -686,7 +686,7 @@ bool OMR::X86::TreeEvaluator::genNullTestSequence(TR::Node *node,
    }
 
 
-// also handles iiload
+// also handles iloadi
 TR::Register *OMR::X86::TreeEvaluator::iloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::MemoryReference  *sourceMR = generateX86MemoryReference(node, cg);
@@ -716,7 +716,7 @@ TR::Register *OMR::X86::TreeEvaluator::iloadEvaluator(TR::Node *node, TR::CodeGe
    return reg;
    }
 
-// also handles ibload
+// also handles bloadi
 TR::Register *OMR::X86::TreeEvaluator::bloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::MemoryReference  *sourceMR = generateX86MemoryReference(node, cg);
@@ -768,17 +768,17 @@ OMR::X86::TreeEvaluator::fwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg
    return TR::TreeEvaluator::floatingPointStoreEvaluator(node, cg);
    }
 
-// iiload handled by iloadEvaluator
+// iloadi handled by iloadEvaluator
 
-// ilload handled by lloadEvaluator
+// lloadi handled by lloadEvaluator
 
-// ialoadEvaluator handled by iloadEvaluator
+// aloadiEvaluator handled by iloadEvaluator
 
-// ibloadEvaluator handled by bloadEvaluator
+// bloadiEvaluator handled by bloadEvaluator
 
 // isloadEvaluator handled by sloadEvaluator
 
-// also used for iistore, astore and iastore
+// also used for istorei, astore and astorei
 TR::Register *OMR::X86::TreeEvaluator::integerStoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *valueChild = NULL;
@@ -939,7 +939,7 @@ TR::Register *OMR::X86::TreeEvaluator::integerStoreEvaluator(TR::Node *node, TR:
          tempMR = generateX86MemoryReference(node, cg);
 
          // in comp->useCompressedPointers we should write 4 bytes
-         // since the iastore has been changed to an iistore, size will be 4
+         // since the astorei has been changed to an istorei, size will be 4
          //
          instr = generateMemRegInstruction(opCode, node, tempMR, valueReg, cg);
 
@@ -1090,7 +1090,7 @@ TR::Register *OMR::X86::TreeEvaluator::istoreEvaluator(TR::Node *node, TR::CodeG
 
 // astoreEvaluator handled by istoreEvaluator
 
-// also handles ibstore
+// also handles bstorei
 TR::Register *OMR::X86::TreeEvaluator::bstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return TR::TreeEvaluator::integerStoreEvaluator(node, cg);
@@ -1102,13 +1102,13 @@ TR::Register *OMR::X86::TreeEvaluator::sstoreEvaluator(TR::Node *node, TR::CodeG
    return TR::TreeEvaluator::integerStoreEvaluator(node, cg);
    }
 
-// iistore handled by istoreEvaluator
+// istorei handled by istoreEvaluator
 
-// ilstore handled by lstoreEvaluator
+// lstorei handled by lstoreEvaluator
 
-// iastoreEvaluator handled by istoreEvaluator
+// astoreiEvaluator handled by istoreEvaluator
 
-// ibstoreEvaluator handled by bstoreEvaluator
+// bstoreiEvaluator handled by bstoreEvaluator
 
 // isstoreEvaluator handled by sstoreEvaluator
 
@@ -4735,7 +4735,7 @@ TR::Register *OMR::X86::TreeEvaluator::conversionAnalyser(TR::Node          *nod
          {
          // we could have a sequence like
          // iu2l
-         //   iiload  <- where this node was materialized by lowering an iaload in compressedPointers mode
+         //   iloadi  <- where this node was materialized by lowering an aloadi in compressedPointers mode
          //
          if (node->getOpCodeValue() == TR::iu2l &&
                comp->useCompressedPointers() &&

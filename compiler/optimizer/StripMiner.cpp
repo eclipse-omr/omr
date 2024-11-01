@@ -1659,7 +1659,7 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node,
          if ( node->getSymbol() && node->getSymbol()->isArrayletShadowSymbol())
             {
             /* Pattern match for array access offsets
-               iaload <arraylet>                                iaload <arraylet>
+               aloadi <arraylet>                                aloadi <arraylet>
                   aiadd                                            aladd
                      aload <array>                                    aload <array>
                      isub/iadd                                        lsub/ladd

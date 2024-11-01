@@ -2077,7 +2077,7 @@ TR::Node *constrainIiload(OMR::ValuePropagation *vp, TR::Node *node)
             TR::Node *nullCheckNode = vp->getCurrentParent();
             nullCheckNode->setAndIncChild(0, passThroughNode);
 
-            // create a treetop containing the iiload following the current tree
+            // create a treetop containing the iloadi following the current tree
             TR::TreeTop *newTree = TR::TreeTop::create(vp->comp(), TR::Node::create(TR::treetop, 1, node));
             node->decReferenceCount();
             TR::TreeTop *prevTree = vp->_curTree;
@@ -2149,7 +2149,7 @@ TR::Node *constrainIaload(OMR::ValuePropagation *vp, TR::Node *node)
             node = transformedNode;
             }
 
-         // If it is no longer an iaload,
+         // If it is no longer an aloadi,
          // the rest of this handler may not be applicable anymore.
          //
          if (node->getOpCode().isLoadIndirect() && node->getDataType() == TR::Address)
@@ -2886,7 +2886,7 @@ TR::Node *constrainLongStore(OMR::ValuePropagation *vp, TR::Node *node)
    return node;
    }
 
-// Also handles iastore
+// Also handles astorei
 //
 TR::Node *constrainAstore(OMR::ValuePropagation *vp, TR::Node *node)
    {
@@ -2924,7 +2924,7 @@ void canRemoveWrtBar(OMR::ValuePropagation *vp, TR::Node *node)
          {
          if (node->getOpCode().isIndirect())
             {
-            if (performTransformation(vp->comp(), "%sChanging write barrier store into iastore [%p]\n", OPT_DETAILS, node))
+            if (performTransformation(vp->comp(), "%sChanging write barrier store into astorei [%p]\n", OPT_DETAILS, node))
                {
                bool invalidateInfo = false;
                if (node->getChild(2) != node->getFirstChild())
@@ -5638,7 +5638,7 @@ TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node)
          /*
          n572n       vcall  sun/misc/Unsafe.ensureClassInitialized(Ljava/lang/Class;)V[#631  final native virtual Method -728]
             n577n         aload  java/lang/invoke/MethodHandle$UnsafeGetter.myUnsafe
-            n579n         iaload  java/lang/invoke/MethodHandle.defc
+            n579n         aloadi  java/lang/invoke/MethodHandle.defc
 
          Because Unsafe.ensureClassInitialized is JNI, can't use direct JNI, otherwise can't optimized it at compile time.
          */
@@ -12487,13 +12487,13 @@ TR::Node *constrainArrayStoreChk(OMR::ValuePropagation *vp, TR::Node *node)
    //
    if (!isStoreCheckNeeded)
       {
-      // Change the write barrier into iastore
+      // Change the write barrier into astorei
       //
       canRemoveWrtBar(vp, child);
 
       if (performTransformation(vp->comp(), "%sRemoving redundant arraystore check node [%p]\n", OPT_DETAILS, node))
          {
-         // Child is the iastore. Just change this node to a treetop
+         // Child is the astorei. Just change this node to a treetop
          //
          TR::Node::recreate(node, TR::treetop);
          //DemandLiteralPool can add extra aload to arraystore check node, but treetop can only have one child

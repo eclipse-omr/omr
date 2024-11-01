@@ -2322,7 +2322,7 @@ TR::Register *OMR::X86::AMD64::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR
    return TR::TreeEvaluator::integerStoreEvaluator(node, cg);
    }
 
-// also handles ilload
+// also handles lloadi
 TR::Register *OMR::X86::AMD64::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::MemoryReference  *sourceMR = generateX86MemoryReference(node, cg);
