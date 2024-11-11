@@ -2262,6 +2262,44 @@ OMR::X86::AMD64::TreeEvaluator::lbitpermuteEvaluator(TR::Node *node, TR::CodeGen
    return TR::TreeEvaluator::bitpermuteEvaluator(node, cg);
    }
 
+TR::Register*
+OMR::X86::AMD64::TreeEvaluator::lcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = cg->longClobberEvaluate(srcNode);
+   TR::Register *maskReg = cg->evaluate(maskNode);
+
+   generateRegRegRegInstruction(TR::InstOpCode::PEXT8RegRegReg, node, srcReg, srcReg, maskReg, cg);
+
+   cg->stopUsingRegister(maskReg);
+
+   node->setRegister(srcReg);
+   cg->decReferenceCount(srcNode);
+   cg->decReferenceCount(maskNode);
+
+   return srcReg;
+   }
+
+TR::Register*
+OMR::X86::AMD64::TreeEvaluator::lexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = cg->evaluate(srcNode);
+   TR::Register *maskReg = cg->longClobberEvaluate(maskNode);
+
+   generateRegRegRegInstruction(TR::InstOpCode::PDEP8RegRegReg, node, maskReg, srcReg, maskReg, cg);
+
+   cg->stopUsingRegister(srcReg);
+
+   node->setRegister(maskReg);
+   cg->decReferenceCount(srcNode);
+   cg->decReferenceCount(maskNode);
+
+   return maskReg;
+   }
+
 TR::Register *OMR::X86::AMD64::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Register *targetRegister = TR::TreeEvaluator::loadConstant(node, node->getLongInt(), TR_RematerializableAddress, cg);

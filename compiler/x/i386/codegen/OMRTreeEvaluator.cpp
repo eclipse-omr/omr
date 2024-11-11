@@ -2348,6 +2348,18 @@ OMR::X86::I386::TreeEvaluator::lbitpermuteEvaluator(TR::Node *node, TR::CodeGene
    return TR::TreeEvaluator::bitpermuteEvaluator(node, cg);
    }
 
+TR::Register*
+OMR::X86::I386::TreeEvaluator::lcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::badILOpEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::I386::TreeEvaluator::lexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::badILOpEvaluator(node, cg);
+   }
+
 TR::Register *OMR::X86::I386::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Register *reg = loadConstant(node, node->getInt(), TR_RematerializableAddress, cg);
