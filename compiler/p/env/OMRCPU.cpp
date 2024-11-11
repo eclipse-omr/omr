@@ -48,7 +48,31 @@ OMR::Power::CPU::supportsDecimalFloatingPoint()
    return self()->supportsFeature(OMR_FEATURE_PPC_HAS_DFP);
    }
 
-bool 
+bool
+OMR::Power::CPU::getSupportsHardware32bitCompress()
+   {
+   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10);
+   }
+
+bool
+OMR::Power::CPU::getSupportsHardware64bitCompress()
+   {
+   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10);
+   }
+
+bool
+OMR::Power::CPU::getSupportsHardware32bitExpand()
+   {
+   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10);
+   }
+
+bool
+OMR::Power::CPU::getSupportsHardware64bitExpand()
+   {
+   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10);
+   }
+
+bool
 OMR::Power::CPU::getSupportsHardwareSQRT()
    {
    return self()->isAtLeast(OMR_PROCESSOR_PPC_HW_SQRT_FIRST);
