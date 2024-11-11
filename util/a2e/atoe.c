@@ -80,6 +80,8 @@
 #include <_Ccsid.h>
 #include <sys/statvfs.h>
 
+#include "omrport.h"
+
 #if 1 /* msf - did not find this stuff in LE headers */
                                                    /*ibm@57265 start*/
 int fcntl_init = 0;       /* Global flag that says the OS release    */
@@ -145,7 +147,6 @@ static __ccsid_t newFileCCSID = 0;
  * ASCII<=>EBCDIC translate tables built using iconv()
  * ======================================================================
  */
-#define BUFLEN 6144
 #define CONV_TABLE_SIZE 256
 char a2e_tab[CONV_TABLE_SIZE];
 char e2a_tab[CONV_TABLE_SIZE];
@@ -1244,7 +1245,6 @@ atoe_putchar(int ch)
 	return putchar((int)a2e_tab[ch]);
 }
 
-
 /**************************************************************************
  * name        -
  * description -
@@ -1255,30 +1255,14 @@ int
 atoe_fprintf(FILE *file, const char *ascii_chars, ...)
 {
 	va_list args;
-	char buf[BUFLEN];
-	char *ebuf;
 	int len;
 
 	va_start(args, ascii_chars);
-
-	len = atoe_vsnprintf(buf, BUFLEN, ascii_chars, args);
-
-	/* Abort if failed... */
-	if (len == -1) {
-		return len;
-	}
-
-	ebuf = a2e(buf, len);
-#pragma convlit(suspend)
-	len = fprintf(file, "%s", ebuf);
-#pragma convlit(resume)
-	free(ebuf);
-
+	len = atoe_vfprintf(file, ascii_chars, args);
 	va_end(args);
 
 	return len;
 }
-
 
 /**************************************************************************
  * name        -
@@ -1290,25 +1274,10 @@ int
 atoe_printf(const char *ascii_chars, ...)
 {
 	va_list args;
-	char buf[BUFLEN];
-	char *ebuf;
 	int len;
 
 	va_start(args, ascii_chars);
-
-	len = atoe_vsnprintf(buf, BUFLEN, ascii_chars, args);
-
-	/* Abort if failed... */
-	if (len == -1) {
-		return len;
-	}
-
-	ebuf = a2e(buf, len);
-#pragma convlit(suspend)
-	len = printf("%s", ebuf);
-#pragma convlit(resume)
-	free(ebuf);
-
+	len = atoe_vfprintf(stdout, ascii_chars, args);
 	va_end(args);
 
 	return len;
@@ -1325,12 +1294,11 @@ atoe_printf(const char *ascii_chars, ...)
 int
 std_sprintf(const char *buf, char *ascii_chars, ...)
 {
-	int len;
 	va_list args;
+	int len;
+
 	va_start(args, ascii_chars);
-
 	len = sprintf((char *)buf, ascii_chars, args);
-
 	va_end(args);
 
 	return len;
@@ -1347,20 +1315,12 @@ std_sprintf(const char *buf, char *ascii_chars, ...)
 int
 atoe_sprintf(char *buf, const char *ascii_chars, ...)
 {
-	int len;
-	char wrkbuf[BUFLEN];
-
 	va_list args;
+	int len;
+
 	va_start(args, ascii_chars);
-
-	len = atoe_vsnprintf(wrkbuf, BUFLEN, ascii_chars, args);
-
+	len = atoe_vsprintf(buf, ascii_chars, args);
 	va_end(args);
-	if (-1 == len) {
-		return len;
-	}
-
-	strcpy((char *)buf, wrkbuf);
 
 	return len;
 }
@@ -1376,17 +1336,12 @@ atoe_sprintf(char *buf, const char *ascii_chars, ...)
 int
 atoe_snprintf(char *buf, size_t buflen, const char *ascii_chars, ...)
 {
+	va_list args;
 	int len;
 
-	va_list args;
 	va_start(args, ascii_chars);
-
 	len = atoe_vsnprintf(buf, buflen, ascii_chars, args);
-
 	va_end(args);
-	if (-1 == len) {
-		return len;
-	}
 
 	return len;
 }
@@ -1400,17 +1355,35 @@ atoe_snprintf(char *buf, size_t buflen, const char *ascii_chars, ...)
 int
 atoe_vfprintf(FILE *file, const char *ascii_chars, va_list args)
 {
-	char buf[BUFLEN];
+	va_list args_copy;
+	char *buf;
 	char *ebuf;
 	int len;
 
-	len = atoe_vsnprintf(buf, BUFLEN, ascii_chars, args);
+	/* Measure the required length of buffer. */
+	va_copy(args_copy, args);
+	len = atoe_vsnprintf(NULL, 0, ascii_chars, args_copy);
+	va_end(args_copy);
 
+	/* Abort if failed. */
 	if (len == -1) {
 		return len;
 	}
 
-	ebuf = a2e(buf, len);
+	/* Add one for null terminating character. */
+	len += 1;
+	/* Allocate buffer and write to it. */
+	buf = (char *)malloc(len);
+	if (NULL == buf) {
+		return -1;
+	}
+	atoe_vsnprintf(buf, len, ascii_chars, args);
+
+	ebuf = a2e(buf, len - 1);
+	free(buf);
+	if (NULL == ebuf) {
+		return -1;
+	}
 #pragma convlit(suspend)
 	len = fprintf(file, "%s", ebuf);
 #pragma convlit(resume)
@@ -1441,15 +1414,13 @@ atoe_vprintf(const char *ascii_chars, va_list args)
 int
 atoe_vsprintf(char *target, const char *ascii_chars, va_list args)
 {
-	char buf[BUFLEN];                                     /*ibm@029013*/
-	int  bsize = 0;                                       /*ibm@029013*/
-
-	bsize = atoe_vsnprintf(buf, BUFLEN, ascii_chars, args); /*ibm@029013*/
-	if (-1 == bsize) {
-		return bsize;
+	/* Calculate the maximum valid target size. */
+	size_t target_size = (uintptr_t)OMRPORT_VMEM_MAX_ADDRESS - (uintptr_t)target;
+	/* atoe_vsnprintf() may call the standard snprintf() which does not accept target_size > INT_MAX. */
+	if (target_size > INT_MAX) {
+		target_size = INT_MAX;
 	}
-	strcpy(target, buf);                                  /*ibm@029013*/
-	return bsize;                                         /*ibm@029013*/
+	return atoe_vsnprintf(target, target_size, ascii_chars, args);
 }
 
 /**************************************************************************

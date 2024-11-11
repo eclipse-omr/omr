@@ -93,10 +93,10 @@ pchar(InstanceData *this, int c)
 
 	if (iscntrl(0xff & c) && c != '\n' && c != '\t') {
 		c = '@' + (c & 0x1F);
-		if (this->buffer >= this->end) {
-			return ERROR_RETVAL;
+		if (this->buffer < this->end) {
+			*this->buffer = '^';
 		}
-		*this->buffer++ = '^';
+		*this->buffer++;
 	}
 #endif /* 0 */
 
