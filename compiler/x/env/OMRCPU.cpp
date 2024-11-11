@@ -24,6 +24,7 @@
 #include "env/CPU.hpp"
 #include "env/CompilerEnv.hpp"
 #include "env/ProcessorInfo.hpp"
+#include "infra/Bit.hpp"
 #include "infra/Flags.hpp"
 #include "x/runtime/X86Runtime.hpp"
 #include "codegen/CodeGenerator.hpp"
@@ -195,6 +196,48 @@ bool
 OMR::X86::CPU::supportsTransactionalMemoryInstructions()
    {
    return self()->supportsFeature(OMR_FEATURE_X86_RTM);
+   }
+
+bool
+OMR::X86::CPU::getSupportsHardware32bitCompress()
+   {
+   if (TR::Compiler->omrPortLib == NULL)
+      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
+
+   return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
+   }
+
+bool
+OMR::X86::CPU::getSupportsHardware64bitCompress()
+   {
+   if (self()->isI386())
+      return false;
+
+   if (TR::Compiler->omrPortLib == NULL)
+      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
+
+   return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
+   }
+
+bool
+OMR::X86::CPU::getSupportsHardware32bitExpand()
+   {
+   if (TR::Compiler->omrPortLib == NULL)
+      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
+
+   return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
+   }
+
+bool
+OMR::X86::CPU::getSupportsHardware64bitExpand()
+   {
+   if (self()->isI386())
+      return false;
+
+   if (TR::Compiler->omrPortLib == NULL)
+      return TR::CodeGenerator::getX86ProcessorInfo().supportsBMI2();
+
+   return self()->supportsFeature(OMR_FEATURE_X86_BMI2);
    }
 
 bool

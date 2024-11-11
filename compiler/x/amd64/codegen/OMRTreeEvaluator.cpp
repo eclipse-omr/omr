@@ -2262,6 +2262,18 @@ OMR::X86::AMD64::TreeEvaluator::lbitpermuteEvaluator(TR::Node *node, TR::CodeGen
    return TR::TreeEvaluator::bitpermuteEvaluator(node, cg);
    }
 
+TR::Register*
+OMR::X86::AMD64::TreeEvaluator::lcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::compressExpandBitsEvaluator(node, cg, TR::InstOpCode::PEXT8RegRegReg, TR::InstOpCode::PEXT8RegRegMem);
+   }
+
+TR::Register*
+OMR::X86::AMD64::TreeEvaluator::lexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::compressExpandBitsEvaluator(node, cg, TR::InstOpCode::PDEP8RegRegReg, TR::InstOpCode::PDEP8RegRegMem);
+   }
+
 TR::Register *OMR::X86::AMD64::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Register *targetRegister = TR::TreeEvaluator::loadConstant(node, node->getLongInt(), TR_RematerializableAddress, cg);

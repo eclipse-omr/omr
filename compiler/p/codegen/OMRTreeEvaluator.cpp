@@ -2240,6 +2240,192 @@ OMR::Power::TreeEvaluator::lbitpermuteEvaluator(TR::Node *node, TR::CodeGenerato
    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
    }
 
+static inline TR::Register*
+compressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
+   {
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = NULL;
+   TR::Register *maskReg = NULL;
+   TR::Register *resReg = NULL;
+
+   if (type != TR::Int64)
+      {
+      TR::InstOpCode::Mnemonic loadOpcode;
+      uint64_t zeroExtendMask;
+      uint32_t length;
+      switch (type)
+         {
+         case TR::Int32:
+            loadOpcode = TR::InstOpCode::lwz;
+            zeroExtendMask = CONSTANT64(0x00000000ffffffff);
+            length = 4;
+            break;
+         case TR::Int16:
+            loadOpcode = TR::InstOpCode::lhz;
+            zeroExtendMask = CONSTANT64(0x000000000000ffff);
+            length = 2;
+            break;
+         case TR::Int8:
+            loadOpcode = TR::InstOpCode::lbz;
+            zeroExtendMask = CONSTANT64(0x00000000000000ff);
+            length = 1;
+            break;
+         default:
+            TR_ASSERT_FATAL(false, "Unrecognized compressbits type %s\n", type.toString());
+            break;
+         }
+
+      // Only one of src or mask needs to be zero-extended
+      // First check if either can be zero-extended at compile time
+      if (maskNode->getOpCode().isLoadConst())
+         {
+         int64_t mask = maskNode->getUnsignedLongInt() & zeroExtendMask;
+         maskReg = cg->allocateRegister();
+         loadConstant(cg, maskNode, mask, maskReg);
+         resReg = maskReg;
+         }
+      else if (srcNode->getOpCode().isLoadConst())
+         {
+         int64_t src = srcNode->getUnsignedLongInt() & zeroExtendMask;
+         srcReg = cg->allocateRegister();
+         loadConstant(cg, srcNode, src, srcReg);
+         resReg = srcReg;
+         }
+      // Otherwise check if either is in memory and can therefore be loaded with a zero-extending opcode
+      else if (maskNode->getReferenceCount() == 1 && maskNode->getOpCode().isMemoryReference() && maskNode->getRegister() == NULL)
+         {
+         maskReg = cg->allocateRegister();
+         TR::LoadStoreHandler::generateLoadNodeSequence(cg, maskReg, maskNode, loadOpcode, length);
+         resReg = maskReg;
+         }
+      else if (srcNode->getReferenceCount() == 1 && srcNode->getOpCode().isMemoryReference() && srcNode->getRegister() == NULL)
+         {
+         srcReg = cg->allocateRegister();
+         TR::LoadStoreHandler::generateLoadNodeSequence(cg, srcReg, srcNode, loadOpcode, length);
+         resReg = srcReg;
+         }
+      // If no zero-extension shortcut applied, default to zero-extending the mask
+      if (resReg == NULL)
+         {
+         maskReg = cg->gprClobberEvaluate(maskNode);
+         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicl, node, maskReg, maskReg, 0, zeroExtendMask);
+         resReg = maskReg;
+         }
+      // Evaluate the missing operand
+      if (maskReg == NULL)
+         {
+         maskReg = cg->evaluate(maskNode);
+         }
+      else
+         {
+         srcReg = cg->evaluate(srcNode);
+         }
+      }
+   else
+      {
+      srcReg = cg->evaluate(srcNode);
+      maskReg = cg->gprClobberEvaluate(maskNode);
+      resReg = maskReg;
+      }
+
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::pextd, node, resReg, srcReg, maskReg);
+
+   // Results smaller than 32 bits need to be sign extended to register width
+   if (type == TR::Int8)
+      {
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::extsb, node, resReg, resReg);
+      }
+   else if (type == TR::Int16)
+      {
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::extsh, node, resReg, resReg);
+      }
+
+   node->setRegister(resReg);
+
+   cg->decReferenceCount(srcNode);
+   cg->decReferenceCount(maskNode);
+
+   return resReg;
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::bcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return compressbitsEvaluator(node, cg, TR::Int8);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::scompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return compressbitsEvaluator(node, cg, TR::Int16);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::icompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return compressbitsEvaluator(node, cg, TR::Int32);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::lcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR_ASSERT_FATAL(cg->comp()->target().is64Bit(), "lcompressbits is only supported in 64-bit mode.\n");
+   return compressbitsEvaluator(node, cg, TR::Int64);
+   }
+
+static TR::Register*
+expandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
+   {
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = cg->gprClobberEvaluate(srcNode);
+   TR::Register *maskReg = cg->evaluate(maskNode);
+
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::pdepd, node, srcReg, srcReg, maskReg);
+
+   // Results smaller than 32 bits need to be sign extended to register width
+   if (type == TR::Int8)
+      {
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::extsb, node, srcReg, srcReg);
+      }
+   else if (type == TR::Int16)
+      {
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::extsh, node, srcReg, srcReg);
+      }
+
+   node->setRegister(srcReg);
+   cg->decReferenceCount(maskNode);
+   cg->decReferenceCount(srcNode);
+
+   return srcReg;
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::bexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return expandbitsEvaluator(node, cg, TR::Int8);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::sexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return expandbitsEvaluator(node, cg, TR::Int16);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::iexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return expandbitsEvaluator(node, cg, TR::Int32);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::lexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR_ASSERT_FATAL(cg->comp()->target().is64Bit(), "lexpandbits is only supported in 64-bit mode.\n");
+   return expandbitsEvaluator(node, cg, TR::Int64);
+   }
+
 class TR_OpaqueClassBlock;
 class TR_OpaqueMethodBlock;
 
