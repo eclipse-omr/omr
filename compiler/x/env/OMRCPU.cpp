@@ -255,8 +255,61 @@ OMR::X86::CPU::is(OMRProcessorArchitecture p)
    }
 
 bool
+OMR::X86::CPU::is_feature_disabled(uint32_t feature)
+   {
+   TR_CompilationOptions option = (TR_CompilationOptions) 0;
+
+   switch (feature)
+      {
+      case OMR_FEATURE_X86_SSE3:
+         option = TR_DisableSSE3;
+         break;
+      case OMR_FEATURE_X86_SSE4_1:
+         option = TR_DisableSSE4_1;
+         break;
+      case OMR_FEATURE_X86_SSE4_2:
+         option = TR_DisableSSE4_2;
+         break;
+      case OMR_FEATURE_X86_AVX:
+         option = TR_DisableAVX;
+         break;
+      case OMR_FEATURE_X86_AVX2:
+         option = TR_DisableAVX2;
+         break;
+      case OMR_FEATURE_X86_AVX512F:
+      case OMR_FEATURE_X86_AVX512VL:
+      case OMR_FEATURE_X86_AVX512BW:
+      case OMR_FEATURE_X86_AVX512CD:
+      case OMR_FEATURE_X86_AVX512DQ:
+      case OMR_FEATURE_X86_AVX512ER:
+      case OMR_FEATURE_X86_AVX512PF:
+      case OMR_FEATURE_X86_AVX512_BITALG:
+      case OMR_FEATURE_X86_AVX512_IFMA:
+      case OMR_FEATURE_X86_AVX512_VBMI:
+      case OMR_FEATURE_X86_AVX512_VBMI2:
+      case OMR_FEATURE_X86_AVX512_VNNI:
+      case OMR_FEATURE_X86_AVX512_VPOPCNTDQ:
+         option = TR_DisableAVX512;
+         break;
+      default:
+         return false;
+      }
+
+   if (!_comp)
+      {
+      // Lazy initialize thread local compilation object
+      _comp = TR::comp();
+      }
+
+   return _comp && _comp->getOption(option);
+   }
+
+bool
 OMR::X86::CPU::supportsFeature(uint32_t feature)
    {
+   if (is_feature_disabled(feature))
+      return false;
+
    if (TR::Compiler->omrPortLib == NULL)
       return self()->supports_feature_old_api(feature);
 
