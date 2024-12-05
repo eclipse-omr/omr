@@ -93,9 +93,9 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/env/TRMemory.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/TRPersistentMemory.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/VerboseLog.cpp \
-    $(JIT_OMR_DIRTY_DIR)/env/FrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRFrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRJitConfig.cpp \
+    $(JIT_OMR_DIRTY_DIR)/env/TRFrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/il/OMRDataTypes.cpp \
     $(JIT_OMR_DIRTY_DIR)/il/OMRTreeTop.cpp \
     $(JIT_OMR_DIRTY_DIR)/il/OMRILOps.cpp \
