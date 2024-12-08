@@ -19,7 +19,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#include "compile/ResolvedMethod.hpp"
+#include "compile/TRResolvedMethod.hpp"
 
 #include <string.h>
 #include "compile/Compilation.hpp"
@@ -37,11 +37,6 @@
 class TR_FrontEnd;
 class TR_OpaqueMethodBlock;
 class TR_PrexArgInfo;
-
-namespace TR {
-class IlGeneratorMethodDetails;
-class LabelSymbol;
-} // namespace TR
 
 TR::Method *TR_ResolvedMethod::convertToMethod()
 {
@@ -109,23 +104,11 @@ TR::ILOpCodes TR_ResolvedMethod::returnOpCode()
     return TR::BadILOp;
 }
 
-uint16_t TR_ResolvedMethod::classNameLength()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
+uint16_t TR_ResolvedMethod::classNameLength() { return static_cast<uint16_t>(strlen(classNameChars())); }
 
-uint16_t TR_ResolvedMethod::nameLength()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
+uint16_t TR_ResolvedMethod::nameLength() { return static_cast<uint16_t>(strlen(nameChars())); }
 
-uint16_t TR_ResolvedMethod::signatureLength()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
+uint16_t TR_ResolvedMethod::signatureLength() { return static_cast<uint16_t>(strlen(signatureChars())); }
 
 char *TR_ResolvedMethod::classNameChars()
 {
@@ -145,29 +128,13 @@ char *TR_ResolvedMethod::signatureChars()
     return 0;
 }
 
-bool TR_ResolvedMethod::isConstructor()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isConstructor() { return false; }
 
-bool TR_ResolvedMethod::isStatic()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isStatic() { return true; } // useful default
 
-bool TR_ResolvedMethod::isAbstract()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isAbstract() { return false; }
 
-bool TR_ResolvedMethod::isCompilable(TR_Memory *)
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isCompilable(TR_Memory *) { return true; } // useful default
 
 bool TR_ResolvedMethod::isInlineable(TR::Compilation *)
 {
@@ -175,41 +142,17 @@ bool TR_ResolvedMethod::isInlineable(TR::Compilation *)
     return false;
 }
 
-bool TR_ResolvedMethod::isNative()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isNative() { return false; }
 
-bool TR_ResolvedMethod::isSynchronized()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isSynchronized() { return false; }
 
-bool TR_ResolvedMethod::isPrivate()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isPrivate() { return false; }
 
-bool TR_ResolvedMethod::isProtected()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isProtected() { return false; }
 
-bool TR_ResolvedMethod::isPublic()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isPublic() { return true; } // useful default
 
-bool TR_ResolvedMethod::isFinal()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isFinal() { return false; }
 
 bool TR_ResolvedMethod::isInterpreted()
 {
@@ -223,11 +166,7 @@ bool TR_ResolvedMethod::isInterpretedForHeuristics()
     return false;
 }
 
-bool TR_ResolvedMethod::hasBackwardBranches()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::hasBackwardBranches() { return false; }
 
 bool TR_ResolvedMethod::isObjectConstructor()
 {
@@ -235,11 +174,7 @@ bool TR_ResolvedMethod::isObjectConstructor()
     return false;
 }
 
-bool TR_ResolvedMethod::isNonEmptyObjectConstructor()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isNonEmptyObjectConstructor() { return false; }
 
 bool TR_ResolvedMethod::isCold(TR::Compilation *, bool, TR::ResolvedMethodSymbol * /* = NULL */)
 {
@@ -247,35 +182,18 @@ bool TR_ResolvedMethod::isCold(TR::Compilation *, bool, TR::ResolvedMethodSymbol
     return false;
 }
 
-bool TR_ResolvedMethod::isSubjectToPhaseChange(TR::Compilation *)
+bool TR_ResolvedMethod::isSubjectToPhaseChange(TR::Compilation *) { return false; }
+
+bool TR_ResolvedMethod::isSameMethod(TR_ResolvedMethod *other)
 {
-    TR_UNIMPLEMENTED();
-    return false;
+    return getPersistentIdentifier() == other->getPersistentIdentifier();
 }
 
-bool TR_ResolvedMethod::isSameMethod(TR_ResolvedMethod *)
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isNewInstanceImplThunk() { return false; }
 
-bool TR_ResolvedMethod::isNewInstanceImplThunk()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isJNINative() { return false; }
 
-bool TR_ResolvedMethod::isJNINative()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
-
-bool TR_ResolvedMethod::isJITInternalNative()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
+bool TR_ResolvedMethod::isJITInternalNative() { return false; }
 
 void *TR_ResolvedMethod::resolvedMethodAddress()
 {
@@ -317,6 +235,108 @@ void TR_ResolvedMethod::setWarmCallGraphTooBig(uint32_t bcIndex, TR::Compilation
 {
     TR_UNIMPLEMENTED();
     return;
+}
+
+TR_OpaqueClassBlock *TR_ResolvedMethod::getDeclaringClassFromFieldOrStatic(TR::Compilation *comp, int32_t cpIndex)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+int32_t TR_ResolvedMethod::classCPIndexOfFieldOrStatic(int32_t)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+const char *TR_ResolvedMethod::signature(TR_Memory *, TR_AllocationKind)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+const char *TR_ResolvedMethod::externalName(TR_Memory *, TR_AllocationKind)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+char *TR_ResolvedMethod::fieldName(int32_t, TR_Memory *, TR_AllocationKind kind) { return 0; }
+
+char *TR_ResolvedMethod::staticName(int32_t, TR_Memory *, TR_AllocationKind kind) { return 0; }
+
+char *TR_ResolvedMethod::localName(uint32_t, uint32_t, TR_Memory *) { return 0; }
+
+char *TR_ResolvedMethod::fieldName(int32_t, int32_t &, TR_Memory *, TR_AllocationKind kind)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+char *TR_ResolvedMethod::staticName(int32_t, int32_t &, TR_Memory *, TR_AllocationKind kind)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+char *TR_ResolvedMethod::localName(uint32_t, uint32_t, int32_t &, TR_Memory *) { return 0; }
+
+char *TR_ResolvedMethod::fieldNameChars(int32_t, int32_t &)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+char *TR_ResolvedMethod::fieldSignatureChars(int32_t, int32_t &)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+char *TR_ResolvedMethod::staticSignatureChars(int32_t, int32_t &)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+void *&TR_ResolvedMethod::addressOfClassOfMethod()
+{
+    TR_UNIMPLEMENTED();
+    throw std::exception();
+}
+
+uint32_t TR_ResolvedMethod::vTableSlot()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+bool TR_ResolvedMethod::virtualMethodIsOverridden()
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
+
+void TR_ResolvedMethod::setVirtualMethodIsOverridden() { TR_UNIMPLEMENTED(); }
+
+void *TR_ResolvedMethod::addressContainingIsOverriddenBit()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+int32_t TR_ResolvedMethod::virtualCallSelector()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
+
+uint32_t TR_ResolvedMethod::numberOfExceptionHandlers() { return 0; }
+
+uint8_t *TR_ResolvedMethod::allocateException(uint32_t, TR::Compilation *)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
 }
 
 TR_FrontEnd *TR_ResolvedMethod::fe()
@@ -536,120 +556,6 @@ uint32_t TR_ResolvedMethod::romMethodArgCountAtCallSiteIndex(int32_t callSiteInd
 }
 
 uint32_t TR_ResolvedMethod::romMethodArgCountAtCPIndex(int32_t cpIndex)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-TR_OpaqueClassBlock *TR_ResolvedMethod::getDeclaringClassFromFieldOrStatic(TR::Compilation *comp, int32_t cpIndex)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-int32_t TR_ResolvedMethod::classCPIndexOfFieldOrStatic(int32_t)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-const char *TR_ResolvedMethod::signature(TR_Memory *, TR_AllocationKind)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-const char *TR_ResolvedMethod::externalName(TR_Memory *, TR_AllocationKind)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::fieldName(int32_t, TR_Memory *, TR_AllocationKind kind)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::staticName(int32_t, TR_Memory *, TR_AllocationKind kind)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::localName(uint32_t, uint32_t, TR_Memory *) { /*TR_UNIMPLEMENTED();*/ return 0; }
-
-char *TR_ResolvedMethod::fieldName(int32_t, int32_t &, TR_Memory *, TR_AllocationKind kind)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::staticName(int32_t, int32_t &, TR_Memory *, TR_AllocationKind kind)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::localName(uint32_t, uint32_t, int32_t &, TR_Memory *) { /*TR_UNIMPLEMENTED();*/ return 0; }
-
-char *TR_ResolvedMethod::fieldNameChars(int32_t, int32_t &)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::fieldSignatureChars(int32_t, int32_t &)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-char *TR_ResolvedMethod::staticSignatureChars(int32_t, int32_t &)
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-void *&TR_ResolvedMethod::addressOfClassOfMethod()
-{
-    TR_UNIMPLEMENTED();
-    throw std::exception();
-}
-
-uint32_t TR_ResolvedMethod::vTableSlot()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-bool TR_ResolvedMethod::virtualMethodIsOverridden()
-{
-    TR_UNIMPLEMENTED();
-    return false;
-}
-
-void TR_ResolvedMethod::setVirtualMethodIsOverridden() { TR_UNIMPLEMENTED(); }
-
-void *TR_ResolvedMethod::addressContainingIsOverriddenBit()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-int32_t TR_ResolvedMethod::virtualCallSelector()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-uint32_t TR_ResolvedMethod::numberOfExceptionHandlers()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
-
-uint8_t *TR_ResolvedMethod::allocateException(uint32_t, TR::Compilation *)
 {
     TR_UNIMPLEMENTED();
     return 0;

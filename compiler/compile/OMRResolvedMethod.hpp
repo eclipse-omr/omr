@@ -20,76 +20,41 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#ifndef JITBUILDER_RESOLVEDMETHOD_INCL
-#define JITBUILDER_RESOLVEDMETHOD_INCL
+#ifndef OMR_RESOLVEDMETHOD_INCL
+#define OMR_RESOLVEDMETHOD_INCL
 
-#ifndef TR_RESOLVEDMETHOD_COMPOSED
-#define TR_RESOLVEDMETHOD_COMPOSED
-#define PUT_JITBUILDER_RESOLVEDMETHOD_INTO_TR
-#endif // TR_RESOLVEDMETHOD_COMPOSED
+/*
+ * The following #define and typedef must appear before any #includes in this file
+ */
+#ifndef OMR_RESOLVEDMETHOD_CONNECTOR
+#define OMR_RESOLVEDMETHOD_CONNECTOR
+namespace OMR { class ResolvedMethod; }
+namespace OMR { typedef OMR::ResolvedMethod ResolvedMethodConnector; }
+#endif
+
 
 #include <string.h>
-
 #include "compile/Method.hpp"
-#include "compiler/compile/ResolvedMethod.hpp"
+#include "compile/TRResolvedMethod.hpp"
 
 namespace TR { class IlGeneratorMethodDetails; }
 namespace TR { class IlType; }
-namespace TR { class TypeDictionary; }
 namespace TR { class IlInjector; }
-namespace TR { class MethodBuilder; }
 namespace TR { class FrontEnd; }
 
 
 // quick and dirty implementation to get up and running
 // needs major overhaul
 
-namespace JitBuilder
+namespace OMR
 {
-
-class ResolvedMethodBase : public TR_ResolvedMethod
-   {
-   virtual uint16_t              nameLength()                                   { return signatureLength(); }
-   virtual uint16_t              classNameLength()                              { return signatureLength(); }
-   virtual uint16_t              signatureLength()                              { return static_cast<uint16_t>(strlen(signatureChars())); }
-
-
-   // This group of functions only make sense for Java - we ought to provide answers from that definition
-   virtual bool                  isConstructor()                                { return false; }
-   virtual bool                  isNonEmptyObjectConstructor()                  { return false; }
-   virtual bool                  isFinalInObject()                              { return false; }
-   virtual bool                  isStatic()                                     { return true; }
-   virtual bool                  isAbstract()                                   { return false; }
-   virtual bool                  isCompilable(TR_Memory *)                      { return true; }
-   virtual bool                  isNative()                                     { return false; }
-   virtual bool                  isSynchronized()                               { return false; }
-   virtual bool                  isPrivate()                                    { return false; }
-   virtual bool                  isProtected()                                  { return false; }
-   virtual bool                  isPublic()                                     { return true; }
-   virtual bool                  isFinal()                                      { return false; }
-   virtual bool                  isSubjectToPhaseChange(TR::Compilation *comp)  { return false; }
-
-   virtual bool                  hasBackwardBranches()                          { return false; }
-
-   virtual bool                  isNewInstanceImplThunk()                       { return false; }
-   virtual bool                  isJNINative()                                  { return false; }
-   virtual bool                  isJITInternalNative()                          { return false; }
-
-   uint32_t                      numberOfExceptionHandlers()                    { return 0; }
-
-   virtual bool                  isSameMethod(TR_ResolvedMethod *other)
-      {
-      return getPersistentIdentifier() == other->getPersistentIdentifier();
-      }
-   };
 
 const int16_t MAX_SIGNATURE_LENGTH=128;
 
-class ResolvedMethod : public ResolvedMethodBase, public Method
+class ResolvedMethod : public ::TR_ResolvedMethod, public TR::Method
    {
    public:
    ResolvedMethod(TR_OpaqueMethodBlock *method);
-   ResolvedMethod(TR::MethodBuilder *methodBuilder);
    ResolvedMethod(const char      * fileName,
                   const char      * lineNumber,
                   char            * name,
@@ -172,38 +137,6 @@ class ResolvedMethod : public ResolvedMethodBase, public Method
    };
 
 
-} // namespace JitBuilder
+} // namespace OMR
 
-#if defined(PUT_JITBUILDER_RESOLVEDMETHOD_INTO_TR)
-
-namespace TR
-{
-   class ResolvedMethod : public JitBuilder::ResolvedMethod
-      {
-      public:
-         ResolvedMethod(TR_OpaqueMethodBlock *method)
-            : JitBuilder::ResolvedMethod(method)
-            { }
-
-         ResolvedMethod(char            * fileName,
-                        char            * lineNumber,
-                        char            * name,
-                        int32_t           numArgs,
-                        TR::IlType     ** parmTypes,
-                        TR::IlType      * returnType,
-                        void            * entryPoint,
-                        TR::IlInjector  * ilInjector)
-            : JitBuilder::ResolvedMethod(fileName, lineNumber, name, numArgs,
-                                   parmTypes, returnType,
-                                   entryPoint, ilInjector)
-            { }
-
-         ResolvedMethod(TR::MethodBuilder *methodBuilder)
-            : JitBuilder::ResolvedMethod(methodBuilder)
-            { }
-      };
-} // namespace TR
-
-#endif // defined(PUT_JITBUILDER_RESOLVEDMETHOD_INTO_TR)
-
-#endif // !defined(JITBUILDER_METHOD_INCL)
+#endif // !defined(OMR_RESOLVEDMETHOD_INCL)

@@ -54,7 +54,14 @@ class StaticSignatureMethodBuilder : public TR::MethodBuilder
 
    FunctionPtr Compile()
       {
-      TR::ResolvedMethod resolvedMethod(this);
+      TR::ResolvedMethod resolvedMethod((char *)getDefiningFile(),
+                                        (char *)getDefiningLine(),
+                                        (char *)GetMethodName(),
+                                        getNumParameters(),
+                                        getParameterTypes(),
+                                        getReturnType(),
+                                        0,
+                                        static_cast<TR::IlInjector *>(this));
       TR::IlGeneratorMethodDetails details(&resolvedMethod);
       int32_t rc = 0;
       FunctionPtr entry = (FunctionPtr)(reinterpret_cast<void *>(compileMethodFromDetails(NULL, details, warm, rc)));

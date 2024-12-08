@@ -24,7 +24,8 @@
 JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/compile/OSRData.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRMethod.cpp \
-    $(JIT_OMR_DIRTY_DIR)/compile/ResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/compile/OMRResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/compile/TRResolvedMethod.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/VirtualGuard.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OMROptions.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OptimizationPlan.cpp \
@@ -67,7 +68,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/il/Aliases.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OSRData.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRMethod.cpp \
-    $(JIT_OMR_DIRTY_DIR)/compile/ResolvedMethod.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/VirtualGuard.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRSymbolReferenceTable.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRAliasBuilder.cpp \
@@ -264,7 +264,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRRSSReport.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRCompilerEnv.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/PersistentAllocator.cpp \
-    $(JIT_PRODUCT_DIR)/compile/ResolvedMethod.cpp \
     $(JIT_PRODUCT_DIR)/control/Jit.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/JBIlGeneratorMethodDetails.cpp \
     $(JIT_PRODUCT_DIR)/optimizer/JBOptimizer.cpp \

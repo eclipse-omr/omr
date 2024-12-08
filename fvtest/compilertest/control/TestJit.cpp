@@ -217,7 +217,14 @@ extern "C"
 int32_t
 compileMethodBuilder(TR::MethodBuilder *m, uint8_t **entry)
    {
-   TR::ResolvedMethod resolvedMethod(m);
+   TR::ResolvedMethod resolvedMethod((char *)m->getDefiningFile(),
+                                     (char *)m->getDefiningLine(),
+                                     (char *)m->GetMethodName(),
+                                     m->getNumParameters(),
+                                     m->getParameterTypes(),
+                                     m->getReturnType(),
+                                     0,
+                                     static_cast<TR::IlInjector *>(m));
    TR::IlGeneratorMethodDetails details(&resolvedMethod);
 
    int32_t rc=0;

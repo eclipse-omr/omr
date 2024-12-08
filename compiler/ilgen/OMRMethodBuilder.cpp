@@ -646,7 +646,8 @@ int32_t OMR::MethodBuilder::GetNextBytecodeFromWorklist()
 
 int32_t OMR::MethodBuilder::Compile(void **entry)
 {
-    TR::ResolvedMethod resolvedMethod(static_cast<TR::MethodBuilder *>(this));
+    TR::ResolvedMethod resolvedMethod((char *)getDefiningFile(), (char *)getDefiningLine(), (char *)GetMethodName(),
+        getNumParameters(), getParameterTypes(), getReturnType(), 0, static_cast<TR::IlInjector *>(this));
     TR::IlGeneratorMethodDetails details(&resolvedMethod);
 
     int32_t rc = 0;
