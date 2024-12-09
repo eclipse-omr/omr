@@ -150,7 +150,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimization.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizationManager.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMRTransformUtil.cpp \
-    $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizer.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OrderBlocks.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OSRDefAnalysis.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/PartialRedundancy.cpp \
@@ -213,6 +212,7 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/codegen/OMRInstruction.cpp \
     $(JIT_OMR_DIRTY_DIR)/codegen/ELFGenerator.cpp \
     $(JIT_OMR_DIRTY_DIR)/codegen/OMRELFRelocationResolver.cpp \
+    $(JIT_OMR_DIRTY_DIR)/optimizer/OMRSmallOptimizer.cpp \
 
 
 JIT_PRODUCT_SOURCE_FILES+=\

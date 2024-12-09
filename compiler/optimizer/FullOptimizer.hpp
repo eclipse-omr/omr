@@ -19,12 +19,13 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#ifndef TR_OPTIMIZER_INCL
-#define TR_OPTIMIZER_INCL
+#ifndef TR_FULLOPTIMIZER_INCL
+#define TR_FULLOPTIMIZER_INCL
+
+#include "optimizer/OMRFullOptimizer.hpp"
 
 #include <stddef.h>
 #include <stdint.h>
-#include "optimizer/OMROptimizer.hpp"
 
 namespace TR {
 class Compilation;
@@ -34,19 +35,14 @@ struct OptimizationStrategy;
 
 namespace TR {
 
-class Optimizer : public OMR::Optimizer {
+class FullOptimizer : public OMR::FullOptimizerConnector {
 public:
-    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
+    FullOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
         const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0)
-        : OMR::OptimizerConnector(comp, methodSymbol, isIlGen, strategy, VNType)
+        : OMR::FullOptimizerConnector(comp, methodSymbol, isIlGen, strategy, VNType)
     {}
-
-    static const OptimizationStrategy *optimizationStrategy(TR::Compilation *c)
-    {
-        return OMR::Optimizer::optimizationStrategy(c);
-    };
 };
 
 } // namespace TR
 
-#endif
+#endif // defined(TR_FULLOPTIMIZER_INCL)

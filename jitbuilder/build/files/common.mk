@@ -164,7 +164,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimization.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizationManager.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMRTransformUtil.cpp \
-    $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizer.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OrderBlocks.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OSRDefAnalysis.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/PartialRedundancy.cpp \
@@ -264,9 +263,9 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRRSSReport.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRCompilerEnv.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/PersistentAllocator.cpp \
+    $(JIT_OMR_DIRTY_DIR)/optimizer/OMRSmallOptimizer.cpp \
     $(JIT_PRODUCT_DIR)/control/Jit.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/JBIlGeneratorMethodDetails.cpp \
-    $(JIT_PRODUCT_DIR)/optimizer/JBOptimizer.cpp \
 
 CPP_GENERATED_SOURCE_DIR=$(JIT_PRODUCT_DIR)/client/cpp
 CPP_GENERATED_API_SOURCES+=\

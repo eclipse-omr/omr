@@ -35,9 +35,6 @@ endif()
 set(JITBUILDER_OBJECTS
 	control/Jit.cpp
 	ilgen/JBIlGeneratorMethodDetails.cpp
-	optimizer/JBOptimizer.hpp
-	optimizer/JBOptimizer.cpp
-	optimizer/Optimizer.hpp
 )
 
 if(OMR_ARCH_X86)
@@ -126,6 +123,7 @@ create_omr_compiler_library(
 	NAME    jitbuilder
 	OBJECTS ${JITBUILDER_OBJECTS}
 	DEFINES PROD_WITH_ASSUMES JITTEST
+	FILTER	${omr_SOURCE_DIR}/compiler/optimizer/OMRFullOptimizer.cpp
 )
 
 # Add interface path so that include paths propagate.
@@ -140,6 +138,7 @@ target_include_directories(jitbuilder
 target_link_libraries(jitbuilder
 	PUBLIC
 		${OMR_PORT_LIB}
+		#${JITBUILDER_API_HEADERS}
 )
 
 # JitBuilder examples only work on 64 bit currently.

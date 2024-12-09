@@ -19,40 +19,24 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#ifndef OMR_OPTIMIZER_INCL
-#define OMR_OPTIMIZER_INCL
-
-#if defined(OMR_OPTIMIZER_SMALL)
-#define OPTIMIZER_BASECLASS TR::SmallOptimizer
-#include "optimizer/SmallOptimizer.hpp"
-
-namespace OMR {
-typedef TR::SmallOptimizer Optimizer;
-}
-#else
-#define OPTIMIZER_BASECLASS TR::FullOptimizer
-#include "optimizer/FullOptimizer.hpp"
-
-namespace OMR {
-typedef TR::FullOptimizer Optimizer;
-}
-#endif
+#ifndef OMR_FULLOPTIMIZER_INCL
+#define OMR_FULLOPTIMIZER_INCL
 
 /*
  * The following #define and typedef must appear before any #includes in this file
  */
-#ifndef OMR_OPTIMIZER_CONNECTOR
-#define OMR_OPTIMIZER_CONNECTOR
+#ifndef OMR_FULLOPTIMIZER_CONNECTOR
+#define OMR_FULLOPTIMIZER_CONNECTOR
 
 namespace OMR {
-typedef OMR::Optimizer OptimizerConnector;
+class FullOptimizer;
+typedef OMR::FullOptimizer FullOptimizerConnector;
 } // namespace OMR
 #endif
 
-#if 0
-
 #include <stddef.h>
 #include <stdint.h>
+#include "optimizer/SmallOptimizer.hpp"
 
 namespace TR {
 class Compilation;
@@ -62,16 +46,24 @@ struct OptimizationStrategy;
 
 namespace OMR {
 
-class Optimizer : public OPTIMIZER_BASECLASS {
+class FullOptimizer : public TR::SmallOptimizer {
 public:
-    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
-        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0)
-        : OPTIMIZER_BASECLASS(comp, methodSymbol, isIlGen, strategy, VNType)
-    {}
-};
+    TR_ALLOC(TR_Memory::Machine)
 
+    FullOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
+        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0);
+
+    virtual void enableAllLocalOpts();
+};
 } // namespace OMR
 
-#endif // #if 0
+/*temp for openj9 static*/ extern const OptimizationStrategy cheapObjectAllocationOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy expensiveObjectAllocationOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy cheapGlobalValuePropagationOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy expensiveGlobalValuePropagationOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy isolatedStoreOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy loopSpecializerOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy loopAliasRefinerOpts[];
+/*temp for openj9 static*/ extern const OptimizationStrategy eachEscapeAnalysisPassOpts[];
 
-#endif
+#endif // defined(OMR_FULLOPTIMIZER_INCL)
