@@ -24,6 +24,7 @@ include(OmrCompilerSupport)
 set(COMPILERTEST_FILES
 	control/TestJit.cpp
 	ilgen/IlInjector.cpp
+	${omr_SOURCE_DIR}/compiler/control/SimpleJit.cpp
 )
 
 if(OMR_ARCH_POWER)

@@ -34,6 +34,7 @@ endif()
 # JitBuilder Files
 set(JITBUILDER_OBJECTS
 	control/Jit.cpp
+	${omr_SOURCE_DIR}/compiler/control/SimpleJit.cpp
 )
 
 if(OMR_ARCH_POWER)
