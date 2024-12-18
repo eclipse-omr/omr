@@ -25,7 +25,7 @@
 #include <gtest/gtest.h>
 #include <exception>
 
-#include "Jit.hpp"
+#include "JitBuilder.hpp"
 #include "codegen/CodeGenerator.hpp"
 #include "compile/Compilation.hpp"
 #include "env/FrontEnd.hpp"

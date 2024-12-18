@@ -59,6 +59,10 @@ omr_add_executable(comptest NOWARNINGS
 	ArrayTest.cpp
 )
 
+target_include_directories(comptest PUBLIC
+	${omr_SOURCE_DIR}/fvtest
+)
+
 target_link_libraries(comptest
 	omrGtestGlue
 	omrport

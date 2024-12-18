@@ -24,7 +24,7 @@
 
 #include <gtest/gtest.h>
 #include "ilgen/MethodBuilder.hpp"
-#include "Jit.hpp"
+#include "JitBuilder.hpp"
 
 bool initializeJit();
 int32_t compileMethodBuilder(TR::MethodBuilder * methodBuilder, void ** entryPoint);

@@ -31,7 +31,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "omrport.h"
-#include "Jit.hpp"
+#include "JitBuilder.hpp"
 
 #define ASSERT_NULL(pointer) ASSERT_EQ(NULL, (pointer))
 #define ASSERT_NOTNULL(pointer) ASSERT_TRUE(NULL != (pointer))
