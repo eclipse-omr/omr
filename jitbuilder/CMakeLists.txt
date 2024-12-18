@@ -37,11 +37,7 @@ set(JITBUILDER_OBJECTS
 	ilgen/JBIlGeneratorMethodDetails.cpp
 )
 
-if(OMR_ARCH_X86)
-	list(APPEND JITBUILDER_OBJECTS
-		x/codegen/Evaluator.cpp
-	)
-elseif(OMR_ARCH_S390)
+if(OMR_ARCH_S390)
 	list(APPEND JITBUILDER_OBJECTS
 		z/codegen/Evaluator.cpp
 	)

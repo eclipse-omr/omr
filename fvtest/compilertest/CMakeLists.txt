@@ -27,11 +27,7 @@ set(COMPILERTEST_FILES
 	ilgen/TestIlGeneratorMethodDetails.cpp
 )
 
-if(OMR_ARCH_X86)
-	list(APPEND COMPILERTEST_FILES
-		x/codegen/Evaluator.cpp
-	)
-elseif(OMR_ARCH_POWER)
+if(OMR_ARCH_POWER)
 	list(APPEND COMPILERTEST_FILES
 		#Host
 		p/runtime/AsmUtil.spp
