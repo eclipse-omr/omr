@@ -24,7 +24,6 @@ include(OmrCompilerSupport)
 set(COMPILERTEST_FILES
 	control/TestJit.cpp
 	ilgen/IlInjector.cpp
-	ilgen/TestIlGeneratorMethodDetails.cpp
 )
 
 if(OMR_ARCH_POWER)

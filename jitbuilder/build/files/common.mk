@@ -265,7 +265,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/env/PersistentAllocator.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMRSmallOptimizer.cpp \
     $(JIT_PRODUCT_DIR)/control/Jit.cpp \
-    $(JIT_PRODUCT_DIR)/ilgen/JBIlGeneratorMethodDetails.cpp \
 
 CPP_GENERATED_SOURCE_DIR=$(JIT_PRODUCT_DIR)/client/cpp
 CPP_GENERATED_API_SOURCES+=\

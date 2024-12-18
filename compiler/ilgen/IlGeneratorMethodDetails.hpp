@@ -19,4 +19,30 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#error Each project must provide an implementation for IlGeneratorMethodDetails.hpp
+#ifndef TR_ILGENERATOR_METHOD_DETAILS_INCL
+#define TR_ILGENERATOR_METHOD_DETAILS_INCL
+
+#include "infra/Annotations.hpp"
+#include "ilgen/OMRIlGeneratorMethodDetails.hpp"
+
+class TR_ResolvedMethod;
+namespace TR { class ResolvedMethod; }
+
+namespace TR
+{
+
+class OMR_EXTENSIBLE IlGeneratorMethodDetails : public OMR::IlGeneratorMethodDetailsConnector
+   {
+
+public:
+
+   IlGeneratorMethodDetails() :
+      OMR::IlGeneratorMethodDetailsConnector() {}
+
+   IlGeneratorMethodDetails(TR_ResolvedMethod *method) :
+      OMR::IlGeneratorMethodDetailsConnector(method) {}
+
+   };
+}
+
+#endif
