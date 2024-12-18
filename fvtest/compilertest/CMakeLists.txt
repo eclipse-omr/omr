@@ -35,7 +35,6 @@ if(OMR_ARCH_POWER)
 		p/runtime/CodeSync.cpp
 		${omr_SOURCE_DIR}/compiler/p/runtime/OMRCodeCacheConfig.cpp
 		#target
-		p/codegen/Evaluator.cpp
 		${omr_SOURCE_DIR}/compiler/p/env/OMRDebugEnv.cpp
 	)
 elseif(OMR_ARCH_S390)

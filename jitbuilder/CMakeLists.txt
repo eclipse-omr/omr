@@ -43,7 +43,6 @@ if(OMR_ARCH_S390)
 	)
 elseif(OMR_ARCH_POWER)
 	list(APPEND JITBUILDER_OBJECTS
-		p/codegen/Evaluator.cpp
 		p/runtime/CodeSync.cpp
 		p/runtime/AsmUtil.spp
 		p/runtime/CodeDispatch.spp
