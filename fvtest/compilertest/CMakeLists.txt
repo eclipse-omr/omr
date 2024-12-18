@@ -39,7 +39,6 @@ if(OMR_ARCH_POWER)
 	)
 elseif(OMR_ARCH_S390)
 	list(APPEND COMPILERTEST_FILES
-		z/codegen/Evaluator.cpp
 		${omr_SOURCE_DIR}/compiler/z/env/OMRCPU.cpp
 		${omr_SOURCE_DIR}/compiler/z/env/OMRDebugEnv.cpp
 	)

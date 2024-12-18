@@ -2843,6 +2843,10 @@ void TR_Debug::dump(OMR::Logger *log, TR_CHTable *chTable)
 }
 #endif
 
+#if defined(TR_TARGET_S390)
+void TR_Debug::print(OMR::Logger *log, TR::S390RestoreGPR7Snippet *snippet) {}
+#endif // defined(TR_TARGET_S390)
+
 const char *TR_Debug::getRuntimeHelperName(int32_t index)
 {
 #ifdef J9_PROJECT_SPECIFIC
