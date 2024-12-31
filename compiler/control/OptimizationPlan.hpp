@@ -168,6 +168,9 @@ class TR_OptimizationPlan
    bool getDisableEDO() const { return _flags.testAny(DisableEDO); }
    void setDisableEDO(bool b) { _flags.set(DisableEDO, b); }
 
+   bool getIsCompileMethodAPI() const { return _flags.testAny(IsCompileMethodAPI); }
+   void setIsCompileMethodAPI(bool b) { _flags.set(IsCompileMethodAPI, b); }
+
    // --------------------------------------------------------------------------
    // GPU
    //
@@ -224,6 +227,7 @@ class TR_OptimizationPlan
       DowngradedDueToSamplingJProfiling=0x00400000, // Compilation was downgraded to cold just because we wanted to do JProfiling
       InducedByDLT            = 0x00800000, // Compilation that follows a DLT compilation
       DisableEDO              = 0x01000000, // Do not insert EDO profiling trees for this compilation
+      IsCompileMethodAPI      = 0x02000000, // plan created by TR_MethodEvent::CompileMethodAPI
    };
    private:
    TR_OptimizationPlan  *_next;       // to link events in the pool
