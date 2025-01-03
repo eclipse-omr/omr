@@ -32,20 +32,38 @@
 // needs major overhaul
 OMR::ResolvedMethod::ResolvedMethod(TR_OpaqueMethodBlock *method)
 {
-    _ilInjector = reinterpret_cast<TR::IlInjector *>(method);
+    _ilgen = reinterpret_cast<TR_IlGenerator *>(method);
 
-    TR::ResolvedMethod *resolvedMethod = (TR::ResolvedMethod *)_ilInjector->methodSymbol()->getResolvedMethod();
+    TR::ResolvedMethod *resolvedMethod = (TR::ResolvedMethod *)_ilgen->methodSymbol()->getResolvedMethod();
     _fileName = resolvedMethod->classNameChars();
     _name = resolvedMethod->nameChars();
     _numParms = resolvedMethod->getNumArgs();
     _parmTypes = resolvedMethod->_parmTypes;
+    _parmNames = resolvedMethod->_parmNames;
     _lineNumber = resolvedMethod->getLineNumber();
-    _returnType = resolvedMethod->returnIlType();
+    _returnType = resolvedMethod->returnType();
     _signature = resolvedMethod->getSignature();
     _externalName = 0;
     _entryPoint = resolvedMethod->getEntryPoint();
     strncpy(_signatureChars, resolvedMethod->signatureChars(),
         MAX_SIGNATURE_LENGTH); // TODO: introduce concept of robustness
+}
+
+OMR::ResolvedMethod::ResolvedMethod(const char *fileName, const char *lineNumber, const char *name, int32_t numParms,
+    const char **parmNames, TR::DataType *parmTypes, TR::DataType returnType, void *entryPoint, TR_IlGenerator *ilgen)
+    : _fileName(fileName)
+    , _lineNumber(lineNumber)
+    , _name(name)
+    , _signature(0)
+    , _externalName(0)
+    , _numParms(numParms)
+    , _parmNames(parmNames)
+    , _parmTypes(parmTypes)
+    , _returnType(returnType)
+    , _entryPoint(entryPoint)
+    , _ilgen(ilgen)
+{
+    computeSignatureChars();
 }
 
 const char *OMR::ResolvedMethod::signature(TR_Memory *trMemory, TR_AllocationKind allocKind)
@@ -66,7 +84,7 @@ const char *OMR::ResolvedMethod::signature(TR_Memory *trMemory, TR_AllocationKin
 const char *OMR::ResolvedMethod::externalName(TR_Memory *trMemory, TR_AllocationKind allocKind)
 {
     if (!_externalName) {
-        // For C++, need to mangle name
+        // For C++, need to mangle name but needs to be implemented
         // char * s = (char *)trMemory->allocateMemory(1 + strlen(_name) + 1, allocKind);
         // sprintf(s, "_Z%d%si", (int32_t)strlen(_name), _name);
 
@@ -83,65 +101,85 @@ const char *OMR::ResolvedMethod::externalName(TR_Memory *trMemory, TR_Allocation
 TR::DataType OMR::ResolvedMethod::parmType(uint32_t slot)
 {
     TR_ASSERT((slot < unsigned(_numParms)), "Invalid slot provided for Parameter Type");
-    return _parmTypes[slot]->getPrimitiveType();
+    return _parmTypes[slot];
 }
 
 void OMR::ResolvedMethod::computeSignatureChars()
 {
-    char *name = NULL;
-    uint32_t len = 3;
-    for (int32_t p = 0; p < _numParms; p++) {
-        TR::IlType *type = _parmTypes[p];
-        len += static_cast<uint32_t>(strlen(type->getSignatureName()));
-    }
-    len += static_cast<uint32_t>(strlen(_returnType->getSignatureName()));
+    const char *name = NULL;
+    size_t len = 3; // two parentheses plus trailing \0
+    for (int32_t p = 0; p < _numParms; p++)
+        len += strlen(signatureNameForType[_parmTypes[p].getDataType()]);
+    len += strlen(signatureNameForType[_returnType.getDataType()]);
     TR_ASSERT(len < MAX_SIGNATURE_LENGTH, "signature array may not be large enough"); // TODO: robustness
 
     int32_t s = 0;
     _signatureChars[s++] = '(';
     for (int32_t p = 0; p < _numParms; p++) {
-        name = _parmTypes[p]->getSignatureName();
-        len = static_cast<uint32_t>(strlen(name));
+        name = getParameterTypeSignature(p);
         strncpy(_signatureChars + s, name, MAX_SIGNATURE_LENGTH - s);
-        s += len;
+        s += strlen(name);
     }
     _signatureChars[s++] = ')';
-    name = _returnType->getSignatureName();
-    len = static_cast<uint32_t>(strlen(name));
+    name = signatureNameForType[_returnType.getDataType()];
     strncpy(_signatureChars + s, name, MAX_SIGNATURE_LENGTH - s);
-    s += len;
+    s += strlen(name);
     _signatureChars[s++] = 0;
 }
 
 char *OMR::ResolvedMethod::localName(uint32_t slot, uint32_t bcIndex, int32_t &nameLength, TR_Memory *trMemory)
 {
-    char *name = NULL;
-    if (_ilInjector != NULL && _ilInjector->isMethodBuilder()) {
-        TR::MethodBuilder *bldr = _ilInjector->asMethodBuilder();
-        name = (char *)bldr->getSymbolName(slot);
-        if (name == NULL) {
-            name = "";
-        }
-    } else {
-        size_t len = 8 * sizeof(char);
-        name = (char *)trMemory->allocateHeapMemory(len);
-        snprintf(name, len, "Parm %2d", slot);
-    }
-
+    // should really just return _parmNames[slot], but since it doesn't return const char *, make a copy and return that
+    char *name = (char *)trMemory->allocateHeapMemory(strlen(_parmNames[slot]) + 1);
+    strcpy(name, _parmNames[slot]);
     nameLength = static_cast<int32_t>(strlen(name));
     return name;
 }
 
-TR::IlInjector *OMR::ResolvedMethod::getInjector(TR::IlGeneratorMethodDetails *details,
+TR_IlGenerator *OMR::ResolvedMethod::getIlGenerator(TR::IlGeneratorMethodDetails *details,
     TR::ResolvedMethodSymbol *methodSymbol, TR::FrontEnd *fe, TR::SymbolReferenceTable *symRefTab)
 {
-    _ilInjector->initialize(details, methodSymbol, fe, symRefTab);
-    return _ilInjector;
+    _ilgen->initialize(details, methodSymbol, fe, symRefTab);
+    return _ilgen;
 }
 
-TR::DataType OMR::ResolvedMethod::returnType() { return _returnType->getPrimitiveType(); }
+TR::DataType OMR::ResolvedMethod::returnType() { return _returnType; }
 
 char *OMR::ResolvedMethod::getParameterTypeSignature(int32_t parmIndex)
 {
-    return _parmTypes[parmIndex]->getSignatureName();
+    TR_ASSERT((parmIndex < _numParms), "Invalid slot provided for getParameterTypeSignature");
+
+    // this const-ness should really be fixed, but because this function is virtual and is probably overridden by all
+    // OMR projects, so needs coordination
+    return const_cast<char *>(signatureNameForType[_parmTypes[parmIndex].getDataType()]);
 }
+
+const char *OMR::ResolvedMethod::signatureNameForType[TR::NumOMRTypes] = {
+    "V", // NoType
+    "B", // Int8
+    "C", // Int16
+    "I", // Int32
+    "J", // Int64
+    "F", // Float
+    "D", // Double
+    "L", // Address
+    "A" // Aggregate
+};
+
+const char *OMR::ResolvedMethod::signatureNameForVectorType[TR::NumVectorElementTypes] = {
+    "V1", // VectorInt8
+    "V2", // VectorInt16
+    "V4", // VectorInt32
+    "V8", // VectorInt64
+    "VF", // VectorFloat
+    "VD", // VectorDouble
+};
+
+const char *OMR::ResolvedMethod::signatureNameForMaskType[TR::NumVectorElementTypes] = {
+    "M1", // MaskInt8
+    "M2", // MaskInt16
+    "M4", // MaskInt32
+    "M8", // MaskInt64
+    "MF", // MaskFloat
+    "MD", // MaskDouble
+};

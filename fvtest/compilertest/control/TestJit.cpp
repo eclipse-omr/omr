@@ -26,6 +26,7 @@
 #include "control/CompileMethod.hpp"
 #include "control/SimpleJit.hpp"
 #include "ilgen/IlGeneratorMethodDetails_inlines.hpp"
+#include "ilgen/IlType.hpp"
 #include "ilgen/MethodBuilder.hpp"
 
 extern "C"
@@ -60,17 +61,36 @@ extern "C"
 int32_t
 compileMethodBuilder(TR::MethodBuilder *m, uint8_t **entry)
    {
+   const char **parmNames = (const char **) malloc(m->getNumParameters() * sizeof(const char *));
+   if (parmNames == NULL)
+      return -1;
+
+   TR::DataType *parmTypes = (TR::DataType *) malloc(m->getNumParameters() * sizeof(TR::DataType));
+   if (parmTypes == NULL)
+      return -1;
+
+   for (int32_t p=0;p < m->getNumParameters();p++)
+      {
+      parmNames[p] = m->getSymbolName(p);
+      parmTypes[p] = m->getParameterTypes()[p]->getPrimitiveType();
+      }
+   TR::DataType returnType = m->getReturnType()->getPrimitiveType();
+
    TR::ResolvedMethod resolvedMethod((char *)m->getDefiningFile(),
                                      (char *)m->getDefiningLine(),
                                      (char *)m->GetMethodName(),
                                      m->getNumParameters(),
-                                     m->getParameterTypes(),
-                                     m->getReturnType(),
+                                     parmNames,
+                                     parmTypes,
+                                     returnType,
                                      0,
                                      static_cast<TR::IlInjector *>(m));
    TR::IlGeneratorMethodDetails details(&resolvedMethod);
 
    int32_t rc=0;
    *entry = compileMethod(details, warm, rc);
+
+   free(parmNames);
+
    return rc;
    }

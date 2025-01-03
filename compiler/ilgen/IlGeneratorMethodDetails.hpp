@@ -26,23 +26,23 @@
 #include "ilgen/OMRIlGeneratorMethodDetails.hpp"
 
 class TR_ResolvedMethod;
-namespace TR { class ResolvedMethod; }
 
-namespace TR
-{
-
-class OMR_EXTENSIBLE IlGeneratorMethodDetails : public OMR::IlGeneratorMethodDetailsConnector
-   {
-
-public:
-
-   IlGeneratorMethodDetails() :
-      OMR::IlGeneratorMethodDetailsConnector() {}
-
-   IlGeneratorMethodDetails(TR_ResolvedMethod *method) :
-      OMR::IlGeneratorMethodDetailsConnector(method) {}
-
-   };
+namespace TR {
+class ResolvedMethod;
 }
+
+namespace TR {
+
+class OMR_EXTENSIBLE IlGeneratorMethodDetails : public OMR::IlGeneratorMethodDetailsConnector {
+public:
+    IlGeneratorMethodDetails()
+        : OMR::IlGeneratorMethodDetailsConnector()
+    {}
+
+    IlGeneratorMethodDetails(TR_ResolvedMethod *method)
+        : OMR::IlGeneratorMethodDetailsConnector(method)
+    {}
+};
+} // namespace TR
 
 #endif

@@ -22,8 +22,7 @@
 
 #include "env/FrontEnd.hpp"
 #include "ilgen/IlGeneratorMethodDetails_inlines.hpp"
-#include "ilgen/IlInjector.hpp"
-#include "env/FrontEnd.hpp"
+#include "ilgen/IlGen.hpp"
 #include "compile/Compilation.hpp"
 #include "compile/Method.hpp"
 #include "compile/InlineBlock.hpp"
@@ -41,7 +40,7 @@ bool OMR::IlGeneratorMethodDetails::sameAs(TR::IlGeneratorMethodDetails &other, 
     return self()->getMethod() == other.getMethod();
 }
 
-TR_IlGenerator *OMR::IlGeneratorMethodDetails::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+TR_IlGenerator *OMR::IlGeneratorMethodDetails::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *trfe,
     TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab, bool forceClassLookahead,
     TR_InlineBlocks *blocksToInline)
 {
@@ -52,4 +51,7 @@ TR_IlGenerator *OMR::IlGeneratorMethodDetails::getIlGenerator(TR::ResolvedMethod
     return method->getIlGenerator(self(), methodSymbol, fe, symRefTab);
 }
 
-void OMR::IlGeneratorMethodDetails::print(OMR::Logger *log, TR_FrontEnd *fe) { log->printf("( %p )", self()->getMethod()); }
+void OMR::IlGeneratorMethodDetails::print(OMR::Logger *log, TR_FrontEnd *fe)
+{
+    log->printf("( %p )", self()->getMethod());
+}
