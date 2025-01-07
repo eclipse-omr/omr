@@ -44,20 +44,20 @@
 char *
 omrfile_read_text(struct OMRPortLibrary *portLibrary, intptr_t fd, char *buf, intptr_t nbytes)
 {
-	char temp[64];
-	intptr_t count, i, result;
 	char *cursor = buf;
 
 	if (nbytes <= 0) {
-		return 0;
+		return NULL;
 	}
 
 	/* discount 1 for the trailing NUL */
 	nbytes -= 1;
 
-	while (nbytes) {
-		count = sizeof(temp) > nbytes ? nbytes : sizeof(temp);
-		count = portLibrary->file_read(portLibrary, fd, temp, count);
+	while (nbytes > 0) {
+		char temp[64];
+		intptr_t size = sizeof(temp) > nbytes ? nbytes : sizeof(temp);
+		intptr_t count = portLibrary->file_read(portLibrary, fd, temp, size);
+		intptr_t i = 0;
 
 		/* ignore translation for now */
 		if (count < 0) {
@@ -120,18 +120,20 @@ omrfile_write_text(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *
 int32_t
 omrfile_get_text_encoding(struct OMRPortLibrary *portLibrary, char *charsetName, uintptr_t nbytes)
 {
-	if (buf == NULL) {
+	if (NULL == buf) {
 		return -1;
-	}
+	} else {
+		uintptr_t length = strlen("CP850");
 
-	/* CP850 unless overridden because:
-	 * 1. Anything in a valid Java identifier in CP437, ASCII, and ANSI X3.4-1986 maps directly into CP850
-	 * 2. *most* CP1252 characters in Java identifiers have the same code point in CP850
-	 * 3. If the current platform doesn't provide an override, code pages really aren't Problem #1.
-	 */
-	if (nbytes <= strlen("CP850")) {
-		return (int32_t)(strlen("CP850") + 1);
+		/* CP850 unless overridden because:
+		 * 1. Anything in a valid Java identifier in CP437, ASCII, and ANSI X3.4-1986 maps directly into CP850.
+		 * 2. *Most* CP1252 characters in Java identifiers have the same code point in CP850.
+		 * 3. If the current platform doesn't provide an override, code pages really aren't Problem #1.
+		 */
+		if (nbytes <= length) {
+			return (int32_t)(length + 1);
+		}
+		strcpy(charsetName, "CP850");
 	}
-	strcpy(charsetName, "CP850");
 	return 0;
 }

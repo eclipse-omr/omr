@@ -53,22 +53,22 @@
 #if defined(J9ZOS390)
 #if !defined(OMR_EBCDIC)
 #include "atoe.h"
-#endif
+#endif /* !defined(OMR_EBCDIC) */
 #if defined (nl_langinfo)
 #undef nl_langinfo
-#endif
-#endif
+#endif /* defined (nl_langinfo) */
+#endif /* defined(J9ZOS390) */
 
 #if defined(J9VM_USE_ICONV)
 static int growBuffer(struct OMRPortLibrary *portLibrary, char *stackBuf, char **bufStart, char **cursor, size_t *bytesLeft, uintptr_t *bufLen);
 static intptr_t file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *buf, intptr_t nbytes);
-#endif
+#endif /* defined(J9VM_USE_ICONV) */
 
 #if defined(J9VM_USE_WCTOMB)
 static intptr_t walkUTF8String(const uint8_t *buf, intptr_t nbytes);
 static void translateUTF8String(const uint8_t *in, uint8_t *out, intptr_t nbytes);
 static intptr_t file_write_using_wctomb(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *buf, intptr_t nbytes);
-#endif
+#endif /* defined(J9VM_USE_WCTOMB) */
 
 intptr_t
 omrfile_write_text(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *buf, intptr_t nbytes)
@@ -77,13 +77,13 @@ omrfile_write_text(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *
 	intptr_t i = 0;
 	int requiresTranslation = 0;
 
-#ifdef J9ZOS390
+#if defined(J9ZOS390)
 #pragma convlit(suspend)
-#endif
+#endif /* defined(J9ZOS390) */
 	const char *utf8Encoding = "UTF-8";
-#ifdef J9ZOS390
+#if defined(J9ZOS390)
 #pragma convlit(resume)
-#endif
+#endif /* defined(J9ZOS390) */
 
 #if defined(J9ZOS390) || defined(OMRZTPF)
 #if !defined(OMR_EBCDIC)
@@ -91,17 +91,17 @@ omrfile_write_text(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *
 	/* in which case no translation is required. */
 	requiresTranslation = 1;
 #endif /* !defined(OMR_EBCDIC) */
-#else
-	/* we can short circuit if the string is all ASCII */
+#else /* defined(J9ZOS390) || defined(OMRZTPF) */
+	/* we can short-circuit if the string is all ASCII */
 	for (i = 0; i < nbytes; i++) {
 		if ((uint8_t)buf[i] >= 0x80) {
 			requiresTranslation = 1;
 			break;
 		}
 	}
-#endif
+#endif /* defined(J9ZOS390) || defined(OMRZTPF) */
 
-	if (!requiresTranslation || strcmp(nl_langinfo(CODESET), utf8Encoding) == 0) {
+	if (!requiresTranslation || (0 == strcmp(nl_langinfo(CODESET), utf8Encoding))) {
 		/* We're in luck! No transformations are necessary */
 		result = portLibrary->file_write(portLibrary, fd, (void *)buf, nbytes);
 		return (result == nbytes) ? 0 : result;
@@ -109,9 +109,9 @@ omrfile_write_text(struct OMRPortLibrary *portLibrary, intptr_t fd, const char *
 
 #if defined(J9VM_USE_WCTOMB)
 	return file_write_using_wctomb(portLibrary, fd, buf, nbytes);
-#else
+#else /* defined(J9VM_USE_WCTOMB) */
 	return file_write_using_iconv(portLibrary, fd, buf, nbytes);
-#endif
+#endif /* defined(J9VM_USE_WCTOMB) */
 }
 
 #if defined(J9VM_USE_WCTOMB)
@@ -165,7 +165,7 @@ walkUTF8String(const uint8_t *buf, intptr_t nbytes)
 
 	return hasHighChars ? newLength : 0;
 }
-#endif /* J9VM_USE_WCTOMB */
+#endif /* defined(J9VM_USE_WCTOMB) */
 
 #if defined(J9VM_USE_WCTOMB)
 /**
@@ -196,7 +196,7 @@ translateUTF8String(const uint8_t *in, uint8_t *out, intptr_t nbytes)
 	}
 }
 
-#endif /* J9VM_USE_WCTOMB */
+#endif /* defined(J9VM_USE_WCTOMB) */
 
 #if defined(J9VM_USE_WCTOMB)
 
@@ -223,15 +223,14 @@ file_write_using_wctomb(struct OMRPortLibrary *portLibrary, intptr_t fd, const c
 
 	result = portLibrary->file_write(portLibrary, fd, (void *)buf, nbytes);
 
-	if (newBuf != stackBuf && newBuf != NULL) {
+	if ((stackBuf != newBuf) && (NULL != newBuf)) {
 		portLibrary->mem_free_memory(portLibrary, newBuf);
 	}
 
 	return (result == nbytes) ? 0 : result;
 }
 
-#endif /* J9VM_USE_WCTOMB */
-
+#endif /* defined(J9VM_USE_WCTOMB) */
 
 #if defined(J9VM_USE_ICONV)
 
@@ -262,7 +261,7 @@ growBuffer(struct OMRPortLibrary *portLibrary, char *stackBuf, char **bufStart, 
 	*bufLen = *bufLen + SIZE_OF_INCREMENT;
 	newBuf = portLibrary->mem_allocate_memory(portLibrary, *bufLen, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
 
-	if (newBuf == NULL) {
+	if (NULL == newBuf) {
 		return -1;
 	}
 
@@ -298,26 +297,26 @@ file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const ch
 	char *outbuf = NULL;
 	intptr_t bytesToWrite = 0;
 
-#ifdef J9ZOS390
+#if defined(J9ZOS390)
 	/* LIR 1280 (z/OS only) - every failed call to iconv_open() is recorded on the operator console, so don't retry */
 	if (FALSE == PPG_file_text_iconv_open_failed) {
 		/* iconv_get is not an a2e function, so we need to pass it honest-to-goodness EBCDIC strings */
 #pragma convlit(suspend)
-#endif
+#endif /* defined(J9ZOS390) */
 
-#ifndef OMRZTPF
+#if !defined(OMRZTPF)
 		converter = iconv_get(portLibrary, J9FILETEXT_ICONV_DESCRIPTOR, nl_langinfo(CODESET), "UTF-8");
-#else
+#else /* !defined(OMRZTPF) */
 		converter = iconv_get(portLibrary, J9FILETEXT_ICONV_DESCRIPTOR, "IBM1047", "ISO8859-1" );
-#endif
+#endif /* !defined(OMRZTPF) */
 
-#ifdef J9ZOS390
+#if defined(J9ZOS390)
 #pragma convlit(resume)
 		if (J9VM_INVALID_ICONV_DESCRIPTOR == converter) {
 			PPG_file_text_iconv_open_failed = TRUE;
 		}
 	}
-#endif
+#endif /* defined(J9ZOS390) */
 
 	if (J9VM_INVALID_ICONV_DESCRIPTOR == converter) {
 		/* no converter available for this code set. Just dump the UTF-8 chars */
@@ -333,11 +332,11 @@ file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const ch
 	while ((size_t)-1 == iconv(converter, &inbuf, &inbytesleft, &outbuf, &outbytesleft)) {
 		int tmp_errno = errno;
 
-		if (inbytesleft == 0) {
+		if (0 == inbytesleft) {
 			break;
 		}
 
-		if ((outbytesleft == 0) || (tmp_errno == E2BIG)) {
+		if ((0 == outbytesleft) || (E2BIG == tmp_errno)) {
 			/* input conversion stopped due to lack of space in the output buffer */
 
 			if (growBuffer(portLibrary, stackBuf, &bufStart, &outbuf, &outbytesleft, &outBufLen) < 0) {
@@ -345,7 +344,7 @@ file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const ch
 				break;
 			}
 
-		} else if (tmp_errno == EILSEQ) {
+		} else if (EILSEQ == tmp_errno) {
 			/* input conversion stopped due to an input byte that does not belong to the input code set */
 
 			const char *unicodeFormat = "\\u%04x";
@@ -357,7 +356,7 @@ file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const ch
 			size_t escapedLength = 0;
 			size_t utf8Length = decodeUTF8CharN((const uint8_t *)inbuf, &unicodeC, inbytesleft);
 
-			if (utf8Length == 0) {
+			if (0 == utf8Length) {
 				/* invalid encoding, including 4-byte UTF-8 */
 				utf8Length = 1;
 				escapedLength = 1;
@@ -378,7 +377,7 @@ file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const ch
 				tmp_errno = errno;
 
 				/* if the remaining outbuf is too small, then grow it before storing Unicode string representation */
-				if (tmp_errno == E2BIG) {
+				if (E2BIG == tmp_errno) {
 					if (growBuffer(portLibrary, stackBuf, &bufStart, &outbuf, &outbytesleft, &outBufLen) < 0) {
 						/* failed to grow buffer, just output what we've got so far */
 						break;
@@ -397,14 +396,14 @@ file_write_using_iconv(struct OMRPortLibrary *portLibrary, intptr_t fd, const ch
 	bytesToWrite = outbuf - bufStart;
 	result = portLibrary->file_write(portLibrary, fd, (void *)bufStart, bytesToWrite);
 
-	if (bufStart != stackBuf) {
+	if (stackBuf != bufStart) {
 		portLibrary->mem_free_memory(portLibrary, bufStart);
 	}
 
 	return (result == bytesToWrite) ? 0 : result;
 }
 
-#endif /* J9VM_USE_ICONV */
+#endif /* defined(J9VM_USE_ICONV) */
 
 char *
 omrfile_read_text(struct OMRPortLibrary *portLibrary, intptr_t fd, char *buf, intptr_t nbytes)
@@ -413,9 +412,8 @@ omrfile_read_text(struct OMRPortLibrary *portLibrary, intptr_t fd, char *buf, in
 	const char eol = a2e_tab['\n'];
 	char *tempStr = NULL;
 #else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
-	const static char eol = '\n';
+	static const char eol = '\n';
 #endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
-	char temp[64];
 	char *cursor = buf;
 	BOOLEAN foundEOL = FALSE;
 
@@ -427,9 +425,10 @@ omrfile_read_text(struct OMRPortLibrary *portLibrary, intptr_t fd, char *buf, in
 	nbytes -= 1;
 
 	while ((!foundEOL) && (nbytes > 0)) {
+		char temp[64];
+		intptr_t size = sizeof(temp) > nbytes ? nbytes : sizeof(temp);
+		intptr_t count = portLibrary->file_read(portLibrary, fd, temp, size);
 		intptr_t i = 0;
-		intptr_t count = sizeof(temp) > nbytes ? nbytes : sizeof(temp);
-		count = portLibrary->file_read(portLibrary, fd, temp, count);
 
 		/* ignore translation for now, except on z/OS */
 		if (count < 0) {
@@ -446,7 +445,7 @@ omrfile_read_text(struct OMRPortLibrary *portLibrary, intptr_t fd, char *buf, in
 			cursor += 1;
 
 			if (eol == c) { /* EOL */
-				/*function will return on EOL, move the file pointer to the EOL, prepare for next read*/
+				/* function will return on EOL, move the file pointer to the EOL, prepare for next read */
 				portLibrary->file_seek(portLibrary, fd, i - count + 1, EsSeekCur);
 				foundEOL = TRUE;
 				break;
@@ -472,45 +471,46 @@ int32_t
 omrfile_get_text_encoding(struct OMRPortLibrary *portLibrary, char *charsetName, uintptr_t nbytes)
 {
 	char *codepage = NULL;
+	uintptr_t length = 0;
 	char *c_ptr = NULL;
 
-	if (charsetName == NULL) {
+	if (NULL == charsetName) {
 		return -1;
 	}
 
 #if defined(J9ZOS390) && !defined(OMR_EBCDIC)
 	codepage = etoa_nl_langinfo(CODESET);
-#else
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 	codepage = nl_langinfo(CODESET);
 #endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 
+	length = strlen(codepage);
+
 	/* nl_langinfo returns "" on failure */
-	if (codepage[0] == '\0') {
-#ifdef J9ZOS390
+	if (0 == length) {
+#if defined(J9ZOS390)
 		free(codepage);
-#endif
+#endif /* defined(J9ZOS390) */
 		return -2;
 	}
 
-	/* In case of very detailed text from OS truncate the string at first whitespace. */
-	c_ptr = codepage;
-	while (*c_ptr++ != '\0') {
-		if (*c_ptr == ' ') {
-			*c_ptr = '\0';
-			break;
-		}
+	/* In case of very detailed text from OS, truncate at the first space. */
+	c_ptr = strchr(codepage, ' ');
+	if (NULL != c_ptr) {
+		length = c_ptr - codepage;
 	}
 
-	if (nbytes <= strlen(codepage)) {
-#ifdef J9ZOS390
+	if (nbytes <= length) {
+#if defined(J9ZOS390)
 		free(codepage);
-#endif
-		return (int32_t)(strlen(codepage) + 1);
+#endif /* defined(J9ZOS390) */
+		return (int32_t)(intptr_t)(length + 1);
 	}
 
-	strcpy(charsetName, codepage);
-#ifdef J9ZOS390
+	memcpy(charsetName, codepage, length);
+	charsetName[length] = '\0';
+#if defined(J9ZOS390)
 	free(codepage);
-#endif
+#endif /* defined(J9ZOS390) */
 	return 0;
 }
