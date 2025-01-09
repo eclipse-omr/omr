@@ -3061,7 +3061,7 @@ return f (e, argv, 0) != argv[0]  ||  f (e, argv, 1) != argv[1];
   return 0;
 }
 _ACEOF
-if [ "$OMR_ENV_OPENXL" == "1" ]; then
+if [[ "$CC" =~ 'ibm-clang' ]]; then
   options="-std=extc89 -std=ansi"
 else
   options="-qlanglvl=extc89 -qlanglvl=ansi"

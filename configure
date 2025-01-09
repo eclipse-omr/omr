@@ -4632,7 +4632,11 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 	if test "x$OMR_TOOLCHAIN" = "x"; then :
   if test "$GCC" = "yes"; then :
-  OMR_TOOLCHAIN=gcc
+  if [[ "$CC" =~ 'ibm-clang' ]]; then
+    OMR_TOOLCHAIN=openxl
+  else
+    OMR_TOOLCHAIN=gcc
+  fi
 fi
 fi
 	if test "x$OMR_BUILD_TOOLCHAIN" = "x"; then :
@@ -4684,6 +4688,8 @@ case $OMR_TOOLCHAIN in #(
   gcc) :
      ;; #(
   xlc) :
+     ;; #(
+  openxl) :
      ;; #(
   msvc) :
      ;; #(
