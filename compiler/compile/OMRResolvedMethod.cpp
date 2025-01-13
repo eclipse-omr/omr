@@ -129,10 +129,19 @@ void OMR::ResolvedMethod::computeSignatureChars()
 
 char *OMR::ResolvedMethod::localName(uint32_t slot, uint32_t bcIndex, int32_t &nameLength, TR_Memory *trMemory)
 {
-    // should really just return _parmNames[slot], but since it doesn't return const char *, make a copy and return that
-    char *name = (char *)trMemory->allocateHeapMemory(strlen(_parmNames[slot]) + 1);
-    strcpy(name, _parmNames[slot]);
-    nameLength = static_cast<int32_t>(strlen(name));
+    char *name = NULL;
+    if (slot < _numParms) {
+        const char *constName = _parmNames[slot];
+        nameLength = static_cast<int32_t>(strlen(constName));
+        name = (char *)trMemory->allocateHeapMemory(nameLength + 1);
+        strcpy(name, constName);
+    } else {
+        static const char *defaultLocalPrefix = "Local #";
+        nameLength = static_cast<int32_t>(strlen(defaultLocalPrefix) + 10);
+        name = (char *)trMemory->allocateHeapMemory(nameLength + 1);
+        snprintf(name, nameLength, "%s%d", defaultLocalPrefix, slot);
+    }
+
     return name;
 }
 
