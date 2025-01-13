@@ -176,13 +176,13 @@ public:
    virtual bool getUnresolvedSpecialMethodInCP(int32_t);
    virtual bool getUnresolvedVirtualMethodInCP(int32_t);
 
-   bool isDAAWrapperMethod();
-   bool isDAAMarshallingWrapperMethod();
-   bool isDAAPackedDecimalWrapperMethod();
+   virtual bool isDAAWrapperMethod();
+   virtual bool isDAAMarshallingWrapperMethod();
+   virtual bool isDAAPackedDecimalWrapperMethod();
 
-   bool isDAAIntrinsicMethod();
-   bool isDAAMarshallingIntrinsicMethod();
-   bool isDAAPackedDecimalIntrinsicMethod();
+   virtual bool isDAAIntrinsicMethod();
+   virtual bool isDAAMarshallingIntrinsicMethod();
+   virtual bool isDAAPackedDecimalIntrinsicMethod();
 
    virtual void setMethodHandleLocation(uintptr_t *location);
    virtual uintptr_t *getMethodHandleLocation();
