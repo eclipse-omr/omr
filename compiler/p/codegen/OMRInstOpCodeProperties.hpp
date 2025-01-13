@@ -6319,6 +6319,21 @@
    /* .properties  = */ PPCOpProp_SyncSideEffectFree,
    },
 
+   /*
+    * yield is effective on Power 7 and Power 8 but may not be supported elsewhere.
+    * It is interpreted as a regular nop on unsupported implementations.
+    */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::yield,
+   /* .name        = */ "yield",
+   /* .description =    "Shared Resource Hint NoOp (or)", */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0x7F7BDB78,
+   /* .format      = */ FORMAT_DIRECT,
+   /* .minimumALS  = */ OMR_PROCESSOR_PPC_UNKNOWN,
+   /* .properties  = */ PPCOpProp_SyncSideEffectFree,
+   },
+
    {
    /* .mnemonic    = */ OMR::InstOpCode::shdfence,
    /* .name        = */ "shdfence",

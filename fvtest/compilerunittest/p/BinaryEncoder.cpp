@@ -1087,7 +1087,8 @@ INSTANTIATE_TEST_CASE_P(Special, PPCDirectEncodingTest, ::testing::Values(
     std::make_tuple(TR::InstOpCode::lwsync,   TRTest::BinaryInstruction("7c2004ac"), false),
     std::make_tuple(TR::InstOpCode::sync,     TRTest::BinaryInstruction("7c0004ac"), false),
     std::make_tuple(TR::InstOpCode::nop,      TRTest::BinaryInstruction("60000000"), false),
-    std::make_tuple(TR::InstOpCode::pnop,     TRTest::BinaryInstruction("0700000000000000"), true)
+    std::make_tuple(TR::InstOpCode::pnop,     TRTest::BinaryInstruction("0700000000000000"), true),
+    std::make_tuple(TR::InstOpCode::yield,    TRTest::BinaryInstruction("7f7bdb78"), false)
 ));
 
 INSTANTIATE_TEST_CASE_P(Special, PPCLabelEncodingTest, ::testing::Values(
@@ -1109,7 +1110,8 @@ INSTANTIATE_TEST_CASE_P(Special, PPCRecordFormSanityTest, ::testing::Values(
     std::make_tuple(TR::InstOpCode::label,    TR::InstOpCode::bad, TRTest::BinaryInstruction()),
     std::make_tuple(TR::InstOpCode::lwsync,   TR::InstOpCode::bad, TRTest::BinaryInstruction()),
     std::make_tuple(TR::InstOpCode::sync,     TR::InstOpCode::bad, TRTest::BinaryInstruction()),
-    std::make_tuple(TR::InstOpCode::nop,      TR::InstOpCode::bad, TRTest::BinaryInstruction())
+    std::make_tuple(TR::InstOpCode::nop,      TR::InstOpCode::bad, TRTest::BinaryInstruction()),
+    std::make_tuple(TR::InstOpCode::yield,    TR::InstOpCode::bad, TRTest::BinaryInstruction())
 ));
 
 INSTANTIATE_TEST_CASE_P(Branch, PPCDirectEncodingTest, ::testing::Values(

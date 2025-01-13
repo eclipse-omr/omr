@@ -543,6 +543,7 @@
    xoris,            // XOR immediate shifted
    nop,              // NoOp (ori)
    genop,            // Group Ending NoOp (ori)
+   yield,            // Shared Resource Hint NoOp (or) (only on certain implementations, normal nop elsewhere)
    shdfence,         // Scheduling Fence
 // rxor,             // Rotate & XOR
    wrtbar,           // Write barrier directive
