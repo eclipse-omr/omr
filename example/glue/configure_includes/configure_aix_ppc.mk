@@ -60,6 +60,12 @@ ifeq (aix_ppc, $(SPEC))
     --enable-OMR_THR_FORK_SUPPORT
 endif
 
+ifneq (,$(findstring ibm-clang,$(notdir $(CC))))
+  CONFIGURE_ARGS += 'OMR_TOOLCHAIN=openxl'
+else
+  CONFIGURE_ARGS += 'OMR_TOOLCHAIN=xlc'
+endif
+
 CONFIGURE_ARGS += libprefix=lib exeext= solibext=.so arlibext=.a objext=.o
 
 CONFIGURE_ARGS += 'AS=as'
@@ -75,4 +81,3 @@ CONFIGURE_ARGS += 'AR=ar'
 CONFIGURE_ARGS += 'OMR_HOST_OS=aix'
 CONFIGURE_ARGS += 'OMR_HOST_ARCH=ppc'
 CONFIGURE_ARGS += 'OMR_TARGET_DATASIZE=$(TEMP_TARGET_DATASIZE)'
-CONFIGURE_ARGS += 'OMR_TOOLCHAIN=xlc'

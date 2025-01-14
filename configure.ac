@@ -230,6 +230,7 @@ fi
 AS_CASE([$OMR_TOOLCHAIN],
 	[gcc],[],
 	[xlc],[],
+	[openxl],[],
 	[msvc],[],
 	[AC_MSG_ERROR([An invalid value was provided for OMR_TOOLCHAIN: $OMR_TOOLCHAIN])]
 )
