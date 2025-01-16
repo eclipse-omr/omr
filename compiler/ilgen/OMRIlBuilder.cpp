@@ -1258,6 +1258,13 @@ OMR::IlBuilder::Return()
 void
 OMR::IlBuilder::Return(TR::IlValue *value)
    {
+   TR::DataType retType = value->getDataType();
+   if (value->getDataType() == TR::Int8 || value->getDataType() == TR::Int16 || (Word == Int64 && value->getDataType() == TR::Int32))
+      {
+      retType = Word->getPrimitiveType();
+      value = ConvertTo(Word, value);
+      }
+
    TR::IlBuilder *returnBuilder = _methodBuilder->returnBuilder();
    if (returnBuilder != NULL)
       {
