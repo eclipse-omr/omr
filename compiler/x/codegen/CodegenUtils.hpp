@@ -245,6 +245,27 @@ inline void generateLoop(TR::Register *indexReg,
    generateLoop(1, 1, indexReg, maxIndexReg, node, cg, NULL, genBodyFunction, NULL);
    }
 
+/**
+ * @brief Determines the maximum vector length supported by a set of SIMD opcodes.
+ *
+ * This function iterates through a list of opcodes and checks the maximum vector length
+ * they support by querying the SIMD encoding capabilities of the target CPU. If an opcode
+ * does not support a particular vector length, the function reduces the length and rechecks
+ * all opcodes until a common maximum vector length is determined.
+ *
+ * @param cg Pointer to the code generator, used to access the target CPU features
+ * @param opcodes Array of opcodes to evaluate
+ * @param numOpcodes Number of opcodes in the array
+ *
+ * @return The maximum vector length supported across all given opcodes, or `TR::NoVectorLength` if none are supported
+ */
+TR::VectorLength maxVectorLength(TR::CodeGenerator *cg, TR::InstOpCode *opcodes, size_t numOpcodes);
+
+#define MAX_VECTOR_LENGTH(cg, ...)                                                 \
+    [&]() -> TR::VectorLength {                                                    \
+        TR::InstOpCode opcodes[] = {__VA_ARGS__};                                  \
+        return maxVectorLength(cg, opcodes, sizeof(opcodes) / sizeof(opcodes[0])); \
+    }()
 
 }
 

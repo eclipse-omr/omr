@@ -371,5 +371,23 @@ void generateLoop(int32_t begin,
    cg->stopUsingRegister(loopBoundReg);
    }
 
+TR::VectorLength maxVectorLength(TR::CodeGenerator *cg, TR::InstOpCode *opcodes, size_t numOpcodes)
+   {
+   TR::VectorLength maxLength = TR::VectorLength512;
+
+   for (int i = 0; i < numOpcodes && maxLength != TR::NoVectorLength; i++)
+      {
+      OMR::X86::Encoding encoding = opcodes[i].getSIMDEncoding(&cg->comp()->target().cpu, maxLength);
+
+      if (encoding == OMR::X86::Bad)
+         {
+         maxLength = static_cast<TR::VectorLength>(maxLength - 1);
+         i = -1;
+         }
+      }
+
+   return maxLength;
+   }
+
 }
 }
