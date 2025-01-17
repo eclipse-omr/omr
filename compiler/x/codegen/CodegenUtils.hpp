@@ -267,6 +267,114 @@ TR::VectorLength maxVectorLength(TR::CodeGenerator *cg, TR::InstOpCode *opcodes,
         return maxVectorLength(cg, opcodes, sizeof(opcodes) / sizeof(opcodes[0])); \
     }()
 
+/**
+ * @brief Broadcasts the value in a source register across all elements of a vector register.
+ *
+ * @param node The IL node representing the operation
+ * @param cg The code generator responsible for generating the instruction
+ * @param vl The vector length indicating the width of the vector (e.g., 128-bit, 256-bit)
+ * @param dt The data type of the vector elements (e.g., Int8, Int32, Float)
+ * @param targetReg Optional register to store the result; if null, a new register is allocated
+ * @param srcReg The source register containing the value to broadcast
+ *
+ * @return The vector register containing the result
+ */
+TR::Register *broadcast(TR::Node *node,
+                        TR::CodeGenerator *cg,
+                        TR::VectorLength vl,
+                        TR::DataType dt,
+                        TR::Register *targetReg,
+                        TR::Register *srcReg);
+
+/**
+ * @brief Broadcasts a constant value across all elements of a vector register.
+ *
+ * @param node The IL node representing the operation
+ * @param cg The code generator responsible for generating the instruction
+ * @param vl The vector length indicating the width of the vector (e.g., 128-bit, 256-bit)
+ * @param dt The data type of the vector elements (e.g., Int8, Int32, Float)
+ * @param value The constant value to broadcast
+ *
+ * @return The vector register containing the result
+ */
+TR::Register *broadcastConst(TR::Node *node,
+                             TR::CodeGenerator *cg,
+                             TR::VectorLength vl,
+                             TR::DataType dt,
+                             intptr_t value);
+
+/**
+ * @brief Broadcasts a constant 8-bit integer value across all elements of a vector register.
+ *
+ * @param node The IL node representing the operation
+ * @param cg The code generator responsible for generating the instruction
+ * @param vl The vector length indicating the width of the vector (e.g., 128-bit, 256-bit)
+ * @param value The constant 8-bit integer value to broadcast
+ *
+ * @return The vector register containing the result
+ */
+inline TR::Register *broadcastBConst(TR::Node *node,
+                                     TR::CodeGenerator *cg,
+                                     TR::VectorLength vl,
+                                     intptr_t value)
+   {
+   return broadcastConst(node, cg, vl, TR::Int8, value);
+   }
+
+/**
+ * @brief Broadcasts a constant 16-bit integer value across all elements of a vector register.
+ *
+ * @param node The IL node representing the operation
+ * @param cg The code generator responsible for generating the instruction
+ * @param vl The vector length indicating the width of the vector (e.g., 128-bit, 256-bit)
+ * @param value The constant 16-bit integer value to broadcast
+ *
+ * @return The vector register containing the result
+ */
+inline TR::Register *broadcastSConst(TR::Node *node,
+                                     TR::CodeGenerator *cg,
+                                     TR::VectorLength vl,
+                                     intptr_t value)
+   {
+   return broadcastConst(node, cg, vl, TR::Int16, value);
+   }
+
+/**
+ * @brief Broadcasts a constant 32-bit integer value across all elements of a vector register.
+ *
+ * @param node The IL node representing the operation
+ * @param cg The code generator responsible for generating the instruction
+ * @param vl The vector length indicating the width of the vector (e.g., 128-bit, 256-bit)
+ * @param value The constant 32-bit integer value to broadcast
+ *
+ * @return The vector register containing the result
+ */
+inline TR::Register *broadcastIConst(TR::Node *node,
+                                     TR::CodeGenerator *cg,
+                                     TR::VectorLength vl,
+                                     intptr_t value)
+   {
+   return broadcastConst(node, cg, vl, TR::Int32, value);
+   }
+
+/**
+ * @brief Broadcasts a constant 64-bit integer value across all elements of a vector register.
+ *
+ * @param node The IL node representing the operation
+ * @param cg The code generator responsible for generating the instruction
+ * @param vl The vector length indicating the width of the vector (e.g., 128-bit, 256-bit)
+ * @param value The constant 64-bit integer value to broadcast
+ *
+ * @return The vector register containing the result
+ */
+inline TR::Register *broadcastLConst(TR::Node *node,
+                                     TR::CodeGenerator *cg,
+                                     TR::VectorLength vl,
+                                     intptr_t value)
+   {
+   return broadcastConst(node, cg, vl, TR::Int64, value);
+   }
+
 }
 
 }

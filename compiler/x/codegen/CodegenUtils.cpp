@@ -389,5 +389,135 @@ TR::VectorLength maxVectorLength(TR::CodeGenerator *cg, TR::InstOpCode *opcodes,
    return maxLength;
    }
 
+
+TR::Register *broadcast(TR::Node *node,
+                        TR::CodeGenerator *cg,
+                        TR::VectorLength vl,
+                        TR::DataType dt,
+                        TR::Register *targetReg,
+                        TR::Register *srcReg)
+   {
+   if (!targetReg)
+      {
+      targetReg = cg->allocateRegister(TR_VRF);
+      }
+
+   TR_ASSERT_FATAL(targetReg->getKind() == TR_VRF, "Target register must be a vector in broadcast operations");
+   TR_ASSERT_FATAL(srcReg->getKind() != TR_VRF, "Source register must not be a vector");
+
+   bool broadcast64 = dt.isInt64() || dt.isDouble();
+
+   switch (dt)
+      {
+      case TR::Int8:
+      case TR::Int16:
+      case TR::Int32:
+         generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, targetReg, srcReg, cg);
+         break;
+      case TR::Int64:
+         if (cg->comp()->target().is32Bit())
+            {
+            TR::Register* tempVectorReg = cg->allocateRegister(TR_VRF);
+            generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, tempVectorReg, srcReg->getHighOrder(), cg);
+            generateRegImmInstruction(TR::InstOpCode::PSLLQRegImm1, node, tempVectorReg, 0x20, cg);
+            generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, targetReg, srcReg->getLowOrder(), cg);
+            generateRegRegInstruction(TR::InstOpCode::PORRegReg, node, targetReg, tempVectorReg, cg);
+            cg->stopUsingRegister(tempVectorReg);
+            }
+         else
+            {
+            generateRegRegInstruction(TR::InstOpCode::MOVQRegReg8, node, targetReg, srcReg, cg);
+            }
+         break;
+      case TR::Float:
+      case TR::Double:
+         generateRegRegInstruction(TR::InstOpCode::MOVSDRegReg, node, targetReg, srcReg, cg);
+         break;
+      default:
+         if (cg->comp()->getOption(TR_TraceCG))
+            traceMsg(cg->comp(), "Unsupported data type, Node = %p\n", node);
+         TR_ASSERT_FATAL(false, "Unsupported data type");
+         break;
+      }
+
+   // Expand byte & word to 32-bits
+   switch (dt)
+      {
+      case TR::Int8:
+         generateRegRegInstruction(TR::InstOpCode::PUNPCKLBWRegReg, node, targetReg, targetReg, cg);
+      case TR::Int16:
+         generateRegRegImmInstruction(TR::InstOpCode::PSHUFLWRegRegImm1, node, targetReg, targetReg, 0x0, cg);
+      default:
+         break;
+      }
+
+   switch (vl)
+      {
+      case TR::VectorLength128:
+         generateRegRegImmInstruction(TR::InstOpCode::PSHUFDRegRegImm1, node, targetReg, targetReg, broadcast64 ? 0x44 : 0, cg);
+         break;
+      case TR::VectorLength256:
+         {
+         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2), "256-bit vsplats requires AVX2");
+         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDYmmYmm : TR::InstOpCode::VBROADCASTSSRegReg;
+         generateRegRegInstruction(opcode.getMnemonic(), node, targetReg, targetReg, cg, opcode.getSIMDEncoding(&cg->comp()->target().cpu, TR::VectorLength256));
+         break;
+         }
+      case TR::VectorLength512:
+         {
+         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "512-bit vsplats requires AVX-512");
+         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDZmmXmm : TR::InstOpCode::VBROADCASTSSRegReg;
+         generateRegRegInstruction(opcode.getMnemonic(), node, targetReg, targetReg, cg, OMR::X86::EVEX_L512);
+         break;
+         }
+      default:
+         TR_ASSERT_FATAL(0, "Unsupported vector length");
+         break;
+      }
+
+   return targetReg;
+   }
+
+TR::Register *broadcastConst(TR::Node *node,
+                             TR::CodeGenerator *cg,
+                             TR::VectorLength vl,
+                             TR::DataType dt,
+                             intptr_t value)
+   {
+   TR_RematerializableTypes reType;
+
+   switch (dt)
+      {
+      case TR::Int8:
+         reType = TR_RematerializableByte;
+         break;
+      case TR::Int16:
+         reType = TR_RematerializableShort;
+         break;
+      case TR::Int32:
+         reType = TR_RematerializableInt;
+         break;
+      case TR::Int64:
+         reType = TR_RematerializableLong;
+         break;
+      case TR::Float:
+         reType = TR_RematerializableFloat;
+         break;
+      case TR::Double:
+         reType = TR_RematerializableDouble;
+         break;
+      default:
+         TR_ASSERT_FATAL(false, "Unexpected data type");
+         break;
+      }
+
+   TR::Register *srcReg = loadConstant(node, value, reType, cg);
+   TR::Register *resultReg = broadcast(node, cg, vl, dt, NULL, srcReg);
+
+   cg->stopUsingRegister(srcReg);
+
+   return resultReg;
+   }
+
 }
 }
