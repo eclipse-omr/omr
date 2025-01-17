@@ -527,6 +527,15 @@ OMR::TypeDictionary::TypeDictionary() :
       }
    }
 
+// Copy constructor is private but it must be defined
+// to avoid undefined behaviour, since we can't use `delete`
+OMR::TypeDictionary::TypeDictionary(const TypeDictionary &src) :
+   _client(0),
+   _pointersByName(str_comparator, trMemory()->heapMemoryRegion()),
+   _structsByName(str_comparator, trMemory()->heapMemoryRegion()),
+   _unionsByName(str_comparator, trMemory()->heapMemoryRegion())
+   {}
+
 OMR::TypeDictionary::~TypeDictionary() throw()
    {
    // Cleanup allocations in _memoryRegion *before* its destroyed in
