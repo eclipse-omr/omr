@@ -29,6 +29,36 @@
 
 namespace TR { class Node; }
 
+#define SETUP_CUSTOM_REGISTER(type, cg, deps, varName)                  \
+        varName = cg->allocateRegister(type);                           \
+        deps->addPostCondition(varName, TR::RealRegister::NoReg, cg);
+
+#define SETUP_CUSTOM_REGISTERS_4(type, cg, deps, varA) SETUP_CUSTOM_REGISTER(type, cg, deps, varA)
+#define SETUP_CUSTOM_REGISTERS_5(type, cg, deps, varA, varB) SETUP_CUSTOM_REGISTER(type, cg, deps, varA)       \
+                                                             SETUP_CUSTOM_REGISTER(type, cg, deps, varB)
+#define SETUP_CUSTOM_REGISTERS_6(type, cg, deps, varA, varB, varC) SETUP_CUSTOM_REGISTERS_5(type, cg, deps, varA, varB) \
+                                                             SETUP_CUSTOM_REGISTER(type, cg, deps, varC)
+#define SETUP_CUSTOM_REGISTERS_7(type, cg, deps, varA, varB, varC, varD) SETUP_CUSTOM_REGISTERS_6(type, cg, deps, varA, varB, varC) \
+                                                             SETUP_CUSTOM_REGISTER(type, cg, deps, varD)
+#define SETUP_CUSTOM_REGISTERS_8(type, cg, deps, varA, varB, varC, varD, varE) SETUP_CUSTOM_REGISTERS_7(type, cg, deps, varA, varB, varC, varD) \
+                                                             SETUP_CUSTOM_REGISTER(type, cg, deps, varE)
+
+#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, NAME,...) NAME
+#define SETUP_CUSTOM_REGISTERS(...) GET_MACRO(__VA_ARGS__, SETUP_CUSTOM_REGISTERS_8, SETUP_CUSTOM_REGISTERS_7, SETUP_CUSTOM_REGISTERS_6, SETUP_CUSTOM_REGISTERS_5, SETUP_CUSTOM_REGISTERS_4)(__VA_ARGS__)
+
+
+#define STOP_USING_REGISTERS(cg, ...)                                        \
+    {                                                                        \
+    TR::Register* registers[] = { __VA_ARGS__ };                             \
+    for (int i = 0; i < sizeof(registers) / sizeof(TR::Register *); ++i) {   \
+        cg->stopUsingRegister(registers[i]);                                 \
+    }                                                                        \
+    }
+
+#define SETUP_GPR_REGISTERS(cg, deps, ...) SETUP_CUSTOM_REGISTERS(TR_GPR, cg, deps, __VA_ARGS__)
+#define SETUP_VRF_REGISTERS(cg, deps, ...) SETUP_CUSTOM_REGISTERS(TR_VRF, cg, deps, __VA_ARGS__)
+#define SETUP_FPR_REGISTERS(cg, deps, ...) SETUP_CUSTOM_REGISTERS(TR_FPR, cg, deps, __VA_ARGS__)
+
 namespace OMR
 {
 
