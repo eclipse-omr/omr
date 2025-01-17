@@ -66,6 +66,7 @@
 #include "x/codegen/IntegerMultiplyDecomposer.hpp"
 #include "x/codegen/SubtractAnalyser.hpp"
 #include "x/codegen/X86Instruction.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 #include "codegen/InstOpCode.hpp"
 
 class TR_OpaqueMethodBlock;
@@ -2350,7 +2351,7 @@ OMR::X86::I386::TreeEvaluator::lbitpermuteEvaluator(TR::Node *node, TR::CodeGene
 
 TR::Register *OMR::X86::I386::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   TR::Register *reg = loadConstant(node, node->getInt(), TR_RematerializableAddress, cg);
+   TR::Register *reg = OMR::X86::loadConstant(node, node->getInt(), TR_RematerializableAddress, cg);
    node->setRegister(reg);
    return reg;
    }
@@ -2367,7 +2368,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::lconstEvaluator(TR::Node *node, TR:
       if (lowValue <= highValue)
          {
          lowRegister = cg->allocateRegister();
-         highRegister = loadConstant(node, highValue, TR_RematerializableInt, cg);
+         highRegister = OMR::X86::loadConstant(node, highValue, TR_RematerializableInt, cg);
          if (lowValue == highValue)
             {
             generateRegRegInstruction(TR::InstOpCode::MOV4RegReg, node, lowRegister, highRegister, cg);
@@ -2380,7 +2381,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::lconstEvaluator(TR::Node *node, TR:
          }
       else
          {
-         lowRegister = loadConstant(node, lowValue, TR_RematerializableInt, cg);
+         lowRegister = OMR::X86::loadConstant(node, lowValue, TR_RematerializableInt, cg);
          highRegister = cg->allocateRegister();
          generateRegMemInstruction(TR::InstOpCode::LEA4RegMem, node, highRegister,
                                    generateX86MemoryReference(lowRegister, highValue - lowValue, cg), cg);
@@ -2388,8 +2389,8 @@ TR::Register *OMR::X86::I386::TreeEvaluator::lconstEvaluator(TR::Node *node, TR:
       }
    else
       {
-      lowRegister = loadConstant(node, lowValue, TR_RematerializableInt, cg);
-      highRegister = loadConstant(node, highValue, TR_RematerializableInt, cg);
+      lowRegister = OMR::X86::loadConstant(node, lowValue, TR_RematerializableInt, cg);
+      highRegister = OMR::X86::loadConstant(node, highValue, TR_RematerializableInt, cg);
       }
 
    TR::RegisterPair *longRegister = cg->allocateRegisterPair(lowRegister, highRegister);
@@ -2480,7 +2481,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR:
 
       if (lowValue == highValue)
          {
-         TR::Register *valueReg = loadConstant(node, lowValue, TR_RematerializableInt, cg);
+         TR::Register *valueReg = OMR::X86::loadConstant(node, lowValue, TR_RematerializableInt, cg);
          instr = generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, lowMR, valueReg, cg);
          generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, highMR, valueReg, cg);
          cg->stopUsingRegister(valueReg);
@@ -3189,7 +3190,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::integerPairMulEvaluator(TR::Node *n
             {
             highRegister = cg->allocateRegister();
             }
-         lowRegister = loadConstant(node, lowValue, TR_RematerializableInt, cg);
+         lowRegister = OMR::X86::loadConstant(node, lowValue, TR_RematerializableInt, cg);
          TR::RegisterDependencyConditions  *dependencies = generateRegisterDependencyConditions((uint8_t)2, 2, cg);
          dependencies->addPreCondition(lowRegister, TR::RealRegister::eax, cg);
          dependencies->addPreCondition(highRegister, TR::RealRegister::edx, cg);
@@ -3377,7 +3378,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::integerPairMulEvaluator(TR::Node *n
 
          // Second lowOrder * lowValue
 
-         lowRegister = loadConstant(node, lowValue, TR_RematerializableInt, cg);
+         lowRegister = OMR::X86::loadConstant(node, lowValue, TR_RematerializableInt, cg);
          TR::RegisterDependencyConditions  *dependencies = generateRegisterDependencyConditions((uint8_t)2, 2, cg);
          dependencies->addPreCondition(lowRegister, TR::RealRegister::eax, cg);
          dependencies->addPreCondition(highRegister, TR::RealRegister::edx, cg);

@@ -74,6 +74,7 @@
 #include "x/codegen/CompareAnalyser.hpp"
 #include "x/codegen/FPTreeEvaluator.hpp"
 #include "x/codegen/X86Instruction.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 #include "codegen/InstOpCode.hpp"
 
 class TR_OpaqueClassBlock;
@@ -708,7 +709,7 @@ void OMR::X86::TreeEvaluator::compareIntegersForEquality(TR::Node *node, TR::Cod
                      else if(andSecondChild->getSize() == 2)
                         {
                         TR::Register *tempReg = cg->allocateRegister();
-                        TR::TreeEvaluator::loadConstant(node, mask, TR_RematerializableShort, cg, tempReg);
+                        OMR::X86::loadConstant(node, mask, TR_RematerializableShort, cg, tempReg);
                         generateMemRegInstruction(TR::InstOpCode::TEST2MemReg, node, tempMR, tempReg, cg);
                         cg->stopUsingRegister(tempReg);
                         }
@@ -827,7 +828,7 @@ void OMR::X86::TreeEvaluator::compareIntegersForEquality(TR::Node *node, TR::Cod
                         {
                         //shouldn't use Imm2 instructions
                         TR::Register *tempReg = cg->allocateRegister();
-                        TR::TreeEvaluator::loadConstant(node, 0, TR_RematerializableShort, cg, tempReg);
+                        OMR::X86::loadConstant(node, 0, TR_RematerializableShort, cg, tempReg);
                         generateMemRegInstruction(TR::InstOpCode::CMP2MemReg, node, tempMR, tempReg, cg);
                         cg->stopUsingRegister(tempReg);
                         }
@@ -889,7 +890,7 @@ void OMR::X86::TreeEvaluator::compareIntegersForEquality(TR::Node *node, TR::Cod
                   {
                   //shouldn't use Imm2 instructions
                   TR::Register *tempReg = cg->allocateRegister();
-                  TR::TreeEvaluator::loadConstant(node, constValue, TR_RematerializableShort, cg, tempReg);
+                  OMR::X86::loadConstant(node, constValue, TR_RematerializableShort, cg, tempReg);
                   generateMemRegInstruction(TR::InstOpCode::CMP2MemReg, node, tempMR, tempReg, cg);
                   cg->stopUsingRegister(tempReg);
                   }
@@ -1054,7 +1055,7 @@ void OMR::X86::TreeEvaluator::compareIntegersForOrder(
                {
                //shouldn't use Imm2 instructions
                TR::Register *tempReg = cg->allocateRegister();
-               TR::TreeEvaluator::loadConstant(node, constValue, TR_RematerializableShort, cg, tempReg);
+               OMR::X86::loadConstant(node, constValue, TR_RematerializableShort, cg, tempReg);
                generateMemRegInstruction(TR::InstOpCode::CMP2MemReg, node, tempMR, tempReg, cg);
                cg->stopUsingRegister(tempReg);
                }
@@ -1150,7 +1151,7 @@ void OMR::X86::TreeEvaluator::compare2BytesForOrder(TR::Node *node, TR::CodeGene
          else
             {
             TR::Register *tempReg = cg->allocateRegister();
-            TR::TreeEvaluator::loadConstant(node, value, TR_RematerializableShort, cg, tempReg);
+            OMR::X86::loadConstant(node, value, TR_RematerializableShort, cg, tempReg);
             generateMemRegInstruction(TR::InstOpCode::CMP2MemReg, node, tempMR, tempReg, cg);
             cg->stopUsingRegister(tempReg);
             }
@@ -1905,7 +1906,7 @@ TR::Register *OMR::X86::TreeEvaluator::ifscmpeqEvaluator(TR::Node *node, TR::Cod
             {
             //try to avoid Imm2 instructions
             TR::Register *tempReg = cg->allocateRegister();
-            TR::TreeEvaluator::loadConstant(node, value, TR_RematerializableShort, cg, tempReg);
+            OMR::X86::loadConstant(node, value, TR_RematerializableShort, cg, tempReg);
             generateMemRegInstruction(TR::InstOpCode::CMP2MemReg, node, tempMR, tempReg, cg);
             cg->stopUsingRegister(tempReg);
             }

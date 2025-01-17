@@ -19,13 +19,249 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#include "CodegenUtils.hpp"
-#include "OMRX86Instruction.hpp"
+#include "il/Node.hpp"
+#include "il/Node_inlines.hpp"
+#include "x/codegen/CodegenUtils.hpp"
+
+extern bool existsNextInstructionToTestFlags(TR::Instruction *startInstr,
+                                             uint8_t testMask);
 
 namespace OMR
 {
 namespace X86
 {
+
+TR::Instruction *insertLoadConstant(TR::Node *node,
+                                    TR::Register *target,
+                                    intptr_t value,
+                                    TR_RematerializableTypes type,
+                                    TR::CodeGenerator *cg,
+                                    TR::Instruction *currentInstruction)
+   {
+   TR::Compilation *comp = cg->comp();
+   static const TR::InstOpCode::Mnemonic ops[TR_NumRematerializableTypes+1][3] =
+      //    load 0      load -1     load c
+      { { TR::InstOpCode::UD2,  TR::InstOpCode::UD2,  TR::InstOpCode::UD2   },   // LEA; should not seen here
+        { TR::InstOpCode::XOR4RegReg, TR::InstOpCode::OR4RegImms, TR::InstOpCode::MOV4RegImm4 },   // Byte constant
+        { TR::InstOpCode::XOR4RegReg, TR::InstOpCode::OR4RegImms, TR::InstOpCode::MOV4RegImm4 },   // Short constant
+        { TR::InstOpCode::XOR4RegReg, TR::InstOpCode::OR4RegImms, TR::InstOpCode::MOV4RegImm4 },   // Char constant
+        { TR::InstOpCode::XOR4RegReg, TR::InstOpCode::OR4RegImms, TR::InstOpCode::MOV4RegImm4 },   // Int constant
+        { TR::InstOpCode::XOR4RegReg, TR::InstOpCode::OR4RegImms, TR::InstOpCode::MOV4RegImm4 },   // 32-bit address constant
+        { TR::InstOpCode::XOR4RegReg, TR::InstOpCode::OR8RegImms, TR::InstOpCode::UD2   } }; // Long address constant; MOVs handled specially
+
+   enum { XOR = 0, OR  = 1, MOV = 2 };
+
+   bool is64Bit = false;
+
+   int opsRow = type;
+   if (cg->comp()->target().is64Bit())
+      {
+      if (type == TR_RematerializableAddress)
+         {
+         // Treat 64-bit addresses as longs
+         opsRow++;
+         is64Bit = true;
+         }
+      else
+         {
+         is64Bit = (type == TR_RematerializableLong);
+         }
+      }
+   else
+      {
+      TR_ASSERT(type != TR_RematerializableLong, "Longs are rematerialized as pairs of ints on IA32");
+      }
+
+   TR_ExternalRelocationTargetKind reloKind = TR_NoRelocation;
+   if (cg->profiledPointersRequireRelocation() && node && node->getOpCodeValue() == TR::aconst &&
+         (node->isClassPointerConstant() || node->isMethodPointerConstant()))
+      {
+      if (node->isClassPointerConstant())
+         reloKind = TR_ClassPointer;
+      else if (node->isMethodPointerConstant())
+         reloKind = TR_MethodPointer;
+      else
+         TR_ASSERT(0, "Unexpected node, don't know how to relocate");
+      }
+
+   if (currentInstruction)
+      {
+      // Optimized loads inserted arbitrarily into the instruction stream must be checked
+      // to ensure they don't modify any eflags needed by surrounding instructions.
+      //
+      if ((value == 0 || value == -1))
+         {
+         uint8_t EFlags = TR::InstOpCode::getModifiedEFlags(ops[opsRow][((value == 0) ? XOR : OR)]);
+
+         if (existsNextInstructionToTestFlags(currentInstruction, EFlags) || cg->requiresCarry())
+            {
+            // Can't alter flags, so must use MOV.  Fall through.
+            }
+         else if (value == 0)
+            return generateRegRegInstruction(currentInstruction, ops[opsRow][XOR], target, target, cg);
+         else if (value == -1)
+            return generateRegImmInstruction(currentInstruction, ops[opsRow][OR], target, (uint32_t)-1, cg);
+         }
+
+      // No luck optimizing this.  Just use a MOV
+      //
+      TR::Instruction *movInstruction = NULL;
+      if (is64Bit)
+         {
+         if (cg->constantAddressesCanChangeSize(node) && node && node->getOpCodeValue() == TR::aconst &&
+             (node->isClassPointerConstant() || node->isMethodPointerConstant()))
+            {
+            movInstruction = generateRegImm64Instruction(currentInstruction, TR::InstOpCode::MOV8RegImm64, target, value, cg, reloKind);
+            }
+         else if (IS_32BIT_UNSIGNED(value))
+            {
+            // zero-extended 4-byte MOV
+            movInstruction = generateRegImmInstruction(currentInstruction, TR::InstOpCode::MOV4RegImm4, target, static_cast<int32_t>(value), cg, reloKind);
+            }
+         else if (IS_32BIT_SIGNED(value)) // TODO:AMD64: Is there some way we could get RIP too?
+            {
+            movInstruction = generateRegImmInstruction(currentInstruction, TR::InstOpCode::MOV8RegImm4, target, static_cast<int32_t>(value), cg, reloKind);
+            }
+         else
+            {
+            movInstruction = generateRegImm64Instruction(currentInstruction, TR::InstOpCode::MOV8RegImm64, target, value, cg, reloKind);
+            }
+         }
+      else
+         {
+         movInstruction = generateRegImmInstruction(currentInstruction, ops[opsRow][MOV], target, static_cast<int32_t>(value), cg, reloKind);
+         }
+
+      if (target && node &&
+          node->getOpCodeValue() == TR::aconst &&
+          node->isClassPointerConstant() &&
+          (cg->fe()->isUnloadAssumptionRequired((TR_OpaqueClassBlock *) node->getAddress(),
+                                       comp->getCurrentMethod()) ||
+           cg->profiledPointersRequireRelocation()))
+         {
+         comp->getStaticPICSites()->push_front(movInstruction);
+         }
+
+      if (target && node &&
+          node->getOpCodeValue() == TR::aconst &&
+          node->isMethodPointerConstant() &&
+          (cg->fe()->isUnloadAssumptionRequired(cg->fe()->createResolvedMethod(cg->trMemory(), (TR_OpaqueMethodBlock *) node->getAddress(), comp->getCurrentMethod())->classOfMethod(), comp->getCurrentMethod()) ||
+           cg->profiledPointersRequireRelocation()))
+         {
+         traceMsg(comp, "Adding instr %p to MethodPICSites for node %p\n", movInstruction, node);
+         comp->getStaticMethodPICSites()->push_front(movInstruction);
+         }
+
+      return movInstruction;
+      }
+   else
+      {
+      // constant loads between a compare and a branch cannot clobber the EFLAGS register
+      bool canClobberEFLAGS = !(cg->getCurrentEvaluationTreeTop()->getNode()->getOpCode().isIf() || cg->requiresCarry());
+
+      if (value == 0 && canClobberEFLAGS)
+         {
+         return generateRegRegInstruction(ops[opsRow][XOR], node, target, target, cg);
+         }
+      else if (value == -1 && canClobberEFLAGS)
+         {
+         return generateRegImmInstruction(ops[opsRow][OR], node, target, (uint32_t)-1, cg);
+         }
+      else
+         {
+         TR::Instruction *movInstruction = NULL;
+         if (is64Bit)
+            {
+            if (cg->constantAddressesCanChangeSize(node) && node && node->getOpCodeValue() == TR::aconst &&
+                (node->isClassPointerConstant() || node->isMethodPointerConstant()))
+               {
+               movInstruction = generateRegImm64Instruction(TR::InstOpCode::MOV8RegImm64, node, target, value, cg, reloKind);
+               }
+            else if (IS_32BIT_UNSIGNED(value))
+               {
+               // zero-extended 4-byte MOV
+               movInstruction = generateRegImmInstruction(TR::InstOpCode::MOV4RegImm4, node, target, static_cast<int32_t>(value), cg, reloKind);
+               }
+            else if (IS_32BIT_SIGNED(value)) // TODO:AMD64: Is there some way we could get RIP too?
+               {
+               movInstruction = generateRegImmInstruction(TR::InstOpCode::MOV8RegImm4, node, target, static_cast<int32_t>(value), cg, reloKind);
+               }
+            else
+               {
+               movInstruction = generateRegImm64Instruction(TR::InstOpCode::MOV8RegImm64, node, target, value, cg, reloKind);
+               }
+            }
+         else
+            {
+            movInstruction = generateRegImmInstruction(ops[opsRow][MOV], node, target, static_cast<int32_t>(value), cg, reloKind);
+            }
+
+         // HCR register PIC site in TR::TreeEvaluator::insertLoadConstant
+         TR::Symbol *symbol = NULL;
+         if (node && node->getOpCode().hasSymbolReference())
+            symbol = node->getSymbol();
+         bool isPICCandidate = symbol ? target && symbol->isStatic() && symbol->isClassObject() : false;
+         if (isPICCandidate && comp->getOption(TR_EnableHCR))
+            {
+            comp->getStaticHCRPICSites()->push_front(movInstruction);
+            }
+
+         if (target &&
+             node &&
+             node->getOpCodeValue() == TR::aconst &&
+             node->isClassPointerConstant() &&
+             (cg->fe()->isUnloadAssumptionRequired((TR_OpaqueClassBlock *) node->getAddress(),
+                               comp->getCurrentMethod()) ||
+              cg->profiledPointersRequireRelocation()))
+            {
+            comp->getStaticPICSites()->push_front(movInstruction);
+            }
+
+        if (target && node &&
+            node->getOpCodeValue() == TR::aconst &&
+            node->isMethodPointerConstant() &&
+            (cg->fe()->isUnloadAssumptionRequired(cg->fe()->createResolvedMethod(cg->trMemory(), (TR_OpaqueMethodBlock *) node->getAddress(), comp->getCurrentMethod())->classOfMethod(), comp->getCurrentMethod()) ||
+             cg->profiledPointersRequireRelocation()))
+            {
+            traceMsg(comp, "Adding instr %p to MethodPICSites for node %p\n", movInstruction, node);
+            comp->getStaticMethodPICSites()->push_front(movInstruction);
+            }
+
+         return movInstruction;
+         }
+      }
+   }
+
+TR::Register *loadConstant(TR::Node *node,
+                           intptr_t value,
+                           TR_RematerializableTypes type,
+                           TR::CodeGenerator *cg,
+                           TR::Register *targetRegister)
+   {
+   if (targetRegister == NULL)
+      {
+      targetRegister = cg->allocateRegister();
+      }
+
+   TR::Instruction *instr = OMR::X86::insertLoadConstant(node, targetRegister, value, type, cg);
+
+   // Do not rematerialize register for class pointer or method pointer if
+   // it's AOT compilation because it doesn't have node info in register
+   // rematerialization to create relocation record for the class pointer
+   // or the method pointer.
+   if (cg->enableRematerialisation() &&
+       !(cg->comp()->compileRelocatableCode() && node && node->getOpCodeValue() == TR::aconst &&
+         (node->isClassPointerConstant() || node->isMethodPointerConstant())))
+      {
+      if (node && node->getOpCode().hasSymbolReference() && node->getSymbol() && node->getSymbol()->isClassObject())
+         (TR::Compiler->om.generateCompressedObjectHeaders() || cg->comp()->target().is32Bit())
+         ? type = TR_RematerializableInt : type = TR_RematerializableLong;
+
+      setDiscardableIfPossible(type, targetRegister, node, instr, value, cg);
+      }
+
+   return targetRegister;
+   }
 
 void generateLoop(int32_t unrollFactor,
                   int32_t elementsPerIteration,
@@ -125,8 +361,8 @@ void generateLoop(int32_t begin,
    deps->addPostCondition(indexReg, RealRegister::NoReg, cg);
    deps->addPostCondition(loopBoundReg, RealRegister::NoReg, cg);
 
-   TreeEvaluator::loadConstant(node, begin, TR_RematerializableInt, cg, indexReg);
-   TreeEvaluator::loadConstant(node, end, TR_RematerializableInt, cg, loopBoundReg);
+   loadConstant(node, begin, TR_RematerializableInt, cg, indexReg);
+   loadConstant(node, end, TR_RematerializableInt, cg, loopBoundReg);
 
    OMR::X86::generateLoop(indexReg, loopBoundReg, node, cg, std::move(genBodyFunction));
    generateLabelInstruction(TR::InstOpCode::label, node, label, deps, cg);

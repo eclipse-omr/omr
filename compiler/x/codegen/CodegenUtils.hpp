@@ -22,13 +22,60 @@
 #ifndef OMR_CODEGENUTILS_INCL
 #define OMR_CODEGENUTILS_INCL
 
+#include "codegen/Machine.hpp"
 #include "codegen/CodeGenerator.hpp"
+#include "x/codegen/OMRX86Instruction.hpp"
+#include "x/codegen/RegisterRematerialization.hpp"
+
+namespace TR { class Node; }
 
 namespace OMR
 {
 
 namespace X86
 {
+
+/**
+ * @brief Inserts an instruction to load a constant value into a specified register.
+ *
+ * This function generates an instruction to load a constant value into the target register.
+ * The generated instruction can be appended to a specified instruction chain.
+ *
+ * @param node The IL node that generated the load constant
+ * @param target The register into which the constant value should be loaded
+ * @param value The constant value to be loaded into the target register
+ * @param type The rematerializable type of the constant
+ * @param cg The code generator responsible for generating the instructions
+ * @param currentInstruction The instruction to which the new instruction will be appended (optional)
+ *
+ * @return A pointer to the generated instruction.
+ */
+TR::Instruction *insertLoadConstant(TR::Node *node,
+                                    TR::Register *target,
+                                    intptr_t value,
+                                    TR_RematerializableTypes type,
+                                    TR::CodeGenerator *cg,
+                                    TR::Instruction *currentInstruction = NULL);
+
+/**
+ * @brief Loads a constant value into a register and returns the register.
+ *
+ * This function either loads the specified constant value into the provided target register,
+ * or allocates a new register to hold the constant if no target is provided.
+ *
+ * @param node The IL node associated with this operation
+ * @param value The constant value to load into the registe.
+ * @param type The rematerializable type of the constant
+ * @param cg The code generator managing the instruction generation process
+ * @param targetRegister The target register to load the value into (optional)
+ *
+ * @return A pointer to the register containing the loaded constant value.
+ */
+TR::Register *loadConstant(TR::Node *node,
+                           intptr_t value,
+                           TR_RematerializableTypes type,
+                           TR::CodeGenerator *cg,
+                           TR::Register *targetRegister = NULL);
 
 /**
  * @brief Generates loop control flow with start and end bounds

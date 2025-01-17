@@ -62,6 +62,7 @@
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 #include "x/codegen/X86Register.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 
 extern bool existsNextInstructionToTestFlags(TR::Instruction *startInstr,
                                              uint8_t         testMask);
@@ -838,7 +839,7 @@ TR::RealRegister *OMR::X86::Machine::freeBestGPRegister(TR::Instruction         
             }
          else
             {
-            instr = TR::TreeEvaluator::insertLoadConstant(0, best, info->getConstant(), info->getDataType(), self()->cg(), currentInstruction);
+            instr = OMR::X86::insertLoadConstant(0, best, info->getConstant(), info->getDataType(), self()->cg(), currentInstruction);
             }
          }
 
