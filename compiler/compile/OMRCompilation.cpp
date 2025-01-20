@@ -633,6 +633,7 @@ bool OMR::Compilation::isPotentialOSRPoint(TR::Node *node, TR::Node **osrPointNo
    static char *disableAsyncCheckOSR = feGetEnv("TR_disableAsyncCheckOSR");
    static char *disableGuardedCallOSR = feGetEnv("TR_disableGuardedCallOSR");
    static char *disableMonentOSR = feGetEnv("TR_disableMonentOSR");
+   static char *enableNewsOSR = feGetEnv("TR_enableNewsOSR");
 
    bool potentialOSRPoint = false;
    if (self()->isOSRTransitionTarget(TR::postExecutionOSR))
@@ -663,6 +664,8 @@ bool OMR::Compilation::isPotentialOSRPoint(TR::Node *node, TR::Node **osrPointNo
          }
       else if (node->getOpCodeValue() == TR::monent)
          potentialOSRPoint = (disableMonentOSR == NULL);
+      else if (node->getOpCode().isNew())
+         potentialOSRPoint = (enableNewsOSR != NULL);
       }
    else if (node->canGCandReturn())
       potentialOSRPoint = true;
@@ -804,7 +807,8 @@ OMR::Compilation::getOSRInductionOffset(TR::Node *node)
          return 1;
       }
 
-   if (osrNode->getOpCodeValue() == TR::asynccheck)
+   if ((osrNode->getOpCodeValue() == TR::asynccheck) ||
+       osrNode->getOpCode().isNew())
       return 0;
 
    TR_ASSERT(0, "OSR points should only be calls, monents or asyncchecks");
@@ -838,6 +842,9 @@ OMR::Compilation::requiresAnalysisOSRPoint(TR::Node *node)
    // Calls require an analysis and transition point as liveness may change across them
    if (osrNode->getOpCode().isCall())
       return true;
+
+   if (osrNode->getOpCode().isNew())
+      return false;
 
    switch (osrNode->getOpCodeValue())
       {
