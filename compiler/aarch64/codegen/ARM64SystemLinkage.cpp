@@ -286,8 +286,13 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
    uint32_t stackIndex = 0;
    ListIterator<TR::AutomaticSymbol> automaticIterator(&method->getAutomaticList());
    TR::AutomaticSymbol *localCursor = automaticIterator.getFirst();
+   bool frameNeeded = false;
 
-   stackIndex = 8; // [sp+0] is for link register
+   if (machine->getLinkRegisterKilled())
+      {
+      stackIndex = 8; // [sp+0] is for link register
+      frameNeeded = true;
+      }
 
    // map non-long/double/address, and non-vector automatics
    while (localCursor != NULL)
@@ -300,6 +305,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
          {
          localCursor->setOffset(stackIndex);
          stackIndex += (localCursor->getSize() + 3) & (~3);
+         frameNeeded = true;
          }
       localCursor = automaticIterator.getNext();
       }
@@ -317,6 +323,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
          {
          localCursor->setOffset(stackIndex);
          stackIndex += (localCursor->getSize() + 7) & (~7);
+         frameNeeded = true;
          }
       localCursor = automaticIterator.getNext();
       }
@@ -332,6 +339,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
          {
          localCursor->setOffset(stackIndex);
          stackIndex += (localCursor->getSize() + 15) & (~15);
+         frameNeeded = true;
          }
       localCursor = automaticIterator.getNext();
       }
@@ -344,6 +352,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
       if (rr->getHasBeenAssignedInMethod())
          {
          stackIndex += 8;
+         frameNeeded = true;
          }
       }
    for (int r = TR::RealRegister::v8; r <= TR::RealRegister::v15; r++)
@@ -352,6 +361,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
       if (rr->getHasBeenAssignedInMethod())
          {
          stackIndex += 16;
+         frameNeeded = true;
          }
       }
 
@@ -382,6 +392,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
                {
                nextIntArgReg++;
                mapSingleParameter(parameter, stackIndex, true);
+               frameNeeded = true;
                }
             else
                {
@@ -394,6 +405,7 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
                {
                nextFltArgReg++;
                mapSingleParameter(parameter, stackIndex, true);
+               frameNeeded = true;
                }
             else
                {
@@ -410,7 +422,10 @@ TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
 
    // save the stack frame size, aligned to 16 bytes
    stackIndex = (stackIndex + 15) & (~15);
-   cg()->setFrameSizeInBytes(stackIndex);
+   if (frameNeeded)
+      cg()->setFrameSizeInBytes(stackIndex);
+   else
+      cg()->setFrameSizeInBytes(0);
 
    nextIntArgReg = 0;
    nextFltArgReg = 0;
@@ -528,13 +543,16 @@ TR::ARM64SystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Paramet
 
    // allocate stack space
    uint32_t frameSize = (uint32_t)cg->getFrameSizeInBytes();
-   if (constantIsUnsignedImm12(frameSize))
+   if (frameSize > 0)
       {
-      cursor = generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subimmx, firstNode, sp, sp, frameSize, cursor);
-      }
-   else
-      {
-      TR_UNIMPLEMENTED();
+      if (constantIsUnsignedImm12(frameSize))
+         {
+         cursor = generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subimmx, firstNode, sp, sp, frameSize, cursor);
+         }
+      else
+         {
+         TR_UNIMPLEMENTED();
+         }
       }
 
    // save link register (x30)
@@ -613,13 +631,16 @@ TR::ARM64SystemLinkage::createEpilogue(TR::Instruction *cursor)
 
    // remove space for preserved registers
    uint32_t frameSize = cg->getFrameSizeInBytes();
-   if (constantIsUnsignedImm12(frameSize))
+   if (frameSize > 0)
       {
-      cursor = generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, lastNode, sp, sp, frameSize, cursor);
-      }
-   else
-      {
-      TR_UNIMPLEMENTED();
+      if (constantIsUnsignedImm12(frameSize))
+         {
+         cursor = generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, lastNode, sp, sp, frameSize, cursor);
+         }
+      else
+         {
+         TR_UNIMPLEMENTED();
+         }
       }
 
    // return
