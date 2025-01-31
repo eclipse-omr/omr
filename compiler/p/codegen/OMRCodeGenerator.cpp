@@ -238,28 +238,28 @@ OMR::Power::CodeGenerator::initialize()
          {
          cg->setSupportsArrayCmpLen();
          }
-      }
 
-    if (comp->target().cpu.supportsFeature(OMR_FEATURE_PPC_HAS_VSX))
-       {
-       static bool disablePPCTRTO = (feGetEnv("TR_disablePPCTRTO") != NULL);
-       static bool disablePPCTRTO255 = (feGetEnv("TR_disablePPCTRTO255") != NULL);
-       static bool disablePPCTROT = (feGetEnv("TR_disablePPCTROT") != NULL);
-       static bool disablePPCTROTNoBreak = (feGetEnv("TR_disablePPCTROTNoBreak") != NULL);
+      if (comp->target().cpu.supportsFeature(OMR_FEATURE_PPC_HAS_VSX))
+         {
+         static bool disablePPCTRTO = (feGetEnv("TR_disablePPCTRTO") != NULL);
+         static bool disablePPCTRTO255 = (feGetEnv("TR_disablePPCTRTO255") != NULL);
+         static bool disablePPCTROT = (feGetEnv("TR_disablePPCTROT") != NULL);
+         static bool disablePPCTROTNoBreak = (feGetEnv("TR_disablePPCTROTNoBreak") != NULL);
 
-       if (!disablePPCTRTO)
-          cg->setSupportsArrayTranslateTRTO();
+         if (!disablePPCTRTO)
+            cg->setSupportsArrayTranslateTRTO();
 #ifndef __LITTLE_ENDIAN__
-       else if (!disablePPCTRTO255)
-          setSupportsArrayTranslateTRTO255();
+         else if (!disablePPCTRTO255)
+            setSupportsArrayTranslateTRTO255();
 #endif
 
-       if (!disablePPCTROT)
-          cg->setSupportsArrayTranslateTROT();
+         if (!disablePPCTROT)
+            cg->setSupportsArrayTranslateTROT();
 
-       if (!disablePPCTROTNoBreak)
-          cg->setSupportsArrayTranslateTROTNoBreak();
-       }
+         if (!disablePPCTROTNoBreak)
+            cg->setSupportsArrayTranslateTROTNoBreak();
+         }
+      }
 
    _numberBytesReadInaccessible = 0;
    _numberBytesWriteInaccessible = 4096;

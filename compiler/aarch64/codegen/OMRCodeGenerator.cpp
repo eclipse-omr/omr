@@ -177,6 +177,7 @@ OMR::ARM64::CodeGenerator::initialize()
    // Enable compaction of local stack slots.  i.e. variables with non-overlapping live ranges
    // can share the same slot.
    cg->setSupportsCompactedLocals();
+
    if (!TR::Compiler->om.canGenerateArraylets())
       {
       static const bool disableArrayCmp = feGetEnv("TR_DisableArrayCmp") != NULL;
@@ -189,29 +190,29 @@ OMR::ARM64::CodeGenerator::initialize()
          {
          cg->setSupportsArrayCmpLen();
          }
-      }
 
-   if (!comp->getOption(TR_DisableArraySetOpts))
-      {
-      cg->setSupportsArraySet();
-      }
+      if (!comp->getOption(TR_DisableArraySetOpts))
+         {
+         cg->setSupportsArraySet();
+         }
 
-   static bool disableTRTO = (feGetEnv("TR_disableTRTO") != NULL);
-   if (!disableTRTO)
-      {
-      cg->setSupportsArrayTranslateTRTO();
-      }
+      static bool disableTRTO = (feGetEnv("TR_disableTRTO") != NULL);
+      if (!disableTRTO)
+         {
+         cg->setSupportsArrayTranslateTRTO();
+         }
 
-   static bool disableTRTO255 = (feGetEnv("TR_disableTRTO255") != NULL);
-   if (!disableTRTO255)
-      {
-      cg->setSupportsArrayTranslateTRTO255();
-      }
+      static bool disableTRTO255 = (feGetEnv("TR_disableTRTO255") != NULL);
+      if (!disableTRTO255)
+         {
+         cg->setSupportsArrayTranslateTRTO255();
+         }
 
-   static bool disableTROTNoBreak = (feGetEnv("TR_disableTROTNoBreak") != NULL);
-   if (!disableTROTNoBreak)
-      {
-      cg->setSupportsArrayTranslateTROTNoBreak();
+      static bool disableTROTNoBreak = (feGetEnv("TR_disableTROTNoBreak") != NULL);
+      if (!disableTROTNoBreak)
+         {
+         cg->setSupportsArrayTranslateTROTNoBreak();
+         }
       }
    }
 
