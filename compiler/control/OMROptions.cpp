@@ -1910,7 +1910,7 @@ OMR::Options::Options(
       TR_PersistentJittedBodyInfo *bodyInfo = TR::Recompilation::getJittedBodyInfoFromPC(oldStartPC);
       if (bodyInfo->getIsInvalidated())
          {
-         if (bodyInfo->getMethodInfo()->getNumberOfInvalidations() >= 2)
+         if (bodyInfo->getMethodInfo()->getNumberOfPreexistenceInvalidations() >= 2)
             {
             this->_disabledOptimizations[invariantArgumentPreexistence] = true;
             }

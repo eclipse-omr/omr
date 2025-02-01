@@ -7463,7 +7463,7 @@ void TR_InvariantArgumentPreexistence::processIndirectCall(TR::Node *node, TR::T
             // been invalidated once
             //
             TR::Recompilation *recompInfo = comp()->getRecompilationInfo();
-            if (recompInfo && recompInfo->getMethodInfo()->getNumberOfInvalidations() >= 1 && !chTable->findSingleConcreteSubClass(receiverInfo->getClass(), comp()))
+            if (recompInfo && recompInfo->getMethodInfo()->getNumberOfPreexistenceInvalidations() >= 1 && !chTable->findSingleConcreteSubClass(receiverInfo->getClass(), comp()))
                {
                // will exit without performing any transformation
                //fprintf(stderr, "will not perform devirt\n");
