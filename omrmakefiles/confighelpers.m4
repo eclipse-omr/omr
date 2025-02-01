@@ -67,7 +67,9 @@ AC_DEFUN([OMRCFG_CATEGORIZE_ARCH],
 AC_DEFUN([OMRCFG_CATEGORIZE_TOOLCHAIN],
 	[AC_LANG([C])
 	AS_IF([test "x$$1" = "x"],
-		AS_IF([test "$GCC" = "yes"], [$1=gcc]))
+		AS_IF(AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifndef __open_xl__
+#error not an openxl compiler
+#endif]])], [$1=openxl], AS_IF([test "$GCC" = "yes"], [$1=gcc]))))
 	AS_IF([test "x$OMR_BUILD_TOOLCHAIN" = "x"],
 		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifndef _MSC_VER
 #error not an msvc compiler
