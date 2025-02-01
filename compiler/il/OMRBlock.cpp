@@ -2781,6 +2781,8 @@ TR_BlockCloner::cloneNode(TR::Node * from)
    if (from->getReferenceCount() > 1)
       _nodeMappings.add(from, to, _cfg->comp()->trMemory());
 
+   to->getByteCodeInfo().setDoNotProfile(from->getByteCodeInfo().doNotProfile());
+
    return to;
    }
 
