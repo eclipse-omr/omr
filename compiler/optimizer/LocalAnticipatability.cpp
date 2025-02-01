@@ -590,7 +590,8 @@ bool TR_LocalAnticipatability::updateAnticipatabilityForSupportedNodes(TR::Node 
          }
       else
          {
-         if (opCode.isLoad() || node->getOpCodeValue() == TR::loadaddr)
+	 if ((opCode.isLoad() || node->getOpCodeValue() == TR::loadaddr) &&
+             !node->isDataAddrPointer())
             {
             if (opCode.hasSymbolReference() &&
                 (loadaddrAsLoad() || node->getOpCodeValue() != TR::loadaddr))
@@ -611,6 +612,11 @@ bool TR_LocalAnticipatability::updateAnticipatabilityForSupportedNodes(TR::Node 
             if (!adjustInfoForAddressAdd(node, secondChild, seenDefinedSymbolReferences, seenStoredSymbolReferences, killedExpressions, storeNodes, block))
                return false;
             }
+         else if (node->isDataAddrPointer())
+	    {
+	    if (!adjustInfoForAddressAdd(node, node->getFirstChild(), seenDefinedSymbolReferences, seenStoredSymbolReferences, killedExpressions, storeNodes, block))
+               return false;
+	    }
          else
             return false;
          }
@@ -766,7 +772,8 @@ bool TR_LocalAnticipatability::updateAnticipatabilityForSupportedNodes(TR::Node 
       }
    else
       {
-      if (opCode.isLoad() || opCode.getOpCodeValue() == TR::loadaddr)
+      if ((opCode.isLoad() || opCode.getOpCodeValue() == TR::loadaddr) &&
+          !node->isDataAddrPointer())
          {
          if (opCode.hasSymbolReference() &&
              (loadaddrAsLoad() || opCode.getOpCodeValue() != TR::loadaddr))
@@ -790,6 +797,11 @@ bool TR_LocalAnticipatability::updateAnticipatabilityForSupportedNodes(TR::Node 
          if (!adjustInfoForAddressAdd(node, secondChild, seenDefinedSymbolReferences, seenStoredSymbolReferences, killedExpressions, storeNodes, block))
             return false;
          }
+      else if (node->isDataAddrPointer())
+	 {
+	 if (!adjustInfoForAddressAdd(node, node->getFirstChild(), seenDefinedSymbolReferences, seenStoredSymbolReferences, killedExpressions, storeNodes, block))
+            return false;
+	 }
       else
          return false;
       }
@@ -827,7 +839,8 @@ bool TR_LocalAnticipatability::adjustInfoForAddressAdd(TR::Node *node, TR::Node 
       }
    else
       {
-      if (childOpCode.isLoad() || child->getOpCodeValue() == TR::loadaddr)
+      if ((childOpCode.isLoad() || child->getOpCodeValue() == TR::loadaddr) &&
+          !child->isDataAddrPointer())
          {
          if (childOpCode.hasSymbolReference() &&
              (loadaddrAsLoad() || child->getOpCodeValue() != TR::loadaddr))
