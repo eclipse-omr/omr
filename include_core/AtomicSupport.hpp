@@ -50,6 +50,7 @@
 
 #endif /* !defined(ATOMIC_SUPPORT_STUB) */
 
+
 #include "omrcfg.h"
 #include "omrcomp.h"
 #include "omrutilbase.h"
@@ -352,7 +353,13 @@ public:
 #if defined(OMRZTPF)
 		cs((cs_t *)&oldValue, (cs_t *)address, (cs_t)newValue);
 		return oldValue;
-#elif defined(__xlC__) || defined(__open_xl__) /* defined(OMRZTPF) */
+#elif defined(J9ZOS390) /* defined(OMRZTPF) */
+        /* V1.R13 has a compiler bug and if you pass a constant as oldValue it will cause c-stack corruption */
+        volatile uint32_t old = oldValue;
+        /* 390 cs() function defined in <stdlib.h>, doesn't expand properly to __cs1() which correctly deals with aliasing */
+        __cs1((uint32_t *)&old, (uint32_t *)address, (uint32_t *)&newValue);
+        return old;
+#elif defined(__xlC__) || defined(__open_xl__) /* defined(J9ZOS390) */
 		__compare_and_swap((volatile int*)address, (int*)&oldValue, (int)newValue);
 		return oldValue;
 #elif defined(__GNUC__)  /* defined(__xlC__) */
@@ -369,13 +376,7 @@ public:
 #endif /* defined(__riscv) */
 #elif defined(_MSC_VER) /* defined(__GNUC__) */
 		return (uint32_t)_InterlockedCompareExchange((volatile long *)address, (long)newValue, (long)oldValue);
-#elif defined(J9ZOS390) /* defined(_MSC_VER) */
-		/* V1.R13 has a compiler bug and if you pass a constant as oldValue it will cause c-stack corruption */
-		volatile uint32_t old = oldValue;
-		/* 390 cs() function defined in <stdlib.h>, doesn't expand properly to __cs1() which correctly deals with aliasing */
-		__cs1((uint32_t *)&old, (uint32_t *)address, (uint32_t *)&newValue);
-		return old;
-#else /* defined(J9ZOS390) */
+#else /* defined(_MSC_VER) */
 #error "lockCompareExchangeU32(): unsupported platform!"
 #endif /* defined(__xlC__) */
 #endif /* defined(ATOMIC_SUPPORT_STUB) */
@@ -418,7 +419,19 @@ public:
 #elif defined(OMRZTPF) /* defined(OMR_ARCH_POWER) && !defined(OMR_ENV_DATA64) */
 		csg((csg_t *)&oldValue, (csg_t *)address, (csg_t)newValue);
 		return oldValue;
-#elif defined(__xlC__)|| defined(__open_xl__) /* defined(OMRZTPF) */
+#elif defined(J9ZOS390) /* defined(OMRZTPF) */
+         /* V1.R13 has a compiler bug and if you pass a constant as oldValue it will cause c-stack corruption */
+         volatile uint64_t old = oldValue;
+#if defined(OMR_ENV_DATA64)
+         /* Call __csg directly as csg() does not exist */
+        __csg((void*)&old, (void*)address, (void*)&newValue);
+        return old;
+#else /* defined(OMR_ENV_DATA64) */
+        /* __cds1 does not write the swap value correctly, cds does the correct thing */
+        cds((cds_t*)&old, (cds_t*)address, *(cds_t*)&newValue);
+        return old;
+#endif /* defined(OMR_ENV_DATA64) */
+#elif defined(__xlC__)|| defined(__open_xl__) /* defined(J9ZOS390) */
 #if defined(__64BIT__) || !defined(AIXPPC)
 		__compare_and_swaplp((volatile long*)address, (long*)&oldValue, (long)newValue);
 #else /* defined(__64BIT__) */
@@ -440,19 +453,7 @@ public:
 #endif /* defined(__riscv) */
 #elif defined(_MSC_VER) /* defined(__GNUC__) */
 		return (uint64_t)_InterlockedCompareExchange64((volatile __int64 *)address, (__int64)newValue, (__int64)oldValue);
-#elif defined(J9ZOS390) /* defined(_MSC_VER) */
-		 /* V1.R13 has a compiler bug and if you pass a constant as oldValue it will cause c-stack corruption */
-		 volatile uint64_t old = oldValue;
-#if defined(OMR_ENV_DATA64)
-		 /* Call __csg directly as csg() does not exist */
-		__csg((void*)&old, (void*)address, (void*)&newValue);
-		return old;
-#else /* defined(OMR_ENV_DATA64) */
-		/* __cds1 does not write the swap value correctly, cds does the correct thing */
-		cds((cds_t*)&old, (cds_t*)address, *(cds_t*)&newValue);
-		return old;
-#endif /* defined(OMR_ENV_DATA64) */
-#else /* defined(J9ZOS390) */
+#else /* defined(_MSC_VER) */
 #error "lockCompareExchangeU64(): unsupported platform!"
 #endif /* defined(__xlC__) */
 #endif /* defined(ATOMIC_SUPPORT_STUB) */
