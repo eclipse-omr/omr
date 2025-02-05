@@ -199,8 +199,9 @@ public:
    virtual TR_OpaqueClassBlock * getLeafComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
 
    // Null-terminated.  bufferSize >= 1+getStringUTF8Length(objectPointer).  Returns buffer just for convenience.
-   virtual char *getStringUTF8(uintptr_t objectPointer, char *buffer, intptr_t bufferSize);
-   virtual intptr_t getStringUTF8Length(uintptr_t objectPointer);
+   virtual char *getStringUTF8(uintptr_t objectPointer, char *buffer, uintptr_t bufferSize);
+   virtual int32_t getStringUTF8Length(uintptr_t objectPointer);
+   virtual uint64_t getStringUTF8UnabbreviatedLength(uintptr_t objectPointer);
 
    // --------------------------------------------------------------------------
    // Code cache
