@@ -130,6 +130,8 @@ initializeJitBuilder(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_
       }
    catch (const std::bad_alloc&)
       {
+      if (TR::Compiler != NULL)
+         TR::Compiler->rawAllocator.deallocate(TR::Compiler);
       return false;
       }
 
@@ -220,4 +222,7 @@ internal_shutdownJit()
    codeCacheManager.destroy();
 
    TR::CompilationController::shutdown();
+
+   if (TR::Compiler != NULL)
+      TR::Compiler->rawAllocator.deallocate(TR::Compiler);
    }

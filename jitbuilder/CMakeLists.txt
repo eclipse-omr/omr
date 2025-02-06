@@ -153,15 +153,3 @@ endif()
 if(OMR_LLJB)
 	add_subdirectory(lljb)
 endif()
-
-# install(TARGETS jitbuilder
-#         ARCHIVE       DESTINATION ${CMAKE_BINARY_DIR}/jitbuilder_release
-#         PUBLIC_HEADER DESTINATION ${CMAKE_BINARY_DIR}/jitbuilder_release/include
-#         )
-#
-# # Create release directory
-# file(MAKE_DIRECTORY jitbuilder_release)
-# file(COPY ${jitbuilder_library} DESTINATION jitbuilder_release)
-# file(COPY ${CMAKE_SOURCE_DIR}/compiler/env   DESTINATION jitbuilder_release/include)
-# file(COPY ${CMAKE_SOURCE_DIR}/compiler/il    DESTINATION jitbuilder_release/include)
-# file(COPY ${CMAKE_SOURCE_DIR}/compiler/ilgen DESTINATION jitbuilder_release/include)

@@ -36,12 +36,12 @@ class BytecodeBuilder : public TR::IlBuilder
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL, int32_t bcLength=-1);
+   BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, const char *name=NULL, int32_t bcLength=-1);
 
    virtual bool isBytecodeBuilder() { return true; }
 
    /* The name for this BytecodeBuilder. This can be very helpful for debug output */
-   char *name() { return _name; }
+   const char *name() { return _name; }
 
    /**
     * @brief bytecode length for this builder object
@@ -116,7 +116,7 @@ public:
 protected:
    TR::BytecodeBuilder       * _fallThroughBuilder;
    List<TR::BytecodeBuilder> * _successorBuilders;
-   char                      * _name;
+   const char                * _name;
    int32_t                     _bcLength;
    TR::VirtualMachineState   * _initialVMState;
    TR::VirtualMachineState   * _vmState;

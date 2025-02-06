@@ -105,20 +105,29 @@ OMR::X86::CPU::initializeTargetProcessorInfo(bool force)
    OMR::X86::CodeGenerator::initializeX86TargetProcessorInfo(force);
    }
 
+TR_X86CPUIDBuffer *OMR::X86::CPU::cpuIDBuf = NULL;
+
+void
+OMR::X86::CPU::destroyTargetProcessorInfo()
+   {
+   if (cpuIDBuf != NULL)
+      free(cpuIDBuf);
+   cpuIDBuf = NULL;
+   }
+
 TR_X86CPUIDBuffer *
 OMR::X86::CPU::queryX86TargetCPUID()
    {
-   static TR_X86CPUIDBuffer *buf = NULL;
 
-   if (!buf)
+   if (!cpuIDBuf)
       {
-      buf = reinterpret_cast<TR_X86CPUIDBuffer *>(malloc(sizeof(TR_X86CPUIDBuffer)));
-      if (!buf)
+      cpuIDBuf = reinterpret_cast<TR_X86CPUIDBuffer *>(malloc(sizeof(TR_X86CPUIDBuffer)));
+      if (!cpuIDBuf)
          return NULL;
-      jitGetCPUID(buf);
+      jitGetCPUID(cpuIDBuf);
       }
 
-   return buf;
+   return cpuIDBuf;
    }
 
 const char *

@@ -109,6 +109,7 @@ public:
    // object beforehand.
    //
    void initialize();
+   void destroy();
 
    TR::PersistentAllocator &persistentAllocator() { return _persistentAllocator; }
 
@@ -128,6 +129,10 @@ protected:
    // Initialize 'host' environment for this compiler
    //
    void initializeHostEnvironment();
+
+
+   // Free up 'target' environment for this compiler
+   void destroyTargetEnvironment();
 
 private:
 
