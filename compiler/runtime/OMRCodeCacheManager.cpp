@@ -222,7 +222,14 @@ OMR::CodeCacheManager::destroy()
                                 _symbolContainer->_totalSymbolNameLength),
                               "Failed to write code cache symbols to relocatable ELF file.");
       }
+
    }
+
+   if (_symbolContainer)
+      {
+      self()->freeMemory(_symbolContainer);
+      _symbolContainer = NULL;
+      }
 #endif // HOST_OS == OMR_LINUX
 
    TR::CodeCache *codeCache = self()->getFirstCodeCache();
@@ -238,6 +245,10 @@ OMR::CodeCacheManager::destroy()
       {
       self()->freeCodeCacheSegment(_codeCacheRepositorySegment);
       }
+
+   TR::Monitor::destroy(_usageMonitor);
+   TR::Monitor::destroy(_codeCacheList._mutex);
+   TR::Monitor::destroy(_codeCacheRepositoryMonitor);
 
    _initialized = false;
    }
