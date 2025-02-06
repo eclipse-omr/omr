@@ -11791,7 +11791,7 @@
    /* .description =    "Scalar Maximum Double-Precision", */
    /* .prefix      = */ 0x00000000,
    /* .opcode      = */ 0xF0000500,
-   /* .format      = */ FORMAT_UNKNOWN,
+   /* .format      = */ FORMAT_FRT_FRA_FRB,
    /* .minimumALS  = */ OMR_PROCESSOR_PPC_P7,
    /* .properties  = */ PPCOpProp_IsVSX |
                         PPCOpProp_DoubleFP |
@@ -11804,7 +11804,7 @@
    /* .description =    "Scalar Minimum Double-Precision", */
    /* .prefix      = */ 0x00000000,
    /* .opcode      = */ 0xF0000540,
-   /* .format      = */ FORMAT_UNKNOWN,
+   /* .format      = */ FORMAT_FRT_FRA_FRB,
    /* .minimumALS  = */ OMR_PROCESSOR_PPC_P7,
    /* .properties  = */ PPCOpProp_IsVSX |
                         PPCOpProp_DoubleFP |
