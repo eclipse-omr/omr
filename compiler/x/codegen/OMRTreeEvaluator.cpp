@@ -71,6 +71,7 @@
 #include "ras/DebugCounter.hpp"
 #include "runtime/Runtime.hpp"
 #include "x/codegen/HelperCallSnippet.hpp"
+#include "x/codegen/OMRX86Instruction.hpp"
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "x/codegen/RegisterRematerialization.hpp"
 #include "x/codegen/X86Instruction.hpp"
@@ -5962,6 +5963,165 @@ OMR::X86::TreeEvaluator::bitpermuteEvaluator(TR::Node *node, TR::CodeGenerator *
    return resultReg;
    }
 
+TR::Register*
+OMR::X86::TreeEvaluator::compressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::DataType dt = node->getDataType();
+
+   TR_ASSERT_FATAL(dt == TR::Int32 || dt == TR::Int16 || dt == TR::Int8, "compressbitsEvaluator only supports 32, 16, or 8 bits");
+
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = NULL;
+
+   if (dt != TR::Int32)
+      {
+      // src needs to be zero-extended to 32 bits
+      if (srcNode->getReferenceCount() == 1 &&
+          srcNode->getRegister() == NULL &&
+          srcNode->getOpCode().isLoadVar())
+         {
+         TR::InstOpCode::Mnemonic extendOpCode = (dt == TR::Int16) ? TR::InstOpCode::MOVZXReg4Mem2 : TR::InstOpCode::MOVZXReg4Mem1;
+         TR::MemoryReference *srcMR = generateX86MemoryReference(maskNode, cg);
+         srcReg = cg->allocateRegister(TR_GPR);
+         generateRegMemInstruction(extendOpCode, node, srcReg, srcMR, cg);
+         }
+      else if (srcNode->getOpCode().isLoadConst())
+         {
+         uint32_t src = (dt == TR::Int16) ? srcNode->getUnsignedShortInt() : srcNode->getUnsignedByte();
+         srcReg = TR::TreeEvaluator::loadConstant(srcNode, src, TR_RematerializableInt, cg);
+         }
+      else
+         {
+         TR::InstOpCode::Mnemonic extendOpCode = (dt == TR::Int16) ? TR::InstOpCode::MOVZXReg4Reg2 : TR::InstOpCode::MOVZXReg4Reg1;
+         srcReg = cg->intClobberEvaluate(srcNode);
+         generateRegRegInstruction(extendOpCode, node, srcReg, srcReg, cg);
+         }
+      }
+   else
+      {
+      srcReg = cg->intClobberEvaluate(srcNode);
+      }
+
+   if (maskNode->getReferenceCount() == 1 &&
+       maskNode->getRegister() == NULL &&
+       maskNode->getOpCode().isLoadVar())
+      {
+      TR::MemoryReference *maskMR = generateX86MemoryReference(maskNode, cg);
+      generateRegRegMemInstruction(TR::InstOpCode::PEXT4RegRegMem, node, srcReg, srcReg, maskMR, cg);
+      maskMR->decNodeReferenceCounts(cg);
+      }
+   else
+      {
+      TR::Register *maskReg = cg->evaluate(maskNode);
+      generateRegRegRegInstruction(TR::InstOpCode::PEXT4RegRegReg, node, srcReg, srcReg, maskReg, cg);
+      cg->stopUsingRegister(maskReg);
+      cg->decReferenceCount(maskNode);
+      }
+
+   node->setRegister(srcReg);
+   cg->decReferenceCount(srcNode);
+
+   return srcReg;
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::bcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return compressbitsEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::scompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return compressbitsEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::icompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return compressbitsEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::expandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::DataType dt = node->getDataType();
+
+   TR_ASSERT_FATAL(dt == TR::Int32 || dt == TR::Int16 || dt == TR::Int8, "expandbitsEvaluator only supports 32, 16, or 8 bits");
+
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = cg->intClobberEvaluate(srcNode);
+   TR::Register *maskReg = NULL;
+   bool useRegRegMem = maskNode->getReferenceCount() == 1 &&
+                       maskNode->getRegister() == NULL &&
+                       maskNode->getOpCode().isLoadVar();
+
+   if (dt != TR::Int32)
+      {
+      // mask needs to be zero-extended to 32 bits
+      if (useRegRegMem)
+         {
+         TR::InstOpCode::Mnemonic extendOpCode = (dt == TR::Int16) ? TR::InstOpCode::MOVZXReg4Mem2 : TR::InstOpCode::MOVZXReg4Mem1;
+         TR::MemoryReference *maskMR = generateX86MemoryReference(maskNode, cg);
+         maskReg = cg->allocateRegister(TR_GPR);
+         generateRegMemInstruction(extendOpCode, node, maskReg, maskMR, cg);
+         }
+      else if (maskNode->getOpCode().isLoadConst())
+         {
+         uint32_t mask = (dt == TR::Int16) ? maskNode->getUnsignedShortInt() : maskNode->getUnsignedByte();
+         maskReg = TR::TreeEvaluator::loadConstant(maskNode, mask, TR_RematerializableInt, cg);
+         }
+      else
+         {
+         TR::InstOpCode::Mnemonic extendOpCode = (dt == TR::Int16) ? TR::InstOpCode::MOVZXReg4Reg2 : TR::InstOpCode::MOVZXReg4Reg1;
+         maskReg = cg->intClobberEvaluate(maskNode);
+         generateRegRegInstruction(extendOpCode, node, maskReg, maskReg, cg);
+         }
+
+      generateRegRegRegInstruction(TR::InstOpCode::PDEP4RegRegReg, node, srcReg, srcReg, maskReg, cg);
+      cg->stopUsingRegister(maskReg);
+      }
+   else
+      {
+      if (useRegRegMem)
+         {
+         TR::MemoryReference *maskMR = generateX86MemoryReference(maskNode, cg);
+         generateRegRegMemInstruction(TR::InstOpCode::PDEP4RegRegMem, node, srcReg, srcReg, maskMR, cg);
+         }
+      else
+         {
+         maskReg = cg->evaluate(maskNode);
+         generateRegRegRegInstruction(TR::InstOpCode::PDEP4RegRegReg, node, srcReg, srcReg, maskReg, cg);
+         cg->stopUsingRegister(maskReg);
+         }
+      }
+
+   node->setRegister(srcReg);
+   cg->decReferenceCount(srcNode);
+   cg->decReferenceCount(maskNode);
+
+   return srcReg;
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::bexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return expandbitsEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::sexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return expandbitsEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::iexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return expandbitsEvaluator(node, cg);
+   }
 
 // mask evaluators
 TR::Register*
