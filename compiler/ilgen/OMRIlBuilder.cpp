@@ -510,7 +510,7 @@ OMR::IlBuilder::OrphanBuilder()
    }
 
 TR::BytecodeBuilder *
-OMR::IlBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
+OMR::IlBuilder::OrphanBytecodeBuilder(int32_t bcIndex, const char *name)
    {
    TR::BytecodeBuilder *orphan = new (comp()->trHeapMemory()) TR::BytecodeBuilder(_methodBuilder, bcIndex, name);
    orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
@@ -782,6 +782,7 @@ OMR::IlBuilder::StoreIndirect(const char *type, const char *field, TR::IlValue *
    TraceIL("IlBuilder[ %p ]::StoreIndirect %s.%s = %d (base is %d)\n", this, type, field, value->getID(), object->getID());
    TR::ILOpCodes storeOp = comp()->il.opCodeForIndirectStore(fieldType);
    genTreeTop(TR::Node::createWithSymRef(storeOp, 2, loadValue(object), loadValue(value), 0, symRef));
+   jitPersistentFree(fieldRef);
    }
 
 TR::IlValue *
@@ -816,6 +817,7 @@ OMR::IlBuilder::LoadIndirect(const char *type, const char *field, TR::IlValue *o
    TR::DataType fieldType = symRef->getSymbol()->getDataType();
    TR::IlValue *returnValue = newValue(fieldType, TR::Node::createWithSymRef(comp()->il.opCodeForIndirectLoad(fieldType), 1, loadValue(object), 0, symRef));
    TraceIL("IlBuilder[ %p ]::%d is LoadIndirect %s.%s from (%d)\n", this, returnValue->getID(), type, field, object->getID());
+   jitPersistentFree(fieldRef);
    return returnValue;
    }
 
@@ -1256,6 +1258,13 @@ OMR::IlBuilder::Return()
 void
 OMR::IlBuilder::Return(TR::IlValue *value)
    {
+   TR::DataType retType = value->getDataType();
+   if (value->getDataType() == TR::Int8 || value->getDataType() == TR::Int16 || (Word == Int64 && value->getDataType() == TR::Int32))
+      {
+      retType = Word->getPrimitiveType();
+      value = ConvertTo(Word, value);
+      }
+
    TR::IlBuilder *returnBuilder = _methodBuilder->returnBuilder();
    if (returnBuilder != NULL)
       {
@@ -2582,9 +2591,21 @@ void
 OMR::IlBuilder::ifCmpCondition(TR_ComparisonTypes ct, bool isUnsignedCmp, TR::IlValue *left, TR::IlValue *right, TR::Block *target)
    {
    integerizeAddresses(&left, &right);
+
+   // some unpleasantness because aarch64 doesn't currently implement all(any?) 8 or 16 bit ifcmp opcodes
+   if (comp()->target().cpu.isARM64())
+      {
+      if (left->getDataType() == TR::Int8 || left->getDataType() == TR::Int16)
+          left = ConvertTo(Int32, left);
+      if (right->getDataType() == TR::Int8 || right->getDataType() == TR::Int16)
+          right = ConvertTo(Int32, right);
+      }
+
    TR::Node *leftNode = loadValue(left);
    TR::Node *rightNode = loadValue(right);
-   TR::ILOpCode cmpOpCode(TR::ILOpCode::compareOpCode(leftNode->getDataType(), ct, isUnsignedCmp));
+   TR::DataType dt = leftNode->getDataType();
+   TR::ILOpCode cmpOpCode(TR::ILOpCode::compareOpCode(dt, ct, isUnsignedCmp));
+
    ifjump(cmpOpCode.convertCmpToIfCmp(),
           leftNode,
           rightNode,

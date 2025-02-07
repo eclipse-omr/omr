@@ -2994,6 +2994,19 @@ OMR::Options::shutdown(TR_FrontEnd * fe)
          TR::Options::closeLogsForOtherCompilationThreads(fe);
       }
 
+   if (TR::Options::getAOTCmdLineOptions()->_countString)
+      {
+      TR::Options::jitPersistentFree(const_cast<void *>(reinterpret_cast<const void *>(TR::Options::getAOTCmdLineOptions()->_countString)));
+      }
+   TR::Options::jitPersistentFree(_aotCmdLineOptions);
+   _aotCmdLineOptions = NULL;
+
+   if (TR::Options::getJITCmdLineOptions()->_countString)
+      {
+      TR::Options::jitPersistentFree(const_cast<void *>(reinterpret_cast<const void *>(TR::Options::getJITCmdLineOptions()->_countString)));
+      }
+   TR::Options::jitPersistentFree(_jitCmdLineOptions);
+   _jitCmdLineOptions = NULL;
    }
 
 

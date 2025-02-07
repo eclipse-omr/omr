@@ -60,7 +60,7 @@
                 { "name": "name"
                 , "overloadsuffix": ""
                 , "flags": []
-                , "return": "string"
+                , "return": "constString"
                 , "parms": []
                 },
                 { "name": "vmState"
@@ -424,7 +424,7 @@
                 , "return": "BytecodeBuilder"
                 , "parms": [
                     {"name":"bcIndex","type":"int32"},
-                    {"name":"name","type":"string"}
+                    {"name":"name","type":"constString"}
                     ]
                 },
                 { "name": "Copy"
