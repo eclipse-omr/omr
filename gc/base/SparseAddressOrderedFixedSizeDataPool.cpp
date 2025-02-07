@@ -145,22 +145,6 @@ MM_SparseAddressOrderedFixedSizeDataPool::mapSparseDataPtrToHeapProxyObjectPtr(v
 }
 
 bool
-MM_SparseAddressOrderedFixedSizeDataPool::unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr)
-{
-	bool ret = true;
-	MM_SparseDataTableEntry entryToRemove = MM_SparseDataTableEntry(dataPtr);
-
-	if (0 != hashTableRemove(_objectToSparseDataTable, &entryToRemove)) {
-		Trc_MM_SparseAddressOrderedFixedSizeDataPool_removeEntry_failure(dataPtr);
-		ret = false;
-	} else {
-		Trc_MM_SparseAddressOrderedFixedSizeDataPool_removeEntry_success(dataPtr);
-	}
-
-	return ret;
-}
-
-bool
 MM_SparseAddressOrderedFixedSizeDataPool::unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr, void *proxyObjPtr, uintptr_t size)
 {
 	bool ret = true;
@@ -215,19 +199,6 @@ MM_SparseAddressOrderedFixedSizeDataPool::findHeapProxyObjectPtrForSparseDataPtr
 	}
 
 	return proxyObjPtr;
-}
-
-bool
-MM_SparseAddressOrderedFixedSizeDataPool::isValidDataPtr(void *dataPtr)
-{
-	MM_SparseDataTableEntry *entry = findSparseDataTableEntryForSparseDataPtr(dataPtr);
-	bool ret = true;
-
-	if (entry != NULL) {
-		ret = (entry->_dataPtr == dataPtr);
-	}
-
-	return ret;
 }
 
 bool
@@ -388,24 +359,6 @@ MM_SparseAddressOrderedFixedSizeDataPool::returnFreeListEntry(void *dataAddr, ui
 
 	Trc_MM_SparseAddressOrderedFixedSizeDataPool_returnFreeListEntry_success(dataAddr, (void *)size, _freeListPoolFreeNodesCount, (void *)_approximateFreeMemorySize, (void *)_freeListPoolAllocBytes);
 	return true;
-}
-
-bool
-MM_SparseAddressOrderedFixedSizeDataPool::updateSparseDataEntryAfterObjectHasMoved(void *dataPtr, void *proxyObjPtr)
-{
-	bool ret = true;
-	MM_SparseDataTableEntry lookupEntry = MM_SparseDataTableEntry(dataPtr);
-	MM_SparseDataTableEntry *entry = (MM_SparseDataTableEntry *)hashTableFind(_objectToSparseDataTable, &lookupEntry);
-
-	if ((NULL != entry) && (entry->_dataPtr == dataPtr)) {
-		Trc_MM_SparseAddressOrderedFixedSizeDataPool_updateEntry_success(dataPtr, entry->_proxyObjPtr, proxyObjPtr);
-		entry->_proxyObjPtr = proxyObjPtr;
-	} else {
-		Trc_MM_SparseAddressOrderedFixedSizeDataPool_findEntry_failure(dataPtr);
-		ret = false;
-	}
-
-	return ret;
 }
 
 bool

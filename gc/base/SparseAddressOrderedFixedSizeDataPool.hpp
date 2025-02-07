@@ -132,15 +132,6 @@ public:
 	bool mapSparseDataPtrToHeapProxyObjectPtr(void *dataPtr, void *proxyObjPtr, uintptr_t size);
 
 	/**
-	 * Remove entry from the hash table that is associated the object data pointer provided
-	 *
-	 * @param dataPtr	void*	Data pointer
-	 *
-	 * @return true if key associated to dataPtr is removed successfully, false otherwise
-	 */
-	bool unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr);
-
-	/**
 	 * Remove entry from the hash table that is associated the object data pointer provided.
 	 * Verify if the entry is consistent(the size and associated the object) before removing.
 	 * Assert if no entry is found or the verifying is failed.
@@ -176,13 +167,6 @@ public:
 	 */
 	void *findHeapProxyObjectPtrForSparseDataPtr(void *dataPtr);
 
-	/**
-	 * Check if the given data pointer is valid
-	 *
-	 * @param dataPtr	void*	Data pointer
-	 * @return true if data pointer is valid
-	 */
-	bool isValidDataPtr(void *dataPtr);
 	/**
 	 * Check if the given data pointer is valid and consistent(dataPtr, proxyObjPtr and size)
 	 *
@@ -224,16 +208,6 @@ public:
 	{
 		return _allocObjectCount;
 	}
-
-	/**
-	 * Update the proxyObjPtr after an object has moved for the sparse data entry associated with the given dataPtr.
-	 *
-	 * @param dataPtr       void*   Data pointer
-	 * @param proxyObjPtr   void*   Updated in-heap proxy object pointer for data pointer
-	 *
-	 * @return true if the sparse data entry was successfully updated, false otherwise
-	 */
-	bool updateSparseDataEntryAfterObjectHasMoved(void *dataPtr, void *proxyObjPtr);
 
 	/**
 	 * Update the newProxyObjPtr after an object has moved for the sparse data entry associated with the given dataPtr.
