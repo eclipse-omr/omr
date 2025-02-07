@@ -4569,7 +4569,7 @@ static TR::Register *generateMaxMin(TR::Node *node, TR::CodeGenerator *cg, bool 
    TR::InstOpCode::Mnemonic move_op = type.isIntegral() ? TR::InstOpCode::mr : TR::InstOpCode::fmr;
    TR::InstOpCode::Mnemonic cmp_op;
    bool two_reg = (cg->comp()->target().is32Bit() && type.isInt64());
-   bool check_nan = type.isFloatingPoint();
+   bool is_float = type.isFloatingPoint();
 
    switch (node->getOpCodeValue())
       {
@@ -4640,7 +4640,7 @@ static TR::Register *generateMaxMin(TR::Node *node, TR::CodeGenerator *cg, bool 
    start_label->setStartInternalControlFlow();
    end_label->setEndInternalControlFlow();
    TR::LabelSymbol *nan_label;
-   if (check_nan)
+   if (is_float)
       nan_label = generateLabelSymbol(cg);
    TR::RegisterDependencyConditions *dep;
 
@@ -4669,20 +4669,30 @@ static TR::Register *generateMaxMin(TR::Node *node, TR::CodeGenerator *cg, bool 
    else
       {
       generateTrg1Src2Instruction(cg, cmp_op, node, condReg, trgReg, src2Reg);
-      if (check_nan)
+      if (is_float)
          {
-         generateConditionalBranchInstruction(cg, TR::InstOpCode::bnun, node, nan_label, condReg);
+         // Go to the nan_label for NaN
+         generateConditionalBranchInstruction(cg, TR::InstOpCode::bun, node, nan_label, condReg);
+
+         generateTrg1Src2Instruction(cg, max ? TR::InstOpCode::xsmaxdp : TR::InstOpCode::xsmindp,
+                                     node, trgReg, src1Reg, src2Reg);
+         generateLabelInstruction(cg, TR::InstOpCode::b, node, end_label);
+
+         generateLabelInstruction(cg, TR::InstOpCode::label, node, nan_label);
          // Move the NaN which is in one of trgReg or src2Reg to trgReg by fadd
          generateTrg1Src2Instruction(cg, TR::InstOpCode::fadd, node, trgReg, trgReg, src2Reg);
-         generateLabelInstruction(cg, TR::InstOpCode::b, node, end_label);
-         generateLabelInstruction(cg, TR::InstOpCode::label, node, nan_label);
          }
-      generateConditionalBranchInstruction(cg, max ? TR::InstOpCode::bge : TR::InstOpCode::ble, node, end_label, condReg);
-      generateTrg1Src1Instruction(cg, move_op, node, trgReg, src2Reg);
-
-      dep = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 3, cg->trMemory());
+      else
+         {
+         generateConditionalBranchInstruction(cg, max ? TR::InstOpCode::bge : TR::InstOpCode::ble,
+                                              node, end_label, condReg);
+         generateTrg1Src1Instruction(cg, move_op, node, trgReg, src2Reg);
+         }
+      dep = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 4, cg->trMemory());
       dep->addPostCondition(condReg, TR::RealRegister::NoReg);
       dep->addPostCondition(trgReg, TR::RealRegister::NoReg);
+      if (is_float && src1Reg != trgReg)
+         dep->addPostCondition(src1Reg, TR::RealRegister::NoReg);
       dep->addPostCondition(src2Reg, TR::RealRegister::NoReg);
       }
    generateDepLabelInstruction(cg, TR::InstOpCode::label, node, end_label, dep);
