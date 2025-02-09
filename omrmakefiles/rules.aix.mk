@@ -77,14 +77,14 @@ ifeq (openxl,$(OMR_TOOLCHAIN))
   # openxl options
   GLOBAL_CXXFLAGS+=-fno-exceptions
 else ifneq (,$(findstring xlclang++,$(notdir $(CXX))))
-  # xlc++ options
-  GLOBAL_CXXFLAGS+=-q mbcs -qinfo=pro
-else
   # xlclang++ options
   GLOBAL_CXXFLAGS+=-qxlcompatmacros -fno-exceptions
   ifeq (0,$(OMR_RTTI))
     GLOBAL_CXXFLAGS+=-fno-rtti
   endif
+else
+  # xlc++ options
+  GLOBAL_CXXFLAGS+=-q mbcs -qinfo=pro
 endif
 
 ifdef I5_VERSION
