@@ -5229,48 +5229,20 @@ TR::Register *OMR::Power::TreeEvaluator::arraytranslateEvaluator(TR::Node *node,
          }
       }
 
-   TR::LabelSymbol *labelArrayTranslateStart  = generateLabelSymbol(cg);
-   TR::LabelSymbol *labelNonZeroLengthInput   = generateLabelSymbol(cg);
-   TR::LabelSymbol *labelArrayTranslateDone   = generateLabelSymbol(cg);
-   labelArrayTranslateStart->setStartInternalControlFlow();
-   labelArrayTranslateDone->setEndInternalControlFlow();
-
-   generateLabelInstruction(cg, TR::InstOpCode::label, node, labelArrayTranslateStart);
-
-   generateTrg1Src1ImmInstruction(cg,TR::InstOpCode::Op_cmpi, node, condReg, inputLenReg, 0);
-   generateConditionalBranchInstruction(cg, TR::InstOpCode::bgt, node, labelNonZeroLengthInput, condReg);
-
-
-      {  //Zero length input, return value in outputLenReg.
-         generateTrg1ImmInstruction(cg, TR::InstOpCode::li, node, inputReg, 0);
-         generateLabelInstruction(cg, TR::InstOpCode::b, node, labelArrayTranslateDone);
+   TR_RuntimeHelper helper;
+   if (sourceByte)
+      {
+      TR_ASSERT(!node->isTargetByteArrayTranslate(), "Both source and target are byte for array translate");
+      helper = arraytranslateOT ? TR_PPCarrayTranslateTROT : TR_PPCarrayTranslateTROT255;
       }
-
-   generateLabelInstruction(cg, TR::InstOpCode::label, node, labelNonZeroLengthInput);
-
-      {  //Array Translate helper call, greater-than-zero length input.
-         TR_RuntimeHelper helper;
-         if (sourceByte)
-            {
-            TR_ASSERT(!node->isTargetByteArrayTranslate(), "Both source and target are byte for array translate");
-            if (arraytranslateOT)
-            {
-               helper = TR_PPCarrayTranslateTROT;
-            }
-            else
-               helper = TR_PPCarrayTranslateTROT255;
-            }
-         else
-            {
-            TR_ASSERT(node->isTargetByteArrayTranslate(), "Both source and target are word for array translate");
-            helper = arraytranslateTRTO255 ? TR_PPCarrayTranslateTRTO255 : TR_PPCarrayTranslateTRTO;
-            }
-         TR::SymbolReference *helperSym = cg->symRefTab()->findOrCreateRuntimeHelper(helper);
-         uintptr_t          addr = (uintptr_t)helperSym->getMethodAddress();
-         generateDepImmSymInstruction(cg, TR::InstOpCode::bl, node, addr, deps, helperSym);
+   else
+      {
+      TR_ASSERT(node->isTargetByteArrayTranslate(), "Both source and target are word for array translate");
+      helper = arraytranslateTRTO255 ? TR_PPCarrayTranslateTRTO255 : TR_PPCarrayTranslateTRTO;
       }
-
-   generateDepLabelInstruction(cg, TR::InstOpCode::label, node, labelArrayTranslateDone, deps);
+   TR::SymbolReference *helperSym = cg->symRefTab()->findOrCreateRuntimeHelper(helper);
+   uintptr_t addr = (uintptr_t)helperSym->getMethodAddress();
+   generateDepImmSymInstruction(cg, TR::InstOpCode::bl, node, addr, deps, helperSym);
 
    for (uint32_t i = 0; i < node->getNumChildren(); ++i)
       cg->decReferenceCount(node->getChild(i));
