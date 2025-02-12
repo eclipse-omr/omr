@@ -144,6 +144,27 @@ namespace TR { class Register; }
                                            IA32OpProp_ModifiesCarryFlag    | \
                                            IA32OpProp_ModifiesOverflowFlag)
 
+// Flags used in conjunction with VEX/EVEX L bit to determine size of memory operands
+// If V2V / S2V / V2S Flags are not provided, CG will never shorten EVEX displacement
+#define IA32OpProp2_Vector2Vector             0x00000001 // Source and destination are both vectors
+#define IA32OpProp2_Scalar2Vector             0x00000002 // Source is scalar, destination is vector
+#define IA32OpProp2_Vector2Scalar             0x00000002 // Source is vector, destination is scalar
+
+#define IA32OpProp2_SIMDNarrowing             0x00000004 // Narrows larger elements to smaller sized elements
+#define IA32OpProp2_SIMDExtension             0x00000008 // Extends smaller elements to larger sized elements
+
+#define IA32OpProp2_V2V_RATIO_1x              0x00000010 // Ratio between operands is 1x (such as byte vector to byte vector)
+#define IA32OpProp2_V2V_RATIO_2x              0x00000020 // Ratio between operands is 2x (such as byte vector to word vector)
+#define IA32OpProp2_V2V_RATIO_4x              0x00000040 // Ratio between operands is 4x (such as byte vector to double-word vector)
+#define IA32OpProp2_V2V_RATIO_8x              0x00000080 // Ratio between operands is 8x (such as byte vector to quad-word vector)
+
+#define IA32OpProp2_S2V_i8                    IA32OpProp2_V2V_RATIO_1x
+#define IA32OpProp2_S2V_i16                   IA32OpProp1_V2V_RATIO_2x
+#define IA32OpProp2_S2V_i32                   IA32OpProp1_V2V_RATIO_4x
+#define IA32OpProp2_S2V_i64                   IA32OpProp1_V2V_RATIO_8x
+
+#define IA32OpProp2_DBG_VEX_V_PREFIX          0x00000100 // Prepend 'v' prefix in debug logs for vex/evex versions
+
 
 // Flags for SIMD opcode encoding support, and required CPU feature flags.
 // These flags will be added to SIMD opcodes and can be queried to verify
@@ -326,6 +347,10 @@ class InstOpCode: public OMR::InstOpCode
          {
          return vex_l != VEX_L___;
          }
+      inline bool isVex256() const
+         {
+         return vex_l == VEX_L256;
+         }
       inline bool isEvex() const
          {
          return vex_l >= EVEX_L128;
@@ -502,6 +527,66 @@ class InstOpCode: public OMR::InstOpCode
    inline uint32_t isFusableCompare()              const { return _properties1[_mnemonic] & IA32OpProp1_FusableCompare; }
    inline bool     isEvexInstruction()             const { return _binaries[_mnemonic].vex_l >> 2 == 1; }
    inline uint32_t getInstructionFeatureHints()    const { return _features[_mnemonic]; }
+   inline uint32_t isVector2Vector()               const { return _properties2[_mnemonic] & IA32OpProp2_Vector2Vector; }
+   inline uint32_t isScalar2Vector()               const { return _properties2[_mnemonic] & IA32OpProp2_Scalar2Vector; }
+   inline uint32_t isSIMDNarrowing()               const { return _properties2[_mnemonic] & IA32OpProp2_SIMDNarrowing; }
+   inline uint32_t canShortenEVEXDisplacement()     const { return isVector2Vector() || isScalar2Vector(); }
+
+   int32_t getSIMDMemOperandSize(OMR::X86::Encoding encoding)
+      {
+      if (canShortenEVEXDisplacement())
+         {
+         int32_t vectorSize = 16;
+         int32_t ratio = 1;
+
+         if (info().isEvex256() || info().isVex256())
+            {
+            vectorSize = 32;
+            }
+
+         if (info().isEvex512())
+            {
+            vectorSize = 64;
+            }
+
+         switch (encoding)
+            {
+            case OMR::X86::VEX_L256:
+            case OMR::X86::EVEX_L256:
+               vectorSize = 32;
+               break;
+            case OMR::X86::EVEX_L512:
+               vectorSize = 64;
+               break;
+            default:
+               break;
+            }
+
+         if (_properties2[_mnemonic] & IA32OpProp2_V2V_RATIO_2x)
+            ratio = 2;
+         if (_properties2[_mnemonic] & IA32OpProp2_V2V_RATIO_4x)
+            ratio = 4;
+         if (_properties2[_mnemonic] & IA32OpProp2_V2V_RATIO_8x)
+            ratio = 8;
+
+         if (isScalar2Vector())
+            return ratio;
+
+         if (isSIMDNarrowing())
+            {
+            // We are narrowing source operand down to the size of vectorSize
+            return vectorSize * ratio;
+            }
+         else
+            {
+            // We are extending source operand up to the size of vectorSize
+            return vectorSize / ratio;
+            }
+         }
+
+      TR_ASSERT_FATAL(false, "Cannot narrow EVEX displacement without v2v / s2v / v2s flags");
+      return 0;
+      }
 
    OMR::X86::Encoding getSIMDEncoding(TR::CPU *target, TR::VectorLength vl)
       {
