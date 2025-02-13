@@ -103,7 +103,9 @@ struct TR_BinaryEncodingData
 class TR_FrontEnd : private TR::Uncopyable
    {
 public:
-   TR_FrontEnd() {}
+   TR_FrontEnd()
+      : _isSafeToFreeOptionsOnShutdown(false)   // most conservative setting, relied upon by OpenJ9
+      {}
 
    // --------------------------------------------------------------------------
    // Method
@@ -222,6 +224,11 @@ public:
    virtual char *getFormattedName(char *, int32_t, char *, char *, bool);
    virtual void printVerboseLogHeader(TR::Options *cmdLineOptions) {}
 
+   virtual void setIsSafeToFreeOptionsOnShutdown(bool isSafe=true);
+   virtual bool isSafeToFreeOptionsOnShutdown();
+
+private:
+   bool _isSafeToFreeOptionsOnShutdown;
    };
 
 #endif

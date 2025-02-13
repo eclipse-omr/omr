@@ -137,6 +137,8 @@ initializeJitBuilder(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_
 
    // --------------------------------------------------------------------------
    static TR::FrontEnd fe;
+   fe.setIsSafeToFreeOptionsOnShutdown(true);
+
    auto jitConfig = fe.jitConfig();
 
    initializeAllHelpers(jitConfig, helperIDs, helperAddresses, numHelpers);

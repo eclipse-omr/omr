@@ -166,6 +166,8 @@ initializeTestJit(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t n
 
    // --------------------------------------------------------------------------
    static TR::FrontEnd fe;
+   fe.setIsSafeToFreeOptionsOnShutdown(true);
+
    auto jitConfig = fe.jitConfig();
 
    initializeAllHelpers(jitConfig, helperIDs, helperAddresses, numHelpers);

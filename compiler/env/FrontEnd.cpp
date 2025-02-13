@@ -318,3 +318,15 @@ TR_FrontEnd::methodTrampolineLookup(TR::Compilation *comp, TR::SymbolReference *
    TR_UNIMPLEMENTED();
    return 0;
    }
+
+void
+TR_FrontEnd::setIsSafeToFreeOptionsOnShutdown(bool isSafe)
+   {
+   _isSafeToFreeOptionsOnShutdown = isSafe;
+   }
+
+bool
+TR_FrontEnd::isSafeToFreeOptionsOnShutdown()
+   {
+   return _isSafeToFreeOptionsOnShutdown;
+   }
