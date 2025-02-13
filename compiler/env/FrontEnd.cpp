@@ -283,15 +283,22 @@ TR_FrontEnd::getClassFromMethodBlock(TR_OpaqueMethodBlock *mb)
    return NULL;
    }
 
-intptr_t
+int32_t
 TR_FrontEnd::getStringUTF8Length(uintptr_t objectPointer)
    {
    TR_UNIMPLEMENTED();
    return -1;
    }
 
+uint64_t
+TR_FrontEnd::getStringUTF8UnabbreviatedLength(uintptr_t objectPointer)
+   {
+   TR_UNIMPLEMENTED();
+   return -1;
+   }
+
 char *
-TR_FrontEnd::getStringUTF8(uintptr_t objectPointer, char *buffer, intptr_t bufferSize)
+TR_FrontEnd::getStringUTF8(uintptr_t objectPointer, char *buffer, uintptr_t bufferSize)
    {
    TR_UNIMPLEMENTED();
    return NULL;
