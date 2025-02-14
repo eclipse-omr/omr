@@ -788,14 +788,6 @@ int32_t TR_UseDefInfo::getMemorySymbolIndex(TR::Node * node)
    return -1;
    }
 
-bool TR_UseDefInfo::shouldIndexVolatileSym(TR::SymbolReference*ref, AuxiliaryData &aux)
-   {
-   if (! ref->getSymbol()->isVolatile())        //index non-volatiles
-      return true;
-
-   return false;
-   }
-
 /**
  * Find all symbols whose uses and defs are to be tracked and give them a
  * local index. This index is used to index into the array of bit vectors
@@ -905,13 +897,13 @@ bool TR_UseDefInfo::indexSymbolsAndNodes(AuxiliaryData &aux)
             //
             sym->setLocalIndex(NULL_USEDEF_SYMBOL_INDEX);
 
-            // Volatile symbols must not be considered since they don't have
+            // Non-transparent symbols must not be considered since they don't have
             // any specifiable def points.
             //
-            if (!shouldIndexVolatileSym(symRef,aux))
+            if (!sym->isTransparent())
                {
                if (trace())
-                  traceMsg(comp(), "Ignoring Symbol [%p] because it is volatile %d or aliased to a volatile %d\n",sym,sym->isVolatile(),aux._volatileOrAliasedToVolatileSymbols.get(symRefNumber));
+                  traceMsg(comp(), "Ignoring Symbol [%p] because it is non-transparent %d or aliased to a non-transparent %d\n",sym,!sym->isTransparent(),aux._volatileOrAliasedToVolatileSymbols.get(symRefNumber));
                continue;
                }
 
@@ -969,7 +961,7 @@ bool TR_UseDefInfo::indexSymbolsAndNodes(AuxiliaryData &aux)
             }
          if (sym && sym->getLocalIndex() == NULL_USEDEF_SYMBOL_INDEX)
             {
-            if (!shouldIndexVolatileSym(symRef,aux))
+            if (!sym->isTransparent())
                continue;
 
             if (sym->isStatic())
@@ -1018,7 +1010,7 @@ bool TR_UseDefInfo::indexSymbolsAndNodes(AuxiliaryData &aux)
          sym = symRef->getSymbol();
          if (sym && sym->getLocalIndex() == NULL_USEDEF_SYMBOL_INDEX)
             {
-            if (!shouldIndexVolatileSym(symRef,aux))
+            if (!sym->isTransparent())
                continue;
 
             if (sym->isStatic())
@@ -2545,7 +2537,7 @@ TR::Node *TR_UseDefInfo::getSingleDefiningLoad(TR::Node *node)
           (n = getNode(firstDef)) &&
           (n->getUseDefIndex() > 0) &&
           (n->getOpCode().isLoadVar()) &&
-          (n->getOpCode().hasSymbolReference() && !n->getSymbol()->isVolatile()))
+          (n->getOpCode().hasSymbolReference() && n->getSymbol()->isTransparent()))
          return n;
       }
    return NULL;
