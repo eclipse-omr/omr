@@ -10388,17 +10388,17 @@
    /*                   PPCOpProp_SyncSideEffectFree, */
    /* }, */
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::xsmaxjdp, */
-   /* .name        =    "xsmaxjdp", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::xsmaxjdp,
+   /* .name        = */ "xsmaxjdp",
    /* .description =    "VSX Scalar Maximum Type-J Double-Precision", */
-   /* .prefix      =    0x00000000, */
-   /* .opcode      =    0xF0000480, */
-   /* .format      =    FORMAT_UNKNOWN, */
-   /* .minimumALS  =    OMR_PROCESSOR_PPC_P9, */
-   /* .properties  =    PPCOpProp_IsVSX | */
-   /*                   PPCOpProp_SyncSideEffectFree, */
-   /* }, */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0xF0000480,
+   /* .format      = */ FORMAT_FRT_FRA_FRB,
+   /* .minimumals  = */ OMR_PROCESSOR_PPC_P9,
+   /* .properties  = */ PPCOpProp_IsVSX |
+                        PPCOpProp_SyncSideEffectFree,
+   },
 
    {
    /* .mnemonic    = */ OMR::InstOpCode::xsmaddadp,
@@ -10438,17 +10438,17 @@
    /*                   PPCOpProp_SyncSideEffectFree, */
    /* }, */
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::xsminjdp, */
-   /* .name        =    "xsminjdp", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::xsminjdp,
+   /* .name        = */ "xsminjdp",
    /* .description =    "VSX Scalar Minimum Type-J Double-Precision", */
-   /* .prefix      =    0x00000000, */
-   /* .opcode      =    0xF00004C0, */
-   /* .format      =    FORMAT_UNKNOWN, */
-   /* .minimumALS  =    OMR_PROCESSOR_PPC_P9, */
-   /* .properties  =    PPCOpProp_IsVSX | */
-   /*                   PPCOpProp_SyncSideEffectFree, */
-   /* }, */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0xF00004C0,
+   /* .format      = */ FORMAT_FRT_FRA_FRB,
+   /* .minimumals  = */ OMR_PROCESSOR_PPC_P9,
+   /* .properties  = */ PPCOpProp_IsVSX |
+                        PPCOpProp_SyncSideEffectFree,
+   },
 
    {
    /* .mnemonic    = */ OMR::InstOpCode::xsmsubadp,

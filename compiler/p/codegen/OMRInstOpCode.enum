@@ -875,11 +875,11 @@
 // xsmsubqp,         // VSX Scalar Multiply-Subtract QP
 // xsmulqp,          // VSX Scalar Multiply QP
 // xsmaxcdp,         // VSX Scalar Maximum Type-C Double-Precision
-// xsmaxjdp,         // VSX Scalar Maximum Type-J Double-Precision
+   xsmaxjdp,         // VSX Scalar Maximum Type-J Double-Precision
    xsmaddadp,        // VSX Scalar Multiply-Add Type A Double-Precision
    xsmaddmdp,        // VSX Scalar Multiply-Add Type M Double-Precision
 // xsmincdp,         // VSX Scalar Minimum Type-C Double-Precision
-// xsminjdp,         // VSX Scalar Minimum Type-J Double-Precision
+   xsminjdp,         // VSX Scalar Minimum Type-J Double-Precision
    xsmsubadp,        // VSX Scalar Multiply-Subtract Type A Double-Precision
    xsmsubmdp,        // VSX Scalar Multiply-Subtract Type M Double-Precision
    xsmuldp,          // VSX Scalar Multiply Double-Precision

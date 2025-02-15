@@ -4634,6 +4634,26 @@ static TR::Register *generateMaxMin(TR::Node *node, TR::CodeGenerator *cg, bool 
          }
       }
 
+   // for floating points under P9+ we can just use xsmax/minjdp
+   if (is_float && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
+      {
+      generateTrg1Src2Instruction(cg, max ? TR::InstOpCode::xsmaxjdp : TR::InstOpCode::xsminjdp,
+                                    node, trgReg, src1Reg, src2Reg); 
+
+      TR::RegisterDependencyConditions *dep =
+         new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 2 + (trgReg != src1Reg),
+                                                                   cg->trMemory());
+      dep->addPostCondition(trgReg, TR::RealRegister::NoReg);
+      if (trgReg != src1Reg)
+         dep->addPostCondition(src1Reg, TR::RealRegister::NoReg);
+      dep->addPostCondition(src2Reg, TR::RealRegister::NoReg);
+
+      node->setRegister(trgReg);
+      cg->decReferenceCount(firstChild);
+      cg->decReferenceCount(secondChild);
+      return trgReg;
+      }
+
    TR::Register *condReg = cg->allocateRegister(TR_CCR);
    TR::LabelSymbol *start_label = generateLabelSymbol(cg);
    TR::LabelSymbol *end_label = generateLabelSymbol(cg);
