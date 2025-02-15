@@ -378,6 +378,7 @@ INSTRUCTION(ADDPSRegReg, addps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0x58, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SingleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -398,6 +399,7 @@ INSTRUCTION(ADDPDRegReg, addpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x58, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_DoubleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -967,6 +969,7 @@ INSTRUCTION(CMPPDRegRegImm1, cmppd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0xC2, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -977,6 +980,7 @@ INSTRUCTION(VCMPPDRegRegImm1, cmppd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0xC2, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
@@ -985,6 +989,7 @@ INSTRUCTION(CMPPSRegRegImm1, cmpps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0xC2, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -995,6 +1000,7 @@ INSTRUCTION(VCMPPSRegRegImm1, cmpps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0xC2, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
@@ -1956,6 +1962,7 @@ INSTRUCTION(DIVPSRegReg, divps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0x5e, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SingleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -1976,6 +1983,7 @@ INSTRUCTION(DIVPDRegReg, divpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x5e, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_DoubleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -2166,6 +2174,7 @@ INSTRUCTION(MULPSRegReg, mulps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0x59, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SingleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -2186,6 +2195,7 @@ INSTRUCTION(MULPDRegReg, mulpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x59, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_DoubleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -2733,6 +2743,7 @@ INSTRUCTION(VSQRTPDRegMem, vsqrtpd,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX_W, ESCAPE_0F__, 0x51, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget),
             PROPERTY1(IA32OpProp1_XMMTarget | IA32OpProp1_SourceIsMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -2750,6 +2761,7 @@ INSTRUCTION(VSQRTPSRegMem, vsqrtps,
             BINARY(VEX_L128, VEX_vNONE, PREFIX___, REX__, ESCAPE_0F__, 0x51, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget),
             PROPERTY1(IA32OpProp1_XMMTarget | IA32OpProp1_SourceIsMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -2788,6 +2800,7 @@ INSTRUCTION(MOVDQURegReg, movdqu,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F3, REX__, ESCAPE_0F__, 0x6f, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -2798,6 +2811,7 @@ INSTRUCTION(VMOVDQU8RegReg, movdqu,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F2, REX__, ESCAPE_0F__, 0x6f, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -2807,6 +2821,7 @@ INSTRUCTION(VMOVDQU16RegReg, movdqu,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F2, REX_W, ESCAPE_0F__, 0x6f, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -2816,6 +2831,7 @@ INSTRUCTION(VMOVDQU64RegReg, movdqu,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F3, REX_W, ESCAPE_0F__, 0x6f, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -2845,6 +2861,7 @@ INSTRUCTION(MOVDQUMemReg, movdqu,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F3, REX__, ESCAPE_0F__, 0x7f, 0, ModRM_MR__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3430,6 +3447,7 @@ INSTRUCTION(ORPDRegReg, orpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x56, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512DQ |
@@ -3622,6 +3640,7 @@ INSTRUCTION(PMOVSXBDRegReg, pmovsxbd,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x21, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_SIMDExtension | IA32OpProp2_V2V_RATIO_4x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3632,6 +3651,7 @@ INSTRUCTION(PMOVSXWDRegReg, pmovsxwd,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x23, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_SIMDExtension | IA32OpProp2_V2V_RATIO_2x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3643,6 +3663,7 @@ INSTRUCTION(PMOVZXBWRegReg, pmovzxbw,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x30, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_SIMDExtension | IA32OpProp2_V2V_RATIO_2x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3653,6 +3674,7 @@ INSTRUCTION(PMOVZXBDRegReg, pmovzxbd,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x31, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_SIMDExtension | IA32OpProp2_V2V_RATIO_4x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3663,6 +3685,7 @@ INSTRUCTION(PMOVZXBQRegReg, pmovzxbq,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x32, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_SIMDExtension | IA32OpProp2_V2V_RATIO_8x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3673,6 +3696,7 @@ INSTRUCTION(PMOVZXWDRegReg, pmovzxwd,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x33, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_SIMDExtension | IA32OpProp2_V2V_RATIO_2x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3690,7 +3714,7 @@ INSTRUCTION(VPMOVB2MRegReg, vpmovb2m,
 INSTRUCTION(VPMOVW2MRegReg, vpmovw2m,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F3, REX_W, ESCAPE_0F38, 0x29, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
-            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef | IA32OpProp1_SIMDSingleSource),
+            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512BW)
@@ -3715,6 +3739,7 @@ INSTRUCTION(PMULLWRegReg, pmullw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xd5, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3725,6 +3750,7 @@ INSTRUCTION(PMULLDRegReg, pmulld,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x40, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3735,6 +3761,7 @@ INSTRUCTION(PABSBRegReg, pabsb,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x1C, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE3Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3745,6 +3772,7 @@ INSTRUCTION(PABSWRegReg, pabsw,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x1D, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE3Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3755,6 +3783,7 @@ INSTRUCTION(PABSDRegReg, pabsd,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x1E, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE3Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3765,6 +3794,7 @@ INSTRUCTION(PABSQRegReg, pabsq,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX_W, ESCAPE_0F38, 0x1F, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
@@ -3773,6 +3803,7 @@ INSTRUCTION(PADDBRegReg, paddb,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xfc, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3783,6 +3814,7 @@ INSTRUCTION(PADDWRegReg, paddw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xfd, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3793,6 +3825,7 @@ INSTRUCTION(PADDDRegReg, paddd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xfe, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3803,6 +3836,7 @@ INSTRUCTION(PADDQRegReg, paddq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0xd4, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3813,6 +3847,7 @@ INSTRUCTION(PSUBBRegReg, psubb,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xf8, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3823,6 +3858,7 @@ INSTRUCTION(PSUBWRegReg, psubw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xf9, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3833,6 +3869,7 @@ INSTRUCTION(PSUBDRegReg, psubd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xfa, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3843,6 +3880,7 @@ INSTRUCTION(PSUBQRegReg, psubq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0xfb, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3853,6 +3891,7 @@ INSTRUCTION(PANDRegReg, pand,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xdb, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3863,6 +3902,7 @@ INSTRUCTION(PORRegReg, por,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xeb, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3873,6 +3913,7 @@ INSTRUCTION(PXORRegReg, pxor,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xef, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3928,6 +3969,7 @@ INSTRUCTION(PSHUFLWRegRegImm1, pshuflw,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_F2, REX__, ESCAPE_0F__, 0x70, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3968,6 +4010,7 @@ INSTRUCTION(PMINSWRegReg, pminsw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xEA, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -3978,6 +4021,7 @@ INSTRUCTION(PMINSDRegReg, pminsd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x39, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -3988,6 +4032,7 @@ INSTRUCTION(PMINSQRegReg, pminsq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x39, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
@@ -3996,6 +4041,7 @@ INSTRUCTION(MINPSRegReg, minps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0x5D, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget  | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -4006,6 +4052,7 @@ INSTRUCTION(MINPDRegReg, minpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x5D, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -4016,6 +4063,7 @@ INSTRUCTION(PMAXSBRegReg, pmaxsb,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x3C, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -4026,6 +4074,7 @@ INSTRUCTION(PMAXSWRegReg, pmaxsw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0xEE, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
@@ -4036,6 +4085,7 @@ INSTRUCTION(PMAXSDRegReg, pmaxsd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x3D, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_SSE4_1Supported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -4046,6 +4096,7 @@ INSTRUCTION(PMAXSQRegReg, pmaxsq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x3D, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
@@ -4054,6 +4105,7 @@ INSTRUCTION(MAXPSRegReg, maxps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0x5F, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -4064,6 +4116,7 @@ INSTRUCTION(MAXPDRegReg, maxpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x5F, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -5049,6 +5102,7 @@ INSTRUCTION(SUBPSRegReg, subps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX___, REX__, ESCAPE_0F__, 0x5c, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SingleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -5069,6 +5123,7 @@ INSTRUCTION(SUBPDRegReg, subpd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F__, 0x5c, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_DoubleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_MinTargetSupported |
                      X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
@@ -5558,6 +5613,7 @@ INSTRUCTION(VPSLLVWRegRegReg, psllvw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x12, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5565,6 +5621,7 @@ INSTRUCTION(VPSLLVDRegRegReg, psllvd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x47, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX2 | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -5573,6 +5630,7 @@ INSTRUCTION(VPSLLVQRegRegReg, psllvq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x47, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX2 | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -5581,6 +5639,7 @@ INSTRUCTION(VPSRAVWRegRegReg, vpsravw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x11, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5588,6 +5647,7 @@ INSTRUCTION(VPSRAVDRegRegReg, vpsravd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x46, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX2 | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -5596,6 +5656,7 @@ INSTRUCTION(VPSRAVQRegRegReg, vpsravq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x46, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5603,6 +5664,7 @@ INSTRUCTION(VPSRLVWRegRegReg, vpsrlvw,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x10, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5610,6 +5672,7 @@ INSTRUCTION(VPSRLVDRegRegReg, vpsrlvd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x45, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX2 | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -5618,6 +5681,7 @@ INSTRUCTION(VPSRLVQRegRegReg, vpsrlvq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x45, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX2 | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -5626,6 +5690,7 @@ INSTRUCTION(VPROLVDRegRegReg, vprolvd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x15, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5633,6 +5698,7 @@ INSTRUCTION(VPROLVQRegRegReg, vprolvq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x15, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5641,6 +5707,7 @@ INSTRUCTION(VPRORVDRegRegReg, vprorvd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0x14, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
@@ -5648,13 +5715,15 @@ INSTRUCTION(VPRORVQRegRegReg, vprorvq,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0x14, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)),
 INSTRUCTION(VPTERNLOGDRegMaskRegRegImm1, vpternlogd,
             BINARY(EVEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F3A, 0x25, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM),
-            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget),
+            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
@@ -5662,12 +5731,13 @@ INSTRUCTION(VPTERNLOGDRegMaskRegRegImm1, vpternlogd,
 INSTRUCTION(VPTERNLOGQRegMaskRegRegImm1, vpternlogq,
             BINARY(EVEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F3A, 0x25, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM),
-            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget),
+            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F)
             ),
-INSTRUCTION(VPERM2I128RegRegImm1, vperm2i128 ,
+INSTRUCTION(VPERM2I128RegRegImm1, vperm2i128,
             BINARY(VEX_L256, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F3A, 0x46, 0, ModRM_RM__, Immediate_1),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_ByteImmediate | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_YMMSource | IA32OpProp1_YMMTarget),
@@ -5676,6 +5746,7 @@ INSTRUCTION(VFMADD213PDRegRegReg, vfmadd213pd,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX_W, ESCAPE_0F38, 0xA8, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SingleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresFMA | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresFMA |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |
@@ -5685,6 +5756,7 @@ INSTRUCTION(VFMADD213PSRegRegReg, vfmadd213ps,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F38, 0xA8, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SingleFP | IA32OpProp_SourceRegisterInModRM | IA32OpProp_UsesTarget),
             PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget | IA32OpProp1_SourceCanBeMemRef),
+            PROPERTY2(IA32OpProp2_Vector2Vector | IA32OpProp2_V2V_RATIO_1x),
             FEATURES(X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresFMA | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresFMA |
                      X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL |
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL |

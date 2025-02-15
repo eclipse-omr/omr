@@ -2628,14 +2628,14 @@ TR_Debug::printArgumentFlush(TR::FILE *              pOutFile,
 
 static const char * opCodeToNameMap[] =
    {
-#define INSTRUCTION(name, mnemonic, binary, property0, property1, features) #name
+#define INSTRUCTION(name, mnemonic, binary, ...) #name
 #include "codegen/X86Ops.ins"
 #undef INSTRUCTION
    };
 
 static const char * opCodeToMnemonicMap[] =
    {
-#define INSTRUCTION(name, mnemonic, binary, property0, property1, features) #mnemonic
+#define INSTRUCTION(name, mnemonic, binary, ...) #mnemonic
 #include "codegen/X86Ops.ins"
 #undef INSTRUCTION
    };
