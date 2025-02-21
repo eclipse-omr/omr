@@ -4033,6 +4033,12 @@ OMR::Options::printOptions(const char *options, const char *envOptions)
    TR_Debug::dumpOptions(optionsType, options, envOptions, self(), _jitOptions, TR::Options::_feOptions, _feBase, _fe);
    if (_aggressivenessLevel > 0)
        TR_VerboseLog::writeLineLocked(TR_Vlog_INFO, "aggressivenessLevel=%d", _aggressivenessLevel);
+
+   if (self()->getOption(TR_NoResumableTrapHandler))
+       TR_VerboseLog::writeLineLocked(TR_Vlog_INFO, "noResumableTrapHandler");
+
+   if (self()->getOption(TR_DisableTraps))
+       TR_VerboseLog::writeLineLocked(TR_Vlog_INFO, "disableTraps");
    }
 
 
