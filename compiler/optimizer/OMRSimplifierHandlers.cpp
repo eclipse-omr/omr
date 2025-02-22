@@ -8194,6 +8194,7 @@ TR::Node *imulSimplifier(TR::Node * node, TR::Block * block, TR::Simplifier * s)
          }
       }
    else if (secondChildOp == TR::iconst &&
+            !s->comp()->cg()->doIntMulDecompositionInCG() &&
             !s->getLastRun() &&
             secondChild->getInt()!=0 && !isNonNegativePowerOf2(secondChild->getInt()) &&
             secondChild->getInt() != TR::getMinSigned<TR::Int32>())
@@ -8588,7 +8589,10 @@ TR::Node *lmulSimplifier(TR::Node * node, TR::Block * block, TR::Simplifier * s)
             }
          }
       }
-   else if (s->comp()->target().is64Bit() && secondChildOp==TR::lconst && !s->getLastRun() && secondChild->getLongInt()!=0 && !isNonNegativePowerOf2(secondChild->getLongInt()) && secondChild->getLongInt() != TR::getMinSigned<TR::Int64>())
+   else if (s->comp()->target().is64Bit() && !s->comp()->cg()->doIntMulDecompositionInCG() &&
+            secondChildOp == TR::lconst && !s->getLastRun() && secondChild->getLongInt() != 0 &&
+            !isNonNegativePowerOf2(secondChild->getLongInt()) &&
+            secondChild->getLongInt() != TR::getMinSigned<TR::Int64>())
       {
       decomposeMultiply(node, s, true);
       }

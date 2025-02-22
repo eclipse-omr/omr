@@ -702,6 +702,19 @@ public:
    bool opCodeIsNoOp(TR::ILOpCode &opCode);
    bool opCodeIsNoOpOnThisPlatform(TR::ILOpCode &opCode) {return false;}
 
+   /**
+    * @brief Determines whether integer multiplication decomposition should be deferred to the code generator.
+    *
+    * This function indicates if the decomposition of integer multiplication operations should
+    * be handled by the code generator instead of the optimizer (tree simplifier). Each architecture's
+    * code generator provides its own implementation of this function. By default, this function
+    * returns `false`, meaning that decomposition is not deferred to the code generator and the
+    * optimizer will attempt to simplify.
+    *
+    * @return true if integer multiplication decomposition should be deferred to the code generator, otherwise false.
+    */
+   bool doIntMulDecompositionInCG() { return false; };
+
    bool supportsSinglePrecisionSQRT() {return false;}
    bool supportsFusedMultiplyAdd() {return false;}
    bool supportsNegativeFusedMultiplyAdd() {return false;}
