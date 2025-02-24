@@ -130,6 +130,10 @@ public:
    bool getSupportsHardwareRound() { return false; }
    bool getSupportsHardwareCopySign() { return false; }
    bool hasPopulationCountInstruction() { return false; }
+   bool getSupportsHardware32bitCompress() { return false; }
+   bool getSupportsHardware64bitCompress() { return false; }
+   bool getSupportsHardware32bitExpand() { return false; }
+   bool getSupportsHardware64bitExpand() { return false; }
    bool supportsDecimalFloatingPoint() { return false; }
    bool hasFPU() { return true; }
 
