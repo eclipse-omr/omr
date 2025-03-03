@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 #include <dlfcn.h>
 #include "ut_omrport.h"
 
@@ -437,4 +438,108 @@ int32_t
 omrsl_startup(struct OMRPortLibrary *portLibrary)
 {
 	return 0;
+}
+
+/**
+ * Native Libraries
+ *
+ * This function is called go get all the shared libraries loaded by a process.
+ *
+ * @param[in] portLibrary Pointer to the OMR port library.
+ * @param[in] callback Function to be called for each library.
+ * @param[in] userData User-defined data passed to the callback.
+ *
+ * @return 0 if successful, or the first non-zero return value from the callback.
+ */
+uintptr_t
+omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData)
+{
+#if defined(LINUX)
+/* Length of buffer. */
+#define READ_CHUNK_SIZE (PATH_MAX + 100)
+	char buffer[READ_CHUNK_SIZE + 1];
+	char carryOver[READ_CHUNK_SIZE + 1];
+	intptr_t bytesRead = 0;
+	uintptr_t result = 0;
+	void *addrLow = NULL;
+	void *addrHigh = NULL;
+	unsigned long offset = 0;
+	int devMajor = 0;
+	int devMinor = 0;
+	unsigned long inode = 0;
+	char permissions[5] = {0};
+	char path[READ_CHUNK_SIZE];
+	int count = 0;
+	char combinedBuffer[2 * READ_CHUNK_SIZE + 1];
+	int lastCharIsNewline = 0;
+	char *line = NULL;
+	uintptr_t readChars = 0;
+	int32_t portableError = 0;
+	intptr_t fd = portLibrary->file_open(portLibrary, "/proc/self/maps", EsOpenRead, 0);
+	carryOver[0] = '\0';
+	if (-1 == fd) {
+		portableError = portLibrary->error_last_error_number(portLibrary);
+		Trc_PRT_failed_to_open_proc_maps(portableError);
+		portLibrary->error_set_last_error_with_message(
+				portLibrary,
+				portableError,
+				"Failed to open /proc/self/maps");
+		return (uintptr_t)(intptr_t)portableError;
+	}
+	for (;;) {
+		bytesRead = portLibrary->file_read(portLibrary, fd, buffer, sizeof(buffer) - 1);
+		if (bytesRead <= 0) {
+			break;
+		}
+		buffer[bytesRead] = '\0';
+		lastCharIsNewline = '\n' == buffer[bytesRead - 1];
+		combinedBuffer[0] = '\0';
+		portLibrary->str_printf(portLibrary, combinedBuffer, sizeof(combinedBuffer), "%s%s", carryOver, buffer);
+		line = strtok(combinedBuffer, "\n");
+		while (NULL != line) {
+			char *nextLine = strtok(NULL, "\n");
+			if ((NULL == nextLine) && (0 == lastCharIsNewline)) {
+				readChars = portLibrary->str_printf(portLibrary, carryOver, sizeof(carryOver), "%s", line);
+				if (readChars >= sizeof(carryOver)) {
+					portableError = portLibrary->error_last_error_number(portLibrary);
+					portLibrary->error_set_last_error_with_message(
+							portLibrary,
+							portableError,
+							"Line from /proc/self/maps was truncated");
+					carryOver[0] = '\0';
+					break;
+				}
+				portLibrary->str_printf(portLibrary, carryOver, sizeof(carryOver), "%s", line);
+				break;
+			} else {
+				carryOver[0] = '\0';
+			}
+			addrLow = NULL;
+			addrHigh = NULL;
+			offset = 0;
+			devMajor = 0;
+			devMinor = 0;
+			inode = 0;
+			memset(permissions, 0, sizeof(permissions));
+			memset(path, 0, sizeof(path));
+			count = sscanf(
+					line,
+					"%p-%p %4s %lx %x:%x %lu %s",
+					&addrLow, &addrHigh, permissions,
+					&offset, &devMajor, &devMinor, &inode, path);
+			if ((8 == count)  && ('/' == path[0])) {
+				result = callback(path, addrLow, addrHigh, userData);
+				if (0 != result) {
+					break;
+				}
+			}
+			line = nextLine;
+		}
+	}
+	portLibrary->file_close(portLibrary, fd);
+	return result;
+#else /* defined(LINUX) */
+	/* Platform not supported. */
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+#endif /* defined(LINUX) */
 }

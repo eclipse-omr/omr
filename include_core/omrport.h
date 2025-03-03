@@ -1905,6 +1905,7 @@ typedef struct J9Heap J9Heap;
 
 typedef uintptr_t (*omrsig_protected_fn)(struct OMRPortLibrary *portLib, void *handler_arg);
 typedef uintptr_t (*omrsig_handler_fn)(struct OMRPortLibrary *portLib, uint32_t gpType, void *gpInfo, void *handler_arg);
+typedef uintptr_t (*OMRLibraryInfoCallback)(const char *name, void *addressLow, void *addressHigh, void *userData);
 
 typedef struct OMRPortLibrary {
 	/** portGlobals*/
@@ -2115,6 +2116,8 @@ typedef struct OMRPortLibrary {
 	uintptr_t (*sl_open_shared_library)(struct OMRPortLibrary *portLibrary, char *name, uintptr_t *descriptor, uintptr_t flags) ;
 	/** see @ref omrsl.c::omrsl_lookup_name "omrsl_lookup_name"*/
 	uintptr_t (*sl_lookup_name)(struct OMRPortLibrary *portLibrary, uintptr_t descriptor, char *name, uintptr_t *func, const char *argSignature) ;
+	/** see @ref omrsl.c::omrsl_get_libraries "omrsl_get_libraries"*/
+	uintptr_t (*sl_get_libraries)(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData);
 	/** see @ref omrtty.c::omrtty_startup "omrtty_startup"*/
 	int32_t (*tty_startup)(struct OMRPortLibrary *portLibrary) ;
 	/** see @ref omrtty.c::omrtty_shutdown "omrtty_shutdown"*/
@@ -2955,6 +2958,7 @@ extern J9_CFUNC int32_t omrport_getVersion(struct OMRPortLibrary *portLibrary);
 #define omrsl_close_shared_library(param1) privateOmrPortLibrary->sl_close_shared_library(privateOmrPortLibrary, (param1))
 #define omrsl_open_shared_library(param1,param2,param3) privateOmrPortLibrary->sl_open_shared_library(privateOmrPortLibrary, (param1), (param2), (param3))
 #define omrsl_lookup_name(param1,param2,param3,param4) privateOmrPortLibrary->sl_lookup_name(privateOmrPortLibrary, (param1), (param2), (param3), (param4))
+#define omrsl_get_libraries(callback, userData) privateOmrPortLibrary->sl_get_libraries(privateOmrPortLibrary, callback, userData)
 #define omrtty_startup() privateOmrPortLibrary->tty_startup(privateOmrPortLibrary)
 #define omrtty_shutdown() privateOmrPortLibrary->tty_shutdown(privateOmrPortLibrary)
 #define omrtty_printf(...) privateOmrPortLibrary->tty_printf(privateOmrPortLibrary, __VA_ARGS__)
