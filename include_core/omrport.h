@@ -1905,6 +1905,7 @@ typedef struct J9Heap J9Heap;
 
 typedef uintptr_t (*omrsig_protected_fn)(struct OMRPortLibrary *portLib, void *handler_arg);
 typedef uintptr_t (*omrsig_handler_fn)(struct OMRPortLibrary *portLib, uint32_t gpType, void *gpInfo, void *handler_arg);
+typedef uintptr_t (*OMRProcessInfoCallback)(uintptr_t pid, const char *commandLine, void *userData);
 
 typedef struct OMRPortLibrary {
 	/** portGlobals*/
@@ -2007,6 +2008,8 @@ typedef struct OMRPortLibrary {
 	intptr_t (*sysinfo_get_CPU_utilization)(struct OMRPortLibrary *portLibrary, struct J9SysinfoCPUTime *cpuTime) ;
 	/** see @ref omrsysinfo.c::omrsysinfo_get_CPU_load "omrsysinfo_get_CPU_utilization"*/
 	intptr_t (*sysinfo_get_CPU_load)(struct OMRPortLibrary *portLibrary, double *load) ;
+	/** see @ref omrsysinfo.c::omrsysinfo_get_processes "omrsysinfo_get_processes" */
+	uintptr_t (*sysinfo_get_processes)(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData);
 	/** see @ref omrsysinfo.c::omrsysinfo_limit_iterator_init "omrsysinfo_limit_iterator_init"*/
 	int32_t (*sysinfo_limit_iterator_init)(struct OMRPortLibrary *portLibrary, J9SysinfoLimitIteratorState *state) ;
 	/** see @ref omrsysinfo.c::omrsysinfo_limit_iterator_hasNext "omrsysinfo_limit_iterator_hasNext"*/
@@ -2907,6 +2910,7 @@ extern J9_CFUNC int32_t omrport_getVersion(struct OMRPortLibrary *portLibrary);
 #define omrsysinfo_env_iterator_hasNext(param1) privateOmrPortLibrary->sysinfo_env_iterator_hasNext(privateOmrPortLibrary, (param1))
 #define omrsysinfo_env_iterator_next(param1,param2) privateOmrPortLibrary->sysinfo_env_iterator_next(privateOmrPortLibrary, (param1), (param2))
 #define omrsysinfo_set_number_user_specified_CPUs(param1) privateOmrPortLibrary->sysinfo_set_number_user_specified_CPUs(privateOmrPortLibrary,(param1))
+#define omrsysinfo_get_processes(callback, userData) privateOmrPortLibrary->sysinfo_get_processes(privateOmrPortLibrary, callback, userData)
 #define omrfile_startup() privateOmrPortLibrary->file_startup(privateOmrPortLibrary)
 #define omrfile_shutdown() privateOmrPortLibrary->file_shutdown(privateOmrPortLibrary)
 #define omrfile_write(param1,param2,param3) privateOmrPortLibrary->file_write(privateOmrPortLibrary, (param1), (param2), (param3))
