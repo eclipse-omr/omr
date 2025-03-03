@@ -78,6 +78,8 @@
 #include <nl_types.h>
 #include <langinfo.h>
 
+#include <ctype.h>
+#include <stdint.h>
 
 #if defined(J9ZOS390)
 #include "omrgetthent.h"
@@ -7556,4 +7558,74 @@ done:
 #else /* defined(LINUX) */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif /* defined(LINUX) */
+}
+
+/**
+ * Get the process ID and commandline for each process.
+ * @param[in] portLibrary The port library.
+ * @param[in] callback The function to be invoked for each process with the process ID and command info.
+ * @param[in] userData Data passed to the callback.
+ * @return 0 on success, or the first non-zero value returned by the callback.
+ */
+uintptr_t
+omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
+{
+#if defined(LINUX)
+        DIR *dir = opendir("/proc");
+        if (!dir) {
+                int32_t rc = findError(errno);
+                portLibrary->error_set_last_error(portLibrary, errno, rc);
+                Trc_PRT_sysinfo_get_open_file_count_failedOpeningProcFS(rc); 
+                return -1; 
+        }
+        struct dirent *entry;
+        char cmdline_path[PATH_MAX];
+        char comm_path[PATH_MAX];
+        char command[PATH_MAX];
+        size_t bytes_read;
+        while ((entry = readdir(dir)) != NULL) {
+                /* Skip non-numeric entries which are not processes*/
+                if (!isdigit(entry->d_name[0])) {
+                        continue;
+                }
+                memset(command, 0, PATH_MAX);
+                snprintf(cmdline_path, PATH_MAX, "/proc/%s/cmdline", entry->d_name);
+                snprintf(comm_path, PATH_MAX, "/proc/%s/comm", entry->d_name);
+                bytes_read = 0;
+                /* Open the cmdline file and read cmdline */
+                uintptr_t file = portLibrary->file_open(portLibrary, cmdline_path, EsOpenRead, 0);  
+                if (file != 0) {
+                        bytes_read = portLibrary->file_read(portLibrary, file, command, PATH_MAX - 1);
+                        portLibrary->file_close(portLibrary, file);
+                }
+                /* If cmdline is empty, try reading from comm */
+                if (bytes_read == 0) {
+                        file = portLibrary->file_open(portLibrary, comm_path, EsOpenRead, 0);  
+                        if (file != 0) {
+                                bytes_read = portLibrary->file_read(portLibrary, file, command, PATH_MAX - 1);
+                                portLibrary->file_close(portLibrary, file);
+                        }
+                }
+                /* If both cmdline and comm are empty, skip the process */
+                if (bytes_read == 0) {
+                        continue;
+                }
+                /* Replacing null terminators with spaces in the command */
+                for (size_t i = 0; i < bytes_read; i++) {
+                        if (command[i] == '\0') {
+                                command[i] = ' ';
+                        }
+                }
+                /* Call the callback function with the process ID and command */
+                uintptr_t callback_result = callback((uintptr_t)strtoull(entry->d_name, NULL, 10), command, userData);
+                if (callback_result != 0) {
+                        closedir(dir);
+                        return callback_result;
+                }
+        }
+        closedir(dir);
+        return 0;
+#else
+        return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
+#endif
 }
