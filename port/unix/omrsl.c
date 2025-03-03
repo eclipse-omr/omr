@@ -45,11 +45,14 @@
 #include <errno.h>
 #include <dlfcn.h>
 #include "ut_omrport.h"
+#include "omrport.h"
 
 /* Length of string buffers. */
 #define MAX_STRING_LENGTH 1024
 #define MAX_ERR_BUF_LENGTH 512
 
+/* Max Length of Library name */
+#define READ_CHUNK_SIZE 4096
 /* Start copy from omrfiletext.c */
 /* __STDC_ISO_10646__ indicates that the platform wchar_t encoding is Unicode */
 /* but older versions of libc fail to set the flag, even though they are Unicode */
@@ -437,4 +440,72 @@ int32_t
 omrsl_startup(struct OMRPortLibrary *portLibrary)
 {
 	return 0;
+}
+
+/**
+ * Native Libraries
+ *
+ * This function is called go get all the shared  libraries loaded by the Java process. 
+ *
+ * @param[in] portLibrary Pointer to the OMR port library.
+ * @param[in] callback Function to be called for each library found.
+ * @param[in] userData User-defined data passed to the callback.
+ * @param[out] function pointer to the function 
+ *
+ * @return 0 if successful, or the first non-zero return value from the callback.
+ */
+uintptr_t
+omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData)
+{
+#if defined(LINUX)
+	intptr_t fd=portLibrary->file_open(portLibrary,"/proc/self/maps",EsOpenRead,0);
+	if(0 > fd){
+		return -1;
+	}
+	char buffer[READ_CHUNK_SIZE +1];
+	char carryOver[READ_CHUNK_SIZE +1]="";
+	intptr_t bytesRead = 0;
+	uintptr_t result=0;
+	while (0<(bytesRead = portLibrary->file_read(portLibrary, fd, buffer, READ_CHUNK_SIZE))){
+		buffer[bytesRead] = '\0';
+		int lastCharIsNewline = (0 < bytesRead && '\n' == buffer[bytesRead - 1]);
+		char combinedBuffer[2 * READ_CHUNK_SIZE + 1];
+		snprintf(combinedBuffer, sizeof(combinedBuffer), "%s%s", carryOver, buffer);
+		char *line = strtok(combinedBuffer, "\n");
+		while (NULL != line){
+			char *nextLine = strtok(NULL, "\n");
+			if (NULL == nextLine && !lastCharIsNewline){
+				strncpy(carryOver, line, sizeof(carryOver) - 1);
+				carryOver[sizeof(carryOver) - 1] = '\0';
+				 break;
+			} else{
+				carryOver[0] = '\0';
+			}
+			void*  addrLow = NULL;
+			void* addrHigh = NULL;
+			char permissions[5] = {0};
+			unsigned long offset = 0;
+			int devMajor = 0;
+			int devMinor = 0;
+			unsigned long inode = 0;
+			char path[READ_CHUNK_SIZE] = {0};
+			int count = sscanf(line,
+					"%p-%p %4s %lx %x:%x %lu %s",
+				       	&addrLow, &addrHigh, permissions,
+				       	&offset, &devMajor, &devMinor, &inode, path);
+			if(count==8 && path[0]=='/'){
+				result = callback(path,addrLow,addrHigh, userData);
+			}
+			if (result != 0){
+				portLibrary->file_close(portLibrary, fd);
+				return result;
+			}
+			line = nextLine;
+		}
+	}
+	portLibrary->file_close(portLibrary, fd);
+	return result;
+#else 
+        return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+#endif
 }
