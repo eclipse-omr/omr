@@ -7557,3 +7557,118 @@ done:
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif /* defined(LINUX) */
 }
+
+/*
+ * Get the process ID and commandline for each process.
+ * @param[in] portLibrary The port library.
+ * @param[in] callback The function to be invoked for each process with the process ID and command info.
+ * @param[in] userData Data passed to the callback.
+ * @return 0 on success, or the first non-zero value returned by the callback.
+ */
+uintptr_t
+omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
+{
+#if defined(LINUX)
+#define INITIAL_BUFFER_SIZE 4096
+	char path[PATH_MAX];
+	uintptr_t callback_result = 0;
+	uintptr_t pid;
+	intptr_t file = 0;
+	uintptr_t buffer_size = INITIAL_BUFFER_SIZE;
+	intptr_t bytes_read = 0;
+	intptr_t total_bytes_read = 0;
+	uintptr_t new_size = 0;
+	intptr_t i = 0;
+	char *command = NULL;
+	char *end = NULL;
+	char *new_command = NULL;
+	DIR *dir = opendir("/proc");
+	if (NULL == dir) {
+		int32_t rc = findError(errno);
+		portLibrary->error_set_last_error(portLibrary, errno, rc);
+		Trc_PRT_sysinfo_get_processes_failedOpeningProcFS(rc);
+		return (uintptr_t)(intptr_t)rc;
+	}
+	/* Allocate initial buffer. */
+	command = (char *)portLibrary->mem_allocate_memory(portLibrary, buffer_size, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == command) {
+		closedir(dir);
+		return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	}
+	for (;;) {
+		struct dirent *entry = readdir(dir);
+		if (NULL == entry) {
+			break;
+		}
+		if ('\0' == entry->d_name[0]) {
+			continue;
+		}
+		/* Convert name to pid, skipping non-numeric entries. */
+		pid = (uintptr_t)strtoull(entry->d_name, &end, 10);
+		if ('\0' != *end) {
+			continue;
+		}
+		/* Try reading /proc/[pid]/cmdline. */
+		portLibrary->str_printf(portLibrary, path, sizeof(path), "/proc/%s/cmdline", entry->d_name);
+		file = portLibrary->file_open(portLibrary, path, EsOpenRead, 0);
+		total_bytes_read = 0;
+		if (file >= 0) {
+			for (;;) {
+				bytes_read = portLibrary->file_read(portLibrary, file, command + total_bytes_read, buffer_size - 1 - total_bytes_read);
+				if (bytes_read < 0) {
+					break;
+				}
+				total_bytes_read += bytes_read;
+				if (total_bytes_read == buffer_size - 1) {
+					/* Buffer may be too small, increase and retry. */
+					new_size = buffer_size * 2;
+					new_command = (char *)portLibrary->mem_reallocate_memory(
+						portLibrary,
+						command,
+						new_size, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+					if (NULL == new_command) {
+						break;
+					}
+					command = new_command;
+					buffer_size = new_size;
+					continue;
+				}
+				break;
+			}
+			bytes_read = total_bytes_read;
+			portLibrary->file_close(portLibrary, file);
+		}
+		/* If cmdline is empty, try reading from comm. */
+		if (bytes_read <= 0) {
+			portLibrary->str_printf(portLibrary, path, sizeof(path), "/proc/%s/comm", entry->d_name);
+			file = portLibrary->file_open(portLibrary, path, EsOpenRead, 0);
+			if (file >= 0) {
+				bytes_read = portLibrary->file_read(portLibrary, file, command, buffer_size - 1);
+				portLibrary->file_close(portLibrary, file);
+			}
+		}
+		/* Skip process if no data. */
+		if (bytes_read <= 0) {
+			continue;
+		}
+		/* Replace null terminators with spaces. */
+		for (i = 0; i < bytes_read; i++) {
+			if ('\0' == command[i]) {
+				command[i] = ' ';
+			}
+		}
+		command[bytes_read] = '\0';
+		/* Call the callback function with PID and command. */
+		callback_result = callback(pid, command, userData);
+		if (0 != callback_result) {
+			break;
+		}
+	}
+	portLibrary->mem_free_memory(portLibrary, command);
+	closedir(dir);
+	return callback_result;
+#else /* defined(LINUX) */
+	/* sysinfo_get_processes is not supported on this platform. */
+	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
+#endif /* defined(LINUX) */
+}
