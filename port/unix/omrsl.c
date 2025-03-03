@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 #include <dlfcn.h>
 #include "ut_omrport.h"
 
@@ -437,4 +438,76 @@ int32_t
 omrsl_startup(struct OMRPortLibrary *portLibrary)
 {
 	return 0;
+}
+
+/**
+ * Native Libraries
+ *
+ * This function is called go get all the shared libraries loaded by a process.
+ *
+ * @param[in] portLibrary Pointer to the OMR port library.
+ * @param[in] callback Function to be called for each library.
+ * @param[in] userData User-defined data passed to the callback.
+ *
+ * @return 0 if successful, or the first non-zero return value from the callback.
+ */
+uintptr_t
+omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData)
+{
+#if defined(LINUX)
+	/*
+	 * Length of buffer
+	 * PATH_MAX is the maximum file path length.
+	 * 100 extra bytes account for memory addresses, permissions and offsets.
+	 * 1 extra byte accounts for null terminator.
+	 */
+	char buffer[PATH_MAX + 101];
+	uintptr_t result = 0;
+	void *addrLow = NULL;
+	void *addrHigh = NULL;
+	unsigned long offset = 0;
+	int devMajor = 0;
+	int devMinor = 0;
+	unsigned long inode = 0;
+	char permissions[5] = {0};
+	int count = 0;
+	int pathOffset = 0;
+	int32_t portableError = 0;
+	intptr_t fd = portLibrary->file_open(portLibrary, "/proc/self/maps", EsOpenRead, 0);
+	if (-1 == fd) {
+		portableError = portLibrary->error_last_error_number(portLibrary);
+		Trc_PRT_failed_to_open_proc_maps(portableError);
+		portLibrary->error_set_last_error_with_message(
+				portLibrary,
+				portableError,
+				"Failed to open /proc/self/maps");
+		return (uintptr_t)(intptr_t)portableError;
+	}
+	while (NULL != portLibrary->file_read_text(portLibrary, fd, buffer, sizeof(buffer))) {
+		if (NULL == strchr(buffer, '\n')) {
+			portableError = portLibrary->error_last_error_number(portLibrary);
+			portLibrary->error_set_last_error_with_message(
+					portLibrary,
+					portableError,
+					"An unexpected long path name. Line is truncated.");
+			continue;
+		}
+		count = sscanf(
+				buffer,
+				"%p-%p %4s %lx %x:%x %lu %n",
+				&addrLow, &addrHigh, permissions,
+				&offset, &devMajor, &devMinor, &inode, &pathOffset);
+		if ((7 == count)  && ('/' == buffer[pathOffset])) {
+			result = callback(&buffer[pathOffset], addrLow, addrHigh, userData);
+			if (0 != result) {
+				break;
+			}
+		}
+	}
+	portLibrary->file_close(portLibrary, fd);
+	return result;
+#else /* defined(LINUX) */
+	/* Platform not supported. */
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+#endif /* defined(LINUX) */
 }
