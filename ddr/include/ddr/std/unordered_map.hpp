@@ -26,8 +26,10 @@
 
 #if defined(J9ZOS390)
 #include <ctype.h>
+#if !defined(__open_xl__)
 #undef toupper
 #undef tolower
+#endif /* !defined(__open_xl__) */
 #endif /* defined(J9ZOS390) */
 
 #include <unordered_map>
@@ -38,9 +40,9 @@ using std::unordered_map;
 using std::tr1::unordered_map;
 #endif /* defined(OMR_HAVE_CXX11) */
 
-#if defined(J9ZOS390)
-#define toupper(c)     (islower(c) ? (c & _XUPPER_ASCII) : c)
-#define tolower(c)     (isupper(c) ? (c | _XLOWER_ASCII) : c)
-#endif /* defined(J9ZOS390) */
+#if defined(J9ZOS390) && !defined(__open_xl__)
+#define toupper(c) (islower(c) ? (c & _XUPPER_ASCII) : c)
+#define tolower(c) (isupper(c) ? (c | _XLOWER_ASCII) : c)
+#endif /* defined(J9ZOS390) && !defined(__open_xl__) */
 
 #endif /* DDR_UNORDERED_MAP */
