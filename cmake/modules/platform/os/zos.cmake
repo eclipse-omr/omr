@@ -21,16 +21,20 @@
 
 list(APPEND OMR_PLATFORM_DEFINITIONS
 	-D_ALL_SOURCE
-	-D_OPEN_THREADS=3
-	-D_POSIX_SOURCE
-	-D_XOPEN_SOURCE_EXTENDED
-	-D_ISOC99_SOURCE
-	-D__STDC_LIMIT_MACROS
-	-DLONGLONG
 	-DJ9ZOS390
+	-DLONGLONG
+	-D_OPEN_THREADS=3
+	-D__STDC_LIMIT_MACROS
 	-DSUPPORTS_THREAD_LOCAL
+	-D_XOPEN_SOURCE=600
 	-DZOS
 )
+
+if(OMR_ENV_DATA64)
+	list(APPEND OMR_PLATFORM_DEFINITIONS
+		-DJ9ZOS39064
+	)
+endif()
 
 # CMake ignores any include directories which appear in IMPLICIT_INCLUDE_DIRECTORIES.
 # This causes an issue with a2e since we need to re-specify them after clearing default search path.

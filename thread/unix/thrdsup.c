@@ -65,13 +65,6 @@ intptr_t init_thread_library(void);
 #ifdef J9ZOS390
 static intptr_t zos_init_yielding(void);
 #endif
-intptr_t sem_getvalue_zos(j9sem_t s);
-intptr_t sem_init_zos(j9sem_t s, int pShared, int initValue);
-void call_omrthread_init(void);
-intptr_t sem_destroy_zos(j9sem_t s);
-intptr_t sem_wait_zos(j9sem_t s);
-intptr_t sem_trywait_zos(j9sem_t s);
-intptr_t sem_post_zos(j9sem_t s);
 
 #if defined (OMRZTPF)
 void  ztpf_init_proc(void);
