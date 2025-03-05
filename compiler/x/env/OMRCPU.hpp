@@ -61,6 +61,8 @@ public:
 
    static TR::CPU detect(OMRPortLibrary * const omrPortLib);
 
+   static TR::CPU customize(OMRProcessorDesc processorDescription);
+
    static void initializeTargetProcessorInfo(bool force = false);
 
    TR_X86CPUIDBuffer *queryX86TargetCPUID();
