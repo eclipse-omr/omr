@@ -107,6 +107,13 @@ public:
     */
    static TR::CPU detect(OMRPortLibrary * const omrPortLib);
 
+   /**
+    * @brief A factory method used to construct a CPU object based on user customized processorDescription
+    * @param[in] OMRProcessorDesc : the processor description
+    * @return TR::CPU
+    */
+   static TR::CPU customize(OMRProcessorDesc processorDescription);
+
   /**
     * @brief Returns the processor type and features that will be used by portable AOT compilations
     * @param[in] omrPortLib : the port library

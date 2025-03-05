@@ -162,6 +162,12 @@ OMR::CPU::detect(OMRPortLibrary * const omrPortLib)
    }
 
 TR::CPU
+OMR::CPU::customize(OMRProcessorDesc processorDescription)
+   {
+   return TR::CPU(processorDescription);
+   }
+
+TR::CPU
 OMR::CPU::detectRelocatable(OMRPortLibrary * const omrPortLib)
    {
    return TR::CPU::detect(omrPortLib);

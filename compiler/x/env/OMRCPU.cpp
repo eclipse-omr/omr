@@ -34,32 +34,9 @@ OMR::X86::CPU::detect(OMRPortLibrary * const omrPortLib)
    if (omrPortLib == NULL)
       return TR::CPU();
 
-   // Only enable the features that compiler currently uses
-   uint32_t const enabledFeatures [] = {OMR_FEATURE_X86_FPU, OMR_FEATURE_X86_CX8, OMR_FEATURE_X86_CMOV,
-                                        OMR_FEATURE_X86_MMX, OMR_FEATURE_X86_SSE, OMR_FEATURE_X86_SSE2,
-                                        OMR_FEATURE_X86_SSSE3, OMR_FEATURE_X86_SSE4_1, OMR_FEATURE_X86_SSE4_2,
-                                        OMR_FEATURE_X86_POPCNT, OMR_FEATURE_X86_AESNI, OMR_FEATURE_X86_OSXSAVE,
-                                        OMR_FEATURE_X86_AVX, OMR_FEATURE_X86_AVX2, OMR_FEATURE_X86_FMA, OMR_FEATURE_X86_HLE,
-                                        OMR_FEATURE_X86_RTM, OMR_FEATURE_X86_AVX512F, OMR_FEATURE_X86_AVX512VL,
-                                        OMR_FEATURE_X86_AVX512BW, OMR_FEATURE_X86_AVX512DQ, OMR_FEATURE_X86_AVX512CD,
-                                        OMR_FEATURE_X86_AVX512_VBMI2, OMR_FEATURE_X86_AVX512_VPOPCNTDQ,
-                                        OMR_FEATURE_X86_AVX512_BITALG, OMR_FEATURE_X86_CLWB,
-                                        };
-
    OMRPORT_ACCESS_FROM_OMRPORT(omrPortLib);
-   OMRProcessorDesc featureMasks;
-   memset(featureMasks.features, 0, OMRPORT_SYSINFO_FEATURES_SIZE*sizeof(uint32_t));
-   for (size_t i = 0; i < sizeof(enabledFeatures)/sizeof(uint32_t); i++)
-      {
-      omrsysinfo_processor_set_feature(&featureMasks, enabledFeatures[i], TRUE);
-      }
-
    OMRProcessorDesc processorDescription;
    omrsysinfo_get_processor_description(&processorDescription);
-   for (size_t i = 0; i < OMRPORT_SYSINFO_FEATURES_SIZE; i++)
-      {
-      processorDescription.features[i] &= featureMasks.features[i];
-      }
 
    bool disableAVX = true;
    bool disableAVX512 = true;
@@ -94,6 +71,38 @@ OMR::X86::CPU::detect(OMRPortLibrary * const omrPortLib)
       omrsysinfo_processor_set_feature(&processorDescription, OMR_FEATURE_X86_AVX512_VBMI2, FALSE);
       omrsysinfo_processor_set_feature(&processorDescription, OMR_FEATURE_X86_AVX512_VNNI, FALSE);
       omrsysinfo_processor_set_feature(&processorDescription, OMR_FEATURE_X86_AVX512_VPOPCNTDQ, FALSE);
+      }
+
+   return TR::CPU::customize(processorDescription);
+   }
+
+TR::CPU
+OMR::X86::CPU::customize(OMRProcessorDesc processorDescription)
+   {
+   // Only enable the features that compiler currently uses
+   const uint32_t enabledFeatures [] = {OMR_FEATURE_X86_FPU, OMR_FEATURE_X86_CX8, OMR_FEATURE_X86_CMOV,
+                                        OMR_FEATURE_X86_MMX, OMR_FEATURE_X86_SSE, OMR_FEATURE_X86_SSE2,
+                                        OMR_FEATURE_X86_SSSE3, OMR_FEATURE_X86_SSE4_1, OMR_FEATURE_X86_SSE4_2,
+                                        OMR_FEATURE_X86_POPCNT, OMR_FEATURE_X86_AESNI, OMR_FEATURE_X86_OSXSAVE,
+                                        OMR_FEATURE_X86_AVX, OMR_FEATURE_X86_AVX2, OMR_FEATURE_X86_FMA, OMR_FEATURE_X86_HLE,
+                                        OMR_FEATURE_X86_RTM, OMR_FEATURE_X86_AVX512F, OMR_FEATURE_X86_AVX512VL,
+                                        OMR_FEATURE_X86_AVX512BW, OMR_FEATURE_X86_AVX512DQ, OMR_FEATURE_X86_AVX512CD,
+                                        OMR_FEATURE_X86_AVX512_VBMI2, OMR_FEATURE_X86_AVX512_VPOPCNTDQ,
+                                        OMR_FEATURE_X86_AVX512_BITALG, OMR_FEATURE_X86_CLWB,
+   };
+
+   OMRProcessorDesc featureMasks;
+   memset(featureMasks.features, 0, OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t));
+
+   for (size_t i = 0; i < sizeof(enabledFeatures) / sizeof(uint32_t); i++)
+      {
+      TR_ASSERT_FATAL(enabledFeatures[i] < OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t) * 8, "Illegal cpu feature mask");
+      featureMasks.features[i / sizeof(uint32_t)] |= enabledFeatures[i] % sizeof(uint32_t);
+      }
+
+   for (size_t i = 0; i < OMRPORT_SYSINFO_FEATURES_SIZE; i++)
+      {
+      processorDescription.features[i] &= featureMasks.features[i];
       }
 
    return TR::CPU(processorDescription);
