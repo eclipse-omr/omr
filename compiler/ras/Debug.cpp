@@ -83,9 +83,10 @@
 #include "infra/Array.hpp"
 #include "infra/Assert.hpp"
 #include "infra/BitVector.hpp"
+#include "infra/CfgNode.hpp"
 #include "infra/List.hpp"
 #include "infra/SimpleRegex.hpp"
-#include "infra/CfgNode.hpp"
+#include "infra/String.hpp"
 #include "optimizer/Optimizations.hpp"
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/PreExistence.hpp"
@@ -1838,100 +1839,114 @@ TR_Debug::getStaticName(TR::SymbolReference * symRef)
       }
    else if (sym->isConstantPoolAddress())
       return "<constant pool address>";
-   else if (symRef->getCPIndex() >= 0)
+
+   if (sym->isAddressOfClassObject())
+      return "<address of class object>";
+
+   if (sym->isConstString())
       {
-      if (sym->isAddressOfClassObject())
-         return "<address of class object>";
-
-      if (sym->isConstString())
-         {
-         TR::StackMemoryRegion stackMemoryRegion(*comp()->trMemory());
-         char *contents = NULL;
-         intptr_t length = 0, prefixLength = 0, suffixOffset = 0;
-         const char *etc = "";
-         const intptr_t LENGTH_LIMIT=80;
-         const intptr_t PIECE_LIMIT=20;
-
 #ifdef J9_PROJECT_SPECIFIC
-         TR::VMAccessCriticalSection getStaticNameCriticalSection(comp(),
-                                                                   TR::VMAccessCriticalSection::tryToAcquireVMAccess);
-         if (!symRef->isUnresolved() && getStaticNameCriticalSection.acquiredVMAccess())
+      TR::VMAccessCriticalSection getStaticNameCriticalSection(comp(),
+                                                                TR::VMAccessCriticalSection::tryToAcquireVMAccess);
+      if (!symRef->isUnresolved() && getStaticNameCriticalSection.acquiredVMAccess())
+         {
+         uintptr_t stringLocation = (uintptr_t)sym->castToStaticSymbol()->getStaticAddress();
+         if (stringLocation)
             {
-            uintptr_t stringLocation = (uintptr_t)sym->castToStaticSymbol()->getStaticAddress();
-            if (stringLocation)
+            uintptr_t string = comp()->fej9()->getStaticReferenceFieldAtAddress(stringLocation);
+            uint64_t length64 = comp()->fej9()->getStringUTF8UnabbreviatedLength(string);
+            if (length64 >= 1024)
                {
-               uintptr_t string = comp()->fej9()->getStaticReferenceFieldAtAddress(stringLocation);
-               length = comp()->fej9()->getStringUTF8Length(string);
-               contents = (char*)comp()->trMemory()->allocateMemory(length+1, stackAlloc, TR_MemoryBase::UnknownType);
-               comp()->fej9()->getStringUTF8(string, contents, length+1);
-
-               //
-               // We don't want to mess up the logs too much.  Make sure the
-               // strings aren't too ugly.
-               //
-
-               // Use ellipsis if the string is too long
-               //
-               if (length <= LENGTH_LIMIT)
-                  {
-                  prefixLength = suffixOffset = length;
-                  }
-               else
-                  {
-                  prefixLength = PIECE_LIMIT;
-                  suffixOffset = length - PIECE_LIMIT;
-                  etc = "\"...\"";
-                  }
-
-               // Stop before any non-printable characters (like newlines or UTF8 weirdness)
-               //
-               intptr_t i;
-               for (i=0; i < prefixLength; i++)
-                  if (!isprint(contents[i]))
-                     {
-                     prefixLength = i;
-                     etc = "\"...\"";
-                     break;
-                     }
-               for (i = length-1; i > suffixOffset; i--)
-                  if (!isprint(contents[i]))
-                     {
-                     suffixOffset = i;
-                     etc = "\"...\"";
-                     break;
-                     }
+               // Don't bother converting very long strings to UTF8 just to
+               // trace the first few and last few characters.
+               return "<string (long text omitted)>";
                }
-            char *result = (char*)_comp->trMemory()->allocateHeapMemory(length+20);
-            sprintf(result, "<string \"%.*s%s%s\">", (int)prefixLength, contents, etc, contents+suffixOffset);
+
+            TR::StackMemoryRegion stackMemoryRegion(*comp()->trMemory());
+            size_t length = (size_t)length64;
+            char *contents = (char*)comp()->trMemory()->allocateMemory(
+               length+1, stackAlloc, TR_MemoryBase::UnknownType);
+
+            comp()->fej9()->getStringUTF8(string, contents, length+1);
+
+            //
+            // We don't want to mess up the logs too much.  Make sure the
+            // strings aren't too ugly.
+            //
+
+            // Use ellipsis if the string is too long
+            const size_t LENGTH_LIMIT = 80;
+            size_t prefixLength = length;
+            size_t suffixLength = 0;
+            const char *etc = "";
+            size_t etcLength = 0;
+            if (length > LENGTH_LIMIT)
+               {
+               etc = "\"...\"";
+               etcLength = 5;
+               suffixLength = (LENGTH_LIMIT - etcLength) / 2;
+               prefixLength = LENGTH_LIMIT - etcLength - suffixLength;
+               }
+
+            // Replace unprintable characters with ?
+            for (size_t i = 0; i < prefixLength; i++)
+               {
+               if (!isprint(contents[i]))
+                  {
+                  contents[i] = '?';
+                  }
+               }
+
+            for (size_t i = length - suffixLength; i < length; i++)
+               {
+               if (!isprint(contents[i]))
+                  {
+                  contents[i] = '?';
+                  }
+               }
+
+            // 11 for '<string "">', 1 for terminating NUL.
+            size_t resultSize = prefixLength + etcLength + suffixLength + 11 + 1;
+            char *result = (char*)_comp->trMemory()->allocateHeapMemory(resultSize);
+            TR::snprintfNoTrunc(
+               result,
+               resultSize,
+               "<string \"%.*s%s%s\">",
+               (int)prefixLength,
+               contents,
+               etc,
+               contents + (length - suffixLength));
+
             return result;
             }
+         }
 #endif
-         return "<string>";
-         }
-
-      if (sym->isConstMethodType())
-         return "<method type>"; // TODO: Print the signature
-
-      if (sym->isConstMethodHandle())
-         return "<method handle>"; // TODO: Print some kind of identification
-
-      if (sym->isConstObjectRef())
-         return "<constant object ref>";
-
-      if (sym->isConst())
-         return "<constant>";
-
-      // Value Type default value instance slot address
-      if (sym->isStaticDefaultValueInstance() && staticAddress)
-         {
-         const uint8_t EXTRA_SPACE = 5;
-         char * name = (char *)_comp->trMemory()->allocateHeapMemory(TR::Compiler->debug.pointerPrintfMaxLenInChars()+EXTRA_SPACE);
-         sprintf(name, POINTER_PRINTF_FORMAT, staticAddress);
-         return name;
-         }
-
-      return getOwningMethod(symRef)->staticName(symRef->getCPIndex(), comp()->trMemory());
+      return "<string>";
       }
+
+   if (sym->isConstMethodType())
+      return "<method type>"; // TODO: Print the signature
+
+   if (sym->isConstMethodHandle())
+      return "<method handle>"; // TODO: Print some kind of identification
+
+   if (sym->isConstObjectRef())
+      return "<constant object ref>";
+
+   if (sym->isConst())
+      return "<constant>";
+
+   // Value Type default value instance slot address
+   if (sym->isStaticDefaultValueInstance() && staticAddress)
+      {
+      const uint8_t EXTRA_SPACE = 5;
+      char * name = (char *)_comp->trMemory()->allocateHeapMemory(TR::Compiler->debug.pointerPrintfMaxLenInChars()+EXTRA_SPACE);
+      sprintf(name, POINTER_PRINTF_FORMAT, staticAddress);
+      return name;
+      }
+
+   if (symRef->getCPIndex() >= 0)
+      return getOwningMethod(symRef)->staticName(symRef->getCPIndex(), comp()->trMemory());
 
    if (_comp->getSymRefTab()->isVtableEntrySymbolRef(symRef))
       return "<class_loader>";
