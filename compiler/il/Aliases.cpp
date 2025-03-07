@@ -321,7 +321,7 @@ OMR::SymbolReference::getUseDefAliasesBV(bool isDirectCall, bool includeGCSafePo
             // (this is the same as before), or if we are unresolved and condy
             // (this is the extra condition added), we would return conservative aliases.
             if ((self()->isUnresolved() && (_symbol->isConstantDynamic() || !_symbol->isConstObjectRef())) ||
-	        _symbol->isVolatile() || self()->isLiteralPoolAddress() ||
+                !_symbol->isTransparent() || self()->isLiteralPoolAddress() ||
                 self()->isFromLiteralPool() || _symbol->isUnsafeShadowSymbol() ||
                 (_symbol->isArrayShadowSymbol() && comp->getMethodSymbol()->hasVeryRefinedAliasSets()))
                {
@@ -628,7 +628,7 @@ OMR::SymbolReference::getUseDefAliasesBV(bool isDirectCall, bool includeGCSafePo
          }
       case TR::Symbol::IsShadow:
          {
-         if ((self()->isUnresolved() && !_symbol->isConstObjectRef()) || _symbol->isVolatile() || self()->isLiteralPoolAddress() || self()->isFromLiteralPool() ||
+         if ((self()->isUnresolved() && !_symbol->isConstObjectRef()) || !_symbol->isTransparent() || self()->isLiteralPoolAddress() || self()->isFromLiteralPool() ||
              (_symbol->isUnsafeShadowSymbol() && !self()->reallySharesSymbol()))
             {
             return &comp->getSymRefTab()->aliasBuilder.defaultMethodDefAliasesWithoutImmutable();
@@ -781,7 +781,7 @@ OMR::SymbolReference::getUseDefAliasesBV(bool isDirectCall, bool includeGCSafePo
          // (this is the same as before), or if we are unresolved and condy
          // (this is the extra condition added), we would return conservative aliases.
          if ((self()->isUnresolved() && (_symbol->isConstantDynamic() || !_symbol->isConstObjectRef())) ||
-	     self()->isLiteralPoolAddress() || self()->isFromLiteralPool() || _symbol->isVolatile())
+             self()->isLiteralPoolAddress() || self()->isFromLiteralPool() || !_symbol->isTransparent())
             {
             return &comp->getSymRefTab()->aliasBuilder.defaultMethodDefAliases();
             }
@@ -851,7 +851,7 @@ OMR::SymbolReference::sharesSymbol(bool includingGCSafePoint)
          // (this is the same as before), or if we are unresolved and condy
          // (this is the extra condition added), we would return conservative aliases.
          if ((self()->isUnresolved() && (_symbol->isConstantDynamic() || !_symbol->isConstObjectRef())) ||
-	       _symbol->isVolatile() || self()->isLiteralPoolAddress() ||
+             !_symbol->isTransparent() || self()->isLiteralPoolAddress() ||
                self()->isFromLiteralPool() || _symbol->isUnsafeShadowSymbol() ||
                (_symbol->isArrayShadowSymbol() && c->getMethodSymbol()->hasVeryRefinedAliasSets()))
             {
@@ -1062,7 +1062,7 @@ OMR::SymbolReference::storeCanBeRemoved()
    TR::Compilation *comp = TR::comp();
    TR::Symbol * s = self()->getSymbol();
 
-   return !s->isVolatile() &&
+   return s->isTransparent() &&
      (((s->getDataType() != TR::Double) && (s->getDataType() != TR::Float)) ||
            comp->cg()->getSupportsJavaFloatSemantics() ||
            (self()->isTemporary(comp) && !s->behaveLikeNonTemp()));
