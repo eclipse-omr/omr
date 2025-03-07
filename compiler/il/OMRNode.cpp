@@ -5894,7 +5894,18 @@ OMR::Node::setIsSafeForCGToFastPathUnsafeCall(bool v)
    _flags.set(unsafeFastPathCall);
    }
 
+bool
+OMR::Node::isCallThatWasRefinedFromKnownObject()
+   {
+   return self()->getOpCode().isCall() && _flags.testAny(wasRefinedFromKnownObject);
+   }
 
+void
+OMR::Node::setCallWasRefinedFromKnownObject()
+   {
+   TR_ASSERT_FATAL(self()->getOpCode().isCall(), "Opcode must be call");
+   _flags.set(wasRefinedFromKnownObject);
+   }
 
 bool
 OMR::Node::containsCompressionSequence()
