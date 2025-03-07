@@ -29,6 +29,7 @@
 #include "omrport.h"
 #include "omrportpriv.h"
 #include "ut_omrport.h"
+#include "omrsl.h"
 
 /*
  * Create the port library initialization structure
@@ -139,6 +140,7 @@ static OMRPortLibrary MainPortLibraryTable = {
 	omrsl_close_shared_library, /* sl_close_shared_library */
 	omrsl_open_shared_library, /* sl_open_shared_library */
 	omrsl_lookup_name, /* sl_lookup_name */
+	omrsl_get_libraries, /* sl_get_libraries */
 	omrtty_startup, /* tty_startup */
 	omrtty_shutdown, /* tty_shutdown */
 	omrtty_printf, /* tty_printf */

@@ -50,4 +50,6 @@ omrsl_shutdown(struct OMRPortLibrary *portLibrary);
 int32_t
 omrsl_startup(struct OMRPortLibrary *portLibrary);
 
+uintptr_t
+omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData);
 #endif /* omrsl_h */
