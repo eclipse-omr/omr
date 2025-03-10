@@ -135,3 +135,20 @@ omrsl_startup(struct OMRPortLibrary *portLibrary)
 }
 
 
+/**
+ * Native Libraries
+ *
+ * This function is called go get all the shared  libraries loaded by the Java process. 
+ *
+ * @param[in] portLibrary Pointer to the OMR port library.
+ * @param[in] callback Function to be called for each library found.
+ * @param[in] userData User-defined data passed to the callback.
+ * @param[out] function pointer to the function 
+ *
+ * @return 0 if successful, or the first non-zero return value from the callback.
+ */
+uintptr_t
+omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData)
+{
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
