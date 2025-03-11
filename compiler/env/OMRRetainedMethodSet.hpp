@@ -60,9 +60,7 @@ namespace OMR {
  * that represents the set of methods that will remain loaded at least as long
  * as the JIT body, assuming that such an arrangement is made. When the method
  * is actually inlined, it's necessary to commit to put that arrangement into
- * effect, in a way flattening the child back into the parent. This flattening
- * must be done in a bottom-up fashion, which is how physical inlining
- * proceeds.
+ * effect.
  *
  * This class does not know how to determine the relationships between methods
  * in a given project. It is designed to be subclassed in any project that
@@ -262,11 +260,10 @@ namespace OMR {
  * and even though they would have been unloadable with less inlining.
  *
  * Because of the possibility of this kind of situation, all keepalives and
- * bonds are collected toward the root set, but whenever a bond and a keepalive
- * both apply to the same method, the bond is used and the keepalive is ignored.
- * Essentially, if there is one call path that handles that method using bond,
- * then a bond will be used even if other call paths handle the same method
- * using keepalive.
+ * bonds are collected, but whenever a bond and a keepalive both apply to the
+ * same method, the bond is used and the keepalive is ignored. Essentially, if
+ * there is one call path that handles that method using bond, then a bond will
+ * be used even if other call paths handle the same method using keepalive.
  *
  * Keepalives are intended to be implemented as additional constant references.
  * To see why this scheme successfully prevents the JIT body from outliving its
@@ -313,6 +310,12 @@ class RetainedMethodSet
       OMR::RetainedMethodSet *parent);
 
    /**
+    * \brief Get the assumed-live method for this set.
+    * \return the method
+    */
+   TR_ResolvedMethod *method() { return _method; }
+
+   /**
     * \brief Determine whether \p method is guaranteed to remain loaded.
     *
     * A positive result (true) is reliable, but because this set is generally
@@ -327,46 +330,28 @@ class RetainedMethodSet
 
    /**
     * \brief Inspect the call site corresponding to \p bci in the bytecode and
-    * attempt to extend this set in-place if possible.
+    * attempt to return an extended version of this set if possible.
     *
     * Because this set is generally incomplete, there may be methods that will
     * in fact remain loaded but that are not yet known to do so, and some such
-    * methods may be evident when inspecting the call site.
+    * methods may be evident when inspecting the call site. If such a situation
+    * is detected, this method will return a child set that takes those methods
+    * into account.
     *
-    * The default implementation does nothing.
+    * The default implementation returns the receiver.
     *
     * \param bci bytecode info of the call site to inspect
     */
-   virtual void attestLinkedCalleeWillRemainLoaded(TR_ByteCodeInfo bci) {}
+   virtual OMR::RetainedMethodSet *withLinkedCalleeAttested(TR_ByteCodeInfo bci);
 
    /**
-    * \brief Arrange to keep alive this set's assumed-live method.
-    *
-    * This set must be a child set, and it is flattened into its parent as
-    * appropriate. In particular, the parent will be updated to specify that
-    * this set's method is to be kept alive.
-    *
-    * Usually the method will not already be known to be guaranteed to remain
-    * loaded in the parent. But it's possible if the parent has been modified
-    * in the meantime since this child was created, e.g. due to an attestation
-    * or a bond. In this case, the parent does not necessarily need to
-    * represent the keepalive.
+    * \brief Commit to keep alive this set's assumed-live method.
     */
    virtual void keepalive();
 
    /**
-    * \brief Arrange to invalidate the JIT body if this set's assumed-live
+    * \brief Commit to invalidate the JIT body if this set's assumed-live
     * method is unloaded.
-    *
-    * This set must be a child set, and it is flattened into its parent as
-    * appropriate. In particular, the parent will be updated to specify that
-    * this set's method is to be bonded.
-    *
-    * Usually the method will not already be known to be guaranteed to remain
-    * loaded in the parent. But it's possible if the parent has been modified
-    * in the meantime since this child was created, e.g. due to an attestation
-    * or a different bond. In this case, the parent does not necessarily need
-    * to represent the bond.
     */
    virtual void bond();
 
@@ -378,8 +363,9 @@ class RetainedMethodSet
     * likely the overriding subclass itself).
     *
     * This method must only be called in cases where this RetainedMethodSet
-    * does not guarantee that \p method will remain loaded. The default
-    * implementation is an "unimplemented" assertion.
+    * does not guarantee that \p method will remain loaded. Overrides may lift
+    * this restriction. The default implementation is an "unimplemented"
+    * assertion.
     *
     * \param method the assumed-live method
     * \return a new instance of RetainedMethodSet
@@ -390,18 +376,23 @@ class RetainedMethodSet
     * \brief Get a RetainedMethodSet representing all methods known to remain
     * loaded in this set and also all of this set's keepalives.
     *
-    * It is unspecified whether or not the result is a child set, so in general
-    * it must not be treated as one.
+    * The result could be the receiver or a child set. The default
+    * implementation simply returns the receiver.
     *
-    * It is possible to call attestLinkedCalleeWillRemainLoaded() on the result
-    * without modifying the original receiver.
-    *
-    * The default implementation simply returns the receiver.
-    *
-    * \param method the assumed-live method
-    * \return a new instance of RetainedMethodSet
+    * \return a version of this set with the keepalives attested to remain loaded.
     */
    virtual OMR::RetainedMethodSet *withKeepalivesAttested();
+
+   /**
+    * \brief Get a RetainedMethodSet representing all methods known to remain
+    * loaded in this set and also all of this set's bonds.
+    *
+    * The result could be the receiver or a child set. The default
+    * implementation simply returns the receiver.
+    *
+    * \return a version of this set with the bonds attested to remain loaded.
+    */
+   virtual OMR::RetainedMethodSet *withBondsAttested();
 
    /**
     * \brief An iterator that yields some number of TR_ResolvedMethod pointers.
@@ -443,32 +434,44 @@ class RetainedMethodSet
 
    /**
     * \brief Get the methods to keep alive at least as long as the JIT body.
+    *
+    * These are all of the keepalives generated by any set within the same
+    * tree, i.e. any set descended from the same root set.
+    *
     * \return an iterator that yields the methods to keep alive
     */
    ResolvedMethodIter keepaliveMethods()
       {
-      return ResolvedMethodIter(_keepaliveMethods);
+      return ResolvedMethodIter(keepalivesAndBonds()->_keepaliveMethods);
       }
 
    /**
     * \brief Get the methods to bond (limit the lifetime of the JIT body).
+    *
+    * These are all of the bonds generated by any set within the same tree,
+    * i.e. any set descended from the same root set.
+    *
     * \return an iterator that yields the methods to bond
     */
    ResolvedMethodIter bondMethods()
       {
-      return ResolvedMethodIter(_bondMethods);
+      return ResolvedMethodIter(keepalivesAndBonds()->_bondMethods);
       }
 
    protected:
 
-   /**
-    * \brief Merge the representation of this set into the parent.
-    *
-    * This is used when flattening to expand the set of methods known to remain
-    * loaded in the parent. It should be overridden in subclasses. The default
-    * implementation is an "unimplemented" assertion.
-    */
-   virtual void mergeIntoParent();
+   // The sets of keepalive and bond methods determined by analysis of inlining.
+   // One instance of this is shared between all sets in a tree.
+   struct KeepalivesAndBonds
+      {
+      MethodMap _keepaliveMethods;
+      MethodMap _bondMethods;
+
+      KeepalivesAndBonds(TR::Region &heapRegion);
+      };
+
+   KeepalivesAndBonds *keepalivesAndBonds();
+   virtual KeepalivesAndBonds *createKeepalivesAndBonds();
 
    /**
     * \brief Determine the unloading key of \p method.
@@ -491,36 +494,20 @@ class RetainedMethodSet
    virtual void *unloadingKey(TR_ResolvedMethod *method);
 
    TR::Compilation *comp() { return _comp; }
-   TR_ResolvedMethod *method() { return _method; }
    OMR::RetainedMethodSet *parent() { return _parent; }
 
    private:
 
-   /**
-    * \brief Add each method in \p src to \p dest unless it willRemainLoaded().
-    *
-    * \p dest must be either the _keepaliveMethods or _bondMethods of this set.
-    *
-    * \param dest the destination map
-    * \param src the source map
-    */
-   void propagateMethods(MethodMap &dest, const MethodMap &src);
-
-   enum FlattenMode
-      {
-      FlattenMode_Keepalive,
-      FlattenMode_Bond,
-      };
-
-   void flatten(FlattenMode mode); // implementation of keepalive and bond
+   void traceCommitment(const char *kind, void *key);
 
    TR::Compilation * const _comp;
-   TR_ResolvedMethod *_method;
-   OMR::RetainedMethodSet *_parent;
-   MethodMap _keepaliveMethods;
-   MethodMap _bondMethods;
+   TR_ResolvedMethod * const _method;
+   OMR::RetainedMethodSet * const _parent;
+
+   // This is non-const because of lazy initialization in the root set.
+   KeepalivesAndBonds *_keepalivesAndBonds;
    };
 
-} // namespace TR
+} // namespace OMR
 
 #endif // OMR_RETAINEDMETHODSET_INCL

@@ -25,6 +25,12 @@
 #include "compile/ResolvedMethod.hpp"
 #include "infra/Assert.hpp"
 
+OMR::RetainedMethodSet::KeepalivesAndBonds::KeepalivesAndBonds(TR::Region &heapRegion)
+   : _keepaliveMethods(heapRegion), _bondMethods(heapRegion)
+   {
+   // empty
+   }
+
 OMR::RetainedMethodSet::RetainedMethodSet(
    TR::Compilation *comp,
    TR_ResolvedMethod *method,
@@ -32,8 +38,10 @@ OMR::RetainedMethodSet::RetainedMethodSet(
    : _comp(comp)
    , _method(method)
    , _parent(parent)
-   , _keepaliveMethods(comp->trMemory()->heapMemoryRegion())
-   , _bondMethods(comp->trMemory()->heapMemoryRegion())
+   , _keepalivesAndBonds(
+      parent == NULL
+      ? NULL // lazily initialized to avoid calling virtual method in ctor
+      : parent->keepalivesAndBonds())
    {
    // empty
    }
@@ -41,97 +49,58 @@ OMR::RetainedMethodSet::RetainedMethodSet(
 void
 OMR::RetainedMethodSet::keepalive()
    {
-   flatten(FlattenMode_Keepalive);
+   void *key = unloadingKey(_method);
+   traceCommitment("keepalive", key);
+   keepalivesAndBonds()->_keepaliveMethods.insert(std::make_pair(key, _method));
    }
 
 void
 OMR::RetainedMethodSet::bond()
    {
-   flatten(FlattenMode_Bond);
+   void *key = unloadingKey(_method);
+   traceCommitment("bond", key);
+   keepalivesAndBonds()->_bondMethods.insert(std::make_pair(key, _method));
+   }
+
+OMR::RetainedMethodSet::KeepalivesAndBonds *
+OMR::RetainedMethodSet::keepalivesAndBonds()
+   {
+   if (_keepalivesAndBonds == NULL)
+      {
+      _keepalivesAndBonds = createKeepalivesAndBonds();
+      TR_ASSERT_FATAL(
+         _keepalivesAndBonds != NULL,
+         "createKeepalivesAndBonds() returned null");
+      }
+
+   return _keepalivesAndBonds;
+   }
+
+OMR::RetainedMethodSet::KeepalivesAndBonds *
+OMR::RetainedMethodSet::createKeepalivesAndBonds()
+   {
+   return new (comp()->region()) KeepalivesAndBonds(comp()->region());
    }
 
 void
-OMR::RetainedMethodSet::flatten(FlattenMode mode)
+OMR::RetainedMethodSet::traceCommitment(const char *kind, void *key)
    {
-   TR_ASSERT_FATAL(_parent != NULL, "cannot flatten the root set");
-
-   if (_method == NULL)
-      {
-      return; // already done
-      }
-
-   const char *flattenKindName = NULL; // only for tracing
    if (_comp->getOption(TR_TraceRetainedMethods))
       {
-      flattenKindName = mode == FlattenMode_Keepalive ? "keepalive" : "bond";
       traceMsg(
          _comp,
-         "RetainedMethodSet %p: %s %p %.*s.%.*s%.*s\n",
+         "RetainedMethodSet %p: %s %p %.*s.%.*s%.*s (key %p)\n",
          this,
-         flattenKindName,
+         kind,
          _method->getNonPersistentIdentifier(),
          _method->classNameLength(),
          _method->classNameChars(),
          _method->nameLength(),
          _method->nameChars(),
          _method->signatureLength(),
-         _method->signatureChars());
+         _method->signatureChars(),
+         key);
       }
-
-   // If keepalive has already happened for the parent, then anything
-   // propagated to the parent now would fail to be further propagated up
-   // toward the root set.
-   TR_ASSERT_FATAL(_parent->_method != NULL, "must keepalive in bottom up order");
-
-   if (!_parent->willRemainLoaded(_method))
-      {
-      void *key = unloadingKey(_method);
-      if (mode == FlattenMode_Keepalive)
-         {
-         _parent->_keepaliveMethods.insert(std::make_pair(key, _method));
-         }
-      else
-         {
-         _parent->_bondMethods.insert(std::make_pair(key, _method));
-         }
-
-      if (_comp->getOption(TR_TraceRetainedMethods))
-         {
-         traceMsg(
-            _comp,
-            "RetainedMethodSet %p: added %s method %p (key %p)\n",
-            _parent,
-            flattenKindName,
-            _method->getNonPersistentIdentifier(),
-            key);
-         }
-      }
-
-   _parent->propagateMethods(_parent->_keepaliveMethods, _keepaliveMethods);
-   _parent->propagateMethods(_parent->_bondMethods, _bondMethods);
-
-   // If unloadable methods are allowed to be inlined without a keepalive, then
-   // they will be inlined with a bond. Keepalives only matter if all bonds are
-   // satisfied, so it's important to ignore keepalives when determining what
-   // will remain loaded without a bond (for the purpose of determining whether
-   // to create a bond).
-   //
-   // NOTE: When TR_DontInlineUnloadableMethods is set, we still have to skip
-   // this for keepalives, even though there won't be any bonds. Otherwise,
-   // assignKeepaliveConstRefLabels() will think all keepalives are redundant.
-   //
-   if (mode == FlattenMode_Bond)
-      {
-      // Merge even if the parent already tells us that _method is guaranteed to
-      // remain loaded. There may have been code attested to remain loaded in this
-      // set but not yet in the parent.
-      mergeIntoParent();
-      TR_ASSERT_FATAL(
-         _parent->willRemainLoaded(_method),
-         "method should now be guaranteed to remain loaded");
-      }
-
-   _method = NULL;
    }
 
 OMR::RetainedMethodSet *
@@ -141,33 +110,25 @@ OMR::RetainedMethodSet::createChild(TR_ResolvedMethod *method)
    }
 
 OMR::RetainedMethodSet *
+OMR::RetainedMethodSet::withLinkedCalleeAttested(TR_ByteCodeInfo bci)
+   {
+   return this;
+   }
+
+OMR::RetainedMethodSet *
 OMR::RetainedMethodSet::withKeepalivesAttested()
    {
    return this;
    }
 
-void
-OMR::RetainedMethodSet::mergeIntoParent()
+OMR::RetainedMethodSet *
+OMR::RetainedMethodSet::withBondsAttested()
    {
-   TR_ASSERT_FATAL(false, "unimplemented: OMR::RetainedMethodSet::mergeIntoParent");
+   return this;
    }
 
 void *
 OMR::RetainedMethodSet::unloadingKey(TR_ResolvedMethod *method)
    {
    return method->getNonPersistentIdentifier();
-   }
-
-void
-OMR::RetainedMethodSet::propagateMethods(MethodMap &dest, const MethodMap &src)
-   {
-   for (auto it = src.begin(), end = src.end(); it != end; it++)
-      {
-      void *key = it->first;
-      TR_ResolvedMethod *method = it->second;
-      if (!willRemainLoaded(method))
-         {
-         dest.insert(std::make_pair(key, method));
-         }
-      }
    }
