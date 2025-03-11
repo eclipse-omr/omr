@@ -831,6 +831,11 @@ static void traceBondMethods(TR::Compilation *comp)
 
     traceMsg(comp, "\nBond methods:\n");
 
+    const char *bondMethodsTraceNote = comp->bondMethodsTraceNote();
+    if (bondMethodsTraceNote != NULL) {
+        traceMsg(comp, "  note: %s\n", bondMethodsTraceNote);
+    }
+
     TR_ResolvedMethod *m = NULL;
     bool haveBondMethods = false;
     auto bondIter = comp->retainedMethods()->bondMethods();
@@ -1189,36 +1194,49 @@ void OMR::Compilation::performOptimizations()
 
             // Keepalives must be taken into account, since without them it might
             // be possible for some inlined methods to be unloaded earlier.
-            OMR::RetainedMethodSet *retainedMethods = self()->retainedMethods()->withKeepalivesAttested();
 
-            for (uint32_t i = 0; i < self()->getNumInlinedCallSites(); i++) {
-                // The bci identifies a call site in the bytecode of the outermost
-                // method or a previous inlined site, so we already know that the
-                // call site outlives the JIT body and it's therefore OK to attest
-                // for the call site.
-                //
-                // We need to attest here because the compilation's root retained
-                // method set doesn't account for any call site attestation that
-                // was done during inlining on an inline call path that required at
-                // least one keepalive. For example, if A calls B calls C calls D,
-                // and if B, C, D are all inlined, and if B needed a keepalive, and
-                // if there was something useful to attest at the C->D call site,
-                // that attestation will be missing from the root set.
-                //
-                TR_ByteCodeInfo bci = self()->getInlinedCallSite(i)._byteCodeInfo;
-                if (trace) {
-                    traceMsg(self(), "check inlined site %u, bci=%d:%d\n", i, bci.getCallerIndex(),
-                        bci.getByteCodeIndex());
+            uint32_t numInlinedSites = self()->getNumInlinedCallSites();
+            if (numInlinedSites != 0) {
+                OMR::RetainedMethodSet *root = self()->retainedMethods()->withKeepalivesAttested();
+
+                TR::vector<OMR::RetainedMethodSet *, TR::Region &> retainedMethods(
+                    self()->trMemory()->currentStackRegion());
+
+                retainedMethods.reserve(numInlinedSites);
+                retainedMethods.resize(numInlinedSites, NULL);
+
+                for (uint32_t i = 0; i < numInlinedSites; i++) {
+                    // The bci identifies a call site in the bytecode of the outermost
+                    // method or a previous inlined site, so we already know that the
+                    // call site outlives the JIT body and it's therefore OK to attest
+                    // for the call site.
+                    //
+                    // We need to attest here because the compilation's root retained
+                    // method set doesn't account for any call site attestation that
+                    // was done during inlining.
+                    //
+                    TR_ByteCodeInfo bci = self()->getInlinedCallSite(i)._byteCodeInfo;
+                    if (trace) {
+                        traceMsg(self(), "check inlined site %u, bci=%d:%d\n", i, bci.getCallerIndex(),
+                            bci.getByteCodeIndex());
+                    }
+
+                    int32_t caller = bci.getCallerIndex();
+                    OMR::RetainedMethodSet *parent = caller == -1 ? root : retainedMethods[caller];
+
+                    retainedMethods[i] = parent->withLinkedCalleeAttested(bci);
+
+                    TR_ResolvedMethod *m = self()->getInlinedResolvedMethod(i);
+                    TR_ASSERT_FATAL(retainedMethods[i]->willRemainLoaded(m),
+                        "unexpectedly inlined method that could get unloaded separately:\n"
+                        "          %p %.*s.%.*s%.*s",
+                        m->getPersistentIdentifier(), m->classNameLength(), m->classNameChars(), m->nameLength(),
+                        m->nameChars(), m->signatureLength(), m->signatureChars());
                 }
+            }
 
-                retainedMethods->attestLinkedCalleeWillRemainLoaded(bci);
-
-                TR_ResolvedMethod *m = self()->getInlinedResolvedMethod(i);
-                TR_ASSERT_FATAL(retainedMethods->willRemainLoaded(m),
-                    "unexpectedly inlined method that could get unloaded separately:\n"
-                    "          %p %.*s.%.*s%.*s",
-                    m->getPersistentIdentifier(), m->classNameLength(), m->classNameChars(), m->nameLength(),
-                    m->nameChars(), m->signatureLength(), m->signatureChars());
+            if (trace) {
+                traceMsg(self(), "\n");
             }
         }
     }
@@ -2150,6 +2168,45 @@ void OMR::Compilation::setCannotAttemptOSRDuring(uint32_t index, bool cannotOSR)
 TR_AOTMethodInfo *OMR::Compilation::getInlinedAOTMethodInfo(uint32_t index)
 {
     return _inlinedCallSites[index].aotMethodInfo();
+}
+
+TR_ResolvedMethod *OMR::Compilation::getInlinedCallSiteRefinedMethod(uint32_t i)
+{
+    return _inlinedCallSites[i].refinedMethod();
+}
+
+void OMR::Compilation::setCurrentCallSiteRefinedMethod(TR_ResolvedMethod *m)
+{
+    TR_ASSERT_FATAL(!_inlinedCallStack.isEmpty(), "no current inlined site");
+    _inlinedCallSites[_inlinedCallStack.top()].setRefinedMethod(m);
+}
+
+bool OMR::Compilation::didInlinedSiteGenerateKeepalive(uint32_t i) { return _inlinedCallSites[i].generatedKeepalive(); }
+
+void OMR::Compilation::setCurrentInlinedSiteGeneratedKeepalive(TR_ResolvedMethod *keepaliveMethod)
+{
+    TR_ASSERT_FATAL(keepaliveMethod != NULL, "no keepalive method");
+    TR_ASSERT_FATAL(!_inlinedCallStack.isEmpty(), "no current inlined site");
+    TR_InlinedCallSiteInfo &siteInfo = _inlinedCallSites[_inlinedCallStack.top()];
+    TR_ASSERT_FATAL(keepaliveMethod->isSameMethod(siteInfo.refinedMethod()),
+        "keepalive method %p differs from call site refined method %p", keepaliveMethod->getNonPersistentIdentifier(),
+        siteInfo.refinedMethod()->getNonPersistentIdentifier());
+
+    siteInfo.setGeneratedKeepalive();
+}
+
+bool OMR::Compilation::didInlinedSiteGenerateBond(uint32_t i) { return _inlinedCallSites[i].generatedBond(); }
+
+void OMR::Compilation::setCurrentInlinedSiteGeneratedBond(TR_ResolvedMethod *bondMethod)
+{
+    TR_ASSERT_FATAL(bondMethod != NULL, "no bond method");
+    TR_ASSERT_FATAL(!_inlinedCallStack.isEmpty(), "no current inlined site");
+    TR_InlinedCallSiteInfo &siteInfo = _inlinedCallSites[_inlinedCallStack.top()];
+    TR_ASSERT_FATAL(bondMethod->isSameMethod(siteInfo.resolvedMethod()),
+        "bond method %p differs from inlined resolved method %p", bondMethod->getNonPersistentIdentifier(),
+        siteInfo.resolvedMethod()->getNonPersistentIdentifier());
+
+    siteInfo.setGeneratedBond();
 }
 
 TR_InlinedCallSite *OMR::Compilation::getCurrentInlinedCallSite()

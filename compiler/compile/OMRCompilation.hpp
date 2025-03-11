@@ -706,7 +706,10 @@ public:
         int32_t *_osrCallSiteRematTable;
         bool _directCall;
         bool _cannotAttemptOSRDuring;
+        bool _generatedKeepalive;
+        bool _generatedBond;
         TR_AOTMethodInfo *_aotMethodInfo;
+        TR_ResolvedMethod *_refinedMethod;
 
     public:
         TR_InlinedCallSiteInfo(TR_OpaqueMethodBlock *method, TR_ByteCodeInfo &bcInfo,
@@ -717,7 +720,10 @@ public:
             , _directCall(directCall)
             , _osrCallSiteRematTable(0)
             , _cannotAttemptOSRDuring(false)
+            , _generatedKeepalive(false)
+            , _generatedBond(false)
             , _aotMethodInfo(aotMethodInfo)
+            , _refinedMethod(NULL)
         {
             _site._methodInfo = method;
             _site._byteCodeInfo = bcInfo;
@@ -742,6 +748,18 @@ public:
         void setCannotAttemptOSRDuring(bool cannotOSR) { _cannotAttemptOSRDuring = cannotOSR; }
 
         TR_AOTMethodInfo *aotMethodInfo() { return _aotMethodInfo; }
+
+        TR_ResolvedMethod *refinedMethod() { return _refinedMethod; }
+
+        void setRefinedMethod(TR_ResolvedMethod *m) { _refinedMethod = m; }
+
+        bool generatedKeepalive() { return _generatedKeepalive; }
+
+        void setGeneratedKeepalive() { _generatedKeepalive = true; }
+
+        bool generatedBond() { return _generatedBond; }
+
+        void setGeneratedBond() { _generatedBond = true; }
     };
 
     uint32_t getNumInlinedCallSites();
@@ -758,6 +776,65 @@ public:
     bool cannotAttemptOSRDuring(uint32_t index);
     void setCannotAttemptOSRDuring(uint32_t index, bool cannot);
     TR_AOTMethodInfo *getInlinedAOTMethodInfo(uint32_t index);
+
+    /**
+     * \brief Get the call site method refined based on constant folding for
+     * inlined site \p i, if any.
+     *
+     * If a keepalive was created for the inlined site, it was for this method.
+     *
+     * \param i the inlined site index
+     * \return the refined method, or null if the call site was not refined
+     *         based on a known object.
+     */
+    TR_ResolvedMethod *getInlinedCallSiteRefinedMethod(uint32_t i);
+
+    /**
+     * \brief Set the call site method refined based on constant folding for
+     * the current inlined site.
+     *
+     * \param m the method
+     */
+    void setCurrentCallSiteRefinedMethod(TR_ResolvedMethod *m);
+
+    /**
+     * \brief Determine whether a keepalive was generated for inlined site \p i.
+     *
+     * If a keepalive was generated, it was for getInlinedCallSiteRefinedMethod(i).
+     *
+     * \param i the inlined site index
+     * \return true if a keepalive was generated, false otherwise
+     */
+    bool didInlinedSiteGenerateKeepalive(uint32_t i);
+
+    /**
+     * \brief Mark the current inlined site as having generated a keepalive.
+     *
+     * The current inlined site must have a call site refined method, and it
+     * must be the same as the keepalive method.
+     *
+     * \param keepaliveMethod the keepalive method, used to check consistency
+     */
+    void setCurrentInlinedSiteGeneratedKeepalive(TR_ResolvedMethod *keepaliveMethod);
+
+    /**
+     * \brief Determine whether a bond was generated for inlined site \p i.
+     *
+     * If a bond was generated, it was for the inlined target method.
+     *
+     * \param i the inlined site index
+     * \return true if a bond was generated, false otherwise
+     */
+    bool didInlinedSiteGenerateBond(uint32_t i);
+
+    /**
+     * \brief Mark the current inlined site as having generated a bond.
+     *
+     * The bond method must be the target method that was inlined at this site.
+     *
+     * \param bondMethod the bond method, used to check consistency
+     */
+    void setCurrentInlinedSiteGeneratedBond(TR_ResolvedMethod *bondMethod);
 
     TR_InlinedCallSite *getCurrentInlinedCallSite();
     int32_t getCurrentInlinedSiteIndex();
@@ -1272,6 +1349,15 @@ public:
      * \return the newly created root retained method set
      */
     OMR::RetainedMethodSet *createRetainedMethods(TR_ResolvedMethod *method);
+
+    /**
+     * \brief Get the extra note, if any, to add when tracing bond methods.
+     *
+     * A project can override this to add some context to the trace log.
+     *
+     * \return the note message, or null if none.
+     */
+    const char *bondMethodsTraceNote() { return NULL; }
 
 private:
     void resetVisitCounts(vcount_t, TR::ResolvedMethodSymbol *);

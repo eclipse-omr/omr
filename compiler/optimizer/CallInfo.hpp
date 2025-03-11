@@ -411,6 +411,7 @@ public:
     // we propagate from calltarget to callee callsite when appropriate in ecs
     TR_PrexArgInfo *_ecsPrexArgInfo; // used by ECS and findInlineTargets to assist in choosing correct inline targets
 
+    TR_ResolvedMethod *_refinedMethod; // if refined based on known object
     OMR::RetainedMethodSet *_retainedMethods;
     bool _needsKeepalive;
 
