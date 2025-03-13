@@ -2843,7 +2843,7 @@ OMR::RV::TreeEvaluator::badILOpEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 	return OMR::RV::TreeEvaluator::unImpOpEvaluator(node, cg);
 	}
 
-TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t memSize, TR::CodeGenerator *cg)
+TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
    {
    TR::Register *tempReg;
    bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
@@ -2861,7 +2861,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
       tempReg = cg->allocateRegister();
       }
    node->setRegister(tempReg);
-   TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, memSize, cg);
+   TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
    generateLOAD(op, node, tempReg, tempMR, cg);
 
    /*
@@ -2880,7 +2880,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
 TR::Register *
 OMR::RV::TreeEvaluator::iloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonLoadEvaluator(node, TR::InstOpCode::_lw, 4, cg);
+   return commonLoadEvaluator(node, TR::InstOpCode::_lw, cg);
    }
 
 // also handles aloadi
@@ -2906,7 +2906,7 @@ OMR::RV::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 
    node->setRegister(tempReg);
 
-   TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, 8, cg);
+   TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
    generateLOAD(TR::InstOpCode::_ld, node, tempReg, tempMR, cg);
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -2938,21 +2938,21 @@ OMR::RV::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register *
 OMR::RV::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonLoadEvaluator(node, TR::InstOpCode::_ld, 8, cg);
+   return commonLoadEvaluator(node, TR::InstOpCode::_ld, cg);
    }
 
 // also handles bloadi
 TR::Register *
 OMR::RV::TreeEvaluator::bloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonLoadEvaluator(node, TR::InstOpCode::_lb, 1, cg);
+   return commonLoadEvaluator(node, TR::InstOpCode::_lb, cg);
    }
 
 // also handles sloadi
 TR::Register *
 OMR::RV::TreeEvaluator::sloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonLoadEvaluator(node, TR::InstOpCode::_lh, 2, cg);
+   return commonLoadEvaluator(node, TR::InstOpCode::_lh, cg);
    }
 
 TR::Register *
@@ -2962,9 +2962,9 @@ OMR::RV::TreeEvaluator::awrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 	return OMR::RV::TreeEvaluator::unImpOpEvaluator(node, cg);
 	}
 
-TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t memSize, TR::CodeGenerator *cg)
+TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
    {
-   TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, memSize, cg);
+   TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
    bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
    TR::Node *valueChild;
 
@@ -3003,28 +3003,28 @@ TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, 
 TR::Register *
 OMR::RV::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonStoreEvaluator(node, TR::InstOpCode::_sd, 8, cg);
+   return commonStoreEvaluator(node, TR::InstOpCode::_sd, cg);
    }
 
 // also handles bstorei
 TR::Register *
 OMR::RV::TreeEvaluator::bstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonStoreEvaluator(node, TR::InstOpCode::_sb, 1, cg);
+   return commonStoreEvaluator(node, TR::InstOpCode::_sb, cg);
    }
 
 // also handles sstorei
 TR::Register *
 OMR::RV::TreeEvaluator::sstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonStoreEvaluator(node, TR::InstOpCode::_sh, 2, cg);
+   return commonStoreEvaluator(node, TR::InstOpCode::_sh, cg);
    }
 
 // also handles istorei
 TR::Register *
 OMR::RV::TreeEvaluator::istoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return commonStoreEvaluator(node, TR::InstOpCode::_sw, 4, cg);
+   return commonStoreEvaluator(node, TR::InstOpCode::_sw, cg);
    }
 
 TR::Register *
