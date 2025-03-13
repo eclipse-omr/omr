@@ -948,8 +948,7 @@ class SymbolReferenceTable
 
    TR_Array<TR_BitVector *>            _knownObjectSymrefsByObjectIndex;
 
-   TR_Array<TR::SymbolReference *> *    _unsafeSymRefs;
-   TR_Array<TR::SymbolReference *> *    _unsafeVolatileSymRefs;
+   TR_Array<TR::SymbolReference *> *    _unsafeSymRefs[TR::Symbol::numberOfMemoryOrderings];
 
    List<TR::SymbolReference>            _availableAutos;
    List<TR::SymbolReference>            _vtableEntrySymbolRefs;

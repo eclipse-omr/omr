@@ -491,6 +491,122 @@ OMR::Symbol::isMemoryTypeShadowSymbol()
    return self()->isShadow() && _flags.testAny(MemoryTypeShadow);
    }
 
+const char *
+OMR::Symbol::getMemoryOrderingName(OMR::Symbol::MemoryOrdering ordering)
+   {
+   switch (ordering)
+      {
+      case MemoryOrdering::Transparent: return "transparent";
+      case MemoryOrdering::Opaque: return "opaque";
+      case MemoryOrdering::AcquireRelease: return "acquire/release";
+      case MemoryOrdering::Volatile: return "volatile";
+
+      default:
+         TR_ASSERT_FATAL(false, "Unrecognized memory ordering type");
+         return NULL;
+      }
+   }
+
+void
+OMR::Symbol::setMemoryOrdering(OMR::Symbol::MemoryOrdering ordering)
+   {
+   switch (ordering)
+      {
+      case MemoryOrdering::Transparent:
+         _flags.setValue(MemoryOrderingMask, Transparent);
+         break;
+      case MemoryOrdering::Opaque:
+         _flags.setValue(MemoryOrderingMask, Opaque);
+         break;
+      case MemoryOrdering::AcquireRelease:
+         _flags.setValue(MemoryOrderingMask, AcquireRelease);
+         break;
+      case MemoryOrdering::Volatile:
+         _flags.setValue(MemoryOrderingMask, Volatile);
+         break;
+
+      default:
+         TR_ASSERT_FATAL(false, "Unrecognized memory access ordering type");
+         break;
+      }
+   }
+
+OMR::Symbol::MemoryOrdering
+OMR::Symbol::getMemoryOrdering()
+   {
+   switch (_flags.getValue(MemoryOrderingMask))
+      {
+      case Transparent: return MemoryOrdering::Transparent;
+      case Opaque: return MemoryOrdering::Opaque;
+      case AcquireRelease: return MemoryOrdering::AcquireRelease;
+      case Volatile: return MemoryOrdering::Volatile;
+
+      default:
+         TR_ASSERT_FATAL(false, "This should be unreachable");
+         return MemoryOrdering::Transparent;
+      }
+   }
+
+void
+OMR::Symbol::setTransparent()
+   {
+   _flags.setValue(MemoryOrderingMask, Transparent);
+   }
+
+bool
+OMR::Symbol::isTransparent()
+   {
+   return _flags.testValue(MemoryOrderingMask, Transparent);
+   }
+
+void
+OMR::Symbol::setOpaque()
+   {
+   _flags.setValue(MemoryOrderingMask, Opaque);
+   }
+
+bool
+OMR::Symbol::isOpaque()
+   {
+   return _flags.testValue(MemoryOrderingMask, Opaque);
+   }
+
+bool
+OMR::Symbol::isAtLeastOrStrongerThanOpaque()
+   {
+   return _flags.getValue(MemoryOrderingMask) >= Opaque;
+   }
+
+void
+OMR::Symbol::setAcquireRelease()
+   {
+   _flags.setValue(MemoryOrderingMask, AcquireRelease);
+   }
+
+bool
+OMR::Symbol::isAcquireRelease()
+   {
+   return _flags.testValue(MemoryOrderingMask, AcquireRelease);
+   }
+
+bool
+OMR::Symbol::isAtLeastOrStrongerThanAcquireRelease()
+   {
+   return _flags.getValue(MemoryOrderingMask) >= AcquireRelease;
+   }
+
+void
+OMR::Symbol::setVolatile()
+   {
+   _flags.setValue(MemoryOrderingMask, Volatile);
+   }
+
+bool
+OMR::Symbol::isVolatile()
+   {
+   return _flags.testValue(MemoryOrderingMask, Volatile);
+   }
+
 void
 OMR::Symbol::setStartOfColdInstructionStream()
    {
@@ -749,12 +865,6 @@ bool
 OMR::Symbol::isRegularShadow()
    {
    return self()->isShadow() && !self()->isAutoField() && !self()->isParmField();
-   }
-
-bool
-OMR::Symbol::isSyncVolatile()
-   {
-   return self()->isVolatile();
    }
 
 void

@@ -3221,7 +3221,7 @@ TR::Instruction *loadAddressConstant(TR::CodeGenerator *cg, TR::Node * node, int
 TR::Register *OMR::ARM::TreeEvaluator::iloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Register *tempReg;
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP();
 
    tempReg = cg->allocateRegister();
    if (node->getSymbolReference()->getSymbol()->isInternalPointer())
@@ -3326,7 +3326,7 @@ TR::Register *OMR::ARM::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGe
       }
 
    TR::Register *tempReg;
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP();
 
    if (!node->getSymbolReference()->getSymbol()->isInternalPointer())
       {
@@ -3370,7 +3370,7 @@ TR::Register *OMR::ARM::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGe
    TR::RegisterPair       *trgReg = cg->allocateRegisterPair(lowReg, highReg);
    TR::Compilation *comp = cg->comp();
    bool bigEndian = cg->comp()->target().cpu.isBigEndian();
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = (node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP());
 
    if (needSync && cg->comp()->target().cpu.id() != TR_DefaultARMProcessor)
       {
@@ -3422,7 +3422,7 @@ TR::Register *OMR::ARM::TreeEvaluator::commonLoadEvaluator(TR::Node *node,  TR::
    {
    TR::Register *tempReg = node->setRegister(cg->allocateRegister());
    TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, memSize, cg);
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = (node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP());
    generateTrg1MemInstruction(cg, memToRegOp, node, tempReg, tempMR);
    if (needSync && cg->comp()->target().cpu.id() != TR_DefaultARMProcessor)
       {
@@ -3440,7 +3440,7 @@ TR::Register *OMR::ARM::TreeEvaluator::awrtbarEvaluator(TR::Node *node, TR::Code
    TR::Node                *firstChild = node->getFirstChild();
    TR::Register            *sourceRegister;
    bool killSource = false;
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = (node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP());
 
    if (firstChild->getReferenceCount() > 1 && firstChild->getRegister() != NULL)
       {
@@ -3490,7 +3490,7 @@ TR::Register *OMR::ARM::TreeEvaluator::awrtbariEvaluator(TR::Node *node, TR::Cod
    TR::Node                *secondChild = node->getSecondChild();
    TR::Register            *sourceRegister;
    bool killSource = false;
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = (node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP());
 
    /* comp->useCompressedPointers() is false for 32bit environment, leaving the compressed pointer support unimplemented. */
    if (secondChild->getReferenceCount() > 1 && secondChild->getRegister() != NULL)
@@ -3547,7 +3547,7 @@ TR::Register *OMR::ARM::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeG
       valueChild = node->getFirstChild();
       }
    bool bigEndian = cg->comp()->target().cpu.isBigEndian();
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   bool needSync = (node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease() && cg->comp()->target().isSMP());
    TR::Register *valueReg = cg->evaluate(valueChild);
 
    if (needSync && cg->comp()->target().cpu.id() != TR_DefaultARMProcessor)
@@ -3612,7 +3612,7 @@ TR::Register *OMR::ARM::TreeEvaluator::istoreEvaluator(TR::Node *node, TR::CodeG
 TR::Register *OMR::ARM::TreeEvaluator::commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic memToRegOp, int32_t memSize, TR::CodeGenerator *cg)
    {
    TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, memSize, cg);
-   bool needSync = (node->getSymbolReference()->getSymbol()->isSyncVolatile() && cg->comp()->target().isSMP());
+   const bool supportsDMB = (cg->comp()->target().isSMP() && cg->comp()->target().cpu.id() != TR_DefaultARMProcessor);
    TR::Node *valueChild;
    if (node->getOpCode().isIndirect())
       {
@@ -3623,12 +3623,12 @@ TR::Register *OMR::ARM::TreeEvaluator::commonStoreEvaluator(TR::Node *node, TR::
       valueChild = node->getFirstChild();
       }
 
-   if (needSync && cg->comp()->target().cpu.id() != TR_DefaultARMProcessor)
+   if (supportsDMB && node->getSymbolReference()->getSymbol()->isAtLeastOrStrongerThanAcquireRelease())
       {
       generateInstruction(cg, (cg->comp()->target().cpu.id() == TR_ARMv6) ? TR::InstOpCode::dmb_v6 : TR::InstOpCode::dmb_st, node);
       }
    generateMemSrc1Instruction(cg, memToRegOp, node, tempMR, cg->evaluate(valueChild));
-   if (needSync && cg->comp()->target().cpu.id() != TR_DefaultARMProcessor)
+   if (supportsDMB && node->getSymbolReference()->getSymbol()->isVolatile())
       {
       generateInstruction(cg, (cg->comp()->target().cpu.id() == TR_ARMv6) ? TR::InstOpCode::dmb_v6 : TR::InstOpCode::dmb, node);
       }

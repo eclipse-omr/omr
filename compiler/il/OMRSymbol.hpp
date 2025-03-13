@@ -246,11 +246,6 @@ public:
    void setConst()                          { _flags.set(Const); }
    bool isConst()                           { return _flags.testAny(Const); }
 
-   void setVolatile()                       { _flags.set(Volatile); }
-   void resetVolatile()                     { _flags.reset(Volatile); }
-   bool isVolatile()                        { return _flags.testAny(Volatile); }
-   inline bool isSyncVolatile();
-
    void setInitializedReference()           { _flags.set(InitializedReference); }
    void setUninitializedReference()         { _flags.reset(InitializedReference); }
    bool isInitializedReference()            { return _flags.testAny(InitializedReference); }
@@ -398,8 +393,51 @@ public:
    inline void setMemoryTypeShadowSymbol();
    inline bool isMemoryTypeShadowSymbol();
 
-   void setOrdered() { _flags.set(Ordered); }
-   bool isOrdered()  { return _flags.testAny(Ordered); }
+   /**
+    * See Doug Lea's document on JDK 9 memory order modes for more detail
+    * https://gee.cs.oswego.edu/dl/html/j9mm.html
+    */
+   enum class MemoryOrdering
+      {
+      Transparent,    ///< Access to transparent symbols is unsynchronized, and only guaranteed to be bitwise
+                      ///< atomic for symbols that are addresses or have data types 32 bits or smaller.
+      Opaque,         ///< Accesses to opaque symbols are bitwise atomic. The execution order of all opaque
+                      ///< accesses to any given address in a single thread is the same as the program order of
+                      ///< accesses to that address, with no guarantees for memory ordering effects on other threads.
+                      ///< Stores to opaque symbols are guaranteed to progress, i.e., an opaque store to a given
+                      ///< address will eventually be visible to opaque reads of that address in all other threads.
+      AcquireRelease, ///< Acquire/release symbols have all the same guarantees and constraints as opaque symbols.
+                      ///< Additionally, loads of acquire/release symbols are acquire loads, i.e., memory accesses
+                      ///< that are after a given acquire load in program order will not be reordered to before that
+                      ///< acquire load in execution order, and stores to acquire/release symbols are release stores,
+                      ///< i.e., memory accesses that are before a given release store in program order will not be
+                      ///< reordered to after that release store in execution order.
+      Volatile,       ///< Volatile symbols have all the same guarantees and constraints as acquire/release symbols.
+                      ///< Additionally, all memory accesses that are before an access to a given volatile symbol in
+                      ///< program order will not be reordered to after that volatile access in execution order, and
+                      ///< all memory accesses that are after that volatile access in program order will not be
+                      ///< reordered to before that volatile access in execution order.
+      };
+   static const int numberOfMemoryOrderings = static_cast<int>(MemoryOrdering::Volatile) + 1;
+
+   static inline const char *getMemoryOrderingName(MemoryOrdering ordering);
+
+   inline void setMemoryOrdering(MemoryOrdering ordering);
+   inline MemoryOrdering getMemoryOrdering();
+
+   inline void setTransparent();
+   inline bool isTransparent();
+
+   inline void setOpaque();
+   inline bool isOpaque();
+   inline bool isAtLeastOrStrongerThanOpaque();
+
+   inline void setAcquireRelease();
+   inline bool isAcquireRelease();
+   inline bool isAtLeastOrStrongerThanAcquireRelease();
+
+   inline void setVolatile();
+   inline bool isVolatile();
 
    // flag methods specific to labels
    //
@@ -494,17 +532,30 @@ public:
        */
       KindMask                  = 0x00000700,
 
-
       IsInGlobalRegister        = 0x00000800,
       Const                     = 0x00001000,
-      Volatile                  = 0x00002000,
-      InitializedReference      = 0x00004000,
+
+      /**
+       * Memory access ordering semantics flags
+       * These flags line up with the MemoryOrdering enum
+       */
+      Transparent               = 0x00000000,
+      Opaque                    = 0x00002000,
+      AcquireRelease            = 0x00004000,
+      Volatile                  = 0x00006000,
+
+      /**
+       * Mask used to access memory ordering semantics
+       */
+      MemoryOrderingMask        = 0x00006000,
+
       ClassObject               = 0x00008000, ///< class object pointer
       NotCollected              = 0x00010000,
       Final                     = 0x00020000,
       InternalPointer           = 0x00040000,
       Private                   = 0x00080000,
       AddressOfClassObject      = 0x00100000, ///< address of a class object pointer
+      InitializedReference      = 0x00200000,
       SlotSharedByRefAndNonRef  = 0x00400000, ///< used in fsd to indicate that an reference symbol shares a slot with a nonreference symbol
 
       HoldsMonitoredObject      = 0x08000000,
@@ -555,9 +606,6 @@ public:
       RecognizedKnownObjectShadow = 0x10000000,
       GlobalFragmentShadow      = 0x08000000,
       MemoryTypeShadow          = 0x04000000,
-      Ordered                   = 0x02000000,
-      // Available              = 0x01000000,
-      // Available              = 0x00800000,
 
       // only use by Symbols for which isLabel is true
       //
