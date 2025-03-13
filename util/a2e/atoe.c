@@ -1328,6 +1328,53 @@ atoe_putchar(int ch)
 }
 
 /**************************************************************************
+ * name        - atoe_vfprintf
+ * description -
+ * parameters  -
+ * returns     -
+ *************************************************************************/
+int
+atoe_vfprintf(FILE *file, const char *ascii_chars, va_list args)
+{
+	va_list args_copy;
+	char *buf;
+	char *ebuf;
+	int len;
+
+	/* Measure the required length of buffer. */
+	va_copy(args_copy, args);
+	len = atoe_vsnprintf(NULL, 0, ascii_chars, args_copy);
+	va_end(args_copy);
+
+	/* Abort if failed. */
+	if (len == -1) {
+		return len;
+	}
+
+	/* Add one for null terminating character. */
+	len += 1;
+	/* Allocate buffer and write to it. */
+	buf = (char *)malloc(len);
+	if (NULL == buf) {
+		return -1;
+	}
+	atoe_vsnprintf(buf, len, ascii_chars, args);
+
+	ebuf = a2e(buf, len - 1);
+	free(buf);
+	if (NULL == ebuf) {
+		return -1;
+	}
+#pragma convlit(suspend)
+	len = fprintf(file, "%s", ebuf);
+#pragma convlit(resume)
+
+	free(ebuf);
+
+	return len;
+}
+
+/**************************************************************************
  * name        -
  * description -
  * parameters  -
@@ -1387,6 +1434,24 @@ std_sprintf(const char *buf, char *ascii_chars, ...)
 }
 
 /**************************************************************************
+ * name        - atoe_vsprintf                                     ibm@2580
+ * description -
+ * parameters  -
+ * returns     -
+ *************************************************************************/
+int
+atoe_vsprintf(char *target, const char *ascii_chars, va_list args)
+{
+	/* Calculate the maximum valid target size. */
+	size_t target_size = (uintptr_t)OMRPORT_VMEM_MAX_ADDRESS - (uintptr_t)target;
+	/* atoe_vsnprintf() may call the standard snprintf() which does not accept target_size > INT_MAX. */
+	if (target_size > INT_MAX) {
+		target_size = INT_MAX;
+	}
+	return atoe_vsnprintf(target, target_size, ascii_chars, args);
+}
+
+/**************************************************************************
  * name        - atoe_sprintf
  * description -
  *              This function does not need to convert ascii -> EBCDIC
@@ -1428,52 +1493,6 @@ atoe_snprintf(char *buf, size_t buflen, const char *ascii_chars, ...)
 	return len;
 }
 
-/**************************************************************************
- * name        - atoe_vfprintf
- * description -
- * parameters  -
- * returns     -
- *************************************************************************/
-int
-atoe_vfprintf(FILE *file, const char *ascii_chars, va_list args)
-{
-	va_list args_copy;
-	char *buf;
-	char *ebuf;
-	int len;
-
-	/* Measure the required length of buffer. */
-	va_copy(args_copy, args);
-	len = atoe_vsnprintf(NULL, 0, ascii_chars, args_copy);
-	va_end(args_copy);
-
-	/* Abort if failed. */
-	if (len == -1) {
-		return len;
-	}
-
-	/* Add one for null terminating character. */
-	len += 1;
-	/* Allocate buffer and write to it. */
-	buf = (char *)malloc(len);
-	if (NULL == buf) {
-		return -1;
-	}
-	atoe_vsnprintf(buf, len, ascii_chars, args);
-
-	ebuf = a2e(buf, len - 1);
-	free(buf);
-	if (NULL == ebuf) {
-		return -1;
-	}
-#pragma convlit(suspend)
-	len = fprintf(file, "%s", ebuf);
-#pragma convlit(resume)
-
-	free(ebuf);
-
-	return len;
-}
 
 /**************************************************************************
  * name        - atoe_vprintf
@@ -1485,24 +1504,6 @@ int
 atoe_vprintf(const char *ascii_chars, va_list args)
 {
 	return atoe_vfprintf(stdout, ascii_chars, args);
-}
-
-/**************************************************************************
- * name        - atoe_vsprintf                                     ibm@2580
- * description -
- * parameters  -
- * returns     -
- *************************************************************************/
-int
-atoe_vsprintf(char *target, const char *ascii_chars, va_list args)
-{
-	/* Calculate the maximum valid target size. */
-	size_t target_size = (uintptr_t)OMRPORT_VMEM_MAX_ADDRESS - (uintptr_t)target;
-	/* atoe_vsnprintf() may call the standard snprintf() which does not accept target_size > INT_MAX. */
-	if (target_size > INT_MAX) {
-		target_size = INT_MAX;
-	}
-	return atoe_vsnprintf(target, target_size, ascii_chars, args);
 }
 
 /**************************************************************************
