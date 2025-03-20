@@ -429,6 +429,22 @@ void TR_RegionStructure::ExitExtraction::extractUnconditionalExits(
    if (_trace)
       _comp->dumpMethodTrees("Trees before unconditional exit extraction");
 
+   // moveNodeIntoParent replaces the entire region with the unconditional exit node
+   // if the node is the entry of the region. It expects the region has only one sub
+   // node in this case. However, in this case the region could have contained unreachable
+   // blocks after prior optimizations and its number of the sub nodes is greater than one,
+   // which will fail the assert in moveNodeIntoParent that checks if the number of the
+   // sub nodes in the region equals to one. So we need to clean up the CFG before
+   // unconditional exit extraction if necessary.
+   //
+   if ((_cfg->getHasUnreachableBlocks()) || _cfg->getMightHaveUnreachableBlocks())
+      {
+      _cfg->removeUnreachableBlocks();
+
+      if (_trace)
+         _comp->dumpMethodTrees("Trees after removing unreachable blocks");
+      }
+
    while (_workStack.size() > 0)
       {
       if (_trace)
@@ -730,9 +746,9 @@ void TR_RegionStructure::ExitExtraction::moveNodeIntoParent(
       // Replace this entire region in the parent, since entry can't be removed
       TR_ASSERT_FATAL(
          region->numSubNodes() == 1,
-         "removeUnconditionalExit: all successors of region %p entry are "
-         "outside region, but there are additional sub-nodes\n",
-         region);
+         "removeUnconditionalExit: all successors of region %p %d (entry %p %d) are "
+         "outside region, but there are %d sub-nodes\n",
+         region, region->getNumber(), region->getEntry(), region->getEntry()->getNumber(), region->numSubNodes());
 
       parent->replacePart(region, node->getStructure());
       return;
