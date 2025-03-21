@@ -158,8 +158,10 @@ char e2a_tab[CONV_TABLE_SIZE];
  */
 #include "atoe.h"
 
-int   atoe_vsnprintf(char *str, size_t count, const char *fmt, va_list args);
 int   atoe_fprintf(FILE *, const char *, ...);
+int   atoe_vfprintf(FILE *, const char *, va_list);
+int   atoe_vsnprintf(char *str, size_t count, const char *fmt, va_list args);
+int   atoe_vsprintf(char *, const char *, va_list);
 struct passwd *etoa_passwd(struct passwd *e_passwd);
 
 /*
