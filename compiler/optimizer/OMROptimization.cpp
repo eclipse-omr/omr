@@ -235,7 +235,8 @@ OMR::Optimization::anchorChildren(TR::Node *node, TR::TreeTop* anchorTree, uint3
 
       if (prevChild != child) // quite common for anchor to be called with two equal children
          {
-         if (self()->nodeIsOrderDependent(child, depth, hasCommonedAncestor))
+         // For OffHeap anchoring a dataAddr load can result of its value to be live across GC points
+         if (self()->nodeIsOrderDependent(child, depth, hasCommonedAncestor) && !child->isDataAddrPointer())
             {
             dumpOptDetails(self()->comp(), "%sanchor child %s [" POINTER_PRINTF_FORMAT "] at depth %d before %s [" POINTER_PRINTF_FORMAT "]\n",
                self()->optDetailString(),child->getOpCode().getName(),child,depth,anchorTree->getNode()->getOpCode().getName(),anchorTree->getNode());
