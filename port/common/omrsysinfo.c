@@ -1203,3 +1203,16 @@ omrsysinfo_get_number_context_switches(struct OMRPortLibrary *portLibrary, uint6
 {
 	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 }
+
+/**
+ * Get the process ID and commandline for each process.
+ * @param[in] portLibrary The port library.
+ * @param[in] callback The function to be invoked for each process with the process ID and command info.
+ * @param[in] userData Data passed to the callback.
+ * @return 0 on success, or the first non-zero value returned by the callback.
+ */
+uintptr_t
+omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
+{
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
