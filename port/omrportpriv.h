@@ -713,6 +713,8 @@ extern J9_CFUNC uintptr_t
 omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintptr_t *descriptor, uintptr_t flags);
 extern J9_CFUNC void
 omrsl_shutdown(struct OMRPortLibrary *portLibrary);
+extern J9_CFUNC uintptr_t
+omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData);
 
 /* J9SourceJ9Sock*/
 extern J9_CFUNC int32_t
