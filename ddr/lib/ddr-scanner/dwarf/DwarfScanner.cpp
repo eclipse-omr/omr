@@ -41,6 +41,155 @@
 #include <stack>
 #include <utility>
 
+#define DW_LIBDWARF_MAKE_VERSION(major, minor) (((major) * 100) + (minor))
+
+#if defined(DW_LIBDWARF_VERSION_MAJOR) && defined(DW_LIBDWARF_VERSION_MINOR)
+#define OMR_LIBDWARF_VERSION DW_LIBDWARF_MAKE_VERSION(DW_LIBDWARF_VERSION_MAJOR, DW_LIBDWARF_VERSION_MINOR)
+#else /* defined(DW_LIBDWARF_VERSION_MAJOR) && defined(DW_LIBDWARF_VERSION_MINOR) */
+#define OMR_LIBDWARF_VERSION 0
+#endif /* defined(DW_LIBDWARF_VERSION_MAJOR) && defined(DW_LIBDWARF_VERSION_MINOR) */
+
+/* Wrappers to adapt to differences across libdwarf API versions. */
+
+#if OMR_LIBDWARF_VERSION >= DW_LIBDWARF_MAKE_VERSION(0, 9)
+
+static int
+ddr_dw_finish(
+	Dwarf_Debug  dbg,
+	Dwarf_Error *error)
+{
+	if (NULL != error) {
+		*error = DW_DLV_OK;
+	}
+
+	return dwarf_finish(dbg);
+}
+
+static int
+ddr_dw_init(
+	int           fd,
+	Dwarf_Handler errhand,
+	Dwarf_Ptr     errarg,
+	Dwarf_Debug  *dbg,
+	Dwarf_Error  *error)
+{
+	unsigned int groupnumber = DW_GROUPNUMBER_ANY;
+
+	return dwarf_init_b(fd, groupnumber, errhand, errarg, dbg, error);
+}
+
+static int
+ddr_dw_next_cu_header(
+	Dwarf_Debug     dbg,
+	Dwarf_Bool      is_info,
+	Dwarf_Die      *cu_die,
+	Dwarf_Unsigned *cu_header_length,
+	Dwarf_Half     *version_stamp,
+	Dwarf_Off      *abbrev_offset,
+	Dwarf_Half     *address_size,
+	Dwarf_Half     *length_size,
+	Dwarf_Half     *extension_size,
+	Dwarf_Sig8     *type_signature,
+	Dwarf_Unsigned *typeoffset,
+	Dwarf_Unsigned *next_cu_header_offset,
+	Dwarf_Half     *header_cu_type,
+	Dwarf_Error    *error)
+{
+	return dwarf_next_cu_header_e(
+			dbg,
+			is_info,
+			cu_die,
+			cu_header_length,
+			version_stamp,
+			abbrev_offset,
+			address_size,
+			length_size,
+			extension_size,
+			type_signature,
+			typeoffset,
+			next_cu_header_offset,
+			header_cu_type,
+			error);
+}
+
+static int
+ddr_dw_siblingof(
+	Dwarf_Debug  dbg,
+	Dwarf_Die    die,
+	Dwarf_Die   *return_siblingdie,
+	Dwarf_Error *error)
+{
+	return dwarf_siblingof_c(die, return_siblingdie, error);
+}
+
+#else /* OMR_LIBDWARF_VERSION >= DW_LIBDWARF_MAKE_VERSION(0, 9) */
+
+#define DW_GROUPNUMBER_ANY 0
+
+static int
+ddr_dw_finish(
+		Dwarf_Debug  dbg,
+		Dwarf_Error *error)
+{
+	return dwarf_finish(dbg, error);
+}
+
+static int
+ddr_dw_init(
+	int           fd,
+	Dwarf_Handler errhand,
+	Dwarf_Ptr     errarg,
+	Dwarf_Debug  *dbg,
+	Dwarf_Error  *error)
+{
+	Dwarf_Unsigned access = DW_DLC_READ;
+
+	return dwarf_init(fd, access, errhand, errarg, dbg, error);
+}
+
+static int
+ddr_dw_next_cu_header(
+	Dwarf_Debug     dbg,
+	Dwarf_Bool      is_info,
+	Dwarf_Die      *cu_die,
+	Dwarf_Unsigned *cu_header_length,
+	Dwarf_Half     *version_stamp,
+	Dwarf_Off      *abbrev_offset,
+	Dwarf_Half     *address_size,
+	Dwarf_Half     *length_size,
+	Dwarf_Half     *extension_size,
+	Dwarf_Sig8     *type_signature,
+	Dwarf_Unsigned *typeoffset,
+	Dwarf_Unsigned *next_cu_header_offset,
+	Dwarf_Half     *header_cu_type,
+	Dwarf_Error    *error)
+{
+	if (NULL != cu_die) {
+		*cu_die = NULL;
+	}
+
+	return dwarf_next_cu_header(
+			dbg,
+			cu_header_length,
+			version_stamp,
+			abbrev_offset,
+			address_size,
+			next_cu_header_offset,
+			error);
+}
+
+static int
+ddr_dw_siblingof(
+	Dwarf_Debug  dbg,
+	Dwarf_Die    die,
+	Dwarf_Die   *return_siblingdie,
+	Dwarf_Error *error)
+{
+	return dwarf_siblingof(dbg, die, return_siblingdie, error);
+}
+
+#endif /* OMR_LIBDWARF_VERSION >= DW_LIBDWARF_MAKE_VERSION(0, 9) */
+
 static DDR_RC getConstValue(Dwarf_Debug debug, Dwarf_Attribute attr, const char *attrName, bool assumeSigned, uint64_t *value);
 
 class DwarfVisitor : public TypeVisitor
@@ -1530,7 +1679,28 @@ DwarfScanner::traverse_cu_in_debug_section(Symbol_IR *ir)
 		_typeOffsetMap.clear();
 		_ir = &newIR;
 
-		int ret = dwarf_next_cu_header(_debug, &cuHeaderLength, &versionStamp, &abbrevOffset, &addressSize, &nextCUheader, &error);
+		Dwarf_Die cuDie = NULL;
+		Dwarf_Bool is_info = true;
+		Dwarf_Half length_size = 0;
+		Dwarf_Half extension_size = 0;
+		Dwarf_Sig8 type_signature = { 0 };
+		Dwarf_Unsigned typeoffset = 0;
+		Dwarf_Half header_cu_type = 0;
+		int ret = ddr_dw_next_cu_header(
+				_debug,
+				is_info,
+				&cuDie,
+				&cuHeaderLength,
+				&versionStamp,
+				&abbrevOffset,
+				&addressSize,
+				&length_size,
+				&extension_size,
+				&type_signature,
+				&typeoffset,
+				&nextCUheader,
+				&header_cu_type,
+				&error);
 		if (DW_DLV_ERROR == ret) {
 			ERRMSG("Failed to get next dwarf CU header.");
 			rc = DDR_RC_ERROR;
@@ -1540,11 +1710,10 @@ DwarfScanner::traverse_cu_in_debug_section(Symbol_IR *ir)
 			/* No more CU's. */
 			break;
 		}
-		Dwarf_Die cuDie = NULL;
 		Dwarf_Die childDie = NULL;
 
 		/* Expect the CU to have a single sibling - a DIE */
-		if (DW_DLV_ERROR == dwarf_siblingof(_debug, NULL, &cuDie, &error)) {
+		if (DW_DLV_ERROR == ddr_dw_siblingof(_debug, cuDie, &cuDie, &error)) {
 			ERRMSG("Getting sibling of CU: %s\n", dwarf_errmsg(error));
 			rc = DDR_RC_ERROR;
 			break;
@@ -1643,12 +1812,11 @@ DwarfScanner::scanFile(OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *f
 	}
 
 	if (DDR_RC_OK == rc) {
-		Dwarf_Unsigned access = DW_DLC_READ;
 		Dwarf_Handler errhand = 0;
 		Dwarf_Ptr errarg = NULL;
 		intptr_t native_fd = omrfile_convert_omrfile_fd_to_native_fd(fd);
 		DwarfScanner::scanFileName = filepath;
-		res = dwarf_init((int)native_fd, access, errhand, errarg, &_debug, &error);
+		res = ddr_dw_init((int)native_fd, errhand, errarg, &_debug, &error);
 		if (DW_DLV_OK != res) {
 			ERRMSG("Failed to initialize libDwarf scanning %s: %s\nExiting...\n", filepath, dwarf_errmsg(error));
 			if (NULL != error) {
@@ -1666,7 +1834,7 @@ DwarfScanner::scanFile(OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *f
 
 		DEBUGPRINTF("Unloading libDwarf");
 
-		res = dwarf_finish(_debug, &error);
+		res = ddr_dw_finish(_debug, &error);
 		if (DW_DLV_OK != res) {
 			ERRMSG("Failed to Unload libDwarf: %s\nExiting...\n", dwarf_errmsg(error));
 			if (NULL != error) {
@@ -1707,7 +1875,7 @@ DwarfScanner::getNextSibling(Dwarf_Die *die)
 	Dwarf_Error err = NULL;
 
 	/* Get the next sibling and free the previous one if successful. */
-	int ret = dwarf_siblingof(_debug, *die, &nextSibling, &err);
+	int ret = ddr_dw_siblingof(_debug, *die, &nextSibling, &err);
 	if (DW_DLV_ERROR == ret) {
 		ERRMSG("Getting sibling of die:%s\n", dwarf_errmsg(err));
 	} else if (DW_DLV_OK == ret) {

@@ -27,27 +27,31 @@
 #include "ddr/std/unordered_map.hpp"
 #include <map>
 
-#if defined(OSX) || defined(AIXPPC)
+#if defined(AIXPPC) || defined(OSX)
 #include "ddr/scanner/dwarf/DwarfFunctions.hpp"
-#else /* defined(OSX) || defined(AIXPPC) */
+#else /* defined(AIXPPC) || defined(OSX) */
 
-#if defined(HAVE_DWARF_H)
-#include <dwarf.h>
-#elif defined(HAVE_LIBDWARF_DWARF_H)
+#if defined(HAVE_LIBDWARF_0_DWARF_H)
+#include <libdwarf-0/dwarf.h>
+#elif defined(HAVE_LIBDWARF_DWARF_H) /* defined(HAVE_LIBDWARF_0_DWARF_H) */
 #include <libdwarf/dwarf.h>
-#else
-#error "Need dwarf.h or libdwarf/dwarf.h"
-#endif /* defined(HAVE_DWARF_H) */
+#elif defined(HAVE_DWARF_H) /* defined(HAVE_LIBDWARF_DWARF_H) */
+#include <dwarf.h>
+#else /* defined(HAVE_DWARF_H) */
+#error "Need libdwarf-0/dwarf.h, libdwarf/dwarf.h or dwarf.h"
+#endif /* defined(HAVE_LIBDWARF_0_DWARF_H) */
 
-#if defined(HAVE_LIBDWARF_H)
-#include <libdwarf.h>
-#elif defined(HAVE_LIBDWARF_LIBDWARF_H)
+#if defined(HAVE_LIBDWARF_0_LIBDWARF_H)
+#include <libdwarf-0/libdwarf.h>
+#elif defined(HAVE_LIBDWARF_LIBDWARF_H) /* defined(HAVE_LIBDWARF_0_LIBDWARF_H) */
 #include <libdwarf/libdwarf.h>
-#else
-#error "Need libdwarf.h or libdwarf/libdwarf.h"
-#endif /* defined(HAVE_LIBDWARF_H) */
+#elif defined(HAVE_LIBDWARF_H) /* defined(HAVE_LIBDWARF_LIBDWARF_H) */
+#include <libdwarf.h>
+#else /* defined(HAVE_LIBDWARF_H) */
+#error "Need libdwarf-0/libdwarf.h, libdwarf/libdwarf.h or libdwarf.h"
+#endif /* defined(HAVE_LIBDWARF_0_LIBDWARF_H) */
 
-#endif /* defined(OSX) || defined(AIXPPX) */
+#endif /* defined(AIXPPC) || defined(OSX) */
 
 #include "ddr/ir/ClassUDT.hpp"
 #include "ddr/ir/EnumUDT.hpp"
