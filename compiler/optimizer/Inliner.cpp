@@ -4775,7 +4775,6 @@ bool OMR_InlinerPolicy::trivialInliningOnly(TR_CallStack* callStack, TR_CallTarg
    }
 
 //returns false when inlining fails
-//TODO: currently this method returns true in some cases when the inlining fails. This needs to be fixed
 bool TR_InlinerBase::inlineCallTarget2(TR_CallStack * callStack, TR_CallTarget *calltarget, TR::TreeTop** cursorTreeTop, bool inlinefromgraph, int32_t)
    {
    TR_InlinerDelimiter delimiter(tracer(),"inlineCallTarget2");
