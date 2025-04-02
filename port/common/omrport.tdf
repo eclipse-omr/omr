@@ -1635,3 +1635,5 @@ TraceEntry=Trc_PRT_sysinfo_get_process_start_time_enter Group=sysinfo Overhead=1
 TraceExit=Trc_PRT_sysinfo_get_process_start_time_exit Group=sysinfo Overhead=1 Level=1 NoEnv Template="Exit omrsysinfo_get_process_start_time, pid=%zu, processStartTimeInNanoseconds=%llu, rc=%d."
 
 TraceEvent=Trc_PRT_vmem_reserve_tempfile_not_created Group=mem Overhead=1 Level=5 NoEnv Template="reserve_memory cannot create temporary file %s of size %zu"
+
+TraceException=Trc_PRT_failed_to_open_proc_maps Group=sl Overhead=1 Level=1 NoEnv Template="Failed to open /proc/self/maps; error=%d"
