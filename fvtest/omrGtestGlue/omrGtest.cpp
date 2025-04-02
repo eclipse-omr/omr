@@ -26,15 +26,5 @@
  * So we explicitly include <ctype.h> and undefine the macros for gtest, after gtest we then define back the macros.
  */
 #include <ctype.h>
-#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
-#undef toupper
-#undef tolower
 
 #include "gtest-all.cc"
-
-#define toupper(c)     (islower(c) ? (c & _XUPPER_ASCII) : c)
-#define tolower(c)     (isupper(c) ? (c | _XLOWER_ASCII) : c)
-
-#else
-#include "gtest-all.cc"
-#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
