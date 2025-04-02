@@ -613,4 +613,10 @@ typedef struct U_128 {
 #endif /* defined(__GNUC__) && (__GNUC__ < 5) */
 #endif /* defined(__cplusplus) && (__cplusplus >= 201103L) */
 
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#define OMR_ISDIGIT(x) __isdigit_a(x)
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+#define OMR_ISDIGIT(x) isdigit(x)
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+
 #endif /* OMRCOMP_H */

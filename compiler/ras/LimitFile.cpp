@@ -544,10 +544,10 @@ TR_Debug::limitfileOption(const char *option, void *base, TR::OptionTable *entry
                }
 
             int32_t randNum;
-            while (isdigit(p[0]))
+            while (OMR_ISDIGIT(p[0]))
                {
                randNum = atoi(p);
-               while(isdigit(p[0]))
+               while(OMR_ISDIGIT(p[0]))
                   ++p;
 
                if (isNegative)
