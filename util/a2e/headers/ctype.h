@@ -80,7 +80,6 @@
                 #define isalnum(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISALNUM_ASCII) : 0)
                 #define isalpha(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISALPHA_ASCII) : 0)
                 #define iscntrl(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISCNTRL_ASCII) : 0)
-                #define isdigit(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISDIGIT_ASCII) : 0)
                 #define isgraph(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISGRAPH_ASCII) : 0)
                 #define islower(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISLOWER_ASCII) : 0)
                 #define isprint(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISPRINT_ASCII) : 0)
@@ -88,12 +87,6 @@
                 #define isspace(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISSPACE_ASCII) : 0)
                 #define isupper(c)     (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISUPPER_ASCII) : 0)
                 #define isxdigit(c)    (_IN_RANGE(c) ? (_ascii_is_tab[c] & _ISXDIGIT_ASCII) : 0)
-
-                /*
-                 *  In ASCII, upper case characters have the bit off    ibm@4345
-                 */
-                #define toupper(c)     (islower(c) ? (c & _XUPPER_ASCII) : c)
-                #define tolower(c)     (isupper(c) ? (c | _XLOWER_ASCII) : c)
 
         #endif
 
