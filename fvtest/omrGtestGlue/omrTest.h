@@ -37,17 +37,9 @@ static int iconv_init_static_variable = iconv_initialization();
  * So we explicitly include <ctype.h> and undefine the macros for gtest, after gtest we then define back the macros.
  */
 #include <ctype.h>
-#undef toupper
-#undef tolower
-
-#include "gtest/gtest.h"
-
-#define toupper(c)     (islower(c) ? (c & _XUPPER_ASCII) : c)
-#define tolower(c)     (isupper(c) ? (c | _XLOWER_ASCII) : c)
-
-#else
-#include "gtest/gtest.h"
 #endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+
+#include "gtest/gtest.h"
 
 using namespace testing;
 
