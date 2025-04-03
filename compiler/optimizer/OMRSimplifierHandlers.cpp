@@ -2220,6 +2220,11 @@ static bool simplifyISelectCompare(TR::Node *compare, TR::Simplifier *s)
       TR::NodeChecklist safetyVisited(s->comp());
       TR_ComparisonTypes compareType = TR::ILOpCode::getCompareType(compare->getOpCodeValue());
       bool isUnsignedCompare = TR::ILOpCode(compare->getOpCode()).isUnsignedCompare();
+
+      // do not try to simplify unsigned compare when it will yield a BadILOp with TR_cmpNE as its TR_ComparisonTypes
+      if (isUnsignedCompare && compare->getFirstChild()->getDataType() != TR::Address)
+         return false;
+
       if (canProcessSubTreeLeavesForISelectCompare(safetyVisited, compare->getFirstChild()))
          {
          TR::NodeChecklist visited(s->comp());
