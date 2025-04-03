@@ -1009,8 +1009,19 @@ void TR_RegionStructure::cleanupAfterNodeRemoval()
       {
       TR_RegionStructure::Cursor si(*this);
       TR_ASSERT(si.getFirst() == getEntry(),"bad structure found trying to remove a block");
-      if (getParent())
-         getParent()->replacePart(this, getEntry()->getStructure());
+
+      auto parent = getParent();
+      if (!parent)
+         return;
+
+      auto structure = getEntry()->getStructure();
+      if (!structure)
+         {
+         collapseIntoParent();
+         return;
+         }
+
+      parent->replacePart(this, structure);
       }
    }
 
@@ -1061,6 +1072,9 @@ TR_StructureSubGraphNode *TR_RegionStructure::subNodeFromStructure(
 
 void TR_RegionStructure::replacePart(TR_Structure *from, TR_Structure *to)
    {
+   TR_ASSERT(from != NULL, "target for structure replacement is null");
+   TR_ASSERT(to != NULL, "replacement for structure %d is null", from->getNumber());
+
    // Find the sub-graph node for the sub-structure
    //
    TR_StructureSubGraphNode *node;
