@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
+#define _AE_BIMODAL
+
 #include <ctype.h>
 #include <limits.h>
 #include <stddef.h>
@@ -544,10 +546,10 @@ TR_Debug::limitfileOption(const char *option, void *base, TR::OptionTable *entry
                }
 
             int32_t randNum;
-            while (isdigit(p[0]))
+            while (__isdigit_a(p[0]))
                {
                randNum = atoi(p);
-               while(isdigit(p[0]))
+               while(__isdigit_a(p[0]))
                   ++p;
 
                if (isNegative)
