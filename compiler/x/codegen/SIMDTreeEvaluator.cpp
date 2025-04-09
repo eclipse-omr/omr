@@ -227,6 +227,48 @@ TR::Register* OMR::X86::TreeEvaluator::SIMDstoreEvaluator(TR::Node* node, TR::Co
    return NULL;
    }
 
+TR::Register* OMR::X86::TreeEvaluator::broadcastHelper(TR::Node *node, TR::Register *vectorReg, TR::VectorLength vl, TR::DataType et, TR::CodeGenerator *cg)
+   {
+   bool broadcast64 = et.isInt64() || et.isDouble();
+
+   // Expand byte & word to 32-bits
+   switch (et)
+      {
+      case TR::Int8:
+         generateRegRegInstruction(TR::InstOpCode::PUNPCKLBWRegReg, node, vectorReg, vectorReg, cg);
+      case TR::Int16:
+         generateRegRegImmInstruction(TR::InstOpCode::PSHUFLWRegRegImm1, node, vectorReg, vectorReg, 0x0, cg);
+      default:
+         break;
+      }
+
+   switch (vl)
+      {
+      case TR::VectorLength128:
+         generateRegRegImmInstruction(TR::InstOpCode::PSHUFDRegRegImm1, node, vectorReg, vectorReg, broadcast64 ? 0x44 : 0, cg);
+         break;
+      case TR::VectorLength256:
+         {
+         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2), "256-bit vsplats requires AVX2");
+         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDYmmYmm : TR::InstOpCode::VBROADCASTSSRegReg;
+         generateRegRegInstruction(opcode.getMnemonic(), node, vectorReg, vectorReg, cg, opcode.getSIMDEncoding(&cg->comp()->target().cpu, TR::VectorLength256));
+         break;
+         }
+      case TR::VectorLength512:
+         {
+         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "512-bit vsplats requires AVX-512");
+         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDZmmXmm : TR::InstOpCode::VBROADCASTSSRegReg;
+         generateRegRegInstruction(opcode.getMnemonic(), node, vectorReg, vectorReg, cg, OMR::X86::EVEX_L512);
+         break;
+         }
+      default:
+         TR_ASSERT_FATAL(0, "Unsupported vector length");
+         break;
+      }
+
+   return vectorReg;
+   }
+
 TR::Register* OMR::X86::TreeEvaluator::SIMDsplatsEvaluator(TR::Node* node, TR::CodeGenerator* cg)
    {
    TR::Node* childNode = node->getChild(0);
@@ -269,40 +311,7 @@ TR::Register* OMR::X86::TreeEvaluator::SIMDsplatsEvaluator(TR::Node* node, TR::C
          break;
       }
 
-   // Expand byte & word to 32-bits
-   switch (et)
-      {
-      case TR::Int8:
-         generateRegRegInstruction(TR::InstOpCode::PUNPCKLBWRegReg, node, resultReg, resultReg, cg);
-      case TR::Int16:
-         generateRegRegImmInstruction(TR::InstOpCode::PSHUFLWRegRegImm1, node, resultReg, resultReg, 0x0, cg);
-      default:
-         break;
-      }
-
-   switch (vl)
-      {
-      case TR::VectorLength128:
-         generateRegRegImmInstruction(TR::InstOpCode::PSHUFDRegRegImm1, node, resultReg, resultReg, broadcast64 ? 0x44 : 0, cg);
-         break;
-      case TR::VectorLength256:
-         {
-         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2), "256-bit vsplats requires AVX2");
-         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDYmmYmm : TR::InstOpCode::VBROADCASTSSRegReg;
-         generateRegRegInstruction(opcode.getMnemonic(), node, resultReg, resultReg, cg, opcode.getSIMDEncoding(&cg->comp()->target().cpu, TR::VectorLength256));
-         break;
-         }
-      case TR::VectorLength512:
-         {
-         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "512-bit vsplats requires AVX-512");
-         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDZmmXmm : TR::InstOpCode::VBROADCASTSSRegReg;
-         generateRegRegInstruction(opcode.getMnemonic(), node, resultReg, resultReg, cg, OMR::X86::EVEX_L512);
-         break;
-         }
-      default:
-         TR_ASSERT_FATAL(0, "Unsupported vector length");
-         break;
-      }
+   TR::TreeEvaluator::broadcastHelper(node, resultReg, vl, et, cg);
 
    node->setRegister(resultReg);
    cg->decReferenceCount(childNode);
