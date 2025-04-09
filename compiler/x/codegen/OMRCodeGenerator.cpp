@@ -980,6 +980,8 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
       {
       case TR::mload:
       case TR::mloadi:
+      case TR::mstore:
+      case TR::mstorei:
          return cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1);
       case TR::vcmpgt:
       case TR::vmcmpgt:
