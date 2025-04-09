@@ -1714,7 +1714,7 @@ VECTOR_OPERATION_MACRO(\
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmshl, \
    /* .name                    = */ "vmshl", \
-   /* .properties1             = */ 0, \
+   /* .properties1             = */ ILProp1::VectorMasked, \
    /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
    /* .properties3             = */ 0, \
    /* .properties4             = */ 0, \
@@ -1730,7 +1730,7 @@ VECTOR_OPERATION_MACRO(\
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmshr, \
    /* .name                    = */ "vmshr", \
-   /* .properties1             = */ 0, \
+   /* .properties1             = */ ILProp1::VectorMasked, \
    /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
    /* .properties3             = */ 0, \
    /* .properties4             = */ 0, \
@@ -1762,7 +1762,7 @@ VECTOR_OPERATION_MACRO(\
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmrol, \
    /* .name                    = */ "vmrol", \
-   /* .properties1             = */ 0, \
+   /* .properties1             = */ ILProp1::VectorMasked, \
    /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
    /* .properties3             = */ 0, \
    /* .properties4             = */ 0, \
