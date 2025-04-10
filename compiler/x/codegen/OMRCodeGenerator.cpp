@@ -1019,9 +1019,9 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
           switch (ot.getVectorLength())
              {
              case TR::VectorLength128:
-                return !et.isInt16();
+                return true;
              case TR::VectorLength256:
-                return cpu->supportsFeature(OMR_FEATURE_X86_AVX2) && !et.isInt16();
+                return cpu->supportsFeature(OMR_FEATURE_X86_AVX2);
              case TR::VectorLength512:
                 return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F);
              default:

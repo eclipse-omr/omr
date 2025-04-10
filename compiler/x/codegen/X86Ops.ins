@@ -3479,6 +3479,16 @@ INSTRUCTION(PAUSE, pause,
             PROPERTY0(0),
             PROPERTY1(0),
             FEATURES(0)),
+INSTRUCTION(PACKSSWBRegReg, packsswb,
+            BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0x63, 0, ModRM_RM__, Immediate_0),
+            PROPERTY0(IA32OpProp_SourceRegisterInModRM),
+            PROPERTY1(IA32OpProp1_XMMSource | IA32OpProp1_XMMTarget),
+            FEATURES(X86FeatureProp_MinTargetSupported |
+                     X86FeatureProp_VEX128Supported | X86FeatureProp_VEX128RequiresAVX | X86FeatureProp_VEX256Supported | X86FeatureProp_VEX256RequiresAVX2 |
+                     X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512F | X86FeatureProp_EVEX128RequiresAVX512VL | X86FeatureProp_EVEX128RequiresAVX512BW |
+                     X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512F | X86FeatureProp_EVEX256RequiresAVX512VL | X86FeatureProp_EVEX256RequiresAVX512BW|
+                     X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512F | X86FeatureProp_EVEX512RequiresAVX512BW)
+            ),
 INSTRUCTION(PACKUSWBRegReg, packuswb,
             BINARY(VEX_L128, VEX_vReg_, PREFIX_66, REX__, ESCAPE_0F__, 0x67, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_SourceRegisterInModRM),
