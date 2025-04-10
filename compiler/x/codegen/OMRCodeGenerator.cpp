@@ -972,7 +972,7 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
    TR_ASSERT_FATAL(et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Int64 || et == TR::Float || et == TR::Double,
                    "Unexpected vector element type\n");
 
-   if (opcode.isVectorMasked() && !cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1))
+   if ((opcode.isVectorMasked() || ot.isMask()) && !cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1))
       return false;
 
 #if TR_TARGET_32BIT
@@ -1017,6 +1017,9 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
             default:
                return false;
             }
+      case TR::mAnyTrue:
+      case TR::mAllTrue:
+      case TR::mTrueCount:
       case TR::mToLongBits:
           switch (ot.getVectorLength())
              {

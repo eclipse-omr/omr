@@ -6117,13 +6117,79 @@ OMR::X86::TreeEvaluator::iexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator 
 TR::Register*
 OMR::X86::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+
+   if (maskReg->getKind() == TR_VMR && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW))
+      {
+      TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "Mask registers require AVX-512");
+      generateRegRegInstruction(TR::InstOpCode::KTESTQRegReg, node, maskReg, maskReg, cg);
+      }
+   else if (maskReg->getKind() == TR_VMR)
+      {
+      TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "Mask registers require AVX-512");
+
+      if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512DQ))
+         {
+         generateRegRegInstruction(TR::InstOpCode::KTESTWRegReg, node, maskReg, maskReg, cg);
+         }
+      else
+         {
+         TR::InstOpCode::Mnemonic opcode = TR::InstOpCode::KMOVWRegMask;
+
+         // Rare case; move mask into GPR
+         generateRegRegInstruction(opcode, node, resultReg, maskReg, cg);
+         generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, resultReg, cg);
+         }
+      }
+   else
+      {
+      TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+      generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, resultReg, cg);
+      }
+
+   generateRegInstruction(TR::InstOpCode::SETNE1Reg, node, resultReg, cg);
+
+#ifdef TR_TARGET_64BIT
+   generateRegRegInstruction(TR::InstOpCode::MOVZXReg8Reg1, node, resultReg, resultReg, cg);
+#else
+   generateRegRegInstruction(TR::InstOpCode::MOVZXReg4Reg1, node, resultReg, resultReg, cg);
+#endif
+
+   cg->decReferenceCount(maskNode);
+   node->setRegister(resultReg);
+
+   return resultReg;
    }
 
 TR::Register*
 OMR::X86::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+   TR::Register *cmpReg = cg->allocateRegister();
+   int32_t numLanes = maskNode->getDataType().getVectorNumLanes();
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+
+#ifndef TR_TARGET_64BIT
+   TR_ASSERT_FATAL(false, "mAllTrueEvaluator is only supported on 64-bit");
+#endif
+
+   TR_RematerializableTypes rematType = numLanes > 32 ? TR_RematerializableLong : TR_RematerializableInt;
+   int64_t mask = numLanes == 64 ? -1 : (1ll << numLanes) - 1;
+   TR::TreeEvaluator::loadConstant(node, mask, rematType, cg, cmpReg);
+
+   generateRegRegInstruction(TR::InstOpCode::CMPRegReg(), node, resultReg, cmpReg, cg);
+   generateRegInstruction(TR::InstOpCode::SETE1Reg, node, resultReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::MOVZXReg8Reg1, node, resultReg, resultReg, cg);
+
+   cg->stopUsingRegister(cmpReg);
+   cg->decReferenceCount(maskNode);
+   node->setRegister(resultReg);
+
+   return resultReg;
    }
 
 TR::Register*
@@ -6165,7 +6231,17 @@ OMR::X86::TreeEvaluator::mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::X86::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::POPCNTRegReg(), node, resultReg, resultReg, cg);
+
+   node->setRegister(resultReg);
+   cg->decReferenceCount(maskNode);
+
+   return resultReg;
    }
 
 TR::Register*
