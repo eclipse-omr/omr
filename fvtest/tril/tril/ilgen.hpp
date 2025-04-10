@@ -72,7 +72,7 @@ class OpCodeTable : public TR::ILOpCode {
             std::string opcodeAndSrcType = name;
             TR::DataType resType = TR::NoType;
 
-            std::size_t pos = name.find("To");
+            std::size_t pos = name.find('_');
             std::size_t divider = 2;
 
             if (pos != std::string::npos)
