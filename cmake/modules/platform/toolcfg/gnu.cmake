@@ -128,12 +128,22 @@ function(_omr_toolchain_separate_debug_symbols tgt)
 		omr_get_target_output_genex(${tgt} output_name)
 		set(dbg_file "${output_name}${OMR_DEBUG_INFO_OUTPUT_EXTENSION}")
 		if(OMR_OS_AIX AND CMAKE_C_COMPILER_IS_OPENXL)
-			add_custom_command(
-				TARGET "${tgt}"
-				POST_BUILD
-				COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
-				COMMAND "${CMAKE_STRIP}" -X32_64 ${exe_file}
-			)
+			# When building with OpenXL on AIX, get rid of strip for libjvmtitest.so until
+			# https://github.com/eclipse-openj9/openj9/issues/21528 is resolved.
+			if ("${tgt}" MATCHES "jvmtitest")
+				add_custom_command(
+					TARGET "${tgt}"
+					POST_BUILD
+					COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
+				)
+			else()
+				add_custom_command(
+					TARGET "${tgt}"
+					POST_BUILD
+					COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
+					COMMAND "${CMAKE_STRIP}" -X32_64 ${exe_file}
+				)
+			endif()
 		else()
 			add_custom_command(
 				TARGET "${tgt}"
