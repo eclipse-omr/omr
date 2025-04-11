@@ -39,6 +39,34 @@ uint_t bitXOR(uint_t l, uint_t r) {
     return l ^ r;
 }
 
+template <typename uint_t>
+uint_t bitCOMPRESS(uint_t src, uint_t mask) {
+    uint_t res = 0;
+
+    for (int n = 0; mask; mask >>= 1, src >>= 1) {
+        if (mask & 1) {
+            res |= (src & 1) << n;
+            n++;
+        }
+    }
+
+    return res;
+}
+
+template <typename uint_t>
+uint_t bitEXPAND(uint_t src, uint_t mask) {
+    uint_t res = 0;
+
+    for (int n = 0; mask; mask >>= 1, n++) {
+        if (mask & 1) {
+            res |= (src & 1) << n;
+            src >>= 1;
+        }
+    }
+
+    return res;
+}
+
 int16_t sbyteswap(int16_t l) {
     return ((l << 8) & 0xff00)
          | ((l >> 8) & 0x00ff);
@@ -285,6 +313,10 @@ class Int8LogicalBinary : public TRTest::BinaryOpTest<uint8_t> {};
 TEST_P(Int8LogicalBinary, UsingConst) {
     auto param = TRTest::to_struct(GetParam());
 
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "bcompressbits" && !cpu.getSupportsHardware32bitCompress(), MissingImplementation) << "bcompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "bexpandbits" && !cpu.getSupportsHardware32bitExpand(), MissingImplementation) << "bexpandbits is not supported by the target platform";
+
     char inputTrees[120] = {0};
     std::snprintf(inputTrees, 120, "(method return=Int8 (block (ireturn (%s (bconst %d) (bconst %d)))))", param.opcode.c_str(), param.lhs, param.rhs);
     auto trees = parseString(inputTrees);
@@ -303,6 +335,10 @@ TEST_P(Int8LogicalBinary, UsingConst) {
 
 TEST_P(Int8LogicalBinary, UsingLoadParam) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "bcompressbits" && !cpu.getSupportsHardware32bitCompress(), MissingImplementation) << "bcompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "bexpandbits" && !cpu.getSupportsHardware32bitExpand(), MissingImplementation) << "bexpandbits is not supported by the target platform";
 
     char inputTrees[120] = {0};
     std::snprintf(inputTrees, 120, "(method return=Int8 args=[Int8, Int8] (block (ireturn (%s (bload parm=0) (bload parm=1)))))", param.opcode.c_str());
@@ -324,13 +360,19 @@ INSTANTIATE_TEST_CASE_P(LogicalTest, Int8LogicalBinary, ::testing::Combine(
     ::testing::Values(
         std::tuple<const char*, uint8_t(*)(uint8_t, uint8_t)>("bor", bitOR),
         std::tuple<const char*, uint8_t(*)(uint8_t, uint8_t)>("band", bitAND),
-        std::tuple<const char*, uint8_t(*)(uint8_t, uint8_t)>("bxor", bitXOR)
+        std::tuple<const char*, uint8_t(*)(uint8_t, uint8_t)>("bxor", bitXOR),
+        std::tuple<const char*, uint8_t(*)(uint8_t, uint8_t)>("bcompressbits", bitCOMPRESS),
+        std::tuple<const char*, uint8_t(*)(uint8_t, uint8_t)>("bexpandbits", bitEXPAND)
     )));
 
 class Int16LogicalBinary : public TRTest::BinaryOpTest<uint16_t> {};
 
 TEST_P(Int16LogicalBinary, UsingConst) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "scompressbits" && !cpu.getSupportsHardware32bitCompress(), MissingImplementation) << "scompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "sexpandbits" && !cpu.getSupportsHardware32bitExpand(), MissingImplementation) << "sexpandbits is not supported by the target platform";
 
     char inputTrees[120] = {0};
     std::snprintf(inputTrees, 120, "(method return=Int16 (block (ireturn (%s (sconst %d) (sconst %d)))))", param.opcode.c_str(), param.lhs, param.rhs);
@@ -350,6 +392,10 @@ TEST_P(Int16LogicalBinary, UsingConst) {
 
 TEST_P(Int16LogicalBinary, UsingLoadParam) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "scompressbits" && !cpu.getSupportsHardware32bitCompress(), MissingImplementation) << "scompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "sexpandbits" && !cpu.getSupportsHardware32bitExpand(), MissingImplementation) << "sexpandbits is not supported by the target platform";
 
     char inputTrees[120] = {0};
     std::snprintf(inputTrees, 120, "(method return=Int16 args=[Int16, Int16] (block (ireturn (%s (sload parm=0) (sload parm=1)))))", param.opcode.c_str());
@@ -371,13 +417,19 @@ INSTANTIATE_TEST_CASE_P(LogicalTest, Int16LogicalBinary, ::testing::Combine(
     ::testing::Values(
         std::tuple<const char*, uint16_t(*)(uint16_t, uint16_t)>("sor", bitOR),
         std::tuple<const char*, uint16_t(*)(uint16_t, uint16_t)>("sand", bitAND),
-        std::tuple<const char*, uint16_t(*)(uint16_t, uint16_t)>("sxor", bitXOR)
+        std::tuple<const char*, uint16_t(*)(uint16_t, uint16_t)>("sxor", bitXOR),
+        std::tuple<const char*, uint16_t(*)(uint16_t, uint16_t)>("scompressbits", bitCOMPRESS),
+        std::tuple<const char*, uint16_t(*)(uint16_t, uint16_t)>("sexpandbits", bitEXPAND)
     )));
 
 class Int32LogicalBinary : public TRTest::BinaryOpTest<uint32_t> {};
 
 TEST_P(Int32LogicalBinary, UsingConst) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "icompressbits" && !cpu.getSupportsHardware32bitCompress(), MissingImplementation) << "icompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "iexpandbits" && !cpu.getSupportsHardware32bitExpand(), MissingImplementation) << "iexpandbits is not supported by the target platform";
 
     char inputTrees[120] = {0};
     std::snprintf(inputTrees, 120, "(method return=Int32 (block (ireturn (%s (iconst %d) (iconst %d)) )))", param.opcode.c_str(), param.lhs, param.rhs);
@@ -397,6 +449,10 @@ TEST_P(Int32LogicalBinary, UsingConst) {
 
 TEST_P(Int32LogicalBinary, UsingLoadParam) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "icompressbits" && !cpu.getSupportsHardware32bitCompress(), MissingImplementation) << "icompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "iexpandbits" && !cpu.getSupportsHardware32bitExpand(), MissingImplementation) << "iexpandbits is not supported by the target platform";
 
     char inputTrees[120] = {0};
     std::snprintf(inputTrees, 120, "(method return=Int32 args=[Int32, Int32] (block (ireturn (%s (iload parm=0) (iload parm=1)) )))", param.opcode.c_str());
@@ -418,13 +474,19 @@ INSTANTIATE_TEST_CASE_P(LogicalTest, Int32LogicalBinary, ::testing::Combine(
     ::testing::Values(
         std::tuple<const char*, uint32_t(*)(uint32_t, uint32_t)>("ior", bitOR),
         std::tuple<const char*, uint32_t(*)(uint32_t, uint32_t)>("iand", bitAND),
-        std::tuple<const char*, uint32_t(*)(uint32_t, uint32_t)>("ixor", bitXOR)
+        std::tuple<const char*, uint32_t(*)(uint32_t, uint32_t)>("ixor", bitXOR),
+        std::tuple<const char*, uint32_t(*)(uint32_t, uint32_t)>("icompressbits", bitCOMPRESS),
+        std::tuple<const char*, uint32_t(*)(uint32_t, uint32_t)>("iexpandbits", bitEXPAND)
     )));
 
 class Int64LogicalBinary : public TRTest::BinaryOpTest<uint64_t> {};
 
 TEST_P(Int64LogicalBinary, UsingConst) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "lcompressbits" && !cpu.getSupportsHardware64bitCompress(), MissingImplementation) << "lcompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "lexpandbits" && !cpu.getSupportsHardware64bitExpand(), MissingImplementation) << "lexpandbits is not supported by the target platform";
 
     char inputTrees[160] = {0};
     std::snprintf(inputTrees, 160,
@@ -451,6 +513,10 @@ TEST_P(Int64LogicalBinary, UsingConst) {
 
 TEST_P(Int64LogicalBinary, UsingLoadParam) {
     auto param = TRTest::to_struct(GetParam());
+
+    TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+    SKIP_IF(param.opcode == "lcompressbits" && !cpu.getSupportsHardware64bitCompress(), MissingImplementation) << "lcompressbits is not supported by the target platform";
+    SKIP_IF(param.opcode == "lexpandbits" && !cpu.getSupportsHardware64bitExpand(), MissingImplementation) << "lexpandbits is not supported by the target platform";
 
     char inputTrees[160] = {0};
     std::snprintf(inputTrees, 160,
@@ -479,5 +545,7 @@ INSTANTIATE_TEST_CASE_P(LogicalTest, Int64LogicalBinary, ::testing::Combine(
 	::testing::Values(
 		std::tuple<const char*, uint64_t(*)(uint64_t, uint64_t)>("lor", bitOR),
 		std::tuple<const char*, uint64_t(*)(uint64_t, uint64_t)>("land", bitAND),
-		std::tuple<const char*, uint64_t(*)(uint64_t, uint64_t)>("lxor", bitXOR)
+		std::tuple<const char*, uint64_t(*)(uint64_t, uint64_t)>("lxor", bitXOR),
+        std::tuple<const char*, uint64_t(*)(uint64_t, uint64_t)>("lcompressbits", bitCOMPRESS),
+        std::tuple<const char*, uint64_t(*)(uint64_t, uint64_t)>("lexpandbits", bitEXPAND)
    )));
