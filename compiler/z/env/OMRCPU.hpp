@@ -379,6 +379,30 @@ public:
     */
    void setSupportsVectorPackedDecimalEnhancementFacility3(bool value);
 
+   /**
+    * \brief
+    *    Determines whether the 32 bit compress is available.
+    */
+   bool getSupportsHardware32bitCompress();
+
+   /**
+    * \brief
+    *    Determines whether the 64 bit compress is available.
+    */
+   bool getSupportsHardware64bitCompress();
+
+   /**
+    * \brief
+    *    Determines whether the 32 bit expand is available.
+    */
+   bool getSupportsHardware32bitExpand();
+
+   /**
+    * \brief
+    *    Determines whether the 64 bit expand is available.
+    */
+   bool getSupportsHardware64bitExpand();
+
 private:
 
    bool isAtLeastOldAPI(OMRProcessorArchitecture p);
