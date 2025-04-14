@@ -6731,41 +6731,31 @@ OMR::X86::TreeEvaluator::binaryVectorMaskHelper(TR::InstOpCode opcode,
    {
    TR_ASSERT_FATAL(encoding != OMR::X86::Bad, "No suitable encoding method for opcode");
    bool vectorMask = maskReg->getKind() == TR_VRF;
-   TR::Register *tmpReg = vectorMask ? cg->allocateRegister(TR_VRF) : NULL;
 
-   if (vectorMask)
-      {
-      generateRegRegInstruction(TR::InstOpCode::MOVDQURegReg, node, resultReg, lhsReg, cg, encoding);
-      }
+   generateRegRegInstruction(TR::InstOpCode::MOVDQURegReg, node, resultReg, lhsReg, cg, encoding);
 
-   if (encoding == OMR::X86::Legacy)
+   if (maskTypeMismatch && !vectorMask)
       {
-      generateRegRegInstruction(TR::InstOpCode::MOVDQURegReg, node, tmpReg, lhsReg, cg);
-      generateRegRegInstruction(opcode.getMnemonic(), node, tmpReg, rhsReg, cg, encoding);
-      TR_ASSERT_FATAL(vectorMask, "Native vector masking not supported");
-      vectorMergeMaskHelper(node, resultReg, tmpReg, maskReg, cg);
-      cg->stopUsingRegister(tmpReg);
-      return resultReg;
-      }
-   else if (vectorMask && maskTypeMismatch)
-      {
+      TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
       generateRegRegRegInstruction(opcode.getMnemonic(), node, tmpReg, lhsReg, rhsReg, cg, encoding);
       vectorMergeMaskHelper(node, resultReg, tmpReg, maskReg, cg);
       cg->stopUsingRegister(tmpReg);
       return resultReg;
       }
-   else if (vectorMask)
+   else if (!vectorMask)
       {
-      generateRegMaskRegRegInstruction(opcode.getMnemonic(), node, tmpReg, maskReg, lhsReg, rhsReg, cg, encoding);
-      cg->stopUsingRegister(tmpReg);
+      generateRegMaskRegRegInstruction(opcode.getMnemonic(), node, resultReg, maskReg, lhsReg, rhsReg, cg, encoding);
       return resultReg;
       }
    else
       {
-      TR::InstOpCode movOpcode = TR::InstOpCode::MOVDQURegReg;
-      OMR::X86::Encoding movEncoding = movOpcode.getSIMDEncoding(&cg->comp()->target().cpu, node->getDataType().getVectorLength());
-      generateRegRegInstruction(movOpcode.getMnemonic(), node, resultReg, lhsReg, cg, movEncoding);
-      generateRegMaskRegRegInstruction(opcode.getMnemonic(), node, resultReg, maskReg, lhsReg, rhsReg, cg, encoding);
+      TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+      generateRegRegInstruction(TR::InstOpCode::MOVDQURegReg, node, tmpReg, lhsReg, cg, encoding);
+      generateRegRegInstruction(opcode.getMnemonic(), node, tmpReg, rhsReg, cg, encoding);
+      TR_ASSERT_FATAL(vectorMask, "Native vector masking not supported");
+      vectorMergeMaskHelper(node, resultReg, tmpReg, maskReg, cg);
+      cg->stopUsingRegister(tmpReg);
+      return resultReg;
       }
 
    return resultReg;
