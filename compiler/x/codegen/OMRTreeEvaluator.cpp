@@ -6940,7 +6940,7 @@ OMR::X86::TreeEvaluator::arrayToVectorMaskHelper(TR::Node *node, TR::CodeGenerat
    TR::Register *tmpVectorReg = cg->allocateRegister(TR_VRF);
    TR::Register *valueReg = valueNodeReg;
 
-   if (valueNode->getType().isIntegral())
+   if (valueNodeReg->getKind() == TR_GPR)
       {
       TR_ASSERT_FATAL(cg->comp()->target().is64Bit(), "arrayToVectorMask not supported on 32-bit");
       generateRegRegInstruction(TR::InstOpCode::MOVQRegReg8, node, tmpVectorReg, valueNodeReg, cg);
