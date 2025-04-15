@@ -975,8 +975,10 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
    if ((opcode.isVectorMasked() || ot.isMask()) && !cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1))
       return false;
 
+#if TR_TARGET_32BIT
    if ((opcode.isVectorMasked() || ot.isMask()) && ot.getVectorNumLanes() > 32)
       return false;
+#endif
 
    // implemented vector opcodes
    switch (opcode.getVectorOperation())
@@ -1015,7 +1017,9 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
             default:
                return false;
             }
+      case TR::mmAnyTrue:
       case TR::mAnyTrue:
+      case TR::mmAllTrue:
       case TR::mAllTrue:
       case TR::mTrueCount:
       case TR::mToLongBits:
@@ -1042,6 +1046,7 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
       case TR::i2m:
       case TR::l2m:
       case TR::v2m:
+      case TR::m2v:
          switch (ot.getVectorLength())
             {
             case TR::VectorLength128:

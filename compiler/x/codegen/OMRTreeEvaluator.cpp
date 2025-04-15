@@ -6118,13 +6118,15 @@ TR::Register*
 OMR::X86::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *maskNode = node->getFirstChild();
+   TR::Node *writeMaskNode = node->getNumChildren() > 1 ? node->getSecondChild() : NULL;
    TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *writeMaskReg = writeMaskNode ? cg->evaluate(writeMaskNode) : NULL;
    TR::Register *resultReg = cg->allocateRegister();
 
    if (maskReg->getKind() == TR_VMR && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW))
       {
       TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "Mask registers require AVX-512");
-      generateRegRegInstruction(TR::InstOpCode::KTESTQRegReg, node, maskReg, maskReg, cg);
+      generateRegRegInstruction(TR::InstOpCode::KTESTQRegReg, node, maskReg, writeMaskReg ? writeMaskReg : maskReg, cg);
       }
    else if (maskReg->getKind() == TR_VMR)
       {
@@ -6132,7 +6134,7 @@ OMR::X86::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg
 
       if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512DQ))
          {
-         generateRegRegInstruction(TR::InstOpCode::KTESTWRegReg, node, maskReg, maskReg, cg);
+         generateRegRegInstruction(TR::InstOpCode::KTESTWRegReg, node, maskReg, writeMaskReg ? writeMaskReg : maskReg, cg);
          }
       else
          {
@@ -6140,7 +6142,19 @@ OMR::X86::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg
 
          // Rare case; move mask into GPR
          generateRegRegInstruction(opcode, node, resultReg, maskReg, cg);
-         generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, resultReg, cg);
+
+         if (writeMaskReg)
+            {
+            TR::Register *tmpGPR = cg->allocateRegister();
+
+            generateRegRegInstruction(opcode, node, tmpGPR, writeMaskReg, cg);
+            generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, tmpGPR, cg);
+            cg->stopUsingRegister(tmpGPR);
+            }
+         else
+            {
+            generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, resultReg, cg);
+            }
          }
       }
    else
@@ -6167,21 +6181,30 @@ TR::Register*
 OMR::X86::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *maskNode = node->getFirstChild();
+   TR::Node *writeMaskNode = node->getNumChildren() > 1 ? node->getSecondChild() : NULL;
    TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *writeMaskReg = writeMaskNode ? cg->evaluate(writeMaskNode) : NULL;
    TR::Register *resultReg = cg->allocateRegister();
    TR::Register *cmpReg = cg->allocateRegister();
    int32_t numLanes = maskNode->getDataType().getVectorNumLanes();
    TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
 
+   if (writeMaskReg)
+      {
+      TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), cmpReg, writeMaskReg, cg);
+      }
+   else
+      {
 #ifdef TR_TARGET_64BIT
-   TR_RematerializableTypes rematType = numLanes > 32 ? TR_RematerializableLong : TR_RematerializableInt;
-   uint64_t mask = (1U << numLanes) - 1;
+      TR_RematerializableTypes rematType = numLanes > 32 ? TR_RematerializableLong : TR_RematerializableInt;
+      uint64_t mask = (1U << numLanes) - 1;
 #else
-   TR_RematerializableTypes rematType = TR_RematerializableInt;
-   uint32_t mask = (1U << numLanes) - 1;
-   TR_ASSERT_FATAL(numLanes <= 32, "A maximum of 32 mask lanes are supported on 32-bit");
+      TR_RematerializableTypes rematType = TR_RematerializableInt;
+      uint32_t mask = (1U << numLanes) - 1;
+      TR_ASSERT_FATAL(numLanes <= 32, "A maximum of 32 mask lanes are supported on 32-bit");
 #endif
-   TR::TreeEvaluator::loadConstant(node, mask, rematType, cg, cmpReg);
+      TR::TreeEvaluator::loadConstant(node, mask, rematType, cg, cmpReg);
+      }
 
    generateRegRegInstruction(TR::InstOpCode::CMPRegReg(), node, resultReg, cmpReg, cg);
    generateRegInstruction(TR::InstOpCode::SETE1Reg, node, resultReg, cg);
@@ -6196,13 +6219,13 @@ OMR::X86::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg
 TR::Register*
 OMR::X86::TreeEvaluator::mmAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return TR::TreeEvaluator::mAnyTrueEvaluator(node, cg);
    }
 
 TR::Register*
 OMR::X86::TreeEvaluator::mmAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return TR::TreeEvaluator::mAllTrueEvaluator(node, cg);
    }
 
 TR::Register*
