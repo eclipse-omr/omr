@@ -6271,13 +6271,43 @@ OMR::X86::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *
 TR::Register*
 OMR::X86::TreeEvaluator::mFirstTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+
+#ifdef TR_TARGET_64BIT
+   generateRegRegInstruction(TR::InstOpCode::LZCNT8RegReg, node, resultReg, resultReg, cg);
+#else
+   generateRegRegInstruction(TR::InstOpCode::LZCNT4RegReg, node, resultReg, resultReg, cg);
+#endif
+
+   cg->decReferenceCount(maskNode);
+   node->setRegister(resultReg);
+
+   return resultReg;
    }
 
 TR::Register*
 OMR::X86::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+
+#ifdef TR_TARGET_64BIT
+   generateRegRegInstruction(TR::InstOpCode::TZCNT8RegReg, node, resultReg, resultReg, cg);
+#else
+   generateRegRegInstruction(TR::InstOpCode::TZCNT4RegReg, node, resultReg, resultReg, cg);
+#endif
+
+   cg->decReferenceCount(maskNode);
+   node->setRegister(resultReg);
+
+   return resultReg;
    }
 
 void OMR::X86::TreeEvaluator::vectorMaskToGPRHelper(TR::Node *node, TR::DataType type, TR::Register *gprReg, TR::Register *maskReg, TR::CodeGenerator *cg)
