@@ -533,6 +533,8 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    bool supportsAddressRematerialization();
    bool supportsXMMRRematerialization();
 
+   bool doIntMulDecompositionInCG() { return true; };
+
    TR::Instruction *setLastCatchAppendInstruction(TR::Instruction *i) {return (_lastCatchAppendInstruction=i);}
    TR::Instruction *getLastCatchAppendInstruction()                  {return _lastCatchAppendInstruction;}
 
