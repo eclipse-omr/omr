@@ -1768,6 +1768,12 @@ OMR::ARM::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *
    }
 
 TR::Register*
+OMR::ARM::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
 OMR::ARM::TreeEvaluator::vconvEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);

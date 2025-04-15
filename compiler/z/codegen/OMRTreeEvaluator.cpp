@@ -15291,6 +15291,13 @@ OMR::Z::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg
    return returnVecReg;
    }
 
+TR::Register*
+OMR::Z::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+
 TR::Register *
 OMR::Z::TreeEvaluator::arraytranslateDecodeSIMDEvaluator(TR::Node * node, TR::CodeGenerator * cg, ArrayTranslateFlavor convType)
    {

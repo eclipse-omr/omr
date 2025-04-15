@@ -7578,6 +7578,12 @@ OMR::X86::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *
    }
 
 TR::Register*
+OMR::X86::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
 OMR::X86::TreeEvaluator::vcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);

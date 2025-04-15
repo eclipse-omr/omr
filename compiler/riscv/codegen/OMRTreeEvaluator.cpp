@@ -1615,6 +1615,12 @@ OMR::RV::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *c
    }
 
 TR::Register*
+OMR::RV::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
 OMR::RV::TreeEvaluator::vcastEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return TR::TreeEvaluator::passThroughEvaluator(node, cg);
