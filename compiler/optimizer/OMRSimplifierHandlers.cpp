@@ -17253,8 +17253,10 @@ TR::Node *bndchkSimplifier(TR::Node * node, TR::Block * block, TR::Simplifier * 
          }
       }
    else if (boundChild->getOpCode().isLoadConst() &&
-            (indexChild->getOpCode().isMul() && !isNodeMulHigh(indexChild) &&
-                 indexChild->getSecondChild()->getOpCode().isLoadConst()))
+            (indexChild->getOpCode().isMul() &&
+               !isNodeMulHigh(indexChild) &&
+               indexChild->cannotOverflow() &&
+               indexChild->getSecondChild()->getOpCode().isLoadConst()))
       {
       int32_t k1 = boundChild->getInt();
       int32_t k2 = indexChild->getSecondChild()->getInt();
@@ -17588,8 +17590,10 @@ TR::Node *bndchkwithspinechkSimplifier(TR::Node * node, TR::Block * block, TR::S
          }
       }
    else if (boundChild->getOpCode().isLoadConst() &&
-            (indexChild->getOpCode().isMul() && !isNodeMulHigh(indexChild) &&
-             indexChild->getSecondChild()->getOpCode().isLoadConst()))
+            (indexChild->getOpCode().isMul() &&
+               !isNodeMulHigh(indexChild) &&
+               indexChild->cannotOverflow() &&
+               indexChild->getSecondChild()->getOpCode().isLoadConst()))
       {
       int32_t k1 = boundChild->getInt();
       int32_t k2 = indexChild->getSecondChild()->getInt();
