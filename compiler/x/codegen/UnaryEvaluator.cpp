@@ -33,6 +33,7 @@
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 #include "env/CompilerEnv.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 
 extern TR::Register *intOrLongClobberEvaluate(TR::Node *node, bool nodeIs64Bit, TR::CodeGenerator *cg);
 
@@ -162,7 +163,7 @@ TR::Register *OMR::X86::TreeEvaluator::unaryVectorArithmeticEvaluator(TR::Node *
 
 TR::Register *OMR::X86::TreeEvaluator::bconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   TR::Register *reg = TR::TreeEvaluator::loadConstant(node, node->getInt(), TR_RematerializableByte, cg);
+   TR::Register *reg = OMR::X86::loadConstant(node, node->getInt(), TR_RematerializableByte, cg);
    node->setRegister(reg);
 
    if (cg->enableRegisterInterferences())
@@ -173,14 +174,14 @@ TR::Register *OMR::X86::TreeEvaluator::bconstEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *OMR::X86::TreeEvaluator::sconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   TR::Register *reg = TR::TreeEvaluator::loadConstant(node, node->getInt(), TR_RematerializableShort, cg);
+   TR::Register *reg = OMR::X86::loadConstant(node, node->getInt(), TR_RematerializableShort, cg);
    node->setRegister(reg);
    return reg;
    }
 
 TR::Register *OMR::X86::TreeEvaluator::iconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   TR::Register *reg = TR::TreeEvaluator::loadConstant(node, node->getInt(), TR_RematerializableInt, cg);
+   TR::Register *reg = OMR::X86::loadConstant(node, node->getInt(), TR_RematerializableInt, cg);
    node->setRegister(reg);
    return reg;
    }
