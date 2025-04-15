@@ -266,7 +266,7 @@ atTRTO255_Done:
 
 FUNC_LABEL(__arrayTranslateTROTNoBreak):
 	cmp	w2, #16
-	b.cc	atTROTNB_15
+	b.cc	atTROTNB_residue
 	lsr	w4, w2, #4
 atTROTNB_16Loop:
 	// load 16 elements
@@ -278,35 +278,142 @@ atTROTNB_16Loop:
 	// store 16 elements
 	stp	q1, q0, [x1], #32
 	b.ne	atTROTNB_16Loop
-atTROTNB_15:
+atTROTNB_residue:
 	// 15 elements or less remaining
-	tst	w2, #8
-	b.eq	atTROTNB_7
-	// load 8 elements
+	adr	x5, atTROTNB_table
+	and	w4, w2, #15
+	add	x5, x5, x4, lsl #2
+	br	x5
+
+atTROTNB_table:
+	b	atTROTNB_0
+	b	atTROTNB_1
+	b	atTROTNB_2
+	b	atTROTNB_3
+	b	atTROTNB_4
+	b	atTROTNB_5
+	b	atTROTNB_6
+	b	atTROTNB_7
+	b	atTROTNB_8
+	b	atTROTNB_9
+	b	atTROTNB_10
+	b	atTROTNB_11
+	b	atTROTNB_12
+	b	atTROTNB_13
+	b	atTROTNB_14
+
+atTROTNB_15:
+	// load and store 8 elements
 	ldr	d0, [x0], #8
-	// unsigned extension
 	uxtl	v1.8h, v0.8b
-	// store 8 elements
 	str	q1, [x1], #16
 atTROTNB_7:
-	// 7 elements or less remaining
-	tst	w2, #4
-	b.eq	atTROTNB_3
-	// load 4 elements
-	ldr	s0, [x0], #4
-	// unsigned extension
+	// load and store 4 elements
+	ldr	s0, [x0]
 	uxtl	v1.8h, v0.8b
-	// store 4 elements
-	str	d1, [x1], #8
+	str	d1, [x1]
+	// load and store 2 elements
+	ldr	h0, [x0, #4]
+	uxtl	v1.8h, v0.8b
+	str	s1, [x1, #8]
+	// load and store 1 element
+	ldrb	w4, [x0, #6]
+	strh	w4, [x1, #12]
+	mov	x0, x2
+	ret
+
+atTROTNB_14:
+	// load and store 8 elements
+	ldr	d0, [x0], #8
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1], #16
+atTROTNB_6:
+	// load and store 4 elements
+	ldr	s0, [x0]
+	uxtl	v1.8h, v0.8b
+	str	d1, [x1]
+	// load and store 2 elements
+	ldr	h0, [x0, #4]
+	uxtl	v1.8h, v0.8b
+	str	s1, [x1, #8]
+	mov	x0, x2
+	ret
+
+atTROTNB_13:
+	// load and store 8 elements
+	ldr	d0, [x0], #8
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1], #16
+atTROTNB_5:
+	// load and store 4 elements
+	ldr	s0, [x0]
+	uxtl	v1.8h, v0.8b
+	str	d1, [x1]
+	// load and store 1 element
+	ldrb	w4, [x0, #4]
+	strh	w4, [x1, #8]
+	mov	x0, x2
+	ret
+
+atTROTNB_12:
+	// load and store 8 elements
+	ldr	d0, [x0], #8
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1], #16
+atTROTNB_4:
+	// load and store 4 elements
+	ldr	s0, [x0]
+	uxtl	v1.8h, v0.8b
+	str	d1, [x1]
+	mov	x0, x2
+	ret
+
+atTROTNB_11:
+	// load and store 8 elements
+	ldr	d0, [x0], #8
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1], #16
 atTROTNB_3:
-	// 3 elements or less remaining
-	ands	w4, w2, #3
-atTROTNB_1Loop:
-	b.eq	atTROTNB_Done
-	ldrb	w5, [x0], #1
-	subs	w4, w4, #1
-	strh	w5, [x1], #2
-	b	atTROTNB_1Loop
-atTROTNB_Done:
+	// load and store 2 elements
+	ldr	h0, [x0]
+	uxtl	v1.8h, v0.8b
+	str	s1, [x1]
+	// load and store 1 element
+	ldrb	w4, [x0, #2]
+	strh	w4, [x1, #4]
+	mov	x0, x2
+	ret
+
+atTROTNB_10:
+	// load and store 8 elements
+	ldr	d0, [x0], #8
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1], #16
+atTROTNB_2:
+	// load and store 2 elements
+	ldr	h0, [x0]
+	uxtl	v1.8h, v0.8b
+	str	s1, [x1]
+	mov	x0, x2
+	ret
+
+atTROTNB_9:
+	// load and store 8 elements
+	ldr	d0, [x0], #8
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1], #16
+atTROTNB_1:
+	// load and store 1 element
+	ldrb	w4, [x0]
+	strh	w4, [x1]
+	mov	x0, x2
+	ret
+
+atTROTNB_8:
+	// load and store 8 elements
+	ldr	d0, [x0]
+	uxtl	v1.8h, v0.8b
+	str	q1, [x1]
+atTROTNB_0:
 	mov	x0, x2
 	ret
