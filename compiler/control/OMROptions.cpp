@@ -1376,7 +1376,7 @@ OMR::Options::getNumericValue(const char *& option)
    while (pendingOperation)
       {
       int64_t current = 0;
-      while (isdigit(*option))
+      while (OMR_ISDIGIT(*option))
          {
          current = 10 * current + *option - '0';
          option++;
@@ -3426,7 +3426,7 @@ OMR::Options::processOptionSet(
             options++;
             //assume this is a digit
             value=0;
-            while (isdigit(*options))
+            while (OMR_ISDIGIT(*options))
                {
                value = 10 * value + *options - '0';
                options++;
@@ -3443,7 +3443,7 @@ OMR::Options::processOptionSet(
                options++;
                //assume this is a digit
                value=0;
-               while (isdigit(*options))
+               while (OMR_ISDIGIT(*options))
                   {
                   value = 10*value + *options - '0';
                   options++;
@@ -4390,10 +4390,10 @@ OMR::Options::setCounts()
          {
          while (s[0] == ' ')
             ++s;
-         if (isdigit(s[0]))
+         if (OMR_ISDIGIT(s[0]))
             {
             count[i] = atoi(s);
-            while(isdigit(s[0]))
+            while (OMR_ISDIGIT(s[0]))
                ++s;
             if (initialCount >= 0)
                {
@@ -4415,10 +4415,10 @@ OMR::Options::setCounts()
             count[i] = -1;
          while (s[0] == ' ')
             ++s;
-         if (isdigit(s[0]))
+         if (OMR_ISDIGIT(s[0]))
             {
             bcount[i] = atoi(s);
-            while(isdigit(s[0]))
+            while (OMR_ISDIGIT(s[0]))
                ++s;
             if (initialBCount >= 0)
                {
@@ -4438,10 +4438,10 @@ OMR::Options::setCounts()
          bcount[i] = -1;
          while (s[0] == ' ')
             ++s;
-         if (isdigit(s[0]))
+         if (OMR_ISDIGIT(s[0]))
             {
             milcount[i] = atoi(s);
-            while(isdigit(s[0]))
+            while (OMR_ISDIGIT(s[0]))
                ++s;
             if (initialMILCount >= 0)
                {
