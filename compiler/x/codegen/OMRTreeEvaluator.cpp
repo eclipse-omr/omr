@@ -5967,7 +5967,7 @@ OMR::X86::TreeEvaluator::compressExpandBitsEvaluator(TR::Node *node, TR::CodeGen
    {
    TR::Node *srcNode = node->getFirstChild();
    TR::Node *maskNode = node->getSecondChild();
-   TR::Register *srcReg = cg->longClobberEvaluate(srcNode);
+   TR::Register *srcReg = cg->gprClobberEvaluate(srcNode, TR::InstOpCode::MOVRegReg());
 
    if (maskNode->getReferenceCount() == 1 &&
        maskNode->getRegister() == NULL &&
