@@ -52,8 +52,9 @@
 #include "env/CompilerEnv.hpp"
 #include "env/CompileTimeProfiler.hpp"
 #include "env/IO.hpp"
-#include "env/ObjectModel.hpp"
 #include "env/KnownObjectTable.hpp"
+#include "env/ObjectModel.hpp"
+#include "env/OMRRetainedMethodSet.hpp"
 #include "env/PersistentInfo.hpp"
 #include "env/StackMemoryRegion.hpp"
 #include "env/TRMemory.hpp"
@@ -287,6 +288,7 @@ OMR::Compilation::Compilation(
    _bitVectorPool(self()),
    _typeLayoutMap((LayoutComparator()), LayoutAllocator(self()->region())),
    _currentILGenCallTarget(NULL),
+   _retainedMethods(NULL),
    _tlsManager(*self())
    {
    if (target != NULL)
@@ -924,6 +926,49 @@ static int32_t strHash(const char *str)
    return result;
    }
 
+/**
+ * \brief Print all bond methods of the root retained method set to the log
+ */
+static void traceBondMethods(TR::Compilation *comp)
+   {
+   if (!comp->getOption(TR_TraceOptDetails) && !comp->getOption(TR_TraceCG))
+      {
+      return;
+      }
+
+   traceMsg(comp, "\nBond methods:\n");
+
+   TR_ResolvedMethod *m = NULL;
+   bool haveBondMethods = false;
+   auto bondIter = comp->retainedMethods()->bondMethods();
+   while (bondIter.next(&m))
+      {
+      haveBondMethods = true;
+      traceMsg(
+         comp,
+         "  %p %.*s.%.*s%.*s\n",
+         m->getNonPersistentIdentifier(),
+         m->classNameLength(),
+         m->classNameChars(),
+         m->nameLength(),
+         m->nameChars(),
+         m->signatureLength(),
+         m->signatureChars());
+      }
+
+   if (comp->compileRelocatableCode())
+      {
+      TR_ASSERT_FATAL(!haveBondMethods, "bonds are meaningless in AOT compilation");
+      traceMsg(comp, "  (to be determined at load time)\n");
+      }
+   else if (!haveBondMethods)
+      {
+      traceMsg(comp, "  (none)\n");
+      }
+
+   traceMsg(comp, "\n");
+   }
+
 int32_t OMR::Compilation::compile()
    {
 
@@ -1101,6 +1146,8 @@ int32_t OMR::Compilation::compile()
          self()->failCompilation<TR::CompilationException>("Aborting after IL Gen due to TR_TOSS_IL");
          }
 
+      traceBondMethods(self());
+
       if (_recompilationInfo)
          _recompilationInfo->beforeCodeGen();
 
@@ -1262,11 +1309,70 @@ TR_YesNoMaybe OMR::Compilation::isCpuExpensiveCompilation(int64_t threshold)
 
 void OMR::Compilation::performOptimizations()
    {
-
    _optimizer = TR::Optimizer::createOptimizer(self(), self()->getJittedMethodSymbol(), false);
 
    if (_optimizer)
+      {
       _optimizer->optimize();
+
+      if (self()->getOption(TR_DontInlineUnloadableMethods))
+         {
+         // Check the inlining table to make sure that all inlined methods are
+         // guaranteed to outlive this body.
+         bool trace = self()->getOption(TR_TraceRetainedMethods);
+         if (trace)
+            {
+            traceMsg(self(), "dontInlineUnloadableMethods: check inlining table\n");
+            }
+
+         // Keepalives must be taken into account, since without them it might
+         // be possible for some inlined methods to be unloaded earlier.
+         OMR::RetainedMethodSet *retainedMethods =
+            self()->retainedMethods()->withKeepalivesAttested();
+
+         for (uint32_t i = 0; i < self()->getNumInlinedCallSites(); i++)
+            {
+            // The bci identifies a call site in the bytecode of the outermost
+            // method or a previous inlined site, so we already know that the
+            // call site outlives the JIT body and it's therefore OK to attest
+            // for the call site.
+            //
+            // We need to attest here because the compilation's root retained
+            // method set doesn't account for any call site attestation that
+            // was done during inlining on an inline call path that required at
+            // least one keepalive. For example, if A calls B calls C calls D,
+            // and if B, C, D are all inlined, and if B needed a keepalive, and
+            // if there was something useful to attest at the C->D call site,
+            // that attestation will be missing from the root set.
+            //
+            TR_ByteCodeInfo bci = self()->getInlinedCallSite(i)._byteCodeInfo;
+            if (trace)
+               {
+               traceMsg(
+                  self(),
+                  "check inlined site %u, bci=%d:%d\n",
+                  i,
+                  bci.getCallerIndex(),
+                  bci.getByteCodeIndex());
+               }
+
+            retainedMethods->attestLinkedCalleeWillRemainLoaded(bci);
+
+            TR_ResolvedMethod *m = self()->getInlinedResolvedMethod(i);
+            TR_ASSERT_FATAL(
+               retainedMethods->willRemainLoaded(m),
+               "unexpectedly inlined method that could get unloaded separately:\n"
+               "          %p %.*s.%.*s%.*s",
+               m->getPersistentIdentifier(),
+               m->classNameLength(),
+               m->classNameChars(),
+               m->nameLength(),
+               m->nameChars(),
+               m->signatureLength(),
+               m->signatureChars());
+            }
+         }
+      }
    }
 
 bool OMR::Compilation::incInlineDepth(TR::ResolvedMethodSymbol * method, TR::Node *callNode, bool directCall, TR_VirtualGuardSelection *guard, TR_OpaqueClassBlock *receiverClass, TR_PrexArgInfo *argInfo)
@@ -2751,4 +2857,23 @@ OMR::Compilation::insertNewFirstBlock()
    self()->setStartTree(newFirstBlock->getEntry());
 
    return newFirstBlock;
+   }
+
+OMR::RetainedMethodSet *
+OMR::Compilation::retainedMethods()
+   {
+   if (_retainedMethods == NULL)
+      {
+      _retainedMethods = self()->createRetainedMethods(self()->getMethodBeingCompiled());
+      }
+
+   return _retainedMethods;
+   }
+
+OMR::RetainedMethodSet *
+OMR::Compilation::createRetainedMethods(TR_ResolvedMethod *method)
+   {
+   OMR::RetainedMethodSet *parent = NULL;
+   TR::Region &region = self()->trMemory()->heapMemoryRegion();
+   return new (region) OMR::RetainedMethodSet(self(), method, parent);
    }
