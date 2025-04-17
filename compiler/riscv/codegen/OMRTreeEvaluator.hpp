@@ -367,6 +367,7 @@ public:
    static TR::Register *vRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vRegStoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+   static TR::Register *vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vsetelemEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vsplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg);

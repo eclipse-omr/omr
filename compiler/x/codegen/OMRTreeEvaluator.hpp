@@ -390,6 +390,7 @@ class OMR_EXTENSIBLE TreeEvaluator: public OMR::TreeEvaluator
    static TR::Register *vbyteswapEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vmbyteswapEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+   static TR::Register *vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vmcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg);

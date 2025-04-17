@@ -869,6 +869,22 @@ VECTOR_OPERATION_MACRO(\
    /* .description             =    vector bit-wise select operator */ \
 )
 VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ vblend, \
+   /* .name                    = */ "vblend", \
+   /* .properties1             = */ 0, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE | ILProp2::Select, \
+   /* .properties3             = */ 0, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::VectorResult, \
+   /* .childProperties         = */ THREE_CHILD(ILChildProp::UnspecifiedChildType, ILChildProp::UnspecifiedChildType, ILChildProp::UnspecifiedChildType), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    vector blend witn mask operator */ \
+)
+VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vsetelem, \
    /* .name                    = */ "vsetelem", \
    /* .properties1             = */ 0, \

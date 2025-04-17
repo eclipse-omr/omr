@@ -466,6 +466,7 @@
 #define vcallSimplifierHandler dftSimplifier
 #define vcalliSimplifierHandler dftSimplifier
 #define vbitselectSimplifierHandler dftSimplifier
+#define vblendSimplifierHandler dftSimplifier
 #define vcastSimplifierHandler vcastSimplifier
 #define vconvSimplifierHandler dftSimplifier
 #define vsetelemSimplifierHandler vsetelemSimplifier
