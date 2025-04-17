@@ -130,7 +130,7 @@ function(_omr_toolchain_separate_debug_symbols tgt)
 		if(OMR_OS_AIX AND CMAKE_C_COMPILER_IS_OPENXL)
 			# When building with OpenXL on AIX, get rid of strip for libjvmtitest.so until
 			# https://github.com/eclipse-openj9/openj9/issues/21528 is resolved.
-			if ("${tgt}" MATCHES "jvmtitest")
+			if ("${tgt}" MATCHES "${SKIP_STRIP_MODULE}")
 				add_custom_command(
 					TARGET "${tgt}"
 					POST_BUILD
