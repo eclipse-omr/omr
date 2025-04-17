@@ -197,6 +197,7 @@ macro(omr_detect_system_information)
 				# OpenXL17 uses CMAKE_C_COMPILER_ID "Clang"
 				set(_OMR_TOOLCONFIG "gnu")
 				set(CMAKE_C_COMPILER_IS_OPENXL TRUE CACHE BOOL "OpenXL is the C compiler")
+				set(SKIP_STRIP_MODULE "")
 			else()
 				# TODO we don't actually have a clang config
 				# just use GNU config

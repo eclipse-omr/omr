@@ -129,12 +129,22 @@ function(_omr_toolchain_separate_debug_symbols tgt)
 		omr_get_target_output_genex(${tgt} output_name)
 		set(dbg_file "${output_name}${OMR_DEBUG_INFO_OUTPUT_EXTENSION}")
 		if(OMR_OS_AIX AND CMAKE_C_COMPILER_IS_OPENXL)
-			add_custom_command(
-				TARGET "${tgt}"
-				POST_BUILD
-				COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
-				COMMAND "${CMAKE_STRIP}" -X32_64 ${exe_file}
-			)
+			# When building with OpenXL on AIX, get rid of strip for libjvmtitest.so until
+			# https://github.com/eclipse-openj9/openj9/issues/21528 is resolved.
+			if ("${tgt}" MATCHES "${SKIP_STRIP_MODULE}")
+				add_custom_command(
+					TARGET "${tgt}"
+					POST_BUILD
+					COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
+				)
+			else()
+				add_custom_command(
+					TARGET "${tgt}"
+					POST_BUILD
+					COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
+					COMMAND "${CMAKE_STRIP}" -X32_64 ${exe_file}
+				)
+			endif()
 		else()
 			add_custom_command(
 				TARGET "${tgt}"
@@ -162,14 +172,20 @@ function(_omr_toolchain_process_exports TARGET_NAME)
 
 	set(exp_file "$<TARGET_PROPERTY:${TARGET_NAME},BINARY_DIR>/${TARGET_NAME}.exp")
 
-	omr_process_template(
-		"${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/gnu_exports.exp.in"
-		"${exp_file}"
-	)
-
-if(NOT CMAKE_C_COMPILER_IS_OPENXL)
-	target_link_libraries(${TARGET_NAME}
-		PRIVATE
-			"-Wl,--version-script,${exp_file}")
-endif()
+	# Currently, OpenXL on AIX uses the GNU configuration. In the future, it should
+	# be switched to the OpenXL-specific configuration (as has already been done with
+	# z/OS), but until then, we need to add this special case for OpenXL.
+	if (CMAKE_C_COMPILER_IS_OPENXL)
+		omr_process_template(
+			"${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/xlc_exports.exp.in"
+			"${exp_file}"
+		)
+		set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-bE:${TARGET_NAME}.exp")
+	else()
+		omr_process_template(
+			"${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/gnu_exports.exp.in"
+			"${exp_file}"
+		)
+		set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--version-script,${exp_file}")
+	endif()
 endfunction()
