@@ -3966,43 +3966,74 @@ TR_OpaqueClassBlock * TR_IndirectCallSite::extractAndLogClassArgument (TR_Inline
    return  getClassFromArgInfo();
    }
 
+namespace { // file-local
 
-bool TR_DirectCallSite::findCallSiteTarget (TR_CallStack* callStack, TR_InlinerBase* inliner)
+struct DirectCallSiteGuardSelection
    {
+   TR_OpaqueClassBlock *_receiverClass;
+   TR_VirtualGuardSelection *_guard;
 
-  if (inliner->getPolicy()->replaceSoftwareCheckWithHardwareCheck(_initialCalleeMethod))
-      return false;
+   DirectCallSiteGuardSelection(
+      TR::Compilation *comp, TR_CallSite *site, TR_InlinerBase *inliner);
+   };
 
-
-   TR_OpaqueClassBlock *tempreceiverClass;
-   TR_VirtualGuardSelection *guard;
+DirectCallSiteGuardSelection::DirectCallSiteGuardSelection(
+   TR::Compilation *comp, TR_CallSite *site, TR_InlinerBase *inliner)
+   : _receiverClass(NULL)
+   , _guard(NULL)
+   {
    static const char *disableHCRGuards2 = feGetEnv("TR_DisableHCRGuards");
 
-   const bool skipHCRGuardForCallee = inliner->getPolicy()->skipHCRGuardForCallee(_initialCalleeMethod);
+   const bool skipHCRGuardForCallee = inliner->getPolicy()->skipHCRGuardForCallee(site->_initialCalleeMethod);
 
    static const char *disableFSDGuard = feGetEnv("TR_DisableFSDGuard");
-   if (!disableHCRGuards2 && comp()->getHCRMode() != TR::none && !comp()->compileRelocatableCode() && !skipHCRGuardForCallee)
+   if (!disableHCRGuards2 && comp->getHCRMode() != TR::none && !comp->compileRelocatableCode() && !skipHCRGuardForCallee)
       {
-      tempreceiverClass = _initialCalleeMethod->classOfMethod();
-      guard = new (comp()->trHeapMemory()) TR_VirtualGuardSelection(TR_HCRGuard, TR_NonoverriddenTest);
+      _receiverClass = site->_initialCalleeMethod->classOfMethod();
+      _guard = new (comp->trHeapMemory()) TR_VirtualGuardSelection(TR_HCRGuard, TR_NonoverriddenTest);
       }
-   else if (!disableFSDGuard && comp()->getOption(TR_FullSpeedDebug))
+   else if (!disableFSDGuard && comp->getOption(TR_FullSpeedDebug))
       {
-      tempreceiverClass = _receiverClass;
-      guard = new (comp()->trHeapMemory()) TR_VirtualGuardSelection(TR_BreakpointGuard, TR_FSDTest);
+      _receiverClass = site->_receiverClass;
+      _guard = new (comp->trHeapMemory()) TR_VirtualGuardSelection(TR_BreakpointGuard, TR_FSDTest);
       }
    else
       {
       TR_VirtualGuardKind kind = TR_NoGuard;
-      if (comp()->compileRelocatableCode())
+      if (comp->compileRelocatableCode())
          kind = TR_DirectMethodGuard;
-      guard = new (comp()->trHeapMemory()) TR_VirtualGuardSelection(kind);
-      tempreceiverClass = _receiverClass;
+
+      _guard = new (comp->trHeapMemory()) TR_VirtualGuardSelection(kind);
+      _receiverClass = site->_receiverClass;
+      }
+   }
+
+} // anonymous namespace
+
+static bool findDirectCallSiteTarget(
+   TR::Compilation *comp, TR_CallSite *site, TR_InlinerBase *inliner)
+   {
+   if (inliner->getPolicy()->replaceSoftwareCheckWithHardwareCheck(site->_initialCalleeMethod))
+      {
+      return false;
       }
 
-   debugTrace(inliner->tracer(),"Found a Direct Call.");
-   addTarget(comp()->trMemory(), inliner, guard, _initialCalleeMethod,tempreceiverClass,heapAlloc);
+   DirectCallSiteGuardSelection sel(comp, site, inliner);
+   debugTrace(inliner->tracer(), "Found a Direct Call.");
+   site->addTarget(
+      comp->trMemory(),
+      inliner,
+      sel._guard,
+      site->_initialCalleeMethod,
+      sel._receiverClass,
+      heapAlloc);
+
    return true;
+   }
+
+bool TR_DirectCallSite::findCallSiteTarget (TR_CallStack* callStack, TR_InlinerBase* inliner)
+   {
+   return findDirectCallSiteTarget(comp(), this, inliner);
    }
 
 void OMR_InlinerUtil::collectCalleeMethodClassInfo(TR_ResolvedMethod *calleeMethod)
@@ -4023,7 +4054,7 @@ void TR_InlinerBase::getSymbolAndFindInlineTargets(TR_CallStack *callStack, TR_C
 
    if (callsite->_initialCalleeSymbol)
       {
-      callsite->_initialCalleeMethod = callsite->_initialCalleeSymbol->getResolvedMethod();
+      callsite->assertInitialCalleeConsistency();
       if (getPolicy()->supressInliningRecognizedInitialCallee(callsite, comp()))
          isInlineable = Recognized_Callee;
 
@@ -4086,7 +4117,20 @@ void TR_InlinerBase::getSymbolAndFindInlineTargets(TR_CallStack *callStack, TR_C
    for (int32_t i=0; i<callsite->numTargets(); i++)
       {
       TR_CallTarget *target = callsite->getTarget(i);
-      if (!target->_calleeSymbol || !target->_calleeMethod->isSameMethod(target->_calleeSymbol->getResolvedMethod()))
+      if (target->_calleeSymbol != NULL)
+         {
+         target->assertCalleeConsistency();
+         }
+      // Prefer to reuse the call site's symbol when it matches. This avoids
+      // redundant symbol creation, and it also ensures that the method symbol
+      // kind will be correct in the case of a direct call.
+      else if (callsite->_initialCalleeSymbol != NULL
+               && target->_calleeMethod->isSameMethod(
+                     callsite->_initialCalleeSymbol->getResolvedMethod()))
+         {
+         target->_calleeSymbol = callsite->_initialCalleeSymbol;
+         }
+      else
          {
          target->_calleeMethod->setOwningMethod(callsite->_callNode->getSymbolReference()->getOwningMethodSymbol(comp())->getResolvedMethod()); //need to point to the owning method to the same one that got ilgen'd d157939
 
@@ -4490,86 +4534,71 @@ TR_CallSite* TR_InlinerBase::findAndUpdateCallSiteInGraph(TR_CallStack *callStac
    callsite->_callNodeTreeTop = tt;
    callsite->_parent = parent;
    callsite->_initialCalleeSymbol = callNode->getSymbolReference()->getSymbol()->castToMethodSymbol()->getResolvedMethodSymbol();
+   if (callsite->_initialCalleeSymbol != NULL)
+      {
+      callsite->_initialCalleeMethod = callsite->_initialCalleeSymbol->getResolvedMethod();
+      }
 
    if (callNode->getSymbolReference()->getSymbol()->castToMethodSymbol()->isInterface() && callsite->_initialCalleeSymbol)
       debugTrace(tracer(), "findAndUpdateCallSiteInGraph: BAD: Interface call has an initialCalleeSYmbol %p for calNode %p", callsite->_initialCalleeSymbol, callNode);
 
    if (getPolicy()->shouldRemoveDifferingTargets(callNode))
       {
-      //find a matching target if there's any
-      for (int32_t i = 0 ; i < callsite->numTargets() ; i++)
+      bool wasIndirect = callsite->_isIndirectCall;
+      callsite->_isIndirectCall = false;
+
+      // Remove all targets that don't match.
+      TR_ResolvedMethod *initialMethod =
+         callsite->_initialCalleeSymbol->getResolvedMethod();
+
+      bool hadTarget = callsite->numTargets() > 0;
+      for (int32_t i = callsite->numTargets() - 1; i >= 0; i--)
          {
-         if (callsite->getTarget(i)->_calleeMethod->isSameMethod(callsite->_initialCalleeSymbol->getResolvedMethod()) && i > 0)
+         if (!callsite->getTarget(i)->_calleeMethod->isSameMethod(initialMethod))
             {
-            TR_CallTarget* tempTarget = callsite->getTarget(0);
-            callsite->setTarget(0, callsite->getTarget(i));
-            callsite->setTarget(i, tempTarget);
-            break;
+            callsite->removecalltarget(i, tracer(), Not_Sane);
             }
          }
 
-      //more than one target, clear the rest
       if (callsite->numTargets() > 1)
          {
+         // Multiple TR_CallTarget instances for the same target method. This
+         // probably shouldn't happen, but if it did, it would be harmless to
+         // simply ignore targets beyond the first.
          callsite->removeTargets(tracer(), 1, Not_Sane);
          }
 
-     int32_t i = 0;
-                     //at this point there should be just one target
-                     //if we are lucky it is the one whose calleeMethod matches the one of callsite's calleeSymbol
-                     //also it seemed less invasive to assign i to 0 rather than change every single occurence of (i)
-
-      // Code to help Inliner cope with the fact that IAP might have refined targets
       if (callsite->numTargets() > 0)
          {
-         if (callsite->isIndirectCall()) //local opts pre-existence has been performed
-         {
-         if (comp()->compileRelocatableCode())
-            callsite->getTarget(i)->_guard->_kind = TR_DirectMethodGuard;
-         else
-            callsite->getTarget(i)->_guard->_kind = TR_NoGuard;                                // do not need a guard anymore
-         callsite->getTarget(i)->_guard->_type = TR_NonoverriddenTest;
-         callsite->getTarget(i)->_guard->_thisClass = 0;
+         TR_ASSERT_FATAL(
+            callsite->numTargets() == 1,
+            "call site %p should have only one target",
+            callsite);
 
-         if (!callsite->getTarget(i)->_calleeMethod->isSameMethod(callsite->_initialCalleeSymbol->getResolvedMethod()))
+         if (wasIndirect)
             {
-            callsite->getTarget(i)->_myCallees.setFirst(0);                // preventing furhter inlining as we now don't know what's beyond the new target
-            callsite->getTarget(i)->_numCallees=0;                         // may want to improve this eventually
-            callsite->getTarget(i)->_partialInline=0;                     // Can't do a partial inline anymore as the blocks are wrong.
-            callsite->getTarget(i)->_isPartialInliningCandidate=false;
+            TR_CallTarget *target = callsite->getTarget(0);
+            DirectCallSiteGuardSelection sel(comp(), callsite, this);
+            target->_guard = sel._guard;
             }
-         callsite->getTarget(i)->_calleeSymbol = callsite->_initialCalleeSymbol;
-         callsite->getTarget(i)->_calleeMethod = callsite->_initialCalleeSymbol->getResolvedMethod();
-         callsite->_isIndirectCall = false;
          }
-         else //if(!callsite->isIndirectCall()) //local opts string peepholes has been performed
+      else if (hadTarget)
          {
-         if (!callsite->getTarget(i)->_calleeMethod->isSameMethod(callsite->_initialCalleeSymbol->getResolvedMethod()))
+         // There was at least one existing target, but none of the targets
+         // matched. Add a new target as though for a TR_DirectCallSite.
+         if (findDirectCallSiteTarget(comp(), callsite, this))
             {
-            callsite->getTarget(i)->_guard->_thisClass = 0;
-            callsite->getTarget(i)->_myCallees.setFirst(0);                // preventing furhter inlining as we now don't know what's beyond the new target
-            callsite->getTarget(i)->_numCallees=0;                         // may want to improve this eventually
-            callsite->getTarget(i)->_partialInline=0;                     // Can't do a partial inline anymore as the blocks are wrong.
-            callsite->getTarget(i)->_isPartialInliningCandidate=false;
-            callsite->getTarget(i)->_calleeSymbol = callsite->_initialCalleeSymbol;
-            callsite->getTarget(i)->_calleeMethod = callsite->_initialCalleeSymbol->getResolvedMethod();
-               }
-            }
+            // Can't do a partial inline anymore as the blocks are wrong.
+            callsite->getTarget(0)->_isPartialInliningCandidate = false;
             }
          }
+      }
 
    //if the code above kicked in this will only run once.
    for (int32_t i = 0 ; i< callsite->numTargets() ; i++)
       {
       if (callsite->getTarget(i)->_isPartialInliningCandidate && callsite->getTarget(i)->_partialInline)
           callsite->getTarget(i)->_partialInline->setCallNodeTreeTop(tt);
-
-      if (!callsite->getTarget(i)->_calleeSymbol && !callsite->isInterface())
-         {
-         //in case you are curious about what we do for interfaces
-         //we will fill in calleeSymbol next time we call getSymbolAndFindInlineTargets
-         callsite->getTarget(i)->_calleeSymbol = callsite->_initialCalleeSymbol;
-         }
 
       if (callsite->getTarget(i)->_guard->_kind == TR_InterfaceGuard && callsite->getTarget(i)->_guard->_type == TR_MethodTest && callsite->_initialCalleeSymbol)
          {
@@ -5706,6 +5735,14 @@ TR_CallTarget::TR_CallTarget(TR::Region &memRegion,
    _ecsPrexArgInfo(ecsPrexArgInfo),
    _requiredConsts(memRegion)
    {
+   TR_ASSERT_FATAL(
+      _calleeMethod != NULL, "no _calleeMethod. What are we supposed to inline?");
+
+   if (_calleeSymbol != NULL)
+      {
+      assertCalleeConsistency();
+      }
+
    _weight=0;
    _callGraphAdjustedWeight=0;
    _alreadyInlined=false;
@@ -5725,6 +5762,17 @@ TR_CallTarget::TR_CallTarget(TR::Region &memRegion,
    _calleeMethodKind = TR::MethodSymbol::Virtual;
    }
 
+void
+TR_CallTarget::assertCalleeConsistency()
+   {
+   TR_ASSERT_FATAL(
+      _calleeMethod->isSameMethod(_calleeSymbol->getResolvedMethod()),
+      "call target %p _calleeMethod %p differs from _calleeSymbol method %p",
+      this,
+      _calleeMethod->getNonPersistentIdentifier(),
+      _calleeSymbol->getResolvedMethod()->getNonPersistentIdentifier());
+   }
+
 const char*
 TR_CallTarget::signature(TR_Memory *trMemory)
    {
@@ -5733,7 +5781,6 @@ TR_CallTarget::signature(TR_Memory *trMemory)
    else
      return "No Resolved Method";
    }
-
 
 TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod,
                          TR::TreeTop *callNodeTreeTop,
@@ -5776,10 +5823,33 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod,
    _myRemovedTargets(0, comp->allocator()),
    _ecsPrexArgInfo(0)
    {
+   if (_initialCalleeSymbol != NULL)
+      {
+      if (_initialCalleeMethod != NULL)
+         {
+         assertInitialCalleeConsistency();
+         }
+      else
+         {
+         _initialCalleeMethod = _initialCalleeSymbol->getResolvedMethod();
+         }
+      }
+
    _visitCount=0;
    _failureReason=InlineableTarget;
    _byteCodeIndex = bcInfo.getByteCodeIndex();
    _callerBlock = NULL;
+   }
+
+void
+TR_CallSite::assertInitialCalleeConsistency()
+   {
+   TR_ASSERT_FATAL(
+      _initialCalleeMethod->isSameMethod(_initialCalleeSymbol->getResolvedMethod()),
+      "call site %p _initialCalleeMethod %p differs from _initialCalleeSymbol method %p",
+      this,
+      _initialCalleeMethod->getNonPersistentIdentifier(),
+      _initialCalleeSymbol->getResolvedMethod()->getNonPersistentIdentifier());
    }
 
 const char*
@@ -5835,10 +5905,19 @@ TR_CallSite::addTarget(TR_Memory* mem, TR_InlinerBase *inliner, TR_VirtualGuardS
          TR_ASSERT_FATAL(false, "unexpected alloc kind %d for call target", (int)allocKind);
       }
 
+   // For TR_CallTarget, the callee symbol, if specified, must be consistent
+   // with the callee method.
+   TR::ResolvedMethodSymbol *calleeSymbol = _initialCalleeSymbol;
+   if (calleeSymbol != NULL
+       && !calleeSymbol->getResolvedMethod()->isSameMethod(implementer))
+      {
+      calleeSymbol = NULL;
+      }
+
    TR_CallTarget *result = new (*memRegion) TR_CallTarget(
       *memRegion,
       this,
-      _initialCalleeSymbol,
+      calleeSymbol,
       implementer,
       guard,
       receiverClass,

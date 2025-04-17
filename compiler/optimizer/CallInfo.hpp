@@ -215,6 +215,8 @@ struct TR_CallTarget : public TR_Link<TR_CallTarget>
       _numDeletedCallees++;
       }
 
+   void assertCalleeConsistency();
+
    TR_InlineBlocks             *_partialInline;
    TR_LinkHead<TR_CallSite>     _myCallees;
    int32_t                      _numCallees;
@@ -382,6 +384,8 @@ class TR_CallSite : public TR_Link<TR_CallSite>, private TR::Uncopyable
       const char*             signature(TR_Memory *trMemory);
 
       TR_OpaqueClassBlock    *calleeClass();
+
+      void assertInitialCalleeConsistency();
 
       TR::Compilation *             _comp;
       TR_ResolvedMethod *          _callerResolvedMethod;
