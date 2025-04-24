@@ -230,6 +230,16 @@ public:
     */
    const char* getProcessorName() { return "Unknown Processor"; }
 
+   /**
+    * @brief Returns the set of features enabled by the OMR compiler.
+    * @return An OMRProcessorDesc with the list of all features enabled in OMR.
+    */
+   static OMRProcessorDesc getEnabledFeatures()
+      {
+      OMRProcessorDesc desk;
+      return desk;
+      }
+
 protected:
    OMRProcessorDesc _processorDescription;
 

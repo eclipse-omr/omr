@@ -26,6 +26,26 @@
 
 char* feGetEnv(const char*);
 
+OMRProcessorDesc OMR::X86::CPU::getEnabledFeatures()
+   {
+   // Only enable the features that compiler currently uses
+   const uint32_t enabledFeatures[] = {
+      OMR_FEATURE_PPC_HAS_ALTIVEC, OMR_FEATURE_PPC_HAS_DFP,
+      OMR_FEATURE_PPC_HTM, OMR_FEATURE_PPC_HAS_VSX
+   };
+
+   OMRProcessorDesc featureMasks;
+   memset(featureMasks.features, 0, OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t));
+
+   for (size_t i = 0; i < sizeof(enabledFeatures) / sizeof(uint32_t); i++)
+      {
+      TR_ASSERT_FATAL(enabledFeatures[i] < OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t) * 8, "Illegal cpu feature mask");
+      featureMasks.features[i / sizeof(uint32_t)] |= enabledFeatures[i] % sizeof(uint32_t);
+      }
+
+   return featureMasks;
+   }
+
 bool
 OMR::Power::CPU::getPPCSupportsAES()
    {

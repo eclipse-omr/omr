@@ -31,6 +31,36 @@
 #include "control/Options_inlines.hpp"
 #include "env/CPU.hpp"
 
+OMRProcessorDesc OMR::Z::CPU::getEnabledFeatures()
+   {
+   // Only enable the features that compiler currently uses
+   const uint32_t enabledFeatures [] = {OMR_FEATURE_S390_DFP, OMR_FEATURE_S390_TRANSACTIONAL_EXECUTION_FACILITY,
+                                         OMR_FEATURE_S390_CONSTRAINED_TRANSACTIONAL_EXECUTION_FACILITY, OMR_FEATURE_S390_FPE,
+                                         OMR_FEATURE_S390_RI, OMR_FEATURE_S390_VECTOR_FACILITY, OMR_FEATURE_S390_HIGH_WORD,
+                                         OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_2,
+                                         OMR_FEATURE_S390_GUARDED_STORAGE, OMR_FEATURE_S390_VECTOR_PACKED_DECIMAL,
+                                         OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1,
+                                         OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_2,
+                                         OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_3,
+                                         OMR_FEATURE_S390_VECTOR_PACKED_DECIMAL_ENHANCEMENT_FACILITY,
+                                         OMR_FEATURE_S390_VECTOR_PACKED_DECIMAL_ENHANCEMENT_FACILITY_2,
+                                         OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_4,
+                                         OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_3,
+                                         OMR_FEATURE_S390_PLO_EXTENSION,
+                                         OMR_FEATURE_S390_VECTOR_PACKED_DECIMAL_ENHANCEMENT_FACILITY_3};
+
+   OMRProcessorDesc featureMasks;
+   memset(featureMasks.features, 0, OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t));
+
+   for (size_t i = 0; i < sizeof(enabledFeatures) / sizeof(uint32_t); i++)
+      {
+      TR_ASSERT_FATAL(enabledFeatures[i] < OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t) * 8, "Illegal cpu feature mask");
+      featureMasks.features[i / sizeof(uint32_t)] |= enabledFeatures[i] % sizeof(uint32_t);
+      }
+
+   return featureMasks;
+   }
+
 TR::CPU
 OMR::Z::CPU::detect(OMRPortLibrary * const omrPortLib)
    {

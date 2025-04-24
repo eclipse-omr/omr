@@ -142,6 +142,12 @@ public:
     */
    const char* getProcessorName();
 
+   /**
+    * @brief Returns the set of features enabled by the OMR compiler.
+    * @return An OMRProcessorDesc with the list of all features enabled in OMR on Power.
+    */
+   static OMRProcessorDesc getEnabledFeatures();
+
 private:
 
    TR_Processor getOldProcessorTypeFromNewProcessorType(OMRProcessorArchitecture p);

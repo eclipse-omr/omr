@@ -379,6 +379,12 @@ public:
     */
    void setSupportsVectorPackedDecimalEnhancementFacility3(bool value);
 
+   /**
+    * @brief Returns the set of features enabled by the OMR compiler.
+    * @return An OMRProcessorDesc with the list of all features enabled in OMR on Z.
+    */
+   static OMRProcessorDesc getEnabledFeatures();
+
 private:
 
    bool isAtLeastOldAPI(OMRProcessorArchitecture p);
