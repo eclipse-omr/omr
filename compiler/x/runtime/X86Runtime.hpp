@@ -22,8 +22,6 @@
 #ifndef X86RUNTIME_INCL
 #define X86RUNTIME_INCL
 
-#include "env/ProcessorInfo.hpp"
-
 #if defined(OMR_OS_WINDOWS)
 #include <intrin.h>
 #define cpuid(CPUInfo, EAXValue)             __cpuid(CPUInfo, EAXValue)
@@ -41,22 +39,9 @@ inline unsigned long long _xgetbv(unsigned int ecx)
    }
 #endif /* defined(OMR_OS_WINDOWS) */
 
-/**
- * @brief maskProcessorFlags
- * @param pBuffer
- *
- * Masks out the processor features the compiler does not
- * care about.
- */
-inline void maskProcessorFlags(TR_X86CPUIDBuffer* pBuffer)
-   {
-   pBuffer->_featureFlags  &= getFeatureFlagsMask();
-   pBuffer->_featureFlags2 &= getFeatureFlags2Mask();
-   pBuffer->_featureFlags8 &= getFeatureFlags8Mask();
-   }
-
 char* feGetEnv(const char*);
-inline bool jitGetCPUID(TR_X86CPUIDBuffer* pBuffer)
+
+inline void jitGetVendorID(char buf[13])
    {
    enum
       {
@@ -69,70 +54,13 @@ inline bool jitGetCPUID(TR_X86CPUIDBuffer* pBuffer)
 
    // EAX = 0
    cpuid(CPUInfo, 0);
-   int* VendorID = (int*)pBuffer->_vendorId;
+   int* VendorID = (int*) buf;
+
    VendorID[0] = CPUInfo[EBX];
    VendorID[1] = CPUInfo[EDX];
    VendorID[2] = CPUInfo[ECX];
 
-   if (CPUInfo[EAX] > 0)
-      {
-      // EAX = 1
-      cpuid(CPUInfo, 1);
-      pBuffer->_processorSignature = CPUInfo[EAX];
-      pBuffer->_brandIdEtc         = CPUInfo[EBX];
-      pBuffer->_featureFlags       = CPUInfo[EDX];
-      pBuffer->_featureFlags2      = CPUInfo[ECX];
-      // EAX = 7, ECX = 0
-      cpuidex(CPUInfo, 7, 0);
-      pBuffer->_featureFlags8      = CPUInfo[EBX];
-      pBuffer->_featureFlags10     = CPUInfo[ECX];
-
-      bool disableAVX = true;
-      bool disableAVX512 = true;
-
-      // Check XCRO register for OS support of xmm/ymm/zmm
-      if(pBuffer->_featureFlags2 & TR_OSXSAVE)
-         {
-         // '6' = mask for XCR0[2:1]='11b' (XMM state and YMM state are enabled)
-         disableAVX = ((6 & _xgetbv(0)) != 6);
-         // 'e6' = (mask for XCR0[7:5]='111b' (Opmask, ZMM_Hi256, Hi16_ZMM) + XCR0[2:1]='11b' (XMM/YMM))
-         disableAVX512 = ((0xe6 & _xgetbv(0)) != 0xe6);
-         }
-
-      if (disableAVX)
-         {
-         // Unset AVX/AVX2 if not enabled via CR0 or otherwise disabled
-         pBuffer->_featureFlags2 &= ~TR_AVX;
-         pBuffer->_featureFlags8 &= ~TR_AVX2;
-         }
-
-      if (disableAVX512)
-         {
-         // Unset AVX-512 if not enabled via CR0 or otherwise disabled
-         // If other AVX-512 extensions are supported in the old cpuid API, they need to be disabled here
-         pBuffer->_featureFlags8 &= ~TR_AVX512F;
-         pBuffer->_featureFlags8 &= ~TR_AVX512VL;
-         pBuffer->_featureFlags8 &= ~TR_AVX512BW;
-         pBuffer->_featureFlags8 &= ~TR_AVX512CD;
-         pBuffer->_featureFlags8 &= ~TR_AVX512DQ;
-         pBuffer->_featureFlags10 &= ~TR_AVX512_BITALG;
-         pBuffer->_featureFlags10 &= ~TR_AVX512_VBMI;
-         pBuffer->_featureFlags10 &= ~TR_AVX512_VBMI2;
-         pBuffer->_featureFlags10 &= ~TR_AVX512_VNNI;
-         pBuffer->_featureFlags10 &= ~TR_AVX512_VPOPCNTDQ;
-         }
-
-      /* Mask out the bits the compiler does not care about.
-       * This is necessary for relocatable compilations; without
-       * this step, validations might fail because of mismatches
-       * in unused hardware features */
-      maskProcessorFlags(pBuffer);
-      return true;
-      }
-   else
-      {
-      return false;
-      }
+   buf[12] = 0; // Null terminate the string.
    }
 
 inline bool AtomicCompareAndSwap(volatile uint32_t* ptr, uint32_t old_val, uint32_t new_val)

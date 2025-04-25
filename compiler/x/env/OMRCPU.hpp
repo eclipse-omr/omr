@@ -63,13 +63,7 @@ public:
 
    static TR::CPU customize(OMRProcessorDesc processorDescription);
 
-   TR_X86CPUIDBuffer *queryX86TargetCPUID();
    const char *getX86ProcessorVendorId();
-   uint32_t getX86ProcessorSignature();
-   uint32_t getX86ProcessorFeatureFlags();
-   uint32_t getX86ProcessorFeatureFlags2();
-   uint32_t getX86ProcessorFeatureFlags8();
-   uint32_t getX86ProcessorFeatureFlags10();
 
    bool getSupportsHardwareSQRT();
 

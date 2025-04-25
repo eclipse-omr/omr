@@ -23,7 +23,6 @@
 #include <string.h>
 #include "env/CPU.hpp"
 #include "env/CompilerEnv.hpp"
-#include "env/ProcessorInfo.hpp"
 #include "infra/Bit.hpp"
 #include "infra/Flags.hpp"
 #include "x/runtime/X86Runtime.hpp"
@@ -117,75 +116,19 @@ OMR::X86::CPU::customize(OMRProcessorDesc processorDescription)
    return TR::CPU(processorDescription);
    }
 
-TR_X86CPUIDBuffer *
-OMR::X86::CPU::queryX86TargetCPUID()
-   {
-   static TR_X86CPUIDBuffer *buf = NULL;
-
-   if (!buf)
-      {
-      buf = reinterpret_cast<TR_X86CPUIDBuffer *>(malloc(sizeof(TR_X86CPUIDBuffer)));
-      if (!buf)
-         return NULL;
-      jitGetCPUID(buf);
-      }
-
-   return buf;
-   }
-
 const char *
 OMR::X86::CPU::getX86ProcessorVendorId()
    {
    static char buf[13];
+   static bool init = false;
 
-   // Terminate the vendor ID with NULL before returning.
-   //
-   strncpy(buf, self()->queryX86TargetCPUID()->_vendorId, 12);
-   buf[12] = '\0';
+   if (!init)
+      {
+      jitGetVendorID(buf);
+      init = true;
+      }
 
    return buf;
-   }
-
-uint32_t
-OMR::X86::CPU::getX86ProcessorSignature()
-   {
-   return self()->queryX86TargetCPUID()->_processorSignature;
-   }
-
-uint32_t
-OMR::X86::CPU::getX86ProcessorFeatureFlags()
-   {
-   if (TR::Compiler->omrPortLib == NULL)
-      return self()->queryX86TargetCPUID()->_featureFlags;
-
-   return self()->_processorDescription.features[0];
-   }
-
-uint32_t
-OMR::X86::CPU::getX86ProcessorFeatureFlags2()
-   {
-   if (TR::Compiler->omrPortLib == NULL)
-      return self()->queryX86TargetCPUID()->_featureFlags2;
-
-   return self()->_processorDescription.features[1];
-   }
-
-uint32_t
-OMR::X86::CPU::getX86ProcessorFeatureFlags8()
-   {
-   if (TR::Compiler->omrPortLib == NULL)
-      return self()->queryX86TargetCPUID()->_featureFlags8;
-
-   return self()->_processorDescription.features[3];
-   }
-
-uint32_t
-OMR::X86::CPU::getX86ProcessorFeatureFlags10()
-   {
-   if (TR::Compiler->omrPortLib == NULL)
-      return self()->queryX86TargetCPUID()->_featureFlags10;
-
-   return self()->_processorDescription.features[4];
    }
 
 bool
@@ -197,10 +140,7 @@ OMR::X86::CPU::getSupportsHardwareSQRT()
 bool
 OMR::X86::CPU::hasPopulationCountInstruction()
    {
-   if ((self()->getX86ProcessorFeatureFlags2() & TR_POPCNT) != 0x00000000)
-      return true;
-   else
-     return false;
+   return self()->supportsFeature(OMR_FEATURE_X86_POPCNT);
    }
 
 bool
@@ -243,7 +183,10 @@ bool
 OMR::X86::CPU::isGenuineIntel()
    {
    if (TR::Compiler->omrPortLib == NULL)
-      return false;
+      {
+      const char *vendor = self()->getX86ProcessorVendorId();
+      return strncmp(vendor, "GenuineIntel", 12) == 0;
+      }
 
    return self()->isAtLeast(OMR_PROCESSOR_X86_INTEL_FIRST) && self()->isAtMost(OMR_PROCESSOR_X86_INTEL_LAST);
    }
@@ -252,7 +195,10 @@ bool
 OMR::X86::CPU::isAuthenticAMD()
    {
    if (TR::Compiler->omrPortLib == NULL)
-      return false;
+      {
+      const char *vendor = self()->getX86ProcessorVendorId();
+      return strncmp(vendor, "AuthenticAMD", 12) == 0;
+      }
 
    return self()->isAtLeast(OMR_PROCESSOR_X86_AMD_FIRST) && self()->isAtMost(OMR_PROCESSOR_X86_AMD_LAST);
    }

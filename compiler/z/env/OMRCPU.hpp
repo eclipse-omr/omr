@@ -35,7 +35,6 @@ namespace OMR { typedef OMR::Z::CPU CPUConnector; }
 
 #include "compiler/env/OMRCPU.hpp"
 #include "env/jittypes.h"
-#include "env/ProcessorInfo.hpp"
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
