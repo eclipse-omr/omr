@@ -4013,6 +4013,7 @@ OMR::X86::TreeEvaluator::performCall(
 
    TR::Register *returnRegister;
    TR::Linkage *linkage = cg->getLinkage(callSymbol->getLinkageConvention());
+   TR_ASSERT_FATAL(linkage != NULL, "LINKAED NULL");
    if (isIndirect)
       returnRegister = linkage->buildIndirectDispatch(node);
    else

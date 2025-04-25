@@ -117,12 +117,6 @@ OMR::X86::CPU::customize(OMRProcessorDesc processorDescription)
    return TR::CPU(processorDescription);
    }
 
-void
-OMR::X86::CPU::initializeTargetProcessorInfo(bool force)
-   {
-   OMR::X86::CodeGenerator::initializeX86TargetProcessorInfo(force);
-   }
-
 TR_X86CPUIDBuffer *
 OMR::X86::CPU::queryX86TargetCPUID()
    {
@@ -249,7 +243,7 @@ bool
 OMR::X86::CPU::isGenuineIntel()
    {
    if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().isGenuineIntel();
+      return false;
 
    return self()->isAtLeast(OMR_PROCESSOR_X86_INTEL_FIRST) && self()->isAtMost(OMR_PROCESSOR_X86_INTEL_LAST);
    }
@@ -258,7 +252,7 @@ bool
 OMR::X86::CPU::isAuthenticAMD()
    {
    if (TR::Compiler->omrPortLib == NULL)
-      return TR::CodeGenerator::getX86ProcessorInfo().isAuthenticAMD();
+      return false;
 
    return self()->isAtLeast(OMR_PROCESSOR_X86_AMD_FIRST) && self()->isAtMost(OMR_PROCESSOR_X86_AMD_LAST);
    }

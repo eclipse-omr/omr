@@ -63,8 +63,6 @@ public:
 
    static TR::CPU customize(OMRProcessorDesc processorDescription);
 
-   static void initializeTargetProcessorInfo(bool force = false);
-
    TR_X86CPUIDBuffer *queryX86TargetCPUID();
    const char *getX86ProcessorVendorId();
    uint32_t getX86ProcessorSignature();

@@ -4952,8 +4952,6 @@ TR::Register *OMR::X86::I386::TreeEvaluator::performLload(TR::Node *node, TR::Me
 
       if (performTransformation(comp, "O^O Using SSE for volatile load %s\n", cg->getDebug()->getName(node)))
          {
-         TR_X86ProcessorInfo &p = cg->getX86ProcessorInfo();
-
          if (cg->comp()->target().cpu.isGenuineIntel())
             {
             TR::Register *xmmReg = cg->allocateRegister(TR_FPR);

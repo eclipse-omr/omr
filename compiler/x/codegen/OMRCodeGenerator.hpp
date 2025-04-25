@@ -115,122 +115,6 @@ struct TR_BetterSpillPlacement
 #define CPUID_SIGNATURE_EXTENDEDMODEL_MASK  0x000f0000
 #define CPUID_SIGNATURE_EXTENDEDFAMILY_MASK 0x0ff00000
 
-struct TR_X86ProcessorInfo
-   {
-   public:
-
-   TR_ALLOC(TR_Memory::IA32ProcessorInfo)
-
-   TR_X86ProcessorInfo() { reset(); }
-
-   enum TR_X86ProcessorVendors
-      {
-      TR_AuthenticAMD                  = 0x01,
-      TR_GenuineIntel                  = 0x02,
-      TR_UnknownVendor                 = 0x04
-      };
-   uint32_t getCPUStepping(uint32_t signature)       {return (signature & CPUID_SIGNATURE_STEPPING_MASK);}
-   uint32_t getCPUModel(uint32_t signature)          {return (signature & CPUID_SIGNATURE_MODEL_MASK) >> 4;}
-   uint32_t getCPUFamily(uint32_t signature)         {return (signature & CPUID_SIGNATURE_FAMILY_MASK) >> 8;}
-   uint32_t getCPUProcessor(uint32_t signature)      {return (signature & CPUID_SIGNATURE_PROCESSOR_MASK) >> 12;}
-   uint32_t getCPUExtendedModel(uint32_t signature)  {return (signature & CPUID_SIGNATURE_EXTENDEDMODEL_MASK) >> 16;}
-   uint32_t getCPUExtendedFamily(uint32_t signature) {return (signature & CPUID_SIGNATURE_EXTENDEDFAMILY_MASK) >> 20;}
-
-   bool isGenuineIntel() {return _vendorFlags.testAny(TR_GenuineIntel);}
-   bool isAuthenticAMD() {return _vendorFlags.testAny(TR_AuthenticAMD);}
-private:
-
-   flags8_t   _vendorFlags;
-   flags32_t  _featureFlags;   // cache feature flags for re-use
-   flags32_t  _featureFlags2;  // cache feature flags 2 for re-use
-   flags32_t  _featureFlags8;  // cache feature flags 8 for re-use
-   flags32_t  _featureFlags10; // cache feature flags 10 for re-use
-
-   uint32_t _processorDescription;
-
-   friend class OMR::X86::CodeGenerator;
-
-   /**
-    * @brief Zero initalize all member variables
-    *
-    */
-   void reset();
-
-   /**
-    * @brief Initialize all member variables
-    *
-    * @param force Force initialization even if it has already been performed
-    */
-   void initialize(bool force = false);
-
-   /**
-    * @brief testFlag Ensures that the feature being tested for exists in the mask
-    *                 and then checks whether the feature is set in the flag. The
-    *                 reason for this is to facilitate correctness checks for
-    *                 relocatable compilations. In order for the compiler to use a
-    *                 processor feature, the feature flag should be added to the
-    *                 mask so that the processor validation code also accounts for
-    *                 the use of said feature.
-    *
-    * @param flag     Either _featureFlags, _featureFlags2, or _featureFlags8
-    * @param feature  The feature being tested for
-    * @param mask     The mask returned by either getFeatureFlagsMask(),
-    *                 getFeatureFlags2Mask(), or getFeatureFlags8Mask()
-    *
-    * @return         The result of flag.testAny(feature)
-    */
-   bool testFlag(flags32_t &flag, uint32_t feature, uint32_t mask)
-      {
-      TR_ASSERT_FATAL(feature & mask, "The %x feature needs to be added to the "
-                                      "getFeatureFlagsMask (or variant) function "
-                                      "for correctness in relocatable compiles!\n",
-                      feature);
-
-      return flag.testAny(feature);
-      }
-
-   /**
-    * @brief testFeatureFlags Wrapper around testFlag
-    *
-    * @param feature          The feature being tested for
-    *
-    * @return                 The result of testFlag
-    */
-   bool testFeatureFlags(uint32_t feature)
-      {
-      return testFlag(_featureFlags, feature, getFeatureFlagsMask());
-      }
-
-   /**
-    * @brief testFeatureFlags2 Wrapper around testFlag
-    *
-    * @param feature           The feature being tested for
-    *
-    * @return                  The result of testFlag
-    */
-   bool testFeatureFlags2(uint32_t feature)
-      {
-      return testFlag(_featureFlags2, feature, getFeatureFlags2Mask());
-      }
-
-   /**
-    * @brief testFeatureFlags8 Wrapper around testFlag
-    *
-    * @param feature           The feature being tested for
-    *
-    * @return                  The result of testFlag
-    */
-   bool testFeatureFlags8(uint32_t feature)
-      {
-      return testFlag(_featureFlags8, feature, getFeatureFlags8Mask());
-      }
-
-   bool testFeatureFlags10(uint32_t feature)
-      {
-      return testFlag(_featureFlags10, feature, getFeatureFlags10Mask());
-      }
-   };
-
 enum TR_PaddingProperties
    {
    TR_NoOpPadding       = 0,
@@ -283,9 +167,6 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    TR::Linkage *createLinkage(TR_LinkageConventions lc);
    void beginInstructionSelection();
    void endInstructionSelection();
-
-   static TR_X86ProcessorInfo &getX86ProcessorInfo();
-   static void initializeX86TargetProcessorInfo(bool force = false) { getX86ProcessorInfo().initialize(force); }
 
    typedef enum
       {

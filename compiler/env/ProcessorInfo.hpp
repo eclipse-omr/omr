@@ -86,7 +86,6 @@ enum TR_X86_CPUID_edx_eax01
    TR_ThermalMonitor                = 0x20000000, // GenuineIntel Only
    // Reserved by Intel             = 0x40000000, // IA64-specific
    // Reserved by Intel             = 0x80000000
-   TR_X86ProcessorInfoInitialized   = 0x80000000  // FIXME: Using a reserved bit for our purposes.
    };
 
 inline uint32_t getFeatureFlagsMask()
