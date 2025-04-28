@@ -37,28 +37,19 @@ OMR::X86::CPU::detect(OMRPortLibrary * const omrPortLib)
 
    OMRPORT_ACCESS_FROM_OMRPORT(omrPortLib);
    OMRProcessorDesc processorDescription;
+   OMROSDesc osDescription;
+
    omrsysinfo_get_processor_description(&processorDescription);
+   omrsysinfo_get_os_description(&osDescription);
 
-   bool disableAVX = true;
-   bool disableAVX512 = true;
-
-   // Check XCRO register for OS support of xmm/ymm/zmm
-   if (TRUE == omrsysinfo_processor_has_feature(&processorDescription, OMR_FEATURE_X86_OSXSAVE))
-      {
-      // '6' = mask for XCR0[2:1]='11b' (XMM state and YMM state are enabled)
-      disableAVX = ((6 & _xgetbv(0)) != 6);
-      // 'e6' = (mask for XCR0[7:5]='111b' (Opmask, ZMM_Hi256, Hi16_ZMM) + XCR0[2:1]='11b' (XMM/YMM))
-      disableAVX512 = ((0xe6 & _xgetbv(0)) != 0xe6);
-      }
-
-   if (disableAVX)
+   if (!omrsysinfo_os_has_feature(&osDescription, OMRPORT_OS_FEATURE_X86_XSAVE_YMM))
       {
       // Unset AVX/AVX2 if not enabled via CR0 or otherwise disabled
       omrsysinfo_processor_set_feature(&processorDescription, OMR_FEATURE_X86_AVX, FALSE);
       omrsysinfo_processor_set_feature(&processorDescription, OMR_FEATURE_X86_AVX2, FALSE);
       }
 
-   if (disableAVX512)
+   if (!omrsysinfo_os_has_feature(&osDescription, OMRPORT_OS_FEATURE_X86_XSAVE_ZMM))
       {
       // Unset AVX-512 if not enabled via CR0 or otherwise disabled
       // If other AVX-512 extensions are supported in the port library, they need to be disabled here
