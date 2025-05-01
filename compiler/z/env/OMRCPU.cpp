@@ -672,3 +672,27 @@ OMR::Z::CPU::setSupportsVectorPackedDecimalEnhancementFacility3(bool value)
       _flags.reset(S390SupportsVectorPDEnhancementFacility3);
       }
    }
+
+bool
+OMR::Z::CPU::getSupportsHardware32bitCompress()
+   {
+   return self()->supportsFeature(OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_4);
+   }
+
+bool
+OMR::Z::CPU::getSupportsHardware64bitCompress()
+   {
+   return self()->supportsFeature(OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_4);
+   }
+
+bool
+OMR::Z::CPU::getSupportsHardware32bitExpand()
+   {
+   return self()->supportsFeature(OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_4);
+   }
+
+bool
+OMR::Z::CPU::getSupportsHardware64bitExpand()
+   {
+   return self()->supportsFeature(OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_4);
+   }
