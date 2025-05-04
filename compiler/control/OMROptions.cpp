@@ -2782,7 +2782,13 @@ OMR::Options::jitPreProcess()
 
       self()->setOption(TR_DisableThunkTupleJ2I); // JSR292:TODO: Figure out how to do this without confusing startPCIfAlreadyCompiled
 
-      self()->setOption(TR_DisableSeparateInitFromAlloc);
+#ifdef J9_PROJECT_SPECIFIC
+      TR_J9VMBase *fej9 = (TR_J9VMBase *)_fe;
+      bool enableTLHBatchClearing = fej9->tlhHasBeenCleared();
+      if (enableTLHBatchClearing)
+         self()->setOption(TR_DisableSeparateInitFromAlloc);
+#endif
+
 
    #ifdef J9ZOS390
    #if defined(TR_TARGET_32BIT)
