@@ -27,6 +27,7 @@ compiler_library(env
 	${CMAKE_CURRENT_LIST_DIR}/OMRArithEnv.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRClassEnv.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRDebugEnv.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRRetainedMethodSet.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVMEnv.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVMMethodEnv.cpp
 	${CMAKE_CURRENT_LIST_DIR}/SegmentAllocator.cpp
