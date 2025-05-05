@@ -75,6 +75,7 @@ protected:
 	bool  _climb;				/* indicates that current attempt to allocate should try parent, if current subspace failed */
 	bool  _completedFromTlh;
 
+	bool _sharedReserved;
 public:
 
 	/**
@@ -218,6 +219,9 @@ public:
 	 */
 	MMINLINE bool getAllocationSucceeded() {return _allocationSucceeded;}
 
+	MMINLINE void setSharedReserved(bool sharedReserved) {_sharedReserved = sharedReserved;}
+	MMINLINE bool getSharedReserved() {return _sharedReserved;}
+
 	/**
 	 * Create an AllocateDescriptionCore object.
 	 */
@@ -245,6 +249,7 @@ public:
 		, _collectAndClimb(collectAndClimb)
 		, _climb(false)
 		, _completedFromTlh(false)
+		, _sharedReserved(false)
 	{}
 };
 
