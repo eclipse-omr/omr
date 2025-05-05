@@ -7558,7 +7558,7 @@ done:
 #endif /* defined(LINUX) */
 }
 
-#if defined(LINUX)
+#if defined(J9ZOS390) || defined(LINUX)
 /*
  * A helper function to fully read a file.
  */
@@ -7598,7 +7598,7 @@ read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintp
 	}
 	return total_bytes_read;
 }
-#endif /* defined(LINUX) */
+#endif /* defined(J9ZOS390) || defined(LINUX) */
 
 /*
  * Get the process ID and commandline for each process.
@@ -7610,7 +7610,7 @@ read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintp
 uintptr_t
 omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
 {
-#if defined(LINUX)
+#if defined(J9ZOS390) || defined(LINUX)
 	uintptr_t callback_result = 0;
 	uintptr_t buffer_size = 4096;
 	char *command = NULL;
@@ -7687,8 +7687,8 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 	portLibrary->mem_free_memory(portLibrary, command);
 	closedir(dir);
 	return callback_result;
-#else /* defined(LINUX) */
+#else /* defined(J9ZOS390) || defined(LINUX) */
 	/* sysinfo_get_processes is not supported on this platform. */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
-#endif /* defined(LINUX) */
+#endif /* defined(J9ZOS390) || defined(LINUX) */
 }
