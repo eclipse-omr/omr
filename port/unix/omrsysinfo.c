@@ -7558,7 +7558,7 @@ done:
 #endif /* defined(LINUX) */
 }
 
-#if defined(LINUX)
+#if defined(J9ZOS390) || defined(LINUX)
 /*
  * A helper function to fully read a file.
  */
@@ -7598,7 +7598,7 @@ read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintp
 	}
 	return total_bytes_read;
 }
-#endif /* defined(LINUX) */
+#endif /* defined(J9ZOS390) || defined(LINUX) */
 
 /*
  * Get the process ID and commandline for each process.
@@ -7610,10 +7610,21 @@ read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintp
 uintptr_t
 omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
 {
-#if defined(LINUX)
+#if defined(J9ZOS390) || defined(LINUX)
 	uintptr_t callback_result = 0;
 	uintptr_t buffer_size = 4096;
 	char *command = NULL;
+#if defined(J9VM_USE_ICONV)
+	char *utf8_command = NULL;
+	iconv_t converter = J9VM_INVALID_ICONV_DESCRIPTOR;
+#ifdef J9ZOS390
+#pragma convlit(suspend)
+#endif
+	converter = iconv_get(portLibrary, J9SYSINFO_ICONV_DESCRIPTOR, "UTF-8", nl_langinfo(CODESET));
+#ifdef J9ZOS390
+#pragma convlit(resume)
+#endif
+#endif /* J9VM_USE_ICONV */
 	DIR *dir = opendir("/proc");
 	if (NULL == dir) {
 		int32_t rc = findError(errno);
@@ -7674,21 +7685,91 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 		/* Replace null terminators with spaces. */
 		for (i = 0; i < bytes_read; i++) {
 			if ('\0' == command[i]) {
+#ifdef J9ZOS390
+				command[i] = (char)0x40;
+#else
 				command[i] = ' ';
+#endif
 			}
 		}
 		command[bytes_read] = '\0';
-		/* Call the callback function with PID and command. */
-		callback_result = callback(pid, command, userData);
+#if defined(J9VM_USE_ICONV)
+		if (J9VM_INVALID_ICONV_DESCRIPTOR != converter) {
+			char *in_ptr = NULL;
+			char *out_ptr = NULL;
+			size_t in_bytes_left = 0;
+			size_t out_bytes_left = 0;
+			uintptr_t output_buffer_size = buffer_size * 2;
+			if (NULL != utf8_command) {
+				portLibrary->mem_free_memory(portLibrary, utf8_command);
+				utf8_command = NULL;
+			}
+			utf8_command = (char *)portLibrary->mem_allocate_memory(
+					portLibrary,
+					output_buffer_size,
+					OMR_GET_CALLSITE(),
+					OMRMEM_CATEGORY_PORT_LIBRARY);
+			if (NULL == utf8_command) {
+				portLibrary->mem_free_memory(portLibrary, command);
+				closedir(dir);
+				return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+			}
+			in_ptr = command;
+			in_bytes_left = (size_t)bytes_read;
+			out_ptr = utf8_command;
+			out_bytes_left = output_buffer_size;
+			while (1) {
+				size_t res = iconv(converter, &in_ptr, &in_bytes_left, &out_ptr, &out_bytes_left);
+				if (res != (size_t)(-1)) {
+					break;
+				} else if (errno == E2BIG) {
+					char *new_utf8_command = NULL;
+					uintptr_t old_size = output_buffer_size;
+					output_buffer_size *= 2;
+					new_utf8_command = (char *)portLibrary->mem_reallocate_memory(
+							portLibrary,
+							utf8_command,
+							output_buffer_size,
+							OMR_GET_CALLSITE(),
+							OMRMEM_CATEGORY_PORT_LIBRARY);
+					if (NULL == new_utf8_command) {
+						portLibrary->mem_free_memory(portLibrary, utf8_command);
+						portLibrary->mem_free_memory(portLibrary, command);
+						closedir(dir);
+						return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+					}
+					out_ptr = new_utf8_command + (out_ptr - utf8_command);
+					utf8_command = new_utf8_command;
+					out_bytes_left += (output_buffer_size - old_size);
+				} else {
+					break;
+				}
+			}
+			*out_ptr = '\0';
+			callback_result = callback(pid, utf8_command, userData);
+		} else
+#endif /* J9VM_USE_ICONV */
+		{
+			callback_result = callback(pid, command, userData);
+		}
 		if (0 != callback_result) {
 			break;
 		}
 	}
+#if defined(J9VM_USE_ICONV)
+	if (J9VM_INVALID_ICONV_DESCRIPTOR != converter) {
+		iconv_free(portLibrary, J9SL_ICONV_DESCRIPTOR, converter);
+	}
+	if (utf8_command != NULL) {
+		portLibrary->mem_free_memory(portLibrary, utf8_command);
+	}
+#endif /* J9VM_USE_ICONV */
 	portLibrary->mem_free_memory(portLibrary, command);
 	closedir(dir);
 	return callback_result;
-#else /* defined(LINUX) */
+#else /* defined(J9ZOS390) || defined(LINUX) */
 	/* sysinfo_get_processes is not supported on this platform. */
+	omrtty_printf(portLibrary, "OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED\n");
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
-#endif /* defined(LINUX) */
+#endif /* defined(J9ZOS390) || defined(LINUX) */
 }
