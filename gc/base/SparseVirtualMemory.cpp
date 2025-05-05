@@ -76,7 +76,17 @@ MM_SparseVirtualMemory::initialize(MM_EnvironmentBase *env, uint32_t memoryCateg
 		off_heap_size = MM_Math::roundToCeiling(regionSize, (in_heap_size / 100) * ext->sparseHeapSizeRatio);
 	}
 
-	bool success = MM_VirtualMemory::initialize(env, off_heap_size, NULL, NULL, 0, memoryCategory);
+	bool success = false;
+
+	uintptr_t size = sizeof(void *) * (off_heap_size / regionSize);
+	_allocationContextArray = (void **)env->getForge()->allocate(size, OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
+	if (NULL != _allocationContextArray) {
+		memset(_allocationContextArray, 0, size);
+	} else {
+		return success;
+	}
+
+	success = MM_VirtualMemory::initialize(env, off_heap_size, NULL, NULL, 0, memoryCategory);
 
 	if (success) {
 		void *sparseHeapBase = getHeapBase();
@@ -98,6 +108,11 @@ MM_SparseVirtualMemory::initialize(MM_EnvironmentBase *env, uint32_t memoryCateg
 void
 MM_SparseVirtualMemory::tearDown(MM_EnvironmentBase *env)
 {
+	if (NULL != _allocationContextArray) {
+		env->getForge()->free(_allocationContextArray);
+		_allocationContextArray = NULL;
+	}
+
 	if (NULL != _sparseDataPool) {
 		_sparseDataPool->kill(env);
 		_sparseDataPool = NULL;
@@ -174,6 +189,9 @@ MM_SparseVirtualMemory::freeSparseRegionAndUnmapFromHeapObject(MM_EnvironmentBas
 
 	if ((NULL != dataPtr) && (0 != dataSize)) {
 		uintptr_t adjustedSize = adjustSize(dataSize);
+
+		resetAllocationContextForAddress(dataPtr, dataSize);
+
 		ret = decommitMemory(env, dataPtr, adjustedSize);
 		if (ret) {
 			omrthread_monitor_enter(_largeObjectVirtualMemoryMutex);
