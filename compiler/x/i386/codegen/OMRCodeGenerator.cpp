@@ -132,6 +132,21 @@ OMR::X86::I386::CodeGenerator::initialize()
    static char *dontConsiderAllAutosForGRA = feGetEnv("TR_dontConsiderAllAutosForGRA");
    if (!dontConsiderAllAutosForGRA)
       cg->setConsiderAllAutosAsTacticalGlobalRegisterCandidates();
+
+   if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_BMI2))
+      {
+      static bool disableBitwiseCompress = feGetEnv("TR_disableBitwiseCompress") != NULL;
+      if (!disableBitwiseCompress)
+         {
+         cg->setSupports32BitCompress();
+         }
+
+      static bool disableBitwiseExpand = feGetEnv("TR_disableBitwiseExpand") != NULL;
+      if (!disableBitwiseExpand)
+         {
+         cg->setSupports32BitExpand();
+         }
+      }
    }
 
 

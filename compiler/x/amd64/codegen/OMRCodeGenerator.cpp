@@ -125,6 +125,23 @@ void OMR::X86::AMD64::CodeGenerator::initialize()
       {
       _maxObjectSizeGuaranteedNotToOverflow = (uint32_t)INT_MAX;
       }
+
+   if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_BMI2))
+      {
+      static bool disableBitwiseCompress = feGetEnv("TR_disableBitwiseCompress") != NULL;
+      if (!disableBitwiseCompress)
+         {
+         cg->setSupports32BitCompress();
+         cg->setSupports64BitCompress();
+         }
+
+      static bool disableBitwiseExpand = feGetEnv("TR_disableBitwiseExpand") != NULL;
+      if (!disableBitwiseExpand)
+         {
+         cg->setSupports32BitExpand();
+         cg->setSupports64BitExpand();
+         }
+      }
    }
 
 

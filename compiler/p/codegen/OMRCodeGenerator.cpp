@@ -367,6 +367,25 @@ OMR::Power::CodeGenerator::initialize()
    TR_ResolvedMethod *method = comp->getJittedMethodSymbol()->getResolvedMethod();
    TR_ReturnInfo      returnInfo = cg->getLinkage()->getReturnInfoFromReturnType(method->returnType());
    comp->setReturnInfo(returnInfo);
+
+   if (comp->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
+      {
+      static bool disableBitwiseCompress = feGetEnv("TR_disableBitwiseCompress") != NULL;
+      if (!disableBitwiseCompress)
+         {
+         cg->setSupports32BitCompress();
+         if (cg->is64BitProcessor())
+            cg->setSupports64BitCompress();
+         }
+
+      static bool disableBitwiseExpand = feGetEnv("TR_disableBitwiseExpand") != NULL;
+      if (!disableBitwiseExpand)
+         {
+         cg->setSupports32BitExpand();
+         if (cg->is64BitProcessor())
+            cg->setSupports64BitExpand();
+         }
+      }
    }
 
 TR::Linkage *
