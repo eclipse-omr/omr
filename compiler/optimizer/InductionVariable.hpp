@@ -335,6 +335,7 @@ class TR_LoopStrider : public TR_LoopTransformer
    bool _registersScarce;
    bool _newTempsCreated;
    bool _newNonAddressTempsCreated;
+   bool _arrayShadowParent;
 
    // (64-bit)
    // sign-extension elimination data-structures
