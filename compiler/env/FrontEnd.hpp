@@ -40,7 +40,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "env/ProcessorInfo.hpp"
 #include "env/jittypes.h"
 #include "il/DataTypes.hpp"
 #include "il/ILOpCodes.hpp"

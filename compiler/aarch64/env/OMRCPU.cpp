@@ -24,6 +24,23 @@
 #include "env/jittypes.h"
 #include "omrport.h"
 
+OMRProcessorDesc OMR::ARM64::CPU::getEnabledFeatures()
+   {
+   // Only enable the features that compiler currently uses
+   const uint32_t enabledFeatures [] = {OMR_FEATURE_ARM64_FP, OMR_FEATURE_ARM64_ASIMD, OMR_FEATURE_ARM64_CRC32, OMR_FEATURE_ARM64_LSE};
+
+   OMRProcessorDesc featureMasks;
+   memset(featureMasks.features, 0, OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t));
+
+   for (size_t i = 0; i < sizeof(enabledFeatures) / sizeof(uint32_t); i++)
+      {
+      TR_ASSERT_FATAL(enabledFeatures[i] < OMRPORT_SYSINFO_FEATURES_SIZE * sizeof(uint32_t) * 8, "Illegal cpu feature mask");
+      featureMasks.features[i / sizeof(uint32_t)] |= enabledFeatures[i] % sizeof(uint32_t);
+      }
+
+   return featureMasks;
+   }
+
 bool
 OMR::ARM64::CPU::isTargetWithinUnconditionalBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress)
    {

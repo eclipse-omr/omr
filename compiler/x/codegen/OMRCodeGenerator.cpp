@@ -112,151 +112,10 @@ namespace TR { class RegisterDependencyConditions; }
 // Hack markers
 #define CANT_REMATERIALIZE_ADDRESSES(cg) (cg->comp()->target().is64Bit()) // AMD64 produces a memref with an unassigned addressRegister
 
-void TR_X86ProcessorInfo::reset()
-   {
-   _vendorFlags = 0;
-   _featureFlags = 0;
-   _featureFlags2 = 0;
-   _featureFlags8 = 0;
-   _featureFlags10 = 0;
-   _processorDescription = 0;
-   }
-
-void TR_X86ProcessorInfo::initialize(bool force)
-   {
-   if (force)
-      {
-      reset();
-      }
-   else if (_featureFlags.testAny(TR_X86ProcessorInfoInitialized))
-      {
-      return;
-      }
-
-   // For now, we only convert the feature bits into a flags32_t, for easier querying.
-   // To retrieve other information, the VM functions can be called directly.
-   //
-   _featureFlags.set(TR::Compiler->target.cpu.getX86ProcessorFeatureFlags());
-   _featureFlags2.set(TR::Compiler->target.cpu.getX86ProcessorFeatureFlags2());
-   _featureFlags8.set(TR::Compiler->target.cpu.getX86ProcessorFeatureFlags8());
-   _featureFlags10.set(TR::Compiler->target.cpu.getX86ProcessorFeatureFlags10());
-
-   // Determine the processor vendor.
-   //
-   const char *vendor = TR::Compiler->target.cpu.getX86ProcessorVendorId();
-   if (!strncmp(vendor, "GenuineIntel", 12))
-      _vendorFlags.set(TR_GenuineIntel);
-   else if (!strncmp(vendor, "AuthenticAMD", 12))
-      _vendorFlags.set(TR_AuthenticAMD);
-   else
-      _vendorFlags.set(TR_UnknownVendor);
-
-   // Finally set this bit so we don't attempt to re-initialize.
-   //
-   _featureFlags.set(TR_X86ProcessorInfoInitialized);
-
-   // initialize the processor model description
-   _processorDescription = 0;
-
-   // set up the processor family and cache description
-
-   uint32_t _processorSignature = TR::Compiler->target.cpu.getX86ProcessorSignature();
-
-   if (isGenuineIntel())
-      {
-      switch (getCPUFamily(_processorSignature))
-         {
-         case 0x05: _processorDescription |= TR_ProcessorIntelPentium; break;
-         case 0x06:
-            {
-            uint32_t extended_model = getCPUModel(_processorSignature) + (getCPUExtendedModel(_processorSignature) << 4);
-            uint32_t processorStepping = getCPUStepping(_processorSignature);
-            switch (extended_model)
-               {
-               case 0xcf:
-                  _processorDescription |= TR_ProcessorIntelEmeraldRapids; break;
-               case 0x8f:
-                  _processorDescription |= TR_ProcessorIntelSapphireRapids; break;
-               case 0x6a:  // IceLake_X
-               case 0x6c:  // IceLake_D
-               case 0x7d:  // IceLake
-               case 0x7e:  // IceLake_L
-                  _processorDescription |= TR_ProcessorIntelIceLake; break;
-               case 0x55:  // Skylake_X
-                  if (processorStepping >= 5 && processorStepping <= 7)
-                     {
-                     _processorDescription |= TR_ProcessorIntelCascadeLake;
-                     }
-                  else if (processorStepping >= 0xa && processorStepping <= 0xb)
-                     {
-                     _processorDescription |= TR_ProcessorIntelCooperLake;
-                     }
-                  else
-                     {
-                     _processorDescription |= TR_ProcessorIntelSkylake;
-                     }
-                  break;
-               case 0x4e:  // Skylake_L
-               case 0x5e:  // Skylake
-                  _processorDescription |= TR_ProcessorIntelSkylake; break;
-               case 0x4f:
-                  _processorDescription |= TR_ProcessorIntelBroadwell; break;
-               case 0x3f:
-               case 0x3c:
-                  _processorDescription |= TR_ProcessorIntelHaswell; break;
-               case 0x3e:
-               case 0x3a:
-                  _processorDescription |= TR_ProcessorIntelIvyBridge; break;
-               case 0x2a:
-               case 0x2d:  // SandyBridge EP
-                  _processorDescription |= TR_ProcessorIntelSandyBridge; break;
-               case 0x2c:  // WestmereEP
-               case 0x2f:  // WestmereEX
-                  _processorDescription |= TR_ProcessorIntelWestmere; break;
-               case 0x1a:  // Nehalem
-                  _processorDescription |= TR_ProcessorIntelNehalem; break;
-               case 0x17:  // Harpertown
-               case 0x0f:  // Woodcrest/Clovertown
-                  _processorDescription |= TR_ProcessorIntelCore2; break;
-               default:  _processorDescription |= TR_ProcessorIntelP6; break;
-               }
-            break;
-            }
-         case 0x0f: _processorDescription |= TR_ProcessorIntelPentium4; break;
-         default:   _processorDescription |= TR_ProcessorUnknown; break;
-         }
-      }
-   else if (isAuthenticAMD())
-      {
-      switch (getCPUFamily(_processorSignature))
-         {
-         case 0x05:
-            if (getCPUModel(_processorSignature) < 0x04)
-               _processorDescription |= TR_ProcessorAMDK5;
-            else
-               _processorDescription |= TR_ProcessorAMDK6;
-            break;
-         case 0x06: _processorDescription |= TR_ProcessorAMDAthlonDuron; break;
-         case 0x0f:
-            if (getCPUExtendedFamily(_processorSignature) < 6)
-               _processorDescription |= TR_ProcessorAMDOpteron;
-            else
-               _processorDescription |= TR_ProcessorAMDFamily15h;
-            break;
-         default:   _processorDescription |= TR_ProcessorUnknown; break;
-         }
-      }
-   }
-
-
 void
 OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
    {
    bool supportsSSE2 = false;
-
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.isGenuineIntel() == getX86ProcessorInfo().isGenuineIntel(), "isGenuineIntel() failed\n");
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.isAuthenticAMD() == getX86ProcessorInfo().isAuthenticAMD(), "isAuthenticAMD() failed\n");
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.prefersMultiByteNOP() == getX86ProcessorInfo().prefersMultiByteNOP(), "prefersMultiByteNOP() failed\n");
 
    // Pick a padding table
    //
@@ -276,8 +135,6 @@ OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
 
 #if defined(TR_TARGET_X86)
 #if !defined(J9HAMMER)
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.supportsFeature(OMR_FEATURE_X86_SSE2) == getX86ProcessorInfo().supportsSSE2(), "supportsSSE2() failed\n");
-
    if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_SSE2) && comp->target().cpu.testOSForSSESupport())
       supportsSSE2 = true;
 #else
@@ -285,8 +142,6 @@ OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
    supportsSSE2 = true;
 #endif // !defined(J9HAMMER)
 #endif // defined(TR_TARGET_X86)
-
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.supportsFeature(OMR_FEATURE_X86_RTM) == getX86ProcessorInfo().supportsTM(), "supportsTM() failed\n");
 
    if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_RTM) && !comp->getOption(TR_DisableTM))
       {
@@ -296,7 +151,6 @@ OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
         *
         * TODO: Need to figure out from which mode of Broadwell start supporting TM
         */
-      TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_HASWELL) == getX86ProcessorInfo().isIntelHaswell(), "isIntelHaswell() failed\n");
       if (!comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_HASWELL))
          {
          if (comp->target().is64Bit())
@@ -313,7 +167,6 @@ OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
 
    // Choose the best XMM double precision load instruction for the target architecture.
    //
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.isAuthenticAMD() == getX86ProcessorInfo().isAuthenticAMD(), "isAuthenticAMD() failed\n");
    static char *forceMOVLPD = feGetEnv("TR_forceMOVLPDforDoubleLoads");
    if (comp->target().cpu.isAuthenticAMD() || forceMOVLPD)
       {
@@ -472,9 +325,6 @@ OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
    // Make a conservative estimate of the boundary over which an executable instruction cannot
    // be patched.
    //
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.isGenuineIntel() == getX86ProcessorInfo().isGenuineIntel(), "isGenuineIntel() failed\n");
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.isAuthenticAMD() == getX86ProcessorInfo().isAuthenticAMD(), "isAuthenticAMD() failed\n");
-   TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_AMD_FAMILY15H) == getX86ProcessorInfo().isAMD15h(), "isAMD15h() failed\n");
    int32_t boundary;
    if (comp->target().cpu.isGenuineIntel() || (comp->target().cpu.isAuthenticAMD() && comp->target().cpu.is(OMR_PROCESSOR_X86_AMD_FAMILY15H)))
       boundary = 32;
@@ -678,13 +528,6 @@ OMR::X86::CodeGenerator::endInstructionSelection()
              "endInstructionSelection() ==> Could not find the dummy finally block!\n");
       generateMemInstruction(self()->getLastCatchAppendInstruction(), TR::InstOpCode::LDCWMem, generateX86MemoryReference(self()->findOrCreate2ByteConstant(self()->getLastCatchAppendInstruction()->getNode(), DOUBLE_PRECISION_ROUND_TO_NEAREST), self()), self());
       }
-   }
-
-TR_X86ProcessorInfo &
-OMR::X86::CodeGenerator::getX86ProcessorInfo()
-   {
-   static TR_X86ProcessorInfo processorInfo = TR_X86ProcessorInfo();
-   return processorInfo;
    }
 
 int32_t OMR::X86::CodeGenerator::getMaximumNumbersOfAssignableGPRs()
@@ -1189,7 +1032,6 @@ OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::ILOpCode opcode)
 bool
 OMR::X86::CodeGenerator::getSupportsEncodeUtf16LittleWithSurrogateTest()
    {
-   TR_ASSERT_FATAL(self()->comp()->compileRelocatableCode() || self()->comp()->isOutOfProcessCompilation() || self()->comp()->compilePortableCode() || self()->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_SSE4_1) == TR::CodeGenerator::getX86ProcessorInfo().supportsSSE4_1(), "supportsSSE4_1()");
    return self()->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_SSE4_1) &&
           !self()->comp()->getOption(TR_DisableSIMDUTF16LEEncoder);
    }
@@ -1197,7 +1039,6 @@ OMR::X86::CodeGenerator::getSupportsEncodeUtf16LittleWithSurrogateTest()
 bool
 OMR::X86::CodeGenerator::getSupportsEncodeUtf16BigWithSurrogateTest()
    {
-   TR_ASSERT_FATAL(self()->comp()->compileRelocatableCode() || self()->comp()->isOutOfProcessCompilation() || self()->comp()->compilePortableCode() || self()->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_SSE4_1) == TR::CodeGenerator::getX86ProcessorInfo().supportsSSE4_1(), "supportsSSE4_1()");
    return self()->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_SSE4_1) &&
           !self()->comp()->getOption(TR_DisableSIMDUTF16BEEncoder);
    }

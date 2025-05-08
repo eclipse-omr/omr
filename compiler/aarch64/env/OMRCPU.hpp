@@ -135,6 +135,13 @@ public:
     * @returns const char* string representing the name of the current processor
     */
    const char* getProcessorName();
+
+   /**
+    * @brief Returns the set of features enabled by the OMR compiler.
+    * @return An OMRProcessorDesc with the list of all features enabled in OMR on aarch64.
+    */
+   static OMRProcessorDesc getEnabledFeatures();
+
    };
 
 }
