@@ -1911,6 +1911,7 @@ bool TR_LoopStrider::examineTreeForInductionVariableUse(TR::Block *loopInvariant
    TR::AutomaticSymbol *pinningArrayPointer = NULL;
    TR::Node *originalNode = NULL;
    if (cg()->supportsInternalPointers() &&
+       _arrayShadowParent &&
        (node->isInternalPointer()) &&
        !node->isDataAddrPointer() &&
        node->getFirstChild()->getOpCode().isLoadVar() &&
@@ -2187,6 +2188,13 @@ bool TR_LoopStrider::examineTreeForInductionVariableUse(TR::Block *loopInvariant
                         (*newSymbolReference)->getReferenceNumber());
          }
       }
+
+   // Only first-level children of array-shadow symbol node have the _arrayShadowParent argument set
+   if (_arrayShadowParent)
+      _arrayShadowParent = false;
+   TR::Node* checkNode = originalNode ? originalNode : node;
+   if (checkNode->getOpCode().hasSymbolReference() && checkNode->getSymbolReference()->getSymbol()->isArrayShadowSymbol())
+      _arrayShadowParent = true;
 
    if (examineChildren)
        {
@@ -3413,7 +3421,7 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
             mul/shift/integer offset
     */
    if (cg()->supportsInternalPointers() && reassociateAndHoistNonPacked() &&
-      node->isInternalPointer() && !node->isDataAddrPointer())
+   _arrayShadowParent && node->isInternalPointer() && !node->isDataAddrPointer())
       {
       if (node->getFirstChild()->isDataAddrPointer())
          pinningArrayNode = node->getFirstChild()->getFirstChild();
@@ -3738,6 +3746,13 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
          }
       }
 #endif /* J9_PROJECT_SPECIFIC */
+
+   // Only first-level children of array-shadow symbol node have the _arrayShadowParent argument set
+   if (_arrayShadowParent)
+      _arrayShadowParent = false;
+   TR::Node* checkNode = originalNode ? originalNode : node;
+   if (checkNode->getOpCode().hasSymbolReference() && checkNode->getSymbolReference()->getSymbol()->isArrayShadowSymbol())
+      _arrayShadowParent = true;
 
    if (examineChildren)
        {
