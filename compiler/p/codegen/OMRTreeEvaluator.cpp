@@ -1062,7 +1062,14 @@ OMR::Power::TreeEvaluator::m2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::Power::TreeEvaluator::m2vEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   // Resulting vector should represent boolean array
+   // The mask is already in this form, with 'true' represented as all 1's
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128 &&
+                             node->getDataType().getVectorElementType() == TR::Int8,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+   return TR::TreeEvaluator::passThroughEvaluator(node, cg);
+
    }
 
 // vector evaluators
