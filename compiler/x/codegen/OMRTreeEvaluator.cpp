@@ -5260,12 +5260,15 @@ TR::InstOpCode OMR::X86::TreeEvaluator::getNativeSIMDOpcode(TR::ILOpCodes opcode
          case TR::vdiv:
             binaryOp = BinaryArithmeticDiv;
             break;
+         case TR::vmand:
          case TR::vand:
             binaryOp = BinaryArithmeticAnd;
             break;
+         case TR::vmor:
          case TR::vor:
             binaryOp = BinaryArithmeticOr;
             break;
+         case TR::vmxor:
          case TR::vxor:
             binaryOp = BinaryArithmeticXor;
             break;
@@ -5669,21 +5672,18 @@ TR::Register* OMR::X86::TreeEvaluator::vectorBinaryArithmeticEvaluator(TR::Node*
    bool useRegMemForm = cg->comp()->target().cpu.supportsAVX() && !mask;
    bool maskTypeMismatch = false;
 
-   if (et == TR::Int8 || et == TR::Int16)
+   switch (node->getOpCode().getVectorOperation())
       {
-      switch (node->getOpCode().getVectorOperation())
-         {
-         case TR::vand:
-         case TR::vor:
-         case TR::vxor:
-            // There are no native opcodes meant specifically for these element types
-            // Therefore, if masking is required, we cannot use a single instruction
-            // to perform these masked bitwise operations because of the element type mismatch.
-            maskTypeMismatch = true;
-            break;
-         default:
-            break;
-         }
+      case TR::vmand:
+      case TR::vmor:
+      case TR::vmxor:
+         // There are no native opcodes meant specifically for these element types
+         // Therefore, if masking is required, we cannot use a single instruction
+         // to perform these masked bitwise operations because of the element type mismatch.
+         maskTypeMismatch = et != TR::Int32 && et != TR::Float;
+         break;
+      default:
+         break;
       }
 
    if (useRegMemForm)
@@ -7206,7 +7206,7 @@ OMR::X86::TreeEvaluator::vmaddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::X86::TreeEvaluator::vmandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return TR::TreeEvaluator::vectorBinaryArithmeticEvaluator(node, cg);
    }
 
 TR::Register*
@@ -7302,7 +7302,7 @@ OMR::X86::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::X86::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return TR::TreeEvaluator::vectorBinaryArithmeticEvaluator(node, cg);
    }
 
 TR::Register*
@@ -7386,7 +7386,7 @@ OMR::X86::TreeEvaluator::vmsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::X86::TreeEvaluator::vmxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return TR::TreeEvaluator::vectorBinaryArithmeticEvaluator(node, cg);
    }
 
 TR::Register*

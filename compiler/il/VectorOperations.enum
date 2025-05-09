@@ -1463,7 +1463,7 @@ VECTOR_OPERATION_MACRO(\
    /* .name                    = */ "vmor", \
    /* .properties1             = */ ILProp1::VectorMasked, \
    /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
-   /* .properties3             = */ ILProp3::VectorReduction, \
+   /* .properties3             = */ 0, \
    /* .properties4             = */ 0, \
    /* .dataType                = */ TR::NoType, \
    /* .typeProperties          = */ ILTypeProp::VectorResult, \
