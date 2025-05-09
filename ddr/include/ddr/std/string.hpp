@@ -24,19 +24,6 @@
 
 #include "ddr/config.hpp"
 
-#if defined(J9ZOS390)
-
 #include <ctype.h>
-#undef toupper
-#undef tolower
-
 #include <string>
-
-#define toupper(c)     (islower(c) ? (c & _XUPPER_ASCII) : c)
-#define tolower(c)     (isupper(c) ? (c | _XLOWER_ASCII) : c)
-
-#else /* defined(J9ZOS390) */
-#include <string>
-#endif /* defined(J9ZOS390) */
-
 #endif /* STRING_HPP */
