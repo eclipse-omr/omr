@@ -6907,6 +6907,7 @@ OMR::X86::TreeEvaluator::arrayToVectorMaskHelper(TR::Node *node, TR::CodeGenerat
    TR::InstOpCode v2mOp = TR::InstOpCode::bad;
    TR::InstOpCode shiftOp = TR::InstOpCode::PSLLQRegImm1;
    bool nativeMasking = cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F);
+   TR::DataType integralType = et;
    int32_t shiftAmount = 0;
 
    switch (et)
@@ -6925,12 +6926,14 @@ OMR::X86::TreeEvaluator::arrayToVectorMaskHelper(TR::Node *node, TR::CodeGenerat
          shiftAmount = 31;
          expandOp = TR::InstOpCode::PMOVZXBDRegReg;
          v2mOp = TR::InstOpCode::VPMOVD2MRegReg;
+         integralType = TR::Int32;
          break;
       case TR::Int64:
       case TR::Double:
          shiftAmount = 63;
          expandOp = TR::InstOpCode::PMOVZXBQRegReg;
          v2mOp = TR::InstOpCode::VPMOVQ2MRegReg;
+         integralType = TR::Int64;
          break;
       default:
          TR_ASSERT_FATAL(0, "Unexpected element type");
@@ -6985,7 +6988,7 @@ OMR::X86::TreeEvaluator::arrayToVectorMaskHelper(TR::Node *node, TR::CodeGenerat
       {
       TR::Register *result = cg->allocateRegister(TR_VRF);
       TR::InstOpCode xorOpcode = TR::InstOpCode::PXORRegReg;
-      TR::InstOpCode subOp = VectorBinaryArithmeticOpCodesForReg[BinaryArithmeticSub][et - 1];
+      TR::InstOpCode subOp = VectorBinaryArithmeticOpCodesForReg[BinaryArithmeticSub][integralType - 1];
       OMR::X86::Encoding xorEncoding = xorOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
       OMR::X86::Encoding subEncoding = subOp.getSIMDEncoding(&cg->comp()->target().cpu, vl);
       TR_ASSERT_FATAL(xorEncoding != OMR::X86::Bad, "No suitable encoding form for pxor opcode");
