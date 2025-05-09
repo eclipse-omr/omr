@@ -5908,6 +5908,10 @@ omrsysinfo_get_os_description(struct OMRPortLibrary *portLibrary, struct OMROSDe
 #if defined(J9ZOS390)
 		rc = getZOSDescription(portLibrary, desc);
 #endif /* defined(J9ZOS390) */
+
+#if defined(J9HAMMER) || defined(J9X86)
+		rc = omrsysinfo_get_x86_os_description(portLibrary, desc);
+#endif
 	}
 
 	Trc_PRT_sysinfo_get_os_description_Exit(rc);

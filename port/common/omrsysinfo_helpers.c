@@ -438,6 +438,46 @@ omrsysinfo_get_x86_description(struct OMRPortLibrary *portLibrary, OMRProcessorD
 	return 0;
 }
 
+intptr_t
+omrsysinfo_get_x86_os_description(struct OMRPortLibrary *portLibrary, OMROSDesc *desc) {
+
+	OMRProcessorDesc processorDesc;
+	omrsysinfo_get_x86_description(portLibrary, &processorDesc);
+
+	if (portLibrary->sysinfo_processor_has_feature(portLibrary, &processorDesc, OMR_FEATURE_X86_XSAVE)) {
+		unsigned int leaf = 0;
+#if defined(OMR_OS_WINDOWS)
+		unsigned long long xcr0 = _xgetbv(leaf);
+#else
+		unsigned int eax, edx;
+		__asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(leaf));
+		unsigned long long xcr0 = ((unsigned long long)edx << 32) | eax;
+#endif
+
+      // '6' = mask for XCR0[1]='1b' (XMM state is enabled)
+		if (OMR_ARE_ANY_BITS_SET(xcr0, 0x2)) {
+			desc->features[OMRPORT_OS_FEATURE_X86_XSAVE_XMM / 32] |= 1u << OMRPORT_OS_FEATURE_X86_XSAVE_XMM % 32;
+		}
+
+      // '6' = mask for XCR0[2:1]='11b' (XMM state and YMM state are enabled)
+		if (OMR_ARE_ALL_BITS_SET(xcr0, 0x6)) {
+			desc->features[OMRPORT_OS_FEATURE_X86_XSAVE_YMM / 32] |= 1u << OMRPORT_OS_FEATURE_X86_XSAVE_YMM % 32;
+		}
+
+      // 'e6' = (mask for XCR0[7:5]='111b' (Opmask, ZMM_Hi256, Hi16_ZMM) + XCR0[2:1]='11b' (XMM/YMM))
+		if (OMR_ARE_ALL_BITS_SET(xcr0, 0xe6)) {
+			desc->features[OMRPORT_OS_FEATURE_X86_XSAVE_ZMM / 32] |= 1u << OMRPORT_OS_FEATURE_X86_XSAVE_ZMM % 32;
+		}
+
+      // '0x80000' (mask for APX_F EGPR)
+		if (OMR_ARE_ANY_BITS_SET(xcr0, 0x80000)) {
+			desc->features[OMRPORT_OS_FEATURE_X86_XSAVE_EGPR / 32] |= 1u << OMRPORT_OS_FEATURE_X86_XSAVE_EGPR % 32;
+		}
+	}
+
+	return 0;
+}
+
 /**
  * Assembly code to get the register data from CPUID instruction
  * This function executes the CPUID instruction based on which we can detect

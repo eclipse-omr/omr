@@ -1895,6 +1895,7 @@ omrsysinfo_get_os_description(struct OMRPortLibrary *portLibrary, struct OMROSDe
 
 	if (NULL != desc) {
 		memset(desc, 0, sizeof(OMROSDesc));
+		rc = omrsysinfo_get_x86_os_description(portLibrary, desc);
 	}
 
 	Trc_PRT_sysinfo_get_os_description_Exit(rc);

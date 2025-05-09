@@ -1353,8 +1353,12 @@ typedef struct OMROSDesc {
 	uint32_t features[OMRPORT_SYSINFO_OS_FEATURES_SIZE];
 } OMROSDesc;
 
-/* zOS features */
-#define OMRPORT_ZOS_FEATURE_RMODE64 31 /* RMODE64. */
+/* OS features */
+#define OMRPORT_ZOS_FEATURE_RMODE64       31 /* RMODE64. */
+#define OMRPORT_OS_FEATURE_X86_XSAVE_XMM  30
+#define OMRPORT_OS_FEATURE_X86_XSAVE_YMM  29
+#define OMRPORT_OS_FEATURE_X86_XSAVE_ZMM  28
+#define OMRPORT_OS_FEATURE_X86_XSAVE_EGPR 27
 
 typedef struct OMROSKernelInfo {
 	uint32_t kernelVersion;
