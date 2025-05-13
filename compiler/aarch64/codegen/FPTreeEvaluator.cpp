@@ -956,15 +956,13 @@ OMR::ARM64::TreeEvaluator::fRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *
    }
 
 static TR::Register *
-fpMinMaxHelper(TR::Node *node, bool isDouble, TR::ARM64ConditionCode cc, TR::CodeGenerator *cg)
+fpMinMaxHelper(TR::Node *node, bool isMax, bool isDouble, TR::CodeGenerator *cg)
    {
    TR::Node *firstChild = node->getFirstChild();
    TR::Node *secondChild = node->getSecondChild();
    TR::Register *src1Reg = cg->evaluate(firstChild);
    TR::Register *src2Reg = cg->evaluate(secondChild);
    TR::Register *trgReg;
-   TR::LabelSymbol *orderedLabel = generateLabelSymbol(cg);
-   TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
    TR::InstOpCode::Mnemonic op;
 
    TR_ASSERT(node->getNumChildren() == 2, "The number of children for fmax/fmin/dmax/dmin must be 2.");
@@ -982,31 +980,16 @@ fpMinMaxHelper(TR::Node *node, bool isDouble, TR::ARM64ConditionCode cc, TR::Cod
       trgReg = isDouble ? cg->allocateRegister(TR_FPR) : cg->allocateSinglePrecisionRegister();
       }
 
-   op = isDouble ? TR::InstOpCode::fcmpd : TR::InstOpCode::fcmps;
-   generateSrc2Instruction(cg, op, node, src1Reg, src2Reg);
-   generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, orderedLabel, TR::CC_VC);
-
-   // Unordered case
-   TR::Register *tmpReg = cg->allocateRegister();
-   if (isDouble)
+   if (isMax)
       {
-      loadConstant64(cg, node, DOUBLE_NAN, tmpReg);
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::fmov_xtod, node, trgReg, tmpReg);
+      op = isDouble ? TR::InstOpCode::fmaxd : TR::InstOpCode::fmaxs;
       }
    else
       {
-      loadConstant32(cg, node, FLOAT_NAN, tmpReg);
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::fmov_wtos, node, trgReg, tmpReg);
+      op = isDouble ? TR::InstOpCode::fmind : TR::InstOpCode::fmins;
       }
-   cg->stopUsingRegister(tmpReg);
-   generateLabelInstruction(cg, TR::InstOpCode::b, node, doneLabel);
 
-   // Ordered case
-   generateLabelInstruction(cg, TR::InstOpCode::label, node, orderedLabel);
-   op = isDouble ? TR::InstOpCode::fcseld : TR::InstOpCode::fcsels;
-   generateCondTrg1Src2Instruction(cg, op, node, trgReg, src1Reg, src2Reg, cc);
-
-   generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);
+   generateTrg1Src2Instruction(cg, op, node, trgReg, src1Reg, src2Reg);
 
    node->setRegister(trgReg);
    cg->decReferenceCount(firstChild);
@@ -1018,25 +1001,25 @@ fpMinMaxHelper(TR::Node *node, bool isDouble, TR::ARM64ConditionCode cc, TR::Cod
 TR::Register *
 OMR::ARM64::TreeEvaluator::fmaxEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return fpMinMaxHelper(node, false, TR::CC_GE, cg);
+   return fpMinMaxHelper(node, true, false, cg);
    }
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::fminEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return fpMinMaxHelper(node, false, TR::CC_LS, cg);
+   return fpMinMaxHelper(node, false, false, cg);
    }
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::dmaxEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return fpMinMaxHelper(node, true, TR::CC_GE, cg);
+   return fpMinMaxHelper(node, true, true, cg);
    }
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::dminEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return fpMinMaxHelper(node, true, TR::CC_LS, cg);
+   return fpMinMaxHelper(node, false, true, cg);
    }
 
 TR::Register *
