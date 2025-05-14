@@ -145,21 +145,37 @@ function(_omr_toolchain_separate_debug_symbols tgt)
 	else()
 		omr_get_target_output_genex(${tgt} output_name)
 		set(dbg_file "${output_name}${OMR_DEBUG_INFO_OUTPUT_EXTENSION}")
+
+		# Check if the given target shouldn't be stripped.
+		get_target_property(skip_strip ${target} OMR_SKIP_STRIP)
+
 		if(OMR_OS_AIX AND CMAKE_C_COMPILER_IS_OPENXL)
 			add_custom_command(
 				TARGET "${tgt}"
 				POST_BUILD
 				COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
-				COMMAND "${CMAKE_STRIP}" -X32_64 ${exe_file}
 			)
+			if (NOT ${skip_strip})
+				add_custom_command(
+					TARGET "${tgt}"
+					POST_BUILD
+					COMMAND "${CMAKE_STRIP}" -X32_64 ${exe_file}
+				)
+			endif()
 		else()
 			add_custom_command(
 				TARGET "${tgt}"
 				POST_BUILD
 				COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${exe_file}" "${dbg_file}"
-				COMMAND "${CMAKE_OBJCOPY}" --strip-debug "${exe_file}"
-				COMMAND "${CMAKE_OBJCOPY}" --add-gnu-debuglink="${dbg_file}" "${exe_file}"
 			)
+			if (NOT ${skip_strip})
+				add_custom_command(
+					TARGET "${tgt}"
+					POST_BUILD
+					COMMAND "${CMAKE_OBJCOPY}" --strip-debug "${exe_file}"
+					COMMAND "${CMAKE_OBJCOPY}" --add-gnu-debuglink="${dbg_file}" "${exe_file}"
+				)
+			endif()
 		endif()
 	endif()
 	set_target_properties(${tgt} PROPERTIES OMR_DEBUG_FILE "${dbg_file}")
@@ -179,14 +195,24 @@ function(_omr_toolchain_process_exports TARGET_NAME)
 
 	set(exp_file "$<TARGET_PROPERTY:${TARGET_NAME},BINARY_DIR>/${TARGET_NAME}.exp")
 
-	omr_process_template(
-		"${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/gnu_exports.exp.in"
-		"${exp_file}"
-	)
-
-if(NOT CMAKE_C_COMPILER_IS_OPENXL)
-	target_link_libraries(${TARGET_NAME}
-		PRIVATE
-			"-Wl,--version-script,${exp_file}")
-endif()
+	# Currently, OpenXL on AIX uses the GNU configuration. In the future, it should
+	# be switched to the OpenXL-specific configuration (as has already been done with
+	# z/OS), but until then, we need to add this special case for OpenXL.
+	if (CMAKE_C_COMPILER_IS_OPENXL)
+		omr_process_template(
+			"${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/xlc_exports.exp.in"
+			"${exp_file}"
+		)
+		target_link_libraries(${TARGET_NAME}
+			PRIVATE
+				"-Wl,-bE:${exp_file}")
+	else()
+		omr_process_template(
+			"${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/gnu_exports.exp.in"
+			"${exp_file}"
+		)
+		target_link_libraries(${TARGET_NAME}
+			PRIVATE
+				"-Wl,--version-script,${exp_file}")
+	endif()
 endfunction()

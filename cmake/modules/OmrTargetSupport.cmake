@@ -33,7 +33,7 @@ include(OmrUtility)
 # At present, a thin wrapper around add_library, but it ensures that exports
 # and split debug info are handled
 function(omr_add_library name)
-	set(options SHARED STATIC OBJECT INTERFACE NOWARNINGS)
+	set(options SHARED STATIC OBJECT INTERFACE NOWARNINGS SKIP_STRIP)
 	set(oneValueArgs OUTPUT_NAME)
 	set(multiValueArgs)
 
@@ -73,6 +73,10 @@ function(omr_add_library name)
 		set_target_properties(${name} PROPERTIES OUTPUT_NAME "${opt_OUTPUT_NAME}")
 	endif()
 
+	if(opt_SKIP_STRIP)
+		set_target_properties(${name} PROPERTIES OMR_SKIP_STRIP TRUE)
+	endif()
+
 	if(NOT opt_NOWARNINGS AND NOT lib_type STREQUAL "INTERFACE")
 		if(OMR_WARNINGS_AS_ERRORS)
 			target_compile_options(${name} PRIVATE
@@ -108,7 +112,9 @@ function(omr_add_library name)
 	endif()
 
 	if(opt_SHARED)
-		# split debug info if applicable. Note: omr_split_debug is responsible for checking OMR_SEPARATE_DEBUG_INFO
+		# Split debug info if applicable. Note: omr_process_split_debug is responsible for
+		# checking OMR_SEPARATE_DEBUG_INFO, and _omr_toolchain_separate_debug_symbols is
+		# responsible for checking OMR_SKIP_STRIP.
 		omr_process_split_debug(${name})
 	endif()
 endfunction()
@@ -196,7 +202,7 @@ endfunction()
 # omr_process_split_debug(<target>)
 #   Process a target to generate split debug info if requested/required
 function(omr_process_split_debug target)
-	omr_assert(FATAL_ERROR TEST TARGET ${target} MESSAGE "omr_split_debug called on invalid target '${target}'")
+	omr_assert(FATAL_ERROR TEST TARGET ${target} MESSAGE "omr_process_split_debug called on invalid target '${target}'")
 
 	# if we have already processed this target, skip it
 	get_target_property(is_split ${target} OMR_SPLIT_DEBUG_PROCESSED)
