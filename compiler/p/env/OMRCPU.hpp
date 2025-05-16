@@ -68,11 +68,6 @@ public:
    bool hasPopulationCountInstruction();
    bool supportsDecimalFloatingPoint();
 
-   bool getSupportsHardware32bitCompress();
-   bool getSupportsHardware64bitCompress();
-   bool getSupportsHardware32bitExpand();
-   bool getSupportsHardware64bitExpand();
-
    /**
     * @brief Determines whether 32bit integer rotate is available
     *

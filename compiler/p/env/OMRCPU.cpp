@@ -49,30 +49,6 @@ OMR::Power::CPU::supportsDecimalFloatingPoint()
    }
 
 bool
-OMR::Power::CPU::getSupportsHardware32bitCompress()
-   {
-   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10);
-   }
-
-bool
-OMR::Power::CPU::getSupportsHardware64bitCompress()
-   {
-   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10) && TR::Compiler->target.is64Bit();
-   }
-
-bool
-OMR::Power::CPU::getSupportsHardware32bitExpand()
-   {
-   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10);
-   }
-
-bool
-OMR::Power::CPU::getSupportsHardware64bitExpand()
-   {
-   return self()->isAtLeast(OMR_PROCESSOR_PPC_P10) && TR::Compiler->target.is64Bit();
-   }
-
-bool
 OMR::Power::CPU::getSupportsHardwareSQRT()
    {
    return self()->isAtLeast(OMR_PROCESSOR_PPC_HW_SQRT_FIRST);

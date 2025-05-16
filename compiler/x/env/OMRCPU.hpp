@@ -75,30 +75,6 @@ public:
 
    bool getSupportsHardwareSQRT();
 
-   /** @brief Determines whether the 32 bit bitwise compress instruction is available on the current processor.
-    *
-    *  @return true if the 32 bit bitwise compress instruction is available, false otherwise.
-    */
-   bool getSupportsHardware32bitCompress();
-
-   /** @brief Determines whether the 64 bit bitwise compress instruction is available on the current processor.
-    *
-    *  @return true if the 64 bit bitwise compress instruction is available, false otherwise.
-    */
-   bool getSupportsHardware64bitCompress();
-
-   /** @brief Determines whether the 32 bit bitwise expand instruction is available on the current processor.
-    *
-    *  @return true if the 32 bit bitwise expand instruction is available, false otherwise.
-    */
-   bool getSupportsHardware32bitExpand();
-
-   /** @brief Determines whether the 64 bit bitwise expand instruction is available on the current processor.
-    *
-    *  @return true if the 64 bit bitwise expand instruction is available, false otherwise.
-    */
-   bool getSupportsHardware64bitExpand();
-
    /** @brief Determines whether the popcnt instruction is available on the current processor.
     *
     *  @return true if popcnt is available, false otherwise.
