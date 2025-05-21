@@ -267,8 +267,16 @@ else()
 			TARGET "${tgt}"
 			POST_BUILD
 			COMMAND "${CMAKE_COMMAND}" -E copy ${exe_file} ${dbg_file}
-			COMMAND "${CMAKE_STRIP}" -X32_64 -t ${exe_file}
 		)
+		# Check if the given target shouldn't be stripped.
+		get_target_property(skip_strip ${tgt} OMR_SKIP_STRIP)
+		if (NOT ${skip_strip})
+			add_custom_command(
+				TARGET "${tgt}"
+				POST_BUILD
+				COMMAND "${CMAKE_STRIP}" -X32_64 -t ${exe_file}
+			)
+		endif()
 		set_target_properties(${tgt} PROPERTIES OMR_DEBUG_FILE "${dbg_file}")
 	endfunction()
 endif()
