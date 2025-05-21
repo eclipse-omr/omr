@@ -35,7 +35,6 @@ namespace OMR { typedef OMR::Z::CPU CPUConnector; }
 
 #include "compiler/env/OMRCPU.hpp"
 #include "env/jittypes.h"
-#include "env/ProcessorInfo.hpp"
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
@@ -379,6 +378,12 @@ public:
     *     \c true if the Vector Packed Decimal 3 facility is available, and \c false otherwise.
     */
    void setSupportsVectorPackedDecimalEnhancementFacility3(bool value);
+
+   /**
+    * @brief Returns the set of features enabled by the OMR compiler.
+    * @return An OMRProcessorDesc with the list of all features enabled in OMR on Z.
+    */
+   static OMRProcessorDesc getEnabledFeatures();
 
 private:
 

@@ -63,15 +63,7 @@ public:
 
    static TR::CPU customize(OMRProcessorDesc processorDescription);
 
-   static void initializeTargetProcessorInfo(bool force = false);
-
-   TR_X86CPUIDBuffer *queryX86TargetCPUID();
    const char *getX86ProcessorVendorId();
-   uint32_t getX86ProcessorSignature();
-   uint32_t getX86ProcessorFeatureFlags();
-   uint32_t getX86ProcessorFeatureFlags2();
-   uint32_t getX86ProcessorFeatureFlags8();
-   uint32_t getX86ProcessorFeatureFlags10();
 
    bool getSupportsHardwareSQRT();
 
@@ -168,12 +160,8 @@ public:
 
    // Will be removed once we no longer need the old processor detection apis
    bool is(OMRProcessorArchitecture p);
-   bool is_old_api(OMRProcessorArchitecture p);
-   bool is_test(OMRProcessorArchitecture p);
 
    bool supportsFeature(uint32_t feature);
-   bool supports_feature_old_api(uint32_t feature);
-   bool supports_feature_test(uint32_t feature);
 
    bool isFeatureDisabledByOption(uint32_t feature);
 
@@ -182,6 +170,13 @@ public:
     * @returns const char* string representing the name of the current processor
     */
    const char* getProcessorName();
+
+   /**
+    * @brief Returns the set of features enabled by the OMR compiler.
+    * @return An OMRProcessorDesc with the list of all features enabled in OMR on x86.
+    */
+   static OMRProcessorDesc getEnabledFeatures();
+
    };
 }
 

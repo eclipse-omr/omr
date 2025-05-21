@@ -98,13 +98,6 @@ TR::Register *TR_X86IntegerMultiplyDecomposer::decomposeIntegerMultiplier(int32_
          const integerMultiplyComposition& composition = _integerMultiplySolutions[decompositionIndex];
          if (composition._subsequentShiftTooExpensive == false)
             {
-            TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_CORE2) == cg()->getX86ProcessorInfo().isIntelCore2(), "isIntelCore2 failed\n");
-            TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_NEHALEM) == cg()->getX86ProcessorInfo().isIntelNehalem(), "isIntelNehalem failed\n");
-            TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_WESTMERE) == cg()->getX86ProcessorInfo().isIntelWestmere(), "isIntelWestmere failed\n");
-            TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_SANDYBRIDGE) == cg()->getX86ProcessorInfo().isIntelSandyBridge(), "isIntelSandyBridge failed\n");
-            TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_AMD_FAMILY15H) == cg()->getX86ProcessorInfo().isAMD15h(), "isAMD15h failed\n");
-            TR_ASSERT_FATAL(comp->compileRelocatableCode() || comp->isOutOfProcessCompilation() || comp->compilePortableCode() || comp->target().cpu.is(OMR_PROCESSOR_X86_AMD_OPTERON) == cg()->getX86ProcessorInfo().isAMDOpteron(), "isAMDOpteron failed\n");
-
             target = generateDecompositionInstructions(decompositionIndex, tempRegArraySize, tempRegArray);
             if (shiftAmount < 3 &&
                !comp->target().cpu.is(OMR_PROCESSOR_X86_INTEL_CORE2) &&

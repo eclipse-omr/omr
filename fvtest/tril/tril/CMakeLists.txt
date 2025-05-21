@@ -52,6 +52,7 @@ target_include_directories(tril PUBLIC
 target_link_libraries(tril PUBLIC
 	${TRIL_BACKEND_LIB}
 	${CMAKE_DL_LIBS}
+	${OMR_PORT_LIB}
 )
 
 # TODO system thread library should be linked in a more generic way.
