@@ -3247,10 +3247,17 @@ static void
 threadInterruptWake(omrthread_t thread, omrthread_monitor_t monitor)
 {
 	ASSERT(thread);
-	ASSERT(thread->flags & J9THREAD_FLAG_WAITING);
-	ASSERT(0 != monitor);
+	ASSERT(NULL != thread);
+	ASSERT(OMR_ARE_ANY_BITS_SET(thread->flags, J9THREAD_FLAG_WAITING));
 
-	thread->flags |= J9THREAD_FLAG_BLOCKED;
+	/* Clear the native interrupt flag. */
+	if (OMR_ARE_NO_BITS_SET(thread->flags, J9THREAD_FLAG_PRIORITY_INTERRUPTED | J9THREAD_FLAG_ABORTED)) {
+		thread->flags &= ~J9THREAD_FLAG_INTERRUPTED;
+	}
+	/* Clear the WAITING flag. */
+	thread->flags &= ~J9THREAD_FLAG_WAITING;
+	/* Mark thread as BLOCKED and NOTIFIED. */
+	thread->flags |= (J9THREAD_FLAG_BLOCKED | J9THREAD_FLAG_NOTIFIED);
 	NOTIFY_WRAPPER(thread);
 }
 
