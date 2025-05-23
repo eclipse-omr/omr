@@ -667,7 +667,7 @@ class OMR_InlinerPolicy : public TR::OptimizationPolicy, public OMR_InlinerHelpe
        *
        * \return true if the method shouldn't be inlined in inliner
        */
-      virtual bool supressInliningRecognizedInitialCallee(TR_CallSite* callsite, TR::Compilation* comp);
+      virtual bool suppressInliningRecognizedInitialCallee(TR_CallSite* callsite, TR::Compilation* comp);
 
    protected:
       virtual bool tryToInlineTrivialMethod (TR_CallStack* callStack, TR_CallTarget* calltarget);
