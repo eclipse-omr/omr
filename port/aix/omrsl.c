@@ -763,5 +763,63 @@ omrsl_startup(struct OMRPortLibrary *portLibrary)
 uintptr_t
 omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData)
 {
-	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+	uintptr_t result = 0;
+	void *buffer = NULL;
+	struct ld_info *ldInfo = NULL;
+	int rc = 0;
+	unsigned int bufferSize = 65536;
+	for (;;) {
+		buffer = portLibrary->mem_allocate_memory(
+				portLibrary,
+				bufferSize,
+				OMR_GET_CALLSITE(),
+				OMRMEM_CATEGORY_PORT_LIBRARY);
+		if (NULL == buffer) {
+			portLibrary->error_set_last_error_with_message(
+					portLibrary,
+					-1,
+					"Failed to allocate memory for loadquery buffer.");
+			return (uintptr_t)(intptr_t)-1;
+		}
+		rc = loadquery(L_GETINFO, buffer, (int)bufferSize);
+		if (-1 != rc) {
+			break;
+		}
+		if (ENOMEM != errno) {
+			int portableError = portLibrary->error_last_error_number(portLibrary);
+			portLibrary->error_set_last_error_with_message(
+					portLibrary,
+					portableError,
+					"loadquery(L_GETINFO) failed.");
+			portLibrary->mem_free_memory(portLibrary, buffer);
+			return (uintptr_t)(intptr_t)portableError;
+		}
+		portLibrary->mem_free_memory(portLibrary, buffer);
+		bufferSize *= 2;
+	}
+	ldInfo = (struct ld_info *)buffer;
+	for(;;) {
+		if (0 != ldInfo->ldinfo_datasize) {
+			void *data_start = ldInfo->ldinfo_dataorg;
+			void *data_end = (char *)data_start + ldInfo->ldinfo_datasize;
+			result = callback(ldInfo->ldinfo_filename, data_start, data_end, userData);
+			if (0 != result) {
+				break;
+			}
+		}
+		if (0 != ldInfo->ldinfo_textsize) {
+			void *text_start = ldInfo->ldinfo_textorg;
+			void *text_end = (char *)text_start + ldInfo->ldinfo_textsize;
+			result = callback(ldInfo->ldinfo_filename, text_start, text_end, userData);
+			if (0 != result) {
+				break;
+			}
+		}
+		if (0 == ldInfo->ldinfo_next) {
+			break;
+		}
+		ldInfo = (struct ld_info *)((char *)ldInfo + ldInfo->ldinfo_next);
+	}
+	portLibrary->mem_free_memory(portLibrary, buffer);
+	return result;
 }
