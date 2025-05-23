@@ -2409,6 +2409,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
    bool isISO88591Decoder = (rm == TR::sun_nio_cs_ISO_8859_1_Decoder_decodeISO8859_1);
    bool isSBCSEncoder = (rm == TR::sun_nio_cs_ext_SBCS_Encoder_encodeSBCS)? true:false;
    bool isSBCSDecoder = (rm == TR::sun_nio_cs_ext_SBCS_Decoder_decodeSBCS)? true:false;
+   bool isDecodeToLatin1 = (rm == TR::sun_nio_cs_SingleByteDecoder_decodeToLatin1Impl)? true:false;
    bool isEncodeUtf16 = (rm == TR::sun_nio_cs_UTF16_Encoder_encodeUTF16Big || rm == TR::sun_nio_cs_UTF16_Encoder_encodeUTF16Little);
 
    int32_t childId = callNode->getFirstArgumentIndex();
@@ -2490,7 +2491,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
          {
          dstOff = TR::TransformUtil::generateConvertArrayElementIndexToOffsetTrees(comp(), dstOff, strideNode, 0, false);
          arrayTranslateNode->setSourceIsByteArrayTranslate(true);
-         arrayTranslateNode->setTargetIsByteArrayTranslate(false);
+         arrayTranslateNode->setTargetIsByteArrayTranslate(isDecodeToLatin1);
          }
       src = TR::TransformUtil::generateArrayElementAddressTrees(comp(), srcObj, srcOff);
       dst = TR::TransformUtil::generateArrayElementAddressTrees(comp(), dstObj, dstOff);
@@ -2516,7 +2517,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
          node = TR::Node::create(is64BitTarget ? TR::ladd : TR::iadd, 2, node, hdrSize);
          dst = TR::Node::create(is64BitTarget? TR::aladd : TR::aiadd, 2, dstObj, node);
          arrayTranslateNode->setSourceIsByteArrayTranslate(true);
-         arrayTranslateNode->setTargetIsByteArrayTranslate(false);
+         arrayTranslateNode->setTargetIsByteArrayTranslate(isDecodeToLatin1);
          }
       }
 
@@ -2566,7 +2567,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
          }
       termCharNode = TR::Node::create(callNode,TR::iconst, 0, termchar);
       }
-   else if (!encode && !isSBCSDecoder)
+   else if (!encode && !isSBCSDecoder && !isDecodeToLatin1)
       {
       arrayTranslateNode->setTermCharNodeIsHint(false);
       arrayTranslateNode->setSourceCellIsTermChar(false);
@@ -2621,6 +2622,15 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
       arrayTranslateNode->setSourceCellIsTermChar(false);
       arrayTranslateNode->setTableBackedByRawStorage(false);
       termCharNode = TR::Node::create(callNode,TR::iconst, 0, 11);
+      TR::Node *tableNodeAddr = tableRef? TR::Node::createLoad(callNode, tableRef):callNode->getChild(childId++)->duplicateTree();
+      tableNode = tableNodeAddr;
+      }
+   else if (isDecodeToLatin1) // only z
+      {
+      arrayTranslateNode->setTermCharNodeIsHint(false);
+      arrayTranslateNode->setSourceCellIsTermChar(false);
+      arrayTranslateNode->setTableBackedByRawStorage(false);
+      termCharNode = TR::Node::create(callNode,TR::iconst, 0, 0);
       TR::Node *tableNodeAddr = tableRef? TR::Node::createLoad(callNode, tableRef):callNode->getChild(childId++)->duplicateTree();
       tableNode = tableNodeAddr;
       }
@@ -4300,7 +4310,8 @@ void OMR::ValuePropagation::transformConverterCall(TR::TreeTop *callTree)
       len = callNode->getChild(childId++);//->createLongIfNeeded();
 
    if ( (rm == TR::sun_nio_cs_ext_SBCS_Encoder_encodeSBCS) ||
-         (rm == TR::sun_nio_cs_ext_SBCS_Decoder_decodeSBCS))
+         (rm == TR::sun_nio_cs_ext_SBCS_Decoder_decodeSBCS) ||
+	 (rm == TR::sun_nio_cs_SingleByteDecoder_decodeToLatin1Impl))
       {
       hasTable = true;
       tableNode = callNode->getChild(childId++);
@@ -4428,6 +4439,7 @@ void OMR::ValuePropagation::transformConverterCall(TR::TreeTop *callTree)
          case TR::sun_nio_cs_ext_SBCS_Decoder_decodeSBCS:
          case TR::sun_nio_cs_UTF_8_Decoder_decodeUTF_8:
          case TR::sun_nio_cs_UTF_8_Encoder_encodeUTF_8:
+	 case TR::sun_nio_cs_SingleByteDecoder_decodeToLatin1Impl:
          default:
             threshold = 0;
             break;
