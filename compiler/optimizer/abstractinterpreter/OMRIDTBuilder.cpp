@@ -73,6 +73,8 @@ TR::IDT* OMR::IDTBuilder::buildIDT()
                                                 bcInfo,
                                                 comp(),
                                                 -1,
+                                                false,
+                                                comp()->retainedMethods(),
                                                 false);
 
    TR_CallTarget *rootCallTarget = new (region()) TR_CallTarget(
