@@ -1879,6 +1879,11 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
             return true;
          else
             return false;
+      case TR::mTrueCount:
+         if (cpu->isAtLeast(OMR_PROCESSOR_PPC_P8))
+            return true;
+         else
+            return false;
       case TR::vload:
       case TR::vloadi:
       case TR::vstore:
