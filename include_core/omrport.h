@@ -1775,6 +1775,20 @@ typedef struct OMRProcessorDesc {
 #define OMR_FEATURE_X86_XSAVE_AVX512 64 + 2 /* OS Supports AVX-512 (zmm, opmask) state */
 #define OMR_FEATURE_X86_XSAVE_APX    64 + 3 /* OS Supports APX (r16-r31) state */
 
+/* FLAGS FOR AVX 10.X SUPPORT.
+ * These flags are to be set after checking for AVX10 and XCR0 register flags.
+ */
+#define OMR_FEATURE_X86_AVX10_1      64 + 4  /* AVX 10.1 */
+#define OMR_FEATURE_X86_AVX10_2      64 + 5  /* AVX 10.2 */
+
+/* bits 7-15 are reserved */
+
+/* AVX 10 vector length support from CPUID.(EAX=24H, ECX=00H):EBX[16-18] */
+#define OMR_FEATURE_X86_AVX10_128    64 + 16 /* Indicates 128-bit vector support */
+#define OMR_FEATURE_X86_AVX10_256    64 + 17 /* Indicates 256-bit vector support */
+#define OMR_FEATURE_X86_AVX10_512    64 + 18 /* Indicates 512-bit vector support */
+/* bits 19+ are reserved */
+
 #define OMR_X86_XCR0_MASK_XMM        0x2      /* XCR0[1] - XMM state (SSE) */
 #define OMR_X86_XCR0_MASK_YMM        0x4      /* XCR0[2] - YMM state (AVX) */
 #define OMR_X86_XCR0_MASK_AVX512     0xe0     /* XCR0[7:5] - Opmask, ZMM_Hi256, Hi16_ZMM */
@@ -1851,6 +1865,79 @@ typedef struct OMRProcessorDesc {
 #define OMR_FEATURE_X86_ENQCMD              128 + 29
 #define OMR_FEATURE_X86_SGX_LC              128 + 30
 #define OMR_FEATURE_X86_PKS                 128 + 31
+
+/*
+ * Structured Feature Information Returned in the EAX Register by CPUID instruction when EAX = 7, ECX = 1
+ */
+#define OMR_FEATURE_X86_SHA512                       160 + 0   /* SHA512 */
+#define OMR_FEATURE_X86_SM3                          160 + 1   /* SM3 */
+#define OMR_FEATURE_X86_SM4                          160 + 2   /* SM4 */
+#define OMR_FEATURE_X86_5_3                          160 + 3   /* Reserved */
+#define OMR_FEATURE_X86_AVX_VNNI                     160 + 4   /* AVX-VNNI */
+#define OMR_FEATURE_X86_AVX512_BF16                  160 + 5   /* AVX512-BF16 */
+#define OMR_FEATURE_X86_LASS                         160 + 6   /* LASS */
+#define OMR_FEATURE_X86_CMPCCXADD                    160 + 7   /* CMPCCXADD */
+#define OMR_FEATURE_X86_ARCHPERFMONEXT               160 + 8   /* ArchPerfMonExt */
+#define OMR_FEATURE_X86_INDEX9                       160 + 9   /* Reserved */
+#define OMR_FEATURE_X86_FASTREP_MOVSB_ZERO           160 + 10  /* Fast zero-length REP MOVSB */
+#define OMR_FEATURE_X86_FASTREP_STOSB_SHORT          160 + 11  /* Fast short REP STOSB */
+#define OMR_FEATURE_X86_FASTREP_CMPSB_SCASB_SHORT    160 + 12  /* Fast short REP CMPSB, SCASB */
+#define OMR_FEATURE_X86_5_13                         160 + 13  /* Reserved */
+#define OMR_FEATURE_X86_5_14                         160 + 14  /* Reserved */
+#define OMR_FEATURE_X86_5_15                         160 + 15  /* Reserved */
+#define OMR_FEATURE_X86_5_16                         160 + 16  /* Reserved */
+#define OMR_FEATURE_X86_5_17                         160 + 17  /* Reserved */
+#define OMR_FEATURE_X86_5_18                         160 + 18  /* Reserved */
+#define OMR_FEATURE_X86_WRMSRNS                      160 + 19  /* WRMSRNS */
+#define OMR_FEATURE_X86_INDEX20                      160 + 20  /* Reserved */
+#define OMR_FEATURE_X86_AMX_FP16                     160 + 21  /* AMX-FP16 */
+#define OMR_FEATURE_X86_HRESET                       160 + 22  /* HRESET */
+#define OMR_FEATURE_X86_AVX_IFMA                     160 + 23  /* AVX-IFMA */
+#define OMR_FEATURE_X86_INDEX24                      160 + 24  /* Reserved */
+#define OMR_FEATURE_X86_INDEX25                      160 + 25  /* Reserved */
+#define OMR_FEATURE_X86_LAM                          160 + 26  /* LAM */
+#define OMR_FEATURE_X86_MSRLIST                      160 + 27  /* MSRLIST */
+#define OMR_FEATURE_X86_5_28                         160 + 28  /* Reserved */
+#define OMR_FEATURE_X86_5_29                         160 + 29  /* Reserved */
+#define OMR_FEATURE_X86_INVD_DISABLE_POST_BIOS_DONE  160 + 30  /* INVD_DISABLE_POST_BIOS_DONE */
+#define OMR_FEATURE_X86_5_MOVRS                      160 + 31  /* MOVRS */
+
+/*
+ * Structured Feature Information Returned in the EDX Register by CPUID instruction when EAX = 7, ECX = 1
+ */
+#define OMR_FEATURE_X86_6_0                   192 + 0   /* Reserved */
+#define OMR_FEATURE_X86_6_1                   192 + 1   /* Reserved */
+#define OMR_FEATURE_X86_6_2                   192 + 2   /* Reserved */
+#define OMR_FEATURE_X86_6_3                   192 + 3   /* Reserved */
+#define OMR_FEATURE_X86_AVX_VNNI_INT8         192 + 4   /* AVX-VNNI-INT8 */
+#define OMR_FEATURE_X86_AVX_NE_CONVERT        192 + 5   /* AVX-NE-CONVERT */
+#define OMR_FEATURE_X86_6_6                   192 + 6   /* Reserved */
+#define OMR_FEATURE_X86_6_7                   192 + 7   /* Reserved */
+#define OMR_FEATURE_X86_AMX_COMPLEX           192 + 8   /* AMX-COMPLEX */
+#define OMR_FEATURE_X86_6_9                   192 + 9   /* Reserved */
+#define OMR_FEATURE_X86_AVX_VNNI_INT16        192 + 10  /* AVX-VNNI-INT16 */
+#define OMR_FEATURE_X86_6_11                  192 + 11  /* Reserved */
+#define OMR_FEATURE_X86_6_12                  192 + 12  /* Reserved */
+#define OMR_FEATURE_X86_6_13                  192 + 13  /* Reserved */
+#define OMR_FEATURE_X86_PREFETCHI             192 + 14  /* PREFETCHI */
+#define OMR_FEATURE_X86_6_15                  192 + 15  /* Reserved */
+#define OMR_FEATURE_X86_6_16                  192 + 16  /* Reserved */
+#define OMR_FEATURE_X86_UIRET_UIF             192 + 17  /* UIRET_UIF */
+#define OMR_FEATURE_X86_CET_SSS               192 + 18  /* CET_SSS */
+#define OMR_FEATURE_X86_AVX10                 192 + 19  /* AVX10 */
+#define OMR_FEATURE_X86_6_20                  192 + 20  /* Reserved */
+#define OMR_FEATURE_X86_APX                 192 + 21  /* Advanced Performance Extensions (APX) */
+#define OMR_FEATURE_X86_6_22                  192 + 22  /* Reserved */
+#define OMR_FEATURE_X86_6_23                  192 + 23  /* Reserved */
+#define OMR_FEATURE_X86_6_24                  192 + 24  /* Reserved */
+#define OMR_FEATURE_X86_6_25                  192 + 25  /* Reserved */
+#define OMR_FEATURE_X86_6_26                  192 + 26  /* Reserved */
+#define OMR_FEATURE_X86_6_27                  192 + 27  /* Reserved */
+#define OMR_FEATURE_X86_6_28                  192 + 28  /* Reserved */
+#define OMR_FEATURE_X86_6_29                  192 + 29  /* Reserved */
+#define OMR_FEATURE_X86_6_30                  192 + 30  /* Reserved */
+#define OMR_FEATURE_X86_6_31                  192 + 31  /* Reserved */
+
 
 /*  AArch64 Linux features
  *  See https://www.kernel.org/doc/html/latest/arm64/elf_hwcaps.html.

@@ -40,6 +40,9 @@ omrsysinfo_get_x86_description(struct OMRPortLibrary *portLibrary, OMRProcessorD
 extern uint32_t
 omrsysinfo_get_x86_xsave_state();
 
+extern uint32_t
+omrsysinfo_get_x86_avx10_subversion();
+
 extern void
 omrsysinfo_get_x86_cpuid(uint32_t leaf, uint32_t *cpuInfo);
 
