@@ -937,6 +937,7 @@ OMR::Power::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator
 	     splat = OMR::InstOpCode::vspltish;
 	     break;
      case TR::Int32:
+     case TR::Int64:
 	     splat = OMR::InstOpCode::vspltisw;
 	     break;
      default:
@@ -945,6 +946,15 @@ OMR::Power::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator
 
    //AND with 1's to ensure each "true" value is represented by exactly one "1" bit
    generateTrg1ImmInstruction(cg, splat, node, temp2, 1);
+   
+   if (firstChild->getDataType().getVectorElementType() == TR::Int64)
+      {
+      //since there's no splat immediate doubleword instruction, we need to use the single word
+      //version and then shift it over by 32 bits
+      generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, temp1, -1);
+      generateTrg1Src2Instruction(cg, TR::InstOpCode::vsrd, node, temp2, temp2, temp1);
+      }
+
    generateTrg1Src2Instruction(cg, OMR::InstOpCode::vand, node, temp1, srcReg, temp2);
 
    //use vector population count and take sum of results
