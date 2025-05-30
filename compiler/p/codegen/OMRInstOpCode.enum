@@ -646,7 +646,7 @@
    vsel,             // vector conditional select
    vsld,             // Vector Shift Left Dword
    vsrad,            // Vector Shift Right Algebraic Dword
-// vsrd,             // Vector Shift Right Dword
+   vsrd,             // Vector Shift Right Dword
 // vsubcuq,          // Vector Subtract & write Carry Unsigned Qword
 // vsubecuq,         // Vector Subtract Extended & write Carry Unsigned Qword
 // vsubeuqm,         // Vector Subtract Extended Unsigned Qword Modulo
@@ -812,7 +812,7 @@
 // vpmsumh,          // Vector Polynomial Multiply-Sum Hword
 // vpmsumw,          // Vector Polynomial Multiply-Sum Word
 // vpopcntb,         // Vector Population Count Byte
-// vpopcntd,         // Vector Population Count Dword
+   vpopcntd,         // Vector Population Count Dword
 // vpopcnth,         // Vector Population Count Hword
 // vpopcntw,         // Vector Population Count Word
    vmrghb,           // vector merge high byte

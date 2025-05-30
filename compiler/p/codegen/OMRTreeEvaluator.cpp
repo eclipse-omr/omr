@@ -913,7 +913,63 @@ OMR::Power::TreeEvaluator::mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *c
 TR::Register*
 OMR::Power::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *firstChild = node->getFirstChild();
+
+   TR_ASSERT_FATAL_WITH_NODE(node, firstChild->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+   TR::Register *srcReg = cg->evaluate(firstChild);
+   TR::Register *resReg = cg->allocateRegister(TR_GPR);
+
+   TR::Register *temp1 = cg->allocateRegister(TR_VRF);
+   TR::Register *temp2 = cg->allocateRegister(TR_VRF);
+
+   node->setRegister(resReg);
+
+   //pick splat opcode based on vector element type
+   TR::InstOpCode::Mnemonic splat;
+   switch(firstChild->getDataType().getVectorElementType())
+     {
+     case TR::Int8:
+	     splat = OMR::InstOpCode::vspltisb;
+	     break;
+     case TR::Int16:
+	     splat = OMR::InstOpCode::vspltish;
+	     break;
+     case TR::Int32:
+     case TR::Int64:
+	     splat = OMR::InstOpCode::vspltisw;
+	     break;
+     default:
+	     TR_ASSERT_FATAL(false, "help\n"); return NULL;
+     }
+
+   //AND with 1's to ensure each "true" value is represented by exactly one "1" bit
+   generateTrg1ImmInstruction(cg, splat, node, temp2, 1);
+   
+   if (firstChild->getDataType().getVectorElementType() == TR::Int64)
+      {
+      //since there's no splat immediate doubleword instruction, we need to use the single word
+      //version and then shift it over by 32 bits
+      generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, temp1, -1);
+      generateTrg1Src2Instruction(cg, TR::InstOpCode::vsrd, node, temp2, temp2, temp1);
+      }
+
+   generateTrg1Src2Instruction(cg, OMR::InstOpCode::vand, node, temp1, srcReg, temp2);
+
+   //use vector population count and take sum of results
+   generateTrg1Src1Instruction(cg, OMR::InstOpCode::vpopcntd, node, temp1, temp1);
+   generateTrg1Src2ImmInstruction(cg, OMR::InstOpCode::xxpermdi, node, temp2, temp1, temp1, 2);
+   generateTrg1Src2Instruction(cg, OMR::InstOpCode::vaddudm, node, temp1, temp1, temp2);
+
+   //move result to GPR
+   generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, resReg, temp1);
+
+   cg->stopUsingRegister(temp1);
+   cg->stopUsingRegister(temp2);
+   cg->decReferenceCount(firstChild);
+
+   return resReg;
    }
 
 TR::Register*
