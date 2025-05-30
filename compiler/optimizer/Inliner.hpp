@@ -243,7 +243,7 @@ struct TR_VirtualGuardSelection
    TR_OpaqueClassBlock *_thisClass;
 
    // only for a MutableCallSiteTargetGuard
-   uintptr_t                *_mutableCallSiteObject;
+   TR::KnownObjectTable::Index _mutableCallSiteObject;
    TR::KnownObjectTable::Index _mutableCallSiteEpoch;
 
    // this flag is used to signify a profiled guard for which

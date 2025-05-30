@@ -148,7 +148,7 @@ class TR_VirtualGuard
          int16_t calleeIndex,
          TR::Node * node,
          TR::TreeTop * destination,
-         uintptr_t *mcsObject,
+         TR::KnownObjectTable::Index mcsObject,
          TR::KnownObjectTable::Index mcsEpoch);
 
    static TR::Node *createDummyOrSideEffectGuard(TR::Compilation *, TR::Node *, TR::TreeTop *);
@@ -224,7 +224,7 @@ class TR_VirtualGuard
    TR_OpaqueClassBlock    *getThisClass()   { return _thisClass; }
    void                    setThisClass(TR_OpaqueClassBlock *thisClass)   { _thisClass = thisClass; }
 
-   uintptr_t *mutableCallSiteObject()
+   TR::KnownObjectTable::Index mutableCallSiteObject()
       {
       TR_ASSERT(_kind == TR_MutableCallSiteTargetGuard, "mutableCallSiteObject only defined for TR_MutableCallSiteTargetGuard");
       return _mutableCallSiteObject;
@@ -294,7 +294,7 @@ class TR_VirtualGuard
    bool                      _mergedWithOSRGuard;
 
    // These reference locations are non-null only for MutableCallSiteGuards
-   uintptr_t                *_mutableCallSiteObject;
+   TR::KnownObjectTable::Index _mutableCallSiteObject;
    TR::KnownObjectTable::Index _mutableCallSiteEpoch;
    TR_ByteCodeInfo           _bcInfo;
    };
