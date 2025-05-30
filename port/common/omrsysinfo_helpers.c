@@ -47,6 +47,7 @@
 #define CPUID_VENDOR_INFO                                 0
 #define CPUID_FAMILY_INFO                                 1
 #define CPUID_STRUCTURED_EXTENDED_FEATURE_INFO            7
+#define CPUID_AVX10_ENUMERATION_FEATURE_INFO              0x24
 
 #define CPUID_VENDOR_INTEL                                "GenuineIntel"
 #define CPUID_VENDOR_AMD                                  "AuthenticAMD"
@@ -188,8 +189,8 @@ static const char* const OMR_FEATURE_X86_NAME[] = {
 	"null",             /* 2 * 32 + 1 */
 	"null",             /* 2 * 32 + 2 */
 	"null",             /* 2 * 32 + 3 */
-	"null",             /* 2 * 32 + 4 */
-	"null",             /* 2 * 32 + 5 */
+	"avx10.1",          /* 2 * 32 + 4 */
+	"avx10.2",          /* 2 * 32 + 5 */
 	"null",             /* 2 * 32 + 6 */
 	"null",             /* 2 * 32 + 7 */
 	"null",             /* 2 * 32 + 8 */
@@ -200,9 +201,9 @@ static const char* const OMR_FEATURE_X86_NAME[] = {
 	"null",             /* 2 * 32 + 13 */
 	"null",             /* 2 * 32 + 14 */
 	"null",             /* 2 * 32 + 15 */
-	"null",             /* 2 * 32 + 16 */
-	"null",             /* 2 * 32 + 17 */
-	"null",             /* 2 * 32 + 18 */
+	"avx10/128",        /* 2 * 32 + 16 */
+	"avx10/256",        /* 2 * 32 + 17 */
+	"avx10/512",        /* 2 * 32 + 18 */
 	"null",             /* 2 * 32 + 19 */
 	"null",             /* 2 * 32 + 20 */
 	"null",             /* 2 * 32 + 21 */
@@ -279,7 +280,71 @@ static const char* const OMR_FEATURE_X86_NAME[] = {
 	"movdir64b",        /* 4 * 32 + 28 */
 	"enqcmd",           /* 4 * 32 + 29 */
 	"sgx_lc",           /* 4 * 32 + 30 */
-	"pks"               /* 4 * 32 + 31 */
+	"pks",              /* 4 * 32 + 31 */
+	"sha512",           /* 5 * 32 + 0 */
+	"sm3",              /* 5 * 32 + 1 */
+	"sm4",              /* 5 * 32 + 2 */
+	"null",             /* 5 * 32 + 3 */
+	"avx_vnni",         /* 5 * 32 + 4 */
+	"avx512_bf16",      /* 5 * 32 + 5 */
+	"lass",             /* 5 * 32 + 6 */
+	"cmpccxadd",        /* 5 * 32 + 7 */
+	"archperfmonext",   /* 5 * 32 + 8 */
+	"null",             /* 5 * 32 + 9 */
+	"fastrep_movsb_zero",        /* 5 * 32 + 10 */
+	"fastrep_stosb_short",       /* 5 * 32 + 11 */
+	"fastrep_cmpsb_scasb_short", /* 5 * 32 + 12 */
+	"null",             /* 5 * 32 + 13 */
+	"null",             /* 5 * 32 + 14 */
+	"null",             /* 5 * 32 + 15 */
+	"null",             /* 5 * 32 + 16 */
+	"null",             /* 5 * 32 + 17 */
+	"null",             /* 5 * 32 + 18 */
+	"wrmsrns",          /* 5 * 32 + 19 */
+	"null",             /* 5 * 32 + 20 */
+	"amx_fp16",         /* 5 * 32 + 21 */
+	"hreset",           /* 5 * 32 + 22 */
+	"avx_ifma",         /* 5 * 32 + 23 */
+	"null",             /* 5 * 32 + 24 */
+	"null",             /* 5 * 32 + 25 */
+	"lam",              /* 5 * 32 + 26 */
+	"msrlist",          /* 5 * 32 + 27 */
+	"null",             /* 5 * 32 + 28 */
+	"null",             /* 5 * 32 + 29 */
+	"invd_disable_post_bios_done", /* 5 * 32 + 30 */
+	"movrs",            /* 5 * 32 + 31 */
+	"null",             /* 6 * 32 + 0  */
+	"null",             /* 6 * 32 + 1  */
+	"null",             /* 6 * 32 + 2  */
+	"null",             /* 6 * 32 + 3  */
+	"avx_vnni_int8",    /* 6 * 32 + 4  */
+	"avx_ne_convert",   /* 6 * 32 + 5  */
+	"null",             /* 6 * 32 + 6  */
+	"null",             /* 6 * 32 + 7  */
+	"amx_complex",      /* 6 * 32 + 8  */
+	"null",             /* 6 * 32 + 9  */
+	"avx_vnni_int16",   /* 6 * 32 + 10 */
+	"null",             /* 6 * 32 + 11 */
+	"null",             /* 6 * 32 + 12 */
+	"null",             /* 6 * 32 + 13 */
+	"prefetchi",        /* 6 * 32 + 14 */
+	"null",             /* 6 * 32 + 15 */
+	"null",             /* 6 * 32 + 16 */
+	"uiretuif",         /* 6 * 32 + 17 */
+	"cet_sss",          /* 6 * 32 + 18 */
+	"avx10",            /* 6 * 32 + 19 */
+	"null",             /* 6 * 32 + 20 */
+	"apx",              /* 6 * 32 + 21 */
+	"null",             /* 6 * 32 + 22 */
+	"null",             /* 6 * 32 + 23 */
+	"null",             /* 6 * 32 + 24 */
+	"null",             /* 6 * 32 + 25 */
+	"null",             /* 6 * 32 + 26 */
+	"null",             /* 6 * 32 + 27 */
+	"null",             /* 6 * 32 + 28 */
+	"null",             /* 6 * 32 + 29 */
+	"null",             /* 6 * 32 + 30 */
+	"null"              /* 6 * 32 + 31 */
 };
 
 const char *
@@ -433,15 +498,26 @@ omrsysinfo_get_x86_description(struct OMRPortLibrary *portLibrary, OMRProcessorD
 	desc->features[1] = CPUInfo[CPUID_ECX];
 	desc->features[2] = 0;
 
-	/* If OSXSAVE is supported, populate the XSAVE state in desc->features[2]. Unused bits (4-31) are reserved for future expansion. */
+	/* If OSXSAVE is supported, populate the XSAVE state in desc->features[2], bits 0-3 */
 	if (OMR_ARE_ANY_BITS_SET(desc->features[(OMR_FEATURE_X86_OSXSAVE) / 32], INDEX_TO_MASK(OMR_FEATURE_X86_OSXSAVE))) {
 		desc->features[2] |= omrsysinfo_get_x86_xsave_state();
 	}
 
 	/* extended features */
-	omrsysinfo_get_x86_cpuid_ext(CPUID_STRUCTURED_EXTENDED_FEATURE_INFO, 0, CPUInfo); /* 0x0 is the only valid subleaf value for this leaf */
+	omrsysinfo_get_x86_cpuid_ext(CPUID_STRUCTURED_EXTENDED_FEATURE_INFO, 0, CPUInfo); /* CPUID.(0x7.0x0) */
 	desc->features[3] = CPUInfo[CPUID_EBX]; /* Structured Extended Feature Flags in EBX */
 	desc->features[4] = CPUInfo[CPUID_ECX]; /* Structured Extended Feature Flags in ECX */
+
+	omrsysinfo_get_x86_cpuid_ext(CPUID_STRUCTURED_EXTENDED_FEATURE_INFO, 1, CPUInfo); /* CPUID.(0x7.0x1). */
+	desc->features[5] = CPUInfo[CPUID_EAX]; /* Structured Extended Feature Flags in EAX */
+	desc->features[6] = CPUInfo[CPUID_EDX]; /* Structured Extended Feature Flags in EDX */
+
+	/* If AVX 10 is supported, populate the AVX 10.X sub version flags in desc->features[2], bits 4-6, 16-18
+	 * Unused bits (7-15, 19-31) are reserved for future expansion.
+	 */
+	if (OMR_ARE_ANY_BITS_SET(desc->features[(OMR_FEATURE_X86_AVX10) / 32], INDEX_TO_MASK(OMR_FEATURE_X86_AVX10))) {
+		desc->features[2] |= omrsysinfo_get_x86_avx10_subversion();
+	}
 
 	return 0;
 }
@@ -491,6 +567,47 @@ omrsysinfo_get_x86_xsave_state()
 	if (OMR_ARE_ANY_BITS_SET(xcr0, OMR_X86_XCR0_MASK_APX_EGPR)) {
 		state |= INDEX_TO_MASK(OMR_FEATURE_X86_XSAVE_APX);
 	}
+
+	return state;
+}
+
+/**
+ * @brief Queries the AVX10 sub-version and supported vector lengths on x86 CPUs.
+ *
+ * This function retrieves information about the AVX10 instruction set extensions
+ * supported by the processor using the CPUID leaf eax=0x24, sub-leaf ecx=0. The AVX10 sub-version
+ * is stored in EBX[7:0] and is used to determine which AVX10.X features are available.
+ * Additionally, vector length support (128-bit, 256-bit, 512-bit) is also reported via flags.
+ *
+ * The returned value is a bitmask composed of `OMR_FEATURE_X86_AVX10_*` flags indicating:
+ * - AVX10 sub-version support (AVX10.1, AVX10.2, AVX10.3)
+ * - Vector length support (128/256/512-bit)
+ *
+ * @return A bitmask indicating the AVX10 features and vector lengths supported by the CPU.
+ */
+uint32_t omrsysinfo_get_x86_avx10_subversion() {
+	/* AVX 10.X support is stored in CPUID(0x24,0).EBX[7:0] as an enumeration*/
+	uint32_t state = 0;
+	uint32_t subVersion = 0;
+	uint32_t CPUInfo[4] = {0};
+
+	omrsysinfo_get_x86_cpuid_ext(CPUID_AVX10_ENUMERATION_FEATURE_INFO, 0, CPUInfo); /* CPUID.(0x24.0x0). */
+	subVersion = CPUInfo[CPUID_EBX] & 0xff;
+
+	if (subVersion >= 1) {
+		state |= INDEX_TO_MASK(OMR_FEATURE_X86_AVX10_1);
+	}
+
+	if (subVersion >= 2) {
+		state |= INDEX_TO_MASK(OMR_FEATURE_X86_AVX10_2);
+	}
+
+	/* Set more flags as new sub versions arrive */
+
+	/* Check vector length support */
+	state |= CPUInfo[CPUID_EBX] & INDEX_TO_MASK(OMR_FEATURE_X86_AVX10_128);
+	state |= CPUInfo[CPUID_EBX] & INDEX_TO_MASK(OMR_FEATURE_X86_AVX10_256);
+	state |= CPUInfo[CPUID_EBX] & INDEX_TO_MASK(OMR_FEATURE_X86_AVX10_512);
 
 	return state;
 }
