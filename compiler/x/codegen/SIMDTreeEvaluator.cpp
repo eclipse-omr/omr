@@ -231,21 +231,41 @@ TR::Register* OMR::X86::TreeEvaluator::broadcastHelper(TR::Node *node, TR::Regis
    {
    bool broadcast64 = et.isInt64() || et.isDouble();
 
-   // Expand byte & word to 32-bits
-   switch (et)
+   if (!cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2) ||
+       vl != TR::VectorLength128)
       {
-      case TR::Int8:
-         generateRegRegInstruction(TR::InstOpCode::PUNPCKLBWRegReg, node, vectorReg, vectorReg, cg);
-      case TR::Int16:
-         generateRegRegImmInstruction(TR::InstOpCode::PSHUFLWRegRegImm1, node, vectorReg, vectorReg, 0x0, cg);
-      default:
-         break;
+      // Expand byte & word to 32-bits and update `et` to represent the resulting type
+      switch (et)
+         {
+         case TR::Int8:
+            generateRegRegInstruction(TR::InstOpCode::PUNPCKLBWRegReg, node, vectorReg, vectorReg, cg);
+            // fallthrough
+         case TR::Int16:
+            generateRegRegImmInstruction(TR::InstOpCode::PSHUFLWRegRegImm1, node, vectorReg, vectorReg, 0x0, cg);
+            et = TR::Int32;
+            break;
+         default:
+            break;
+         }
       }
 
    switch (vl)
       {
       case TR::VectorLength128:
-         generateRegRegImmInstruction(TR::InstOpCode::PSHUFDRegRegImm1, node, vectorReg, vectorReg, broadcast64 ? 0x44 : 0, cg);
+         switch (et)
+            {
+            case TR::Int8:
+               TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2), "8-bit to 128-bit vsplats requires AVX2");
+               generateRegRegInstruction(TR::InstOpCode::VPBROADCASTBRegReg, node, vectorReg, vectorReg, cg);
+               break;
+            case TR::Int16:
+               TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2), "16-bit to 128-bit vsplats requires AVX2");
+               generateRegRegInstruction(TR::InstOpCode::VPBROADCASTWRegReg, node, vectorReg, vectorReg, cg);
+               break;
+            default:
+               generateRegRegImmInstruction(TR::InstOpCode::PSHUFDRegRegImm1, node, vectorReg, vectorReg, broadcast64 ? 0x44 : 0, cg);
+               break;
+            }
          break;
       case TR::VectorLength256:
          {
