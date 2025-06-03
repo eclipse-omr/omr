@@ -226,6 +226,7 @@ public:
    static TR::Register *mloadiEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+   static TR::Register *msplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mFirstTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);

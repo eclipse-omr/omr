@@ -1905,6 +1905,7 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
          else
             return false;
       case TR::vsplats:
+      case TR::msplats:
             return true;
       case TR::vmin:
       case TR::vmax:
