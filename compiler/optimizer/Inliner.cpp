@@ -55,6 +55,7 @@
 #include "env/CompilerEnv.hpp"
 #include "env/ObjectModel.hpp"
 #include "env/PersistentInfo.hpp"
+#include "env/OMRRetainedMethodSet.hpp"
 #include "env/StackMemoryRegion.hpp"
 #include "env/TRMemory.hpp"
 #include "env/jittypes.h"
@@ -4306,7 +4307,17 @@ void TR_InlinerBase::applyPolicyToTargets(TR_CallStack *callStack, TR_CallSite *
             }
          }
 
+      if (comp()->getOption(TR_DontInlineUnloadableMethods)
+          && !callsite->_retainedMethods->willRemainLoaded(calltarget->_calleeMethod))
+         {
+         tracer()->insertCounter(Unloadable_Callee, callsite->_callNodeTreeTop);
+         callsite->removecalltarget(i, tracer(), Unloadable_Callee);
+         i--;
+         continue;
+         }
+
       int32_t bytecodeSize = getPolicy()->getInitialBytecodeSize(calltarget->_calleeMethod, calltarget->_calleeSymbol, comp());
+
 
       if (!forceInline(calltarget))
          getUtil()->estimateAndRefineBytecodeSize(callsite, calltarget, callStack, bytecodeSize);
@@ -4974,6 +4985,34 @@ bool TR_InlinerBase::inlineCallTarget2(TR_CallStack * callStack, TR_CallTarget *
    // this point, we can be sure that all transitive callers will be inlined
    // successfully as well. That is, this target's code will be included in the
    // trees by the end of inlining.
+
+   // Take note of any necessary keepalive and/or bond. Note that there could
+   // be both a keepalive and a bond here, if e.g. the call site is an indirect
+   // call site that was refined based on constant folding, but the keepalive
+   // doesn't cover the call target.
+
+   if (calltarget->_myCallSite->_refinedMethod != NULL)
+      {
+      comp()->setCurrentCallSiteRefinedMethod(calltarget->_myCallSite->_refinedMethod);
+      }
+
+   if (calltarget->_myCallSite->_needsKeepalive)
+      {
+      auto *retainedMethods = calltarget->_myCallSite->_retainedMethods;
+      retainedMethods->keepalive();
+      comp()->setCurrentInlinedSiteGeneratedKeepalive(retainedMethods->method());
+      }
+
+   if (calltarget->_needsBond)
+      {
+      TR_ASSERT_FATAL(
+         !comp()->getOption(TR_DontInlineUnloadableMethods),
+         "dontInlineUnloadableMethods must prevent attempts to create bonds");
+
+      auto *retainedMethods = calltarget->_retainedMethods;
+      retainedMethods->bond();
+      comp()->setCurrentInlinedSiteGeneratedBond(retainedMethods->method());
+      }
 
    // We have the trees now, we can check if each argument is invariant and clear the prex arg for the ones that are not
    getUtil()->clearArgInfoForNonInvariantArguments(calltarget, tracer());
@@ -5725,6 +5764,8 @@ TR_CallTarget::TR_CallTarget(TR::Region &memRegion,
    _frequencyAdjustment(freqAdj),
    _prexArgInfo(NULL),
    _ecsPrexArgInfo(ecsPrexArgInfo),
+   _retainedMethods(callsite->_retainedMethods),
+   _needsBond(false),
    _requiredConsts(memRegion)
    {
    TR_ASSERT_FATAL(
@@ -5752,6 +5793,12 @@ TR_CallTarget::TR_CallTarget(TR::Region &memRegion,
    _failureReason=InlineableTarget;
    _size=-1;
    _calleeMethodKind = TR::MethodSymbol::Virtual;
+
+   if (!_retainedMethods->willRemainLoaded(_calleeMethod))
+      {
+      _retainedMethods = _retainedMethods->createChild(_calleeMethod);
+      _needsBond = true; // if this target is actually inlined
+      }
    }
 
 void
@@ -5789,7 +5836,9 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod,
                          TR_ByteCodeInfo & bcInfo,
                          TR::Compilation *comp,
                          int32_t depth,
-                         bool allConsts) :
+                         bool allConsts,
+                         OMR::RetainedMethodSet *retainedMethods,
+                         bool wasRefinedFromKnownObject) :
    _callerResolvedMethod(callerResolvedMethod),
    _callNodeTreeTop(callNodeTreeTop),
    _cursorTreeTop(NULL),
@@ -5813,7 +5862,10 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod,
    _allConsts(allConsts),
    _mytargets(0, comp->allocator()),
    _myRemovedTargets(0, comp->allocator()),
-   _ecsPrexArgInfo(0)
+   _ecsPrexArgInfo(0),
+   _refinedMethod(NULL),
+   _retainedMethods(retainedMethods),
+   _needsKeepalive(false)
    {
    if (_initialCalleeSymbol != NULL)
       {
@@ -5831,6 +5883,61 @@ TR_CallSite::TR_CallSite(TR_ResolvedMethod *callerResolvedMethod,
    _failureReason=InlineableTarget;
    _byteCodeIndex = bcInfo.getByteCodeIndex();
    _callerBlock = NULL;
+
+   // Because the retained method set is generally incomplete, look at the call
+   // site in the bytecode and take into account any linked callee.
+   //
+   // This inspects the call site independently of initialCalleeMethod so that
+   // it happens even if that hasn't been specified yet, and also to make sure
+   // that it's independent of any refinement that may have happened in the
+   // trees based on e.g. preexistence.
+   //
+   // However! this call site may be for a helper or intrinsic call node, which
+   // won't be inlined, and which doesn't necessarily correspond to a call in
+   // the bytecode. In that case, the bcInfo doesn't necessarily identify a
+   // call instruction, so avoid treating it as though it does.
+   //
+   if (callNode == NULL
+       || (!callNode->getSymbolReference()->getSymbol()->castToMethodSymbol()->isHelper()
+           && !comp->getSymRefTab()->isNonHelper(callNode->getSymbolReference())))
+      {
+      _retainedMethods = _retainedMethods->withLinkedCalleeAttested(bcInfo);
+      }
+
+   // Arrange to create a keepalive if needed based on known object refinement.
+   if (wasRefinedFromKnownObject)
+      {
+      // initialCalleeMethod was refined based on known object information,
+      // i.e. constants that we're allowed to retain, so we can also retain the
+      // callee. However, note that (as usual) for an indirect call the best
+      // target might still not be guaranteed to remain loaded, if it's defined
+      // by a subtype of potentially shorter lifespan.
+      //
+      // If we have a call node, then we might not yet have initialCalleeMethod,
+      // but it must have been refined in the trees, and the refined method is
+      // found from the symbol.
+      //
+      _refinedMethod = _initialCalleeMethod;
+      if (callNode != NULL)
+         {
+         TR_ASSERT_FATAL_WITH_NODE(
+            callNode,
+            callNode->isCallThatWasRefinedFromKnownObject(),
+            "wasRefinedFromKnownObject parameter inconsistent with node flag");
+         _refinedMethod =
+            callNode->getSymbol()->getResolvedMethodSymbol()->getResolvedMethod();
+         }
+
+      TR_ASSERT_FATAL(
+         _refinedMethod != NULL,
+         "initialCalleeMethod unspecified despite supposed known object refinement");
+
+      if (!_retainedMethods->willRemainLoaded(_refinedMethod))
+         {
+         _needsKeepalive = true;
+         _retainedMethods = _retainedMethods->createChild(_refinedMethod);
+         }
+      }
    }
 
 void
