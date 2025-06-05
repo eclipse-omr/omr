@@ -373,7 +373,7 @@ TR_VirtualGuard::createNonoverriddenGuard
 
 
 TR::Node *
-TR_VirtualGuard::createMutableCallSiteTargetGuard(TR::Compilation * comp, int16_t calleeIndex, TR::Node * node, TR::TreeTop * destination, uintptr_t *mcsObject, TR::KnownObjectTable::Index mcsEpoch)
+TR_VirtualGuard::createMutableCallSiteTargetGuard(TR::Compilation * comp, int16_t calleeIndex, TR::Node * node, TR::TreeTop * destination, TR::KnownObjectTable::Index mcsObject, TR::KnownObjectTable::Index mcsEpoch)
    {
    TR::SymbolReferenceTable *symRefTab = comp->getSymRefTab();
    TR::SymbolReference *addressSymRef = symRefTab->createKnownStaticDataSymbolRef(0, TR::Address, mcsEpoch);
