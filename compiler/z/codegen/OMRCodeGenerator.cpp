@@ -613,6 +613,23 @@ OMR::Z::CodeGenerator::initialize()
          }
       }
 
+   if (comp->target().cpu.supportsFeature(OMR_FEATURE_S390_MISCELLANEOUS_INSTRUCTION_EXTENSION_4))
+      {
+      static bool disableBitwiseCompress = feGetEnv("TR_disableBitwiseCompress") != NULL;
+      if (!disableBitwiseCompress)
+         {
+         cg->setSupports32BitCompress();
+         cg->setSupports64BitCompress();
+         }
+
+      static bool disableBitwiseExpand = feGetEnv("TR_disableBitwiseExpand") != NULL;
+      if (!disableBitwiseExpand)
+         {
+         cg->setSupports32BitExpand();
+         cg->setSupports64BitExpand();
+         }
+      }
+
    if (!comp->compileRelocatableCode())
       {
       cg->setSupportsArrayTranslateTRxx();
