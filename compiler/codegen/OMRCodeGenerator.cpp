@@ -1962,13 +1962,12 @@ OMR::CodeGenerator::reserveCodeCache()
    {
    int32_t numReserved = 0;
    int32_t compThreadID = 0;
+   TR::Compilation *comp = self()->comp();
 
-   _codeCache = TR::CodeCacheManager::instance()->reserveCodeCache(false, 0, compThreadID, &numReserved);
+   _codeCache = TR::CodeCacheManager::instance()->reserveCodeCache(false, 0, compThreadID, &numReserved, comp->codeCacheKind());
 
    if (!_codeCache) // Cannot reserve a cache; all are used
       {
-      TR::Compilation *comp = self()->comp();
-
       // We may reach this point if all code caches have been used up.
       // If some code caches have some space but cannot be used because they are reserved
       // we will throw an exception in the call to TR::CodeCacheManager::reserveCodeCache

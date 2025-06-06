@@ -24,6 +24,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "control/OptionsUtil.hpp"
 #include "il/DataTypes.hpp"
 #include "infra/CriticalSection.hpp"
 #include "runtime/CodeCacheConfig.hpp"
@@ -157,7 +158,8 @@ public:
    void  freeMemory(void *memoryToFree);
 
    TR::CodeCache * allocateCodeCacheObject(TR::CodeCacheMemorySegment *codeCacheSegment,
-                                           size_t codeCacheSize);
+                                           size_t codeCacheSize,
+                                           TR::CodeCacheKind kind);
    void * chooseCacheStartAddress(size_t repositorySize);
 
    TR::CodeCache * getFirstCodeCache()            { return _codeCacheList._head; }
@@ -172,8 +174,10 @@ public:
    TR::CodeCache * reserveCodeCache(bool compilationCodeAllocationsMustBeContiguous,
                                     size_t sizeEstimate,
                                     int32_t compThreadID,
-                                    int32_t *numReserved);
-   TR::CodeCache * getNewCodeCache(int32_t reservingCompThreadID);
+                                    int32_t *numReserved,
+                                    TR::CodeCacheKind kind);
+   TR::CodeCache * getNewCodeCache(int32_t reservingCompThreadID,
+                                   TR::CodeCacheKind kind);
 
    uint8_t * allocateCodeMemory(size_t warmCodeSize,
                                 size_t coldCodeSize,
@@ -191,13 +195,15 @@ public:
     *                  <= -2 : no reservation is requested
     *                  == -1 : the application thread is requesting the allocation; new code cache will be reserved
     *                  >=  0 : a compilation thread is requesting the allocation; new code cache will be reserved
+    * @param[in] kind : the kind of code cache to allocate
     *
     * @return if allocation is successful, the allocated TR::CodeCache object from
     *           the new segment; NULL otherwise.
     */
    TR::CodeCache * allocateCodeCacheFromNewSegment(
       size_t segmentSizeInBytes,
-      int32_t reservingCompilationTID);
+      int32_t reservingCompilationTID,
+      TR::CodeCacheKind kind);
 
    TR::CodeCache * findCodeCacheFromPC(void *inCacheAddress);
 

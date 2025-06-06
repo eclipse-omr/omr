@@ -1857,7 +1857,8 @@ OMR::Options::Options(
       int32_t compThreadID) :
    _optionSets(NULL),
    _postRestoreOptionSets(NULL),
-   _logListForOtherCompThreads(0)
+   _logListForOtherCompThreads(0),
+   _codeCacheKind(TR::CodeCacheKind::DEFAULT_CC)
    {
    TR_ASSERT(optimizationPlan, "Must have an optimization plan when calling this method");
 

@@ -180,6 +180,13 @@ private:
    const char *_optionString;
    };
 
+// An enum to indcate the type of code cache a compiled body will be placed into
+//
+enum CodeCacheKind
+   {
+   DEFAULT_CC = 0,
+   };
+
 }
 
 #endif

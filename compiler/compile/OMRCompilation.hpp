@@ -354,6 +354,11 @@ public:
    //
    bool compilePortableCode() { return false; }
 
+   // The kind of code cache to be allocated for the compiled body generated
+   // by this compilation unit
+   //
+   TR::CodeCacheKind codeCacheKind();
+
    // Maximum number of internal pointers that can be managed.
    //
    int32_t maxInternalPointers();

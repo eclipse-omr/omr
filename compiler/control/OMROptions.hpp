@@ -1349,6 +1349,9 @@ protected:
 public:
    TR_ALLOC(TR_Memory::Options)
 
+   TR::CodeCacheKind getCodeCacheKind() { return _codeCacheKind; }
+   void setCodeCacheKind(TR::CodeCacheKind kind) { _codeCacheKind = kind; }
+
    void init()
    {
       _optionSets = NULL;
@@ -1505,6 +1508,7 @@ public:
       _arraycopyRepMovsIntArrayThreshold = 32;
       _arraycopyRepMovsLongArrayThreshold = 32;
       _arraycopyRepMovsReferenceArrayThreshold = 32;
+      _codeCacheKind = TR::CodeCacheKind::DEFAULT_CC;
 
       memset(_options, 0, sizeof(_options));
       memset(_disabledOptimizations, false, sizeof(_disabledOptimizations));
@@ -2545,6 +2549,7 @@ protected:
    int32_t                     _arraycopyRepMovsLongArrayThreshold; // Long array copy threshold for using REP MOVS instructions. Only supports 32, 64, or 128 bytes
    int32_t                     _arraycopyRepMovsReferenceArrayThreshold; // Reference array copy threshold for using REP MOVS instructions. Only supports 32, 64, or 128 bytes
 
+   TR::CodeCacheKind           _codeCacheKind;
    }; // TR::Options
 
 }

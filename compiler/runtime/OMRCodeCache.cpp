@@ -269,7 +269,8 @@ OMR::CodeCache::trimCodeMemoryAllocation(void *codeMemoryStart, size_t actualSiz
 bool
 OMR::CodeCache::initialize(TR::CodeCacheManager *manager,
                            TR::CodeCacheMemorySegment *codeCacheSegment,
-                           size_t allocatedCodeCacheSizeInBytes)
+                           size_t allocatedCodeCacheSizeInBytes,
+                           TR::CodeCacheKind kind)
    {
    _manager = manager;
 
@@ -278,6 +279,8 @@ OMR::CodeCache::initialize(TR::CodeCacheManager *manager,
    // instead of _jitConfig->codeCachePadKB * 1024 bytes
    // If codeCachePadKB is not set, heapSize is segmentSize anyway
    _segment = codeCacheSegment;
+
+   _kind = kind;
 
    // helperTop is heapTop, usually
    // When codeCachePadKB > segmentSize, the helperTop is not at the very end of the segemnt
@@ -1758,7 +1761,8 @@ OMR::CodeCache::getCCPreLoadedCodeAddress(TR_CCPreLoadedCode h, TR::CodeGenerato
 TR::CodeCache *
 OMR::CodeCache::allocate(TR::CodeCacheManager *manager,
                          size_t segmentSize,
-                         int32_t reservingCompThreadID)
+                         int32_t reservingCompThreadID,
+                         TR::CodeCacheKind kind)
    {
-   return manager->allocateCodeCacheFromNewSegment(segmentSize, reservingCompThreadID);
+   return manager->allocateCodeCacheFromNewSegment(segmentSize, reservingCompThreadID, kind);
    }

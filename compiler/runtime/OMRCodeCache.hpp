@@ -34,6 +34,7 @@ namespace OMR { typedef CodeCache CodeCacheConnector; }
 
 #include <stddef.h>
 #include <stdint.h>
+#include "control/OptionsUtil.hpp"
 #include "env/defines.h"
 #include "il/DataTypes.hpp"
 #include "infra/CriticalSection.hpp"
@@ -87,7 +88,7 @@ public:
 
    TR::CodeCache * getNextCodeCache()  { return _next; }
 
-   static TR::CodeCache *allocate(TR::CodeCacheManager *manager, size_t segmentSize, int32_t reservingCompThreadID);
+   static TR::CodeCache *allocate(TR::CodeCacheManager *manager, size_t segmentSize, int32_t reservingCompThreadID, TR::CodeCacheKind kind);
    void destroy(TR::CodeCacheManager *manager);
 
    uint8_t *allocateCodeMemory(size_t warmCodeSize,
@@ -213,12 +214,14 @@ public:
     * @param[in] manager : the TR::CodeCacheManager
     * @param[in] codeCacheSegment : the code cache memory segment that has been allocated
     * @param[in] allocatedCodeCacheSizeInBytes : the size (in bytes) of the allocated code cache
+    * @param[in] kind : the kind of this code cache
     *
     * @return true on a successful initialization; false otherwise.
     */
    bool                       initialize(TR::CodeCacheManager *manager,
                                          TR::CodeCacheMemorySegment *codeCacheSegment,
-                                         size_t allocatedCodeCacheSizeInBytes);
+                                         size_t allocatedCodeCacheSizeInBytes,
+                                         TR::CodeCacheKind kind);
 
 private:
    void                       updateMaxSizeOfFreeBlocks(CodeCacheFreeCacheBlock *blockPtr, size_t blockSize);
@@ -406,6 +409,8 @@ public:
    uint8_t * _warmCodeAlloc;
 
    uint8_t * _coldCodeAlloc;
+
+   TR::CodeCacheKind _kind;
 
    TR::CodeCacheManager *_manager;
 

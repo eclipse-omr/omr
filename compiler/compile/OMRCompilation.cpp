@@ -485,6 +485,12 @@ OMR::Compilation::maxInternalPointers()
    return 0;
    }
 
+TR::CodeCacheKind
+OMR::Compilation::codeCacheKind()
+   {
+   return _options->getCodeCacheKind();
+   }
+
 bool
 OMR::Compilation::isOutermostMethod()
    {
