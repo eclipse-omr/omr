@@ -342,6 +342,16 @@ public:
    size_t getCurrTotalUsedInBytes() const { return _currTotalUsedInBytes; }
    size_t getMaxUsedInBytes() const { return _maxUsedInBytes; }
 
+private:
+
+   TR::CodeCache * reserveCodeCacheImpl(bool compilationCodeAllocationsMustBeContiguous,
+                                        size_t sizeEstimate,
+                                        int32_t compThreadID,
+                                        int32_t *numReserved,
+                                        TR::CodeCacheKind kind,
+                                        bool ignoreKindAndSkipAllocate);
+
+
 protected:
 
    TR::RawAllocator               _rawAllocator;

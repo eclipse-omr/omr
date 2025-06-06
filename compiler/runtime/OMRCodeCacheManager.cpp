@@ -315,12 +315,52 @@ OMR::CodeCacheManager::unreserveCodeCache(TR::CodeCache *codeCache)
 // A compThreadID of -1 means unknown. This ID will be written into the code cache
 // The ID of the thread that last reserved the cache will remain written after the
 // reservation is over. This will allow us to implement some affinity.
+//
+// If TR_RetryCodeCacheAllocAndIgnoreKind is set, this method will retry the
+// reservation ignoring the kind; however, on the retry it will skip trying to
+// allocate a new code cache. This is because, on the first attempt, if we
+// failed to reserve a new code cache, we would try to allocate a new code
+// cache. If we're retrying then that means that both the reservation and
+// allocation failed. As such, there is only value in trying to find an
+// existing code cache to reserve.
 TR::CodeCache *
 OMR::CodeCacheManager::reserveCodeCache(bool compilationCodeAllocationsMustBeContiguous,
                                       size_t sizeEstimate,
                                       int32_t compThreadID,
                                       int32_t *numReserved,
                                       TR::CodeCacheKind kind)
+   {
+   TR::CodeCache *codeCache = NULL;
+
+   bool retry = false;
+   do
+      {
+      codeCache = reserveCodeCacheImpl(compilationCodeAllocationsMustBeContiguous,
+                                       sizeEstimate, compThreadID, numReserved,
+                                       kind, retry);
+
+      retry =
+         // option to retry is enabled
+         TR::Options::getCmdLineOptions()->getOption(TR_RetryCodeCacheAllocAndIgnoreKind)
+         // only retry once
+         && (retry == false)
+         // failed to reserve or allocate a code cache
+         && !codeCache
+         // the code cache is not full
+         && !self()->codeCacheFull();
+      }
+   while(retry);
+
+   return codeCache;
+   }
+
+TR::CodeCache *
+OMR::CodeCacheManager::reserveCodeCacheImpl(bool compilationCodeAllocationsMustBeContiguous,
+                                            size_t sizeEstimate,
+                                            int32_t compThreadID,
+                                            int32_t *numReserved,
+                                            TR::CodeCacheKind kind,
+                                            bool ignoreKindAndSkipAllocate)
    {
    int32_t numCachesAlreadyReserved = 0;
    TR::CodeCache *codeCache = NULL;
@@ -331,16 +371,21 @@ OMR::CodeCacheManager::reserveCodeCache(bool compilationCodeAllocationsMustBeCon
       CacheListCriticalSection scanCacheList(self());
       for (codeCache = self()->getFirstCodeCache(); codeCache; codeCache = codeCache->next())
          {
-         if (!codeCache->isReserved() && codeCache->_kind == kind) // we cannot touch the reserved ones
+         // we cannot touch the reserved ones
+         if (!codeCache->isReserved() && (codeCache->_kind == kind || ignoreKindAndSkipAllocate))
             {
             TR_YesNoMaybe almostFull = codeCache->almostFull();
             if (almostFull == TR_no || (almostFull == TR_maybe && !compilationCodeAllocationsMustBeContiguous))
                {
                // Is the free space big enough?
-               if (sizeEstimate == 0 || // If size estimate is not given we'll blindly pick anything
-                   codeCache->getFreeContiguousSpace() >= sizeEstimate ||
-                   codeCache->getSizeOfLargestFreeWarmBlock() >= sizeEstimate   // we don't know yet the warm/cold requirements
-                   )                                                             // so check only for warm part
+               if (
+                  // If size estimate is not given we'll blindly pick anything
+                  sizeEstimate == 0 ||
+                  codeCache->getFreeContiguousSpace() >= sizeEstimate ||
+                  // we don't know yet the warm/cold requirements so check
+                  // only for warm part
+                  codeCache->getSizeOfLargestFreeWarmBlock() >= sizeEstimate
+                  )
                   {
                   codeCache->reserve(compThreadID);
                   break;
@@ -361,6 +406,16 @@ OMR::CodeCacheManager::reserveCodeCache(bool compilationCodeAllocationsMustBeCon
       TR_ASSERT(codeCache->isReserved(), "cache must be reserved\n");
       return codeCache;
       }
+   else if (ignoreKindAndSkipAllocate)
+      {
+      // This is the second attempt. A code cache could not be reserved
+      // regardless of whether the kind was ignored and no new code cache could
+      // be allocated. Thus, now set the code cache full.
+      if (numCachesAlreadyReserved == 0)
+         self()->setCodeCacheFull();
+
+      return NULL;
+      }
 
    // No existing code cache is available; try to allocate a new one
    if (self()->canAddNewCodeCache())
@@ -380,7 +435,11 @@ OMR::CodeCacheManager::reserveCodeCache(bool compilationCodeAllocationsMustBeCon
       }
    else
       {
-      if (numCachesAlreadyReserved == 0)
+      if (numCachesAlreadyReserved == 0
+         // This is the first attempt; no more code caches could be allocated
+         // but there may still be code caches that can be reserved if we
+         // ignore the kind
+         && !TR::Options::getCmdLineOptions()->getOption(TR_RetryCodeCacheAllocAndIgnoreKind))
          {
          // Cannot reserve a cache and there are no other reserved caches, so
          // no chance to find space for this request. Must declare code cache full.
