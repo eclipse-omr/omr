@@ -4787,7 +4787,7 @@ TR::Register* OMR::Power::TreeEvaluator::vmaddEvaluator(TR::Node *node, TR::Code
 
 TR::Register* OMR::Power::TreeEvaluator::vmandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return vandEvaluator(node, cg);
    }
 
 TR::Register* OMR::Power::TreeEvaluator::vmcmpeqEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4867,7 +4867,7 @@ TR::Register* OMR::Power::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::Code
 
 TR::Register* OMR::Power::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return vorEvaluator(node, cg);
    }
 
 TR::Register* OMR::Power::TreeEvaluator::vmorUncheckedEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4937,7 +4937,7 @@ TR::Register* OMR::Power::TreeEvaluator::vmsubEvaluator(TR::Node *node, TR::Code
 
 TR::Register* OMR::Power::TreeEvaluator::vmxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return vxorEvaluator(node, cg);
    }
 
 TR::Register* OMR::Power::TreeEvaluator::vmfirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)

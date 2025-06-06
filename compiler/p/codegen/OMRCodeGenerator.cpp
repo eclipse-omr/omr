@@ -1898,8 +1898,11 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
          else
             return false;
       case TR::vxor:
+      case TR::vmxor:
       case TR::vor:
+      case TR::vmor:
       case TR::vand:
+      case TR::vmand:
          if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Int64)
             return true;
          else
