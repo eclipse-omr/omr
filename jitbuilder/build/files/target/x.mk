@@ -27,7 +27,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/x/codegen/ControlFlowEvaluator.cpp \
     $(JIT_OMR_DIRTY_DIR)/x/codegen/DataSnippet.cpp \
     $(JIT_OMR_DIRTY_DIR)/x/codegen/DivideCheckSnippet.cpp \
-    $(JIT_OMR_DIRTY_DIR)/x/codegen/FPBinaryArithmeticAnalyser.cpp \
     $(JIT_OMR_DIRTY_DIR)/x/codegen/FPCompareAnalyser.cpp \
     $(JIT_OMR_DIRTY_DIR)/x/codegen/FPTreeEvaluator.cpp \
     $(JIT_OMR_DIRTY_DIR)/x/codegen/SIMDTreeEvaluator.cpp \

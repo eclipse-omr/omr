@@ -26,7 +26,6 @@ compiler_library(x
 	${CMAKE_CURRENT_LIST_DIR}/codegen/ControlFlowEvaluator.cpp
 	${CMAKE_CURRENT_LIST_DIR}/codegen/DataSnippet.cpp
 	${CMAKE_CURRENT_LIST_DIR}/codegen/DivideCheckSnippet.cpp
-	${CMAKE_CURRENT_LIST_DIR}/codegen/FPBinaryArithmeticAnalyser.cpp
 	${CMAKE_CURRENT_LIST_DIR}/codegen/FPCompareAnalyser.cpp
 	${CMAKE_CURRENT_LIST_DIR}/codegen/FPTreeEvaluator.cpp
 	${CMAKE_CURRENT_LIST_DIR}/codegen/SIMDTreeEvaluator.cpp

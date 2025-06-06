@@ -61,7 +61,6 @@
 #include "infra/Assert.hpp"
 #include "infra/List.hpp"
 #include "runtime/Runtime.hpp"
-#include "x/codegen/FPBinaryArithmeticAnalyser.hpp"
 #include "x/codegen/FPCompareAnalyser.hpp"
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "x/codegen/RegisterRematerialization.hpp"
