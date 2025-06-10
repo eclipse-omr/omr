@@ -30,6 +30,8 @@
 #include "GCExtensionsBase.hpp"
 #include "SparseHeapLinkedFreeHeader.hpp"
 
+class GC_HashTableIterator;
+
 /**
  *
  * @ingroup GC_Base_Core
@@ -148,10 +150,12 @@ public:
 	 * @param dataPtr       void*       Data pointer
 	 * @param proxyObjPtr   void*       Proxy object associated with dataPtr
 	 * @param size          uintptr_t   Size of region consumed by dataPtr
+	 * @param sparseDataEntryIterator GC_HashTableIterator* if it is not NULL,
+	 * 		using the iterator for removing the entry instead of finding the entry from the hashtable
 	 *
 	 * @return true if key associated to dataPtr is removed successfully, false otherwise.
 	 */
-	bool unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr, void *proxyObjPtr, uintptr_t size);
+	bool unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr, void *proxyObjPtr, uintptr_t size, GC_HashTableIterator *sparseDataEntryIterator);
 
 	/**
 	 * Get MM_SparseDataTableEntry associated with data pointer

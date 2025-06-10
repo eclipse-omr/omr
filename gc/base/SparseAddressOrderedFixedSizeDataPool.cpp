@@ -26,6 +26,7 @@
 #include "SparseVirtualMemory.hpp"
 #include "SparseAddressOrderedFixedSizeDataPool.hpp"
 #include "Heap.hpp"
+#include "HashTableIterator.hpp"
 
 #define SPARSE_DATA_TABLE_INIT_SIZE 10
 #define SPARSE_FREE_LIST_POOL_INIT_SIZE 5
@@ -145,21 +146,24 @@ MM_SparseAddressOrderedFixedSizeDataPool::mapSparseDataPtrToHeapProxyObjectPtr(v
 }
 
 bool
-MM_SparseAddressOrderedFixedSizeDataPool::unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr, void *proxyObjPtr, uintptr_t size)
+MM_SparseAddressOrderedFixedSizeDataPool::unmapSparseDataPtrFromHeapProxyObjectPtr(void *dataPtr, void *proxyObjPtr, uintptr_t size, GC_HashTableIterator *sparseDataEntryIterator)
 {
 	bool ret = true;
-	MM_SparseDataTableEntry entryToRemove = MM_SparseDataTableEntry(dataPtr);
-
-	MM_SparseDataTableEntry *entry = (MM_SparseDataTableEntry *)hashTableFind(_objectToSparseDataTable, &entryToRemove);
-	Assert_MM_true((NULL != entry) && verifySparseDataEntry(entry, dataPtr, proxyObjPtr, size));
-
-	if (0 != hashTableRemove(_objectToSparseDataTable, &entryToRemove)) {
-		Trc_MM_SparseAddressOrderedFixedSizeDataPool_removeEntry_failure(dataPtr);
-		ret = false;
+	if (NULL != sparseDataEntryIterator) {
+		sparseDataEntryIterator->removeSlot();
 	} else {
-		Trc_MM_SparseAddressOrderedFixedSizeDataPool_removeEntry_success(dataPtr);
-	}
+		MM_SparseDataTableEntry entryToRemove = MM_SparseDataTableEntry(dataPtr);
 
+		MM_SparseDataTableEntry *entry = (MM_SparseDataTableEntry *)hashTableFind(_objectToSparseDataTable, &entryToRemove);
+		Assert_MM_true((NULL != entry) && verifySparseDataEntry(entry, dataPtr, proxyObjPtr, size));
+
+		if (0 != hashTableRemove(_objectToSparseDataTable, &entryToRemove)) {
+			Trc_MM_SparseAddressOrderedFixedSizeDataPool_removeEntry_failure(dataPtr);
+			ret = false;
+		} else {
+			Trc_MM_SparseAddressOrderedFixedSizeDataPool_removeEntry_success(dataPtr);
+		}
+	}
 	return ret;
 }
 

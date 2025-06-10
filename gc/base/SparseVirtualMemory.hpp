@@ -38,6 +38,7 @@
 #include "HeapRegionManager.hpp"
 #include "VirtualMemory.hpp"
 
+class GC_HashTableIterator;
 class MM_GCExtensions;
 class MM_GCExtensionsBase;
 class MM_Heap;
@@ -124,10 +125,11 @@ public:
 	 * @param dataPtr       void*       Data pointer
 	 * @param proxyObjPtr   void*       Proxy object associated with dataPtr
 	 * @param size          uintptr_t   Size of region consumed by dataPtr
+ 	 * @param sparseDataEntryIterator GC_HashTableIterator*   if it is not NULL, For UnmapFromHeapObject
 	 *
 	 * @return true if region associated to object was decommited and freed successfully, false otherwise
 	 */
-	bool freeSparseRegionAndUnmapFromHeapObject(MM_EnvironmentBase *env, void *dataPtr, void *proxyObjPtr, uintptr_t size);
+	bool freeSparseRegionAndUnmapFromHeapObject(MM_EnvironmentBase *env, void *dataPtr, void *proxyObjPtr, uintptr_t size, GC_HashTableIterator *sparseDataEntryIterator = NULL);
 	/**
 	 * Decommits/Releases memory, returning the associated pages to the OS
 	 *
