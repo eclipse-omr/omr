@@ -4055,7 +4055,7 @@ void TR_InlinerBase::getSymbolAndFindInlineTargets(TR_CallStack *callStack, TR_C
    if (callsite->_initialCalleeSymbol)
       {
       callsite->assertInitialCalleeConsistency();
-      if (getPolicy()->supressInliningRecognizedInitialCallee(callsite, comp()))
+      if (getPolicy()->suppressInliningRecognizedInitialCallee(callsite, comp()))
          isInlineable = Recognized_Callee;
 
       if (isInlineable != InlineableTarget)
@@ -6412,7 +6412,7 @@ OMR_InlinerUtil::refineInlineGuard(TR::Node *callNode, TR::Block *&block1, TR::B
  * stop inlining for this callsite if TR_CallSite#_initialCalleeSymbol is certain specific method
  */
 bool
-OMR_InlinerPolicy::supressInliningRecognizedInitialCallee(TR_CallSite* callsite, TR::Compilation* comp)
+OMR_InlinerPolicy::suppressInliningRecognizedInitialCallee(TR_CallSite* callsite, TR::Compilation* comp)
    {
    return false;
    }
