@@ -1773,28 +1773,29 @@ omrvmem_find_valid_page_size(struct OMRPortLibrary *portLibrary, uintptr_t mode,
 
 	if (0 != validPageSize) {
 #if defined(LINUXPPC)
-		/* On Linux PPC, for executable pages, search through the list of supported page sizes only if
-		 * - request is for 16M pages, and
-		 * - 64 bit system OR (32 bit system AND CodeCacheConsolidation is enabled)
+#if !defined(OMR_ENV_DATA64)
+		/* On 32-bit Linux PPC, for executable pages,
+		 * search through the list of supported page sizes only if
+		 * - request is for 64K pages, or
+		 * - request is for 16M pages AND CodeCacheConsolidation is enabled
+		 *
+		 * for 64-bit, accept any request supported by the OS
 		 */
-#if defined(OMR_ENV_DATA64)
-		if ((OMRPORT_VMEM_MEMORY_MODE_EXECUTE != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) ||
-			(SIXTEEN_M == validPageSize))
-#else
+		BOOLEAN codeCacheConsolidationEnabled = FALSE;
+
 		/* Check if the TR_ppcCodeCacheConsolidationEnabled env variable is set.
 		 * TR_ppcCodeCacheConsolidationEnabled is a manually set env variable used to indicate
 		 * that Code Cache Consolidation is enabled in the JIT.
 		 */
-		BOOLEAN codeCacheConsolidationEnabled = FALSE;
-
 		if (OMRPORT_VMEM_MEMORY_MODE_EXECUTE == (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) {
 			if (portLibrary->sysinfo_get_env(portLibrary, "TR_ppcCodeCacheConsolidationEnabled", NULL, 0) != -1) {
 				codeCacheConsolidationEnabled = TRUE;
 			}
 		}
-		if ((OMRPORT_VMEM_MEMORY_MODE_EXECUTE != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) ||
-			(codeCacheConsolidationEnabled && (SIXTEEN_M == validPageSize)))
-#endif /* defined(OMR_ENV_DATA64) */
+		if ((OMRPORT_VMEM_MEMORY_MODE_EXECUTE != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode))
+			|| (codeCacheConsolidationEnabled && (SIXTEEN_M == validPageSize))
+			|| (SIXTY_FOUR_K == validPageSize))
+#endif /* !defined(OMR_ENV_DATA64) */
 #endif /* defined(LINUXPPC) */
 		{
 			uintptr_t pageIndex = 0;
