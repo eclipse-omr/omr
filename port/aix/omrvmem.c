@@ -763,6 +763,10 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
+#if !defined(OMR_ENV_DATA64)
+	/* on 32 bit systems, mmap starting out a new 256M segment when allocating is
+	 * a significant impact for the address space, while this is not a concern on 64 bit systems
+	 */
 	if (0 != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) {
 		/* Allocate code memory  */
 		result = portLibrary->mem_allocate_memory(portLibrary, byteAmount, OMR_GET_CALLSITE(), category->categoryCode);
@@ -780,6 +784,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
 		return result;
 	}
+#endif /* !defined(OMR_ENV_DATA64) */
 
 #if defined(MAP_ANONYMOUS)
 	flags |= MAP_ANONYMOUS;
