@@ -29,6 +29,7 @@
 #include "EnvironmentBase.hpp"
 #include "Forge.hpp"
 #include "GCExtensionsBase.hpp"
+#include "HashTableIterator.hpp"
 #include "Math.hpp"
 #include "ModronAssertions.h"
 #include "SparseVirtualMemory.hpp"
@@ -166,7 +167,7 @@ MM_SparseVirtualMemory::allocateSparseFreeEntryAndMapToHeapObject(void *proxyObj
 }
 
 bool
-MM_SparseVirtualMemory::freeSparseRegionAndUnmapFromHeapObject(MM_EnvironmentBase *env, void *dataPtr, void *proxyObjPtr, uintptr_t size)
+MM_SparseVirtualMemory::freeSparseRegionAndUnmapFromHeapObject(MM_EnvironmentBase *env, void *dataPtr, void *proxyObjPtr, uintptr_t size, GC_HashTableIterator *sparseDataEntryIterator)
 {
 	uintptr_t dataSize = _sparseDataPool->findObjectDataSizeForSparseDataPtr(dataPtr);
 	bool ret = true;
@@ -176,7 +177,7 @@ MM_SparseVirtualMemory::freeSparseRegionAndUnmapFromHeapObject(MM_EnvironmentBas
 		ret = decommitMemory(env, dataPtr, adjustedSize);
 		if (ret) {
 			omrthread_monitor_enter(_largeObjectVirtualMemoryMutex);
-			ret = (_sparseDataPool->returnFreeListEntry(dataPtr, adjustedSize) && _sparseDataPool->unmapSparseDataPtrFromHeapProxyObjectPtr(dataPtr, proxyObjPtr, size));
+			ret = (_sparseDataPool->returnFreeListEntry(dataPtr, adjustedSize) && _sparseDataPool->unmapSparseDataPtrFromHeapProxyObjectPtr(dataPtr, proxyObjPtr, size, sparseDataEntryIterator));
 			omrthread_monitor_exit(_largeObjectVirtualMemoryMutex);
 			Trc_MM_SparseVirtualMemory_decommitMemory_success(dataPtr, (void *)adjustedSize);
 		} else {
