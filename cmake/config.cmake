@@ -236,6 +236,8 @@ set(OMR_OPT_CUDA OFF CACHE BOOL "Enable CUDA support in OMR. See also: OMR_CUDA_
 
 set(OMR_SANITIZE OFF CACHE STRING "Sanitizer selection. Only has an effect on GNU or Clang")
 
+set(OMR_LINK_OPT OFF CACHE BOOL "Enable link-time optimization (for toolchains that support it)")
+
 if(OMR_OS_WINDOWS)
 	set(OMR_WINDOWS_NOMINMAX ON CACHE BOOL "Define NOMINMAX in every compilation unit; prevents Windows headers from polluting the global namespace with 'min' and 'max' macros.")
 endif()

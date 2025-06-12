@@ -103,6 +103,16 @@ if(OMR_OS_AIX AND CMAKE_C_COMPILER_IS_OPENXL)
 	endif()
 endif()
 
+if(OMR_LINK_OPT)
+	if (OMR_TOOLCONFIG STREQUAL "gnu")
+		omr_append_flags(CMAKE_C_FLAGS "-flto")
+		omr_append_flags(CMAKE_CXX_FLAGS "-flto")
+		omr_append_flags(CMAKE_SHARED_LINKER_FLAGS "-flto")
+	else()
+		message(WARNING "Link-time optimization requested, but not supported by ${OMR_TOOLCONFIG} toolchain.")
+	endif()
+endif()
+
 # Testarossa build variables. Longer term the distinction between TR and the rest
 # of the OMR code should be heavily reduced. In the meantime, we keep the distinction.
 
