@@ -6117,13 +6117,79 @@ OMR::X86::TreeEvaluator::iexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator 
 TR::Register*
 OMR::X86::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+   TR::CPU *cpu = &cg->comp()->target().cpu;
+
+#ifndef TR_TARGET_64BIT
+    TR_ASSERT_FATAL(false, "mAnyTrueEvaluator is only supported on 64-bit");
+#endif
+
+   if (maskReg->getKind() == TR_VMR && cpu->supportsFeature(OMR_FEATURE_X86_AVX512BW))
+      {
+      TR_ASSERT_FATAL(cpu->supportsFeature(OMR_FEATURE_X86_AVX512F), "Mask registers require AVX-512");
+      generateRegRegInstruction(TR::InstOpCode::KTESTQRegReg, node, maskReg, maskReg, cg);
+      }
+   else if (maskReg->getKind() == TR_VMR)
+      {
+      TR_ASSERT_FATAL(cpu->supportsFeature(OMR_FEATURE_X86_AVX512F), "Mask registers require AVX-512");
+
+      if (cpu->supportsFeature(OMR_FEATURE_X86_AVX512DQ))
+         {
+         generateRegRegInstruction(TR::InstOpCode::KTESTWRegReg, node, maskReg, maskReg, cg);
+         }
+      else
+         {
+         TR::InstOpCode::Mnemonic opcode = TR::InstOpCode::KMOVWRegMask;
+
+         // Rare case; move mask into GPR
+         generateRegRegInstruction(opcode, node, resultReg, maskReg, cg);
+         generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, resultReg, cg);
+         }
+      }
+   else
+      {
+      TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+      generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, resultReg, resultReg, cg);
+      }
+
+   generateRegInstruction(TR::InstOpCode::SETNE1Reg, node, resultReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::MOVZXReg8Reg1, node, resultReg, resultReg, cg);
+
+   cg->decReferenceCount(maskNode);
+   node->setRegister(resultReg);
+
+   return resultReg;
    }
 
 TR::Register*
 OMR::X86::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+   TR::Register *cmpReg = cg->allocateRegister();
+   int32_t numLanes = maskNode->getDataType().getVectorNumLanes();
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+
+#ifndef TR_TARGET_64BIT
+   TR_ASSERT_FATAL(false, "mAllTrueEvaluator is only supported on 64-bit");
+#endif
+
+   TR_RematerializableTypes rematType = numLanes > 32 ? TR_RematerializableLong : TR_RematerializableInt;
+   int64_t mask = numLanes == 64 ? -1 : (1ll << numLanes) - 1;
+   TR::TreeEvaluator::loadConstant(node, mask, rematType, cg, cmpReg);
+
+   generateRegRegInstruction(TR::InstOpCode::CMPRegReg(), node, resultReg, cmpReg, cg);
+   generateRegInstruction(TR::InstOpCode::SETE1Reg, node, resultReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::MOVZXReg8Reg1, node, resultReg, resultReg, cg);
+
+   cg->stopUsingRegister(cmpReg);
+   cg->decReferenceCount(maskNode);
+   node->setRegister(resultReg);
+
+   return resultReg;
    }
 
 TR::Register*
@@ -6165,7 +6231,17 @@ OMR::X86::TreeEvaluator::mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::X86::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::Register *resultReg = cg->allocateRegister();
+
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, maskNode->getDataType(), resultReg, maskReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::POPCNTRegReg(), node, resultReg, resultReg, cg);
+
+   node->setRegister(resultReg);
+   cg->decReferenceCount(maskNode);
+
+   return resultReg;
    }
 
 TR::Register*
@@ -6180,28 +6256,24 @@ OMR::X86::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *c
    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
    }
 
-TR::Register*
-OMR::X86::TreeEvaluator::mToLongBitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+void OMR::X86::TreeEvaluator::vectorMaskToGPRHelper(TR::Node *node, TR::DataType type, TR::Register *gprReg, TR::Register *maskReg, TR::CodeGenerator *cg)
    {
-   TR::DataType type = node->getDataType();
-   TR::Node *maskNode = node->getFirstChild();
-   TR::Register *maskReg = cg->evaluate(maskNode);
-
-   TR_ASSERT_FATAL_WITH_NODE(node, cg->comp()->target().is64Bit(), "mToLongBitsEvaluator() only supported on 64-bit");
-
-   TR::Register *resultReg = cg->allocateRegister(TR_GPR);
+   TR_ASSERT_FATAL(type.isVector() || type.isMask(), "vectorMaskToGPRHelper requires vector type, not raw element type");
+   TR::DataType et = type.getVectorElementType();
 
    if (maskReg->getKind() == TR_VMR)
       {
       TR::InstOpCode movOpcode = cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW) ? TR::InstOpCode::KMOVQRegMask : TR::InstOpCode::KMOVWRegMask;
-      generateRegRegInstruction(movOpcode.getMnemonic(), node, resultReg, maskReg, cg);
+      generateRegRegInstruction(movOpcode.getMnemonic(), node, gprReg, maskReg, cg);
       }
    else
       {
-      TR_ASSERT_FATAL_WITH_NODE(maskNode, maskReg->getKind() == TR_VRF, "Expected mask register kind of TR_VMR or TR_VRF");
+      TR_ASSERT_FATAL(maskReg->getKind() == TR_VRF, "Expected mask register kind of TR_VRF");
       TR::InstOpCode movMskOp = TR::InstOpCode::bad;
+      TR::Register *packedMaskReg = NULL;
+      bool andResult = false;
 
-      switch (type.getVectorElementType())
+      switch (et)
          {
          case TR::Int64:
          case TR::Double:
@@ -6212,18 +6284,80 @@ OMR::X86::TreeEvaluator::mToLongBitsEvaluator(TR::Node *node, TR::CodeGenerator 
             movMskOp = TR::InstOpCode::MOVMSKPSRegReg;
             break;
          case TR::Int16:
-            TR_ASSERT_FATAL(false, "Int16 element type not supported mToLongBitsEvaluator");
+            {
+            // Since all bits in lane are either 1 or 0, we can do unsigned conversion from word to byte.
+            TR::InstOpCode packInstruction = TR::InstOpCode::PACKSSWBRegReg;
+            TR::InstOpCode xorInstruction = TR::InstOpCode::PXORRegReg;
+            TR::InstOpCode movInstruction = TR::InstOpCode::MOVDQURegReg;
+            OMR::X86::Encoding packEncoding = packInstruction.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
+            OMR::X86::Encoding xorEncoding = xorInstruction.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
+            OMR::X86::Encoding movEncoding = movInstruction.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
+            packedMaskReg = cg->allocateRegister(TR_VRF);
+
+            if (packEncoding != OMR::X86::Legacy && xorEncoding != OMR::X86::Legacy && type.getVectorLength() == TR::VectorLength256)
+               {
+               TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+               generateRegRegImmInstruction(TR::InstOpCode::VEXTRACTF128RegRegImm1, node, tmpReg, maskReg, 1, cg, OMR::X86::VEX_L256);
+               generateRegRegRegInstruction(packInstruction.getMnemonic(), node, packedMaskReg, maskReg, tmpReg, cg, packEncoding);
+
+               andResult = true;
+               cg->stopUsingRegister(tmpReg);
+               }
+            else if (packEncoding != OMR::X86::Legacy && xorEncoding != OMR::X86::Legacy)
+               {
+               generateRegRegInstruction(xorInstruction.getMnemonic(), node, packedMaskReg, packedMaskReg, cg, xorEncoding);
+               generateRegRegRegInstruction(packInstruction.getMnemonic(), node, packedMaskReg, maskReg, packedMaskReg, cg, packEncoding);
+               }
+            else
+               {
+               // 3 operand instruction not available
+               TR_ASSERT_FATAL(type.getVectorLength() == TR::VectorLength128, "Unexpected vector length");
+               TR::Register *zeroReg = cg->allocateRegister(TR_VRF);
+
+               generateRegRegInstruction(movInstruction.getMnemonic(), node, packedMaskReg, maskReg, cg, movEncoding);
+               generateRegRegInstruction(xorInstruction.getMnemonic(), node, zeroReg, zeroReg, cg, xorEncoding);
+               generateRegRegInstruction(packInstruction.getMnemonic(), node, packedMaskReg, zeroReg, cg, packEncoding);
+
+               cg->stopUsingRegister(zeroReg);
+               }
+            // Intentional fallthrough
+            }
          case TR::Int8:
             movMskOp = TR::InstOpCode::PMOVMSKB4RegReg;
             break;
          default:
-            TR_ASSERT_FATAL(false, "Unexpected element type for mToLongBitsEvaluator");
+            TR_ASSERT_FATAL(false, "Unexpected element type for vectorMaskToGPRHelper");
          }
+
       OMR::X86::Encoding movMskEncoding = movMskOp.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
       TR_ASSERT_FATAL(movMskEncoding != OMR::X86::Bad, "Unsupported movmsk opcode in mToLongBitsEvaluator");
 
-      generateRegRegInstruction(movMskOp.getMnemonic(), node, resultReg, maskReg, cg, movMskEncoding);
+      generateRegRegInstruction(movMskOp.getMnemonic(), node, gprReg, packedMaskReg ? packedMaskReg : maskReg, cg, movMskEncoding);
+
+      if (andResult)
+         {
+         int32_t numLanes = type.getVectorNumLanes();
+         int32_t bitmask = numLanes == 32 ? -1 : (1 << numLanes) - 1;
+         generateRegImmInstruction(TR::InstOpCode::ANDRegImm4(), node, gprReg, bitmask, cg);
+         }
+
+      if (packedMaskReg)
+         cg->stopUsingRegister(packedMaskReg);
       }
+   }
+
+TR::Register*
+OMR::X86::TreeEvaluator::mToLongBitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::Node *maskNode = node->getFirstChild();
+   TR::Register *maskReg = cg->evaluate(maskNode);
+   TR::DataType type = node->getOpCode().getVectorResultDataType();
+
+   TR_ASSERT_FATAL_WITH_NODE(node, cg->comp()->target().is64Bit(), "mToLongBitsEvaluator() only supported on 64-bit");
+
+   TR::Register *resultReg = cg->allocateRegister(TR_GPR);
+   TR::TreeEvaluator::vectorMaskToGPRHelper(node, type, resultReg, maskReg, cg);
 
    node->setRegister(resultReg);
    cg->decReferenceCount(maskNode);
