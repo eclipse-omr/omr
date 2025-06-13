@@ -7610,7 +7610,102 @@ read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintp
 uintptr_t
 omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
 {
-#if defined(LINUX)
+#if defined(AIXPPC)
+	pid_t procIndex = 0;
+	int32_t maxProcs = 256;
+	uintptr_t callback_result = 0;
+	size_t argsSize = 8192;
+	char *args = NULL;
+	struct procentry64 *procs = (struct procentry64 *)portLibrary->mem_allocate_memory(
+			portLibrary,
+			maxProcs * sizeof(struct procentry64),
+			OMR_GET_CALLSITE(),
+			OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == procs) {
+		goto alloc_failed;
+	}
+	args = (char *)portLibrary->mem_allocate_memory(
+			portLibrary,
+			argsSize,
+			OMR_GET_CALLSITE(),
+			OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == args) {
+		goto alloc_failed;
+	}
+	for (;;) {
+		int32_t i = 0;
+		int32_t numProcs = getprocs64(procs, sizeof(struct procentry64), NULL, 0, &procIndex, maxProcs);
+		if (-1 == numProcs) {
+			int32_t rc = findError(errno);
+			portLibrary->error_set_last_error(portLibrary, errno, rc);
+			Trc_PRT_failed_to_getprocs64(rc);
+			callback_result = (uintptr_t)(intptr_t)rc;
+			goto done;
+		}
+		if (0 == numProcs) {
+			break;
+		}
+		for (i = 0; i < numProcs; i++) {
+			BOOLEAN foundArgs = FALSE;
+			struct procentry64 pe;
+			memset(&pe, 0, sizeof(pe));
+			memset(args, 0, argsSize);
+			pe.pi_pid = procs[i].pi_pid;
+			while (0 != getargs(&pe, sizeof(pe), args, argsSize)) {
+				size_t idx = 0;
+				size_t newSize = 0;
+				char *newArgs = NULL;
+				size_t scanLimit = argsSize - 1;
+				/* Check for double-null terminator. */
+				if ('\0' != args[0]) {
+					for (idx = 0; idx < scanLimit; idx++) {
+						if ('\0' == args[idx]) {
+							if ('\0' == args[idx + 1]) {
+								foundArgs = TRUE;
+								break;
+							}
+							args[idx] = ' ';
+						}
+					}
+					if (foundArgs) {
+						callback_result = callback((uintptr_t)pe.pi_pid, args, userData);
+						break;
+					}
+				}
+				/* Reallocate buffer and try again. */
+				newSize = argsSize * 2;
+				newArgs = (char *)portLibrary->mem_reallocate_memory(
+						portLibrary,
+						args,
+						newSize,
+						OMR_GET_CALLSITE(),
+						OMRMEM_CATEGORY_PORT_LIBRARY);
+				if (NULL == newArgs) {
+					break;
+				}
+				memset(newArgs + argsSize, 0, newSize - argsSize);
+				args = newArgs;
+				argsSize = newSize;
+			}
+			if (!foundArgs && '\0' != procs[i].pi_comm[0]) {
+				callback_result = callback((uintptr_t)procs[i].pi_pid, procs[i].pi_comm, userData);
+			}
+			if (0 != callback_result) {
+				break;
+			}
+		}
+		if (0 != callback_result) {
+			break;
+		}
+	}
+done:
+	portLibrary->mem_free_memory(portLibrary, args);
+	portLibrary->mem_free_memory(portLibrary, procs);
+	return callback_result;
+alloc_failed:
+	callback_result = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	goto done;
+#elif defined(LINUX) /* defined(AIXPPC) */
 	uintptr_t callback_result = 0;
 	uintptr_t buffer_size = 4096;
 	char *command = NULL;
