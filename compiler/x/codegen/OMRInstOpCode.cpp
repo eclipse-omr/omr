@@ -148,7 +148,7 @@ template <typename TBuffer> typename TBuffer::cursor_t OMR::X86::InstOpCode::OpC
          }
       else
          {
-         TR::Instruction::VEX<3> vex(rex, modrm_opcode);
+         TR::Instruction::VEX<3> vex(rex);
          vex.m = escape;
          vex.L = enc;
          vex.p = prefixes;
@@ -220,12 +220,14 @@ template <typename TBuffer> typename TBuffer::cursor_t OMR::X86::InstOpCode::OpC
          }
       // OpCode
       buffer.append(opcode);
-      // ModRM
-      if (modrm_form)
-         {
-         buffer.append(TR::Instruction::ModRM(modrm_opcode));
-         }
       }
+
+   // ModRM
+   if (modrm_form)
+      {
+      buffer.append(TR::Instruction::ModRM(modrm_opcode));
+      }
+
    return buffer;
    }
 
@@ -236,28 +238,31 @@ void OMR::X86::InstOpCode::OpCode_t::finalize(uint8_t* cursor) const
       {
       case 0xC4:
          {
-         auto pVEX = (TR::Instruction::VEX<3>*)cursor;
+         auto pVEX = (TR::Instruction::VEX<3>*) cursor;
+         auto modRM = (TR::Instruction::ModRM*) (cursor + 4);
          if (vex_v == VEX_vReg_)
             {
-            pVEX->v = ~(modrm_form == ModRM_EXT_ ? pVEX->RM() : pVEX->Reg());
+            pVEX->v = ~(modrm_form == ModRM_EXT_ ? pVEX->RM(*modRM) : pVEX->Reg(*modRM));
             }
          }
          break;
       case 0xC5:
          {
          auto pVEX = (TR::Instruction::VEX<2>*)cursor;
+         auto modRM = (TR::Instruction::ModRM*) (cursor + 3);
          if (vex_v == VEX_vReg_)
             {
-            pVEX->v = ~(modrm_form == ModRM_EXT_ ? pVEX->RM() : pVEX->Reg());
+            pVEX->v = ~(modrm_form == ModRM_EXT_ ? pVEX->RM(*modRM) : pVEX->Reg(*modRM));
             }
          }
          break;
       case 0x62:
          {
          auto pVEX = (TR::Instruction::EVEX*)cursor;
+         auto modRM = (TR::Instruction::ModRM*) (cursor + 5);
          if (vex_v == VEX_vReg_)
             {
-            pVEX->v = ~(modrm_form == ModRM_EXT_ ? pVEX->RM() : pVEX->Reg());
+            pVEX->v = ~(modrm_form == ModRM_EXT_ ? pVEX->RM(*modRM) : pVEX->Reg(*modRM));
             }
          }
          break;

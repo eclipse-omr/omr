@@ -3307,9 +3307,9 @@ TR::X86RegRegInstruction  * generateRegRegInstruction(TR::Instruction *, TR::Ins
  */
 TR::Instruction  * generateBreakOnDFSet(TR::CodeGenerator *cg, TR::Instruction* cursor = NULL);
 
-TR::Instruction  * generateInstruction(TR::InstOpCode::Mnemonic, TR::Node *, TR::RegisterDependencyConditions  * cond, TR::CodeGenerator *cg);
-TR::Instruction  * generateInstruction(TR::InstOpCode::Mnemonic op, TR::Node * node, TR::CodeGenerator *cg);
-TR::Instruction  * generateInstruction(TR::Instruction *prev, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg);
+TR::Instruction  * generateInstruction(TR::InstOpCode::Mnemonic, TR::Node *, TR::RegisterDependencyConditions  * cond, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
+TR::Instruction  * generateInstruction(TR::InstOpCode::Mnemonic op, TR::Node * node, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
+TR::Instruction  * generateInstruction(TR::Instruction *prev, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
 
 TR::X86ImmInstruction  * generateImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node * node, int32_t imm, TR::RegisterDependencyConditions  * cond, TR::CodeGenerator *cg);
 TR::X86ImmInstruction  * generateImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node * node, int32_t imm, TR::CodeGenerator *cg, int32_t reloKind=TR_NoRelocation);

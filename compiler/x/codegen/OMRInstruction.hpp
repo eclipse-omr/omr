@@ -312,12 +312,10 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
       uint8_t Z : 1;    // P2[7] : z
       // Byte 4: opcode
       uint8_t opcode;
-      // Byte 5: ModRM
-      ModRM   modrm;
 
       inline EVEX() {}
 
-      inline EVEX(const REX& rex, uint8_t ModRMOpCode) : modrm(ModRMOpCode)
+      inline EVEX(const REX& rex, uint8_t ModRMOpCode)
          {
          escape = '\x62';
          // reserved bits
@@ -330,6 +328,7 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
          X = ~rex.X;
          B = ~rex.B;
 
+         ModRM modrm(ModRMOpCode);
          r = ~(rex.R & modrm.reg);
 
          W = rex.W;
@@ -338,11 +337,11 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
          a = 0;
          }
 
-      inline uint8_t Reg() const
+      inline uint8_t Reg(const ModRM modrm) const
          {
          return modrm.Reg(~R);
          }
-      inline uint8_t RM() const
+      inline uint8_t RM(const ModRM modrm) const
          {
          return modrm.RM(~B);
          }
@@ -366,11 +365,9 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
       uint8_t W : 1;
       // Byte 3: opcode
       uint8_t opcode;
-      // Byte 4: ModRM
-      ModRM   modrm;
 
       inline VEX() {}
-      inline VEX(const REX& rex, uint8_t ModRMOpCode) : modrm(ModRMOpCode)
+      inline VEX(const REX& rex)
          {
          escape = '\xC4';
          R = ~rex.R;
@@ -383,11 +380,11 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
          {
          return X && B && !W && (m == 1);
          }
-      inline uint8_t Reg() const
+      inline uint8_t Reg(const ModRM modrm) const
          {
          return modrm.Reg(~R);
          }
-      inline uint8_t RM() const
+      inline uint8_t RM(const ModRM modrm) const
          {
          return modrm.RM(~B);
          }
@@ -404,11 +401,9 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
       uint8_t R : 1;
       // Byte 2: opcode
       uint8_t opcode;
-      // Byte 3: ModRM
-      ModRM   modrm;
 
       inline VEX() {}
-      inline VEX(const VEX<3>& other) : modrm(other.modrm)
+      inline VEX(const VEX<3>& other)
          {
          escape = '\xC5';
          p = other.p;
@@ -417,11 +412,11 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
          R = other.R;
          opcode = other.opcode;
          }
-      inline uint8_t Reg() const
+      inline uint8_t Reg(const ModRM modrm) const
          {
          return modrm.Reg(~R);
          }
-      inline uint8_t RM() const
+      inline uint8_t RM(const ModRM modrm) const
          {
          return modrm.RM();
          }

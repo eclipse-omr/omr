@@ -34,12 +34,12 @@ TR::RealRegister *getRealRegister(TR::RealRegister::RegNum regNum, TR::CodeGener
     return rr;
 }
 
-class XDirectEncodingTest : public TRTest::BinaryEncoderTest<>, public ::testing::WithParamInterface<std::tuple<TR::InstOpCode::Mnemonic, TRTest::BinaryInstruction>> {};
+class XDirectEncodingTest : public TRTest::BinaryEncoderTest<>, public ::testing::WithParamInterface<std::tuple<TR::InstOpCode::Mnemonic, OMR::X86::Encoding, TRTest::BinaryInstruction>> {};
 
 TEST_P(XDirectEncodingTest, encode) {
-    auto instr = generateInstruction(std::get<0>(GetParam()), fakeNode, cg());
+    TR::Instruction *instr = generateInstruction(std::get<0>(GetParam()), fakeNode, cg(), std::get<1>(GetParam()));
 
-    ASSERT_EQ(std::get<1>(GetParam()), encodeInstruction(instr));
+    ASSERT_EQ(std::get<2>(GetParam()), encodeInstruction(instr));
 }
 
 class XLabelEncodingTest : public TRTest::BinaryEncoderTest<>, public ::testing::WithParamInterface<std::tuple<TR::InstOpCode::Mnemonic, size_t, TRTest::BinaryInstruction>> {};
@@ -126,9 +126,10 @@ TEST_P(XRegMemEncodingTest, encode) {
 }
 
 INSTANTIATE_TEST_CASE_P(Special, XDirectEncodingTest, ::testing::Values(
-    std::make_tuple(TR::InstOpCode::UD2,  "0f0b"),
-    std::make_tuple(TR::InstOpCode::INT3, "cc"),
-    std::make_tuple(TR::InstOpCode::RET,  "c3")
+    std::make_tuple(TR::InstOpCode::UD2,        OMR::X86::Default,  "0f0b"),
+    std::make_tuple(TR::InstOpCode::INT3,       OMR::X86::Default,  "cc"),
+    std::make_tuple(TR::InstOpCode::RET,        OMR::X86::Default,  "c3"),
+    std::make_tuple(TR::InstOpCode::VZEROUPPER, OMR::X86::VEX_L128, "c5f877")
 ));
 
 INSTANTIATE_TEST_CASE_P(Special, XLabelEncodingTest, ::testing::Values(

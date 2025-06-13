@@ -4510,23 +4510,31 @@ TR::Instruction* generateBreakOnDFSet(TR::CodeGenerator *cg, TR::Instruction* cu
    }
 
 TR::Instruction  *
-generateInstruction(TR::Instruction *prev, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+generateInstruction(TR::Instruction *prev,
+                    TR::InstOpCode::Mnemonic op,
+                    TR::CodeGenerator *cg,
+                    OMR::X86::Encoding encoding)
    {
-   return new (cg->trHeapMemory()) TR::Instruction(op, prev, cg);
-   }
-
-TR::Instruction  *
-generateInstruction(TR::InstOpCode::Mnemonic op, TR::Node * node, TR::CodeGenerator *cg)
-   {
-   return new (cg->trHeapMemory()) TR::Instruction(node, op, cg);
+   return new (cg->trHeapMemory()) TR::Instruction(op, prev, cg, encoding);
    }
 
 TR::Instruction  *
 generateInstruction(TR::InstOpCode::Mnemonic op,
                     TR::Node * node,
-                    TR::RegisterDependencyConditions  *cond, TR::CodeGenerator *cg)
+                    TR::CodeGenerator *cg,
+                    OMR::X86::Encoding encoding)
    {
-   return new (cg->trHeapMemory()) TR::Instruction(cond, node, op, cg);
+   return new (cg->trHeapMemory()) TR::Instruction(node, op, cg, encoding);
+   }
+
+TR::Instruction  *
+generateInstruction(TR::InstOpCode::Mnemonic op,
+                    TR::Node * node,
+                    TR::RegisterDependencyConditions  *cond,
+                    TR::CodeGenerator *cg,
+                    OMR::X86::Encoding encoding)
+   {
+   return new (cg->trHeapMemory()) TR::Instruction(cond, node, op, cg, encoding);
    }
 
 TR::X86MemInstruction  *
