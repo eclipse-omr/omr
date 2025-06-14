@@ -1420,6 +1420,7 @@ OMR::ARM64::TreeEvaluator::mFirstTrueEvaluator(TR::Node *node, TR::CodeGenerator
          generateTrg1Src1Instruction(cg, TR::InstOpCode::rbitx, node, resReg, resReg);
          generateTrg1Src1Instruction(cg, TR::InstOpCode::clzx, node, resReg, resReg);
          generateLogicalShiftRightImmInstruction(cg, node, resReg, resReg, 3, true);
+         break;
       case TR::Int32:
       case TR::Float:
          /*
@@ -1515,7 +1516,7 @@ OMR::ARM64::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator 
       case TR::Float:
          /*
           * shrn    v1.2s, v0.2d, #16           ; Moves mask values to lane 0 - 3 (viewed as short vector)
-          * umov    w0, v1.2d[0]
+          * umov    x0, v1.2d[0]
           * mov     x1, #3
           * clz     x0, x0                      ; Counts leading zeros.
           * lsr     x0, x0, #4                  ; Divides by 16.
@@ -1531,18 +1532,20 @@ OMR::ARM64::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator 
       case TR::Int64:
       case TR::Double:
          /*
-          * ext     v1.16b, v0.16b, v0.16b, #2
+          * ext     v1.16b, v0.16b, v0.16b, #9
           * umov    w0, v1.4s[3]
+          * orr     w0, w0, #0x8000
           * mov     w1, #1
           * clz     w0, w0
-          * lsr     w0, w0, #4
+          * lsr     w0, w0, #3
           * sub     x0, x1, x0
           */
          generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::vext16b, node, tempReg, maskReg, maskReg, 9);
          generateMovVectorElementToGPRInstruction(cg, TR::InstOpCode::umovws, node, resReg, tempReg, 3);
+         generateLogicalImmInstruction(cg, TR::InstOpCode::orrimmw, node, resReg, resReg, false, 0x440); // immr=17, imms=0 for 0x8000
          loadConstant32(cg, node, 1, maxLaneReg);
          generateTrg1Src1Instruction(cg, TR::InstOpCode::clzw, node, resReg, resReg);
-         generateLogicalShiftRightImmInstruction(cg, node, resReg, resReg, 4, false);
+         generateLogicalShiftRightImmInstruction(cg, node, resReg, resReg, 3, false);
          generateTrg1Src2Instruction(cg, TR::InstOpCode::subx, node, resReg, maxLaneReg, resReg);
          break;
       default:
