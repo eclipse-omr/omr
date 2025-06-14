@@ -1107,6 +1107,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"reservingLocks",     "O\tenable reserving locks for hot methods on classes that can be reserved", SET_OPTION_BIT(TR_ReservingLocks), "F"},
    {"restrictInlinerDuringStartup", "O\trestrict trivial inliner during startup", SET_OPTION_BIT(TR_RestrictInlinerDuringStartup), "F", NOT_IN_SUBSET },
    {"restrictStaticFieldFolding", "O\trestrict instance field folding", SET_OPTION_BIT(TR_RestrictStaticFieldFolding), "F"},
+   {"retryCodeCacheAllocAndIgnoreKind",     "M\tRetry code cache allocation and ignore the kind on alloc failure", SET_OPTION_BIT(TR_RetryCodeCacheAllocAndIgnoreKind), "F", NOT_IN_SUBSET},
    {"rtGCMapCheck", "D\tEnable runtime GC Map checking at every async check.", SET_OPTION_BIT(TR_RTGCMapCheck), "F"},
    {"sampleDensityBaseThreshold=", "M<nnn>\t", TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_sampleDensityBaseThreshold, 0, "F%d", NOT_IN_SUBSET},
    {"sampleDensityIncrementThreshold=", "M<nnn>\t", TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_sampleDensityIncrementThreshold, 0, "F%d", NOT_IN_SUBSET},
