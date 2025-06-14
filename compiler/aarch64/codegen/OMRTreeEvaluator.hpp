@@ -226,6 +226,7 @@ public:
    static TR::Register *mloadiEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+   static TR::Register *msplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mFirstTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);
@@ -283,6 +284,7 @@ public:
    static TR::Register *vRegStoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+   static TR::Register *msplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vsetelemEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vsplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg);

@@ -411,6 +411,7 @@
 #define mloadiSimplifierHandler indirectLoadSimplifier
 #define mstoreSimplifierHandler directStoreSimplifier
 #define mstoreiSimplifierHandler indirectStoreSimplifier
+#define msplatsSimplifierHandler dftSimplifier
 #define mTrueCountSimplifierHandler dftSimplifier
 #define mFirstTrueSimplifierHandler dftSimplifier
 #define mLastTrueSimplifierHandler dftSimplifier

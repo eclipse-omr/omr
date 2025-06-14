@@ -911,6 +911,29 @@ OMR::Power::TreeEvaluator::mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *c
    }
 
 TR::Register*
+OMR::Power::TreeEvaluator::msplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::Node *child = node->getFirstChild();
+
+   TR_ASSERT_FATAL(child->getOpCode().isLoadConst() &&
+                   (child->get64bitIntegralValue() == -1 ||
+                    child->get64bitIntegralValue() == 0), "msplats has non-constant value\n"); // TODO extend lowest bit
+
+   TR::Register *resReg = TR::TreeEvaluator::vsplatsEvaluator(node, cg);
+
+   // Lowest mask bit needs to be expanded to the whole mask element
+   TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisb, node, tmpReg, 15);
+   // move lowest bit to the sign position
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vslb, node, resReg, resReg, tmpReg);
+   // extend sign bit to the right
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vsrab, node, resReg, resReg, tmpReg);
+   cg->stopUsingRegister(tmpReg);
+
+   return resReg;
+   }
+
+TR::Register*
 OMR::Power::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *firstChild = node->getFirstChild();

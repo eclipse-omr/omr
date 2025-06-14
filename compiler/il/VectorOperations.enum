@@ -115,6 +115,22 @@ VECTOR_OPERATION_MACRO(\
    /* .description             =    load indirect mask */ \
 )
 VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ msplats, \
+   /* .name                    = */ "msplats", \
+   /* .properties1             = */ 0, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
+   /* .properties3             = */ 0, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::MaskResult, \
+   /* .childProperties         = */ ONE_CHILD(TR::Int64), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    mask splats */ \
+)
+VECTOR_OPERATION_MACRO(\
    /* .operation               = */ mstore, \
    /* .name                    = */ "mstore", \
    /* .properties1             = */ ILProp1::Store | ILProp1::TreeTop | ILProp1::HasSymbolRef, \
