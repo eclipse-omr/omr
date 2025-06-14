@@ -3612,11 +3612,11 @@ TR::Register *OMR::Power::TreeEvaluator::vandEvaluator(TR::Node *node, TR::CodeG
       case TR::Int8:
       case TR::Int16:
       case TR::Int32:
+      case TR::Int64:
          opCode = TR::InstOpCode::vand;
          break;
       default:
-         opCode = TR::InstOpCode::xxland;
-         break;
+         TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
      }
 
    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, opCode);
@@ -3634,11 +3634,11 @@ TR::Register *OMR::Power::TreeEvaluator::vorEvaluator(TR::Node *node, TR::CodeGe
       case TR::Int8:
       case TR::Int16:
       case TR::Int32:
+      case TR::Int64:
          opCode = TR::InstOpCode::vor;
          break;
       default:
-         opCode = TR::InstOpCode::xxlor;
-         break;
+         TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
      }
    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, opCode);
    }
@@ -3655,11 +3655,11 @@ TR::Register *OMR::Power::TreeEvaluator::vxorEvaluator(TR::Node *node, TR::CodeG
       case TR::Int8:
       case TR::Int16:
       case TR::Int32:
+      case TR::Int64:
          opCode = TR::InstOpCode::vxor;
          break;
       default:
-         opCode = TR::InstOpCode::xxlxor;
-         break;
+         TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
      }
    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, opCode);
    }
@@ -4787,7 +4787,7 @@ TR::Register* OMR::Power::TreeEvaluator::vmaddEvaluator(TR::Node *node, TR::Code
 
 TR::Register* OMR::Power::TreeEvaluator::vmandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return vandEvaluator(node, cg);
    }
 
 TR::Register* OMR::Power::TreeEvaluator::vmcmpeqEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4867,7 +4867,7 @@ TR::Register* OMR::Power::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::Code
 
 TR::Register* OMR::Power::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return vorEvaluator(node, cg);
    }
 
 TR::Register* OMR::Power::TreeEvaluator::vmorUncheckedEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4937,7 +4937,7 @@ TR::Register* OMR::Power::TreeEvaluator::vmsubEvaluator(TR::Node *node, TR::Code
 
 TR::Register* OMR::Power::TreeEvaluator::vmxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return vxorEvaluator(node, cg);
    }
 
 TR::Register* OMR::Power::TreeEvaluator::vmfirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)
