@@ -2055,6 +2055,28 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
             }
          }
 
+      if (estimateCursor->getNext() == NULL && estimateCursor->getKind() != TR::Instruction::IsPadding)
+         {
+         TR::Instruction *lastInstruction = estimateCursor;
+
+         while (lastInstruction != NULL)
+            {
+            if (!lastInstruction->getOpCode().isPseudoOp())
+               break;
+
+            lastInstruction = lastInstruction->getPrev();
+            }
+
+         // In some cases, the last instruction in the function will be a call instruction. This may happen
+         // when throwing an exception. The return address of the function may be beyond the body of this
+         // function. In this case, we must add padding to end of the function to prevent the stack walker
+         // from detecting an illegal return address.
+         if (lastInstruction && lastInstruction->getOpCode().isCallOp())
+            {
+            generatePaddingInstruction(estimateCursor, 1, self());
+            }
+         }
+
       estimate = estimateCursor->estimateBinaryLength(estimate);
       TR_VFPState prevState = _vfpState;
       estimateCursor->adjustVFPState(&_vfpState, self());
