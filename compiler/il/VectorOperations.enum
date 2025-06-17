@@ -258,6 +258,54 @@ VECTOR_OPERATION_MACRO(\
    /* .ifCompareOpCode         = */ TR::BadILOp, \
    /* .description             =    Store mask global register */ \
 )
+VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ mand, \
+   /* .name                    = */ "mand", \
+   /* .properties1             = */ ILProp1::Commutative | ILProp1::Associative | ILProp1::And, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
+   /* .properties3             = */ 0, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::MaskResult, \
+   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    mask logical AND */ \
+)
+VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ mor, \
+   /* .name                    = */ "mor", \
+   /* .properties1             = */ ILProp1::Commutative | ILProp1::Associative | ILProp1::Or, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
+   /* .properties3             = */ 0, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::MaskResult, \
+   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    mask logical OR */ \
+)
+VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ mxor, \
+   /* .name                    = */ "mxor", \
+   /* .properties1             = */ ILProp1::Commutative | ILProp1::Associative | ILProp1::Xor, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::SupportedForPRE, \
+   /* .properties3             = */ 0, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::MaskResult, \
+   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    mask exclusive OR*/ \
+)
 // vector mask conversion opcodes
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ b2m, \
