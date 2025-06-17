@@ -1059,6 +1059,24 @@ OMR::Power::TreeEvaluator::mRegStoreEvaluator(TR::Node *node, TR::CodeGenerator 
    }
 
 TR::Register*
+OMR::Power::TreeEvaluator::mandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::vandEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::morEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::vorEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::Power::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::vxorEvaluator(node, cg);
+   }
+
+TR::Register*
 OMR::Power::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
