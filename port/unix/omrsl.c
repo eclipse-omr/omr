@@ -78,6 +78,8 @@
 
 #if defined(OSX)
 #define PLATFORM_DLL_EXTENSION ".dylib"
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
 #else /* defined(OSX) */
 #define PLATFORM_DLL_EXTENSION ".so"
 #endif /* defined(OSX) */
@@ -506,7 +508,42 @@ omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback c
 	}
 	portLibrary->file_close(portLibrary, fd);
 	return result;
-#else /* defined(LINUX) */
+#elif defined(OSX) /* defined(LINUX) */
+	uint32_t image_count = _dyld_image_count();
+	uint32_t i = 0;
+	for (i = 0; i < image_count; ++i) {
+		intptr_t slide = 0;
+		const struct mach_header_64 *header = NULL;
+		const struct load_command *lc = NULL;
+		uint32_t cmd = 0;
+		const char *image_name = _dyld_get_image_name(i);
+		if ((NULL == image_name) || ('/' != image_name[0])) {
+			continue;
+		}
+		header = (const struct mach_header_64 *)_dyld_get_image_header(i);
+		if ((NULL == header) || (MH_MAGIC_64 != header->magic)) {
+			continue;
+		}
+		lc = (const struct load_command *)(header + 1);
+		slide = _dyld_get_image_vmaddr_slide(i);
+		for (cmd = 0; cmd < header->ncmds; ++cmd) {
+			if (0 == lc->cmdsize) {
+				break;
+			}
+			if (LC_SEGMENT_64 == lc->cmd) {
+				const struct segment_command_64 *seg = (const struct segment_command_64 *)lc;
+				uint64_t addrLow = seg->vmaddr + slide;
+				uint64_t addrHigh = addrLow + seg->vmsize;
+				uintptr_t result = callback(image_name, (void *)addrLow, (void *)addrHigh, userData);
+				if (0 != result) {
+					return result;
+				}
+			}
+			lc = (const struct load_command *)((const uint8_t *)lc + lc->cmdsize);
+		}
+	}
+	return 0;
+#else /* defined(OSX) */
 	/* Platform not supported. */
 	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 #endif /* defined(LINUX) */
