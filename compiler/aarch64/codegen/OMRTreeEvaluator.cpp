@@ -1759,6 +1759,24 @@ OMR::ARM64::TreeEvaluator::mRegStoreEvaluator(TR::Node *node, TR::CodeGenerator 
    return TR::TreeEvaluator::iRegStoreEvaluator(node, cg);
    }
 
+TR::Register*
+OMR::ARM64::TreeEvaluator::mandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::ARM64::TreeEvaluator::morEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::ARM64::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
 /* This template function should be declared as constexpr if the compiler supports it. */
 template<TR::VectorOperation op>
 TR::ILOpCodes getLoadOpCodeForMaskConversion()

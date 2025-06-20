@@ -418,6 +418,9 @@
 #define mLongBitsToMaskSimplifierHandler dftSimplifier
 #define mRegLoadSimplifierHandler dftSimplifier
 #define mRegStoreSimplifierHandler dftSimplifier
+#define mandSimplifierHandler dftSimplifier
+#define morSimplifierHandler dftSimplifier
+#define mxorSimplifierHandler dftSimplifier
 #define b2mSimplifierHandler dftSimplifier
 #define s2mSimplifierHandler dftSimplifier
 #define i2mSimplifierHandler dftSimplifier
