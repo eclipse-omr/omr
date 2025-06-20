@@ -1638,3 +1638,4 @@ TraceEvent=Trc_PRT_vmem_reserve_tempfile_not_created Group=mem Overhead=1 Level=
 
 TraceException=Trc_PRT_failed_to_open_proc_maps Group=sl Overhead=1 Level=1 NoEnv Template="Failed to open /proc/self/maps; error=%d"
 TraceException=Trc_PRT_failed_to_open_proc Group=sysinfo Overhead=1 Level=1 NoEnv Template="Failed to open /proc; error=%d"
+TraceException=Trc_PRT_failed_to_getprocs64 Group=sysinfo Overhead=1 Level=1 NoEnv Template="Failed to call getprocs64; error=%d"
