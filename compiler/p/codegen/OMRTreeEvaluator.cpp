@@ -911,6 +911,15 @@ OMR::Power::TreeEvaluator::mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *c
    }
 
 TR::Register*
+OMR::Power::TreeEvaluator::msplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   // msplats can only get 0 or -1 as a child value, so only splat is needed
+   TR::Register *resReg = TR::TreeEvaluator::vsplatsEvaluator(node, cg);
+
+   return resReg;
+   }
+
+TR::Register*
 OMR::Power::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *firstChild = node->getFirstChild();
