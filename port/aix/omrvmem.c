@@ -399,8 +399,10 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		/* Invalid input */
 		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
 		Trc_PRT_vmem_omrvmem_reserve_memory_invalid_input();
-	} else if (PPG_vmem_pageSize[0] == params->pageSize) {
-		/* Handle default page size differently, don't use shmget */
+	} else if (PPG_vmem_pageSize[0] == params->pageSize || params->byteAmount < params->pageSize) {
+		/* Use default page size if the byteAmount requested is less than the pageSize requested
+		 * Handle default page size differently, don't use shmget
+		 */
 		uintptr_t alignment = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t minimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
 
@@ -763,6 +765,10 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
+#if !defined(OMR_ENV_DATA64)
+	/* on 32 bit systems, mmap starting out a new 256M segment when allocating is
+	 * a significant impact for the address space, while this is not a concern on 64 bit systems
+	 */
 	if (0 != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) {
 		/* Allocate code memory  */
 		result = portLibrary->mem_allocate_memory(portLibrary, byteAmount, OMR_GET_CALLSITE(), category->categoryCode);
@@ -780,6 +786,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
 		return result;
 	}
+#endif /* !defined(OMR_ENV_DATA64) */
 
 #if defined(MAP_ANONYMOUS)
 	flags |= MAP_ANONYMOUS;
