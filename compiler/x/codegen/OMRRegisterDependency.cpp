@@ -498,16 +498,9 @@ void OMR::X86::RegisterDependencyConditions::assignPreConditionRegisters(TR::Ins
    {
    if (_preConditions != NULL)
       {
-      if ((kindsToBeAssigned & TR_X87_Mask))
-         {
-         _preConditions->assignFPRegisters(currentInstruction, kindsToBeAssigned, _numPreConditions, cg);
-         }
-      else
-         {
-         cg->clearRegisterAssignmentFlags();
-         cg->setRegisterAssignmentFlag(TR_PreDependencyCoercion);
-         _preConditions->assignRegisters(currentInstruction, kindsToBeAssigned, _numPreConditions, cg);
-         }
+      cg->clearRegisterAssignmentFlags();
+      cg->setRegisterAssignmentFlag(TR_PreDependencyCoercion);
+      _preConditions->assignRegisters(currentInstruction, kindsToBeAssigned, _numPreConditions, cg);
       }
    }
 
@@ -515,16 +508,9 @@ void OMR::X86::RegisterDependencyConditions::assignPostConditionRegisters(TR::In
    {
    if (_postConditions != NULL)
       {
-      if ((kindsToBeAssigned & TR_X87_Mask))
-         {
-         _postConditions->assignFPRegisters(currentInstruction, kindsToBeAssigned, _numPostConditions, cg);
-         }
-      else
-         {
-         cg->clearRegisterAssignmentFlags();
-         cg->setRegisterAssignmentFlag(TR_PostDependencyCoercion);
-         _postConditions->assignRegisters(currentInstruction, kindsToBeAssigned, _numPostConditions, cg);
-         }
+      cg->clearRegisterAssignmentFlags();
+      cg->setRegisterAssignmentFlag(TR_PostDependencyCoercion);
+      _postConditions->assignRegisters(currentInstruction, kindsToBeAssigned, _numPostConditions, cg);
       }
    }
 
