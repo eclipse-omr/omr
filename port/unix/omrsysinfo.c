@@ -7687,7 +7687,53 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 	portLibrary->mem_free_memory(portLibrary, command);
 	closedir(dir);
 	return callback_result;
-#else /* defined(LINUX) */
+#elif defined(OSX) /* defined(LINUX) */
+	uintptr_t callback_result = 0;
+	pid_t *pid_buffer = NULL;
+	int actual_bytes = 0;
+	int i = 0;
+	int num_procs = 0;
+	char path_buf[PROC_PIDPATHINFO_MAXSIZE];
+	int num_bytes = proc_listpids(PROC_ALL_PIDS, 0, NULL, 0);
+	if (num_bytes <= 0) {
+		int32_t rc = findError(errno);
+		portLibrary->error_set_last_error(portLibrary, errno, rc);
+		Trc_PRT_failed_to_call_proc_listpids(rc);
+		return (uintptr_t)(intptr_t)rc;
+	}
+	pid_buffer = (pid_t *)portLibrary->mem_allocate_memory(
+		portLibrary,
+		num_bytes,
+		OMR_GET_CALLSITE(),
+		OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == pid_buffer) {
+		return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	}
+	actual_bytes = proc_listpids(PROC_ALL_PIDS, 0, pid_buffer, num_bytes);
+	if (actual_bytes <= 0) {
+		int32_t rc = findError(errno);
+		portLibrary->error_set_last_error(portLibrary, errno, rc);
+		Trc_PRT_failed_to_call_proc_listpids(rc);
+		portLibrary->mem_free_memory(portLibrary, pid_buffer);
+		return (uintptr_t)(intptr_t)rc;
+	}
+	num_procs = actual_bytes / sizeof(pid_t);
+	for (i = 0; i < num_procs; i++) {
+		pid_t pid = pid_buffer[i];
+		if (pid <= 0) {
+			continue;
+		}
+		memset(path_buf, 0, sizeof(path_buf));
+		if (proc_pidpath(pid, path_buf, sizeof(path_buf)) > 0) {
+			callback_result = callback((uintptr_t)pid, path_buf, userData);
+			if (0 != callback_result) {
+				break;
+			}
+		}
+	}
+	portLibrary->mem_free_memory(portLibrary, pid_buffer);
+	return callback_result;
+#else /* defined(OSX) */
 	/* sysinfo_get_processes is not supported on this platform. */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif /* defined(LINUX) */
