@@ -1074,17 +1074,17 @@
    /* .properties  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::cntlzw].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm,
    },
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::cnttzw, */
-   /* .name        =    "cnttzw", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::cnttzw,
+   /* .name        = */ "cnttzw",
    /* .description =    "Count Trailing Zeros Word", */
-   /* .prefix      =    0x00000000, */
-   /* .opcode      =    0x7C000434, */
-   /* .format      =    FORMAT_UNKNOWN, */
-   /* .minimumALS  =    OMR_PROCESSOR_PPC_P9, */
-   /* .properties  =    PPCOpProp_HasRecordForm | */
-   /*                   PPCOpProp_SyncSideEffectFree, */
-   /* }, */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0x7C000434,
+   /* .format      = */ FORMAT_RA_RS,
+   /* .minimumALS  = */ OMR_PROCESSOR_PPC_P9,
+   /* .properties  = */ PPCOpProp_HasRecordForm |
+                        PPCOpProp_SyncSideEffectFree,
+   },
 
    /* { */
    /* .mnemonic    =    OMR::InstOpCode::cnttzw_r, */
