@@ -126,7 +126,7 @@ void OMR::X86::AMD64::CodeGenerator::initialize()
       _maxObjectSizeGuaranteedNotToOverflow = (uint32_t)INT_MAX;
       }
 
-   if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_BMI2))
+   if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_BMI2) && comp->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX))
       {
       static bool disableBitwiseCompress = feGetEnv("TR_disableBitwiseCompress") != NULL;
       if (!disableBitwiseCompress)

@@ -133,7 +133,7 @@ OMR::X86::I386::CodeGenerator::initialize()
    if (!dontConsiderAllAutosForGRA)
       cg->setConsiderAllAutosAsTacticalGlobalRegisterCandidates();
 
-   if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_BMI2))
+   if (comp->target().cpu.supportsFeature(OMR_FEATURE_X86_BMI2) && comp->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX))
       {
       static bool disableBitwiseCompress = feGetEnv("TR_disableBitwiseCompress") != NULL;
       if (!disableBitwiseCompress)
