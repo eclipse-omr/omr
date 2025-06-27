@@ -2824,6 +2824,27 @@ TR::Optimizer *OMR::Optimizer::self()
    return (static_cast<TR::Optimizer *>(this));
    }
 
+const char *
+OMR::Optimizer::getAnalysisPhaseName(OMR::Optimizer::AnalysisPhases phaseId)
+   {
+#define OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+   analysis_phase, \
+   name, \
+   id, \
+   ...) \
+      case id: \
+         return name;
+
+   switch (phaseId)
+      {
+#include "optimizer/OptimizerAnalysisPhases.enum"
+      default:
+         break;
+      }
+
+      return "Unknown analysis phase";
+   }
+
 OMR_InlinerPolicy* OMR::Optimizer::getInlinerPolicy()
    {
    return new (comp()->allocator()) OMR_InlinerPolicy(comp());

@@ -322,25 +322,19 @@ class Optimizer
 
    bool isEnabled(OMR::Optimizations i);
 
-   enum // RAS
-      {
-      // Analyses start with "A", but not "A0" because that's "After Optimization"
-      BUILDING_VALUE_NUMBERS          = 0xA1,
-      BUILDING_STRUCTURE              = 0xA5, // "5"tructure
-      BUILDING_ALIASES                = 0xAA, // "A"liases
-      BUILDING_ACCURATE_NODE_COUNT    = 0xAC, // "C"ount
-      BUILDING_USE_DEFS               = 0xAD, // "D"efs
-      BUILDING_FREQUENCIES            = 0xAF, // "F"requencies
+#include "optimizer/OptimizerAnalysisPhasesEnum.hpp"
 
-      // When no analysis is running
-      BEFORE_OPTIMIZATION             = 0xB0,
-      PERFORMING_OPTIMIZATION         = 0xFF,
-      AFTER_OPTIMIZATION              = 0xA0,
-
-      HWPROFILE_PEEPHOLE_BLOCKS       = 0xCB,
-      PERFORMING_CHECKS               = 0xCC,
-
-      } AnalysisPhases;
+   /**
+    * Given a \ref Optimizer::AnalysisPhase value, returns a descriptive name
+    * for the phase.  This method is intended to be used for RAS purposes.
+    *
+    * \parm[in] phaseId An optimizer \ref Optimizer::AnalysisPhases value
+    *
+    * \returns A NUL-terminated character string giving the name of the phase,
+    *          or the string "Unknown analysis phase" if the phase id value is
+    *          not recognized.
+    */
+   static const char *getAnalysisPhaseName(Optimizer::AnalysisPhases phaseId);
 
    protected:
    TR::OptimizationManager *      _opts[OMR::numGroups];

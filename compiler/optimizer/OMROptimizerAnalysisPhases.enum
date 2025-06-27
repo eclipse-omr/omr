@@ -1,0 +1,81 @@
+/*******************************************************************************
+ * Copyright IBM Corp. and others 2000
+ *
+ * This program and the accompanying materials are made available under
+ * the terms of the Eclipse Public License 2.0 which accompanies this
+ * distribution and is available at https://www.eclipse.org/legal/epl-2.0/
+ * or the Apache License, Version 2.0 which accompanies this distribution
+ * and is available at https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the
+ * Eclipse Public License, v. 2.0 are satisfied: GNU General Public License,
+ * version 2 with the GNU Classpath Exception [1] and GNU General Public
+ * License, version 2 with the OpenJDK Assembly Exception [2].
+ *
+ * [1] https://www.gnu.org/software/classpath/license.html
+ * [2] https://openjdk.org/legal/assembly-exception.html
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+ *******************************************************************************/
+
+      // Analyses start with "A", but not "A0" because that's "After Optimization"
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BUILDING_VALUE_NUMBERS, \
+  /* name             = */    "Building value numbers", \
+  /* id               = */    0xA1, \
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BUILDING_STRUCTURE, \
+  /* name             = */    "Building structure", \
+  /* id               = */    0xA5, // "5"tructure
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BUILDING_ALIASES, \
+  /* name             = */    "Building aliases", \
+  /* id               = */    0xAA, // "A"liases
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BUILDING_ACCURATE_NODE_COUNT, \
+  /* name             = */    "Building accurate node count", \
+  /* id               = */    0xAC, // "C"ount
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BUILDING_USE_DEFS, \
+  /* name             = */    "Building Use-Defs", \
+  /* id               = */    0xAD, // "D"efs
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BUILDING_FREQUENCIES, \
+  /* name             = */    "Building frequencies", \
+  /* id               = */    0xAF, // "F"requencies
+)
+
+      // When no analysis is running
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    BEFORE_OPTIMIZATION, \
+  /* name             = */    "Before Optimization", \
+  /* id               = */    0xB0, \
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    PERFORMING_OPTIMIZATION, \
+  /* name             = */    "Performing Optimization", \
+  /* id               = */    0xFF, \
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    AFTER_OPTIMIZATION, \
+  /* name             = */    "After Optimization", \
+  /* id               = */    0xA0, \
+)
+
+      // Checks
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    HWPROFILE_PEEPHOLE_BLOCKS, \
+  /* name             = */    "Hardware Profile Peepholde Blocks", \
+  /* id               = */    0xCB, \
+)
+OPTIMIZER_ANALYSIS_PHASES_MACRO(\
+  /* analysis_phase   = */    PERFORMING_CHECKS, \
+  /* name             = */    "Performing checks", \
+  /* id               = */    0xCC, \
+)
