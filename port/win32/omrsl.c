@@ -37,6 +37,8 @@
 #include "omrutil.h"
 #include "portnls.h"
 #include "ut_omrport.h"
+#include <psapi.h>
+#include <limits.h>
 
 #ifndef HINSTANCE_ERROR
 #define HINSTANCE_ERROR 32
@@ -478,5 +480,60 @@ findError(int32_t errorCode)
 uintptr_t
 omrsl_get_libraries(struct OMRPortLibrary *portLibrary, OMRLibraryInfoCallback callback, void *userData)
 {
-	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+	HANDLE hProcess = GetCurrentProcess();
+	HMODULE *modules = NULL;
+	DWORD needed = 0;
+	uint32_t numModules = 0;
+	uint32_t i = 0;
+	uintptr_t result = 0;
+	if ((0 == EnumProcessModules(hProcess, NULL, 0, &needed)) || (0 == needed)) {
+		portLibrary->error_set_last_error_with_message(
+				portLibrary,
+				OMRPORT_ERROR_OPFAILED,
+				"Failed to get module size using EnumProcessModules.");
+		return (uintptr_t)(intptr_t)OMRPORT_ERROR_OPFAILED;
+	}
+	numModules = needed / sizeof(HMODULE);
+	modules = (HMODULE *)portLibrary->mem_allocate_memory(
+			portLibrary,
+			needed,
+			OMR_GET_CALLSITE(),
+			OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == modules) {
+		int32_t portableError = portLibrary->error_last_error_number(portLibrary);
+		portLibrary->error_set_last_error_with_message(
+				portLibrary,
+				portableError,
+				"Memory allocation failed for module list.");
+		return (uintptr_t)(intptr_t)portableError;
+	}
+	if (0 == EnumProcessModules(hProcess, modules, needed, &needed)) {
+		portLibrary->error_set_last_error_with_message(
+				portLibrary,
+				OMRPORT_ERROR_OPFAILED,
+				"Failed to enumerate modules.");
+		result = (uintptr_t)(intptr_t)OMRPORT_ERROR_OPFAILED;
+		goto done;
+	}
+	for (i = 0; i < numModules; i++) {
+		char fileName[MAX_PATH];
+		MODULEINFO modinfo;
+		void *addrLow = NULL;
+		void *addrHigh = NULL;
+		if (0 == GetModuleFileNameExA(hProcess, modules[i], fileName, sizeof(fileName))) {
+			continue;
+		}
+		if (!GetModuleInformation(hProcess, modules[i], &modinfo, sizeof(modinfo))) {
+			continue;
+		}
+		addrLow = modinfo.lpBaseOfDll;
+		addrHigh = (void *)((char *)addrLow + modinfo.SizeOfImage);
+		result = callback(fileName, addrLow, addrHigh, userData);
+		if (0 != result) {
+			goto done;
+		}
+	}
+done:
+	portLibrary->mem_free_memory(portLibrary, modules);
+	return result;
 }
