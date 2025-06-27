@@ -19,8 +19,6 @@
 # SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
 ###############################################################################
 
-# cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-#
 # project(triltest LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
