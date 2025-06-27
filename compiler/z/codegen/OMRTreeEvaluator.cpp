@@ -2349,52 +2349,153 @@ OMR::Z::TreeEvaluator::lbitpermuteEvaluator(TR::Node *node, TR::CodeGenerator *c
    return TR::TreeEvaluator::bitpermuteEvaluator(node, cg);
    }
 
+static inline TR::Register*
+inlineBitCompress(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
+   {
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = cg->gprClobberEvaluate(srcNode);
+   TR::Register *maskReg = cg->gprClobberEvaluate(maskNode);
+
+   if (type != TR::Int64)
+      {
+      TR::InstOpCode::Mnemonic extendOpCode;
+      switch (type)
+         {
+         case TR::Int8:
+            extendOpCode = TR::InstOpCode::LLGCR;
+            break;
+         case TR::Int16:
+            extendOpCode = TR::InstOpCode::LLGHR;
+            break;
+         case TR::Int32:
+            extendOpCode = TR::InstOpCode::LLGFR;
+            break;
+
+         default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "Unrecognized expandbits type %s\n", type.toString());
+            break;
+         }
+
+      generateRRInstruction(cg, extendOpCode, node, maskReg, maskReg);
+      }
+
+   generateRRFInstruction(cg, TR::InstOpCode::BEXTG, node, srcReg, srcReg, maskReg, static_cast<uint8_t>(0));
+   generateRRFInstruction(cg, TR::InstOpCode::POPCNT, node, maskReg, maskReg, static_cast<uint8_t>(0x8), static_cast<uint8_t>(0x0), NULL);
+   generateRSInstruction(cg, TR::InstOpCode::RLLG, node, srcReg, srcReg, generateS390MemoryReference(maskReg, 0, cg));
+
+   node->setRegister(srcReg);
+
+   cg->stopUsingRegister(maskReg);
+
+   cg->decReferenceCount(srcNode);
+   cg->decReferenceCount(maskNode);
+
+   return srcReg;
+   }
+
 TR::Register*
 OMR::Z::TreeEvaluator::bcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitCompress(node, cg, TR::Int8);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::scompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitCompress(node, cg, TR::Int16);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::icompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitCompress(node, cg, TR::Int32);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::lcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitCompress(node, cg, TR::Int64);
    }
+
+static inline TR::Register*
+inlineBitExpand(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
+   {
+   TR::Node *srcNode = node->getFirstChild();
+   TR::Node *maskNode = node->getSecondChild();
+   TR::Register *srcReg = cg->gprClobberEvaluate(srcNode);
+   TR::Register *maskReg = NULL;
+   TR::Register *bitCountReg = cg->allocateRegister();
+
+   if (type != TR::Int64)
+      {
+      TR::InstOpCode::Mnemonic extendOpCode;
+      maskReg = cg->gprClobberEvaluate(maskNode);
+      switch (type)
+         {
+         case TR::Int8:
+            extendOpCode = TR::InstOpCode::LLGCR;
+            break;
+         case TR::Int16:
+            extendOpCode = TR::InstOpCode::LLGHR;
+            break;
+         case TR::Int32:
+            extendOpCode = TR::InstOpCode::LLGFR;
+            break;
+
+         default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "Unrecognized expandbits type %s\n", type.toString());
+            break;
+         }
+
+      generateRRInstruction(cg, extendOpCode, node, maskReg, maskReg);
+      }
+   else
+      {
+      maskReg = cg->evaluate(maskNode);
+      }
+
+   generateRIInstruction(cg, TR::InstOpCode::LGHI, node, bitCountReg, -1);
+   generateRRInstruction(cg, TR::InstOpCode::XGR, node, bitCountReg, maskReg);
+   generateRRFInstruction(cg, TR::InstOpCode::POPCNT, node, bitCountReg, bitCountReg, static_cast<uint8_t>(0x8), static_cast<uint8_t>(0x0), NULL);
+   generateRSInstruction(cg, TR::InstOpCode::SLLG, node, srcReg, srcReg, generateS390MemoryReference(bitCountReg, 0, cg));
+   generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, srcReg, srcReg, maskReg, static_cast<uint8_t>(0));
+
+   node->setRegister(srcReg);
+
+   cg->stopUsingRegister(bitCountReg);
+   if (type != TR::Int64)
+      cg->stopUsingRegister(maskReg);
+
+   cg->decReferenceCount(srcNode);
+   cg->decReferenceCount(maskNode);
+
+   return srcReg;
+   }
+
 
 TR::Register*
 OMR::Z::TreeEvaluator::bexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitExpand(node, cg, TR::Int8);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::sexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitExpand(node, cg, TR::Int16);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::iexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitExpand(node, cg, TR::Int32);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::lexpandbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return inlineBitExpand(node, cg, TR::Int64);
    }
 
 TR::Register*
@@ -8755,62 +8856,6 @@ OMR::Z::TreeEvaluator::inlineNumberOfLeadingZeros(TR::Node *node, TR::CodeGenera
    cg->stopUsingRegister(argReg);
    cg->decReferenceCount(argNode);
    return returnReg;
-   }
-
-TR::Register*
-OMR::Z::TreeEvaluator::inlineBitCompress(TR::Node *node, TR::CodeGenerator *cg, bool isLong)
-   {
-   TR::Node *argNode = node->getFirstChild();
-   TR::Node *maskNode = node->getSecondChild();
-   TR::Register *argReg = cg->gprClobberEvaluate(argNode);
-   TR::Register *maskReg = cg->gprClobberEvaluate(maskNode);
-   if (!isLong)
-      {
-      generateRRInstruction(cg, TR::InstOpCode::LLGFR, node, maskReg, maskReg);
-      }
-   generateRRFInstruction(cg, TR::InstOpCode::BEXTG, node, argReg, argReg, maskReg, static_cast<uint8_t>(0));
-   generateRRFInstruction(cg, TR::InstOpCode::POPCNT, node, maskReg, maskReg, static_cast<uint8_t>(0x8), static_cast<uint8_t>(0x0), NULL);
-   generateRSInstruction(cg, TR::InstOpCode::RLLG, node, argReg, argReg, generateS390MemoryReference(maskReg, 0, cg));
-
-   node->setRegister(argReg);
-   cg->stopUsingRegister(maskReg);
-   cg->decReferenceCount(argNode);
-   cg->decReferenceCount(maskNode);
-
-   return argReg;
-   }
-
-TR::Register*
-OMR::Z::TreeEvaluator::inlineBitExpand(TR::Node *node, TR::CodeGenerator *cg, bool isLong)
-   {
-   TR::Node *argNode = node->getFirstChild();
-   TR::Node *maskNode = node->getSecondChild();
-   TR::Register *argReg = cg->gprClobberEvaluate(argNode);
-   TR::Register *maskReg;
-   if (!isLong)
-      {
-      maskReg = cg->gprClobberEvaluate(maskNode);
-      generateRRInstruction(cg, TR::InstOpCode::LLGFR, node, maskReg, maskReg);
-      }
-   else
-      {
-      maskReg = cg->evaluate(maskNode);
-      }
-   TR::Register *bitCountReg = cg->allocateRegister();
-
-   generateRIInstruction(cg, TR::InstOpCode::LGHI, node, bitCountReg, -1);
-   generateRRInstruction(cg, TR::InstOpCode::XGR, node, bitCountReg, maskReg);
-   generateRRFInstruction(cg, TR::InstOpCode::POPCNT, node, bitCountReg, bitCountReg, static_cast<uint8_t>(0x8), static_cast<uint8_t>(0x0), NULL);
-   generateRSInstruction(cg, TR::InstOpCode::SLLG, node, argReg, argReg, generateS390MemoryReference(bitCountReg, 0, cg));
-   generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, argReg, argReg, maskReg, static_cast<uint8_t>(0));
-
-   node->setRegister(argReg);
-   cg->stopUsingRegister(maskReg);
-   cg->stopUsingRegister(bitCountReg);
-   cg->decReferenceCount(argNode);
-   cg->decReferenceCount(maskNode);
-
-   return argReg;
    }
 
 TR::Register *getConditionCode(TR::Node *node, TR::CodeGenerator *cg, TR::Register *programRegister)
