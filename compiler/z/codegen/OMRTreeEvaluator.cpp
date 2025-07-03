@@ -1124,28 +1124,104 @@ OMR::Z::TreeEvaluator::PassThroughEvaluator(TR::Node *node, TR::CodeGenerator *c
    }
 
 // mask evaluators
+
+/**
+ * \brief
+ * Evaluate mAllTrue, mmAllTrue, mAnyTrue, and mmAny true opcodes.
+ *
+ * \details
+ * mAnyTrue returns boolean "true" if there is at least one lane with mask value of "true" in first child.
+ * mmAnyTrue returns boolean "true" if there is at least one lane with mask value of "true" in ANDed first child and second child.
+ * mAllTrue returns boolean "true" if all lanes have mask value of "true" in first child.
+ * mmAllTrue returns boolean "true" if all lanes have mask value of "true" in first child and second child.
+ * A lane has mask value of "true" when all bits in the lane are set to 1 and "false" when all bits are set to 0.
+ * 
+ *\param node
+ * The land node.
+ *
+ *\param cg
+ * The code generator used to generate the instructions.
+ *
+ *\param hasSecondChild
+ * Whether the node has a second child (mmAllTrue/mmAnyTrue) or not.
+ * 
+ *\param isAllTrue
+ * Whether all lanes in mask must be "true" or just one (or more) to return "true".
+ * 
+ * \return
+ * TR::Register with boolean value of "false" (0) or "true" (1).
+ */
+TR::Register*
+OMR::Z::TreeEvaluator::maskAllAndAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool hasSecondChild, bool isAllTrue)
+   {
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Node *secondChild = hasSecondChild ? node->getSecondChild() : NULL;
+   TR_ASSERT_FATAL_WITH_NODE(node, firstChild->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", firstChild->getDataType().toString());
+   TR::Register *maskReg = NULL;
+   TR::LabelSymbol* returnTrueLabel = generateLabelSymbol(cg);
+   TR::Register *resultReg = cg->allocateRegister();
+   TR::Register *allBitsOneReg = cg->allocateRegister(TR_VRF);
+   bool stopUsingMaskReg = false;
+
+   if(hasSecondChild)
+      {
+      // In case of mmAllTrue and mmAnyTrue there are two children. Just AND the children and the rest is similar to mAllTrue and mAnyTrue.
+      TR::Register *mask1Reg = cg->evaluate(firstChild);
+      TR::Register *mask2Reg = cg->evaluate(secondChild);
+      maskReg = tryToReuseInputVectorRegs(node, cg);
+      stopUsingMaskReg = ((maskReg == mask1Reg) || (maskReg == mask2Reg));
+      generateVRRcInstruction(cg, TR::InstOpCode::VN, node, maskReg, mask1Reg, mask2Reg, 0, 0, 0);
+      }
+   else
+      {
+      maskReg = cg->evaluate(firstChild);
+      }
+
+   // Default value of result register is "true".
+   generateRRInstruction(cg, TR::InstOpCode::XR, node, resultReg, resultReg);
+   generateVRIaInstruction(cg, TR::InstOpCode::VGBM, node, allBitsOneReg, 0xffff, 0);
+   generateVRRcInstruction(cg, TR::InstOpCode::VCEQ, node, allBitsOneReg, allBitsOneReg, maskReg, 1, 0, getVectorElementSizeMask(firstChild));
+   // Jump to return if no lane is "true" or in case of "AllTrue", not all lanes are "true".
+   generateS390BranchInstruction(cg, TR::InstOpCode::BRC, (isAllTrue ? TR::InstOpCode::COND_MASK5 : TR::InstOpCode::COND_MASK1), node, returnTrueLabel);
+
+   generateRIInstruction(cg, TR::InstOpCode::LGHI, node, resultReg, 1);
+
+   generateS390LabelInstruction(cg, TR::InstOpCode::label, node, returnTrueLabel);
+
+   cg->decReferenceCount(firstChild);
+   if (hasSecondChild)
+      cg->decReferenceCount(secondChild);
+   cg->stopUsingRegister(allBitsOneReg);
+   if (stopUsingMaskReg)
+      cg->stopUsingRegister(maskReg);
+
+   node->setRegister(resultReg);
+   return resultReg;
+   }
+
 TR::Register*
 OMR::Z::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, false, false);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, false, true);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::mmAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, true, false);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::mmAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, true, true);
    }
 
 TR::Register*
