@@ -223,6 +223,7 @@ MM_Scavenger::initialize(MM_EnvironmentBase *env)
 
 	/* initialize the global scavenger gcCount */
 	_extensions->scavengerStats._gcCount = 0;
+	_extensions->incrementScavengerStats._gcCount = 0;
 
 	if (!_scavengeCacheFreeList.initialize(env, NULL)) {
 		return false;
@@ -490,8 +491,8 @@ MM_Scavenger::workerSetupForGC(MM_EnvironmentStandard *env)
 	/* Clear local language-specific stats */
 	_delegate.workerSetupForGC_clearEnvironmentLangStats(env);
 
-	/* record that this thread is participating in this cycle */
-	env->_scavengerStats._gcCount = _extensions->scavengerStats._gcCount;
+	/* Record that this thread is participating in this increment. */
+	env->_scavengerStats._gcCount = _extensions->incrementScavengerStats._gcCount;
 
 	/* Reset the local remembered set fragment */
 	env->_scavengerRememberedSet.count = 0;
@@ -523,7 +524,7 @@ MM_Scavenger::calculateRecommendedWorkingThreads(MM_EnvironmentStandard *env)
 		return;
 	}
 
-	Trc_MM_Scavenger_calculateRecommendedWorkingThreads_entry(env->getLanguageVMThread(), _extensions->scavengerStats._gcCount);
+	Trc_MM_Scavenger_calculateRecommendedWorkingThreads_entry(env->getLanguageVMThread(), _extensions->incrementScavengerStats._gcCount);
 
 	if (_isRememberedSetInOverflowAtTheBeginning || _extensions->scavengerStats._causedRememberedSetOverflow) {
 		/* Scavenge cycle ignored for recommending threads. Scavenger had overflows, this will skew the model,
@@ -662,7 +663,7 @@ MM_Scavenger::reportGCStart(MM_EnvironmentStandard *env)
 	/* TODO CRGTMP deprecate this trace point and add a new one */
 	Trc_MM_LocalGCStart(env->getLanguageVMThread(),
 		_extensions->globalGCStats.gcCount,
-		_extensions->scavengerStats._gcCount,
+		_extensions->incrementScavengerStats._gcCount,
 		0, /* used to be weak reference count */
 		0, /* used to be soft reference count */
 		0, /* used to be phantom reference count */
@@ -671,7 +672,7 @@ MM_Scavenger::reportGCStart(MM_EnvironmentStandard *env)
 
 	Trc_OMRMM_LocalGCStart(env->getOmrVMThread(),
 	_extensions->globalGCStats.gcCount,
-	        _extensions->scavengerStats._gcCount,
+	        _extensions->incrementScavengerStats._gcCount,
 	        0, /* used to be weak reference count */
 	        0, /* used to be soft reference count */
 	        0, /* used to be phantom reference count */
@@ -684,7 +685,7 @@ MM_Scavenger::reportGCStart(MM_EnvironmentStandard *env)
 		omrtime_hires_clock(),
 		J9HOOK_MM_OMR_LOCAL_GC_START,
 		_extensions->globalGCStats.gcCount,
-		_extensions->scavengerStats._gcCount
+		_extensions->incrementScavengerStats._gcCount
 	);
 }
 
@@ -4295,6 +4296,7 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 	/* Flush any VM level changes to prepare for a safe slot walk */
 	GC_OMRVMInterface::flushCachesForGC(env);
 
+	_extensions->incrementScavengerStats._gcCount += 1;
 	if (firstIncrement)	{
 		if (_extensions->processLargeAllocateStats) {
 			processLargeAllocateStatsBeforeGC(env);
@@ -5754,8 +5756,8 @@ MM_Scavenger::workThreadComplete(MM_EnvironmentStandard *env)
 {
 	Assert_MM_true(IS_CONCURRENT_ENABLED);
 
-	/* record that this thread is participating in this cycle */
-	env->_scavengerStats._gcCount = _extensions->scavengerStats._gcCount;
+	/* Record that this thread is participating in this increment. */
+	env->_scavengerStats._gcCount = _extensions->incrementScavengerStats._gcCount;
 
 	clearThreadGCStats(env, false);
 

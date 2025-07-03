@@ -357,3 +357,35 @@ MM_GCExtensionsBase::usingSATBBarrier()
 #endif /* defined(OMR_GC_REALTIME) */
 	return false;
 }
+
+UDATA
+MM_GCExtensionsBase::getUniqueGCCycleCount()
+{
+	UDATA result = 0;
+
+	switch (configurationOptions._gcPolicy) {
+	case OMR_GC_POLICY_OPTTHRUPUT:
+	case OMR_GC_POLICY_OPTAVGPAUSE:
+	case OMR_GC_POLICY_METRONOME:
+		result = globalGCStats.gcCount;
+		break;
+	case OMR_GC_POLICY_GENCON:
+		result = globalGCStats.gcCount;
+#if defined(OMR_GC_MODRON_SCAVENGER)
+		result += scavengerStats._gcCount;
+#endif /* defined(OMR_GC_MODRON_SCAVENGER) */
+		break;
+	case OMR_GC_POLICY_BALANCED:
+#if defined(OMR_GC_VLHGC)
+		result = globalVLHGCStats.gcCount;
+#endif /* defined(OMR_GC_VLHGC) */
+		break;
+	case OMR_GC_POLICY_NOGC:
+		break;
+	default :
+		/* Unknown GC policy. */
+		Assert_MM_unreachable();
+		break;
+	}
+	return result;
+}

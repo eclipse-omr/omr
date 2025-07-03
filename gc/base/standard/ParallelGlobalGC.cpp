@@ -1691,7 +1691,7 @@ MM_ParallelGlobalGC::reportGCStart(MM_EnvironmentBase *env)
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
 
 #if defined(OMR_GC_MODRON_SCAVENGER)
-	scavengerCount = _extensions->scavengerStats._gcCount;
+	scavengerCount = _extensions->incrementScavengerStats._gcCount;
 #endif /* OMR_GC_MODRON_SCAVENGER */
 
 	Trc_MM_GlobalGCStart(env->getLanguageVMThread(), _extensions->globalGCStats.gcCount);
@@ -1777,7 +1777,7 @@ MM_ParallelGlobalGC::reportGlobalGCIncrementStart(MM_EnvironmentBase *env)
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
 	uintptr_t scavengerCount = 0;
 #if defined(OMR_GC_MODRON_SCAVENGER)
-	scavengerCount = _extensions->scavengerStats._gcCount;
+	scavengerCount = _extensions->incrementScavengerStats._gcCount;
 #endif /* OMR_GC_MODRON_SCAVENGER */
 
 	TRIGGER_J9HOOK_MM_PRIVATE_GLOBAL_GC_INCREMENT_START(
