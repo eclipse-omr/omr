@@ -39,6 +39,7 @@
 #include "infra/Assert.hpp"
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 
 /*
  * \brief
@@ -144,7 +145,7 @@ TR::Register* TR_X86SubtractAnalyser::integerSubtractAnalyserImpl(TR::Node     *
          // firstchild is an inconst and it has not been evaluated.
          //   Generate the code for an iconst.
          firstRegister = _cg->allocateRegister();
-         TR::TreeEvaluator::insertLoadConstant(firstChild, firstRegister, firstChild->getInt(), TR_RematerializableInt, _cg);
+         OMR::X86::insertLoadConstant(firstChild, firstRegister, firstChild->getInt(), TR_RematerializableInt, _cg);
          }
       else
          {

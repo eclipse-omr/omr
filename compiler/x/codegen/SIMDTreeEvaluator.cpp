@@ -29,6 +29,7 @@
 #include "il/Node_inlines.hpp"
 #include "infra/Assert.hpp"
 #include "x/codegen/X86Instruction.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 #include "codegen/InstOpCode.hpp"
 
 namespace TR { class Instruction; }
@@ -234,75 +235,8 @@ TR::Register* OMR::X86::TreeEvaluator::SIMDsplatsEvaluator(TR::Node* node, TR::C
    TR::DataType et = node->getDataType().getVectorElementType();
    TR::VectorLength vl = node->getDataType().getVectorLength();
    TR::Register* resultReg = cg->allocateRegister(TR_VRF);
-   bool broadcast64 = et.isInt64() || et.isDouble();
 
-   switch (et)
-      {
-      case TR::Int8:
-      case TR::Int16:
-      case TR::Int32:
-         generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, resultReg, childReg, cg);
-         break;
-      case TR::Int64:
-         if (cg->comp()->target().is32Bit())
-            {
-            TR::Register* tempVectorReg = cg->allocateRegister(TR_VRF);
-            generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, tempVectorReg, childReg->getHighOrder(), cg);
-            generateRegImmInstruction(TR::InstOpCode::PSLLQRegImm1, node, tempVectorReg, 0x20, cg);
-            generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, resultReg, childReg->getLowOrder(), cg);
-            generateRegRegInstruction(TR::InstOpCode::PORRegReg, node, resultReg, tempVectorReg, cg);
-            cg->stopUsingRegister(tempVectorReg);
-            }
-         else
-            {
-            generateRegRegInstruction(TR::InstOpCode::MOVQRegReg8, node, resultReg, childReg, cg);
-            }
-         break;
-      case TR::Float:
-      case TR::Double:
-         generateRegRegInstruction(TR::InstOpCode::MOVSDRegReg, node, resultReg, childReg, cg);
-         break;
-      default:
-         if (cg->comp()->getOption(TR_TraceCG))
-            traceMsg(cg->comp(), "Unsupported data type, Node = %p\n", node);
-         TR_ASSERT_FATAL(false, "Unsupported data type");
-         break;
-      }
-
-   // Expand byte & word to 32-bits
-   switch (et)
-      {
-      case TR::Int8:
-         generateRegRegInstruction(TR::InstOpCode::PUNPCKLBWRegReg, node, resultReg, resultReg, cg);
-      case TR::Int16:
-         generateRegRegImmInstruction(TR::InstOpCode::PSHUFLWRegRegImm1, node, resultReg, resultReg, 0x0, cg);
-      default:
-         break;
-      }
-
-   switch (vl)
-      {
-      case TR::VectorLength128:
-         generateRegRegImmInstruction(TR::InstOpCode::PSHUFDRegRegImm1, node, resultReg, resultReg, broadcast64 ? 0x44 : 0, cg);
-         break;
-      case TR::VectorLength256:
-         {
-         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2), "256-bit vsplats requires AVX2");
-         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDYmmYmm : TR::InstOpCode::VBROADCASTSSRegReg;
-         generateRegRegInstruction(opcode.getMnemonic(), node, resultReg, resultReg, cg, opcode.getSIMDEncoding(&cg->comp()->target().cpu, TR::VectorLength256));
-         break;
-         }
-      case TR::VectorLength512:
-         {
-         TR_ASSERT_FATAL(cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F), "512-bit vsplats requires AVX-512");
-         TR::InstOpCode opcode = broadcast64 ? TR::InstOpCode::VBROADCASTSDZmmXmm : TR::InstOpCode::VBROADCASTSSRegReg;
-         generateRegRegInstruction(opcode.getMnemonic(), node, resultReg, resultReg, cg, OMR::X86::EVEX_L512);
-         break;
-         }
-      default:
-         TR_ASSERT_FATAL(0, "Unsupported vector length");
-         break;
-      }
+   OMR::X86::broadcast(node, cg, vl, et, resultReg, childReg);
 
    node->setRegister(resultReg);
    cg->decReferenceCount(childNode);

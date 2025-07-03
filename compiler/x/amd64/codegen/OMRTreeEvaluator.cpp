@@ -50,6 +50,7 @@
 #include "x/codegen/ConstantDataSnippet.hpp"
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "x/codegen/X86Instruction.hpp"
+#include "x/codegen/CodegenUtils.hpp"
 #include "codegen/InstOpCode.hpp"
 
 TR::Register*
@@ -2276,7 +2277,7 @@ OMR::X86::AMD64::TreeEvaluator::lexpandbitsEvaluator(TR::Node *node, TR::CodeGen
 
 TR::Register *OMR::X86::AMD64::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   TR::Register *targetRegister = TR::TreeEvaluator::loadConstant(node, node->getLongInt(), TR_RematerializableAddress, cg);
+   TR::Register *targetRegister = OMR::X86::loadConstant(node, node->getLongInt(), TR_RematerializableAddress, cg);
 
    node->setRegister(targetRegister);
    return targetRegister;
@@ -2284,7 +2285,7 @@ TR::Register *OMR::X86::AMD64::TreeEvaluator::aconstEvaluator(TR::Node *node, TR
 
 TR::Register *OMR::X86::AMD64::TreeEvaluator::lconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   TR::Register *targetRegister = TR::TreeEvaluator::loadConstant(node, node->getLongInt(), TR_RematerializableLong, cg);
+   TR::Register *targetRegister = OMR::X86::loadConstant(node, node->getLongInt(), TR_RematerializableLong, cg);
 
    node->setRegister(targetRegister);
    return targetRegister;

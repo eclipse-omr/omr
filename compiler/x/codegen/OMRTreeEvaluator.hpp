@@ -482,12 +482,6 @@ class OMR_EXTENSIBLE TreeEvaluator: public OMR::TreeEvaluator
    static bool VMinlineCallEvaluator(TR::Node *node, bool isIndirect, TR::CodeGenerator *cg);
    static TR::Instruction *VMtestForReferenceArray(TR::Node *, TR::Register *objectReg, TR::CodeGenerator *cg);
    static bool genNullTestSequence(TR::Node *node, TR::Register *opReg, TR::Register *targetReg, TR::CodeGenerator *cg);
-   static TR::Instruction *insertLoadConstant(TR::Node *node,
-                                             TR::Register *target,
-                                             intptr_t value,
-                                             TR_RematerializableTypes type,
-                                             TR::CodeGenerator *cg,
-                                             TR::Instruction *currentInstruction = NULL);
 
    static TR::Instruction *insertLoadMemory(TR::Node *node,
                                            TR::Register *target,
@@ -547,8 +541,6 @@ class OMR_EXTENSIBLE TreeEvaluator: public OMR::TreeEvaluator
    static void genArithmeticInstructionsForOverflowCHK(TR::Node *node, TR::CodeGenerator *cg);
 
    static TR::Register *performCall(TR::Node *node, bool isIndirect, bool spillFPRegs, TR::CodeGenerator *cg);
-
-   static TR::Register *loadConstant(TR::Node *node, intptr_t value, TR_RematerializableTypes t, TR::CodeGenerator *cg, TR::Register *targetRegister = NULL);
 
    static bool setCarryBorrow(TR::Node *flagNode, bool invertValue, TR::CodeGenerator *cg);
 
