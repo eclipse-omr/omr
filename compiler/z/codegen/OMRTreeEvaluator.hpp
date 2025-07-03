@@ -295,6 +295,8 @@ public:
     static TR::Register *mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *mmAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *mmAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *maskAllAndAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool hasMaskChild,
+        bool isAllTrue);
     static TR::Register *mloadEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *mloadiEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *mstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
