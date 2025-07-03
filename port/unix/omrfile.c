@@ -55,6 +55,10 @@
 /* The following undef is to address CMVC 95221 */
 #undef fwrite
 #undef fread
+
+#if !defined(OMR_EBCDIC)
+#include "atoe.h"
+#endif
 #endif
 
 #if defined(LINUX) || defined(OSX)
