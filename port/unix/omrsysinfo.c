@@ -7558,7 +7558,7 @@ done:
 #endif /* defined(LINUX) */
 }
 
-#if defined(LINUX)
+#if defined(J9ZOS390) || defined(LINUX)
 /*
  * A helper function to fully read a file.
  */
@@ -7598,7 +7598,7 @@ read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintp
 	}
 	return total_bytes_read;
 }
-#endif /* defined(LINUX) */
+#endif /* defined(J9ZOS390) || defined(LINUX) */
 
 /*
  * Get the process ID and commandline for each process.
@@ -7706,11 +7706,35 @@ done:
 alloc_failed:
 	callback_result = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
 	goto done;
-#elif defined(LINUX) /* defined(AIXPPC) */
+#elif defined(J9ZOS390) || defined(LINUX) /* defined(AIXPPC) */
 	uintptr_t callback_result = 0;
 	uintptr_t buffer_size = 4096;
 	char *command = NULL;
-	DIR *dir = opendir("/proc");
+	DIR *dir = NULL;
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+	uintptr_t output_buffer_size = buffer_size * 2;
+	char *utf8_command = (char *)portLibrary->mem_allocate_memory(
+			portLibrary,
+			output_buffer_size,
+			OMR_GET_CALLSITE(),
+			OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == utf8_command) {
+		return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	}
+
+#if defined(J9ZOS390)
+#pragma convlit(suspend)
+#endif /* defined(J9ZOS390) */
+	iconv_t converter = iconv_get(portLibrary, J9SYSINFO_ICONV_DESCRIPTOR, "UTF-8", nl_langinfo(CODESET));
+#if defined(J9ZOS390)
+#pragma convlit(resume)
+#endif /* defined(J9ZOS390) */
+	if (J9VM_INVALID_ICONV_DESCRIPTOR == converter) {
+		portLibrary->mem_free_memory(portLibrary, utf8_command);
+		return (uintptr_t)1;
+	}
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+	dir = opendir("/proc");
 	if (NULL == dir) {
 		int32_t rc = findError(errno);
 		portLibrary->error_set_last_error(portLibrary, errno, rc);
@@ -7770,20 +7794,61 @@ alloc_failed:
 		/* Replace null terminators with spaces. */
 		for (i = 0; i < bytes_read; i++) {
 			if ('\0' == command[i]) {
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#pragma convlit(suspend)
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+				/* EBCDIC space to be converted to ASCII later */
 				command[i] = ' ';
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#pragma convlit(resume)
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 			}
 		}
 		command[bytes_read] = '\0';
-		/* Call the callback function with PID and command. */
+#if defined(OMR_EBCDIC) || !defined(J9ZOS390)
 		callback_result = callback(pid, command, userData);
+#else /* defined(OMR_EBCDIC) || !defined(J9ZOS390) */
+		{
+			intptr_t converted_len = -1;
+			memset(utf8_command, 0, output_buffer_size);
+			/* Keep reallocating until the conversion succeeds. */
+			for(;;) {
+				char *new_utf8_command = NULL;
+				uintptr_t old_size = output_buffer_size;
+				converted_len = convertWithIConv(portLibrary, &converter, command, utf8_command, output_buffer_size);
+				if (converted_len >= 0) {
+					break;
+				}
+				output_buffer_size *= 2;
+				new_utf8_command = (char *)portLibrary->mem_reallocate_memory(
+						portLibrary,
+						utf8_command,
+						output_buffer_size,
+						OMR_GET_CALLSITE(),
+						OMRMEM_CATEGORY_PORT_LIBRARY);
+				if (NULL == new_utf8_command) {
+					portLibrary->mem_free_memory(portLibrary, utf8_command);
+					portLibrary->mem_free_memory(portLibrary, command);
+					closedir(dir);
+					return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+				}
+				utf8_command = new_utf8_command;
+			}
+			callback_result = callback(pid, utf8_command, userData);
+		}
+#endif /* defined(OMR_EBCDIC) || !defined(J9ZOS390) */
 		if (0 != callback_result) {
 			break;
 		}
 	}
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+	iconv_free(portLibrary, J9SL_ICONV_DESCRIPTOR, converter);
+	portLibrary->mem_free_memory(portLibrary, utf8_command);
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 	portLibrary->mem_free_memory(portLibrary, command);
 	closedir(dir);
 	return callback_result;
-#else /* defined(LINUX) */
+#else /* defined(J9ZOS390) || defined(LINUX) */
 	/* sysinfo_get_processes is not supported on this platform. */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif /* defined(AIXPPC) */
