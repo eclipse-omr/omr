@@ -9613,17 +9613,17 @@
    /*                   PPCOpProp_SyncSideEffectFree, */
    /* }, */
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::vpopcntw, */
-   /* .name        =    "vpopcntw", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::vpopcntw,
+   /* .name        = */ "vpopcntw",
    /* .description =    "Vector Population Count Word", */
-   /* .prefix      =    0x00000000, */
-   /* .opcode      =    0x10000783, */
-   /* .format      =    FORMAT_UNKNOWN, */
-   /* .minimumALS  =    OMR_PROCESSOR_PPC_P8, */
-   /* .properties  =    PPCOpProp_IsVMX | */
-   /*                   PPCOpProp_SyncSideEffectFree, */
-   /* }, */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0x10000783,
+   /* .format      = */ FORMAT_VRT_VRB,
+   /* .minimumALS  = */ OMR_PROCESSOR_PPC_P8,
+   /* .properties  = */ PPCOpProp_IsVMX |
+                        PPCOpProp_SyncSideEffectFree,
+   },
 
    {
    /* .mnemonic    = */ OMR::InstOpCode::vmrghb,
