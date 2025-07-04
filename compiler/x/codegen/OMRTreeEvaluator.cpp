@@ -6188,19 +6188,74 @@ TR::Register *OMR::X86::TreeEvaluator::mRegStoreEvaluator(TR::Node *node, TR::Co
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+TR::Register *OMR::X86::TreeEvaluator::binaryMaskEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *lhsNode = node->getFirstChild();
+    TR::Node *rhsNode = node->getSecondChild();
+    TR::Register *lhsReg = cg->evaluate(lhsNode);
+    TR::Register *rhsReg = cg->evaluate(rhsNode);
+    TR::Register *resultReg = cg->allocateRegister(lhsReg->getKind());
+    TR::InstOpCode vectorOpcode = TR::InstOpCode::bad;
+    TR::InstOpCode maskOpcode = TR::InstOpCode::bad;
+    bool avx512BW = cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW);
+    int32_t numLanes = node->getDataType().getVectorNumLanes();
+
+    switch (node->getOpCode().getVectorOperation()) {
+        case TR::mand:
+            vectorOpcode = TR::InstOpCode::PANDRegReg;
+            maskOpcode = avx512BW ? TR::InstOpCode::KANDQRegRegReg : TR::InstOpCode::KANDWRegRegReg;
+            break;
+        case TR::mor:
+            vectorOpcode = TR::InstOpCode::PORRegReg;
+            maskOpcode = avx512BW ? TR::InstOpCode::KORQRegRegReg : TR::InstOpCode::KORWRegRegReg;
+            break;
+        case TR::mxor:
+            vectorOpcode = TR::InstOpCode::PXORRegReg;
+            maskOpcode = avx512BW ? TR::InstOpCode::KXORQRegRegReg : TR::InstOpCode::KXORWRegRegReg;
+            break;
+        default:
+            TR_ASSERT_FATAL(false, "Unsupported operation in binaryMaskEvaluator");
+            break;
+    }
+
+    if (resultReg->getKind() == TR_VMR) {
+        TR_ASSERT_FATAL(numLanes <= 16 || avx512BW,
+            "binaryMaskEvaluator: Native mask operations on more than 16 lanes requires AVX-512BW");
+        generateRegRegRegInstruction(maskOpcode.getMnemonic(), node, resultReg, lhsReg, rhsReg, cg);
+    } else {
+        TR::VectorLength vl = node->getOpCode().getVectorResultDataType().getVectorLength();
+        OMR::X86::Encoding encoding = vectorOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+
+        TR_ASSERT_FATAL(encoding != OMR::X86::Bad, "Unsupported instruction binaryMaskEvaluator");
+
+        if (encoding != OMR::X86::Legacy) {
+            generateRegRegRegInstruction(vectorOpcode.getMnemonic(), node, resultReg, lhsReg, rhsReg, cg, encoding);
+        } else {
+            generateRegRegInstruction(TR::InstOpCode::MOVDQURegReg, node, resultReg, lhsReg, cg, encoding);
+            generateRegRegInstruction(vectorOpcode.getMnemonic(), node, resultReg, rhsReg, cg, encoding);
+        }
+    }
+
+    cg->decReferenceCount(lhsNode);
+    cg->decReferenceCount(rhsNode);
+    node->setRegister(resultReg);
+
+    return resultReg;
+}
+
 TR::Register *OMR::X86::TreeEvaluator::mandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::binaryMaskEvaluator(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::morEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::binaryMaskEvaluator(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::binaryMaskEvaluator(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
