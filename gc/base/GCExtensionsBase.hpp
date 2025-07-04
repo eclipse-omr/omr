@@ -1455,6 +1455,13 @@ public:
 	bool isSATBBarrierActive();
 	bool usingSATBBarrier();
 
+	/**
+	* Get a unique GC ID based on all counts.
+	*
+	* @return unique GC ID count
+	*/
+	UDATA getUniqueGCCycleCount();
+
 #if defined(J9VM_OPT_CRIU_SUPPORT)
 	/**
 	 * Helper function to determine whether a GC reinitialization is taking place
