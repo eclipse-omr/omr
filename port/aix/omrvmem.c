@@ -399,9 +399,10 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		/* Invalid input */
 		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
 		Trc_PRT_vmem_omrvmem_reserve_memory_invalid_input();
-	} else if (PPG_vmem_pageSize[0] == params->pageSize || params->byteAmount < params->pageSize) {
-		/* Use default page size if the byteAmount requested is less than the pageSize requested
-		 * Handle default page size differently, don't use shmget
+	} else if ((PPG_vmem_pageSize[0] == params->pageSize) || (params->byteAmount < params->pageSize)) {
+		/* Use default page size if byteAmount is smaller than the requested pageSize.
+		 * In this case, handle the allocation differently, and avoid using shmget,
+		 * which is not optimal for small allocations.
 		 */
 		uintptr_t alignment = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t minimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
@@ -766,8 +767,9 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
 #if !defined(OMR_ENV_DATA64)
-	/* on 32 bit systems, mmap starting out a new 256M segment when allocating is
-	 * a significant impact for the address space, while this is not a concern on 64 bit systems
+	/* On 32 bit systems, starting a new 256MB segment with mmap during allocating can
+	 * significantly impact the address space due to its limited size. This is not a
+	 * concern on 64-bit systems, which have a much larger virtual address space.
 	 */
 	if (0 != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) {
 		/* Allocate code memory  */
@@ -955,11 +957,11 @@ omrvmem_find_valid_page_size(struct OMRPortLibrary *portLibrary, uintptr_t mode,
 	Assert_PRT_true_wrapper(OMRPORT_VMEM_PAGE_FLAG_NOT_USED == validPageFlags);
 
 	if (0 != validPageSize) {
-		/* for 32-bit executable pages, search through the list of page sizes only if
-		 * - request is for 64K pages, or
-		 * - request is for 16M pages AND CodeCacheConsolidation is enabled
+		/* For 32-bit executable pages, search through the list of page sizes only if:
+		 * - The request is for 64K pages, or
+		 * - The request is for 16M pages and CodeCacheConsolidation is enabled.
 		 *
-		 * for 64-bit, accept any request supported by the OS
+		 * For 64-bit, accept any request supported by the OS.
 		 */
 #if !defined(OMR_ENV_DATA64)
 		BOOLEAN codeCacheConsolidationEnabled = FALSE;
@@ -968,13 +970,14 @@ omrvmem_find_valid_page_size(struct OMRPortLibrary *portLibrary, uintptr_t mode,
 		 * TR_ppcCodeCacheConsolidationEnabled is a manually set env variable used to indicate
 		 * that Code Cache Consolidation is enabled in the JIT.
 		 */
-		if (OMRPORT_VMEM_MEMORY_MODE_EXECUTE == (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode)) {
-			if (portLibrary->sysinfo_get_env(portLibrary, "TR_ppcCodeCacheConsolidationEnabled", NULL, 0) != -1) {
-				codeCacheConsolidationEnabled = TRUE;
-			}
+		if (OMR_ARE_ANY_BITS_SET(mode, OMRPORT_VMEM_MEMORY_MODE_EXECUTE)
+			&& (-1 != portLibrary->sysinfo_get_env(portLibrary, "TR_ppcCodeCacheConsolidationEnabled", NULL, 0))
+		) {
+			codeCacheConsolidationEnabled = TRUE;
 		}
-		if ((OMRPORT_VMEM_MEMORY_MODE_EXECUTE != (OMRPORT_VMEM_MEMORY_MODE_EXECUTE & mode))
-			|| ((TRUE == codeCacheConsolidationEnabled) && (SIXTEEN_M == validPageSize))
+
+		if (OMR_ARE_NO_BITS_SET(mode, OMRPORT_VMEM_MEMORY_MODE_EXECUTE)
+			|| (codeCacheConsolidationEnabled && (SIXTEEN_M == validPageSize))
 			|| (SIXTY_FOUR_K == validPageSize))
 #endif /* !defined(OMR_ENV_DATA64) */
 		{
