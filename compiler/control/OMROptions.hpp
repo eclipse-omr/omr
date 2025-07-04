@@ -410,7 +410,7 @@ enum TR_CompilationOptions
    TR_DisableNewX86VolatileSupport        = 0x04000000 + 10,
    TR_DisableZ17                          = 0x08000000 + 10,
    TR_EnableFileBackedCodeCacheDisclaiming = 0x10000000 + 10,
-   // Available                           = 0x20000000 + 10,
+   TR_DisableAVXUseInArrayCopy            = 0x20000000 + 10,
    // Available                           = 0x40000000 + 10,
    TR_DisableDirectToJNIInline            = 0x80000000 + 10,
 

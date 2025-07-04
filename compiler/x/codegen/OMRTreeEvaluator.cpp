@@ -2736,10 +2736,14 @@ static bool enablePrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS(uint8_t elemen
    if (!cg->comp()->target().cpu.supportsAVX() || !cg->comp()->target().is64Bit())
       return false;
 
+   static bool disableAVXUseInArrayCopy = feGetEnv("TR_DisableAVXUseInArrayCopy") != NULL;
    static bool disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS  = feGetEnv("TR_Disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS") != NULL;
    static bool disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = feGetEnv("TR_Disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS") != NULL;
    static bool disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = feGetEnv("TR_Disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS") != NULL;
    static bool disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = feGetEnv("TR_Disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS") != NULL;
+
+   if (disableAVXUseInArrayCopy || cg->comp()->getOption(TR_DisableAVXUseInArrayCopy))
+      return false;
 
    bool disableEnhancement = false;
 
