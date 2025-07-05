@@ -3958,8 +3958,16 @@ static void arraySetXMM(TR::Node* node, uint8_t elementSize, TR::Register* addre
    TR::Register *scratch2Reg = cg->allocateRegister(TR_GPR);
    TR::Register *xmmValueReg = cg->allocateRegister(TR_VRF);
 
-   generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, xmmValueReg, valueReg, cg);
-   TR::TreeEvaluator::broadcastHelper(node, xmmValueReg, TR::VectorLength128, TR::Int8, cg);
+   if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512VL) ||
+       cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW))
+      {
+      generateRegRegInstruction(TR::InstOpCode::VPBROADCASTBRegMaskReg, node, xmmValueReg, valueReg, cg);
+      }
+   else
+      {
+      generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, xmmValueReg, valueReg, cg);
+      TR::TreeEvaluator::broadcastHelper(node, xmmValueReg, TR::VectorLength128, TR::Int8, cg);
+      }
 
    // If we don't know the size at compile-time or it's known to be less than 64 bytes, generate
    // a series of tests for various sizes and branch to short, branch free sequences of stores.
