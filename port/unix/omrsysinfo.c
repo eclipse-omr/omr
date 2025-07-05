@@ -7783,7 +7783,52 @@ alloc_failed:
 	portLibrary->mem_free_memory(portLibrary, command);
 	closedir(dir);
 	return callback_result;
-#else /* defined(LINUX) */
+#elif defined(OSX) /* defined(LINUX) */
+	uintptr_t callbackResult = 0;
+	pid_t *pidBuffer = NULL;
+	int actualBytes = 0;
+	int i = 0;
+	int numProcs = 0;
+	int numBytes = proc_listpids(PROC_ALL_PIDS, 0, NULL, 0);
+	if (numBytes <= 0) {
+		int32_t rc = findError(errno);
+		portLibrary->error_set_last_error(portLibrary, errno, rc);
+		Trc_PRT_failed_to_call_proc_listpids(rc);
+		return (uintptr_t)(intptr_t)rc;
+	}
+	pidBuffer = (pid_t *)portLibrary->mem_allocate_memory(
+			portLibrary,
+			numBytes,
+			OMR_GET_CALLSITE(),
+			OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == pidBuffer) {
+		return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	}
+	actualBytes = proc_listpids(PROC_ALL_PIDS, 0, pidBuffer, numBytes);
+	if (actualBytes <= 0) {
+		int32_t rc = findError(errno);
+		portLibrary->error_set_last_error(portLibrary, errno, rc);
+		Trc_PRT_failed_to_call_proc_listpids(rc);
+		portLibrary->mem_free_memory(portLibrary, pidBuffer);
+		return (uintptr_t)(intptr_t)rc;
+	}
+	numProcs = actualBytes / sizeof(pid_t);
+	for (i = 0; i < numProcs; i++) {
+		pid_t pid = pidBuffer[i];
+		char pathBuf[PROC_PIDPATHINFO_MAXSIZE] = {0};
+		if (pid <= 0) {
+			continue;
+		}
+		if (proc_pidpath(pid, pathBuf, sizeof(pathBuf)) > 0) {
+			callbackResult = callback((uintptr_t)pid, pathBuf, userData);
+			if (0 != callbackResult) {
+				break;
+			}
+		}
+	}
+	portLibrary->mem_free_memory(portLibrary, pidBuffer);
+	return callbackResult;
+#else /* defined(OSX) */
 	/* sysinfo_get_processes is not supported on this platform. */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif /* defined(AIXPPC) */
