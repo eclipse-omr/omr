@@ -308,6 +308,10 @@ INSTANTIATE_TEST_CASE_P(LegacySimdTest, XRegRegEncEncodingTest, ::testing::Value
 
 INSTANTIATE_TEST_CASE_P(AVXSimdRegRegVex128Test, XRegRegEncEncodingTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::InstOpCode::Mnemonic, TR::RealRegister::RegNum, TR::RealRegister::RegNum, OMR::X86::Encoding, TRTest::BinaryInstruction>>(
     std::make_tuple(TR::InstOpCode::VBROADCASTSSRegReg, TR::RealRegister::xmm11, TR::RealRegister::xmm15, OMR::X86::VEX_L128, "c4427918df"),
+    std::make_tuple(TR::InstOpCode::VPBROADCASTBRegReg, TR::RealRegister::xmm11, TR::RealRegister::xmm15, OMR::X86::VEX_L128, "c4427978df"),
+    std::make_tuple(TR::InstOpCode::VPBROADCASTWRegReg, TR::RealRegister::xmm11, TR::RealRegister::xmm15, OMR::X86::VEX_L128, "c4427979df"),
+    std::make_tuple(TR::InstOpCode::VPBROADCASTDRegReg, TR::RealRegister::xmm11, TR::RealRegister::xmm15, OMR::X86::VEX_L128, "c4427958df"),
+    std::make_tuple(TR::InstOpCode::VPBROADCASTQRegReg, TR::RealRegister::xmm11, TR::RealRegister::xmm15, OMR::X86::VEX_L128, "c4427959df"),
     std::make_tuple(TR::InstOpCode::PUNPCKLBWRegReg,    TR::RealRegister::xmm11, TR::RealRegister::xmm15, OMR::X86::VEX_L128, "c4412160df"),
     std::make_tuple(TR::InstOpCode::PMOVMSKB4RegReg,    TR::RealRegister::eax,   TR::RealRegister::xmm0, OMR::X86::VEX_L128,  "c5f9d7c0"),
     std::make_tuple(TR::InstOpCode::MOVMSKPSRegReg,     TR::RealRegister::ecx,   TR::RealRegister::xmm7, OMR::X86::VEX_L128,  "c5f850cf"),
