@@ -624,6 +624,14 @@ INSTRUCTION(VPBROADCASTBRegReg, vpbroadcastb,
                      X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512BW | X86FeatureProp_EVEX256RequiresAVX512VL |
                      X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512BW)
             ),
+INSTRUCTION(VPBROADCASTBRegMaskGPR, vpbroadcastb,
+            BINARY(EVEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x7a, 0, ModRM_RM__, Immediate_0),
+            PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM | IA32OpProp_IntSource),
+            PROPERTY1(IA32OpProp1_XMMTarget | IA32OpProp1_SIMDSingleSource),
+            FEATURES(X86FeatureProp_EVEX128Supported | X86FeatureProp_EVEX128RequiresAVX512BW | X86FeatureProp_EVEX128RequiresAVX512VL |
+                     X86FeatureProp_EVEX256Supported | X86FeatureProp_EVEX256RequiresAVX512BW | X86FeatureProp_EVEX256RequiresAVX512VL |
+                     X86FeatureProp_EVEX512Supported | X86FeatureProp_EVEX512RequiresAVX512BW)
+            ),
 INSTRUCTION(VPBROADCASTWRegReg, vpbroadcastw,
             BINARY(VEX_L128, VEX_vNONE, PREFIX_66, REX__, ESCAPE_0F38, 0x79, 0, ModRM_RM__, Immediate_0),
             PROPERTY0(IA32OpProp_ModifiesTarget | IA32OpProp_SourceRegisterInModRM),
