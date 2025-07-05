@@ -272,6 +272,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"disableAVX",                         "C\tdisable avx and newer on x86",                   TR::Options::disableCPUFeatures, TR_DisableAVX, 0, "F"},
    {"disableAVX2",                        "C\tdisable avx2 and newer on x86",                  TR::Options::disableCPUFeatures, TR_DisableAVX2, 0, "F"},
    {"disableAVX512",                      "C\tdisable avx512 on x86",                          TR::Options::disableCPUFeatures, TR_DisableAVX512, 0, "F"},
+   {"disableAVXUseInArrayCopy",           "O\tdisable use of AVX instructions in arraycopies (x86 only)", SET_OPTION_BIT(TR_DisableAVXUseInArrayCopy), "F"},
    {"disableBasicBlockExtension",         "O\tdisable basic block extension",                  TR::Options::disableOptimization, basicBlockExtension, 0, "P"},
    {"disableBasicBlockPeepHole",          "O\tdisable basic blocks peepHole",                  SET_OPTION_BIT(TR_DisableBasicBlockPeepHole), "F"},
    {"disableBCDArithChildOrdering",       "O\tstress testing option -- do not reorder children of BCD arithmetic nodes", SET_OPTION_BIT(TR_DisableBCDArithChildOrdering), "F" },
