@@ -89,6 +89,13 @@ TR::Register *TR_ScratchRegisterManager::findOrCreateScratchRegister(TR_Register
       if (msr->_reg->getKind() == rk && !(msr->_state & msrAllocated))
          {
          msr->_state |= msrAllocated;
+         // in addScratchRegistersToDependencyList, we only want to add donated registers that
+         // have been used. We cannot check this using the msrAllocated bit because that may be 
+         // unset in reclaimScratchRegister
+         if (msr->_state & msrDonated)
+            {
+            msr->_state |= msrUsedDonated;
+            }
          return msr->_reg;
          }
 
@@ -117,7 +124,23 @@ void TR_ScratchRegisterManager::addScratchRegistersToDependencyList(
 
    while (msr)
       {
-      deps->unionNoRegPostCondition(msr->_reg, _cg);
+      /*
+       * To use a Scratch Register Manager inside ICF, we need to use donated registers.
+       * For non-donated regiters, we always want to add them to the dependency list, even if they are not marked  as allocated,
+       * since they may have been reclaimed. The non-donated registers in the msr list are used at least once.
+       * 
+       * However for donated registers, we only want to add them if they are actually used. They will still be in the MSR list
+       * even if they have never been used.
+       */
+      if ((msr->_state & msrDonated) && (msr->_state & msrUsedDonated))
+         {
+         deps->unionNoRegPostCondition(msr->_reg, _cg);
+         }
+      else if (!(msr->_state & msrDonated))
+         {
+         deps->unionNoRegPostCondition(msr->_reg, _cg);
+         }
+      
       msr = iterator.getNext();
       }
    }

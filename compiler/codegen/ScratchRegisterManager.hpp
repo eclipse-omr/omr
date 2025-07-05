@@ -33,9 +33,10 @@ namespace TR { class RegisterDependencyConditions; }
 
 enum TR_ManagedScratchRegisterStates
    {
-   msrUnassigned = 0x00,    // no register associated
-   msrAllocated  = 0x01,    // register has been allocated
-   msrDonated    = 0x02     // register was donated to the list (not allocated)
+   msrUnassigned  = 0x00,  // no register associated
+   msrAllocated   = 0x01,  // register has been allocated
+   msrDonated     = 0x02,  // register was donated to the list (not allocated)
+   msrUsedDonated = 0x04   // register was donated to the list has been used at least once
    };
 
 class TR_ManagedScratchRegister
