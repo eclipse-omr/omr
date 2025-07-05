@@ -7565,38 +7565,38 @@ done:
 static intptr_t
 read_fully(struct OMRPortLibrary *portLibrary, intptr_t file, char **data, uintptr_t *size)
 {
-	uintptr_t buffer_size = *size;
-	intptr_t total_bytes_read = 0;
-	char *new_data = NULL;
+	uintptr_t bufferSize = *size;
+	intptr_t totalBytesRead = 0;
+	char *newData = NULL;
 	for (;;) {
-		intptr_t bytes_read = portLibrary->file_read(
+		intptr_t bytesRead = portLibrary->file_read(
 				portLibrary,
 				file,
-				*data + total_bytes_read,
-				buffer_size - total_bytes_read);
-		if (bytes_read < 0) {
-			return bytes_read;
+				*data + totalBytesRead,
+				bufferSize - totalBytesRead);
+		if (bytesRead < 0) {
+			return bytesRead;
 		}
-		total_bytes_read += bytes_read;
+		totalBytesRead += bytesRead;
 		/* Break if the buffer is large enough; otherwise, grow the buffer. */
-		if (total_bytes_read < buffer_size) {
+		if (totalBytesRead < bufferSize) {
 			break;
 		}
 		/* Buffer may be too small, increase and retry. */
-		buffer_size *= 2;
-		new_data = (char *)portLibrary->mem_reallocate_memory(
+		bufferSize *= 2;
+		newData = (char *)portLibrary->mem_reallocate_memory(
 				portLibrary,
 				*data,
-				buffer_size,
+				bufferSize,
 				OMR_GET_CALLSITE(),
 				OMRMEM_CATEGORY_PORT_LIBRARY);
-		if (NULL == new_data) {
+		if (NULL == newData) {
 			return -1;
 		}
-		*data = new_data;
-		*size = buffer_size;
+		*data = newData;
+		*size = bufferSize;
 	}
-	return total_bytes_read;
+	return totalBytesRead;
 }
 #endif /* defined(LINUX) */
 
@@ -7613,7 +7613,7 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 #if defined(AIXPPC)
 	pid_t procIndex = 0;
 	int maxProcs = 256;
-	uintptr_t callback_result = 0;
+	uintptr_t callbackResult = 0;
 	int argsSize = 8192;
 	char *args = NULL;
 	struct procentry64 *procs = (struct procentry64 *)portLibrary->mem_allocate_memory(
@@ -7639,7 +7639,7 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 			int32_t rc = findError(errno);
 			portLibrary->error_set_last_error(portLibrary, errno, rc);
 			Trc_PRT_failed_to_getprocs64(rc);
-			callback_result = (uintptr_t)(intptr_t)rc;
+			callbackResult = (uintptr_t)(intptr_t)rc;
 			goto done;
 		}
 		if (0 == numProcs) {
@@ -7666,7 +7666,7 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 				for (idx = 0; idx < scanLimit; idx++) {
 					if ('\0' == args[idx]) {
 						if ('\0' == args[idx + 1]) {
-							callback_result = callback((uintptr_t)pe.pi_pid, args, userData);
+							callbackResult = callback((uintptr_t)pe.pi_pid, args, userData);
 							goto check_callback;
 						}
 						args[idx] = ' ';
@@ -7688,10 +7688,10 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 				argsSize = newSize;
 			}
 			if ('\0' != procs[i].pi_comm[0]) {
-				callback_result = callback((uintptr_t)procs[i].pi_pid, procs[i].pi_comm, userData);
+				callbackResult = callback((uintptr_t)procs[i].pi_pid, procs[i].pi_comm, userData);
 			}
 check_callback:
-			if (0 != callback_result) {
+			if (0 != callbackResult) {
 				goto done;
 			}
 		}
@@ -7702,13 +7702,13 @@ check_callback:
 done:
 	portLibrary->mem_free_memory(portLibrary, args);
 	portLibrary->mem_free_memory(portLibrary, procs);
-	return callback_result;
+	return callbackResult;
 alloc_failed:
-	callback_result = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	callbackResult = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
 	goto done;
 #elif defined(LINUX) /* defined(AIXPPC) */
-	uintptr_t callback_result = 0;
-	uintptr_t buffer_size = 4096;
+	uintptr_t callbackResult = 0;
+	uintptr_t bufferSize = 4096;
 	char *command = NULL;
 	DIR *dir = opendir("/proc");
 	if (NULL == dir) {
@@ -7720,7 +7720,7 @@ alloc_failed:
 	/* Allocate initial buffer. */
 	command = (char *)portLibrary->mem_allocate_memory(
 			portLibrary,
-			buffer_size,
+			bufferSize,
 			OMR_GET_CALLSITE(),
 			OMRMEM_CATEGORY_PORT_LIBRARY);
 	if (NULL == command) {
@@ -7731,7 +7731,7 @@ alloc_failed:
 		char path[PATH_MAX];
 		uintptr_t pid = 0;
 		intptr_t file = 0;
-		intptr_t bytes_read = 0;
+		intptr_t bytesRead = 0;
 		intptr_t i = 0;
 		char *end = NULL;
 		struct dirent *entry = readdir(dir);
@@ -7751,38 +7751,38 @@ alloc_failed:
 		portLibrary->str_printf(portLibrary, path, sizeof(path), "/proc/%s/cmdline", entry->d_name);
 		file = portLibrary->file_open(portLibrary, path, EsOpenRead, 0);
 		if (file >= 0) {
-			bytes_read = read_fully(portLibrary, file, &command, &buffer_size);
+			bytesRead = read_fully(portLibrary, file, &command, &bufferSize);
 			portLibrary->file_close(portLibrary, file);
 		}
 		/* If cmdline is empty, try reading /proc/[pid]/comm. */
-		if (bytes_read <= 0) {
+		if (bytesRead <= 0) {
 			portLibrary->str_printf(portLibrary, path, sizeof(path), "/proc/%s/comm", entry->d_name);
 			file = portLibrary->file_open(portLibrary, path, EsOpenRead, 0);
 			if (file >= 0) {
-				bytes_read = read_fully(portLibrary, file, &command, &buffer_size);
+				bytesRead = read_fully(portLibrary, file, &command, &bufferSize);
 				portLibrary->file_close(portLibrary, file);
 			}
 		}
 		/* Skip process if no data. */
-		if (bytes_read <= 0) {
+		if (bytesRead <= 0) {
 			continue;
 		}
 		/* Replace null terminators with spaces. */
-		for (i = 0; i < bytes_read; i++) {
+		for (i = 0; i < bytesRead; i++) {
 			if ('\0' == command[i]) {
 				command[i] = ' ';
 			}
 		}
-		command[bytes_read] = '\0';
+		command[bytesRead] = '\0';
 		/* Call the callback function with PID and command. */
-		callback_result = callback(pid, command, userData);
-		if (0 != callback_result) {
+		callbackResult = callback(pid, command, userData);
+		if (0 != callbackResult) {
 			break;
 		}
 	}
 	portLibrary->mem_free_memory(portLibrary, command);
 	closedir(dir);
-	return callback_result;
+	return callbackResult;
 #else /* defined(LINUX) */
 	/* sysinfo_get_processes is not supported on this platform. */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
