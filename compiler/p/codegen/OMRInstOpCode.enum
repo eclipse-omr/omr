@@ -814,7 +814,7 @@
 // vpopcntb,         // Vector Population Count Byte
    vpopcntd,         // Vector Population Count Dword
 // vpopcnth,         // Vector Population Count Hword
-// vpopcntw,         // Vector Population Count Word
+   vpopcntw,         // Vector Population Count Word
    vmrghb,           // vector merge high byte
    vmrghh,           // vector merge high half word
    vmrghw,           // vector merge high word
