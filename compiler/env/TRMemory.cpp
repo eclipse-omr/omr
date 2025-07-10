@@ -268,6 +268,7 @@ const char * objectName[] =
    "IPHashedCallSite",
    "Assumptions",
    "PatchSites",
+   "JProfBFPatchSites",
 
    "TR_ZHWProfiler",
    "TR_PPCHWProfiler",
