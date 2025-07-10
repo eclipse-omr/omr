@@ -865,7 +865,41 @@ OMR::Power::TreeEvaluator::PassThroughEvaluator(TR::Node *node, TR::CodeGenerato
 TR::Register*
 OMR::Power::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return vloadEvaluator(node, cg);
+   TR::Node *inputNode = node->getFirstChild();
+   TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
+
+   TR::Register *inputReg = cg->evaluate(inputNode);
+   TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
+
+   TR::Register *resultReg = cg->allocateRegister(TR_GPR);
+   TR::Register *temp = cg->allocateRegister(TR_VRF);
+   TR::Register *splatReg = cg->allocateRegister(TR_VRF);
+
+   node->setRegister(resultReg);
+
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, splatReg, 0);
+
+   if (maskReg)
+      generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, temp, splatReg, inputReg, maskReg);
+
+   //check for any true values in each half of input vector separately
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, splatReg, -1);
+   generateTrg1Src2Instruction(cg, OMR::InstOpCode::vcmpequd, node, temp, (maskReg ? temp : inputReg), splatReg);
+
+   //OR the two halves together and move result to GPR
+   generateTrg1Src2ImmInstruction(cg, OMR::InstOpCode::xxpermdi, node, splatReg, temp, temp, 2);
+   generateTrg1Src2Instruction(cg, OMR::InstOpCode::vor, node, temp, temp, splatReg);
+   generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, resultReg, temp);
+
+   //AND with 0000....01 to ensure that we return 1 if true, 0 if false
+   generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, resultReg, resultReg, 1);
+
+   cg->stopUsingRegister(temp);
+   cg->stopUsingRegister(splatReg);
+   cg->decReferenceCount(inputNode);
+   if (maskNode) cg->decReferenceCount(maskNode);
+
+   return resultReg;
    }
 
 TR::Register*
@@ -877,7 +911,7 @@ OMR::Power::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *
 TR::Register*
 OMR::Power::TreeEvaluator::mmAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return vloadEvaluator(node, cg);
+   return mAnyTrueEvaluator(node, cg);
    }
 
 TR::Register*
