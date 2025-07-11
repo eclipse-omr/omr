@@ -4953,6 +4953,11 @@ void
 MM_Scavenger::reportGCCycleStart(MM_EnvironmentStandard *env)
 {
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
+	MM_CollectionStatisticsStandard *stats = (MM_CollectionStatisticsStandard *)env->_cycleState->_collectionStatistics;
+
+	/* Clear STW pause stats for this cycle. */
+	stats->clearPauseStats();
+
 	MM_CommonGCData commonData;
 
 	Trc_MM_CycleStart(env->getLanguageVMThread(), env->_cycleState->_type, _extensions->getHeap()->getActualFreeMemorySize());
@@ -5070,6 +5075,10 @@ MM_Scavenger::reportGCIncrementEnd(MM_EnvironmentStandard *env)
 	}
 
 	stats->_endTime = omrtime_hires_clock();
+
+	/* Record STW pause stats for this cycle */
+	stats->processPauseDuration();
+
 	stats->_stallTime = _extensions->scavengerStats.getStallTime();
 
 	TRIGGER_J9HOOK_MM_PRIVATE_GC_INCREMENT_END(

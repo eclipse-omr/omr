@@ -1588,6 +1588,7 @@ MM_ConcurrentGC::acquireExclusiveVMAccessAndSignalThreadsToActivateWriteBarrier(
 			_concurrentCycleState = MM_CycleState();
 			_concurrentCycleState._type = _cycleType;
 			env->_cycleState = &_concurrentCycleState;
+			env->_cycleState->_collectionStatistics = &_collectionStatistics;
 			reportGCCycleStart(env);
 			env->_cycleState = previousCycleState;
 
