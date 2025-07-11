@@ -23,7 +23,15 @@
 # TODO: OMR_RTTI flag
 # TODO: Version things
 
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+# CMAKE_VERSION is not defined before 2.6.3.
+if ((CMAKE_MAJOR_VERSION LESS 3) OR (CMAKE_VERSION VERSION_LESS "3.12"))
+	cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+else()
+	# Beginning with version 3.12, cmake supports a version range here
+	# as a declaration from this project that new policy behaviors
+	# (up to the second version) are acceptable.
+	cmake_minimum_required(VERSION 3.12...3.28 FATAL_ERROR)
+endif()
 
 message(STATUS "Starting with CMake version ${CMAKE_VERSION}")
 
