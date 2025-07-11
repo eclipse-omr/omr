@@ -327,6 +327,11 @@ void
 MM_SegregatedGC::reportGCCycleStart(MM_EnvironmentBase *env)
 {
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
+	MM_CollectionStatisticsStandard *stats = (MM_CollectionStatisticsStandard *)env->_cycleState->_collectionStatistics;
+
+	/* Clear STW pause stats for this cycle. */
+	stats->clearPauseStats();
+
 	MM_CommonGCData commonData;
 
 	TRIGGER_J9HOOK_MM_OMR_GC_CYCLE_START(
@@ -540,6 +545,9 @@ MM_SegregatedGC::reportGCIncrementEnd(MM_EnvironmentBase *env)
 	}
 
 	stats->_endTime = omrtime_hires_clock();
+
+	/* Record STW pause stats for this cycle */
+	stats->processPauseDuration();
 
 	TRIGGER_J9HOOK_MM_PRIVATE_GC_INCREMENT_END(
 		_extensions->privateHookInterface,

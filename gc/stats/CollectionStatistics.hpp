@@ -45,6 +45,9 @@ public:
 	uint64_t  _endTime;			/**< Collection end time */
 	uint64_t  _stallTime;		/**< Collection stall time */
 
+	uint64_t  _pauseTotal;		/**< Sum of all STW pauses during this GC cycle */
+	uint64_t  _pauseLongest;	/**< Longest STW pause during this GC cycle */
+
 	omrthread_process_time_t _startProcessTimes; /**< Process (Kernel and User) start time(s) */
 	omrthread_process_time_t _endProcessTimes;   /**< Process (Kernel and User) end time(s) */
 
@@ -63,10 +66,44 @@ public:
 		,_startTime(0)
 		,_endTime(0)
 		,_stallTime(0)
+		,_pauseTotal(0)
+		,_pauseLongest(0)
 		,_startProcessTimes()
 		,_endProcessTimes()
 		,_cpuUtilStats()
 	{};
+
+	/**
+	 * Calculates the STW pause duration,
+	 * adds it to the total for this cycle,
+	 * and stores the longest pause
+	 * duration for this cycle as well.
+	 * For use in JFR GC events.
+	 * Should be done at increment end.
+	 */
+	void
+	processPauseDuration()
+	{
+		uint64_t pauseDuration = 0;
+		if (_endTime > _startTime) {
+			pauseDuration = _endTime - _startTime;
+		}
+		_pauseTotal += pauseDuration;
+		if (pauseDuration > _pauseLongest) {
+			_pauseLongest = pauseDuration;
+		}
+	}
+
+	/**
+	 * Clears the pause stats for this cycle.
+	 * Should be done at cycle start.
+	 */
+	void
+	clearPauseStats()
+	{
+		_pauseTotal = 0;
+		_pauseLongest = 0;
+	}
 };
 
 #endif /* COLLECTIONSTATISTICS_HPP_ */
