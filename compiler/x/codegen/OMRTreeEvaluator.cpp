@@ -5599,6 +5599,7 @@ TR::Register* OMR::X86::TreeEvaluator::vectorCompareEvaluator(TR::Node* node, TR
          }
 
       OMR::X86::Encoding cmpEncoding = cmpOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+      TR_ASSERT_FATAL(cmpEncoding != OMR::X86::Bad, "vectorCompareEvaluator: Selected illegal instruction for target hardware");
 
       if (cmpEncoding == OMR::X86::Legacy || et.isFloatingPoint())
          {

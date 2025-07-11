@@ -181,8 +181,8 @@ namespace TR { class Register; }
 
 #define X86FeatureProp_MinTargetSupported       (0x00000100 | X86FeatureProp_Legacy) // The opcode is supported by the OMR min target CPU
 #define X86FeatureProp_SSE3Supported            (0x00000200 | X86FeatureProp_Legacy) // ISA supports instruction with SSE3
-#define X86FeatureProp_SSE4Supported            (0x00000400 | X86FeatureProp_Legacy) // ISA supports instruction with SSE4
-#define X86FeatureProp_SSE4_1Supported          (0x00000800 | X86FeatureProp_Legacy) // ISA supports instruction with SSE4.1
+#define X86FeatureProp_SSE4_1Supported          (0x00000400 | X86FeatureProp_Legacy) // ISA supports instruction with SSE4.1
+#define X86FeatureProp_SSE4_2Supported          (0x00000800 | X86FeatureProp_Legacy) // ISA supports instruction with SSE4.2
 #define X86FeatureProp_LegacyMask               (0x00000F00 | X86FeatureProp_Legacy) // ISA supports instruction with legacy encoding
 
 #define X86FeatureProp_AVX                       0x00001000
@@ -639,6 +639,9 @@ class InstOpCode: public OMR::InstOpCode
                if (supported)
                    return OMR::X86::VEX_L128;
                }
+
+            if ((flags & X86FeatureProp_SSE4_2Supported) && target->supportsFeature(OMR_FEATURE_X86_SSE4_2))
+               return OMR::X86::Legacy;
 
             if ((flags & X86FeatureProp_SSE4_1Supported) && target->supportsFeature(OMR_FEATURE_X86_SSE4_1))
                return OMR::X86::Legacy;
