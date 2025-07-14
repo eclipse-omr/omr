@@ -1930,6 +1930,8 @@ void OMR::X86::TreeEvaluator::arrayCopy64BitPrimitiveInlineSmallSizeWithoutREPMO
 
    // 40-64 Bytes
    generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, tmpXmmYmmReg1, tmpXmmYmmReg2, 32, cg);
+   if (repMovsThresholdBytes == 64)
+      generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
    generateLabelInstruction(TR::InstOpCode::JMP4, node, mainEndLabel, cg);
 
    if (repMovsThresholdBytes == 64)
@@ -1942,6 +1944,7 @@ void OMR::X86::TreeEvaluator::arrayCopy64BitPrimitiveInlineSmallSizeWithoutREPMO
 
    // 72-128 Bytes
    generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, tmpXmmYmmReg1, tmpXmmYmmReg2, 64, cg);
+   generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
    generateLabelInstruction(TR::InstOpCode::JMP4, node, mainEndLabel, cg);
    }
 
@@ -2062,6 +2065,8 @@ void OMR::X86::TreeEvaluator::arrayCopy32BitPrimitiveInlineSmallSizeWithoutREPMO
 
    // 36-64 Bytes
    generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, tmpXmmYmmReg1, tmpXmmYmmReg2, 32, cg);
+   if (repMovsThresholdBytes == 64)
+      generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
    generateLabelInstruction(TR::InstOpCode::JMP4, node, mainEndLabel, cg);
 
    if (repMovsThresholdBytes == 64)
@@ -2074,6 +2079,7 @@ void OMR::X86::TreeEvaluator::arrayCopy32BitPrimitiveInlineSmallSizeWithoutREPMO
 
    // 68-128 Bytes
    generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, tmpXmmYmmReg1, tmpXmmYmmReg2, 64, cg);
+   generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
    generateLabelInstruction(TR::InstOpCode::JMP4, node, mainEndLabel, cg);
    }
 
@@ -2285,6 +2291,7 @@ static void arrayCopy16BitPrimitiveInlineSmallSizeWithoutREPMOVSImplRoot16(TR::N
 
    // 34-64 Bytes
    generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, tmpXmmYmmReg1, tmpXmmYmmReg2, 32, cg);
+   generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
    generateLabelInstruction(TR::InstOpCode::JMP4, node, mainEndLabel, cg);
    }
 
@@ -2431,6 +2438,7 @@ static void arrayCopy8BitPrimitiveInlineSmallSizeWithoutREPMOVSImplRoot8(TR::Nod
 
    // 33-64 Bytes
    generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, tmpXmmYmmReg1, tmpXmmYmmReg2, 32, cg);
+   generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
    generateLabelInstruction(TR::InstOpCode::JMP4, node, mainEndLabel, cg);
    }
 
@@ -3020,10 +3028,13 @@ static void arrayCopyPrimitiveInlineSmallSizeConstantCopySize(TR::Node* node,
    TR::Register* tmpVRFReg1 = cg->allocateRegister(TR_VRF);
    TR::Register* tmpVRFReg2 = cg->allocateRegister(TR_VRF);
 
+   bool emitVzeroupper = false;
+
    if (((copySize < 64) && ((copySize & (copySize - 1)) == 0)) // power of 2
        || ((copySize == 64) && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F)))
       {
       TR::Register* valueReg = (copySize >= 16) ? tmpVRFReg1 : tmpReg1;
+      emitVzeroupper = copySize >= 32;
       generateArrayElementLoad(node, valueReg, copySize, srcReg, 0 /* index */, cg);
       generateArrayElementStore(node, dstReg, 0 /* index */, valueReg, copySize, cg);
       }
@@ -3047,8 +3058,12 @@ static void arrayCopyPrimitiveInlineSmallSizeConstantCopySize(TR::Node* node,
          t1 = tmpVRFReg1;
          t2 = tmpVRFReg2;
          }
+      emitVzeroupper = regSize >= 32;
       generateMemoryCopyInstructions(node, dstReg, srcReg, sizeReg, t1, t2, regSize, cg);
       }
+
+   if (emitVzeroupper)
+      generateInstruction(TR::InstOpCode::VZEROUPPER, node, cg);
 
    cg->stopUsingRegister(tmpReg1);
    cg->stopUsingRegister(tmpReg2);
