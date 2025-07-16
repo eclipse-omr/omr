@@ -410,7 +410,7 @@ enum TR_CompilationOptions
    TR_DisableNewX86VolatileSupport        = 0x04000000 + 10,
    TR_DisableZ17                          = 0x08000000 + 10,
    TR_EnableFileBackedCodeCacheDisclaiming = 0x10000000 + 10,
-   // Available                           = 0x20000000 + 10,
+   TR_AllowJitBodyToOutliveInlinedCode    = 0x20000000 + 10,
    // Available                           = 0x40000000 + 10,
    TR_DisableDirectToJNIInline            = 0x80000000 + 10,
 
@@ -658,7 +658,7 @@ enum TR_CompilationOptions
    // Available                                       = 0x00040000 + 19,
    // Available                                       = 0x00080000 + 19,
    // Available                                       = 0x00100000 + 19,
-   // Available                                       = 0x00200000 + 19,
+   TR_TraceRetainedMethods                            = 0x00200000 + 19,
    // Available                                       = 0x00400000 + 19,
    // Available                                       = 0x00800000 + 19,
    TR_EnableRATPurging                                = 0x01000000 + 19,  // enable periodic RAT table purging
@@ -823,7 +823,7 @@ enum TR_CompilationOptions
    TR_PerfTool                                        = 0x00010000 + 25,
    // Available                                       = 0x00020000 + 25,
    TR_DisableBranchOnCount                            = 0x00040000 + 25,
-   // Available                                       = 0x00080000 + 25,
+   TR_DontInlineUnloadableMethods                     = 0x00080000 + 25,
    TR_DisableLoopEntryAlignment                       = 0x00100000 + 25,
    TR_EnableLoopEntryAlignment                        = 0x00200000 + 25,
    TR_DisableLeafRoutineDetection                     = 0x00400000 + 25,
