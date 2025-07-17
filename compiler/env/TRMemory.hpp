@@ -415,6 +415,7 @@ public:
       ZHWProfiler,
       PPCHWProfiler,
       ZGuardedStorage,
+      JProfiler,
 
       CatchTable,
 
