@@ -472,6 +472,21 @@ class OMR_EXTENSIBLE TreeEvaluator: public OMR::TreeEvaluator
    static TR::Register *maskLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *maskStoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *SIMDstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+
+   /**
+    * @brief Helper function to broadcast a single element from a vector register across all lanes.
+    *
+    * This function emits the appropriate instructions to broadcast the value from a specified
+    * vector register across all elements of a vector, based on the given vector length and element type.
+    *
+    * @param node        The IR node associated with the broadcast operation.
+    * @param vectorReg   The vector register containing the value to broadcast.
+    * @param vl          The vector length (e.g., 128-bit, 256-bit) that determines the width of the target vector.
+    * @param et          The element type (e.g., Int32, Int64, Float32) that defines the lane size for broadcasting.
+    * @param cg          The code generator used to emit the broadcast instructions.
+    * @return vectorReg
+    */
+   static TR::Register *broadcastHelper(TR::Node *node, TR::Register *vectorReg, TR::VectorLength vl, TR::DataType et, TR::CodeGenerator *cg);
    static TR::Register *SIMDsplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *SIMDvgetelemEvaluator(TR::Node *node, TR::CodeGenerator *cg);
 
