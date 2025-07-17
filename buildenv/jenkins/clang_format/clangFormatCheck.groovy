@@ -24,9 +24,18 @@
     timeout(time: 8, unit: 'HOURS') {
         stage('Queue') {
             node('Linux && x86') {
-                currentBuild.description = "<a href=${JENKINS_URL}computer/${NODE_NAME}>${NODE_NAME}</a>"
+                def tmpDesc = (currentBuild.description) ? currentBuild.description + "<br>" : ""
+                currentBuild.description = tmpDesc + "<a href=${JENKINS_URL}computer/${NODE_NAME}>${NODE_NAME}</a>"
                 try {
-                    checkout scm
+                    def gitConfig = scm.getUserRemoteConfigs().get(0)
+                    def refspec = (gitConfig.getRefspec()) ? gitConfig.getRefspec() : ''
+                    checkout changelog: false, poll: false,
+                        scm: [$class: 'GitSCM',
+                            branches: [[name: scm.branches[0].name]],
+                            userRemoteConfigs: [[
+                                refspec: "${refspec}",
+                                url: "${gitConfig.getUrl()}"]]
+                        ]
                     stage('Docker Build') {
                         dir('buildenv/jenkins/clang_format') {
                             sh "docker build -t clang-format -f Dockerfile ."
