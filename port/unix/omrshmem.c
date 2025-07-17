@@ -1663,7 +1663,7 @@ omrshmem_openSharedMemory (OMRPortLibrary *portLibrary, intptr_t fd, const char 
 				goto failDontUnlink;
 			}
 		} else {
-#if defined(__GNUC__) || defined(AIXPPC)
+#if (defined(__GNUC__) || defined(AIXPPC)) && !defined(J9ZOS390)
 #if defined(OSX)
 			/*Use ._key for OSX*/
 			if (buf.shm_perm._key != controlinfo->common.ftok_key)
@@ -1681,7 +1681,7 @@ omrshmem_openSharedMemory (OMRPortLibrary *portLibrary, intptr_t fd, const char 
 				rc = OMRPORT_ERROR_SHMEM_OPFAILED_SHM_KEY_MISMATCH;
 				goto fail;
 			}
-#endif
+#endif /* (defined(__GNUC__) || defined(AIXPPC)) && !defined(J9ZOS390) */
 #if defined (OMRZOS390)
 			if (omr_getipcWrapper(portLibrary, controlinfo->common.shmid, &info, sizeof(IPCQPROC), IPCQALL) == -1) {
 				int32_t lastError = omrerror_last_error_number(portLibrary) | OMRPORT_ERROR_SYSTEM_CALL_ERRNO_MASK;
