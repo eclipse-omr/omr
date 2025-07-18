@@ -766,6 +766,20 @@ class TR_LiveVariableInformation
    int32_t numNodes()                { return _numNodes; }
 
    TR_BitVector *liveCommonedLoads() { return _liveCommonedLoads; }
+
+   /**
+    * The number of distinct commoned loads that are live for a particular
+    * local variable during a backwards tree walk.
+    * \param localIdx The index of a local variable
+    * \returns The number of distinct commoned loads of the local variable
+    *          that are live, or zero if the number of distinct commoned
+    *          loads is not being tracked.
+    */
+   int32_t numDistinctCommonedLoads(int32_t localIdx)
+      {
+      return (_distinctCommonedLoads == NULL) ? 0 : _distinctCommonedLoads[localIdx];
+      }
+
    void createGenAndKillSetCaches();
    void initializeGenAndKillSetInfo(TR_BitVector **genSetInfo, TR_BitVector **killSetInfo,
                                     TR_BitVector **exceptionGenSetInfo, TR_BitVector **exceptionKillSetInfo);
@@ -815,6 +829,20 @@ class TR_LiveVariableInformation
 
    // this bit vector tracks which commoned loads are currently live
    TR_BitVector   *_liveCommonedLoads;
+
+   /**
+    * A \ref TR::NodeChecklist that is used to keep track of whether a particular
+    * commoned \ref TR::Node for the load of a local variable has already been
+    * encountered during a backwards tree walk.
+    */
+   TR::NodeChecklist   *_seenCommonedNodeForLoadOfLocal;
+
+   /**
+    * An array that is used to keep track of the number of distinct commoned
+    * loads of a local variable that are live at a given point in a backwards
+    * tree walk.
+    */
+   int32_t        *_distinctCommonedLoads;
    };
 
 
