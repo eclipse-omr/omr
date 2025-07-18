@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <windows.h>
 #include <WinSDKVer.h>
+#include <tlhelp32.h>
+#include <psapi.h>
 /* Undefine the winsockapi because winsock2 defines it.  Removes warnings. */
 #if defined(_WINSOCKAPI_) && !defined(_WINSOCK2API_)
 #undef _WINSOCKAPI_
@@ -2075,5 +2077,78 @@ omrsysinfo_get_number_context_switches(struct OMRPortLibrary *portLibrary, uint6
 uintptr_t
 omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData)
 {
-	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+	DWORD *processes = NULL;
+	DWORD bytesReturned = 0;
+	DWORD numProcesses = 0;
+	DWORD bufferSize = 1024 * sizeof(DWORD);
+	DWORD i = 0;
+	uintptr_t callbackResult = 0;
+	if (NULL == callback) {
+		portLibrary->error_set_last_error_with_message(
+				portLibrary,
+				OMRPORT_ERROR_OPFAILED,
+				"Callback function is NULL.");
+		return (uintptr_t)(intptr_t)OMRPORT_ERROR_OPFAILED;
+	}
+	processes = (DWORD *)portLibrary->mem_allocate_memory(
+			portLibrary,
+			bufferSize,
+			OMR_GET_CALLSITE(),
+			OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == processes) {
+		goto alloc_failed;
+	}
+	for (;;) {
+		DWORD *newBuffer = NULL;
+		if (0 == EnumProcesses(processes, bufferSize, &bytesReturned)) {
+			Trc_PRT_failed_to_call_EnumProcesses(OMRPORT_ERROR_SYSINFO_OPFAILED);
+			callbackResult = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_OPFAILED;
+			goto done;
+		}
+		/* Break if the buffer is large enough; otherwise, grow the buffer. */
+		if (bytesReturned < bufferSize) {
+			break;
+		}
+		/* Buffer may be too small, increase and retry. */
+		bufferSize *= 2;
+		newBuffer = (DWORD *)portLibrary->mem_reallocate_memory(
+				portLibrary,
+				processes,
+				bufferSize,
+				OMR_GET_CALLSITE(),
+				OMRMEM_CATEGORY_PORT_LIBRARY);
+		if (NULL == newBuffer) {
+			goto alloc_failed;
+		}
+		processes = newBuffer;
+	}
+	numProcesses = bytesReturned / sizeof(DWORD);
+	for (i = 0; i < numProcesses; i++) {
+		char exePath[MAX_PATH];
+		DWORD pathLen = sizeof(exePath);
+		DWORD pid = processes[i];
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_QUERY_INFORMATION, FALSE, pid);
+		exePath[0] = '\0';
+		if (NULL != hProcess) {
+			if (0 == QueryFullProcessImageName(hProcess, 0, exePath, &pathLen)) {
+				CloseHandle(hProcess);
+				continue;
+			}
+			CloseHandle(hProcess);
+		}
+		/* Skip entries with no name. */
+		if ('\0' == exePath[0]) {
+			continue;
+		}
+		callbackResult = callback((uintptr_t)pid, exePath, userData);
+		if (0 != callbackResult) {
+			goto done;
+		}
+	}
+done:
+	portLibrary->mem_free_memory(portLibrary, processes);
+	return callbackResult;
+alloc_failed:
+	callbackResult = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	goto done;
 }
