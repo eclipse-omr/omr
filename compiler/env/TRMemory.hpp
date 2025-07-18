@@ -411,6 +411,7 @@ public:
       IPHashedCallSite,
       Assumption,
       PatchSites,
+      JProfBFPatchSites,
 
       ZHWProfiler,
       PPCHWProfiler,
