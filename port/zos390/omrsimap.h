@@ -149,8 +149,8 @@ typedef _Packed struct J9CVT {
 	J9ASMVT *__ptr32 cvtasmvt;    /**< 704:4 Pointer to auxiliary storage management vector table (ASMVT) */
 	uint8_t cvtFiller4[460];          /**< 708:460 Ignore fields not relevant to current implementation */
 	J9RCE *__ptr32 cvtrcep;       /**< 1168:4 Address of the RSM Control & Enumeration Area */
-	uint8_t cvtFiller5[92];          /**< 1172:1263 Ignore fields not relevant to current implementation */
-	uint8_t cvtoslvl[16];          /**< 1264:1279 OS level/feature information */
+	uint8_t cvtFiller5[92];           /**< 1172:1263 Ignore fields not relevant to current implementation */
+	uint8_t cvtoslvl[16];         /**< 1264:1279 OS level/feature information */
 	/**< Ignore rest of the CVT */
 } J9CVT;
 
