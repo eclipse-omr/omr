@@ -479,7 +479,11 @@ TR_WinCallStackIterator::TR_WinCallStackIterator() :
    memset( &StackFrame, 0, sizeof(StackFrame) );
    unsigned long pc = getEip();      // Retrieve eip
    unsigned long basePtr;            // Retrieve base pointer
+
+   // Clang format gets upset at the missing ; below, so disable.
+   // clang-format off
    __asm mov [basePtr], ebp
+   // clang-format on
 
    StackFrame.AddrPC.Offset      = pc;
    StackFrame.AddrPC.Mode        = AddrModeFlat;
