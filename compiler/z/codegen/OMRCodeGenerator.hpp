@@ -492,6 +492,7 @@ public:
    void dumpDataSnippets(TR::FILE *outFile);
 
    bool getSupportsBitOpCodes() { return true;}
+   int32_t getMaxLengthOfIncMemoryInstruction() { return 6; }
 
    bool getSupportsImplicitNullChecks() { return _cgFlags.testAny(S390CG_implicitNullChecks); }
    void setSupportsImplicitNullChecks(bool b) { _cgFlags.set(S390CG_implicitNullChecks, b); }
