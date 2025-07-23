@@ -957,6 +957,24 @@ bool OMR::X86::CodeGenerator::supportsAddressRematerialization()         { stati
 #undef ALLOWED_TO_REMATERIALIZE
 #undef CAN_REMATERIALIZE
 
+TR::VectorLength
+OMR::X86::CodeGenerator::getMaxPreferredVectorLength()
+   {
+   TR::CPU *cpu = &self()->comp()->target().cpu;
+
+   if (cpu->supportsFeature(OMR_FEATURE_X86_AVX512F))
+      {
+      return TR::VectorLength512;
+      }
+
+   if (cpu->supportsFeature(OMR_FEATURE_X86_AVX2))
+      {
+      return TR::VectorLength256;
+      }
+
+   return TR::VectorLength128;
+   }
+
 bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpCode opcode)
    {
    TR_ASSERT_FATAL(opcode.isVectorOpCode(), "getSupportsOpCodeForAutoSIMD expects vector opcode\n");

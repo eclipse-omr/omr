@@ -533,6 +533,19 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    bool supportsAddressRematerialization();
    bool supportsXMMRRematerialization();
 
+   /**
+    * @brief Determines the maximum preferred vector length.
+    *
+    * The default implementation of this function returns the maximum vector length supported
+    * by the CPU. It does not consult microarchitecture information. It is the responsibility of
+    * downstream projects to implement this function for their desired behaviour and performance
+    * characteristics.
+    *
+    * @return The maximum preferred vector length in bits (e.g., 128, 256, 512).
+    * This function will return a minimum of TR::VectorLength128 on all target x86 hardware.
+    */
+   TR::VectorLength getMaxPreferredVectorLength();
+
    bool doIntMulDecompositionInCG() { return true; };
 
    TR::Instruction *setLastCatchAppendInstruction(TR::Instruction *i) {return (_lastCatchAppendInstruction=i);}

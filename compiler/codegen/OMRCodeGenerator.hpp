@@ -1897,6 +1897,24 @@ public:
    void decOutOfLineColdPathNestedDepth(){_outOfLineColdPathNestedDepth--;}
 
    /**
+    * @brief Determines the maximum preferred vector length based on the target hardware.
+    *
+    * This function may query the underlying hardware capabilities and internal knowledge about
+    * CPU microarchitectures to recommend the optimal vector length (e.g., 128-bit, 256-bit, 512-bit)
+    * that is likely to yield the best performance. The default implementation returns
+    * TR::NoVectorLength. It is the responsibility of downstream projects to override and fine tune
+    * the behaviour of this function.
+    *
+    * @note All new vectorized intrinsics that support 256 or 512-bit vectorization should query this
+    * function instead of relying strictly on whether the CPU supports vectorization at a given vector
+    * length.
+    *
+    * @return The maximum preferred vector length in bits (e.g., none, 128, 256, 512).
+    * This function will return TR::NoVectorLength unless overridden.
+    */
+   TR::VectorLength getMaxPreferredVectorLength() { return TR::NoVectorLength; }
+
+   /**
     * @brief checks if instruction selection is in the state of generating
     *        instrucions for warm blocks in the case of warm and cold block splitting
     *
