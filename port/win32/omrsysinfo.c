@@ -51,6 +51,7 @@
 #define OMRPORT_SYSINFO_NS100_PER_SEC 10000000ULL
 
 static int32_t copyEnvToBuffer(struct OMRPortLibrary *portLibrary, void *args);
+static double calculateCPULoad(J9SysinfoCPUTime *new, J9SysinfoCPUTime *old);
 
 typedef struct CopyEnvToBufferArgs {
 	uintptr_t bufferSizeBytes;
@@ -1269,6 +1270,11 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 	userTime = lpUserTimeU64.QuadPart * 100;
 	Trc_PRT_sysinfo_get_CPU_utilization_GST_result("user", userTime);
 	cpuTime->cpuTime = kernelActiveTime + userTime;
+
+	cpuTime->userTime = lpUserTimeU64.QuadPart;
+	cpuTime->systemTime = lpKernelTimeU64.QuadPart - lpIdleTimeU64.QuadPart;
+	cpuTime->idleTime = lpIdleTimeU64.QuadPart;
+
 	cpuTime->timestamp = portLibrary->time_nano_time(portLibrary);
 	if (0 == cpuTime->timestamp) {
 		Trc_PRT_sysinfo_get_CPU_utilization_timeFailed();
@@ -1277,6 +1283,17 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 	cpuTime->numberOfCpus = (int32_t) portLibrary->sysinfo_get_number_CPUs_by_type(portLibrary, OMRPORT_CPU_ONLINE);
 
 	return 0;
+}
+
+static double
+calculateCPULoad(J9SysinfoCPUTime *new, J9SysinfoCPUTime *old)
+{
+	int64_t userDelta = new->userTime - old->userTime;
+	int64_t systemDelta = new->systemTime - old->systemTime;
+	int64_t idleDelta = new->idleTime - old->idleTime;
+	int64_t totalDelta = userDelta + systemDelta + idleDelta;
+	double cpuLoad = (totalDelta > 0) ? ((userDelta + systemDelta) / (double)(totalDelta)) : 0.0;
+	return OMR_MIN(cpuLoad, 1.0);
 }
 
 intptr_t
@@ -1300,7 +1317,7 @@ omrsysinfo_get_CPU_load(struct OMRPortLibrary *portLibrary, double *cpuLoad)
 
 	/* Calculate using the most recent value in the history */
 	if (((currentCPUTime.timestamp - latestCPUTime->timestamp) >= 10000000) && (currentCPUTime.numberOfCpus != 0)) {
-		*cpuLoad = OMR_MIN((currentCPUTime.cpuTime - latestCPUTime->cpuTime) / ((double)currentCPUTime.numberOfCpus * (currentCPUTime.timestamp - latestCPUTime->timestamp)), 1.0);
+		*cpuLoad = calculateCPULoad(&currentCPUTime, latestCPUTime);
 		if (*cpuLoad >= 0.0) {
 			*oldestCPUTime = *latestCPUTime;
 			*latestCPUTime = currentCPUTime;
@@ -1312,7 +1329,7 @@ omrsysinfo_get_CPU_load(struct OMRPortLibrary *portLibrary, double *cpuLoad)
 	}
 	
 	if (((currentCPUTime.timestamp - oldestCPUTime->timestamp) >= 10000000) && (currentCPUTime.numberOfCpus != 0)) {
-		*cpuLoad = OMR_MIN((currentCPUTime.cpuTime - oldestCPUTime->cpuTime) / ((double)currentCPUTime.numberOfCpus * (currentCPUTime.timestamp - oldestCPUTime->timestamp)), 1.0);
+		*cpuLoad = calculateCPULoad(&currentCPUTime, oldestCPUTime);
 		if (*cpuLoad >= 0.0) {
 			return 0;
 		} else {

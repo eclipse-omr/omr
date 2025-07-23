@@ -304,6 +304,10 @@ static intptr_t omrsysinfo_get_macos_aarch64_description(struct OMRPortLibrary *
 #endif /* defined(LINUX) */
 #endif /* defined(AARCH64) */
 
+#if (defined(LINUX) && !defined(OMRZTPF)) || defined(AIXPPC) || defined(OSX)
+static double calculateCPULoad(J9SysinfoCPUTime *new, J9SysinfoCPUTime *old);
+#endif /* (defined(LINUX) && !defined(OMRZTPF)) || defined(AIXPPC) || defined(OSX) */
+
 static const char getgroupsErrorMsgPrefix[] = "getgroups : ";
 
 typedef struct EnvListItem {
@@ -4651,20 +4655,20 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 		Trc_PRT_sysinfo_get_CPU_utilization_invalidRead();
 		return OMRPORT_ERROR_FILE_OPFAILED;
 	} else {
-		uint64_t userTime = 0;
-		uint64_t niceTime = 0;
-		uint64_t systemTime = 0;
-		uint64_t idleTime = 0;
-		uint64_t iowaitTime = 0;
-		uint64_t irqTime = 0;
-		uint64_t softirqTime = 0;
+		int64_t userTime = 0;
+		int64_t niceTime = 0;
+		int64_t systemTime = 0;
+		int64_t idleTime = 0;
+		int64_t iowaitTime = 0;
+		int64_t irqTime = 0;
+		int64_t softirqTime = 0;
 		int fieldsRead = 0;
 
 		buf[bytesRead] = '\0';
 		Trc_PRT_sysinfo_get_CPU_utilization_proc_stat_summary(buf);
 
 		fieldsRead = sscanf(
-				buf, "cpu  %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
+				buf, "cpu  %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNd64,
 				&userTime, &niceTime, &systemTime, &idleTime, &iowaitTime, &irqTime, &softirqTime);
 
 		if (fieldsRead < 7) {
@@ -4673,6 +4677,11 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 
 		cpuTime->cpuTime = (userTime + niceTime + systemTime + irqTime + softirqTime) * NS_PER_CLK;
 		cpuTime->numberOfCpus = portLibrary->sysinfo_get_number_CPUs_by_type(portLibrary, OMRPORT_CPU_ONLINE);
+
+		cpuTime->userTime = userTime + niceTime;
+		cpuTime->systemTime = systemTime + irqTime + softirqTime;
+		cpuTime->idleTime = idleTime + iowaitTime;
+
 		status = 0;
 	}
 #elif defined(OSX)
@@ -4688,15 +4697,22 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 	rc = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO,
 		&processorCount, (processor_info_array_t *)&cpuLoadInfo, &msgTypeNumber);
 	if (KERN_SUCCESS == rc) {
-		int64_t userTime = 0;
-		int64_t niceTime = 0;
-		int64_t systemTime = 0;
+		uint64_t userTime = 0;
+		uint64_t niceTime = 0;
+		uint64_t systemTime = 0;
+		uint64_t idleTime = 0;
 		for (i = 0; i < processorCount; i += 1) {
 			userTime += cpuLoadInfo[i].cpu_ticks[CPU_STATE_USER];
 			niceTime += cpuLoadInfo[i].cpu_ticks[CPU_STATE_NICE];
 			systemTime += cpuLoadInfo[i].cpu_ticks[CPU_STATE_SYSTEM];
+			idleTime += cpuLoadInfo[i].cpu_ticks[CPU_STATE_IDLE];
 		}
 		cpuTime->cpuTime = userTime + niceTime + systemTime;
+
+		cpuTime->userTime = userTime + niceTime;
+		cpuTime->systemTime = systemTime;
+		cpuTime->idleTime = idleTime;
+
 		status = 0;
 	} else {
 		return OMRPORT_ERROR_FILE_OPFAILED;
@@ -4719,6 +4735,11 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 	Trc_PRT_sysinfo_get_CPU_utilization_perfstat(stats.user, stats.sys, stats.ncpus);
 	cpuTime->numberOfCpus = stats.ncpus; /* get the actual number of CPUs against which the time is reported */
 	cpuTime->cpuTime = (stats.user + stats.sys) * NS_PER_CPU_TICK;
+
+	cpuTime->userTime = stats.user;
+	cpuTime->systemTime = stats.sys;
+	cpuTime->idleTime = stats.idle + stats.wait;
+
 	status = 0;
 #endif
 	postTimestamp = portLibrary->time_nano_time(portLibrary);
@@ -4735,6 +4756,19 @@ omrsysinfo_get_CPU_utilization(struct OMRPortLibrary *portLibrary, struct J9Sysi
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif
 }
+
+#if (defined(LINUX) && !defined(OMRZTPF)) || defined(AIXPPC) || defined(OSX)
+static double
+calculateCPULoad(J9SysinfoCPUTime *new, J9SysinfoCPUTime *old)
+{
+	int64_t userDelta = new->userTime - old->userTime;
+	int64_t systemDelta = new->systemTime - old->systemTime;
+	int64_t idleDelta = new->idleTime - old->idleTime;
+	int64_t totalDelta = userDelta + systemDelta + idleDelta;
+	double cpuLoad = (totalDelta > 0) ? ((userDelta + systemDelta) / (double)(totalDelta)) : 0.0;
+	return OMR_MIN(cpuLoad, 1.0);
+}
+#endif /* (defined(LINUX) && !defined(OMRZTPF)) || defined(AIXPPC) || defined(OSX) */
 
 intptr_t
 omrsysinfo_get_CPU_load(struct OMRPortLibrary *portLibrary, double *cpuLoad)
@@ -4757,7 +4791,7 @@ omrsysinfo_get_CPU_load(struct OMRPortLibrary *portLibrary, double *cpuLoad)
 
 	/* Calculate using the most recent value in the history. */
 	if (((currentCPUTime.timestamp - latestCPUTime->timestamp) >= 10000000) && (currentCPUTime.numberOfCpus != 0)) {
-		*cpuLoad = OMR_MIN((currentCPUTime.cpuTime - latestCPUTime->cpuTime) / ((double)currentCPUTime.numberOfCpus * (currentCPUTime.timestamp - latestCPUTime->timestamp)), 1.0);
+		*cpuLoad = calculateCPULoad(&currentCPUTime, latestCPUTime);
 		if (*cpuLoad >= 0.0) {
 			*oldestCPUTime = *latestCPUTime;
 			*latestCPUTime = currentCPUTime;
@@ -4769,7 +4803,7 @@ omrsysinfo_get_CPU_load(struct OMRPortLibrary *portLibrary, double *cpuLoad)
 	}
 
 	if (((currentCPUTime.timestamp - oldestCPUTime->timestamp) >= 10000000) && (currentCPUTime.numberOfCpus != 0)) {
-		*cpuLoad = OMR_MIN((currentCPUTime.cpuTime - oldestCPUTime->cpuTime) / ((double)currentCPUTime.numberOfCpus * (currentCPUTime.timestamp - oldestCPUTime->timestamp)), 1.0);
+		*cpuLoad = calculateCPULoad(&currentCPUTime, oldestCPUTime);
 		if (*cpuLoad >= 0.0) {
 			return 0;
 		} else {
