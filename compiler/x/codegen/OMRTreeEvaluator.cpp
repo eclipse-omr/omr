@@ -5719,11 +5719,18 @@ TR::Register* OMR::X86::TreeEvaluator::vectorBinaryArithmeticEvaluator(TR::Node*
 
 
    TR::InstOpCode nativeOpcode = getNativeSIMDOpcode(opcode, type, useRegMemForm);
+   OMR::X86::Encoding simdEncoding;
 
-   if (useRegMemForm && nativeOpcode.getMnemonic() == TR::InstOpCode::bad)
+   if (nativeOpcode.getMnemonic() != TR::InstOpCode::bad)
+      {
+      simdEncoding = nativeOpcode.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
+      }
+
+   if (useRegMemForm && (simdEncoding == OMR::X86::Legacy || nativeOpcode.getMnemonic() == TR::InstOpCode::bad))
       {
       useRegMemForm = false;
       nativeOpcode = getNativeSIMDOpcode(opcode, type, useRegMemForm);
+      simdEncoding = nativeOpcode.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
       }
 
    TR_ASSERT_FATAL(nativeOpcode.getMnemonic() != TR::InstOpCode::bad, "Unsupported vector operation for given element type: %s",
@@ -5735,8 +5742,6 @@ TR::Register* OMR::X86::TreeEvaluator::vectorBinaryArithmeticEvaluator(TR::Node*
 
    TR_ASSERT_FATAL_WITH_NODE(lhs, lhsReg->getKind() == TR_VRF, "Left child of vector operation must be a vector");
    TR_ASSERT_FATAL_WITH_NODE(lhs, rhsReg == NULL || rhsReg->getKind() == TR_VRF, "Right child of vector operation must be a vector");
-
-   OMR::X86::Encoding simdEncoding = nativeOpcode.getSIMDEncoding(&cg->comp()->target().cpu, type.getVectorLength());
    TR_ASSERT_FATAL_WITH_NODE(node, simdEncoding != Bad, "This x86 opcode is not supported by the target CPU");
 
    if (cg->comp()->target().cpu.supportsAVX())
