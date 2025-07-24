@@ -102,13 +102,6 @@ if(OMR_OS_ZOS)
 		if(NOT target_type STREQUAL "SHARED_LIBRARY")
 			return()
 		endif()
-		add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-			COMMAND "${CMAKE_COMMAND}"
-				"-DLIBRARY_FILE_NAME=$<TARGET_FILE_NAME:${TARGET_NAME}>"
-				"-DRUNTIME_DIR=$<TARGET_FILE_DIR:${TARGET_NAME}>"
-				"-DARCHIVE_DIR=$<TARGET_PROPERTY:${TARGET_NAME},ARCHIVE_OUTPUT_DIRECTORY>"
-				-P "${omr_SOURCE_DIR}/cmake/modules/platform/toolcfg/zos_rename_exports.cmake"
-		)
 	endfunction()
 else()
 	function(_omr_toolchain_process_exports TARGET_NAME)
