@@ -107,9 +107,9 @@
    cntlzd_r,         // Count leading zeros dword Rc=1
    cntlzw,           // Count leading zeros word
    cntlzw_r,         // Count leading zeros word Rc=1
-// cnttzw,           // Count Trailing Zeros Word
+   cnttzw,           // Count Trailing Zeros Word
 // cnttzw_r,         // Count Trailing Zeros Word Rc=1
-// cnttzd,           // Count Trailing Zeros Dword
+   cnttzd,           // Count Trailing Zeros Dword
 // cnttzd_r,         // Count Trailing Zeros Dword Rc=1
    crand,            // Condition register AND
    crandc,           // Condition register AND with complement
