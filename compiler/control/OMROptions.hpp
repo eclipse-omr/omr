@@ -194,7 +194,7 @@ enum TR_CompilationOptions
    TR_DisableDynamicLoopTransfer          = 0x00200000 + 3,
    TR_TraceNodeFlags                      = 0x00400000 + 3,
    TR_DisableNewBVA                       = 0x00800000 + 3,
-   // Available                           = 0x01000000 + 3,
+   TR_EnableOpMaskRegisters               = 0x01000000 + 3,
    TR_BreakBBStart                        = 0x02000000 + 3,
    TR_DisableRXusage                      = 0x04000000 + 3,
    TR_EnableInliningOfUnsafeForArraylets  = 0x08000000 + 3,
