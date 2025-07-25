@@ -1124,28 +1124,76 @@ OMR::Z::TreeEvaluator::PassThroughEvaluator(TR::Node *node, TR::CodeGenerator *c
    }
 
 // mask evaluators
+
+TR::Register*
+OMR::Z::TreeEvaluator::maskAllAndAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool allTrue, bool hasSecondChild)
+   {
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Node *secondChild = hasSecondChild ? node->getSecondChild() : NULL;
+   TR_ASSERT_FATAL_WITH_NODE(node, firstChild->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", firstChild->getDataType().toString());
+   TR::Register *maskReg = cg->evaluate(firstChild);
+   TR::Register *mask2Reg = hasSecondChild ? cg->evaluate(secondChild) : maskReg;
+   TR::Register *resultReg = cg->allocateRegister(TR_GPR);
+   TR::Register *tmpReg = maskReg;
+   if (firstChild->getReferenceCount() > 1)
+      {
+         TR::Register *tmpReg = mask2Reg;
+         if(!hasSecondChild || secondChild->getReferenceCount() > 1)
+            tmpReg = cg->allocateRegister(TR_VRF);
+      }
+
+   if (hasSecondChild || allTrue)
+      {
+      // Merge children. We need inverted values for allTrue.
+      generateVRRcInstruction(cg, allTrue ? TR::InstOpCode::VNN : TR::InstOpCode::VN, node, tmpReg, maskReg, mask2Reg, 0, 0, 0);
+      // The checksum is zero only when all lanes are zero.
+      generateVRRcInstruction(cg, TR::InstOpCode::VCKSM, node, tmpReg, tmpReg, tmpReg, 0, 0, 0);
+      }
+   else
+      {
+      generateVRRcInstruction(cg, TR::InstOpCode::VCKSM, node, tmpReg, maskReg, maskReg, 0, 0, 0);
+      }
+
+   // Load checksum on result register.
+   generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, resultReg, tmpReg, generateS390MemoryReference(1, cg), 2);
+   // Adding logical (int32)-1 set 33rd bit if register is not zero.
+   // Adding arithmetical (int32)-1 set sign (64th) bit if register zero.
+   generateRILInstruction(cg, allTrue ? TR::InstOpCode::AGFI : TR::InstOpCode::ALGFI, node, resultReg, -1);
+   generateRSInstruction(cg, TR::InstOpCode::SRLG, node, resultReg, resultReg, allTrue ? 63 : 32);
+
+   if (tmpReg != maskReg && tmpReg != mask2Reg)
+      cg->stopUsingRegister(tmpReg);
+   node->setRegister(resultReg);
+   cg->decReferenceCount(firstChild);
+   if (hasSecondChild)
+      cg->decReferenceCount(secondChild);
+
+   return resultReg;
+   }
+
 TR::Register*
 OMR::Z::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, false, false);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::mAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, true, false);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::mmAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, false, true);
    }
 
 TR::Register*
 OMR::Z::TreeEvaluator::mmAllTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   return maskAllAndAnyTrueEvaluator(node, cg, true, true);
    }
 
 TR::Register*
