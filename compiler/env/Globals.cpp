@@ -24,4 +24,6 @@
 // Globally accessible pointer to the environment in which compiles are being
 // performed.
 //
-namespace TR { CompilerEnv *Compiler = 0; }
+namespace TR {
+CompilerEnv *Compiler = 0;
+}

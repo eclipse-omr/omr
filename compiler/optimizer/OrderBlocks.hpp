@@ -31,12 +31,14 @@
 #include "optimizer/OptimizationManager.hpp"
 
 class TR_RegionStructure;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class CFGEdge; }
-namespace TR { class CFGNode; }
-namespace TR { class Compilation; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFG;
+class CFGEdge;
+class CFGNode;
+class Compilation;
+class TreeTop;
+}
 
 
 typedef List<TR::CFGNode> TR_BlockList;

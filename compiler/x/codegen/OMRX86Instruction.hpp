@@ -47,12 +47,16 @@
 #include "codegen/InstOpCode.hpp"
 #include "env/CompilerEnv.hpp"
 
-namespace TR { class LabelRelocation; }
+namespace TR {
+class LabelRelocation;
+}
 class TR_VirtualGuardSite;
-namespace TR { class X86RegMemInstruction; }
-namespace TR { class X86RegRegInstruction; }
-namespace TR { class UnresolvedDataSnippet; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class X86RegMemInstruction;
+class X86RegRegInstruction;
+class UnresolvedDataSnippet;
+class SymbolReference;
+}
 
 enum TR_X86MemoryBarrierKinds
    {
@@ -3508,8 +3512,10 @@ generateImm64SymInstruction(TR::Instruction                      *precedingInstr
 
 
 
-namespace TR { typedef TR::Instruction X86FPReturnInstruction; }
-namespace TR { typedef TR::X86ImmInstruction X86FPReturnImmInstruction; }
+namespace TR {
+typedef TR::Instruction X86FPReturnInstruction;
+typedef TR::X86ImmInstruction X86FPReturnImmInstruction;
+}
 
 
 TR::X86FPRegInstruction  * generateFPRegInstruction(TR::InstOpCode::Mnemonic op, TR::Node *, TR::Register * reg1, TR::CodeGenerator *cg);

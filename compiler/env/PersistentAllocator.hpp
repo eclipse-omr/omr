@@ -27,8 +27,12 @@
 #ifndef TR_PERSISTENT_ALLOCATOR
 #define TR_PERSISTENT_ALLOCATOR
 
-namespace OMR { class PersistentAllocator; }
-namespace TR { using OMR::PersistentAllocator; }
+namespace OMR {
+class PersistentAllocator;
+}
+namespace TR {
+using OMR::PersistentAllocator;
+}
 
 #endif // TR_PERSISTENT_ALLOCATOR
 

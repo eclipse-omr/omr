@@ -27,17 +27,21 @@
  */
 #ifndef OMR_GLOBALREGISTER_CONNECTOR
 #define OMR_GLOBALREGISTER_CONNECTOR
-namespace OMR { class GlobalRegister; }
-namespace OMR { typedef OMR::GlobalRegister GlobalRegisterConnector; }
+namespace OMR {
+class GlobalRegister;
+typedef OMR::GlobalRegister GlobalRegisterConnector;
+}
 #endif
 
 #include "il/Node.hpp"
 
-namespace TR { class RegisterCandidate; }
-namespace TR { class TreeTop; }
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-namespace TR { class GlobalRegister; }
+namespace TR {
+class RegisterCandidate;
+class TreeTop;
+class Block;
+class Compilation;
+class GlobalRegister;
+}
 
 class TR_NodeMappings;
 class TR_GlobalRegisterAllocator;

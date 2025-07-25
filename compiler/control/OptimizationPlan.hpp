@@ -33,10 +33,14 @@
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class CompilationInfo; }
+namespace TR {
+class CompilationInfo;
+}
 class TR_MethodEvent;
-namespace TR { class Recompilation; }
-namespace TR { class Monitor; }
+namespace TR {
+class Recompilation;
+class Monitor;
+}
 struct TR_MethodToBeCompiled;
 
 #if defined(__IBMCPP__) || defined(__open_xl__)

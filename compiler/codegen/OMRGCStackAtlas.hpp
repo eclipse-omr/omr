@@ -27,8 +27,10 @@
  */
 #ifndef OMR_GCSTACKATLAS_CONNECTOR
 #define OMR_GCSTACKATLAS_CONNECTOR
-namespace OMR { class GCStackAtlas; }
-namespace OMR { typedef OMR::GCStackAtlas GCStackAtlasConnector; }
+namespace OMR {
+class GCStackAtlas;
+typedef OMR::GCStackAtlas GCStackAtlasConnector;
+}
 #endif
 
 #include "codegen/GCStackMap.hpp"
@@ -42,9 +44,11 @@ namespace OMR { typedef OMR::GCStackAtlas GCStackAtlasConnector; }
 class TR_GCStackAllocMap;
 class TR_GCStackMap;
 class TR_InternalPointerMap;
-namespace TR { class GCStackAtlas; }
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class GCStackAtlas;
+class AutomaticSymbol;
+class CodeGenerator;
+}
 
 namespace OMR
 {

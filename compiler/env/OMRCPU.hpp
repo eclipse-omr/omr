@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CPU_CONNECTOR
 #define OMR_CPU_CONNECTOR
-namespace OMR { class CPU; }
-namespace OMR { typedef OMR::CPU CPUConnector; }
+namespace OMR {
+class CPU;
+typedef OMR::CPU CPUConnector;
+}
 #endif
 
 #include <string.h>
@@ -36,7 +38,9 @@ namespace OMR { typedef OMR::CPU CPUConnector; }
 #include "infra/Annotations.hpp"
 #include "omrport.h"
 
-namespace TR { class CPU; }
+namespace TR {
+class CPU;
+}
 
 namespace TR
 {

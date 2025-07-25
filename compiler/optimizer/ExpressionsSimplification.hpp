@@ -31,9 +31,11 @@
 class TR_BitVector;
 class TR_RegionStructure;
 class TR_Structure;
-namespace TR { class Block; }
-namespace TR { class CFGNode; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFGNode;
+class TreeTop;
+}
 template <class T> class List;
 template <class T> class ListIterator;
 

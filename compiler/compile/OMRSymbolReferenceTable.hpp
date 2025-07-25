@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SYMBOLREFERENCETABLE_CONNECTOR
 #define OMR_SYMBOLREFERENCETABLE_CONNECTOR
-namespace OMR { class SymbolReferenceTable; }
-namespace OMR { typedef OMR::SymbolReferenceTable SymbolReferenceTableConnector; }
+namespace OMR {
+class SymbolReferenceTable;
+typedef OMR::SymbolReferenceTable SymbolReferenceTableConnector;
+}
 #endif
 
 

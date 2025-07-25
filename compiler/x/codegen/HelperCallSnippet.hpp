@@ -27,9 +27,11 @@
 #include "il/Node.hpp"
 #include "x/codegen/RestartSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class SymbolReference;
+}
 
 namespace TR {
 

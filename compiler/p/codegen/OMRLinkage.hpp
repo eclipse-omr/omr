@@ -27,8 +27,10 @@
  */
 #ifndef OMR_LINKAGE_CONNECTOR
 #define OMR_LINKAGE_CONNECTOR
-namespace OMR { namespace Power { class Linkage; } }
-namespace OMR { typedef OMR::Power::Linkage LinkageConnector; }
+namespace OMR {
+namespace Power { class Linkage; }
+typedef OMR::Power::Linkage LinkageConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRLinkage.hpp"
@@ -42,16 +44,18 @@ namespace OMR { typedef OMR::Power::Linkage LinkageConnector; }
 #include "env/TRMemory.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class AutomaticSymbol;
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class MemoryReference;
+class Node;
+class ParameterSymbol;
+class Register;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+}
 template <class T> class List;
 
 namespace TR {

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_IO_CONNECTOR
 #define OMR_IO_CONNECTOR
-namespace OMR { class IO; }
-namespace OMR { typedef OMR::IO IOConnector; }
+namespace OMR {
+class IO;
+typedef OMR::IO IOConnector;
+}
 #endif
 
 #include <stddef.h>

@@ -112,7 +112,9 @@
 
 
 
-namespace TR { class SimpleRegex; }
+namespace TR {
+class SimpleRegex;
+}
 
 int32_t  *NumInlinedMethods   = NULL;
 int32_t  *InlinedSizes        = NULL;

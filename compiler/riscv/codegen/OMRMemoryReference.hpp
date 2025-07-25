@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
-namespace OMR { namespace RV { class MemoryReference; } }
-namespace OMR { typedef OMR::RV::MemoryReference MemoryReferenceConnector; }
+namespace OMR {
+namespace RV { class MemoryReference; }
+typedef OMR::RV::MemoryReference MemoryReferenceConnector;
+}
 #else
 #error OMR::RV::MemoryReference expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -42,10 +44,12 @@ namespace OMR { typedef OMR::RV::MemoryReference MemoryReferenceConnector; }
 #include "env/TRMemory.hpp"
 #include "il/SymbolReference.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class UnresolvedDataSnippet; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Node;
+class UnresolvedDataSnippet;
+}
 
 namespace OMR
 {

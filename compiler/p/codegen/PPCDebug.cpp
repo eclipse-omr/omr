@@ -70,8 +70,10 @@ int jitDebugPPC;
 #include "p/codegen/StackCheckFailureSnippet.hpp"
 #endif
 
-namespace TR { class PPCForceRecompilationSnippet; }
-namespace TR { class PPCRecompilationSnippet; }
+namespace TR {
+class PPCForceRecompilationSnippet;
+class PPCRecompilationSnippet;
+}
 
 const char *
 TR_Debug::getOpCodeName(TR::InstOpCode * opCode)

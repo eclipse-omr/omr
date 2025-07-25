@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTIONDELEGATE_CONNECTOR
 #define OMR_INSTRUCTIONDELEGATE_CONNECTOR
-namespace OMR { namespace ARM { class InstructionDelegate; } }
-namespace OMR { typedef OMR::ARM::InstructionDelegate InstructionDelegateConnector; }
+namespace OMR {
+namespace ARM { class InstructionDelegate; }
+typedef OMR::ARM::InstructionDelegate InstructionDelegateConnector;
+}
 #else
 #error OMR::ARM::InstructionDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif

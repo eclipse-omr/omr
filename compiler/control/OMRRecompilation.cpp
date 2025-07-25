@@ -43,8 +43,10 @@
 #include "infra/Timer.hpp"
 
 class TR_OpaqueMethodBlock;
-namespace TR { class Instruction; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Instruction;
+class SymbolReference;
+}
 
 
 OMR::Recompilation::Recompilation(TR::Compilation * comp) :

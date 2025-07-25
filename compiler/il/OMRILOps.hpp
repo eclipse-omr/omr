@@ -30,7 +30,9 @@
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 namespace OMR
 {

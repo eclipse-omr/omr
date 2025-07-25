@@ -29,9 +29,11 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 
-namespace TR { class Block; }
-namespace TR { class NodeChecklist; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class NodeChecklist;
+class TreeTop;
+}
 template <class T> class List;
 
 namespace TR

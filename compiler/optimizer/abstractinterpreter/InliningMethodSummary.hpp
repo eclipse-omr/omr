@@ -26,7 +26,9 @@
 #include "optimizer/ValuePropagation.hpp"
 #include "optimizer/abstractinterpreter/AbsValue.hpp"
 
-namespace TR { class PotentialOptimizationPredicate; }
+namespace TR {
+class PotentialOptimizationPredicate;
+}
 
 namespace TR {
 

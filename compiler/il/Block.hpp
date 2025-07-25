@@ -27,7 +27,9 @@
 #include "infra/Annotations.hpp"
 
 class TR_Memory;
-namespace TR { class TreeTop; }
+namespace TR {
+class TreeTop;
+}
 
 namespace TR
 {

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CFG_CONNECTOR
 #define OMR_CFG_CONNECTOR
-namespace OMR { class CFG; }
-namespace OMR { typedef OMR::CFG CFGConnector; }
+namespace OMR {
+class CFG;
+typedef OMR::CFG CFGConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -50,13 +52,15 @@ class TR_BitVector;
 class TR_BlockCloner;
 class TR_BlockFrequencyInfo;
 class TR_ExternalProfiler;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class CFGEdge; }
-namespace TR { class CFGNode; }
-namespace TR { class Compilation; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFG;
+class CFGEdge;
+class CFGNode;
+class Compilation;
+class ResolvedMethodSymbol;
+class TreeTop;
+}
 template <class T> class TR_Array;
 
 

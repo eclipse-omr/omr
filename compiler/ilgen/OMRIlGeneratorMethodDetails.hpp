@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ILGENERATORMETHODDETAILS_CONNECTOR
 #define OMR_ILGENERATORMETHODDETAILS_CONNECTOR
-namespace OMR { class IlGeneratorMethodDetails; }
-namespace OMR { typedef OMR::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector; }
+namespace OMR {
+class IlGeneratorMethodDetails;
+typedef OMR::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -37,8 +39,10 @@ namespace OMR { typedef OMR::IlGeneratorMethodDetails IlGeneratorMethodDetailsCo
 
 class TR_FrontEnd;
 class TR_ResolvedMethod;
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class IlVerifier; }
+namespace TR {
+class IlGeneratorMethodDetails;
+class IlVerifier;
+}
 
 namespace OMR
 {

@@ -51,7 +51,9 @@
 #include "ras/Debug.hpp"
 
 class TR_Structure;
-namespace TR { class Optimizer; }
+namespace TR {
+class Optimizer;
+}
 
 TR_LiveVariableInformation::TR_LiveVariableInformation(TR::Compilation   *c,
                                                        TR::Optimizer *optimizer,

@@ -31,7 +31,9 @@
 #include "il/Node.hpp"
 #include "codegen/Analyser.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 #define EvalChild1  0x01
 #define EvalChild2  0x02

@@ -24,8 +24,10 @@
 
 #include <stdint.h>
 
-namespace TR { class CompilationStrategy; }
-namespace TR { class CompilationInfo; }
+namespace TR {
+class CompilationStrategy;
+class CompilationInfo;
+}
 
 //------------------------------- TR::CompilationController ------------------------
 // All methods and fields are static. The most important field is _compilationStrategy

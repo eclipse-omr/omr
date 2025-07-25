@@ -25,8 +25,10 @@
 #include "env/TRMemory.hpp"
 #include "il/DataTypes.hpp"
 
-namespace TR { class IlType; }
-namespace TR { class TypeDictionary; }
+namespace TR {
+class IlType;
+class TypeDictionary;
+}
 
 extern "C" {
 typedef void * (*ClientAllocator)(void * impl);

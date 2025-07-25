@@ -27,8 +27,10 @@
  */
 #ifndef OMR_OBJECTFORMAT_CONNECTOR
 #define OMR_OBJECTFORMAT_CONNECTOR
-namespace OMR { class ObjectFormat; }
-namespace OMR { typedef OMR::ObjectFormat ObjectFormatConnector; }
+namespace OMR {
+class ObjectFormat;
+typedef OMR::ObjectFormat ObjectFormatConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -37,8 +39,10 @@ namespace OMR { typedef OMR::ObjectFormat ObjectFormatConnector; }
 #include "env/TRMemory.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class FunctionCallData; }
-namespace TR { class Instruction; }
+namespace TR {
+class FunctionCallData;
+class Instruction;
+}
 
 namespace OMR
 {

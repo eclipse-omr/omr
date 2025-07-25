@@ -36,7 +36,9 @@
 #include "optimizer/LocalAnalysis.hpp"
 #include "optimizer/Structure.hpp"
 
-namespace TR { class Optimizer; }
+namespace TR {
+class Optimizer;
+}
 
 // #define MAX_BLOCKS_FOR_STACK_ALLOCATION 16
 

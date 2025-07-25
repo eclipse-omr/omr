@@ -26,8 +26,10 @@
 #include "codegen/UnresolvedDataSnippet_inlines.hpp"
 #include "il/LabelSymbol.hpp"
 
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Node;
+class SymbolReference;
+}
 
 OMR::UnresolvedDataSnippet::UnresolvedDataSnippet(TR::CodeGenerator * cg,
                                                   TR::Node * node,

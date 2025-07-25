@@ -26,7 +26,9 @@
 #include "il/DataTypes.hpp"
 #include "il/OMRAutomaticSymbol.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
 {

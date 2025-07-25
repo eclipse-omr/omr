@@ -27,16 +27,20 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_CONNECTOR
-namespace OMR { namespace RV { class RegisterDependencyConditions; } }
-namespace OMR { typedef OMR::RV::RegisterDependencyConditions RegisterDependencyConditionsConnector; }
+namespace OMR {
+namespace RV { class RegisterDependencyConditions; }
+typedef OMR::RV::RegisterDependencyConditions RegisterDependencyConditionsConnector;
+}
 #else
 #error OMR::RV::RegisterDependencyConditions expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #ifndef OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
-namespace OMR { namespace RV { class RegisterDependencyGroup; } }
-namespace OMR { typedef OMR::RV::RegisterDependencyGroup RegisterDependencyGroupConnector; }
+namespace OMR {
+namespace RV { class RegisterDependencyGroup; }
+typedef OMR::RV::RegisterDependencyGroup RegisterDependencyGroupConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRRegisterDependency.hpp"
@@ -48,9 +52,11 @@ namespace OMR { typedef OMR::RV::RegisterDependencyGroup RegisterDependencyGroup
 #include "env/TRMemory.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class Instruction;
+class Node;
+class RegisterDependencyConditions;
+}
 namespace OMR
 {
 namespace RV

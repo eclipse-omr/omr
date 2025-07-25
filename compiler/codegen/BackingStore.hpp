@@ -28,8 +28,10 @@
 #include "il/SymbolReference.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class Symbol; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class Symbol;
+class SymbolReferenceTable;
+}
 
 class TR_BackingStore
    {

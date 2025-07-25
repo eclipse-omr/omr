@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
-namespace OMR { namespace Power { struct RegisterDependency; } }
-namespace OMR { typedef OMR::Power::RegisterDependency RegisterDependencyConnector; }
+namespace OMR {
+namespace Power { struct RegisterDependency; }
+typedef OMR::Power::RegisterDependency RegisterDependencyConnector;
+}
 #else
 #error OMR::Power::RegisterDependency expected to be a primary connector, but an OMR connector is already defined
 #endif

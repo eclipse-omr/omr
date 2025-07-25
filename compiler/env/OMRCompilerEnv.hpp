@@ -27,8 +27,10 @@
  */
 #ifndef OMR_COMPILER_ENV_CONNECTOR
 #define OMR_COMPILER_ENV_CONNECTOR
-namespace OMR { class CompilerEnv; }
-namespace OMR { typedef OMR::CompilerEnv CompilerEnvConnector; }
+namespace OMR {
+class CompilerEnv;
+typedef OMR::CompilerEnv CompilerEnvConnector;
+}
 #endif
 
 
@@ -44,7 +46,9 @@ namespace OMR { typedef OMR::CompilerEnv CompilerEnvConnector; }
 #include "env/VMMethodEnv.hpp"
 #include "env/TRMemory.hpp"
 
-namespace TR { class CompilerEnv; }
+namespace TR {
+class CompilerEnv;
+}
 
 
 namespace OMR

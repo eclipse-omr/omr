@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SYMBOLREFERENCE_CONNECTOR
 #define OMR_SYMBOLREFERENCE_CONNECTOR
-namespace OMR { class SymbolReference; }
-namespace OMR { typedef OMR::SymbolReference SymbolReferenceConnector; }
+namespace OMR {
+class SymbolReference;
+typedef OMR::SymbolReference SymbolReferenceConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -56,9 +58,11 @@ class TR_Debug;
 class TR_ResolvedMethod;
 class TR_UseDefAliasSetInterface;
 class TR_UseOnlyAliasSetInterface;
-namespace TR { class Register; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Register;
+class ResolvedMethodSymbol;
+class SymbolReference;
+}
 template <class T> class TR_Array;
 template <AliasSetInterface> class TR_AliasSetInterface ;
 typedef TR::SparseBitVector SharedSparseBitVector;

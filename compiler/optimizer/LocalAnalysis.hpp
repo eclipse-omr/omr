@@ -31,9 +31,11 @@
 #include "il/Node.hpp"
 #include "infra/BitVector.hpp"
 
-namespace TR { class Block; }
-namespace TR { class Optimizer; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Optimizer;
+class TreeTop;
+}
 
 class TR_LocalAnalysisInfo
    {

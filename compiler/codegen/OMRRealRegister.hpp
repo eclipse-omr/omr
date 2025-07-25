@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
-namespace OMR { class RealRegister; }
-namespace OMR { typedef OMR::RealRegister RealRegisterConnector; }
+namespace OMR {
+class RealRegister;
+typedef OMR::RealRegister RealRegisterConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -36,8 +38,10 @@ namespace OMR { typedef OMR::RealRegister RealRegisterConnector; }
 #include "codegen/RegisterConstants.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class RealRegister; }
+namespace TR {
+class CodeGenerator;
+class RealRegister;
+}
 
 namespace OMR
 {

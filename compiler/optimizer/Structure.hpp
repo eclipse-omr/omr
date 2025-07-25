@@ -50,10 +50,12 @@ class TR_LocalTransparency;
 class TR_PrimaryInductionVariable;
 class TR_RegionStructure;
 class TR_StructureSubGraphNode;
-namespace TR { class RegisterCandidate; }
-namespace TR { class VPConstraint; }
-namespace TR { class RegisterMappedSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class RegisterCandidate;
+class VPConstraint;
+class RegisterMappedSymbol;
+class SymbolReference;
+}
 
 class TR_Structure
    {

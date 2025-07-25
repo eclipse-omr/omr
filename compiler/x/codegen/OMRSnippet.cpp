@@ -33,20 +33,22 @@
 #include "codegen/InstOpCode.hpp"
 #include "codegen/UnresolvedDataSnippet.hpp"
 
-namespace TR { class X86BoundCheckWithSpineCheckSnippet; }
-namespace TR { class X86CallSnippet; }
-namespace TR { class X86CheckFailureSnippet; }
-namespace TR { class X86CheckFailureSnippetWithResolve; }
-namespace TR { class X86DivideCheckSnippet; }
-namespace TR { class X86FPConvertToIntSnippet; }
-namespace TR { class X86FPConvertToLongSnippet; }
-namespace TR { class X86ForceRecompilationSnippet; }
-namespace TR { class X86GuardedDevirtualSnippet; }
-namespace TR { class X86PicDataSnippet; }
-namespace TR { class X86RecompilationSnippet; }
-namespace TR { class X86SpineCheckSnippet; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
+namespace TR {
+class X86BoundCheckWithSpineCheckSnippet;
+class X86CallSnippet;
+class X86CheckFailureSnippet;
+class X86CheckFailureSnippetWithResolve;
+class X86DivideCheckSnippet;
+class X86FPConvertToIntSnippet;
+class X86FPConvertToLongSnippet;
+class X86ForceRecompilationSnippet;
+class X86GuardedDevirtualSnippet;
+class X86PicDataSnippet;
+class X86RecompilationSnippet;
+class X86SpineCheckSnippet;
+class LabelSymbol;
+class Node;
+}
 
 
 OMR::X86::Snippet::Snippet(

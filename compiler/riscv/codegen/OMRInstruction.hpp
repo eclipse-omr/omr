@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { namespace RV { class Instruction; } }
-namespace OMR { typedef OMR::RV::Instruction InstructionConnector; }
+namespace OMR {
+namespace RV { class Instruction; }
+typedef OMR::RV::Instruction InstructionConnector;
+}
 #else
 #error OMR::RV::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,12 +41,14 @@ namespace OMR { typedef OMR::RV::Instruction InstructionConnector; }
 #include <stdint.h>
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class BtypeInstruction; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class BtypeInstruction;
+}
 
 namespace OMR
 {

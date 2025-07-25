@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
-   namespace OMR { namespace ARM64 { class Register; } }
-   namespace OMR { typedef OMR::ARM64::Register RegisterConnector; }
+namespace OMR {
+   namespace ARM64 { class Register; }
+   typedef OMR::ARM64::Register RegisterConnector;
+}
 #else
    #error OMR::ARM64::Register expected to be a primary connector, but a OMR connector is already defined
 #endif

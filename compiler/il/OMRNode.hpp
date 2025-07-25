@@ -27,8 +27,10 @@
  */
 #ifndef OMR_NODE_CONNECTOR
 #define OMR_NODE_CONNECTOR
-namespace OMR { class Node; }
-namespace OMR { typedef OMR::Node NodeConnector; }
+namespace OMR {
+class Node;
+typedef OMR::Node NodeConnector;
+}
 #endif
 
 #include <limits.h>
@@ -56,19 +58,21 @@ class TR_UseDefAliasSetInterface;
 class TR_OpaqueClassBlock;
 class TR_OpaqueMethodBlock;
 class TR_ResolvedMethod;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class NodePool; }
-namespace TR { class Register; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
-namespace TR { class NodeExtension; }
-namespace TR { class NodeChecklist; }
+namespace TR {
+class AutomaticSymbol;
+class Block;
+class CodeGenerator;
+class Compilation;
+class LabelSymbol;
+class Node;
+class NodePool;
+class Register;
+class Symbol;
+class SymbolReference;
+class TreeTop;
+class NodeExtension;
+class NodeChecklist;
+}
 template <class T> class List;
 
 #define NUM_DEFAULT_CHILDREN    2

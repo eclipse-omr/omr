@@ -35,7 +35,9 @@
 #include "p/codegen/GenerateInstructions.hpp"
 #include "p/codegen/PPCInstruction.hpp"
 
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class RegisterDependencyConditions;
+}
 
 TR_PPCOutOfLineCodeSection::TR_PPCOutOfLineCodeSection(TR::Node  *callNode,
                             TR::ILOpCodes      callOp,

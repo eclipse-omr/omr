@@ -29,10 +29,12 @@
 #include "infra/Cfg.hpp"
 
 class TR_Debug;
-namespace TR { class Block; }
-namespace TR { class Node; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Node;
+class ResolvedMethodSymbol;
+class TreeTop;
+}
 
 /// This class can be used to check if the CFG is correct. The check is
 /// performed in two distinct steps.

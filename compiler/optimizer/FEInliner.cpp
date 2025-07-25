@@ -31,11 +31,13 @@
 class TR_OpaqueClassBlock;
 class TR_PrexArgInfo;
 class TR_ResolvedMethod;
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
+namespace TR {
+class ResolvedMethodSymbol;
+class SymbolReference;
+class Compilation;
+class Node;
+class TreeTop;
+}
 
 TR_CallSite* TR_CallSite::create(TR::TreeTop* callNodeTreeTop,
                            TR::Node *parent,

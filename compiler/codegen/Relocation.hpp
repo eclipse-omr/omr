@@ -31,11 +31,13 @@
 #include "runtime/Runtime.hpp"
 #include "ras/DebugCounter.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class LabelSymbol;
+class Node;
+}
 
 typedef enum
    {

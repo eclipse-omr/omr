@@ -35,13 +35,15 @@
 class TR_BitVector;
 class TR_OSRMethodData;
 class TR_OSRSlotSharingInfo;
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Compilation;
+class Instruction;
+class Node;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class TreeTop;
+}
 template <class T> class List;
 
 namespace TR

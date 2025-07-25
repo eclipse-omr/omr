@@ -24,7 +24,9 @@
 
 #include "control/OMRRecompilation.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
 {

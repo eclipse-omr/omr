@@ -29,7 +29,9 @@
 #include "il/DataTypes.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 uint8_t* TR_TranslateTable::data()
    {

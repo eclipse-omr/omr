@@ -27,19 +27,23 @@
  */
 #ifndef OMR_FUNCTIONCALLDATA_CONNECTOR
 #define OMR_FUNCTIONCALLDATA_CONNECTOR
-namespace OMR { namespace X86 { class FunctionCallData; } }
-namespace OMR { typedef OMR::X86::FunctionCallData FunctionCallDataConnector; }
+namespace OMR {
+namespace X86 { class FunctionCallData; }
+typedef OMR::X86::FunctionCallData FunctionCallDataConnector;
+}
 #endif
 
 #include "compiler/objectfmt/OMRFunctionCallData.hpp"
 #include "runtime/Runtime.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class SymbolReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class Instruction;
+class SymbolReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class CodeGenerator;
+}
 
 namespace OMR
 {

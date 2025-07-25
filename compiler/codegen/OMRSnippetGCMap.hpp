@@ -27,14 +27,18 @@
  */
 #ifndef OMR_SNIPPETGCMAP_CONNECTOR
 #define OMR_SNIPPETGCMAP_CONNECTOR
-namespace OMR { class SnippetGCMap; }
-namespace OMR { typedef OMR::SnippetGCMap SnippetGCMapConnector; }
+namespace OMR {
+class SnippetGCMap;
+typedef OMR::SnippetGCMap SnippetGCMapConnector;
+}
 #endif
 
 #include "infra/Flags.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class Instruction;
+class CodeGenerator;
+}
 class TR_GCStackMap;
 
 namespace OMR

@@ -29,10 +29,12 @@
 #include "codegen/Snippet.hpp"
 
 class TR_StorageReference;
-namespace TR { class SymbolReference; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class SymbolReference;
+class CodeGenerator;
+class Node;
+class Register;
+}
 
 namespace TR
 {

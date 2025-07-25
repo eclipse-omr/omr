@@ -27,14 +27,18 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
-namespace OMR { class MemoryReference; }
-namespace OMR { typedef OMR::MemoryReference MemoryReferenceConnector; }
+namespace OMR {
+class MemoryReference;
+typedef OMR::MemoryReference MemoryReferenceConnector;
+}
 #endif
 
 #include "env/TRMemory.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class MemoryReference; }
+namespace TR {
+class MemoryReference;
+}
 
 namespace OMR
 {

@@ -38,12 +38,16 @@
 
 class TR_ReachingDefinitions;
 class TR_ValueNumberInfo;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class ILOpCode; }
-namespace TR { class Optimizer; }
-namespace TR { class TreeTop; }
-namespace OMR { class Optimizer; }
+namespace TR {
+class Block;
+class CFG;
+class ILOpCode;
+class Optimizer;
+class TreeTop;
+}
+namespace OMR {
+class Optimizer;
+}
 
 /**
  * Use/def information.

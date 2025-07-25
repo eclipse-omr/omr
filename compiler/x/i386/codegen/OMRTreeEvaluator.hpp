@@ -27,8 +27,10 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { namespace X86 { namespace I386 { class TreeEvaluator; } } }
-namespace OMR { typedef OMR::X86::I386::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+namespace X86 { namespace I386 { class TreeEvaluator; } }
+typedef OMR::X86::I386::TreeEvaluator TreeEvaluatorConnector;
+}
 #else
 #error OMR::X86::I386::TreeEvaluator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -37,7 +39,9 @@ namespace OMR { typedef OMR::X86::I386::TreeEvaluator TreeEvaluatorConnector; }
 
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 
 

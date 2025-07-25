@@ -24,9 +24,11 @@
 
 #include "ilgen/IlBuilder.hpp"
 
-namespace TR { class BytecodeBuilder; }
-namespace TR { class MethodBuilder; }
-namespace TR { class VirtualMachineState; }
+namespace TR {
+class BytecodeBuilder;
+class MethodBuilder;
+class VirtualMachineState;
+}
 
 namespace OMR
 {

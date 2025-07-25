@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ARITHENV_CONNECTOR
 #define OMR_ARITHENV_CONNECTOR
-namespace OMR { class ArithEnv; }
-namespace OMR { typedef OMR::ArithEnv ArithEnvConnector; }
+namespace OMR {
+class ArithEnv;
+typedef OMR::ArithEnv ArithEnvConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -36,10 +38,14 @@ namespace OMR { typedef OMR::ArithEnv ArithEnvConnector; }
 #include "infra/Annotations.hpp"
 #include "env/jittypes.h"
 
-namespace TR { class ArithEnv; }
+namespace TR {
+class ArithEnv;
+}
 
 struct OMR_VMThread;
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace OMR
 {

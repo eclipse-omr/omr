@@ -27,9 +27,11 @@
 #include "infra/List.hpp"
 #include "optimizer/Optimization.hpp"
 
-namespace TR { class Block; }
-namespace TR { class OptimizationManager; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class OptimizationManager;
+class TreeTop;
+}
 
 namespace OMR
 {

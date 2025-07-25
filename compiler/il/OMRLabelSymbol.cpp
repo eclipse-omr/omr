@@ -36,8 +36,10 @@
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
 
-namespace TR { class ParameterSymbol; }
-namespace TR { class Snippet; }
+namespace TR {
+class ParameterSymbol;
+class Snippet;
+}
 template <class T> class List;
 
 TR::LabelSymbol *

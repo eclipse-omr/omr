@@ -38,7 +38,9 @@
 #define MAX_UINTPTR (~(uintptr_t)0)
 
 #ifdef __cplusplus
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 /// This data type exists to refer class data which TR knows exists,
 /// but doesn't know a lot about. Intended to avoid using `void *`

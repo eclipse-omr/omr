@@ -54,10 +54,12 @@
 #include "ras/ILValidationUtils.hpp"
 
 
-namespace TR { class Compilation; }
-namespace TR { class NodeChecklist; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Compilation;
+class NodeChecklist;
+class ResolvedMethodSymbol;
+class TreeTop;
+}
 
 namespace TR {
 

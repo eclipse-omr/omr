@@ -26,7 +26,9 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 
-namespace TR { class Block; }
+namespace TR {
+class Block;
+}
 
 class TR_VirtualGuardHeadMerger : public TR::Optimization
    {

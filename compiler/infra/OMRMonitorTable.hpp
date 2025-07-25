@@ -24,15 +24,19 @@
 
 #ifndef OMR_MONITORTABLE_CONNECTOR
 #define OMR_MONITORTABLE_CONNECTOR
-namespace OMR { class MonitorTable; }
-namespace OMR { typedef MonitorTable MonitorTableConnector; }
+namespace OMR {
+class MonitorTable;
+typedef MonitorTable MonitorTableConnector;
+}
 #endif
 
 #include "infra/Annotations.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class MonitorTable; }
-namespace TR { class Monitor; }
+namespace TR {
+class MonitorTable;
+class Monitor;
+}
 
 namespace OMR
 {

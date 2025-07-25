@@ -29,8 +29,10 @@
 #ifndef OMR_ELF_RELOCATION_RESOLVER_CONNECTOR
 #define OMR_ELF_RELOCATION_RESOLVER_CONNECTOR
 
-namespace OMR { class ELFRelocationResolver; }
-namespace OMR { typedef ::OMR::ELFRelocationResolver ELFRelocationResolverConnector; }
+namespace OMR {
+class ELFRelocationResolver;
+typedef ::OMR::ELFRelocationResolver ELFRelocationResolverConnector;
+}
 
 #endif /* OMR_ELF_RELOCATION_RESOLVER_CONNECTOR */
 

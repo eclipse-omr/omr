@@ -24,8 +24,10 @@
 
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { namespace X86 { class Machine; } }
-namespace OMR { typedef OMR::X86::Machine MachineConnector; }
+namespace OMR {
+namespace X86 { class Machine; }
+typedef OMR::X86::Machine MachineConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRMachine.hpp"
@@ -46,15 +48,19 @@ class TR_BackingStore;
 class TR_Debug;
 class TR_FrontEnd;
 class TR_OutlinedInstructions;
-namespace OMR { class RegisterUsage; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Machine; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class SymbolReference; }
-namespace TR { struct X86LinkageProperties; }
+namespace OMR {
+class RegisterUsage;
+}
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Machine;
+class MemoryReference;
+class Node;
+class RegisterDependencyConditions;
+class SymbolReference;
+struct X86LinkageProperties;
+}
 template <typename ListKind> class List;
 
 // Encapsulates the state of the register assigner at a particular point

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_FRONTEND_CONNECTOR
 #define OMR_FRONTEND_CONNECTOR
-namespace OMR { class FrontEnd; }
-namespace OMR { typedef OMR::FrontEnd FrontEndConnector; }
+namespace OMR {
+class FrontEnd;
+typedef OMR::FrontEnd FrontEndConnector;
+}
 #endif
 
 #include "compile/CompilationTypes.hpp"
@@ -40,7 +42,9 @@ namespace OMR { typedef OMR::FrontEnd FrontEndConnector; }
 #include "runtime/CodeCache.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
-namespace TR { class FrontEnd; }
+namespace TR {
+class FrontEnd;
+}
 class TR_ResolvedMethod;
 
 namespace OMR

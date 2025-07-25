@@ -32,7 +32,9 @@
 #include "infra/Assert.hpp"
 
 class TR_VirtualGuardSite;
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 namespace TR
 {

@@ -28,13 +28,17 @@
 #include <stdint.h>
 #include "env/jittypes.h"
 
-namespace TR { class X86DataSnippet; }
+namespace TR {
+class X86DataSnippet;
+}
 class TR_ScratchRegisterManager;
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+class Register;
+class SymbolReference;
+}
 
 namespace TR
 {

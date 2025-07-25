@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
-namespace OMR { namespace Z { class Register; } }
-namespace OMR { typedef OMR::Z::Register RegisterConnector; }
+namespace OMR {
+namespace Z { class Register; }
+typedef OMR::Z::Register RegisterConnector;
+}
 #else
 #error OMR::Z::Register expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -41,8 +43,10 @@ namespace OMR { typedef OMR::Z::Register RegisterConnector; }
 class TR_LiveRegisterInfo;
 class TR_OpaquePseudoRegister;
 class TR_PseudoRegister;
-namespace TR { class MemoryReference; }
-namespace TR { class Register; }
+namespace TR {
+class MemoryReference;
+class Register;
+}
 template <class T> class TR_Queue;
 
 namespace OMR

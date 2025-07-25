@@ -53,8 +53,10 @@
 #include "runtime/Runtime.hpp"
 
 class TR_OpaqueClassBlock;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Register; }
+namespace TR {
+class AutomaticSymbol;
+class Register;
+}
 
 void OMR::Power::Linkage::mapStack(TR::ResolvedMethodSymbol *method)
    {

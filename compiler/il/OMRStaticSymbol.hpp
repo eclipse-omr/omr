@@ -27,8 +27,10 @@
  */
 #ifndef OMR_STATICSYMBOL_CONNECTOR
 #define OMR_STATICSYMBOL_CONNECTOR
-namespace OMR { class StaticSymbol; }
-namespace OMR { typedef OMR::StaticSymbol StaticSymbolConnector; }
+namespace OMR {
+class StaticSymbol;
+typedef OMR::StaticSymbol StaticSymbolConnector;
+}
 #endif
 
 #include "il/Symbol.hpp"
@@ -38,8 +40,10 @@ namespace OMR { typedef OMR::StaticSymbol StaticSymbolConnector; }
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class LabelSymbol; }
-namespace TR { class StaticSymbol; }
+namespace TR {
+class LabelSymbol;
+class StaticSymbol;
+}
 
 namespace OMR
 {

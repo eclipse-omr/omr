@@ -102,7 +102,9 @@ namespace ILTypeProp
  * provided as static const variables. Although this could be implemented as an
  * enum, some compilers used for testing had problems handling 64-bit enums.
  */
-namespace TR { typedef uint64_t ILChildPropType; }
+namespace TR {
+typedef uint64_t ILChildPropType;
+}
 namespace ILChildProp
    {
 

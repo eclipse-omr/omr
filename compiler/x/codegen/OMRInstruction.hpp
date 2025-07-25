@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { namespace X86 { class Instruction; } }
-namespace OMR { typedef OMR::X86::Instruction InstructionConnector; }
+namespace OMR {
+namespace X86 { class Instruction; }
+typedef OMR::X86::Instruction InstructionConnector;
+}
 #else
 #error OMR::X86::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -41,15 +43,17 @@ namespace OMR { typedef OMR::X86::Instruction InstructionConnector; }
 #include "codegen/RegisterConstants.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class X86ImmInstruction;   }
-namespace TR { class X86LabelInstruction; }
-namespace TR { class X86RegInstruction;   }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class X86ImmInstruction;
+class X86LabelInstruction;
+class X86RegInstruction;
+class CodeGenerator;
+class Instruction;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 struct TR_VFPState;
 
 namespace OMR

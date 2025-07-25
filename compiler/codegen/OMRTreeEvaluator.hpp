@@ -27,8 +27,10 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { class TreeEvaluator; }
-namespace OMR { typedef OMR::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+class TreeEvaluator;
+typedef OMR::TreeEvaluator TreeEvaluatorConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -37,9 +39,11 @@ namespace OMR { typedef OMR::TreeEvaluator TreeEvaluatorConnector; }
 #include "il/Node.hpp"
 
 class TR_OpaqueClassBlock;
-namespace TR { class SymbolReference; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Register; }
+namespace TR {
+class SymbolReference;
+class CodeGenerator;
+class Register;
+}
 
 
 namespace OMR

@@ -25,9 +25,11 @@
 
 #include "optimizer/abstractinterpreter/OMRIDTBuilder.hpp"
 
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class Region; }
-namespace TR { class Compilation; }
+namespace TR {
+class ResolvedMethodSymbol;
+class Region;
+class Compilation;
+}
 class TR_InlinerBase;
 
 namespace TR

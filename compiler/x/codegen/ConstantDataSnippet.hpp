@@ -27,8 +27,10 @@
 #include <stdint.h>
 #include "codegen/Snippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class Node;
+}
 
 namespace TR {
 
