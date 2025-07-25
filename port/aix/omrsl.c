@@ -296,6 +296,7 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 		}
 
 		if (NULL == handle) {
+			char *actualFileName = NULL;
 #if defined(J9OS_I5)
 			/* now check to see if it is an iSeries library. */
 			handle = Xj9LoadIleLibrary(openName, errBuf, sizeof(errBuf));
@@ -322,7 +323,6 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 					loadAndInit(mangledName, L_RTLD_LOCAL, NULL);
 					handle = dlopen(mangledName, lazyOrNow);
 					if (NULL == handle) {
-						char *actualFileName = NULL;
 						lastErrno = errno;
 						/* update the error string and return code only if a file was actually found */
 						if ((ENOENT != lastErrno) && (IS_FILE_VISIBLE(portLibrary, mangledName))) {
@@ -367,48 +367,48 @@ omrsl_open_shared_library(struct OMRPortLibrary *portLibrary, char *name, uintpt
 										result = portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_SL_INVALID, errBuf);
 									}
 								}
-#endif
-								actualFileName = strrchr(fileName, '(');
-								if ((NULL != actualFileName) && (NULL != strchr(fileName, ')'))) {
-									Trc_PRT_sl_open_shared_library_Event1(name);
-
-									/*
-									 * reference : http://publib.boulder.ibm.com/infocenter/pseries/v5r3/index.jsp?topic=/com.ibm.aix.basetechref/doc/basetrf1/load.htm
-									 * In case where library name contains '(' and ')', we are specifying an archive member.
-									 * eg archive(member).
-									 * This translates into a file of name 'archive', to which dlopen will look to load 'member' since RTLD_MEMBER is specified.
-									 */
-
-									loadAndInit(name, L_RTLD_LOCAL, NULL);
-									handle = dlopen(name, lazyOrNow | RTLD_MEMBER);
-									if (NULL == handle) {
-										lastErrno = errno;
-
-										pathLength = portLibrary->str_printf(
-																		portLibrary, mangledName, (EsMaxPath + 1), "%.*s%.*s",
-																		(uintptr_t)fileName + 1 - (uintptr_t)name,
-																		name,
-																		(uintptr_t)actualFileName - 1 - (uintptr_t)fileName,
-																		fileName + 1);
-										if (pathLength >= EsMaxPath) {
-											result = OMRPORT_SL_UNSUPPORTED;
-											goto exit;
-										}
-										if ((ENOENT != lastErrno) && (IS_FILE_VISIBLE(portLibrary, mangledName))) {
-											getDLError(portLibrary, errBuf, sizeof(errBuf));
-											result = portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_SL_INVALID, errBuf);
-										}
-									}
-								}
-#if defined(J9OS_I5)
 							}
 						}
-#endif
+#endif /* defined(J9OS_I5) */
 					}
 				}
 #if defined(J9OS_I5)
 			}
-#endif
+#endif /* defined(J9OS_I5) */
+			if (NULL == handle) {
+				actualFileName = strrchr(fileName, '(');
+				if ((NULL != actualFileName) && (NULL != strchr(fileName, ')'))) {
+					Trc_PRT_sl_open_shared_library_Event1(name);
+
+					/*
+					 * reference : http://publib.boulder.ibm.com/infocenter/pseries/v5r3/index.jsp?topic=/com.ibm.aix.basetechref/doc/basetrf1/load.htm
+					 * In case where library name contains '(' and ')', we are specifying an archive member.
+					 * eg archive(member).
+					 * This translates into a file of name 'archive', to which dlopen will look to load 'member' since RTLD_MEMBER is specified.
+					 */
+
+					loadAndInit(name, L_RTLD_LOCAL, NULL);
+					handle = dlopen(name, lazyOrNow | RTLD_MEMBER);
+					if (NULL == handle) {
+						lastErrno = errno;
+
+						pathLength = portLibrary->str_printf(
+														portLibrary, mangledName, (EsMaxPath + 1), "%.*s%.*s",
+														(uintptr_t)fileName + 1 - (uintptr_t)name,
+														name,
+														(uintptr_t)actualFileName - 1 - (uintptr_t)fileName,
+														fileName + 1);
+						if (pathLength >= EsMaxPath) {
+							result = OMRPORT_SL_UNSUPPORTED;
+							goto exit;
+						}
+						if ((ENOENT != lastErrno) && (IS_FILE_VISIBLE(portLibrary, mangledName))) {
+							getDLError(portLibrary, errBuf, sizeof(errBuf));
+							result = portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_SL_INVALID, errBuf);
+						}
+					}
+				}
+			}
 		}
 	}
 
