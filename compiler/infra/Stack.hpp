@@ -28,26 +28,55 @@
 
 // TR_Stack use TR_Array as a stack
 //
-template<class T> class TR_Stack : public TR_Array<T>
-   {
+template<class T> class TR_Stack : public TR_Array<T> {
 public:
-   TR_Stack(TR_Memory * m, uint32_t initialSize = 8, bool zeroInit = false, TR_AllocationKind allocKind = heapAlloc)
-      : TR_Array<T>(m, initialSize, zeroInit, allocKind) { }
-   TR_Stack(const TR_Stack<T>& other) : TR_Array<T>(other) { }
-   TR_Stack<T> & operator=(const TR_Stack<T>& other) { (TR_Array<T>&)*this = (TR_Array<T>&)other; return *this; }
+    TR_Stack(TR_Memory *m, uint32_t initialSize = 8, bool zeroInit = false, TR_AllocationKind allocKind = heapAlloc)
+        : TR_Array<T>(m, initialSize, zeroInit, allocKind)
+    {}
 
-   int32_t  topIndex() { return TR_Array<T>::lastIndex(); }
-   T &      top()      { return TR_Array<T>::element(topIndex()); }
-   void     push(T t)  { TR_Array<T>::add(t); }
-   T        pop()      { T t = top(); TR_Array<T>::remove(topIndex()); return t; }
-   void     swap()     { T t = top(); top() = TR_Array<T>::element(topIndex() - 1); TR_Array<T>::element(topIndex() - 1) = t; }
-   bool     isEmpty()  { return TR_Array<T>::size() == 0; }
-   void     clear()    { TR_Array<T>::setSize(0); }
+    TR_Stack(const TR_Stack<T> &other)
+        : TR_Array<T>(other)
+    {}
 
-   // FIFO behaviour
-   T &      bottom()   { return TR_Array<T>::element(0); }
-   T        drop()     { T t = bottom(); TR_Array<T>::remove(0); return t; }
+    TR_Stack<T> &operator=(const TR_Stack<T> &other)
+    {
+        (TR_Array<T> &)*this = (TR_Array<T> &)other;
+        return *this;
+    }
 
-   };
+    int32_t topIndex() { return TR_Array<T>::lastIndex(); }
+
+    T &top() { return TR_Array<T>::element(topIndex()); }
+
+    void push(T t) { TR_Array<T>::add(t); }
+
+    T pop()
+    {
+        T t = top();
+        TR_Array<T>::remove(topIndex());
+        return t;
+    }
+
+    void swap()
+    {
+        T t = top();
+        top() = TR_Array<T>::element(topIndex() - 1);
+        TR_Array<T>::element(topIndex() - 1) = t;
+    }
+
+    bool isEmpty() { return TR_Array<T>::size() == 0; }
+
+    void clear() { TR_Array<T>::setSize(0); }
+
+    // FIFO behaviour
+    T &bottom() { return TR_Array<T>::element(0); }
+
+    T drop()
+    {
+        T t = bottom();
+        TR_Array<T>::remove(0);
+        return t;
+    }
+};
 
 #endif

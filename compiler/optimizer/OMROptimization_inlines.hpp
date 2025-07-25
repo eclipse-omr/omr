@@ -24,16 +24,8 @@
 
 #include "optimizer/Optimization.hpp"
 
-TR::Optimization*
-OMR::Optimization::self()
-   {
-   return static_cast<TR::Optimization*>(this);
-   }
+TR::Optimization *OMR::Optimization::self() { return static_cast<TR::Optimization *>(this); }
 
-bool
-OMR::Optimization::trace()
-   {
-   return _manager->trace();
-   }
+bool OMR::Optimization::trace() { return _manager->trace(); }
 
 #endif

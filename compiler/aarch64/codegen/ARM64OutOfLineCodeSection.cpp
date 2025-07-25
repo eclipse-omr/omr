@@ -26,50 +26,45 @@
 #include "codegen/Machine.hpp"
 #include "codegen/Register.hpp"
 
-TR_ARM64OutOfLineCodeSection::TR_ARM64OutOfLineCodeSection(TR::Node *callNode,
-                            TR::ILOpCodes callOp,
-                            TR::Register *targetReg,
-                            TR::LabelSymbol *entryLabel,
-                            TR::LabelSymbol *restartLabel,
-                            TR::CodeGenerator *cg) :
-                            TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
-   {
-   generateARM64OutOfLineCodeSectionDispatch();
-   }
+TR_ARM64OutOfLineCodeSection::TR_ARM64OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp,
+    TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+    : TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
+{
+    generateARM64OutOfLineCodeSectionDispatch();
+}
 
 void TR_ARM64OutOfLineCodeSection::generateARM64OutOfLineCodeSectionDispatch()
-   {
-   // Switch to cold helper instruction stream.
-   //
-   swapInstructionListsWithCompilation();
+{
+    // Switch to cold helper instruction stream.
+    //
+    swapInstructionListsWithCompilation();
 
-   TR::Instruction *entryLabelInstruction = generateLabelInstruction(_cg, TR::InstOpCode::label, _callNode, _entryLabel);
+    TR::Instruction *entryLabelInstruction
+        = generateLabelInstruction(_cg, TR::InstOpCode::label, _callNode, _entryLabel);
 
-   _cg->incOutOfLineColdPathNestedDepth();
-   TR_Debug *debugObj = _cg->getDebug();
-   if (debugObj)
-     {
-     debugObj->addInstructionComment(entryLabelInstruction, "Denotes start of OOL sequence");
-     }
+    _cg->incOutOfLineColdPathNestedDepth();
+    TR_Debug *debugObj = _cg->getDebug();
+    if (debugObj) {
+        debugObj->addInstructionComment(entryLabelInstruction, "Denotes start of OOL sequence");
+    }
 
-   TR::Register *resultReg = TR::TreeEvaluator::performCall(_callNode, _callNode->getOpCode().isCallIndirect(), _cg);
+    TR::Register *resultReg = TR::TreeEvaluator::performCall(_callNode, _callNode->getOpCode().isCallIndirect(), _cg);
 
-   if (_targetReg)
-      {
-      TR_ASSERT(resultReg, "resultReg must not be a NULL");
-      generateMovInstruction(_cg, _callNode, _targetReg, resultReg);
-      }
-   _cg->decReferenceCount(_callNode);
+    if (_targetReg) {
+        TR_ASSERT(resultReg, "resultReg must not be a NULL");
+        generateMovInstruction(_cg, _callNode, _targetReg, resultReg);
+    }
+    _cg->decReferenceCount(_callNode);
 
-   TR::Instruction *returnBranchInstruction = generateLabelInstruction(_cg, TR::InstOpCode::b, _callNode, _restartLabel);
+    TR::Instruction *returnBranchInstruction
+        = generateLabelInstruction(_cg, TR::InstOpCode::b, _callNode, _restartLabel);
 
-   if (debugObj)
-     {
-     debugObj->addInstructionComment(returnBranchInstruction, "Denotes end of OOL: return to mainline");
-     }
+    if (debugObj) {
+        debugObj->addInstructionComment(returnBranchInstruction, "Denotes end of OOL: return to mainline");
+    }
 
-   _cg->decOutOfLineColdPathNestedDepth();
+    _cg->decOutOfLineColdPathNestedDepth();
 
-   // Switch from cold helper instruction stream.
-   swapInstructionListsWithCompilation();
-   }
+    // Switch from cold helper instruction stream.
+    swapInstructionListsWithCompilation();
+}

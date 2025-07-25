@@ -25,14 +25,10 @@
 #include "objectfmt/OMRJitCodeRWXObjectFormat.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE JitCodeRWXObjectFormat : public OMR::JitCodeRWXObjectFormatConnector
-   {
+class OMR_EXTENSIBLE JitCodeRWXObjectFormat : public OMR::JitCodeRWXObjectFormatConnector {};
 
-   };
-
-}
+} // namespace TR
 
 #endif

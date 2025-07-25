@@ -28,148 +28,148 @@
 
 // Common evaluator for integer xconst
 static TR::Register *commonConstEvaluator(TR::Node *node, int32_t value, TR::CodeGenerator *cg)
-   {
-   TR::Register *tempReg = cg->allocateRegister();
-   loadConstant32(cg, node, value, tempReg);
-   return node->setRegister(tempReg);
-   }
+{
+    TR::Register *tempReg = cg->allocateRegister();
+    loadConstant32(cg, node, value, tempReg);
+    return node->setRegister(tempReg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::iconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return commonConstEvaluator(node, node->getInt(), cg);
-   }
+{
+    return commonConstEvaluator(node, node->getInt(), cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::sconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return commonConstEvaluator(node, node->getShortInt(), cg);
-   }
+{
+    return commonConstEvaluator(node, node->getShortInt(), cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::bconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return commonConstEvaluator(node, node->getByte(), cg);
-   }
+{
+    return commonConstEvaluator(node, node->getByte(), cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   TR::Register *tempReg = cg->allocateRegister();
-   intptr_t address = node->getLongInt();
-   loadConstant64(cg, node, address, tempReg);
-   return node->setRegister(tempReg);
-   }
+{
+    TR::Register *tempReg = cg->allocateRegister();
+    intptr_t address = node->getLongInt();
+    loadConstant64(cg, node, address, tempReg);
+    return node->setRegister(tempReg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::lconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   TR::Register *tempReg = cg->allocateRegister();
-   loadConstant64(cg, node, node->getLongInt(), tempReg);
-   return node->setRegister(tempReg);
-   }
+{
+    TR::Register *tempReg = cg->allocateRegister();
+    loadConstant64(cg, node, node->getLongInt(), tempReg);
+    return node->setRegister(tempReg);
+}
 
 // also handles lneg
 TR::Register *OMR::RV::TreeEvaluator::inegEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   TR::Node *firstChild = node->getFirstChild();
-   TR::Register *reg = cg->gprClobberEvaluate(firstChild);
-   TR::Register *zero = cg->machine()->getRealRegister(TR::RealRegister::zero);
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Register *reg = cg->gprClobberEvaluate(firstChild);
+    TR::Register *zero = cg->machine()->getRealRegister(TR::RealRegister::zero);
 
-   generateRTYPE(TR::InstOpCode::_sub, node, reg, zero, reg, cg);
+    generateRTYPE(TR::InstOpCode::_sub, node, reg, zero, reg, cg);
 
-   firstChild->decReferenceCount();
-   return node->setRegister(reg);
-   }
+    firstChild->decReferenceCount();
+    return node->setRegister(reg);
+}
 
 static TR::Register *commonIntegerAbsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   TR::Node *firstChild = node->getFirstChild();
-   TR::Register *reg = cg->gprClobberEvaluate(firstChild);
-   TR::Register *tempReg  = cg->allocateRegister();
-   bool is64bit = node->getDataType().isInt64();
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Register *reg = cg->gprClobberEvaluate(firstChild);
+    TR::Register *tempReg = cg->allocateRegister();
+    bool is64bit = node->getDataType().isInt64();
 
-   generateITYPE(TR::InstOpCode::_srai, node, tempReg,  reg, is64bit ? 63 : 31, cg);
-   generateRTYPE(TR::InstOpCode::_xor,  node, reg, reg, tempReg, cg);
-   generateRTYPE(TR::InstOpCode::_sub,  node, reg, reg, tempReg, cg);
+    generateITYPE(TR::InstOpCode::_srai, node, tempReg, reg, is64bit ? 63 : 31, cg);
+    generateRTYPE(TR::InstOpCode::_xor, node, reg, reg, tempReg, cg);
+    generateRTYPE(TR::InstOpCode::_sub, node, reg, reg, tempReg, cg);
 
-   cg->stopUsingRegister(tempReg);
-   node->setRegister(reg);
-   cg->decReferenceCount(firstChild);
-   return reg;
-   }
+    cg->stopUsingRegister(tempReg);
+    node->setRegister(reg);
+    cg->decReferenceCount(firstChild);
+    return reg;
+}
 
 TR::Register *OMR::RV::TreeEvaluator::iabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return commonIntegerAbsEvaluator(node, cg);
-   }
+{
+    return commonIntegerAbsEvaluator(node, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::labsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return commonIntegerAbsEvaluator(node, cg);
-   }
+{
+    return commonIntegerAbsEvaluator(node, cg);
+}
 
 // also handles i2b, i2s, l2b, l2s
 TR::Register *OMR::RV::TreeEvaluator::l2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   TR::Node *child = node->getFirstChild();
-   TR::Register *trgReg = cg->gprClobberEvaluate(child);
-   node->setRegister(trgReg);
-   cg->decReferenceCount(child);
-   return trgReg;
-   }
+{
+    TR::Node *child = node->getFirstChild();
+    TR::Register *trgReg = cg->gprClobberEvaluate(child);
+    node->setRegister(trgReg);
+    cg->decReferenceCount(child);
+    return trgReg;
+}
 
 static TR::Register *extendToIntOrLongHelper(TR::Node *node, uint32_t imms, TR::CodeGenerator *cg)
-   {
-   TR::Node *child  = node->getFirstChild();
-   TR::Register *trgReg = cg->gprClobberEvaluate(child);
+{
+    TR::Node *child = node->getFirstChild();
+    TR::Register *trgReg = cg->gprClobberEvaluate(child);
 
-   node->setRegister(trgReg);
-   child->decReferenceCount();
-   return trgReg;
-   }
+    node->setRegister(trgReg);
+    child->decReferenceCount();
+    return trgReg;
+}
 
 TR::Register *OMR::RV::TreeEvaluator::b2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 7, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 7, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::s2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 15, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 15, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::b2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 7, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 7, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::s2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 15, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 15, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::i2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 31, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 31, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::bu2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 7, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 7, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::su2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 15, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 15, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::bu2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 7, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 7, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::su2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 15, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 15, cg);
+}
 
 TR::Register *OMR::RV::TreeEvaluator::iu2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
-   return extendToIntOrLongHelper(node, 31, cg);
-   }
+{
+    return extendToIntOrLongHelper(node, 31, cg);
+}

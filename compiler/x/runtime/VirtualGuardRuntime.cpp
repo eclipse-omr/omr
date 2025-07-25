@@ -23,38 +23,35 @@
 #include "infra/Assert.hpp"
 #include "x/runtime/X86Runtime.hpp"
 
-#define IS_32BIT_SIGNED(x)   ((x) == ( int32_t)(x))
+#define IS_32BIT_SIGNED(x) ((x) == (int32_t)(x))
 
 extern "C" void _patchVirtualGuard(uint8_t *locationAddr, uint8_t *destinationAddr, int32_t smpFlag)
-   {
-   intptr_t destinationDistance = destinationAddr - locationAddr;
-   TR_ASSERT(IS_32BIT_SIGNED(destinationDistance), "Destination address must be in range of 5-byte jmp instruction");
+{
+    intptr_t destinationDistance = destinationAddr - locationAddr;
+    TR_ASSERT(IS_32BIT_SIGNED(destinationDistance), "Destination address must be in range of 5-byte jmp instruction");
 
-   if (-126 <= destinationDistance && destinationDistance <= 129)
-      {
-      // Two-byte jmp instruction
-      //
-      intptr_t displacement = destinationDistance-2;
-      *(uint16_t*)locationAddr = 0xeb + (displacement << 8);
-      }
-   else
-      {
-      // Five-byte jmp instruction
-      //
-      intptr_t displacement = destinationDistance-5;
+    if (-126 <= destinationDistance && destinationDistance <= 129) {
+        // Two-byte jmp instruction
+        //
+        intptr_t displacement = destinationDistance - 2;
+        *(uint16_t *)locationAddr = 0xeb + (displacement << 8);
+    } else {
+        // Five-byte jmp instruction
+        //
+        intptr_t displacement = destinationDistance - 5;
 
-      // Self-loop
-      *(uint16_t*)locationAddr = 0xfeeb;
+        // Self-loop
+        *(uint16_t *)locationAddr = 0xfeeb;
 
-      patchingFence16(locationAddr);
+        patchingFence16(locationAddr);
 
-      // Bytes 2-4
-      locationAddr[2] = (displacement >> 8);
-      locationAddr[3] = (displacement >> 16);
-      locationAddr[4] = (displacement >> 24);
+        // Bytes 2-4
+        locationAddr[2] = (displacement >> 8);
+        locationAddr[3] = (displacement >> 16);
+        locationAddr[4] = (displacement >> 24);
 
-      // Bytes 0-1; unlock the self-loop/JMP+3
-      patchingFence16(locationAddr);
-      *(uint16_t*)locationAddr = 0xe9 + ((displacement & 0xff) << 8);
-      }
-   }
+        // Bytes 0-1; unlock the self-loop/JMP+3
+        patchingFence16(locationAddr);
+        *(uint16_t *)locationAddr = 0xe9 + ((displacement & 0xff) << 8);
+    }
+}

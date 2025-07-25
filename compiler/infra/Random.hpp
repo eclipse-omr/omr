@@ -24,51 +24,50 @@
 
 #include <stdint.h>
 #include "env/TRMemory.hpp"
-namespace TR { class Compilation; }
 
-class TR_RandomGenerator
-   {
-   public:
-   //Cannot new/delete; allocate as a value
-   TR_ALLOC(TR_Memory::RandomGenerator)
+namespace TR {
+class Compilation;
+}
 
-   uint32_t getRandom();
-   int32_t getRandom(int32_t min, int32_t max);
-   void setSeed(uint32_t newSeed);
+class TR_RandomGenerator {
+public:
+    // Cannot new/delete; allocate as a value
+    TR_ALLOC(TR_Memory::RandomGenerator)
 
-   TR_RandomGenerator(TR_RandomGenerator *parent)
-      {
-      setSeed(parent->getRandom());
-      }
+    uint32_t getRandom();
+    int32_t getRandom(int32_t min, int32_t max);
+    void setSeed(uint32_t newSeed);
 
-   TR_RandomGenerator(int32_t seedValue)
-      {
-      setSeed(seedValue);
-      }
+    TR_RandomGenerator(TR_RandomGenerator *parent) { setSeed(parent->getRandom()); }
 
-   TR_RandomGenerator(uint32_t seedValue)
-      {
-      setSeed(seedValue);
-      }
+    TR_RandomGenerator(int32_t seedValue) { setSeed(seedValue); }
 
-   static void exercise(int32_t period, TR::Compilation *comp); // For testing
+    TR_RandomGenerator(uint32_t seedValue) { setSeed(seedValue); }
 
-   private:
-   uint64_t _bits; // Unsigned, so that right-shifts don't wipe the sign bit all over the place
-   };
+    static void exercise(int32_t period, TR::Compilation *comp); // For testing
 
-class TR_HasRandomGenerator
-   {
-   TR_RandomGenerator          _randomGenerator;
+private:
+    uint64_t _bits; // Unsigned, so that right-shifts don't wipe the sign bit all over the place
+};
 
-   public:
-   bool                      randomBoolean(int32_t rarity=2)     { return _randomGenerator.getRandom(1, rarity) == rarity; } // Probability of returning true is 1/rarity
-   int32_t                   randomInt()                         { return _randomGenerator.getRandom(); }
-   int32_t                   randomInt(int32_t max)              { return _randomGenerator.getRandom(0, max); }
-   int32_t                   randomInt(int32_t min, int32_t max) { return _randomGenerator.getRandom(min, max); }
-   TR_RandomGenerator       *randomGenerator()                   { return &_randomGenerator; }
+class TR_HasRandomGenerator {
+    TR_RandomGenerator _randomGenerator;
 
-   TR_HasRandomGenerator(TR::Compilation *comp);
-   };
+public:
+    bool randomBoolean(int32_t rarity = 2)
+    {
+        return _randomGenerator.getRandom(1, rarity) == rarity;
+    } // Probability of returning true is 1/rarity
+
+    int32_t randomInt() { return _randomGenerator.getRandom(); }
+
+    int32_t randomInt(int32_t max) { return _randomGenerator.getRandom(0, max); }
+
+    int32_t randomInt(int32_t min, int32_t max) { return _randomGenerator.getRandom(min, max); }
+
+    TR_RandomGenerator *randomGenerator() { return &_randomGenerator; }
+
+    TR_HasRandomGenerator(TR::Compilation *comp);
+};
 
 #endif

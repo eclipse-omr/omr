@@ -25,67 +25,34 @@
 #include "il/Node_inlines.hpp"
 #include "infra/Assert.hpp"
 
-void
-GlobalRegisterInfo::freeNodeExtension(TR::Node * owner)
-   {
-   owner->freeExtensionIfExists();
-   }
+void GlobalRegisterInfo::freeNodeExtension(TR::Node *owner) { owner->freeExtensionIfExists(); }
 
-void
-ChildUnionMembers::CaseInfo::freeNodeExtension( TR::Node * owner)
-   {
-   owner->freeExtensionIfExists();
-   }
+void ChildUnionMembers::CaseInfo::freeNodeExtension(TR::Node *owner) { owner->freeExtensionIfExists(); }
 
-void
-ChildUnionMembers::MonitorInfo::freeNodeExtension(TR::Node * owner)
-   {
-   owner->freeExtensionIfExists();
-   }
+void ChildUnionMembers::MonitorInfo::freeNodeExtension(TR::Node *owner) { owner->freeExtensionIfExists(); }
 
-TR::Node *
-TR_ParentOfChildNode::getParent()
-   {
-   return _parent;
-   }
+TR::Node *TR_ParentOfChildNode::getParent() { return _parent; }
 
-void
-TR_ParentOfChildNode::setParent(TR::Node * parent)
-   {
-   _parent = parent;
-   }
+void TR_ParentOfChildNode::setParent(TR::Node *parent) { _parent = parent; }
 
-int32_t
-TR_ParentOfChildNode::getChildNumber()
-   {
-   return _childNumber;
-   }
+int32_t TR_ParentOfChildNode::getChildNumber() { return _childNumber; }
 
-void
-TR_ParentOfChildNode::setParentAndChildNumber(TR::Node * parent, int32_t childNumber)
-   {
-   _parent = parent; _childNumber = childNumber;
-   }
+void TR_ParentOfChildNode::setParentAndChildNumber(TR::Node *parent, int32_t childNumber)
+{
+    _parent = parent;
+    _childNumber = childNumber;
+}
 
-void
-TR_ParentOfChildNode::setChild(TR::Node * newChild)
-   {
-   TR_ASSERT(!isNull(), "tried to update a NULL ParentOfChildNode");
+void TR_ParentOfChildNode::setChild(TR::Node *newChild)
+{
+    TR_ASSERT(!isNull(), "tried to update a NULL ParentOfChildNode");
 
-   TR::Node * oldChild = _parent->getChild(_childNumber);
-   _parent->setChild(_childNumber, newChild);
-   oldChild->decReferenceCount();
-   newChild->incReferenceCount();
-   }
+    TR::Node *oldChild = _parent->getChild(_childNumber);
+    _parent->setChild(_childNumber, newChild);
+    oldChild->decReferenceCount();
+    newChild->incReferenceCount();
+}
 
-TR::Node *
-TR_ParentOfChildNode::getChild()
-   {
-   return _parent->getChild(_childNumber);
-   }
+TR::Node *TR_ParentOfChildNode::getChild() { return _parent->getChild(_childNumber); }
 
-bool
-TR_ParentOfChildNode::isNull()
-   {
-   return (_parent == NULL);
-   }
+bool TR_ParentOfChildNode::isNull() { return (_parent == NULL); }

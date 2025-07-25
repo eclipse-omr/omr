@@ -27,59 +27,49 @@
 
 #include "codegen/RegisterDependency.hpp" // @@@@
 
-namespace TR
-{
+namespace TR {
 class Instruction;
 
-class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector
-   {
+class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector {
+public:
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0)
+        : OMR::InstructionConnector(cg, op, node)
+    {}
 
-   public:
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::Node *node = 0)
+        : OMR::InstructionConnector(cg, precedingInstruction, op, node)
+    {}
 
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0)
-      : OMR::InstructionConnector(cg, op, node)
-      {}
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node = 0)
-      : OMR::InstructionConnector(cg, precedingInstruction, op, node)
-      {}
+    Instruction(TR::Node *node, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(node, cg)
+    {}
 
-   Instruction(TR::Node *node, TR::CodeGenerator *cg)
-      : OMR::InstructionConnector(node, cg)
-      {}
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(op, node, cg)
+    {}
 
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg)
-      : OMR::InstructionConnector(op, node, cg)
-      {}
+    Instruction(TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node,
+        TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(precedingInstruction, op, node, cg)
+    {}
 
-   Instruction(TR::Instruction   *precedingInstruction,
-               TR::InstOpCode::Mnemonic     op,
-               TR::Node          *node,
-               TR::CodeGenerator *cg)
-      : OMR::InstructionConnector(precedingInstruction, op, node, cg)
-      {}
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::RegisterDependencyConditions *cond,
+        TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(op, node, cond, cg)
+    {}
 
-   Instruction(TR::InstOpCode::Mnemonic                       op,
-               TR::Node                            *node,
-               TR::RegisterDependencyConditions    *cond,
-               TR::CodeGenerator                   *cg)
-      : OMR::InstructionConnector(op, node, cond, cg)
-      {}
+    Instruction(TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node,
+        TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(precedingInstruction, op, node, cond, cg)
+    {}
+};
 
-   Instruction(TR::Instruction                     *precedingInstruction,
-               TR::InstOpCode::Mnemonic                       op,
-               TR::Node                            *node,
-               TR::RegisterDependencyConditions    *cond,
-               TR::CodeGenerator                   *cg)
-      : OMR::InstructionConnector(precedingInstruction, op, node, cond, cg)
-      {}
-
-   };
-
-}
+} // namespace TR
 
 #include "codegen/OMRInstruction_inlines.hpp"
 
-//TODO: these downcasts everywhere need to be removed
-inline uint32_t        * toARMCursor(uint8_t *i) { return (uint32_t *)i; }
+// TODO: these downcasts everywhere need to be removed
+inline uint32_t *toARMCursor(uint8_t *i) { return (uint32_t *)i; }
 
 #endif

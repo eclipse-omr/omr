@@ -22,22 +22,23 @@
 #ifndef IlVerifier_hpp
 #define IlVerifier_hpp
 
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class ResolvedMethodSymbol;
+}
 
 namespace TR {
 
-class IlVerifier
-   {
-   public:
-   /**
-    * Verify the IL of a method has certain properties.
-    *
-    * @return 0 on success, or a non-zero error code. If non-zero is returned,
-    * compilation stops.
-    */
-   virtual int32_t verify(TR::ResolvedMethodSymbol *methodSymbol) = 0; 
-   };
+class IlVerifier {
+public:
+    /**
+     * Verify the IL of a method has certain properties.
+     *
+     * @return 0 on success, or a non-zero error code. If non-zero is returned,
+     * compilation stops.
+     */
+    virtual int32_t verify(TR::ResolvedMethodSymbol *methodSymbol) = 0;
+};
 
-}
+} // namespace TR
 
 #endif

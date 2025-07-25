@@ -27,8 +27,11 @@
  */
 #ifndef OMR_METHOD_METADATAPOD_CONNECTOR
 #define OMR_METHOD_METADATAPOD_CONNECTOR
-namespace OMR { struct MethodMetaDataPOD; }
-namespace OMR { typedef OMR::MethodMetaDataPOD MethodMetaDataPODConnector; }
+
+namespace OMR {
+struct MethodMetaDataPOD;
+typedef OMR::MethodMetaDataPOD MethodMetaDataPODConnector;
+} // namespace OMR
 #endif
 
 #include <stdint.h>
@@ -42,15 +45,13 @@ namespace OMR { typedef OMR::MethodMetaDataPOD MethodMetaDataPODConnector; }
  *
  */
 
-namespace OMR
-{
+namespace OMR {
 
-struct OMR_EXTENSIBLE MethodMetaDataPOD
-   {
-   uintptr_t startPC;
-   uintptr_t endPC;
-   };
+struct OMR_EXTENSIBLE MethodMetaDataPOD {
+    uintptr_t startPC;
+    uintptr_t endPC;
+};
 
-}
+} // namespace OMR
 
 #endif

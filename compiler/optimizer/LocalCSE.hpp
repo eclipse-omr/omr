@@ -24,19 +24,19 @@
 
 #include "optimizer/OMRLocalCSE.hpp"
 
-namespace TR { class OptimizationManager; }
-
-namespace TR
-{
-
-class LocalCSE : public OMR::LocalCSE
-   {
-   public:
-
-   LocalCSE(TR::OptimizationManager *manager) :
-      OMR::LocalCSE(manager) {}
-   };
-
+namespace TR {
+class OptimizationManager;
 }
+
+namespace TR {
+
+class LocalCSE : public OMR::LocalCSE {
+public:
+    LocalCSE(TR::OptimizationManager *manager)
+        : OMR::LocalCSE(manager)
+    {}
+};
+
+} // namespace TR
 
 #endif

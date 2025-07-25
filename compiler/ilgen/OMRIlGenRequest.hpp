@@ -27,8 +27,11 @@
  */
 #ifndef OMR_ILGENREQUEST_CONNECTOR
 #define OMR_ILGENREQUEST_CONNECTOR
-namespace OMR { class IlGenRequest; }
-namespace OMR { typedef OMR::IlGenRequest IlGenRequestConnector; }
+
+namespace OMR {
+class IlGenRequest;
+typedef OMR::IlGenRequest IlGenRequestConnector;
+} // namespace OMR
 #endif
 
 #include "env/FilePointerDecl.hpp"
@@ -36,13 +39,15 @@ namespace OMR { typedef OMR::IlGenRequest IlGenRequestConnector; }
 
 class TR_FrontEnd;
 class TR_IlGenerator;
-namespace TR { class Compilation; }
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReferenceTable; }
 
-namespace OMR
-{
+namespace TR {
+class Compilation;
+class IlGeneratorMethodDetails;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
+} // namespace TR
+
+namespace OMR {
 
 /**
  * IlGenRequestBase defines the IlGenRequest API that common code can count on, although it's more documentation
@@ -53,31 +58,26 @@ namespace OMR
  *
  */
 
-class OMR_EXTENSIBLE IlGenRequest
-   {
-
+class OMR_EXTENSIBLE IlGenRequest {
 public:
+    /// Create an ILGen object to execute this request
+    ///
+    virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+        TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
+        = 0;
 
-   /// Create an ILGen object to execute this request
-   ///
-   virtual TR_IlGenerator *getIlGenerator(
-         TR::ResolvedMethodSymbol *methodSymbol,
-         TR_FrontEnd *fe,
-         TR::Compilation *comp,
-         TR::SymbolReferenceTable *symRefTab) = 0;
+    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix) = 0;
 
-   virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix) = 0;
-
-   TR::IlGeneratorMethodDetails & details() { return _methodDetails; }
+    TR::IlGeneratorMethodDetails &details() { return _methodDetails; }
 
 protected:
+    IlGenRequest(TR::IlGeneratorMethodDetails &methodDetails)
+        : _methodDetails(methodDetails)
+    {}
 
-   IlGenRequest(TR::IlGeneratorMethodDetails & methodDetails) :
-      _methodDetails(methodDetails) { }
+    TR::IlGeneratorMethodDetails &_methodDetails;
+};
 
-   TR::IlGeneratorMethodDetails & _methodDetails;
-   };
-
-}
+} // namespace OMR
 
 #endif

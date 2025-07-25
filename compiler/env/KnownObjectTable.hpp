@@ -25,19 +25,19 @@
 #include "env/OMRKnownObjectTable.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class Compilation; }
-
-namespace TR
-{
-
-class OMR_EXTENSIBLE KnownObjectTable : public OMR::KnownObjectTableConnector
-   {
-public:
-
-   KnownObjectTable(TR::Compilation *comp) :
-      OMR::KnownObjectTableConnector(comp) {}
-   };
-
+namespace TR {
+class Compilation;
 }
+
+namespace TR {
+
+class OMR_EXTENSIBLE KnownObjectTable : public OMR::KnownObjectTableConnector {
+public:
+    KnownObjectTable(TR::Compilation *comp)
+        : OMR::KnownObjectTableConnector(comp)
+    {}
+};
+
+} // namespace TR
 
 #endif

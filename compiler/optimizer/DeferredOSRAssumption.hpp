@@ -22,7 +22,9 @@
 #ifndef DEFERRED_OSR_ASSUMPTION_INCL
 #define DEFERRED_OSR_ASSUMPTION_INCL
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR {
 
@@ -38,14 +40,13 @@ namespace TR {
  * the result is never used, its deferred assumptions need not be committed,
  * which helps to avoid creating irrelevant runtime assumptions.
  */
-struct DeferredOSRAssumption
-   {
-   /**
-    * \brief Update \p comp so that this assumption will be required.
-    * \param comp the compilation object
-    */
-   virtual void commit(TR::Compilation *comp) = 0;
-   };
+struct DeferredOSRAssumption {
+    /**
+     * \brief Update \p comp so that this assumption will be required.
+     * \param comp the compilation object
+     */
+    virtual void commit(TR::Compilation *comp) = 0;
+};
 
 } // namespace TR
 

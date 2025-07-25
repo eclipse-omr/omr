@@ -21,25 +21,18 @@
 
 #include "env/PersistentAllocator.hpp"
 
-OMR::PersistentAllocator::PersistentAllocator(const TR::PersistentAllocatorKit &allocatorKit) :
-   _rawAllocator(allocatorKit.rawAllocator)
-   {
-   }
+OMR::PersistentAllocator::PersistentAllocator(const TR::PersistentAllocatorKit &allocatorKit)
+    : _rawAllocator(allocatorKit.rawAllocator)
+{}
 
-void *
-OMR::PersistentAllocator::allocate(size_t size, const std::nothrow_t tag, void * hint) throw()
-   {
-   return _rawAllocator.allocate(size, tag, hint);
-   }
+void *OMR::PersistentAllocator::allocate(size_t size, const std::nothrow_t tag, void *hint) throw()
+{
+    return _rawAllocator.allocate(size, tag, hint);
+}
 
-void *
-OMR::PersistentAllocator::allocate(size_t size, void * hint)
-   {
-   return _rawAllocator.allocate(size, hint);
-   }
+void *OMR::PersistentAllocator::allocate(size_t size, void *hint) { return _rawAllocator.allocate(size, hint); }
 
-void
-OMR::PersistentAllocator::deallocate(void * p, const size_t sizeHint) throw()
-   {
-   _rawAllocator.deallocate(p, sizeHint);
-   }
+void OMR::PersistentAllocator::deallocate(void *p, const size_t sizeHint) throw()
+{
+    _rawAllocator.deallocate(p, sizeHint);
+}

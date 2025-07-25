@@ -27,8 +27,14 @@
  */
 #ifndef OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class JitCodeRWXObjectFormat; } } }
-namespace OMR { typedef OMR::X86::AMD64::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector; }
+
+namespace OMR {
+namespace X86 { namespace AMD64 {
+class JitCodeRWXObjectFormat;
+}} // namespace X86::AMD64
+
+typedef OMR::X86::AMD64::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector;
+} // namespace OMR
 #else
 #error OMR::X86::AMD64::JitCodeRWXObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -36,38 +42,26 @@ namespace OMR { typedef OMR::X86::AMD64::JitCodeRWXObjectFormat JitCodeRWXObject
 #include "compiler/x/objectfmt/OMRJitCodeRWXObjectFormat.hpp"
 #include "env/FilePointerDecl.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class FunctionCallData; }
+namespace TR {
+class Instruction;
+class FunctionCallData;
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace X86 { namespace AMD64 {
 
-namespace X86
-{
-
-namespace AMD64
-{
-
-class OMR_EXTENSIBLE JitCodeRWXObjectFormat : public OMR::X86::JitCodeRWXObjectFormat
-   {
+class OMR_EXTENSIBLE JitCodeRWXObjectFormat : public OMR::X86::JitCodeRWXObjectFormat {
 public:
+    virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
 
-   virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
+    virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
 
-   virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
+    virtual int32_t estimateBinaryLength()
+    {
+        return 5; // CALLImm or JMPImm
+    }
 
-   virtual int32_t estimateBinaryLength()
-      {
-      return 5; // CALLImm or JMPImm
-      }
-
-   virtual void printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data, uint8_t *bufferPos);
-
-   };
-}
-
-}
-
-}
+    virtual void printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data, uint8_t *bufferPos);
+};
+}}} // namespace OMR::X86::AMD64
 
 #endif

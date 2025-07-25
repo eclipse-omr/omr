@@ -23,12 +23,6 @@
 #include "compile/Compilation.hpp"
 #include "infra/ThreadLocal.hpp"
 
-TR::TLSCompilationManager::TLSCompilationManager(TR::Compilation &comp)
-   {
-   TR_TLS_SET(OMR::compilation, &comp);
-   }
+TR::TLSCompilationManager::TLSCompilationManager(TR::Compilation &comp) { TR_TLS_SET(OMR::compilation, &comp); }
 
-TR::TLSCompilationManager::~TLSCompilationManager()
-   {
-   TR_TLS_SET(OMR::compilation, NULL);
-   }
+TR::TLSCompilationManager::~TLSCompilationManager() { TR_TLS_SET(OMR::compilation, NULL); }

@@ -24,16 +24,5 @@
  * definitions are permitted.
  */
 
-   Unknown390Processor,
-   s370,
-   s370gp1,
-   s370gp2,
-   s370gp3,
-   s370gp4,
-   s370gp5,
-   s370gp6,
-   s370gp7,
-   s370gp8,
-   s370gp9,
-   s370gp10,
-   s370gp11,
+Unknown390Processor, s370, s370gp1, s370gp2, s370gp3, s370gp4, s370gp5, s370gp6, s370gp7, s370gp8, s370gp9, s370gp10,
+    s370gp11,

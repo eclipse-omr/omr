@@ -37,39 +37,28 @@ namespace TR {
  * @brief The SegmentPool class maintains a pool of memory segments.
  */
 
-class SegmentPool : public TR::SegmentProvider
-   {
+class SegmentPool : public TR::SegmentProvider {
 public:
-   SegmentPool(TR::SegmentProvider &backingProvider, size_t cacheSize, TR::RawAllocator rawAllocator);
-   ~SegmentPool() throw();
+    SegmentPool(TR::SegmentProvider &backingProvider, size_t cacheSize, TR::RawAllocator rawAllocator);
+    ~SegmentPool() throw();
 
-   virtual TR::MemorySegment &request(size_t requiredSize);
-   virtual void release(TR::MemorySegment &) throw();
+    virtual TR::MemorySegment &request(size_t requiredSize);
+    virtual void release(TR::MemorySegment &) throw();
 
 private:
-   size_t const _poolSize;
-   size_t _storedSegments;
-   TR::SegmentProvider &_backingProvider;
+    size_t const _poolSize;
+    size_t _storedSegments;
+    TR::SegmentProvider &_backingProvider;
 
-   typedef TR::typed_allocator<
-      TR::reference_wrapper<TR::MemorySegment>,
-      TR::RawAllocator
-      > DequeAllocator;
+    typedef TR::typed_allocator<TR::reference_wrapper<TR::MemorySegment>, TR::RawAllocator> DequeAllocator;
 
-   typedef std::deque<
-      TR::reference_wrapper<TR::MemorySegment>,
-      DequeAllocator
-      > StackContainer;
+    typedef std::deque<TR::reference_wrapper<TR::MemorySegment>, DequeAllocator> StackContainer;
 
-   typedef std::stack<
-      TR::reference_wrapper<TR::MemorySegment>,
-      StackContainer
-      > SegmentStack;
+    typedef std::stack<TR::reference_wrapper<TR::MemorySegment>, StackContainer> SegmentStack;
 
-   SegmentStack _segmentStack;
+    SegmentStack _segmentStack;
+};
 
-   };
-
-}
+} // namespace TR
 
 #endif // TR_SEGMENT_POOL

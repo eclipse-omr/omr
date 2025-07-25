@@ -33,124 +33,99 @@
 
 class TR_BlockStructure;
 class TR_Structure;
-namespace TR { class Optimizer; }
 
-TR_DataFlowAnalysis::Kind TR_LiveOnAllPaths::getKind()
-   {
-   return LiveOnAllPaths;
-   }
+namespace TR {
+class Optimizer;
+}
 
-TR_LiveOnAllPaths *TR_LiveOnAllPaths::asLiveOnAllPaths()
-   {
-   return this;
-   }
+TR_DataFlowAnalysis::Kind TR_LiveOnAllPaths::getKind() { return LiveOnAllPaths; }
 
-bool TR_LiveOnAllPaths::supportsGenAndKillSets()
-   {
-   return true;
-   }
+TR_LiveOnAllPaths *TR_LiveOnAllPaths::asLiveOnAllPaths() { return this; }
 
-int32_t TR_LiveOnAllPaths::getNumberOfBits()
-   {
-   return _liveVariableInfo->numLocals();
-   }
+bool TR_LiveOnAllPaths::supportsGenAndKillSets() { return true; }
 
-void TR_LiveOnAllPaths::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, TR_BitVector *)
-   {
-   }
+int32_t TR_LiveOnAllPaths::getNumberOfBits() { return _liveVariableInfo->numLocals(); }
 
-TR_LiveOnAllPaths::TR_LiveOnAllPaths(TR::Compilation *comp,
-                                     TR::Optimizer *optimizer,
-                                     TR_Structure               *rootStructure,
-                                     TR_LiveVariableInformation *liveVariableInfo,
-                                     bool                        splitLongs,
-                                     bool                        includeParms)
-   : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, comp->getOption(TR_TraceLiveness))
-   {
-   if (trace())
-      traceMsg(comp, "Starting LiveOnAllPaths analysis\n");
+void TR_LiveOnAllPaths::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, TR_BitVector *) {}
 
-   int32_t i;
+TR_LiveOnAllPaths::TR_LiveOnAllPaths(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure,
+    TR_LiveVariableInformation *liveVariableInfo, bool splitLongs, bool includeParms)
+    : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, comp->getOption(TR_TraceLiveness))
+{
+    if (trace())
+        traceMsg(comp, "Starting LiveOnAllPaths analysis\n");
 
-   if (comp->getVisitCount() > 8000)
-      comp->resetVisitCounts(1);
+    int32_t i;
 
-   if (liveVariableInfo == NULL)
-      {
-      _liveVariableInfo = new (trStackMemory()) TR_LiveVariableInformation(comp, optimizer, rootStructure, splitLongs, includeParms);
-      _liveVariableInfo->collectLiveVariableInformation();
-      }
-   else
-      _liveVariableInfo = liveVariableInfo;
+    if (comp->getVisitCount() > 8000)
+        comp->resetVisitCounts(1);
 
-   if (_liveVariableInfo->numLocals() == 0)
-      return; // Nothing to do if there are no locals
+    if (liveVariableInfo == NULL) {
+        _liveVariableInfo = new (trStackMemory())
+            TR_LiveVariableInformation(comp, optimizer, rootStructure, splitLongs, includeParms);
+        _liveVariableInfo->collectLiveVariableInformation();
+    } else
+        _liveVariableInfo = liveVariableInfo;
 
-   // Allocate the block info before setting the stack mark - it will be used by
-   // the caller
-   //
-   initializeBlockInfo();
+    if (_liveVariableInfo->numLocals() == 0)
+        return; // Nothing to do if there are no locals
 
-   {
-   TR::StackMemoryRegion stackMemoryRegion(*trMemory());
+    // Allocate the block info before setting the stack mark - it will be used by
+    // the caller
+    //
+    initializeBlockInfo();
 
-   performAnalysis(rootStructure, false);
+    {
+        TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
-   if (trace())
-      {
-      for (i = 1; i < _numberOfNodes; ++i)
-         {
-         if (_blockAnalysisInfo[i])
-            {
-            traceMsg(comp, "\nLiveOnAllPaths variables for block_%d: ",i);
-            _blockAnalysisInfo[i]->print(comp);
+        performAnalysis(rootStructure, false);
+
+        if (trace()) {
+            for (i = 1; i < _numberOfNodes; ++i) {
+                if (_blockAnalysisInfo[i]) {
+                    traceMsg(comp, "\nLiveOnAllPaths variables for block_%d: ", i);
+                    _blockAnalysisInfo[i]->print(comp);
+                }
             }
-         }
-      traceMsg(comp, "\nEnding LiveOnAllPaths analysis\n");
-      }
-   } // scope of the stack memory region
-
-   }
+            traceMsg(comp, "\nEnding LiveOnAllPaths analysis\n");
+        }
+    } // scope of the stack memory region
+}
 
 bool TR_LiveOnAllPaths::postInitializationProcessing()
-   {
-   if (trace())
-      {
-      int32_t i;
-      for (i = 1; i < _numberOfNodes; ++i)
-         {
-         traceMsg(comp(), "\nGen and kill sets for block_%d: ",i);
-         if (_regularGenSetInfo[i])
-            {
-            traceMsg(comp(), " gen set ");
-            _regularGenSetInfo[i]->print(comp());
+{
+    if (trace()) {
+        int32_t i;
+        for (i = 1; i < _numberOfNodes; ++i) {
+            traceMsg(comp(), "\nGen and kill sets for block_%d: ", i);
+            if (_regularGenSetInfo[i]) {
+                traceMsg(comp(), " gen set ");
+                _regularGenSetInfo[i]->print(comp());
             }
-         if (_regularKillSetInfo[i])
-            {
-            traceMsg(comp(), " kill set ");
-            _regularKillSetInfo[i]->print(comp());
+            if (_regularKillSetInfo[i]) {
+                traceMsg(comp(), " kill set ");
+                _regularKillSetInfo[i]->print(comp());
             }
-         if (_exceptionGenSetInfo[i])
-            {
-            traceMsg(comp(), " exception gen set ");
-            _exceptionGenSetInfo[i]->print(comp());
+            if (_exceptionGenSetInfo[i]) {
+                traceMsg(comp(), " exception gen set ");
+                _exceptionGenSetInfo[i]->print(comp());
             }
-         if (_exceptionKillSetInfo[i])
-            {
-            traceMsg(comp(), " exception kill set ");
-            _exceptionKillSetInfo[i]->print(comp());
+            if (_exceptionKillSetInfo[i]) {
+                traceMsg(comp(), " exception kill set ");
+                _exceptionKillSetInfo[i]->print(comp());
             }
-         }
-      }
-   return true;
-   }
+        }
+    }
+    return true;
+}
 
 void TR_LiveOnAllPaths::initializeGenAndKillSetInfo()
-   {
-   _liveVariableInfo->initializeGenAndKillSetInfo(_regularGenSetInfo, _regularKillSetInfo, _exceptionGenSetInfo, _exceptionKillSetInfo);
-   }
+{
+    _liveVariableInfo->initializeGenAndKillSetInfo(_regularGenSetInfo, _regularKillSetInfo, _exceptionGenSetInfo,
+        _exceptionKillSetInfo);
+}
 
 void TR_LiveOnAllPaths::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStructure)
-   {
-   TR_ASSERT(false, "LiveOnAllPaths should use gen and kill sets");
-   }
+{
+    TR_ASSERT(false, "LiveOnAllPaths should use gen and kill sets");
+}

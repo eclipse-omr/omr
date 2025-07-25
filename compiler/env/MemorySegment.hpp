@@ -32,105 +32,85 @@
 
 namespace TR {
 
-class MemorySegment
-   {
+class MemorySegment {
 public:
-   typedef void * RawSegment;
+    typedef void *RawSegment;
 
-   MemorySegment(void * const segment, size_t const size) :
-      _segment(segment),
-      _size(size),
-      _allocated(0),
-      _next(this)
-      {
-      }
+    MemorySegment(void * const segment, size_t const size)
+        : _segment(segment)
+        , _size(size)
+        , _allocated(0)
+        , _next(this)
+    {}
 
-   MemorySegment(const MemorySegment &other) :
-      _segment(other._segment),
-      _size(other._size),
-      _allocated(other._allocated),
-      _next(this)
-      {
-      TR_ASSERT_FATAL(_allocated == 0 && other._next == &other, "Copying segment descriptor that's in use");
-      }
+    MemorySegment(const MemorySegment &other)
+        : _segment(other._segment)
+        , _size(other._size)
+        , _allocated(other._allocated)
+        , _next(this)
+    {
+        TR_ASSERT_FATAL(_allocated == 0 && other._next == &other, "Copying segment descriptor that's in use");
+    }
 
-   ~MemorySegment() throw() {}
+    ~MemorySegment() throw() {}
 
-   void * base() const throw()
-      {
-      return _segment;
-      }
+    void *base() const throw() { return _segment; }
 
-   void * allocate(size_t bytes)
-      {
-      TR_ASSERT_FATAL( !(_allocated + bytes > _size), "Requested allocation would overflow");
-      uint8_t * requested = static_cast<uint8_t *>(_segment) + _allocated;
-      _allocated += bytes;
-      return requested;
-      }
+    void *allocate(size_t bytes)
+    {
+        TR_ASSERT_FATAL(!(_allocated + bytes > _size), "Requested allocation would overflow");
+        uint8_t *requested = static_cast<uint8_t *>(_segment) + _allocated;
+        _allocated += bytes;
+        return requested;
+    }
 
-   void reset() throw()
-      {
-      _allocated = 0;
-      }
+    void reset() throw() { _allocated = 0; }
 
-   size_t remaining() const throw()
-      {
-      return _size - _allocated;
-      }
+    size_t remaining() const throw() { return _size - _allocated; }
 
-   size_t size() const throw()
-      {
-      return _size;
-      }
+    size_t size() const throw() { return _size; }
 
-   void link(MemorySegment &next) throw()
-      {
-      TR_ASSERT_FATAL(_next == this, "Already linked");
-      _next = &next;
-      }
+    void link(MemorySegment &next) throw()
+    {
+        TR_ASSERT_FATAL(_next == this, "Already linked");
+        _next = &next;
+    }
 
-   MemorySegment &unlink() throw()
-      {
-      TR_ASSERT_FATAL(_next != 0 && _next != this, "Already unlinked");
-      MemorySegment &chain = *_next;
-      _next = this;
-      return chain;
-      }
+    MemorySegment &unlink() throw()
+    {
+        TR_ASSERT_FATAL(_next != 0 && _next != this, "Already unlinked");
+        MemorySegment &chain = *_next;
+        _next = this;
+        return chain;
+    }
 
-   MemorySegment &next() const throw()
-      {
-      TR_ASSERT_FATAL(_next, "_next should never be null");
-      return *_next;
-      }
+    MemorySegment &next() const throw()
+    {
+        TR_ASSERT_FATAL(_next, "_next should never be null");
+        return *_next;
+    }
 
-   friend bool operator <(const MemorySegment &left, const MemorySegment& right)
-      {
-      std::less<void *> lessThan;
-      return lessThan(left._segment, right._segment);
-      }
+    friend bool operator<(const MemorySegment &left, const MemorySegment &right)
+    {
+        std::less<void *> lessThan;
+        return lessThan(left._segment, right._segment);
+    }
 
-   friend bool operator ==(const MemorySegment &left, const MemorySegment& right)
-      {
-      return &left == &right;
-      }
+    friend bool operator==(const MemorySegment &left, const MemorySegment &right) { return &left == &right; }
 
-   friend bool operator !=(const MemorySegment &left, const MemorySegment& right)
-      {
-      return !operator ==(left, right);
-      }
+    friend bool operator!=(const MemorySegment &left, const MemorySegment &right) { return !operator==(left, right); }
 
 private:
-   void * const _segment;
-   size_t const _size;
-   size_t _allocated;
-   /*
-    * As much as it makes me sad, I believe this can't be a
-    * reference_wrapper as the class isn't fully defined at this point.
-    */
-   MemorySegment *_next;
-   };
+    void * const _segment;
+    size_t const _size;
+    size_t _allocated;
+    /*
+     * As much as it makes me sad, I believe this can't be a
+     * reference_wrapper as the class isn't fully defined at this point.
+     */
+    MemorySegment *_next;
+};
 
-}
+} // namespace TR
 
 #endif // MEMORYSEGMENT

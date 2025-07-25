@@ -46,117 +46,106 @@ typedef enum {
 // This structure is preferred in new code.
 //
 typedef struct _KDHELP64 {
-
     //
     // address of kernel thread object, as provided in the
     // WAIT_STATE_CHANGE packet.
     //
-    DWORD64   Thread;
+    DWORD64 Thread;
 
     //
     // offset in thread object to pointer to the current callback frame
     // in kernel stack.
     //
-    DWORD   ThCallbackStack;
+    DWORD ThCallbackStack;
 
     //
     // offset in thread object to pointer to the current callback backing
     // store frame in kernel stack.
     //
-    DWORD   ThCallbackBStore;
+    DWORD ThCallbackBStore;
 
     //
     // offsets to values in frame:
     //
     // address of next callback frame
-    DWORD   NextCallback;
+    DWORD NextCallback;
 
     // address of saved frame pointer (if applicable)
-    DWORD   FramePointer;
-
+    DWORD FramePointer;
 
     //
     // Address of the kernel function that calls out to user mode
     //
-    DWORD64   KiCallUserMode;
+    DWORD64 KiCallUserMode;
 
     //
     // Address of the user mode dispatcher function
     //
-    DWORD64   KeUserCallbackDispatcher;
+    DWORD64 KeUserCallbackDispatcher;
 
     //
     // Lowest kernel mode address
     //
-    DWORD64   SystemRangeStart;
+    DWORD64 SystemRangeStart;
 
-    DWORD64  Reserved[8];
+    DWORD64 Reserved[8];
 
 } KDHELP64, *PKDHELP64;
 
 typedef struct _tagADDRESS64 {
-    DWORD64       Offset;
-    WORD          Segment;
-    ADDRESS_MODE  Mode;
+    DWORD64 Offset;
+    WORD Segment;
+    ADDRESS_MODE Mode;
 } ADDRESS64, *LPADDRESS64;
 
 typedef struct _tagSTACKFRAME64 {
-    ADDRESS64   AddrPC;               // program counter
-    ADDRESS64   AddrReturn;           // return address
-    ADDRESS64   AddrFrame;            // frame pointer
-    ADDRESS64   AddrStack;            // stack pointer
-    ADDRESS64   AddrBStore;           // backing store pointer
-    PVOID       FuncTableEntry;       // pointer to pdata/fpo or NULL
-    DWORD64     Params[4];            // possible arguments to the function
-    BOOL        Far;                  // WOW far call
-    BOOL        Virtual;              // is this a virtual frame?
-    DWORD64     Reserved[3];
-    KDHELP64    KdHelp;
+    ADDRESS64 AddrPC; // program counter
+    ADDRESS64 AddrReturn; // return address
+    ADDRESS64 AddrFrame; // frame pointer
+    ADDRESS64 AddrStack; // stack pointer
+    ADDRESS64 AddrBStore; // backing store pointer
+    PVOID FuncTableEntry; // pointer to pdata/fpo or NULL
+    DWORD64 Params[4]; // possible arguments to the function
+    BOOL Far; // WOW far call
+    BOOL Virtual; // is this a virtual frame?
+    DWORD64 Reserved[3];
+    KDHELP64 KdHelp;
 } STACKFRAME64, *LPSTACKFRAME64;
 
 typedef struct _SYMBOL_INFO {
-    ULONG       SizeOfStruct;
-    ULONG       TypeIndex;        // Type Index of symbol
-    ULONG64     Reserved[2];
-    ULONG       info;
-    ULONG       Size;
-    ULONG64     ModBase;          // Base Address of module comtaining this symbol
-    ULONG       Flags;
-    ULONG64     Value;            // Value of symbol, ValuePresent should be 1
-    ULONG64     Address;          // Address of symbol including base address of module
-    ULONG       Register;         // register holding value or pointer to value
-    ULONG       Scope;            // scope of the symbol
-    ULONG       Tag;              // pdb classification
-    ULONG       NameLen;          // Actual length of name
-    ULONG       MaxNameLen;
-    CHAR        Name[1];          // Name of symbol
+    ULONG SizeOfStruct;
+    ULONG TypeIndex; // Type Index of symbol
+    ULONG64 Reserved[2];
+    ULONG info;
+    ULONG Size;
+    ULONG64 ModBase; // Base Address of module comtaining this symbol
+    ULONG Flags;
+    ULONG64 Value; // Value of symbol, ValuePresent should be 1
+    ULONG64 Address; // Address of symbol including base address of module
+    ULONG Register; // register holding value or pointer to value
+    ULONG Scope; // scope of the symbol
+    ULONG Tag; // pdb classification
+    ULONG NameLen; // Actual length of name
+    ULONG MaxNameLen;
+    CHAR Name[1]; // Name of symbol
 } SYMBOL_INFO, *PSYMBOL_INFO;
 
 // Function types used by StackWalk64
-typedef BOOL (__stdcall *PREAD_PROCESS_MEMORY_ROUTINE64)( HANDLE, DWORD64, PVOID, DWORD, LPDWORD);
-typedef PVOID (__stdcall *PFUNCTION_TABLE_ACCESS_ROUTINE64)( HANDLE, DWORD64);
-typedef DWORD64 (__stdcall *PGET_MODULE_BASE_ROUTINE64)( HANDLE, DWORD64);
-typedef DWORD64 (__stdcall *PTRANSLATE_ADDRESS_ROUTINE64)( HANDLE, HANDLE, LPADDRESS64);
+typedef BOOL(__stdcall *PREAD_PROCESS_MEMORY_ROUTINE64)(HANDLE, DWORD64, PVOID, DWORD, LPDWORD);
+typedef PVOID(__stdcall *PFUNCTION_TABLE_ACCESS_ROUTINE64)(HANDLE, DWORD64);
+typedef DWORD64(__stdcall *PGET_MODULE_BASE_ROUTINE64)(HANDLE, DWORD64);
+typedef DWORD64(__stdcall *PTRANSLATE_ADDRESS_ROUTINE64)(HANDLE, HANDLE, LPADDRESS64);
 
-#define MAX_SYM_NAME            2000
+#define MAX_SYM_NAME 2000
 
-typedef DWORD (__stdcall * SymGetOptionsType) (VOID);
-typedef DWORD (__stdcall * SymSetOptionsType) (DWORD);
-typedef BOOL  (__stdcall * SymInitializeType) (HANDLE, PSTR, BOOL);
-typedef BOOL  (__stdcall * StackWalk64Type)(
-      DWORD,
-      HANDLE,
-      HANDLE,
-      LPSTACKFRAME64,
-      PVOID,
-      PREAD_PROCESS_MEMORY_ROUTINE64,
-      PFUNCTION_TABLE_ACCESS_ROUTINE64,
-      PGET_MODULE_BASE_ROUTINE64,
-      PTRANSLATE_ADDRESS_ROUTINE64
-      );
+typedef DWORD(__stdcall *SymGetOptionsType)(VOID);
+typedef DWORD(__stdcall *SymSetOptionsType)(DWORD);
+typedef BOOL(__stdcall *SymInitializeType)(HANDLE, PSTR, BOOL);
+typedef BOOL(__stdcall *StackWalk64Type)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, PVOID, PREAD_PROCESS_MEMORY_ROUTINE64,
+    PFUNCTION_TABLE_ACCESS_ROUTINE64, PGET_MODULE_BASE_ROUTINE64, PTRANSLATE_ADDRESS_ROUTINE64);
 StackWalk64Type StackWalk64;
-typedef BOOL (__stdcall * SymFromAddrType)( HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
-typedef BOOL (__stdcall * SymCleanupType) ( HANDLE);
+typedef BOOL(__stdcall *SymFromAddrType)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
+typedef BOOL(__stdcall *SymCleanupType)(HANDLE);
 
 #endif /* defined(OMR_OS_WINDOWS) && defined(TR_HOST_X86) && defined(TR_HOST_32BIT)) */
 
