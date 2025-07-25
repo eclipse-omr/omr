@@ -27,10 +27,14 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
+
 namespace OMR {
-namespace Z { class Register; }
-typedef OMR::Z::Register RegisterConnector;
+namespace Z {
+class Register;
 }
+
+typedef OMR::Z::Register RegisterConnector;
+} // namespace OMR
 #else
 #error OMR::Z::Register expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -43,99 +47,96 @@ typedef OMR::Z::Register RegisterConnector;
 class TR_LiveRegisterInfo;
 class TR_OpaquePseudoRegister;
 class TR_PseudoRegister;
+
 namespace TR {
 class MemoryReference;
 class Register;
-}
-template <class T> class TR_Queue;
+} // namespace TR
+template<class T> class TR_Queue;
 
-namespace OMR
-{
+namespace OMR { namespace Z {
 
-namespace Z
-{
+class OMR_EXTENSIBLE Register : public OMR::Register {
+protected:
+    Register(uint32_t f = 0);
+    Register(TR_RegisterKinds rk);
+    Register(TR_RegisterKinds rk, uint16_t ar);
 
-class OMR_EXTENSIBLE Register: public OMR::Register
-   {
-   protected:
+public:
+    /*
+     * Getters/Setters
+     */
 
-   Register(uint32_t f=0);
-   Register(TR_RegisterKinds rk);
-   Register(TR_RegisterKinds rk, uint16_t ar);
+    TR_LiveRegisterInfo *getLiveRegisterInfo() { return _liveRegisterInfo._liveRegister; }
 
-   public:
+    TR_LiveRegisterInfo *setLiveRegisterInfo(TR_LiveRegisterInfo *p) { return (_liveRegisterInfo._liveRegister = p); }
 
-   /*
-    * Getters/Setters
-    */
+    uint32_t getInterference() { return _liveRegisterInfo._interference; }
 
-   TR_LiveRegisterInfo *getLiveRegisterInfo()                       {return _liveRegisterInfo._liveRegister;}
-   TR_LiveRegisterInfo *setLiveRegisterInfo(TR_LiveRegisterInfo *p) {return (_liveRegisterInfo._liveRegister = p);}
+    uint32_t setInterference(uint32_t i) { return (_liveRegisterInfo._interference = i); }
 
-   uint32_t getInterference()           {return _liveRegisterInfo._interference;}
-   uint32_t setInterference(uint32_t i) {return (_liveRegisterInfo._interference = i);}
+    TR::MemoryReference *getMemRef() { return _memRef; }
 
-   TR::MemoryReference *getMemRef() { return _memRef; }
-   void setMemRef(TR::MemoryReference *memRef) { _memRef = memRef; }
+    void setMemRef(TR::MemoryReference *memRef) { _memRef = memRef; }
 
-   /*
-    * Methods for manipulating flags
-    */
+    /*
+     * Methods for manipulating flags
+     */
 
-   bool isUsedInMemRef()                    {return _flags.testAny(IsUsedInMemRef);}
-   void setIsUsedInMemRef(bool b = true)    {_flags.set(IsUsedInMemRef, b);}
+    bool isUsedInMemRef() { return _flags.testAny(IsUsedInMemRef); }
 
-   bool is64BitReg();
-   void setIs64BitReg(bool b = true);
+    void setIsUsedInMemRef(bool b = true) { _flags.set(IsUsedInMemRef, b); }
 
-   bool alreadySignExtended()           {return _flags.testAny(AlreadySignExtended);}
-   void setAlreadySignExtended()        {_flags.set(AlreadySignExtended);}
-   void resetAlreadySignExtended()      {_flags.reset(AlreadySignExtended);}
-   
-   /*
-    * Overriding Base Class Implementation of these methods
-    */
-   void setPlaceholderReg();
+    bool is64BitReg();
+    void setIs64BitReg(bool b = true);
 
-   ncount_t decFutureUseCount(ncount_t fuc=1);
+    bool alreadySignExtended() { return _flags.testAny(AlreadySignExtended); }
 
-   bool containsCollectedReference();
-   void setContainsCollectedReference();
+    void setAlreadySignExtended() { _flags.set(AlreadySignExtended); }
 
-   /*
-    * Methods specialized in derived classes
-    */
+    void resetAlreadySignExtended() { _flags.reset(AlreadySignExtended); }
 
-   virtual bool usesRegister(TR::Register* reg);  //ppc may duplicate this
-   virtual bool usesAnyRegister(TR::Register* reg);
+    /*
+     * Overriding Base Class Implementation of these methods
+     */
+    void setPlaceholderReg();
 
-   /*
-    * Pseudo and Opaque Registers
-    */
-   virtual TR_OpaquePseudoRegister  *getOpaquePseudoRegister() {return NULL;}
-   virtual TR_PseudoRegister  *getPseudoRegister() { return NULL;}
+    ncount_t decFutureUseCount(ncount_t fuc = 1);
 
-   private:
+    bool containsCollectedReference();
+    void setContainsCollectedReference();
 
-   enum
-      {
-         IsUsedInMemRef                = 0x0800, // 390 cannot associate GPR0 to regs used in memrefs
-         Is64Bit                       = 0x0002, // 390 flag indicates that this Register contained a 64-bit value
+    /*
+     * Methods specialized in derived classes
+     */
 
-         AlreadySignExtended           = 0x1000, // determine whether i2l should be nops
-      };
+    virtual bool usesRegister(TR::Register *reg); // ppc may duplicate this
+    virtual bool usesAnyRegister(TR::Register *reg);
 
-   //Both x and z have this field, but power has own specialization, may move to base
-   union
-      {
-      TR_LiveRegisterInfo *_liveRegister; // Live register entry representing this register
-      uint32_t             _interference; // Real registers that interfere with this register
-      } _liveRegisterInfo;
+    /*
+     * Pseudo and Opaque Registers
+     */
+    virtual TR_OpaquePseudoRegister *getOpaquePseudoRegister() { return NULL; }
 
-   // Both x and z have this, but power doesn't, so duplicating in both x and z
-   TR::MemoryReference *_memRef;
-   };
-}
-}
+    virtual TR_PseudoRegister *getPseudoRegister() { return NULL; }
+
+private:
+    enum {
+        IsUsedInMemRef = 0x0800, // 390 cannot associate GPR0 to regs used in memrefs
+        Is64Bit = 0x0002, // 390 flag indicates that this Register contained a 64-bit value
+
+        AlreadySignExtended = 0x1000, // determine whether i2l should be nops
+    };
+
+    // Both x and z have this field, but power has own specialization, may move to base
+    union {
+        TR_LiveRegisterInfo *_liveRegister; // Live register entry representing this register
+        uint32_t _interference; // Real registers that interfere with this register
+    } _liveRegisterInfo;
+
+    // Both x and z have this, but power doesn't, so duplicating in both x and z
+    TR::MemoryReference *_memRef;
+};
+}} // namespace OMR::Z
 
 #endif /* OMR_Z_REGISTER_INCL */

@@ -23,7 +23,7 @@
 #define OMR_METHODEXCEPTIONDATA_INCL
 
 namespace OMR {
-typedef void * MethodExceptionData;
+typedef void *MethodExceptionData;
 }
 
 #endif

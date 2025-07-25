@@ -26,13 +26,10 @@
 
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-struct OMR_EXTENSIBLE MethodMetaDataPOD : public OMR::MethodMetaDataPODConnector
-   {
-   };
+struct OMR_EXTENSIBLE MethodMetaDataPOD : public OMR::MethodMetaDataPODConnector {};
 
-}
+} // namespace TR
 
 #endif

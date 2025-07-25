@@ -22,15 +22,13 @@
 #ifndef OMR_THUNKBUILDER_INCL
 #define OMR_THUNKBUILDER_INCL
 
-
 #include "ilgen/MethodBuilder.hpp"
 
 namespace TR {
 class ThunkBuilder;
 }
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * @brief provide mechanism to call arbitrary C functions by signature passing array of arguments
@@ -52,60 +50,54 @@ namespace OMR
  * calls the given function, and will return the return value as expected.
  */
 
-class ThunkBuilder : public TR::MethodBuilder
-   {
-   public:
-   TR_ALLOC(TR_Memory::IlGenerator)
+class ThunkBuilder : public TR::MethodBuilder {
+public:
+    TR_ALLOC(TR_Memory::IlGenerator)
 
-   /**
-    * @brief construct a ThunkBuilder for a particular signature
-    * @param types TypeDictionary object that will be used by the ThunkBuilder object
-    * @param name primarily used for debug purposes and will appear in the compilation log
-    * @param returnType return type for the thunk's signature
-    * @param numCalleeParams number of parameters in the thunk's signature
-    * @param calleeParamTypes array of parameter types in the thunk's signature, must have numCalleeParams elements
-    */
-   ThunkBuilder(TR::TypeDictionary *types, const char *name, TR::IlType *returnType,
-                uint32_t numCalleeParams, TR::IlType **calleeParamTypes);
-   virtual ~ThunkBuilder() { }
+    /**
+     * @brief construct a ThunkBuilder for a particular signature
+     * @param types TypeDictionary object that will be used by the ThunkBuilder object
+     * @param name primarily used for debug purposes and will appear in the compilation log
+     * @param returnType return type for the thunk's signature
+     * @param numCalleeParams number of parameters in the thunk's signature
+     * @param calleeParamTypes array of parameter types in the thunk's signature, must have numCalleeParams elements
+     */
+    ThunkBuilder(TR::TypeDictionary *types, const char *name, TR::IlType *returnType, uint32_t numCalleeParams,
+        TR::IlType **calleeParamTypes);
 
-   virtual bool buildIL();
+    virtual ~ThunkBuilder() {}
 
-   /**
-    * @brief returns the client object associated with this object, allocating it if necessary
-    */
-   void *client();
+    virtual bool buildIL();
 
-   /**
-    * @brief Set the Client Allocator function
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
+    /**
+     * @brief returns the client object associated with this object, allocating it if necessary
+     */
+    void *client();
 
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
+    /**
+     * @brief Set the Client Allocator function
+     */
+    static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
 
-   private:
-   uint32_t      _numCalleeParams;
-   TR::IlType ** _calleeParamTypes;
+    /**
+     * @brief Set the Get Impl function
+     *
+     * @param getter function pointer to the impl getter
+     */
+    static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
 
-   // static void * allocateClientObject(TR::ThunkBuilder *);
-   static ClientAllocator _clientAllocator;
+private:
+    uint32_t _numCalleeParams;
+    TR::IlType **_calleeParamTypes;
 
-   /**
-    * @brief pointer to impl getter function
-    */
-   static ImplGetter _getImpl;
-   };
+    // static void * allocateClientObject(TR::ThunkBuilder *);
+    static ClientAllocator _clientAllocator;
+
+    /**
+     * @brief pointer to impl getter function
+     */
+    static ImplGetter _getImpl;
+};
 
 } // namespace OMR
 

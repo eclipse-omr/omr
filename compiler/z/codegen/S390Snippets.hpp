@@ -28,37 +28,34 @@ namespace TR {
 class CodeGenerator;
 class LabelSymbol;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
-class S390RestoreGPR7Snippet : public TR::Snippet
-   {
-   TR::LabelSymbol * _targetLabel;
+class S390RestoreGPR7Snippet : public TR::Snippet {
+    TR::LabelSymbol *_targetLabel;
 
 public:
-   S390RestoreGPR7Snippet(TR::CodeGenerator* cg, TR::Node *c, TR::LabelSymbol *lab, TR::LabelSymbol *targetLabel)
-      : TR::Snippet(cg, c, lab, false), _targetLabel(targetLabel)
-      {
-      }
+    S390RestoreGPR7Snippet(TR::CodeGenerator *cg, TR::Node *c, TR::LabelSymbol *lab, TR::LabelSymbol *targetLabel)
+        : TR::Snippet(cg, c, lab, false)
+        , _targetLabel(targetLabel)
+    {}
 
-   S390RestoreGPR7Snippet(TR::CodeGenerator* cg, TR::Node *c, TR::LabelSymbol *lab, TR::Snippet *targetSnippet)
-      : TR::Snippet(cg, c, lab, false), _targetLabel(targetSnippet->getSnippetLabel())
-      {
-      }
+    S390RestoreGPR7Snippet(TR::CodeGenerator *cg, TR::Node *c, TR::LabelSymbol *lab, TR::Snippet *targetSnippet)
+        : TR::Snippet(cg, c, lab, false)
+        , _targetLabel(targetSnippet->getSnippetLabel())
+    {}
 
-   TR::LabelSymbol *getTargetLabel() { return _targetLabel; }
-   TR::LabelSymbol *setTargetLabel ( TR::LabelSymbol * targetLabel)
-      {
-      return _targetLabel = targetLabel;
-      }
+    TR::LabelSymbol *getTargetLabel() { return _targetLabel; }
 
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
-   virtual uint8_t *emitSnippetBody();
-   virtual Kind getKind() { return IsRestoreGPR7; }
+    TR::LabelSymbol *setTargetLabel(TR::LabelSymbol *targetLabel) { return _targetLabel = targetLabel; }
 
-   };
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
+    virtual uint8_t *emitSnippetBody();
 
-}
+    virtual Kind getKind() { return IsRestoreGPR7; }
+};
+
+} // namespace TR
 
 #endif

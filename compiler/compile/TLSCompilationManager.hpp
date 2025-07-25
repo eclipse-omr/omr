@@ -28,13 +28,12 @@ namespace TR {
 
 class Compilation;
 
-class TLSCompilationManager
-   {
+class TLSCompilationManager {
 public:
-   TLSCompilationManager(Compilation &comp);
-   ~TLSCompilationManager();
-   };
+    TLSCompilationManager(Compilation &comp);
+    ~TLSCompilationManager();
+};
 
-}
+} // namespace TR
 
 #endif // TLSCOMPILATIONMANAGER_HPP

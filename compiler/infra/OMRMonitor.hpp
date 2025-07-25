@@ -24,10 +24,11 @@
 
 #ifndef OMR_MONITOR_CONNECTOR
 #define OMR_MONITOR_CONNECTOR
+
 namespace OMR {
 class Monitor;
 typedef OMR::Monitor MonitorConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stdint.h>
@@ -38,44 +39,61 @@ namespace TR {
 class Monitor;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class Monitor
-   {
-   public:
+class Monitor {
+public:
+    ~Monitor();
 
-   ~Monitor();
+    TR::Monitor *self();
+    static TR::Monitor *create(const char *name);
+    static void destroy(TR::Monitor *monitor);
+    void enter();
 
-   TR::Monitor *self();
-   static TR::Monitor *create(const char *name);
-   static void destroy(TR::Monitor *monitor);
-   void enter();
-   int32_t try_enter() { TR_UNIMPLEMENTED(); return 0; }
-   int32_t exit(); // returns 0 on success
-   void destroy();
-   void wait() { TR_UNIMPLEMENTED(); }
-   intptr_t wait_timed(int64_t millis, int32_t nanos) { TR_UNIMPLEMENTED(); return 0; }
-   void notify() { TR_UNIMPLEMENTED(); }
-   void notifyAll() { TR_UNIMPLEMENTED(); }
-   int32_t num_waiting() { TR_UNIMPLEMENTED(); return 0; }
-   char const *getName();
-   bool init(const char *name);
+    int32_t try_enter()
+    {
+        TR_UNIMPLEMENTED();
+        return 0;
+    }
+
+    int32_t exit(); // returns 0 on success
+    void destroy();
+
+    void wait() { TR_UNIMPLEMENTED(); }
+
+    intptr_t wait_timed(int64_t millis, int32_t nanos)
+    {
+        TR_UNIMPLEMENTED();
+        return 0;
+    }
+
+    void notify() { TR_UNIMPLEMENTED(); }
+
+    void notifyAll() { TR_UNIMPLEMENTED(); }
+
+    int32_t num_waiting()
+    {
+        TR_UNIMPLEMENTED();
+        return 0;
+    }
+
+    char const *getName();
+    bool init(const char *name);
 
 #if defined(J9ZOS390) || defined(AIXPPC)
-   // xlc cannot handle private delete operator
-   public:
+    // xlc cannot handle private delete operator
+public:
 #else
-   private:
+private:
 #endif
 
-   void *operator new(size_t size);
-   void operator delete(void *p);
+    void *operator new(size_t size);
+    void operator delete(void *p);
 
-   const char *_name;
-   MUTEX _monitor;
-   };
+    const char *_name;
+    MUTEX _monitor;
+};
 
-}
+} // namespace OMR
 
 #endif

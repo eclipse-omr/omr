@@ -30,107 +30,90 @@
 namespace TR {
 class Machine;
 class Node;
-}
+} // namespace TR
 
-#define EvalChild1  0x01
-#define EvalChild2  0x02
-#define CopyReg1    0x04
-#define CopyReg2    0x08
-#define OpReg1Reg2  0x10
-#define OpReg2Reg1  0x20
-#define OpReg1Mem2  0x40
-#define OpReg2Mem1  0x80
+#define EvalChild1 0x01
+#define EvalChild2 0x02
+#define CopyReg1 0x04
+#define CopyReg2 0x08
+#define OpReg1Reg2 0x10
+#define OpReg2Reg1 0x20
+#define OpReg1Mem2 0x40
+#define OpReg2Mem1 0x80
 
-class TR_X86BinaryCommutativeAnalyser  : public TR_Analyser
-   {
-   static const uint8_t _actionMap[NUM_ACTIONS];
-   TR::CodeGenerator *_cg;
-   bool _reversedOperands;
-   TR::Machine *_machine;
+class TR_X86BinaryCommutativeAnalyser : public TR_Analyser {
+    static const uint8_t _actionMap[NUM_ACTIONS];
+    TR::CodeGenerator *_cg;
+    bool _reversedOperands;
+    TR::Machine *_machine;
 
-   public:
+public:
+    TR_X86BinaryCommutativeAnalyser(TR::CodeGenerator *cg)
+        : _cg(cg)
+        , _machine(cg->machine())
+        , _reversedOperands(false)
+    {}
 
-   TR_X86BinaryCommutativeAnalyser(TR::CodeGenerator *cg)
-      : _cg(cg),
-        _machine(cg->machine()),
-        _reversedOperands(false)
-      {}
+    void genericAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild,
+        TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode,
+        TR::InstOpCode::Mnemonic copyOpCode, bool nonClobberingDestination = false);
 
-   void genericAnalyserWithExplicitOperands(TR::Node      *root,
-                                            TR::Node      *firstChild,
-                                            TR::Node      *secondChild,
-                                            TR::InstOpCode::Mnemonic regRegOpCode,
-                                            TR::InstOpCode::Mnemonic regMemOpCode,
-                                            TR::InstOpCode::Mnemonic copyOpCode,
-                                            bool          nonClobberingDestination = false);
+    void genericAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode,
+        TR::InstOpCode::Mnemonic copyOpCode, bool nonClobberingDestination = false);
 
-   void genericAnalyser(TR::Node      *root,
-                        TR::InstOpCode::Mnemonic regRegOpCode,
-                        TR::InstOpCode::Mnemonic regMemOpCode,
-                        TR::InstOpCode::Mnemonic copyOpCode,
-                        bool          nonClobberingDestination = false);
+    TR::Register *genericAnalyserImpl(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild,
+        TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode,
+        TR::InstOpCode::Mnemonic copyOpCode, bool nonClobberingDestination);
 
-   TR::Register *genericAnalyserImpl(TR::Node      *root,
-                                     TR::Node      *firstChild,
-                                     TR::Node      *secondChild,
-                                     TR::InstOpCode::Mnemonic regRegOpCode,
-                                     TR::InstOpCode::Mnemonic regMemOpCode,
-                                     TR::InstOpCode::Mnemonic copyOpCode,
-                                     bool          nonClobberingDestination);
+    void genericLongAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic lowRegRegOpCode,
+        TR::InstOpCode::Mnemonic highRegRegOpCode, TR::InstOpCode::Mnemonic lowRegMemOpCode,
+        TR::InstOpCode::Mnemonic lowRegMemOpCode2Byte, TR::InstOpCode::Mnemonic lowRegMemOpCode1Byte,
+        TR::InstOpCode::Mnemonic highRegMemOpCode, TR::InstOpCode::Mnemonic copyOpCode);
 
-   void genericLongAnalyser(TR::Node       *root,
-                            TR::InstOpCode::Mnemonic lowRegRegOpCode,
-                            TR::InstOpCode::Mnemonic highRegRegOpCode,
-                            TR::InstOpCode::Mnemonic lowRegMemOpCode,
-                            TR::InstOpCode::Mnemonic lowRegMemOpCode2Byte,
-                            TR::InstOpCode::Mnemonic lowRegMemOpCode1Byte,
-                            TR::InstOpCode::Mnemonic highRegMemOpCode,
-                            TR::InstOpCode::Mnemonic copyOpCode);
+    void integerAddAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regRegOpCode,
+        TR::InstOpCode::Mnemonic regMemOpCode, bool needsEflags = false,
+        TR::Node *carry = 0); // 0 by default
 
-   void integerAddAnalyser(TR::Node       *root,
-                           TR::InstOpCode::Mnemonic regRegOpCode,
-                           TR::InstOpCode::Mnemonic regMemOpCode,
-                           bool needsEflags = false,
-                           TR::Node       *carry = 0);// 0 by default
+    void integerAddAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild,
+        TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode, bool needsEflags = false,
+        TR::Node *carry = 0);
 
-   void integerAddAnalyserWithExplicitOperands(TR::Node       *root,
-                                               TR::Node *firstChild,
-                                               TR::Node *secondChild,
-                                               TR::InstOpCode::Mnemonic regRegOpCode,
-                                               TR::InstOpCode::Mnemonic regMemOpCode,
-                                               bool needsEflags = false,
-                                               TR::Node *carry = 0);
+    TR::Register *integerAddAnalyserImpl(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild,
+        TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode, bool needsEflags,
+        TR::Node *carry);
 
-   TR::Register* integerAddAnalyserImpl(TR::Node       *root,
-                           TR::Node *firstChild,
-                           TR::Node *secondChild,
-                           TR::InstOpCode::Mnemonic regRegOpCode,
-                           TR::InstOpCode::Mnemonic regMemOpCode,
-                           bool needsEflags,
-                           TR::Node *carry);
+    void longAddAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild);
+    void longAddAnalyser(TR::Node *root);
+    TR::Register *longAddAnalyserImpl(TR::Node *root, TR::Node *&firstChild, TR::Node *&secondChild);
 
-   void longAddAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild);
-   void longAddAnalyser(TR::Node *root);
-   TR::Register* longAddAnalyserImpl(TR::Node *root, TR::Node *&firstChild, TR::Node *&secondChild);
+    void longMultiplyAnalyser(TR::Node *root);
+    void longDualMultiplyAnalyser(TR::Node *root);
 
-   void longMultiplyAnalyser(TR::Node *root);
-   void longDualMultiplyAnalyser(TR::Node *root);
+    bool getReversedOperands() { return _reversedOperands; }
 
-   bool getReversedOperands()       {return _reversedOperands;}
-   bool setReversedOperands(bool b) {return (_reversedOperands = b);}
-   bool notReversedOperands()       {return (_reversedOperands = ((_reversedOperands == false) ? true : false));}
+    bool setReversedOperands(bool b) { return (_reversedOperands = b); }
 
-   bool getEvalChild1() {return (_actionMap[getInputs()] & EvalChild1) ? true : false;}
-   bool getEvalChild2() {return (_actionMap[getInputs()] & EvalChild2) ? true : false;}
-   bool getCopyReg1()   {return (_actionMap[getInputs()] & CopyReg1)   ? true : false;}
-   bool getCopyReg2()   {return (_actionMap[getInputs()] & CopyReg2)   ? true : false;}
-   bool getOpReg1Reg2() {return (_actionMap[getInputs()] & OpReg1Reg2) ? true : false;}
-   bool getOpReg2Reg1() {return (_actionMap[getInputs()] & OpReg2Reg1) ? true : false;}
-   bool getOpReg1Mem2() {return (_actionMap[getInputs()] & OpReg1Mem2) ? true : false;}
-   bool getOpReg2Mem1() {return (_actionMap[getInputs()] & OpReg2Mem1) ? true : false;}
-   bool getCopyRegs()   {return (_actionMap[getInputs()] & (CopyReg1 | CopyReg2)) ? true : false;}
+    bool notReversedOperands() { return (_reversedOperands = ((_reversedOperands == false) ? true : false)); }
 
-   bool isVolatileMemoryOperand(TR::Node *node);
-   };
+    bool getEvalChild1() { return (_actionMap[getInputs()] & EvalChild1) ? true : false; }
+
+    bool getEvalChild2() { return (_actionMap[getInputs()] & EvalChild2) ? true : false; }
+
+    bool getCopyReg1() { return (_actionMap[getInputs()] & CopyReg1) ? true : false; }
+
+    bool getCopyReg2() { return (_actionMap[getInputs()] & CopyReg2) ? true : false; }
+
+    bool getOpReg1Reg2() { return (_actionMap[getInputs()] & OpReg1Reg2) ? true : false; }
+
+    bool getOpReg2Reg1() { return (_actionMap[getInputs()] & OpReg2Reg1) ? true : false; }
+
+    bool getOpReg1Mem2() { return (_actionMap[getInputs()] & OpReg1Mem2) ? true : false; }
+
+    bool getOpReg2Mem1() { return (_actionMap[getInputs()] & OpReg2Mem1) ? true : false; }
+
+    bool getCopyRegs() { return (_actionMap[getInputs()] & (CopyReg1 | CopyReg2)) ? true : false; }
+
+    bool isVolatileMemoryOperand(TR::Node *node);
+};
 
 #endif

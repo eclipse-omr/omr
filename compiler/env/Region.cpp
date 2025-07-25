@@ -27,70 +27,58 @@
 
 namespace TR {
 
-Region::Region(TR::SegmentProvider &segmentProvider, TR::RawAllocator rawAllocator) :
-   _bytesAllocated(0),
-   _segmentProvider(segmentProvider),
-   _rawAllocator(rawAllocator),
-   _initialSegment(_initialSegmentArea.data, INITIAL_SEGMENT_SIZE),
-   _currentSegment(TR::ref(_initialSegment)),
-   _lastDestroyer(NULL)
-   {
-   }
+Region::Region(TR::SegmentProvider &segmentProvider, TR::RawAllocator rawAllocator)
+    : _bytesAllocated(0)
+    , _segmentProvider(segmentProvider)
+    , _rawAllocator(rawAllocator)
+    , _initialSegment(_initialSegmentArea.data, INITIAL_SEGMENT_SIZE)
+    , _currentSegment(TR::ref(_initialSegment))
+    , _lastDestroyer(NULL)
+{}
 
-Region::Region(const Region &prototype) :
-   _bytesAllocated(0),
-   _segmentProvider(prototype._segmentProvider),
-   _rawAllocator(prototype._rawAllocator),
-   _initialSegment(_initialSegmentArea.data, INITIAL_SEGMENT_SIZE),
-   _currentSegment(TR::ref(_initialSegment)),
-   _lastDestroyer(NULL)
-   {
-   }
+Region::Region(const Region &prototype)
+    : _bytesAllocated(0)
+    , _segmentProvider(prototype._segmentProvider)
+    , _rawAllocator(prototype._rawAllocator)
+    , _initialSegment(_initialSegmentArea.data, INITIAL_SEGMENT_SIZE)
+    , _currentSegment(TR::ref(_initialSegment))
+    , _lastDestroyer(NULL)
+{}
 
 Region::~Region() throw()
-   {
-   /*
-    * Destroy all object instances that depend on the region
-    * to manage their lifetimes.
-    */
-   Destroyer *lastDestroyer = _lastDestroyer;
-   while (lastDestroyer != NULL)
-      {
-      lastDestroyer->destroy();
-      lastDestroyer = lastDestroyer->prev();
-      }
+{
+    /*
+     * Destroy all object instances that depend on the region
+     * to manage their lifetimes.
+     */
+    Destroyer *lastDestroyer = _lastDestroyer;
+    while (lastDestroyer != NULL) {
+        lastDestroyer->destroy();
+        lastDestroyer = lastDestroyer->prev();
+    }
 
-   for (
-      TR::reference_wrapper<TR::MemorySegment> latestSegment(_currentSegment);
-      latestSegment.get() != _initialSegment;
-      latestSegment = _currentSegment
-      )
-      {
-      _currentSegment = TR::ref(latestSegment.get().unlink());
-      _segmentProvider.release(latestSegment);
-      }
-   TR_ASSERT(_currentSegment.get() == _initialSegment, "self-referencial link was broken");
-   }
-
-void *
-Region::allocate(size_t const size, void *hint)
-   {
-   size_t const roundedSize = (size+15) & (~15);
-   if (_currentSegment.get().remaining() >= roundedSize)
-      {
-      _bytesAllocated += roundedSize;
-      return _currentSegment.get().allocate(roundedSize);
-      }
-   TR::MemorySegment &newSegment = _segmentProvider.request(roundedSize);
-   TR_ASSERT(newSegment.remaining() >= roundedSize, "Allocated segment is too small");
-   newSegment.link(_currentSegment.get());
-   _currentSegment = TR::ref(newSegment);
-   _bytesAllocated += roundedSize;
-   return _currentSegment.get().allocate(roundedSize);
-   }
-
-void
-Region::deallocate(void * allocation, size_t) throw()
-   {
-   }
+    for (TR::reference_wrapper<TR::MemorySegment> latestSegment(_currentSegment);
+         latestSegment.get() != _initialSegment; latestSegment = _currentSegment) {
+        _currentSegment = TR::ref(latestSegment.get().unlink());
+        _segmentProvider.release(latestSegment);
+    }
+    TR_ASSERT(_currentSegment.get() == _initialSegment, "self-referencial link was broken");
 }
+
+void *Region::allocate(size_t const size, void *hint)
+{
+    size_t const roundedSize = (size + 15) & (~15);
+    if (_currentSegment.get().remaining() >= roundedSize) {
+        _bytesAllocated += roundedSize;
+        return _currentSegment.get().allocate(roundedSize);
+    }
+    TR::MemorySegment &newSegment = _segmentProvider.request(roundedSize);
+    TR_ASSERT(newSegment.remaining() >= roundedSize, "Allocated segment is too small");
+    newSegment.link(_currentSegment.get());
+    _currentSegment = TR::ref(newSegment);
+    _bytesAllocated += roundedSize;
+    return _currentSegment.get().allocate(roundedSize);
+}
+
+void Region::deallocate(void *allocation, size_t) throw() {}
+} // namespace TR

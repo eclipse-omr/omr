@@ -21,7 +21,6 @@
 
 #include "codegen/OMRInstOpCode.hpp"
 
-const OMR::Power::InstOpCode::OpCodeMetaData OMR::Power::InstOpCode::metadata[NumOpCodes] =
-   {
-   #include "codegen/OMRInstOpCodeProperties.hpp"
-   };
+const OMR::Power::InstOpCode::OpCodeMetaData OMR::Power::InstOpCode::metadata[NumOpCodes] = {
+#include "codegen/OMRInstOpCodeProperties.hpp"
+};

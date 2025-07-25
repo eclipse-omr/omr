@@ -24,13 +24,15 @@
 
 struct OMR_VMThread;
 class TR_ResolvedMethod;
+
 namespace TR {
 class FrontEnd;
 class IlGeneratorMethodDetails;
 class JitConfig;
-}
+} // namespace TR
 
-int32_t init_options(TR::JitConfig *jitConfig, char * cmdLineOptions);
-int32_t commonJitInit(TR::FrontEnd &fe, char * cmdLineOptions);
+int32_t init_options(TR::JitConfig *jitConfig, char *cmdLineOptions);
+int32_t commonJitInit(TR::FrontEnd &fe, char *cmdLineOptions);
 uint8_t *compileMethod(OMR_VMThread *omrVMThread, TR_ResolvedMethod &compilee, TR_Hotness hotness, int32_t &rc);
-uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMethodDetails &details, TR_Hotness hotness, int32_t &rc);
+uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMethodDetails &details, TR_Hotness hotness,
+    int32_t &rc);

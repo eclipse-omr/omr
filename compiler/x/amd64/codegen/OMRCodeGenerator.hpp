@@ -27,10 +27,14 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
+
 namespace OMR {
-namespace X86 { namespace AMD64 { class CodeGenerator; } }
+namespace X86 { namespace AMD64 {
+class CodeGenerator;
+}} // namespace X86::AMD64
+
 typedef OMR::X86::AMD64::CodeGenerator CodeGeneratorConnector;
-}
+} // namespace OMR
 #else
 #error OMR::X86::AMD64::CodeGenerator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -43,56 +47,42 @@ typedef OMR::X86::AMD64::CodeGenerator CodeGeneratorConnector;
 namespace TR {
 class ILOpCode;
 class Node;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace X86 { namespace AMD64 {
 
-namespace X86
-{
-
-namespace AMD64
-{
-
-class OMR_EXTENSIBLE CodeGenerator : public OMR::X86::CodeGenerator
-   {
-
+class OMR_EXTENSIBLE CodeGenerator : public OMR::X86::CodeGenerator {
 protected:
-
-   CodeGenerator(TR::Compilation *comp);
+    CodeGenerator(TR::Compilation *comp);
 
 public:
+    void initialize();
 
-   void initialize();
+    virtual TR::Register *longClobberEvaluate(TR::Node *node);
 
-   virtual TR::Register *longClobberEvaluate(TR::Node *node);
+    TR_GlobalRegisterNumber getLinkageGlobalRegisterNumber(int8_t linkageRegisterIndex, TR::DataType type);
 
-   TR_GlobalRegisterNumber getLinkageGlobalRegisterNumber(int8_t linkageRegisterIndex, TR::DataType type);
-   TR_BitVector *getGlobalGPRsPreservedAcrossCalls(){ return &_globalGPRsPreservedAcrossCalls; }
-   TR_BitVector *getGlobalFPRsPreservedAcrossCalls(){ return &_globalFPRsPreservedAcrossCalls; }
+    TR_BitVector *getGlobalGPRsPreservedAcrossCalls() { return &_globalGPRsPreservedAcrossCalls; }
 
-   using OMR::X86::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge;
-   int32_t getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Node *);
+    TR_BitVector *getGlobalFPRsPreservedAcrossCalls() { return &_globalFPRsPreservedAcrossCalls; }
 
-   bool opCodeIsNoOpOnThisPlatform(TR::ILOpCode &opCode);
+    using OMR::X86::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge;
+    int32_t getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Node *);
 
-   bool internalPointerSupportImplemented() { return true; }
+    bool opCodeIsNoOpOnThisPlatform(TR::ILOpCode &opCode);
 
-   protected:
+    bool internalPointerSupportImplemented() { return true; }
 
-   TR_BitVector _globalGPRsPreservedAcrossCalls;
-   TR_BitVector _globalFPRsPreservedAcrossCalls;
+protected:
+    TR_BitVector _globalGPRsPreservedAcrossCalls;
+    TR_BitVector _globalFPRsPreservedAcrossCalls;
 
-   private:
+private:
+    TR_GlobalRegisterNumber _gprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters],
+        _fprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters];
+    void initLinkageToGlobalRegisterMap();
+};
 
-   TR_GlobalRegisterNumber _gprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters], _fprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters];
-   void initLinkageToGlobalRegisterMap();
-   };
-
-} // namespace AMD64
-
-} // namespace X86
-
-} // namespace OMR
+}}} // namespace OMR::X86::AMD64
 
 #endif

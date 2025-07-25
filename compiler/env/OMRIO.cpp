@@ -33,76 +33,46 @@
 
 class TR_FrontEnd;
 
-TR::FILE * OMR::IO::Null = TR::FilePointer::Null();
-TR::FILE * OMR::IO::Stdin = TR::FilePointer::Stdin();
-TR::FILE * OMR::IO::Stdout = TR::FilePointer::Stdout();
-TR::FILE * OMR::IO::Stderr = TR::FilePointer::Stderr();
+TR::FILE *OMR::IO::Null = TR::FilePointer::Null();
+TR::FILE *OMR::IO::Stdin = TR::FilePointer::Stdin();
+TR::FILE *OMR::IO::Stdout = TR::FilePointer::Stdout();
+TR::FILE *OMR::IO::Stderr = TR::FilePointer::Stderr();
 
+TR::FILE *OMR::IO::fopen(char *fileName, const char *mode, bool encrypt) { return (TR::FILE *)::fopen(fileName, mode); }
 
-TR::FILE *
-OMR::IO::fopen(char *fileName, const char *mode, bool encrypt)
-   {
-   return (TR::FILE *) ::fopen(fileName, mode);
-   }
+void OMR::IO::fclose(TR::FILE *fileId) { ::fclose((::FILE *)fileId); }
 
+void OMR::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
+{
+    ::fseek((::FILE *)fileId, static_cast<long>(offset), whence);
+}
 
-void
-OMR::IO::fclose(TR::FILE *fileId)
-   {
-   ::fclose((::FILE *)fileId);
-   }
+long OMR::IO::ftell(TR::FILE *fileId) { return ::ftell((::FILE *)fileId); }
 
+void OMR::IO::fflush(TR::FILE *fileId) { ::fflush((::FILE *)fileId); }
 
-void
-OMR::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
-   {
-   ::fseek((::FILE *)fileId, static_cast<long>(offset), whence);
-   }
+int32_t OMR::IO::printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int32_t length = ::vprintf(format, args);
+    va_end(args);
+    return length;
+}
 
+int32_t OMR::IO::fprintf(TR::FILE *fileId, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int32_t length = ::vfprintf((::FILE *)fileId, format, args);
+    va_end(args);
+    return length;
+}
 
-long
-OMR::IO::ftell(TR::FILE *fileId)
-   {
-   return ::ftell((::FILE *)fileId);
-   }
-
-
-void
-OMR::IO::fflush(TR::FILE *fileId)
-   {
-   ::fflush((::FILE *)fileId);
-   }
-
-
-int32_t
-OMR::IO::printf(const char * format, ...)
-   {
-   va_list args;
-   va_start(args, format);
-   int32_t length = ::vprintf(format, args);
-   va_end(args);
-   return length;
-   }
-
-
-int32_t
-OMR::IO::fprintf(TR::FILE *fileId, const char * format, ...)
-   {
-   va_list args;
-   va_start(args, format);
-   int32_t length = ::vfprintf((::FILE*)fileId, format, args);
-   va_end(args);
-   return length;
-   }
-
-
-int32_t
-OMR::IO::vfprintf(TR::FILE *fileId, const char *format, va_list args)
-   {
-   return ::vfprintf((::FILE*)fileId, format, args);
-   }
-
-
+int32_t OMR::IO::vfprintf(TR::FILE *fileId, const char *format, va_list args)
+{
+    return ::vfprintf((::FILE *)fileId, format, args);
+}
 
 TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt) = TR::IO::fopen;
 void (*trfclose)(TR::FILE *fileId) = TR::IO::fclose;

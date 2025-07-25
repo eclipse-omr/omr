@@ -36,88 +36,77 @@ class ParameterSymbol;
 class RegisterDependencyConditions;
 class ResolvedMethodSymbol;
 class SymbolReference;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
 namespace TR {
 
-class PPCSystemLinkage : public TR::Linkage
-   {
-   protected:
+class PPCSystemLinkage : public TR::Linkage {
+protected:
+    TR::PPCLinkageProperties _properties;
 
-   TR::PPCLinkageProperties _properties;
+public:
+    PPCSystemLinkage(TR::CodeGenerator *cg);
 
-   public:
+    virtual const TR::PPCLinkageProperties &getProperties();
 
-   PPCSystemLinkage(TR::CodeGenerator *cg);
+    virtual uint32_t getRightToLeft();
+    virtual bool hasToBeOnStack(TR::ParameterSymbol *parm);
+    virtual void mapStack(TR::ResolvedMethodSymbol *method);
+    virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
+    virtual void initPPCRealRegisterLinkage();
 
-   virtual const TR::PPCLinkageProperties& getProperties();
+    virtual void createPrologue(TR::Instruction *cursor);
+    virtual void createPrologue(TR::Instruction *cursor, List<TR::ParameterSymbol> &parm);
 
-   virtual uint32_t getRightToLeft();
-   virtual bool hasToBeOnStack(TR::ParameterSymbol *parm);
-   virtual void mapStack(TR::ResolvedMethodSymbol *method);
-   virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
-   virtual void initPPCRealRegisterLinkage();
+    virtual void createEpilogue(TR::Instruction *cursor);
 
-   virtual void createPrologue(TR::Instruction *cursor);
-   virtual void createPrologue(TR::Instruction *cursor, List<TR::ParameterSymbol> &parm);
+    virtual int32_t buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies);
 
-   virtual void createEpilogue(TR::Instruction *cursor);
+    virtual void buildVirtualDispatch(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
+        uint32_t sizeOfArguments);
 
-   virtual int32_t buildArgs(
-         TR::Node *callNode,
-         TR::RegisterDependencyConditions *dependencies);
+    void buildDirectCall(TR::Node *callNode, TR::SymbolReference *callSymRef,
+        TR::RegisterDependencyConditions *dependencies, const TR::PPCLinkageProperties &pp, int32_t argSize);
 
-   virtual void buildVirtualDispatch(
-         TR::Node *callNode,
-         TR::RegisterDependencyConditions *dependencies,
-         uint32_t sizeOfArguments);
+    virtual TR::Register *buildDirectDispatch(TR::Node *callNode);
 
-   void buildDirectCall(
-         TR::Node *callNode,
-         TR::SymbolReference *callSymRef,
-         TR::RegisterDependencyConditions *dependencies,
-         const TR::PPCLinkageProperties &pp,
-         int32_t argSize);
+    virtual TR::Register *buildIndirectDispatch(TR::Node *callNode);
 
-   virtual TR::Register *buildDirectDispatch(TR::Node *callNode);
+    virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method);
+    virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method,
+        List<TR::ParameterSymbol> &parmList);
+    virtual void mapParameters(TR::ResolvedMethodSymbol *method, List<TR::ParameterSymbol> &parmList);
 
-   virtual TR::Register *buildIndirectDispatch(TR::Node *callNode);
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from a method compiled with the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for compiled methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromCompiledMethod();
 
-   virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method);
-   virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method, List<TR::ParameterSymbol> &parmList);
-   virtual void mapParameters(TR::ResolvedMethodSymbol *method, List<TR::ParameterSymbol> &parmList);
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from an interpreter using the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromInterpretedMethod();
+};
 
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from a method compiled with the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for compiled methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromCompiledMethod();
-
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from an interpreter using the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromInterpretedMethod();
-
-   };
-
-}
+} // namespace TR
 
 #endif

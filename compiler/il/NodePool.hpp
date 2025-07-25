@@ -29,37 +29,40 @@
 namespace TR {
 class SymbolReference;
 class Compilation;
-}
-template <class T> class TR_Array;
+} // namespace TR
+template<class T> class TR_Array;
 
 namespace TR {
 
-class NodePool
-   {
-   public:
+class NodePool {
+public:
+    TR_ALLOC(TR_Memory::Compilation)
+    NodePool(TR::Compilation *comp);
 
-   TR_ALLOC(TR_Memory::Compilation)
-   NodePool(TR::Compilation * comp);
+    TR::Node *allocate();
+    bool deallocate(TR::Node *node);
+    bool removeDeadNodes();
 
-   TR::Node * allocate();
-   bool      deallocate(TR::Node * node);
-   bool      removeDeadNodes();
-   void      enableNodeGC()  { _disableGC = false; }
-   void      disableNodeGC() { _disableGC = true; }
-   ncount_t  getLastGlobalIndex()     { return _globalIndex; }
-   ncount_t  getMaxIndex()           { return _globalIndex; }
-   TR::Compilation * comp() { return _comp; }
+    void enableNodeGC() { _disableGC = false; }
 
-   void cleanUp();
+    void disableNodeGC() { _disableGC = true; }
 
-   private:
-   TR::Compilation *     _comp;
-   bool                  _disableGC;
-   ncount_t              _globalIndex;
+    ncount_t getLastGlobalIndex() { return _globalIndex; }
 
-   TR::Region            _nodeRegion;
-   };
+    ncount_t getMaxIndex() { return _globalIndex; }
 
-}
+    TR::Compilation *comp() { return _comp; }
+
+    void cleanUp();
+
+private:
+    TR::Compilation *_comp;
+    bool _disableGC;
+    ncount_t _globalIndex;
+
+    TR::Region _nodeRegion;
+};
+
+} // namespace TR
 
 #endif

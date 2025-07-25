@@ -28,54 +28,58 @@
 #include <stdint.h>
 
 #define Clob2 0x01
-#define Mem2  0x02
-#define Reg2  0x04
+#define Mem2 0x02
+#define Reg2 0x04
 #define Clob1 0x08
-#define Mem1  0x10
-#define Reg1  0x20
+#define Mem1 0x10
+#define Reg1 0x20
 
 namespace TR {
 class Compilation;
 class Node;
 class Register;
-}
+} // namespace TR
 
-class TR_Analyser
-   {
-   uint8_t _inputs;
+class TR_Analyser {
+    uint8_t _inputs;
 
-   public:
+public:
+    TR_Analyser()
+        : _inputs(0) {};
 
-   TR_Analyser() : _inputs(0) {};
+    void setInputs(TR::Node *firstChild, TR::Register *firstRegister, TR::Node *secondChild,
+        TR::Register *secondRegister, bool nonClobberingDestination = false, bool dontClobberAnything = false,
+        TR::Compilation *comp = NULL, bool lockedIntoRegister1 = false, bool lockedIntoRegister2 = false);
 
-   void setInputs(TR::Node     *firstChild,
-                  TR::Register *firstRegister,
-                  TR::Node     *secondChild,
-                  TR::Register *secondRegister,
-                  bool         nonClobberingDestination = false,
-                  bool         dontClobberAnything = false,
-                  TR::Compilation *comp = NULL,
-                  bool         lockedIntoRegister1  = false,
-                  bool         lockedIntoRegister2  = false);
+    void resetReg1() { _inputs &= ~Reg1; }
 
-   void resetReg1()  {_inputs &= ~Reg1;}
-   void resetReg2()  {_inputs &= ~Reg2;}
-   void resetMem1()  {_inputs &= ~Mem1;}
-   void resetMem2()  {_inputs &= ~Mem2;}
-   void resetClob1() {_inputs &= ~Clob1;}
-   void resetClob2() {_inputs &= ~Clob2;}
-   void setClob1()   {_inputs |=  Clob1;}
-   void setClob2()   {_inputs |=  Clob2;}
-   void setReg1()    {_inputs |=  Reg1;}
-   void setReg2()    {_inputs |=  Reg2;}
-   void setMem1()    {_inputs |=  Mem1;}
-   void setMem2()    {_inputs |=  Mem2;}
-   uint8_t getMem1()    { return _inputs &  Mem1;}
-   uint8_t getMem2()    { return _inputs &  Mem2;}
+    void resetReg2() { _inputs &= ~Reg2; }
 
+    void resetMem1() { _inputs &= ~Mem1; }
 
-   uint8_t getInputs() {return _inputs;}
+    void resetMem2() { _inputs &= ~Mem2; }
 
-   };
+    void resetClob1() { _inputs &= ~Clob1; }
+
+    void resetClob2() { _inputs &= ~Clob2; }
+
+    void setClob1() { _inputs |= Clob1; }
+
+    void setClob2() { _inputs |= Clob2; }
+
+    void setReg1() { _inputs |= Reg1; }
+
+    void setReg2() { _inputs |= Reg2; }
+
+    void setMem1() { _inputs |= Mem1; }
+
+    void setMem2() { _inputs |= Mem2; }
+
+    uint8_t getMem1() { return _inputs & Mem1; }
+
+    uint8_t getMem2() { return _inputs & Mem2; }
+
+    uint8_t getInputs() { return _inputs; }
+};
 
 #endif

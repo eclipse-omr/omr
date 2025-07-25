@@ -33,370 +33,340 @@
 #define MAX_LINE_NUM_LEN 7
 
 class TR_BitVector;
+
 namespace TR {
 class BytecodeBuilder;
 class ResolvedMethod;
 class SymbolReference;
 class VirtualMachineState;
-}
+} // namespace TR
 
 namespace TR {
 class SegmentProvider;
 class Region;
-}
+} // namespace TR
 
-extern "C"
-{
+extern "C" {
 typedef bool (*RequestFunctionCallback)(void *client, const char *name);
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class MethodBuilder : public TR::IlBuilder
-   {
-   public:
-   TR_ALLOC(TR_Memory::IlGenerator)
+class MethodBuilder : public TR::IlBuilder {
+public:
+    TR_ALLOC(TR_Memory::IlGenerator)
 
-   MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState = NULL);
-   MethodBuilder(TR::MethodBuilder *callerMB, TR::VirtualMachineState *vmState = NULL);
-   virtual ~MethodBuilder();
+    MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState = NULL);
+    MethodBuilder(TR::MethodBuilder *callerMB, TR::VirtualMachineState *vmState = NULL);
+    virtual ~MethodBuilder();
 
-   virtual void setupForBuildIL();
+    virtual void setupForBuildIL();
 
-   /**
-    * @brief returns the next index to be used for new values
-    * @returns the next value index
-    * If this method build is an inlined MethodBuilder, then the answer to
-    * this query is delegated to the caller's MethodBuilder, which means
-    * only the top-level MethodBuilder object assigns value IDs.
-    */
-   int32_t getNextValueID();
+    /**
+     * @brief returns the next index to be used for new values
+     * @returns the next value index
+     * If this method build is an inlined MethodBuilder, then the answer to
+     * this query is delegated to the caller's MethodBuilder, which means
+     * only the top-level MethodBuilder object assigns value IDs.
+     */
+    int32_t getNextValueID();
 
-   bool usesBytecodeBuilders()                               { return _useBytecodeBuilders; }
-   void setUseBytecodeBuilders()                             { _useBytecodeBuilders = true; }
+    bool usesBytecodeBuilders() { return _useBytecodeBuilders; }
 
-   void addToAllBytecodeBuildersList(TR::BytecodeBuilder *bcBuilder);
-   void addToTreeConnectingWorklist(TR::BytecodeBuilder *builder);
-   void addToBlockCountingWorklist(TR::BytecodeBuilder *builder);
+    void setUseBytecodeBuilders() { _useBytecodeBuilders = true; }
 
-   virtual TR::VirtualMachineState *vmState()                { return _vmState; }
-   virtual void setVMState(TR::VirtualMachineState *vmState) { _vmState = vmState; }
+    void addToAllBytecodeBuildersList(TR::BytecodeBuilder *bcBuilder);
+    void addToTreeConnectingWorklist(TR::BytecodeBuilder *builder);
+    void addToBlockCountingWorklist(TR::BytecodeBuilder *builder);
 
-   virtual bool isMethodBuilder()                            { return true; }
-   virtual TR::MethodBuilder *asMethodBuilder();
+    virtual TR::VirtualMachineState *vmState() { return _vmState; }
 
-   TR::TypeDictionary *typeDictionary()                      { return _types; }
+    virtual void setVMState(TR::VirtualMachineState *vmState) { _vmState = vmState; }
 
-   const char *getDefiningFile()                             { return _definingFile; }
-   const char *getDefiningLine()                             { return _definingLine; }
+    virtual bool isMethodBuilder() { return true; }
 
-   const char *GetMethodName()                               { return _methodName; }
-   void AllLocalsHaveBeenDefined()                           { _newSymbolsAreTemps = true; }
+    virtual TR::MethodBuilder *asMethodBuilder();
 
-   TR::IlType *getReturnType()                               { return _returnType; }
-   int32_t getNumParameters()                                { return _numParameters; }
-   const char *getSymbolName(int32_t slot);
+    TR::TypeDictionary *typeDictionary() { return _types; }
 
-   TR::IlType **getParameterTypes();
-   char *getSignature(int32_t numParams, TR::IlType **paramTypeArray);
-   char *getSignature(TR::IlType **paramTypeArray)
-      {
-      return getSignature(_numParameters, paramTypeArray);
-      }
+    const char *getDefiningFile() { return _definingFile; }
 
-   TR::SymbolReference *lookupSymbol(const char *name);
-   void defineSymbol(const char *name, TR::SymbolReference *v);
-   bool symbolDefined(const char *name);
-   bool isSymbolAnArray(const char * name);
+    const char *getDefiningLine() { return _definingLine; }
 
-   TR::ResolvedMethod *lookupFunction(const char *name);
+    const char *GetMethodName() { return _methodName; }
 
-   void AppendBuilder(TR::BytecodeBuilder *bb) { AppendBytecodeBuilder(bb); }
-   void AppendBuilder(TR::IlBuilder *b)    { this->OMR::IlBuilder::AppendBuilder(b); }
+    void AllLocalsHaveBeenDefined() { _newSymbolsAreTemps = true; }
 
-   void DefineFile(const char *file)                         { _definingFile = file; }
+    TR::IlType *getReturnType() { return _returnType; }
 
-   void DefineLine(const char *line);
-   void DefineLine(int line);
-   void DefineName(const char *name);
-   void DefineParameter(const char *name, TR::IlType *type);
-   void DefineArrayParameter(const char *name, TR::IlType *dt);
-   void DefineReturnType(TR::IlType *dt);
-   void DefineLocal(const char *name, TR::IlType *dt);
-   void DefineMemory(const char *name, TR::IlType *dt, void *location);
+    int32_t getNumParameters() { return _numParameters; }
 
-   /**
-    * @brief Define a global symbol
-    * @param name the name by which the global symbol will be referred to
-    * @param dt the data type of the global symbol
-    * @param location the address of the value the global symbol refers to
-    */
-   void DefineGlobal(const char *name, TR::IlType *dt, void *location);
-   void DefineFunction(const char* const name,
-                       const char* const fileName,
-                       const char* const lineNumber,
-                       void           * entryPoint,
-                       TR::IlType     * returnType,
-                       int32_t          numParms,
-                       ...);
-   void DefineFunction(const char* const name,
-                       const char* const fileName,
-                       const char* const lineNumber,
-                       void           * entryPoint,
-                       TR::IlType     * returnType,
-                       int32_t          numParms,
-                       TR::IlType     ** parmTypes);
+    const char *getSymbolName(int32_t slot);
 
-   int32_t Compile(void **entry);
+    TR::IlType **getParameterTypes();
+    char *getSignature(int32_t numParams, TR::IlType **paramTypeArray);
 
-   /**
-    * @brief will be called if a Call is issued to a function that has not yet been defined, provides a
-    *        mechanism for MethodBuilder subclasses to provide method lookup on demand rather than all up
-    *        front via the constructor.
-    * @returns true if the function was found and DefineFunction has been called for it, otherwise false
-    */
-   virtual bool RequestFunction(const char *name)
-      {
-      if (_clientCallbackRequestFunction)
-         return _clientCallbackRequestFunction(_client, name);
+    char *getSignature(TR::IlType **paramTypeArray) { return getSignature(_numParameters, paramTypeArray); }
 
-      return false;
-      }
+    TR::SymbolReference *lookupSymbol(const char *name);
+    void defineSymbol(const char *name, TR::SymbolReference *v);
+    bool symbolDefined(const char *name);
+    bool isSymbolAnArray(const char *name);
 
-   /**
-    * @brief append the first bytecode builder object to this method
-    * @param builder the bytecode builder object to add, usually for bytecode index 0
-    * A side effect of this call is that the builder is added to the worklist so that
-    * all other bytecodes can be processed by asking for GetNextBytecodeFromWorklist()
-    */
-   void AppendBytecodeBuilder(TR::BytecodeBuilder *builder);
+    TR::ResolvedMethod *lookupFunction(const char *name);
 
-   /**
-    * @brief add a bytecode builder to the worklist
-    * @param bcBuilder is the bytecode builder whose bytecode index will be added to the worklist
-    */
-   void addBytecodeBuilderToWorklist(TR::BytecodeBuilder* bcBuilder);
+    void AppendBuilder(TR::BytecodeBuilder *bb) { AppendBytecodeBuilder(bb); }
 
-   /**
-    * @brief get lowest index bytecode from the worklist
-    * @returns lowest bytecode index or -1 if worklist is empty
-    * It is important to use the worklist because it guarantees no bytecode will be
-    * processed before at least one predecessor bytecode has been processed, which
-    * means there should be a non-NULL VirtualMachineState object on the associated
-    * BytecodeBuilder object.
-    */
-   int32_t GetNextBytecodeFromWorklist();
+    void AppendBuilder(TR::IlBuilder *b) { this->OMR::IlBuilder::AppendBuilder(b); }
 
-   /**
-    * @brief Override this MethodBuilder's inline site index
-    * @param siteIndex the inline site index to use for this MethodBuilder
-    */
-   void setInlineSiteIndex(int32_t siteIndex)
-      {
-      _inlineSiteIndex = siteIndex;
-      }
+    void DefineFile(const char *file) { _definingFile = file; }
 
-   /**
-    * @brief returns this MethodBuilder's inline site index
-    * @returns the inlined site index
-    */
-   int32_t inlineSiteIndex()
-      {
-      return _inlineSiteIndex;
-      }
+    void DefineLine(const char *line);
+    void DefineLine(int line);
+    void DefineName(const char *name);
+    void DefineParameter(const char *name, TR::IlType *type);
+    void DefineArrayParameter(const char *name, TR::IlType *dt);
+    void DefineReturnType(TR::IlType *dt);
+    void DefineLocal(const char *name, TR::IlType *dt);
+    void DefineMemory(const char *name, TR::IlType *dt, void *location);
 
-   /**
-    * @brief returns the next inline site index to be used for inlined methods
-    * @returns the next inlined site index
-    * If this method build is an inlined MethodBuilder, then the answer to
-    * this query is delegated to the caller's MethodBuilder, which means
-    * only the top-level MethodBuilder object assigns inlined site IDs.
-    */
-   int32_t getNextInlineSiteIndex();
+    /**
+     * @brief Define a global symbol
+     * @param name the name by which the global symbol will be referred to
+     * @param dt the data type of the global symbol
+     * @param location the address of the value the global symbol refers to
+     */
+    void DefineGlobal(const char *name, TR::IlType *dt, void *location);
+    void DefineFunction(const char * const name, const char * const fileName, const char * const lineNumber,
+        void *entryPoint, TR::IlType *returnType, int32_t numParms, ...);
+    void DefineFunction(const char * const name, const char * const fileName, const char * const lineNumber,
+        void *entryPoint, TR::IlType *returnType, int32_t numParms, TR::IlType **parmTypes);
 
-   /**
-    * @brief associate a particular IlBuilder object as the return landing pad for this (inlined) MethodBuilder
-    * @param returnBuilder the IlBuilder object to use as a return landing pad
-    */
-   void setReturnBuilder(TR::IlBuilder *returnBuilder)
-      {
-      _returnBuilder = returnBuilder;
-      }
+    int32_t Compile(void **entry);
 
-   /**
-    * @brief get the return landing pad IlBuilder for this (inlined) MethodBuilder
-    * @returns the return landing pad IlBUilder object
-    */
-   TR::IlBuilder *returnBuilder()
-      {
-      return _returnBuilder;
-      }
+    /**
+     * @brief will be called if a Call is issued to a function that has not yet been defined, provides a
+     *        mechanism for MethodBuilder subclasses to provide method lookup on demand rather than all up
+     *        front via the constructor.
+     * @returns true if the function was found and DefineFunction has been called for it, otherwise false
+     */
+    virtual bool RequestFunction(const char *name)
+    {
+        if (_clientCallbackRequestFunction)
+            return _clientCallbackRequestFunction(_client, name);
 
-   /**
-    * @brief set the name of the symbol to use to store the return value from this (inined) MethodBuilder
-    * @param symbolName the name of the symbol to store any return value
-    */
-   void setReturnSymbol(const char *symbolName)
-      {
-      _returnSymbolName = symbolName;
-      }
+        return false;
+    }
 
-   /**
-    * @brief get the return symbol name to store any return value from this (inlined) MethodBuilder
-    * @returns the return symbol name
-    */
-   const char *returnSymbol()
-      {
-      return _returnSymbolName;
-      }
+    /**
+     * @brief append the first bytecode builder object to this method
+     * @param builder the bytecode builder object to add, usually for bytecode index 0
+     * A side effect of this call is that the builder is added to the worklist so that
+     * all other bytecodes can be processed by asking for GetNextBytecodeFromWorklist()
+     */
+    void AppendBytecodeBuilder(TR::BytecodeBuilder *builder);
 
-   /*
-    * @brief If this is an inlined MethodBuilder, return the MethodBuilder that directly inlined it
-    * @returns the directly inlining MethodBuilder or NULL if no MethodBuilder inlined this one
-    */
-   TR::MethodBuilder *callerMethodBuilder();
-   
-   /**
-    * @brief returns the client object associated with this object, allocating it if necessary
-    */
-   void *client();
+    /**
+     * @brief add a bytecode builder to the worklist
+     * @param bcBuilder is the bytecode builder whose bytecode index will be added to the worklist
+     */
+    void addBytecodeBuilderToWorklist(TR::BytecodeBuilder *bcBuilder);
 
-   /**
-    * @brief Store callback function to be called on client when RequestFunction is called
-    */
-   void setClientCallback_RequestFunction(void *callback)
-      {
-      _clientCallbackRequestFunction = (RequestFunctionCallback) callback;
-      }
+    /**
+     * @brief get lowest index bytecode from the worklist
+     * @returns lowest bytecode index or -1 if worklist is empty
+     * It is important to use the worklist because it guarantees no bytecode will be
+     * processed before at least one predecessor bytecode has been processed, which
+     * means there should be a non-NULL VirtualMachineState object on the associated
+     * BytecodeBuilder object.
+     */
+    int32_t GetNextBytecodeFromWorklist();
 
-   /**
-    * @brief Set the Client Allocator function
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
+    /**
+     * @brief Override this MethodBuilder's inline site index
+     * @param siteIndex the inline site index to use for this MethodBuilder
+     */
+    void setInlineSiteIndex(int32_t siteIndex) { _inlineSiteIndex = siteIndex; }
 
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
+    /**
+     * @brief returns this MethodBuilder's inline site index
+     * @returns the inlined site index
+     */
+    int32_t inlineSiteIndex() { return _inlineSiteIndex; }
 
-   TR_Memory *trMemory() { return memoryManager._trMemory; }
+    /**
+     * @brief returns the next inline site index to be used for inlined methods
+     * @returns the next inlined site index
+     * If this method build is an inlined MethodBuilder, then the answer to
+     * this query is delegated to the caller's MethodBuilder, which means
+     * only the top-level MethodBuilder object assigns inlined site IDs.
+     */
+    int32_t getNextInlineSiteIndex();
 
-   protected:
-   virtual uint32_t countBlocks();
-   virtual bool connectTrees();
+    /**
+     * @brief associate a particular IlBuilder object as the return landing pad for this (inlined) MethodBuilder
+     * @param returnBuilder the IlBuilder object to use as a return landing pad
+     */
+    void setReturnBuilder(TR::IlBuilder *returnBuilder) { _returnBuilder = returnBuilder; }
 
-   /*
-    * @brief adjusts a local variable name so that it will be unique to the current inlined site to prevent inlining-induced name aliasing
-    * @param name the original local variable name
-    * @returns an adjusted name that will be unique to the current inlined site
-    */
-   const char * adjustNameForInlinedSite(const char *name);
+    /**
+     * @brief get the return landing pad IlBuilder for this (inlined) MethodBuilder
+     * @returns the return landing pad IlBUilder object
+     */
+    TR::IlBuilder *returnBuilder() { return _returnBuilder; }
 
-   private:
-   // We have MemoryManager as the first member of TypeDictionary, so that
-   // it is the last one to get destroyed and all objects allocated using
-   // MemoryManager->_memoryRegion may be safely destroyed in the destructor.
-   typedef struct MemoryManager
-      {
-      MemoryManager();
-      ~MemoryManager();
+    /**
+     * @brief set the name of the symbol to use to store the return value from this (inined) MethodBuilder
+     * @param symbolName the name of the symbol to store any return value
+     */
+    void setReturnSymbol(const char *symbolName) { _returnSymbolName = symbolName; }
 
-      TR::SegmentProvider *_segmentProvider;
-      TR::Region *_memoryRegion;
-      TR_Memory *_trMemory;
-      } MemoryManager;
+    /**
+     * @brief get the return symbol name to store any return value from this (inlined) MethodBuilder
+     * @returns the return symbol name
+     */
+    const char *returnSymbol() { return _returnSymbolName; }
 
-   MemoryManager memoryManager;
+    /*
+     * @brief If this is an inlined MethodBuilder, return the MethodBuilder that directly inlined it
+     * @returns the directly inlining MethodBuilder or NULL if no MethodBuilder inlined this one
+     */
+    TR::MethodBuilder *callerMethodBuilder();
 
-   /**
-    * @brief client callback function to call when RequestFunction is called
-    */
-   RequestFunctionCallback     _clientCallbackRequestFunction;
+    /**
+     * @brief returns the client object associated with this object, allocating it if necessary
+     */
+    void *client();
 
-   // These values are typically defined outside of a compilation
-   const char                * _methodName;
-   TR::IlType                * _returnType;
-   int32_t                     _numParameters;
+    /**
+     * @brief Store callback function to be called on client when RequestFunction is called
+     */
+    void setClientCallback_RequestFunction(void *callback)
+    {
+        _clientCallbackRequestFunction = (RequestFunctionCallback)callback;
+    }
 
-   typedef bool (*StrComparator)(const char *, const char*);
+    /**
+     * @brief Set the Client Allocator function
+     */
+    static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
 
-   typedef TR::typed_allocator<std::pair<const char * const, TR::SymbolReference *>, TR::Region &> SymbolMapAllocator;
-   typedef std::map<const char *, TR::SymbolReference *, StrComparator, SymbolMapAllocator> SymbolMap;
+    /**
+     * @brief Set the Get Impl function
+     *
+     * @param getter function pointer to the impl getter
+     */
+    static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
 
-   // This map should only be accessed inside a compilation via lookupSymbol
-   SymbolMap                   _symbols;
+    TR_Memory *trMemory() { return memoryManager._trMemory; }
 
-   typedef TR::typed_allocator<std::pair<const char * const, int32_t>, TR::Region &> ParameterMapAllocator;
-   typedef std::map<const char *, int32_t, StrComparator, ParameterMapAllocator> ParameterMap;
-   ParameterMap                _parameterSlot;
+protected:
+    virtual uint32_t countBlocks();
+    virtual bool connectTrees();
 
-   typedef TR::typed_allocator<std::pair<const char * const, TR::IlType *>, TR::Region &> SymbolTypeMapAllocator;
-   typedef std::map<const char *, TR::IlType *, StrComparator, SymbolTypeMapAllocator> SymbolTypeMap;
-   SymbolTypeMap               _symbolTypes;
-
-   typedef TR::typed_allocator<std::pair<int32_t const, const char *>, TR::Region &> SlotToSymNameMapAllocator;
-   typedef std::map<int32_t, const char *, std::less<int32_t>, SlotToSymNameMapAllocator> SlotToSymNameMap;
-   SlotToSymNameMap            _symbolNameFromSlot;
-   
-   typedef TR::typed_allocator<const char *, TR::Region &> StringSetAllocator;
-   typedef std::set<const char *, StrComparator, StringSetAllocator> ArrayIdentifierSet;
-
-   // This set acts as an identifier for symbols which correspond to arrays
-   ArrayIdentifierSet          _symbolIsArray;
-
-   typedef TR::typed_allocator<std::pair<const char * const, void *>, TR::Region &> MemoryLocationMapAllocator;
-   typedef std::map<const char *, void *, StrComparator, MemoryLocationMapAllocator> MemoryLocationMap;
-   MemoryLocationMap           _memoryLocations;
-
-   typedef TR::typed_allocator<std::pair<const char * const, void *>, TR::Region &> GlobalMapAllocator;
-   typedef std::map<const char *, void *, StrComparator, GlobalMapAllocator> GlobalMap;
-
-   /**
-    * @brief map of global symbol names and locations of values global symbols refer to.
-    *        This map should only be accessed inside a compilation via lookupSymbol.
-    */
-   GlobalMap                   _globals;
-
-   typedef TR::typed_allocator<std::pair<const char * const, TR::ResolvedMethod *>, TR::Region &> FunctionMapAllocator;
-   typedef std::map<const char *, TR::ResolvedMethod *, StrComparator, FunctionMapAllocator> FunctionMap;
-   FunctionMap                 _functions;
-
-   TR::IlType                ** _cachedParameterTypes;
-   const char                * _definingFile;
-   char                        _definingLine[MAX_LINE_NUM_LEN];
-   TR::IlType                * _cachedParameterTypesArray[18];
-
-   bool                        _newSymbolsAreTemps;
-   int32_t                     _nextValueID;
-
-   bool                        _useBytecodeBuilders;
-   uint32_t                    _numBlocksBeforeWorklist;
-   List<TR::BytecodeBuilder> * _countBlocksWorklist;
-   List<TR::BytecodeBuilder> * _connectTreesWorklist;
-   List<TR::BytecodeBuilder> * _allBytecodeBuilders;
-   TR::VirtualMachineState   * _vmState;
-
-   TR_BitVector              * _bytecodeWorklist;
-   TR_BitVector              * _bytecodeHasBeenInWorklist;
-
-   int32_t                     _inlineSiteIndex;
-   int32_t                     _nextInlineSiteIndex;
-   TR::IlBuilder             * _returnBuilder;
-   const char                * _returnSymbolName;
+    /*
+     * @brief adjusts a local variable name so that it will be unique to the current inlined site to prevent
+     * inlining-induced name aliasing
+     * @param name the original local variable name
+     * @returns an adjusted name that will be unique to the current inlined site
+     */
+    const char *adjustNameForInlinedSite(const char *name);
 
 private:
-   static ClientAllocator      _clientAllocator;
-   static ImplGetter _getImpl;
-   };
+    // We have MemoryManager as the first member of TypeDictionary, so that
+    // it is the last one to get destroyed and all objects allocated using
+    // MemoryManager->_memoryRegion may be safely destroyed in the destructor.
+    typedef struct MemoryManager {
+        MemoryManager();
+        ~MemoryManager();
+
+        TR::SegmentProvider *_segmentProvider;
+        TR::Region *_memoryRegion;
+        TR_Memory *_trMemory;
+    } MemoryManager;
+
+    MemoryManager memoryManager;
+
+    /**
+     * @brief client callback function to call when RequestFunction is called
+     */
+    RequestFunctionCallback _clientCallbackRequestFunction;
+
+    // These values are typically defined outside of a compilation
+    const char *_methodName;
+    TR::IlType *_returnType;
+    int32_t _numParameters;
+
+    typedef bool (*StrComparator)(const char *, const char *);
+
+    typedef TR::typed_allocator<std::pair<const char * const, TR::SymbolReference *>, TR::Region &> SymbolMapAllocator;
+    typedef std::map<const char *, TR::SymbolReference *, StrComparator, SymbolMapAllocator> SymbolMap;
+
+    // This map should only be accessed inside a compilation via lookupSymbol
+    SymbolMap _symbols;
+
+    typedef TR::typed_allocator<std::pair<const char * const, int32_t>, TR::Region &> ParameterMapAllocator;
+    typedef std::map<const char *, int32_t, StrComparator, ParameterMapAllocator> ParameterMap;
+    ParameterMap _parameterSlot;
+
+    typedef TR::typed_allocator<std::pair<const char * const, TR::IlType *>, TR::Region &> SymbolTypeMapAllocator;
+    typedef std::map<const char *, TR::IlType *, StrComparator, SymbolTypeMapAllocator> SymbolTypeMap;
+    SymbolTypeMap _symbolTypes;
+
+    typedef TR::typed_allocator<std::pair<int32_t const, const char *>, TR::Region &> SlotToSymNameMapAllocator;
+    typedef std::map<int32_t, const char *, std::less<int32_t>, SlotToSymNameMapAllocator> SlotToSymNameMap;
+    SlotToSymNameMap _symbolNameFromSlot;
+
+    typedef TR::typed_allocator<const char *, TR::Region &> StringSetAllocator;
+    typedef std::set<const char *, StrComparator, StringSetAllocator> ArrayIdentifierSet;
+
+    // This set acts as an identifier for symbols which correspond to arrays
+    ArrayIdentifierSet _symbolIsArray;
+
+    typedef TR::typed_allocator<std::pair<const char * const, void *>, TR::Region &> MemoryLocationMapAllocator;
+    typedef std::map<const char *, void *, StrComparator, MemoryLocationMapAllocator> MemoryLocationMap;
+    MemoryLocationMap _memoryLocations;
+
+    typedef TR::typed_allocator<std::pair<const char * const, void *>, TR::Region &> GlobalMapAllocator;
+    typedef std::map<const char *, void *, StrComparator, GlobalMapAllocator> GlobalMap;
+
+    /**
+     * @brief map of global symbol names and locations of values global symbols refer to.
+     *        This map should only be accessed inside a compilation via lookupSymbol.
+     */
+    GlobalMap _globals;
+
+    typedef TR::typed_allocator<std::pair<const char * const, TR::ResolvedMethod *>, TR::Region &> FunctionMapAllocator;
+    typedef std::map<const char *, TR::ResolvedMethod *, StrComparator, FunctionMapAllocator> FunctionMap;
+    FunctionMap _functions;
+
+    TR::IlType **_cachedParameterTypes;
+    const char *_definingFile;
+    char _definingLine[MAX_LINE_NUM_LEN];
+    TR::IlType *_cachedParameterTypesArray[18];
+
+    bool _newSymbolsAreTemps;
+    int32_t _nextValueID;
+
+    bool _useBytecodeBuilders;
+    uint32_t _numBlocksBeforeWorklist;
+    List<TR::BytecodeBuilder> *_countBlocksWorklist;
+    List<TR::BytecodeBuilder> *_connectTreesWorklist;
+    List<TR::BytecodeBuilder> *_allBytecodeBuilders;
+    TR::VirtualMachineState *_vmState;
+
+    TR_BitVector *_bytecodeWorklist;
+    TR_BitVector *_bytecodeHasBeenInWorklist;
+
+    int32_t _inlineSiteIndex;
+    int32_t _nextInlineSiteIndex;
+    TR::IlBuilder *_returnBuilder;
+    const char *_returnSymbolName;
+
+private:
+    static ClientAllocator _clientAllocator;
+    static ImplGetter _getImpl;
+};
 
 } // namespace OMR
 

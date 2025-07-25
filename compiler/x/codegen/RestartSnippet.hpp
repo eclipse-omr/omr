@@ -37,112 +37,98 @@ class Node;
 
 namespace TR {
 
-class X86RestartSnippet  : public TR::Snippet
-   {
-   TR::LabelSymbol *_restartLabel;
-   bool            _forceLongRestartJump;
+class X86RestartSnippet : public TR::Snippet {
+    TR::LabelSymbol *_restartLabel;
+    bool _forceLongRestartJump;
 
-   public:
+public:
+    X86RestartSnippet(TR::CodeGenerator *cg, TR::Node *n, TR::LabelSymbol *restartlab, TR::LabelSymbol *snippetlab,
+        bool isGCSafePoint)
+        : TR::Snippet(cg, n, snippetlab, isGCSafePoint)
+        , _restartLabel(restartlab)
+        , _forceLongRestartJump(false)
+    {}
 
-   X86RestartSnippet(TR::CodeGenerator *cg,
-                     TR::Node * n,
-                     TR::LabelSymbol *restartlab,
-                     TR::LabelSymbol *snippetlab,
-                     bool            isGCSafePoint)
-      : TR::Snippet(cg, n, snippetlab, isGCSafePoint),
-        _restartLabel(restartlab), _forceLongRestartJump(false) {}
+    virtual Kind getKind() { return IsRestart; }
 
-   virtual Kind getKind() { return IsRestart; }
+    TR::LabelSymbol *getRestartLabel() { return _restartLabel; }
 
-   TR::LabelSymbol *getRestartLabel()                  {return _restartLabel;}
-   TR::LabelSymbol *setRestartLabel(TR::LabelSymbol *l) {return (_restartLabel = l);}
+    TR::LabelSymbol *setRestartLabel(TR::LabelSymbol *l) { return (_restartLabel = l); }
 
-   void setForceLongRestartJump() {_forceLongRestartJump = true;}
-   bool getForceLongRestartJump() {return _forceLongRestartJump;}
+    void setForceLongRestartJump() { _forceLongRestartJump = true; }
 
-   uint8_t *genRestartJump(TR::InstOpCode::Mnemonic branchOp, uint8_t *bufferCursor, TR::LabelSymbol *label)
-      {
-      TR::InstOpCode  opcode(branchOp);
+    bool getForceLongRestartJump() { return _forceLongRestartJump; }
 
-      uint8_t *destination = label->getCodeLocation();
-      intptr_t  distance    = destination - (bufferCursor + 2);
+    uint8_t *genRestartJump(TR::InstOpCode::Mnemonic branchOp, uint8_t *bufferCursor, TR::LabelSymbol *label)
+    {
+        TR::InstOpCode opcode(branchOp);
 
-      TR_ASSERT((branchOp >= TR::InstOpCode::JA4) && (branchOp <= TR::InstOpCode::JMP4),
-             "opcode must be a long branch for conditional restart in a restart snippet\n");
+        uint8_t *destination = label->getCodeLocation();
+        intptr_t distance = destination - (bufferCursor + 2);
 
-      if (getForceLongRestartJump())
-         {
-          bufferCursor = opcode.binary(bufferCursor, OMR::X86::Encoding::Default);
-          *(int32_t *)bufferCursor = (int32_t)(destination - (bufferCursor + 4));
-          bufferCursor += 4;
-         }
-      else
-         {
-         if (distance >= -128 && distance <= 127)
-            {
-            opcode.convertLongBranchToShort();
-            bufferCursor = opcode.binary(bufferCursor, OMR::X86::Encoding::Default);
-            *bufferCursor = (int8_t)(destination - (bufferCursor + 1));
-            bufferCursor++;
-            }
-         else
-            {
+        TR_ASSERT((branchOp >= TR::InstOpCode::JA4) && (branchOp <= TR::InstOpCode::JMP4),
+            "opcode must be a long branch for conditional restart in a restart snippet\n");
+
+        if (getForceLongRestartJump()) {
             bufferCursor = opcode.binary(bufferCursor, OMR::X86::Encoding::Default);
             *(int32_t *)bufferCursor = (int32_t)(destination - (bufferCursor + 4));
             bufferCursor += 4;
+        } else {
+            if (distance >= -128 && distance <= 127) {
+                opcode.convertLongBranchToShort();
+                bufferCursor = opcode.binary(bufferCursor, OMR::X86::Encoding::Default);
+                *bufferCursor = (int8_t)(destination - (bufferCursor + 1));
+                bufferCursor++;
+            } else {
+                bufferCursor = opcode.binary(bufferCursor, OMR::X86::Encoding::Default);
+                *(int32_t *)bufferCursor = (int32_t)(destination - (bufferCursor + 4));
+                bufferCursor += 4;
             }
-         }
-      return bufferCursor;
-      }
+        }
+        return bufferCursor;
+    }
 
-   uint8_t *genRestartJump(uint8_t *bufferCursor, TR::LabelSymbol *label)
-      {
-      return genRestartJump(TR::InstOpCode::JMP4, bufferCursor, label);
-      }
+    uint8_t *genRestartJump(uint8_t *bufferCursor, TR::LabelSymbol *label)
+    {
+        return genRestartJump(TR::InstOpCode::JMP4, bufferCursor, label);
+    }
 
-   uint8_t *genRestartJump(uint8_t *bufferCursor)
-      {
-      return genRestartJump(bufferCursor, _restartLabel);
-      }
+    uint8_t *genRestartJump(uint8_t *bufferCursor) { return genRestartJump(bufferCursor, _restartLabel); }
 
-   uint32_t estimateRestartJumpLength(TR::InstOpCode::Mnemonic  branchOp,
-                                      int32_t         estimatedSnippetLocation,
-                                      TR::LabelSymbol *label)
-      {
-      intptr_t location = label->getEstimatedCodeLocation();
-      if (label->getCodeLocation() != 0)
-         {
-         location = label->getCodeLocation() - cg()->getBinaryBufferStart();
-         }
-      intptr_t distance = location - (estimatedSnippetLocation + 2); // 2 is size of short branch
-      if (distance >= -128 && distance <= 127 && !getForceLongRestartJump())
-         {
-         return 2;
-         }
-      // long branch required
-      if (branchOp == TR::InstOpCode::JMP4)
-         return 5;
-      else
-         return 6;
-      }
+    uint32_t estimateRestartJumpLength(TR::InstOpCode::Mnemonic branchOp, int32_t estimatedSnippetLocation,
+        TR::LabelSymbol *label)
+    {
+        intptr_t location = label->getEstimatedCodeLocation();
+        if (label->getCodeLocation() != 0) {
+            location = label->getCodeLocation() - cg()->getBinaryBufferStart();
+        }
+        intptr_t distance = location - (estimatedSnippetLocation + 2); // 2 is size of short branch
+        if (distance >= -128 && distance <= 127 && !getForceLongRestartJump()) {
+            return 2;
+        }
+        // long branch required
+        if (branchOp == TR::InstOpCode::JMP4)
+            return 5;
+        else
+            return 6;
+    }
 
-   uint32_t estimateRestartJumpLength(int32_t estimatedSnippetLocation, TR::LabelSymbol *label)
-      {
-      return estimateRestartJumpLength(TR::InstOpCode::JMP4, estimatedSnippetLocation, label);
-      }
+    uint32_t estimateRestartJumpLength(int32_t estimatedSnippetLocation, TR::LabelSymbol *label)
+    {
+        return estimateRestartJumpLength(TR::InstOpCode::JMP4, estimatedSnippetLocation, label);
+    }
 
-   uint32_t estimateRestartJumpLength(int32_t estimatedSnippetLocation)
-      {
-      return estimateRestartJumpLength(estimatedSnippetLocation, _restartLabel);
-      }
+    uint32_t estimateRestartJumpLength(int32_t estimatedSnippetLocation)
+    {
+        return estimateRestartJumpLength(estimatedSnippetLocation, _restartLabel);
+    }
 
-   uint32_t estimateRestartJumpLength(TR::InstOpCode::Mnemonic branchOp, int32_t estimatedSnippetLocation)
-      {
-      return estimateRestartJumpLength(branchOp, estimatedSnippetLocation, _restartLabel);
-      }
+    uint32_t estimateRestartJumpLength(TR::InstOpCode::Mnemonic branchOp, int32_t estimatedSnippetLocation)
+    {
+        return estimateRestartJumpLength(branchOp, estimatedSnippetLocation, _restartLabel);
+    }
+};
 
-   };
-
-}
+} // namespace TR
 
 #endif

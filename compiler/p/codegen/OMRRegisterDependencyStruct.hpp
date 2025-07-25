@@ -27,32 +27,32 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
+
 namespace OMR {
-namespace Power { struct RegisterDependency; }
-typedef OMR::Power::RegisterDependency RegisterDependencyConnector;
+namespace Power {
+struct RegisterDependency;
 }
+
+typedef OMR::Power::RegisterDependency RegisterDependencyConnector;
+} // namespace OMR
 #else
 #error OMR::Power::RegisterDependency expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRRegisterDependencyStruct.hpp"
 
-#define ExcludeGPR0InAssigner       0x80
+#define ExcludeGPR0InAssigner 0x80
 
-namespace OMR
-{
+namespace OMR { namespace Power {
 
-namespace Power
-{
+struct RegisterDependency : OMR::RegisterDependency {
+    uint32_t getExcludeGPR0() { return _flags & ExcludeGPR0InAssigner; }
 
-struct RegisterDependency: OMR::RegisterDependency
-   {
-   uint32_t getExcludeGPR0()    {return _flags & ExcludeGPR0InAssigner;}
-   uint32_t setExcludeGPR0()    {return (_flags |= ExcludeGPR0InAssigner);}
-   uint32_t resetExcludeGPR0()  {return (_flags &= ~ExcludeGPR0InAssigner);}
-   };
+    uint32_t setExcludeGPR0() { return (_flags |= ExcludeGPR0InAssigner); }
 
-}
-}
+    uint32_t resetExcludeGPR0() { return (_flags &= ~ExcludeGPR0InAssigner); }
+};
+
+}} // namespace OMR::Power
 
 #endif

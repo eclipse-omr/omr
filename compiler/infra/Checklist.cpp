@@ -26,55 +26,74 @@
 #include "il/Node.hpp"
 #include "infra/BitVector.hpp"
 
-namespace TR
+namespace TR {
+Checklist::Checklist(TR::Compilation *c)
+    : _comp(c)
+    , _v(allocBV())
+{}
+
+Checklist::~Checklist() { _comp->getBitVectorPool().release(_v); }
+
+Checklist::Checklist(const Checklist &other)
+    : _comp(other._comp)
+    , _v(allocBV())
 {
-   Checklist::Checklist(TR::Compilation* c) : _comp(c), _v(allocBV()) {}
-   Checklist::~Checklist() { _comp->getBitVectorPool().release(_v); }
-
-   Checklist::Checklist(const Checklist &other)
-      : _comp(other._comp), _v(allocBV())
-      {
-      *this = other;
-      }
-
-   Checklist &Checklist::operator=(const Checklist &other)
-      {
-      *_v = *other._v;
-      return *this;
-      }
-
-   TR_BitVector* Checklist::allocBV()
-      {
-      return _comp->getBitVectorPool().get();
-      }
-
-   NodeChecklist::NodeChecklist(TR::Compilation* c) : Checklist(c) {}
-   bool NodeChecklist::contains(TR::Node* n) const { return _v->isSet(n->getGlobalIndex()); }
-   void NodeChecklist::add(TR::Node* n) { _v->set(n->getGlobalIndex()); }
-   void NodeChecklist::remove(TR::Node* n) { _v->reset(n->getGlobalIndex()); }
-   void NodeChecklist::add(const NodeChecklist &other) { *_v |= *(other._v); }
-   void NodeChecklist::remove(const NodeChecklist &other) { return *_v -= *(other._v); }
-   bool NodeChecklist::operator==(const NodeChecklist &other) const { return *_v == *(other._v); }
-   bool NodeChecklist::contains(const NodeChecklist &other) const
-      {
-      NodeChecklist diff(_comp);
-      diff.add(other);
-      diff.remove(*this);
-      return diff.isEmpty();
-      }
-
-   BlockChecklist::BlockChecklist(TR::Compilation* c) : Checklist(c) {}
-   bool BlockChecklist::contains(TR::Block* b) const { return _v->isSet(b->getNumber()); }
-   void BlockChecklist::add(TR::Block* b) { _v->set(b->getNumber()); }
-   void BlockChecklist::remove(TR::Block* b) { _v->reset(b->getNumber()); }
-   void BlockChecklist::add(const BlockChecklist &other) { *_v |= *(other._v); }
-   void BlockChecklist::remove(const BlockChecklist &other) { return *_v -= *(other._v); }
-   bool BlockChecklist::operator==(const BlockChecklist &other) const { return *_v == *(other._v); }
-   bool BlockChecklist::contains(const BlockChecklist &other) const
-      {
-      BlockChecklist diff(_comp);
-      diff.add(other);
-      diff.remove(*this);
-      return diff.isEmpty();
-      }
+    *this = other;
 }
+
+Checklist &Checklist::operator=(const Checklist &other)
+{
+    *_v = *other._v;
+    return *this;
+}
+
+TR_BitVector *Checklist::allocBV() { return _comp->getBitVectorPool().get(); }
+
+NodeChecklist::NodeChecklist(TR::Compilation *c)
+    : Checklist(c)
+{}
+
+bool NodeChecklist::contains(TR::Node *n) const { return _v->isSet(n->getGlobalIndex()); }
+
+void NodeChecklist::add(TR::Node *n) { _v->set(n->getGlobalIndex()); }
+
+void NodeChecklist::remove(TR::Node *n) { _v->reset(n->getGlobalIndex()); }
+
+void NodeChecklist::add(const NodeChecklist &other) { *_v |= *(other._v); }
+
+void NodeChecklist::remove(const NodeChecklist &other) { return *_v -= *(other._v); }
+
+bool NodeChecklist::operator==(const NodeChecklist &other) const { return *_v == *(other._v); }
+
+bool NodeChecklist::contains(const NodeChecklist &other) const
+{
+    NodeChecklist diff(_comp);
+    diff.add(other);
+    diff.remove(*this);
+    return diff.isEmpty();
+}
+
+BlockChecklist::BlockChecklist(TR::Compilation *c)
+    : Checklist(c)
+{}
+
+bool BlockChecklist::contains(TR::Block *b) const { return _v->isSet(b->getNumber()); }
+
+void BlockChecklist::add(TR::Block *b) { _v->set(b->getNumber()); }
+
+void BlockChecklist::remove(TR::Block *b) { _v->reset(b->getNumber()); }
+
+void BlockChecklist::add(const BlockChecklist &other) { *_v |= *(other._v); }
+
+void BlockChecklist::remove(const BlockChecklist &other) { return *_v -= *(other._v); }
+
+bool BlockChecklist::operator==(const BlockChecklist &other) const { return *_v == *(other._v); }
+
+bool BlockChecklist::contains(const BlockChecklist &other) const
+{
+    BlockChecklist diff(_comp);
+    diff.add(other);
+    diff.remove(*this);
+    return diff.isEmpty();
+}
+} // namespace TR

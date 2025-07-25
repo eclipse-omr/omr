@@ -27,10 +27,14 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
+
 namespace OMR {
-namespace ARM64 { class Instruction; }
-typedef OMR::ARM64::Instruction InstructionConnector;
+namespace ARM64 {
+class Instruction;
 }
+
+typedef OMR::ARM64::Instruction InstructionConnector;
+} // namespace OMR
 #else
 #error OMR::ARM64::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -47,202 +51,198 @@ class Instruction;
 class Node;
 class Register;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace ARM64 {
 
-namespace ARM64
-{
+class OMR_EXTENSIBLE Instruction : public OMR::Instruction {
+public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] op : opcode
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] precedingInstruction : preceding instruction
+     * @param[in] op : opcode
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::Node *node = NULL);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] op : opcode
+     * @param[in] cond : register dependency conditions
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond,
+        TR::Node *node = NULL);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] precedingInstruction : preceding instruction
+     * @param[in] op : opcode
+     * @param[in] cond : register dependency conditions
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
 
-class OMR_EXTENSIBLE Instruction : public OMR::Instruction
-   {
+    /**
+     * @brief Instruction description string
+     * @return description string
+     */
+    virtual const char *description() { return "ARM64"; }
 
-   public:
+    /**
+     * @brief Gets instruction kind
+     * @return instruction kind
+     */
+    virtual Kind getKind() { return IsNotExtended; }
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] op : opcode
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] precedingInstruction : preceding instruction
-    * @param[in] op : opcode
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] op : opcode
-    * @param[in] cond : register dependency conditions
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] precedingInstruction : preceding instruction
-    * @param[in] op : opcode
-    * @param[in] cond : register dependency conditions
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
+    /**
+     * @brief Estimates binary length
+     * @param[in] currentEstimate : current estimated length
+     * @return estimated binary length
+     */
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate);
 
-   /**
-    * @brief Instruction description string
-    * @return description string
-    */
-   virtual const char *description() { return "ARM64"; }
-   /**
-    * @brief Gets instruction kind
-    * @return instruction kind
-    */
-   virtual Kind getKind() { return IsNotExtended; }
+    /**
+     * @brief Generates binary encoding of the instruction
+     * @return instruction cursor
+     */
+    virtual uint8_t *generateBinaryEncoding();
 
-   /**
-    * @brief Estimates binary length
-    * @param[in] currentEstimate : current estimated length
-    * @return estimated binary length
-    */
-   virtual int32_t estimateBinaryLength(int32_t currentEstimate);
+    /**
+     * @brief Answers if this instruction is a label or not
+     * @return true if this instruction is a label, false otherwise
+     */
+    virtual bool isLabel() { return _opcode.getMnemonic() == TR::InstOpCode::label; }
 
-   /**
-    * @brief Generates binary encoding of the instruction
-    * @return instruction cursor
-    */
-   virtual uint8_t *generateBinaryEncoding();
+    /**
+     * @brief Gets the base register of memory access
+     * @return base register
+     */
+    virtual TR::Register *getMemoryBase() { return NULL; }
 
-   /**
-    * @brief Answers if this instruction is a label or not
-    * @return true if this instruction is a label, false otherwise
-    */
-   virtual bool isLabel() { return _opcode.getMnemonic() == TR::InstOpCode::label; }
+    /**
+     * @brief Gets the index register of memory access
+     * @return index register
+     */
+    virtual TR::Register *getMemoryIndex() { return NULL; }
 
-   /**
-    * @brief Gets the base register of memory access
-    * @return base register
-    */
-   virtual TR::Register *getMemoryBase() {return NULL;}
-   /**
-    * @brief Gets the index register of memory access
-    * @return index register
-    */
-   virtual TR::Register *getMemoryIndex() {return NULL;}
-   /**
-    * @brief Gets the offset of memory access
-    * @return offset
-    */
-   virtual int32_t getOffset() {return 0;}
+    /**
+     * @brief Gets the offset of memory access
+     * @return offset
+     */
+    virtual int32_t getOffset() { return 0; }
 
-   /**
-    * @brief Gets the register dependency conditions
-    * @return register dependency conditions
-    */
-   virtual TR::RegisterDependencyConditions *getDependencyConditions()
-      {
-      return _conditions;
-      }
-   /**
-    * @brief Sets the register dependency conditions
-    * @param[in] cond : register dependency conditions
-    * @return register dependency conditions
-    */
-   TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
-      {
-      return (_conditions = cond);
-      }
+    /**
+     * @brief Gets the register dependency conditions
+     * @return register dependency conditions
+     */
+    virtual TR::RegisterDependencyConditions *getDependencyConditions() { return _conditions; }
 
-   /**
-    * @brief Sets GCMap mask
-    * @param[in] cg : CodeGenerator
-    * @param[in] mask : GCMap mask
-    */
-   void ARM64NeedsGCMap(TR::CodeGenerator *cg, uint32_t mask);
+    /**
+     * @brief Sets the register dependency conditions
+     * @param[in] cond : register dependency conditions
+     * @return register dependency conditions
+     */
+    TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
+    {
+        return (_conditions = cond);
+    }
 
-   /**
-    * @brief Gets the memory data register
-    * @return memory data register
-    */
-   virtual TR::Register *getMemoryDataRegister();
+    /**
+     * @brief Sets GCMap mask
+     * @param[in] cg : CodeGenerator
+     * @param[in] mask : GCMap mask
+     */
+    void ARM64NeedsGCMap(TR::CodeGenerator *cg, uint32_t mask);
 
-   /**
-    * @brief Assigns registers
-    * @param[in] kindToBeAssigned : register kind
-    */
-   virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
+    /**
+     * @brief Gets the memory data register
+     * @return memory data register
+     */
+    virtual TR::Register *getMemoryDataRegister();
 
-   /**
-    * @brief Answers whether this instruction references the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when the instruction references the virtual register
-    */
-   virtual bool refsRegister(TR::Register *reg);
+    /**
+     * @brief Assigns registers
+     * @param[in] kindToBeAssigned : register kind
+     */
+    virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
 
-   /**
-    * @brief Answers whether this instruction defines the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when the instruction defines the virtual register
-    */
-   virtual bool defsRegister(TR::Register *reg);
+    /**
+     * @brief Answers whether this instruction references the given virtual register
+     * @param[in] reg : virtual register
+     * @return true when the instruction references the virtual register
+     */
+    virtual bool refsRegister(TR::Register *reg);
 
-   /**
-    * @brief Answers whether this instruction uses the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when the instruction uses the virtual register
-    */
-   virtual bool usesRegister(TR::Register *reg);
+    /**
+     * @brief Answers whether this instruction defines the given virtual register
+     * @param[in] reg : virtual register
+     * @return true when the instruction defines the virtual register
+     */
+    virtual bool defsRegister(TR::Register *reg);
 
-   /**
-    * @brief Answers whether a dependency condition associated with this instruction references the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when a dependency condtion references the virtual register
-    */
-   virtual bool dependencyRefsRegister(TR::Register *reg);
+    /**
+     * @brief Answers whether this instruction uses the given virtual register
+     * @param[in] reg : virtual register
+     * @return true when the instruction uses the virtual register
+     */
+    virtual bool usesRegister(TR::Register *reg);
 
-   /**
-    * @brief Calls OMR::Instruction::useRegister and remove placeholder flags if isDummy is false
-    * @param[in] reg : virtual register
-    * @param[in] isDummy : dummy flag
-    */
-   void useRegister(TR::Register *reg, bool isDummy = false);
+    /**
+     * @brief Answers whether a dependency condition associated with this instruction references the given virtual
+     * register
+     * @param[in] reg : virtual register
+     * @return true when a dependency condtion references the virtual register
+     */
+    virtual bool dependencyRefsRegister(TR::Register *reg);
 
-   /*
-    * Maps to TIndex in Instruction. Here we set values specific to ARM64 CodeGen.
-    *
-    * A 32-bit field where the lower 24-bits contain an integer that represents an
-    * approximate ordering of instructions.
-    *
-    * The upper 8 bits are used for flags.
-    * Instruction flags encoded by their bit position.  Subclasses may use any
-    * available bits between LastBaseFlag and MaxBaseFlag inclusive.
-    */
-   enum
-      {
-      WillBePatched        = 0x08000000
-      };
+    /**
+     * @brief Calls OMR::Instruction::useRegister and remove placeholder flags if isDummy is false
+     * @param[in] reg : virtual register
+     * @param[in] isDummy : dummy flag
+     */
+    void useRegister(TR::Register *reg, bool isDummy = false);
 
-   /**
-    * @brief Answers the status of WillBePatched flag
-    * @return true when WillBePatched flag is set
-    */
-   bool willBePatched() {return (_index & WillBePatched) != 0; }
-   /**
-    * @brief Sets WillBePatched flag
-    * @param[in] v : flag status
-    */
-   void setWillBePatched(bool v = true) { v ? _index |= WillBePatched : _index &= ~WillBePatched; }
+    /*
+     * Maps to TIndex in Instruction. Here we set values specific to ARM64 CodeGen.
+     *
+     * A 32-bit field where the lower 24-bits contain an integer that represents an
+     * approximate ordering of instructions.
+     *
+     * The upper 8 bits are used for flags.
+     * Instruction flags encoded by their bit position.  Subclasses may use any
+     * available bits between LastBaseFlag and MaxBaseFlag inclusive.
+     */
+    enum {
+        WillBePatched = 0x08000000
+    };
 
-   private:
-      TR::RegisterDependencyConditions *_conditions;
-   };
+    /**
+     * @brief Answers the status of WillBePatched flag
+     * @return true when WillBePatched flag is set
+     */
+    bool willBePatched() { return (_index & WillBePatched) != 0; }
 
-} // ARM64
+    /**
+     * @brief Sets WillBePatched flag
+     * @param[in] v : flag status
+     */
+    void setWillBePatched(bool v = true) { v ? _index |= WillBePatched : _index &= ~WillBePatched; }
 
-} // OMR
+private:
+    TR::RegisterDependencyConditions *_conditions;
+};
+
+}} // namespace OMR::ARM64
 
 #endif

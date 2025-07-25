@@ -34,107 +34,89 @@ class Register;
 }
 
 OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node)
-   : OMR::Instruction(cg, op, node),
-     _conditions(NULL)
-   {
-   }
+    : OMR::Instruction(cg, op, node)
+    , _conditions(NULL)
+{}
 
+OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction,
+    TR::InstOpCode::Mnemonic op, TR::Node *node)
+    : OMR::Instruction(cg, precedingInstruction, op, node)
+    , _conditions(NULL)
+{}
 
-OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node)
-   : OMR::Instruction(cg, precedingInstruction, op, node),
-     _conditions(NULL)
-   {
-   }
+OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    TR::RegisterDependencyConditions *cond, TR::Node *node)
+    : OMR::Instruction(cg, op, node)
+    , _conditions(cond)
+{
+    if (cond)
+        cond->incRegisterTotalUseCounts(cg);
+}
 
+OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction,
+    TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node)
+    : OMR::Instruction(cg, precedingInstruction, op, node)
+    , _conditions(cond)
+{
+    if (cond)
+        cond->incRegisterTotalUseCounts(cg);
+}
 
-OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node)
-   : OMR::Instruction(cg, op, node),
-     _conditions(cond)
-   {
-   if (cond)
-      cond->incRegisterTotalUseCounts(cg);
-   }
-
-
-OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node)
-   : OMR::Instruction(cg, precedingInstruction, op, node),
-     _conditions(cond)
-   {
-   if (cond)
-      cond->incRegisterTotalUseCounts(cg);
-   }
-
-
-void
-OMR::RV::Instruction::remove()
-   {
-   self()->getPrev()->setNext(self()->getNext());
-   self()->getNext()->setPrev(self()->getPrev());
-   }
-
+void OMR::RV::Instruction::remove()
+{
+    self()->getPrev()->setNext(self()->getNext());
+    self()->getNext()->setPrev(self()->getPrev());
+}
 
 void OMR::RV::Instruction::RVNeedsGCMap(TR::CodeGenerator *cg, uint32_t mask)
-   {
-   if (cg->comp()->useRegisterMaps())
-      self()->setNeedsGCMap(mask);
-   }
+{
+    if (cg->comp()->useRegisterMaps())
+        self()->setNeedsGCMap(mask);
+}
 
-bool
-OMR::RV::Instruction::refsRegister(TR::Register * reg)
-   {
-   TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
-   return cond && cond->refsRegister(reg);
-   }
+bool OMR::RV::Instruction::refsRegister(TR::Register *reg)
+{
+    TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
+    return cond && cond->refsRegister(reg);
+}
 
+bool OMR::RV::Instruction::defsRegister(TR::Register *reg)
+{
+    TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
+    return cond && cond->defsRegister(reg);
+}
 
-bool
-OMR::RV::Instruction::defsRegister(TR::Register * reg)
-   {
-   TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
-   return cond && cond->defsRegister(reg);
-   }
+bool OMR::RV::Instruction::usesRegister(TR::Register *reg)
+{
+    TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
+    return cond && cond->usesRegister(reg);
+}
 
+bool OMR::RV::Instruction::dependencyRefsRegister(TR::Register *reg)
+{
+    TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
+    return cond && cond->refsRegister(reg);
+}
 
-bool
-OMR::RV::Instruction::usesRegister(TR::Register * reg)
-   {
-   TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
-   return cond && cond->usesRegister(reg);
-   }
-
-
-bool
-OMR::RV::Instruction::dependencyRefsRegister(TR::Register * reg)
-   {
-   TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
-   return cond && cond->refsRegister(reg);
-   }
-
-
-void
-OMR::RV::Instruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
-   {
-   TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
-   if (cond)
-      {
-      cond->assignPostConditionRegisters(self(), kindToBeAssigned, self()->cg());
-      cond->assignPreConditionRegisters(self()->getPrev(), kindToBeAssigned, self()->cg());
-      }
-   }
+void OMR::RV::Instruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
+{
+    TR::RegisterDependencyConditions *cond = OMR::RV::Instruction::getDependencyConditions();
+    if (cond) {
+        cond->assignPostConditionRegisters(self(), kindToBeAssigned, self()->cg());
+        cond->assignPreConditionRegisters(self()->getPrev(), kindToBeAssigned, self()->cg());
+    }
+}
 
 uint8_t *OMR::RV::Instruction::generateBinaryEncoding()
-   {
-   TR_ASSERT(false, "generateBinaryEncoding() must be overloaded in subclasses");
-   return NULL;
-   }
+{
+    TR_ASSERT(false, "generateBinaryEncoding() must be overloaded in subclasses");
+    return NULL;
+}
 
 int32_t OMR::RV::Instruction::estimateBinaryLength(int32_t currentEstimate)
-   {
-   setEstimatedBinaryLength(RISCV_INSTRUCTION_LENGTH);
-   return currentEstimate + self()->getEstimatedBinaryLength();
-   }
+{
+    setEstimatedBinaryLength(RISCV_INSTRUCTION_LENGTH);
+    return currentEstimate + self()->getEstimatedBinaryLength();
+}
 
-TR::BtypeInstruction *OMR::RV::Instruction::getBtypeInstruction()
-   {
-   return NULL;
-   }
+TR::BtypeInstruction *OMR::RV::Instruction::getBtypeInstruction() { return NULL; }

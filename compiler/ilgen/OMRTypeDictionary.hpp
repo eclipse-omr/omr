@@ -22,7 +22,6 @@
 #ifndef OMR_TYPEDICTIONARY_INCL
 #define OMR_TYPEDICTIONARY_INCL
 
-
 #include "map"
 #include "ilgen/IlBuilder.hpp"
 #include "env/TypedAllocator.hpp"
@@ -33,256 +32,254 @@ class TR_Memory;
 namespace OMR {
 class StructType;
 class UnionType;
+} // namespace OMR
+
+namespace TR {
+class IlReference;
 }
-namespace TR  { class IlReference; }
-namespace TR  { class SegmentProvider; }
-namespace TR  { class Region; }
+
+namespace TR {
+class SegmentProvider;
+}
+
+namespace TR {
+class Region;
+}
 
 extern "C" {
-typedef void * (*ClientAllocator)(void * impl);
-typedef void * (*ImplGetter)(void *client);
+typedef void *(*ClientAllocator)(void *impl);
+typedef void *(*ImplGetter)(void *client);
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class TypeDictionary : private TR::Uncopyable
-   {
+class TypeDictionary : private TR::Uncopyable {
 public:
-   TR_ALLOC(TR_Memory::IlGenerator)
+    TR_ALLOC(TR_Memory::IlGenerator)
 
-   TypeDictionary();
-   TypeDictionary(const TypeDictionary &src);
+    TypeDictionary();
+    TypeDictionary(const TypeDictionary &src);
 
-   ~TypeDictionary() throw();
+    ~TypeDictionary() throw();
 
-   TR::IlType * LookupStruct(const char *structName);
-   TR::IlType * LookupUnion(const char *unionName);
+    TR::IlType *LookupStruct(const char *structName);
+    TR::IlType *LookupUnion(const char *unionName);
 
-   /**
-    * @brief Begin definition of a new structure type
-    * @param structName the name of the new type
-    * @return pointer to IlType instance of the new type being defined
-    *
-    * The name of the new type will have to be used when specifying
-    * fields of the type. This method must be invoked once before any
-    * calls to `DefineField()` and `CloseStruct()`.
-    */
-   TR::IlType * DefineStruct(const char *structName);
+    /**
+     * @brief Begin definition of a new structure type
+     * @param structName the name of the new type
+     * @return pointer to IlType instance of the new type being defined
+     *
+     * The name of the new type will have to be used when specifying
+     * fields of the type. This method must be invoked once before any
+     * calls to `DefineField()` and `CloseStruct()`.
+     */
+    TR::IlType *DefineStruct(const char *structName);
 
-   /**
-    * @brief Define a member of a new structure type
-    * @param structName the name of the struct type on which to define the field
-    * @param fieldName the name of the field
-    * @param type the IlType instance representing the type of the field
-    * @param offset the offset of the field within the structure (in bytes)
-    *
-    * Fields defined using this method must be defined in offset order.
-    * Specifically, the `offset` on any call to this method must be greater
-    * than or equal to the size of the new struct at the time of the call
-    * (`getSize() <= offset`). Failure to meet this condition will result
-    * in a runtime failure. This was done as an initial attempt to prevent
-    * struct fields from overlapping in memory.
-    *
-    * This method can only be called after a call to `DefineStruct` and
-    * before a call to `CloseStruct` with the same `structName`.
-    */
-   void DefineField(const char *structName, const char *fieldName, TR::IlType *type, size_t offset);
+    /**
+     * @brief Define a member of a new structure type
+     * @param structName the name of the struct type on which to define the field
+     * @param fieldName the name of the field
+     * @param type the IlType instance representing the type of the field
+     * @param offset the offset of the field within the structure (in bytes)
+     *
+     * Fields defined using this method must be defined in offset order.
+     * Specifically, the `offset` on any call to this method must be greater
+     * than or equal to the size of the new struct at the time of the call
+     * (`getSize() <= offset`). Failure to meet this condition will result
+     * in a runtime failure. This was done as an initial attempt to prevent
+     * struct fields from overlapping in memory.
+     *
+     * This method can only be called after a call to `DefineStruct` and
+     * before a call to `CloseStruct` with the same `structName`.
+     */
+    void DefineField(const char *structName, const char *fieldName, TR::IlType *type, size_t offset);
 
-   /**
-    * @brief Define a member of a new structure type
-    * @param structName the name of the struct type on which to define the field
-    * @param fieldName the name of the field
-    * @param type the IlType instance representing the type of the field
-    *
-    * This is an overloaded method. Since no offset for the new struct field is
-    * specified, it will be added to the end of the struct using alignment rules
-    * internally defined by JitBuilder. These are not guaranteed match the rules
-    * used by a C/C++ compiler as alignment rules are compiler specific. However,
-    * the alignment should be the same in most cases.
-    *
-    * This method can only be called after a call to `DefineStruct` and
-    * before a call to `CloseStruct` with the same `structName`.
-    */
-   void DefineField(const char *structName, const char *fieldName, TR::IlType *type);
+    /**
+     * @brief Define a member of a new structure type
+     * @param structName the name of the struct type on which to define the field
+     * @param fieldName the name of the field
+     * @param type the IlType instance representing the type of the field
+     *
+     * This is an overloaded method. Since no offset for the new struct field is
+     * specified, it will be added to the end of the struct using alignment rules
+     * internally defined by JitBuilder. These are not guaranteed match the rules
+     * used by a C/C++ compiler as alignment rules are compiler specific. However,
+     * the alignment should be the same in most cases.
+     *
+     * This method can only be called after a call to `DefineStruct` and
+     * before a call to `CloseStruct` with the same `structName`.
+     */
+    void DefineField(const char *structName, const char *fieldName, TR::IlType *type);
 
-   /**
-    * @brief End definition of a new structure type
-    * @param structName the name of the new type of which the definition is ended
-    * @param finalSize the final size (in bytes) of the type
-    *
-    * The `finalSize` of the struct must be greater than or equal to the size of
-    * the new struct at the time of the call (`getSize() <= finalSize`). If
-    * `finalSize` is greater, the size of the struct will be adjusted. Failure to
-    * meet this condition will result in a runtime failure. This was done as
-    * done as an initial attempt to help ensure that adequate padding is added to
-    * the end of the new struct for use in arrays and nested structs.
-    */
-   void CloseStruct(const char *structName, size_t finalSize);
+    /**
+     * @brief End definition of a new structure type
+     * @param structName the name of the new type of which the definition is ended
+     * @param finalSize the final size (in bytes) of the type
+     *
+     * The `finalSize` of the struct must be greater than or equal to the size of
+     * the new struct at the time of the call (`getSize() <= finalSize`). If
+     * `finalSize` is greater, the size of the struct will be adjusted. Failure to
+     * meet this condition will result in a runtime failure. This was done as
+     * done as an initial attempt to help ensure that adequate padding is added to
+     * the end of the new struct for use in arrays and nested structs.
+     */
+    void CloseStruct(const char *structName, size_t finalSize);
 
-   /**
-    * @brief End definition of a new structure type
-    * @param structName the name of the new type of which the definition is ended
-    *
-    * This is an overloaded method. Since the final size of the struct is not
-    * specified, the size of the new struct at the time of call to this method
-    * will be the final size of the new struct type.
-    */
-   void CloseStruct(const char *structName);
+    /**
+     * @brief End definition of a new structure type
+     * @param structName the name of the new type of which the definition is ended
+     *
+     * This is an overloaded method. Since the final size of the struct is not
+     * specified, the size of the new struct at the time of call to this method
+     * will be the final size of the new struct type.
+     */
+    void CloseStruct(const char *structName);
 
-   TR::IlType * GetFieldType(const char *structName, const char *fieldName);
+    TR::IlType *GetFieldType(const char *structName, const char *fieldName);
 
-   /**
-    * @brief Returns the offset of a field in a struct
-    * @param structName the name of the struct containing the field
-    * @param fieldName the name of the field in the struct
-    * @return the memory offset of the field in bytes
-    */
-   size_t OffsetOf(const char *structName, const char *fieldName);
+    /**
+     * @brief Returns the offset of a field in a struct
+     * @param structName the name of the struct containing the field
+     * @param fieldName the name of the field in the struct
+     * @return the memory offset of the field in bytes
+     */
+    size_t OffsetOf(const char *structName, const char *fieldName);
 
-   TR::IlType * DefineUnion(const char *unionName);
-   void UnionField(const char *unionName, const char *fieldName, TR::IlType *type);
-   void CloseUnion(const char *unionName);
-   TR::IlType * UnionFieldType(const char *unionName, const char *fieldName);
+    TR::IlType *DefineUnion(const char *unionName);
+    void UnionField(const char *unionName, const char *fieldName, TR::IlType *type);
+    void CloseUnion(const char *unionName);
+    TR::IlType *UnionFieldType(const char *unionName, const char *fieldName);
 
-   TR::IlType *PrimitiveType(TR::DataType primitiveType)
-      {
-      return _primitiveType[primitiveType];
-      }
+    TR::IlType *PrimitiveType(TR::DataType primitiveType) { return _primitiveType[primitiveType]; }
 
-   //TR::IlType *ArrayOf(TR::IlType *baseType);
+    // TR::IlType *ArrayOf(TR::IlType *baseType);
 
-   TR::IlType *PointerTo(TR::IlType *baseType);
-   TR::IlType *PointerTo(const char *structName);
-   TR::IlType *PointerTo(TR::DataType baseType)  { return PointerTo(_primitiveType[baseType]); }
+    TR::IlType *PointerTo(TR::IlType *baseType);
+    TR::IlType *PointerTo(const char *structName);
 
-   TR::IlReference *FieldReference(const char *typeName, const char *fieldName);
-   TR_Memory *trMemory() { return memoryManager._trMemory; }
-   TR::IlType *getWord() { return Word; }
+    TR::IlType *PointerTo(TR::DataType baseType) { return PointerTo(_primitiveType[baseType]); }
 
-   /*
-    * @brief advise that compilation is complete so compilation-specific objects like symbol references can be cleared from caches
-    */
-   void NotifyCompilationDone();
+    TR::IlReference *FieldReference(const char *typeName, const char *fieldName);
 
-   /**
-    * @brief associates this object with a particular client object
-    */
-   void setClient(void *client)
-      {
-      _client = client;
-      }
+    TR_Memory *trMemory() { return memoryManager._trMemory; }
 
-   /**
-    * @brief returns the client object associated with this object
-    */
-   void *client();
+    TR::IlType *getWord() { return Word; }
 
-   /**
-    * @brief Set the Client Allocator function
-    *
-    * @param allocator a function pointer to the client object allocator
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
+    /*
+     * @brief advise that compilation is complete so compilation-specific objects like symbol references can be cleared
+     * from caches
+     */
+    void NotifyCompilationDone();
 
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
+    /**
+     * @brief associates this object with a particular client object
+     */
+    void setClient(void *client) { _client = client; }
+
+    /**
+     * @brief returns the client object associated with this object
+     */
+    void *client();
+
+    /**
+     * @brief Set the Client Allocator function
+     *
+     * @param allocator a function pointer to the client object allocator
+     */
+    static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
+
+    /**
+     * @brief Set the Get Impl function
+     *
+     * @param getter function pointer to the impl getter
+     */
+    static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
 
 protected:
-   // We have MemoryManager as the first member of TypeDictionary, so that
-   // it is the last one to get destroyed and all objects allocated using
-   // MemoryManager->_memoryRegion may be safely destroyed in the destructor.
-   typedef struct MemoryManager
-      {
-      MemoryManager();
-      ~MemoryManager();
+    // We have MemoryManager as the first member of TypeDictionary, so that
+    // it is the last one to get destroyed and all objects allocated using
+    // MemoryManager->_memoryRegion may be safely destroyed in the destructor.
+    typedef struct MemoryManager {
+        MemoryManager();
+        ~MemoryManager();
 
-      TR::SegmentProvider *_segmentProvider;
-      TR::Region *_memoryRegion;
-      TR_Memory *_trMemory;
-      } MemoryManager;
+        TR::SegmentProvider *_segmentProvider;
+        TR::Region *_memoryRegion;
+        TR_Memory *_trMemory;
+    } MemoryManager;
 
-   MemoryManager memoryManager;
+    MemoryManager memoryManager;
 
-   OMR::StructType * getStruct(const char *structName);
-   OMR::UnionType  * getUnion(const char *unionName);
+    OMR::StructType *getStruct(const char *structName);
+    OMR::UnionType *getUnion(const char *unionName);
 
-   /**
-    * @brief pointer to a client object that corresponds to this object
-    */
-   void * _client;
+    /**
+     * @brief pointer to a client object that corresponds to this object
+     */
+    void *_client;
 
-   /**
-    * @brief pointer to the function used to allocate an instance of a
-    * client object
-    */
-   static ClientAllocator _clientAllocator;
+    /**
+     * @brief pointer to the function used to allocate an instance of a
+     * client object
+     */
+    static ClientAllocator _clientAllocator;
 
-   /**
-    * @brief pointer to impl getter function
-    */
-   static ImplGetter _getImpl;
+    /**
+     * @brief pointer to impl getter function
+     */
+    static ImplGetter _getImpl;
 
-   typedef bool (*StrComparator)(const char *, const char *);
+    typedef bool (*StrComparator)(const char *, const char *);
 
-   typedef TR::typed_allocator<std::pair<const char * const, TR::IlType *>, TR::Region &> PointerMapAllocator;
-   typedef std::map<const char *, TR::IlType *, StrComparator, PointerMapAllocator> PointerMap;
-   PointerMap          _pointersByName;
+    typedef TR::typed_allocator<std::pair<const char * const, TR::IlType *>, TR::Region &> PointerMapAllocator;
+    typedef std::map<const char *, TR::IlType *, StrComparator, PointerMapAllocator> PointerMap;
+    PointerMap _pointersByName;
 
-   typedef TR::typed_allocator<std::pair<const char * const, OMR::StructType *>, TR::Region &> StructMapAllocator;
-   typedef std::map<const char *, OMR::StructType *, StrComparator, StructMapAllocator> StructMap;
-   StructMap          _structsByName;
+    typedef TR::typed_allocator<std::pair<const char * const, OMR::StructType *>, TR::Region &> StructMapAllocator;
+    typedef std::map<const char *, OMR::StructType *, StrComparator, StructMapAllocator> StructMap;
+    StructMap _structsByName;
 
-   typedef TR::typed_allocator<std::pair<const char * const, OMR::UnionType *>, TR::Region &> UnionMapAllocator;
-   typedef std::map<const char *, OMR::UnionType *, StrComparator, UnionMapAllocator> UnionMap;
-   UnionMap           _unionsByName;
+    typedef TR::typed_allocator<std::pair<const char * const, OMR::UnionType *>, TR::Region &> UnionMapAllocator;
+    typedef std::map<const char *, OMR::UnionType *, StrComparator, UnionMapAllocator> UnionMap;
+    UnionMap _unionsByName;
 
 public:
-   // convenience for primitive types
-   TR::IlType       * _primitiveType[TR::NumAllTypes];
-   TR::IlType       * NoType;
-   TR::IlType       * Int8;
-   TR::IlType       * Int16;
-   TR::IlType       * Int32;
-   TR::IlType       * Int64;
-   TR::IlType       * Word;
-   TR::IlType       * Float;
-   TR::IlType       * Double;
-   TR::IlType       * Address;
-   TR::IlType       * VectorInt8;
-   TR::IlType       * VectorInt16;
-   TR::IlType       * VectorInt32;
-   TR::IlType       * VectorInt64;
-   TR::IlType       * VectorFloat;
-   TR::IlType       * VectorDouble;
+    // convenience for primitive types
+    TR::IlType *_primitiveType[TR::NumAllTypes];
+    TR::IlType *NoType;
+    TR::IlType *Int8;
+    TR::IlType *Int16;
+    TR::IlType *Int32;
+    TR::IlType *Int64;
+    TR::IlType *Word;
+    TR::IlType *Float;
+    TR::IlType *Double;
+    TR::IlType *Address;
+    TR::IlType *VectorInt8;
+    TR::IlType *VectorInt16;
+    TR::IlType *VectorInt32;
+    TR::IlType *VectorInt64;
+    TR::IlType *VectorFloat;
+    TR::IlType *VectorDouble;
 
-   TR::IlType       * _pointerToPrimitiveType[TR::NumAllTypes];
-   TR::IlType       * pNoType;
-   TR::IlType       * pInt8;
-   TR::IlType       * pInt16;
-   TR::IlType       * pInt32;
-   TR::IlType       * pInt64;
-   TR::IlType       * pWord;
-   TR::IlType       * pFloat;
-   TR::IlType       * pDouble;
-   TR::IlType       * pAddress;
-   TR::IlType       * pVectorInt8;
-   TR::IlType       * pVectorInt16;
-   TR::IlType       * pVectorInt32;
-   TR::IlType       * pVectorInt64;
-   TR::IlType       * pVectorFloat;
-   TR::IlType       * pVectorDouble;
-   };
+    TR::IlType *_pointerToPrimitiveType[TR::NumAllTypes];
+    TR::IlType *pNoType;
+    TR::IlType *pInt8;
+    TR::IlType *pInt16;
+    TR::IlType *pInt32;
+    TR::IlType *pInt64;
+    TR::IlType *pWord;
+    TR::IlType *pFloat;
+    TR::IlType *pDouble;
+    TR::IlType *pAddress;
+    TR::IlType *pVectorInt8;
+    TR::IlType *pVectorInt16;
+    TR::IlType *pVectorInt32;
+    TR::IlType *pVectorInt64;
+    TR::IlType *pVectorFloat;
+    TR::IlType *pVectorDouble;
+};
 
 } // namespace OMR
 

@@ -19,17 +19,16 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-extern "C"
-   {
+extern "C" {
 #ifdef TR_HOST_ARM
-   extern void flushICache(unsigned char *, unsigned int);
+extern void flushICache(unsigned char *, unsigned int);
 #endif
-   }
+}
 
 // make sure the code gets from the data cache to the instruction cache
 void armCodeSync(unsigned char *codeStart, unsigned int codeSize)
-   {
+{
 #ifdef TR_HOST_ARM
-   flushICache(codeStart, codeSize);
+    flushICache(codeStart, codeSize);
 #endif
-   }
+}

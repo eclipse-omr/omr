@@ -23,69 +23,63 @@
 #include "runtime/CodeCacheManager.hpp"
 #include "thread_api.h"
 
-TR::CodeCacheMemorySegment*
-OMR::CodeCacheMemorySegment::self()
-   {
-   return static_cast<TR::CodeCacheMemorySegment*>(this);
-   }
+TR::CodeCacheMemorySegment *OMR::CodeCacheMemorySegment::self()
+{
+    return static_cast<TR::CodeCacheMemorySegment *>(this);
+}
 
+void OMR::CodeCacheMemorySegment::adjustAlloc(int64_t adjust)
+{
+    /*
+     * Assuming the code cache memory segment is allocated on the code cache memory,
+     * we need to modify the memory's permission before and after updating members.
+     */
+    omrthread_jit_write_protect_disable();
+    self()->setSegmentAlloc(self()->segmentAlloc() + adjust);
+    omrthread_jit_write_protect_enable();
+}
 
-void
-OMR::CodeCacheMemorySegment::adjustAlloc(int64_t adjust)
-   {
-   /*
-    * Assuming the code cache memory segment is allocated on the code cache memory,
-    * we need to modify the memory's permission before and after updating members.
-    */
-   omrthread_jit_write_protect_disable();
-   self()->setSegmentAlloc(self()->segmentAlloc() + adjust);
-   omrthread_jit_write_protect_enable();
-   }
+void OMR::CodeCacheMemorySegment::free(TR::CodeCacheManager *manager)
+{
+    /*
+     * Assuming the code cache memory segment is allocated on the code cache memory,
+     * we need to modify the memory's permission before and after updating members.
+     */
+    omrthread_jit_write_protect_disable();
+    manager->freeMemory(_base);
+    new (static_cast<TR::CodeCacheMemorySegment *>(this)) TR::CodeCacheMemorySegment();
+    omrthread_jit_write_protect_enable();
+}
 
-
-void
-OMR::CodeCacheMemorySegment::free(TR::CodeCacheManager *manager)
-   {
-   /*
-    * Assuming the code cache memory segment is allocated on the code cache memory,
-    * we need to modify the memory's permission before and after updating members.
-    */
-   omrthread_jit_write_protect_disable();
-   manager->freeMemory(_base);
-   new (static_cast<TR::CodeCacheMemorySegment *>(this)) TR::CodeCacheMemorySegment();
-   omrthread_jit_write_protect_enable();
-   }
-
-void
-OMR::CodeCacheMemorySegment::setSegmentBase(uint8_t *newBase)
-   {
-   /*
-    * Assuming the code cache memory segment is allocated on the code cache memory,
-    * we need to modify the memory's permission before and after updating members.
-    */
-   omrthread_jit_write_protect_disable();
-   _base = newBase;
-   omrthread_jit_write_protect_enable();
-   }
+void OMR::CodeCacheMemorySegment::setSegmentBase(uint8_t *newBase)
+{
+    /*
+     * Assuming the code cache memory segment is allocated on the code cache memory,
+     * we need to modify the memory's permission before and after updating members.
+     */
+    omrthread_jit_write_protect_disable();
+    _base = newBase;
+    omrthread_jit_write_protect_enable();
+}
 
 void OMR::CodeCacheMemorySegment::setSegmentAlloc(uint8_t *newAlloc)
-   {
-   /*
-    * Assuming the code cache memory segment is allocated on the code cache memory,
-    * we need to modify the memory's permission before and after updating members.
-    */
-   omrthread_jit_write_protect_disable();
-   _alloc = newAlloc;
-   omrthread_jit_write_protect_enable();
-   }
+{
+    /*
+     * Assuming the code cache memory segment is allocated on the code cache memory,
+     * we need to modify the memory's permission before and after updating members.
+     */
+    omrthread_jit_write_protect_disable();
+    _alloc = newAlloc;
+    omrthread_jit_write_protect_enable();
+}
 
 void OMR::CodeCacheMemorySegment::setSegmentTop(uint8_t *newTop)
-   {
-   /*
-    * Assuming the code cache memory segment is allocated on the code cache memory,
-    * we need to modify the memory's permission before and after updating members.
-    */
-   omrthread_jit_write_protect_disable();
-   _top = newTop;
-   omrthread_jit_write_protect_enable();
-   }
+{
+    /*
+     * Assuming the code cache memory segment is allocated on the code cache memory,
+     * we need to modify the memory's permission before and after updating members.
+     */
+    omrthread_jit_write_protect_disable();
+    _top = newTop;
+    omrthread_jit_write_protect_enable();
+}

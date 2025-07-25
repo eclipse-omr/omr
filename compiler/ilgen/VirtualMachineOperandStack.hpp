@@ -24,26 +24,19 @@
 
 #include "ilgen/OMRVirtualMachineOperandStack.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class VirtualMachineOperandStack : public OMR::VirtualMachineOperandStack
-   {
-   public:
-   VirtualMachineOperandStack(TR::MethodBuilder *mb,
-                              int32_t sizeHint,
-                              TR::IlType *elementType,
-                              TR::VirtualMachineRegister *stackTop,
-                              bool growsUp = true,
-                              int32_t stackInitialOffset = -1) :
-      OMR::VirtualMachineOperandStack(mb, sizeHint, elementType, stackTop, growsUp, stackInitialOffset)
-      { }
+class VirtualMachineOperandStack : public OMR::VirtualMachineOperandStack {
+public:
+    VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType,
+        TR::VirtualMachineRegister *stackTop, bool growsUp = true, int32_t stackInitialOffset = -1)
+        : OMR::VirtualMachineOperandStack(mb, sizeHint, elementType, stackTop, growsUp, stackInitialOffset)
+    {}
 
-   VirtualMachineOperandStack(TR::VirtualMachineOperandStack *other) :
-      OMR::VirtualMachineOperandStack(other)
-      { }
-
-   };
-}
+    VirtualMachineOperandStack(TR::VirtualMachineOperandStack *other)
+        : OMR::VirtualMachineOperandStack(other)
+    {}
+};
+} // namespace TR
 
 #endif // !defined(TR_VIRTUALMACHINEOPERANDSTACK_INCL)

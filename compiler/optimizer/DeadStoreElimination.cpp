@@ -25,13 +25,9 @@
 #define OPT_DETAILS "O^O DEAD STORE ELIMINATION: "
 
 TR_DeadStoreElimination::TR_DeadStoreElimination(TR::OptimizationManager *manager)
-   : TR_IsolatedStoreElimination(manager)
-   {
-   _mustUseUseDefInfo = true;
-   }
+    : TR_IsolatedStoreElimination(manager)
+{
+    _mustUseUseDefInfo = true;
+}
 
-const char *
-TR_DeadStoreElimination::optDetailString() const throw()
-   {
-   return "O^O DEAD STORE ELIMINATION: ";
-   }
+const char *TR_DeadStoreElimination::optDetailString() const throw() { return "O^O DEAD STORE ELIMINATION: "; }

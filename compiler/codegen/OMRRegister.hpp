@@ -27,10 +27,11 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
+
 namespace OMR {
 class Register;
 typedef OMR::Register RegisterConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -43,6 +44,7 @@ typedef OMR::Register RegisterConnector;
 #include "infra/Annotations.hpp"
 
 class TR_BackingStore;
+
 namespace TR {
 class AutomaticSymbol;
 class Compilation;
@@ -50,167 +52,194 @@ class Instruction;
 class RealRegister;
 class Register;
 class RegisterPair;
-}
+} // namespace TR
 
-#define TR_SSR_ASSERT() TR_ASSERT(self()->getKind() != TR_SSR,"only non-TR_SSR registers use _totalUseCount : an aggregate or BCD type node has been evaluated as a non-aggregate or BCD node (missing o2x cast?)\n")
-#define TR_MAX_USECOUNT_ASSERT(a) TR_ASSERT(_totalUseCount <= MAX_NODE_COUNT-a, "TR::Register::_totalUseCount == MAX_NODE_COUNT")
+#define TR_SSR_ASSERT()                                                                                         \
+    TR_ASSERT(self()->getKind() != TR_SSR,                                                                      \
+        "only non-TR_SSR registers use _totalUseCount : an aggregate or BCD type node has been evaluated as a " \
+        "non-aggregate or BCD node (missing o2x cast?)\n")
+#define TR_MAX_USECOUNT_ASSERT(a) \
+    TR_ASSERT(_totalUseCount <= MAX_NODE_COUNT - a, "TR::Register::_totalUseCount == MAX_NODE_COUNT")
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE Register
-   {
-   protected:
-   Register(uint32_t f=0);
-   Register(TR_RegisterKinds rk);
-   Register(TR_RegisterKinds rk, uint16_t ar);
+class OMR_EXTENSIBLE Register {
+protected:
+    Register(uint32_t f = 0);
+    Register(TR_RegisterKinds rk);
+    Register(TR_RegisterKinds rk, uint16_t ar);
 
-   public:
+public:
+    TR::Register *self();
 
-   TR::Register* self();
+    TR_ALLOC(TR_Memory::Register)
 
-   TR_ALLOC(TR_Memory::Register)
+    /*
+     * Getter/Setters for private fields
+     */
+    TR_BackingStore *getBackingStorage() { return _backingStorage; }
 
-   /*
-    * Getter/Setters for private fields
-    */
-   TR_BackingStore *getBackingStorage()                     { return _backingStorage; }
-   TR_BackingStore *setBackingStorage(TR_BackingStore *bs)  { return (_backingStorage = bs); }
+    TR_BackingStore *setBackingStorage(TR_BackingStore *bs) { return (_backingStorage = bs); }
 
-   TR::AutomaticSymbol *getPinningArrayPointer()                      {return _pinningArrayPointer;}
-   TR::AutomaticSymbol *setPinningArrayPointer(TR::AutomaticSymbol *s) {return (_pinningArrayPointer = s);}
+    TR::AutomaticSymbol *getPinningArrayPointer() { return _pinningArrayPointer; }
 
-   TR::Register *getAssignedRegister()               {return _assignedRegister;}
-   TR::Register *setAssignedRegister(TR::Register *r) {return (_assignedRegister = r);}
+    TR::AutomaticSymbol *setPinningArrayPointer(TR::AutomaticSymbol *s) { return (_pinningArrayPointer = s); }
 
-   TR::Register *getSiblingRegister()               {return _siblingRegister;}
-   TR::Register *setSiblingRegister(TR::Register *r) {return (_siblingRegister = r);}
+    TR::Register *getAssignedRegister() { return _assignedRegister; }
 
-   TR::Instruction *getStartOfRange()                  {return _startOfRange;}
-   TR::Instruction *setStartOfRange(TR::Instruction *i) {return _startOfRange = i;}
-   TR::Instruction *getEndOfRange()                    {return _endOfRange;}
-   TR::Instruction *setEndOfRange(TR::Instruction *i)   {return _endOfRange = i;}
-   TR::Node *getStartOfRangeNode()                  {return _startOfRangeNode;}
-   TR::Node *setStartOfRangeNode(TR::Node *n) { /* _startOfRange=NULL; */ return _startOfRangeNode = n;}
+    TR::Register *setAssignedRegister(TR::Register *r) { return (_assignedRegister = r); }
 
-   ncount_t getTotalUseCount();
-   ncount_t setTotalUseCount(ncount_t tuc);
-   ncount_t incTotalUseCount(ncount_t tuc=1);
-   ncount_t decTotalUseCount(ncount_t tuc=1);
+    TR::Register *getSiblingRegister() { return _siblingRegister; }
 
-   ncount_t getFutureUseCount() {return _futureUseCount;}
-   ncount_t setFutureUseCount(ncount_t fuc) {return (_futureUseCount = fuc);}
-   ncount_t incFutureUseCount(ncount_t fuc=1) {TR_ASSERT(_futureUseCount <= MAX_NODE_COUNT-fuc, "TR::Register::_futureUseCount == MAX_NODE_COUNT"); return (_futureUseCount += fuc);}
-   ncount_t decFutureUseCount(ncount_t fuc=1) { return (_futureUseCount -= fuc);}
+    TR::Register *setSiblingRegister(TR::Register *r) { return (_siblingRegister = r); }
 
-   ncount_t getOutOfLineUseCount() { return _outOfLineUseCount; }
-   ncount_t setOutOfLineUseCount(ncount_t uc) { return (_outOfLineUseCount = uc); }
-   ncount_t incOutOfLineUseCount(ncount_t uc=1) { return (_outOfLineUseCount +=uc); }
-   ncount_t decOutOfLineUseCount(ncount_t uc=1) { return (_outOfLineUseCount -= uc); }
+    TR::Instruction *getStartOfRange() { return _startOfRange; }
 
-   uint32_t getAssociation()           {return _association;}
-   uint32_t setAssociation(uint32_t a) {return (_association = a);}
+    TR::Instruction *setStartOfRange(TR::Instruction *i) { return _startOfRange = i; }
 
-   TR_RegisterKinds getKind()                    {return _kind;}
-   TR_RegisterKinds setKind(TR_RegisterKinds rk) {return (_kind = rk);}
-   TR_RegisterKinds getKindAsMask()              {return TR_RegisterKinds(1<<_kind);}
+    TR::Instruction *getEndOfRange() { return _endOfRange; }
 
-   uint32_t getIndex()           { return _index; }
-   void     setIndex(uint32_t i) { _index=i; }
+    TR::Instruction *setEndOfRange(TR::Instruction *i) { return _endOfRange = i; }
 
-   /*
-    * Get/Set Flag Value
-    */
-   uint32_t getFlags()          {return _flags.getValue();}
-   void    setFlags(uint32_t f) {_flags.setValue(0xffffffff,f);}
+    TR::Node *getStartOfRangeNode() { return _startOfRangeNode; }
 
+    TR::Node *setStartOfRangeNode(TR::Node *n) { /* _startOfRange=NULL; */ return _startOfRangeNode = n; }
 
-   /*
-    * Methods for getting/setting flag masks
-    */
-   bool isPlaceholderReg()  {return _flags.testAny(PlaceholderReg);}
-   void setPlaceholderReg()  {  _flags.set(PlaceholderReg); }
-   void resetPlaceholderReg() {_flags.reset(PlaceholderReg);}
+    ncount_t getTotalUseCount();
+    ncount_t setTotalUseCount(ncount_t tuc);
+    ncount_t incTotalUseCount(ncount_t tuc = 1);
+    ncount_t decTotalUseCount(ncount_t tuc = 1);
 
-   bool containsCollectedReference()      { return _flags.testAny(ContainsCollectedReference); }
-   void setContainsCollectedReference()  {  _flags.set(ContainsCollectedReference); }
+    ncount_t getFutureUseCount() { return _futureUseCount; }
 
-   bool isLive()      {return _flags.testAny(IsLive);}
-   void setIsLive()   {_flags.set(IsLive);}
-   void resetIsLive() {_flags.reset(IsLive); }
+    ncount_t setFutureUseCount(ncount_t fuc) { return (_futureUseCount = fuc); }
 
-   bool containsInternalPointer()    {return _flags.testAny(ContainsInternalPointer);}
-   void setContainsInternalPointer();
+    ncount_t incFutureUseCount(ncount_t fuc = 1)
+    {
+        TR_ASSERT(_futureUseCount <= MAX_NODE_COUNT - fuc, "TR::Register::_futureUseCount == MAX_NODE_COUNT");
+        return (_futureUseCount += fuc);
+    }
 
-   bool isSinglePrecision()                 {return _flags.testAny(IsSinglePrecision);}
-   void setIsSinglePrecision(bool b = true) {_flags.set(IsSinglePrecision, b);}
+    ncount_t decFutureUseCount(ncount_t fuc = 1) { return (_futureUseCount -= fuc); }
 
-   /*
-    * Methods for getting real reg, reg pairs etc in subclasses.
-    * return NULL in base class and return THIS ptr in subclasses
-    * but in some cases, base can also return THIS
-    */
+    ncount_t getOutOfLineUseCount() { return _outOfLineUseCount; }
 
-   TR::RealRegister *getAssignedRealRegister();
-   virtual TR::Register    *getRegister();
+    ncount_t setOutOfLineUseCount(ncount_t uc) { return (_outOfLineUseCount = uc); }
 
-   virtual TR::Register    *getLowOrder()   {return NULL;}
-   virtual TR::Register    *getHighOrder()  {return NULL;}
+    ncount_t incOutOfLineUseCount(ncount_t uc = 1) { return (_outOfLineUseCount += uc); }
 
-   virtual TR::RegisterPair    *getRegisterPair()   {return NULL;}
-   virtual TR::RealRegister    *getRealRegister()   {return NULL;}
+    ncount_t decOutOfLineUseCount(ncount_t uc = 1) { return (_outOfLineUseCount -= uc); }
 
-   virtual const char         *getRegisterName(TR::Compilation *comp, TR_RegisterSizes size = TR_WordReg);
-   static const char          *getRegisterKindName(TR::Compilation *comp, TR_RegisterKinds rk);
+    uint32_t getAssociation() { return _association; }
 
+    uint32_t setAssociation(uint32_t a) { return (_association = a); }
 
-   virtual void block();
-   virtual void unblock();
+    TR_RegisterKinds getKind() { return _kind; }
 
+    TR_RegisterKinds setKind(TR_RegisterKinds rk) { return (_kind = rk); }
+
+    TR_RegisterKinds getKindAsMask() { return TR_RegisterKinds(1 << _kind); }
+
+    uint32_t getIndex() { return _index; }
+
+    void setIndex(uint32_t i) { _index = i; }
+
+    /*
+     * Get/Set Flag Value
+     */
+    uint32_t getFlags() { return _flags.getValue(); }
+
+    void setFlags(uint32_t f) { _flags.setValue(0xffffffff, f); }
+
+    /*
+     * Methods for getting/setting flag masks
+     */
+    bool isPlaceholderReg() { return _flags.testAny(PlaceholderReg); }
+
+    void setPlaceholderReg() { _flags.set(PlaceholderReg); }
+
+    void resetPlaceholderReg() { _flags.reset(PlaceholderReg); }
+
+    bool containsCollectedReference() { return _flags.testAny(ContainsCollectedReference); }
+
+    void setContainsCollectedReference() { _flags.set(ContainsCollectedReference); }
+
+    bool isLive() { return _flags.testAny(IsLive); }
+
+    void setIsLive() { _flags.set(IsLive); }
+
+    void resetIsLive() { _flags.reset(IsLive); }
+
+    bool containsInternalPointer() { return _flags.testAny(ContainsInternalPointer); }
+
+    void setContainsInternalPointer();
+
+    bool isSinglePrecision() { return _flags.testAny(IsSinglePrecision); }
+
+    void setIsSinglePrecision(bool b = true) { _flags.set(IsSinglePrecision, b); }
+
+    /*
+     * Methods for getting real reg, reg pairs etc in subclasses.
+     * return NULL in base class and return THIS ptr in subclasses
+     * but in some cases, base can also return THIS
+     */
+
+    TR::RealRegister *getAssignedRealRegister();
+    virtual TR::Register *getRegister();
+
+    virtual TR::Register *getLowOrder() { return NULL; }
+
+    virtual TR::Register *getHighOrder() { return NULL; }
+
+    virtual TR::RegisterPair *getRegisterPair() { return NULL; }
+
+    virtual TR::RealRegister *getRealRegister() { return NULL; }
+
+    virtual const char *getRegisterName(TR::Compilation *comp, TR_RegisterSizes size = TR_WordReg);
+    static const char *getRegisterKindName(TR::Compilation *comp, TR_RegisterKinds rk);
+
+    virtual void block();
+    virtual void unblock();
 
 #if defined(DEBUG)
-   virtual void print(TR::Compilation *comp, TR::FILE *pOutFile, TR_RegisterSizes size = TR_WordReg);
+    virtual void print(TR::Compilation *comp, TR::FILE *pOutFile, TR_RegisterSizes size = TR_WordReg);
 #endif
 
+protected:
+    flags32_t _flags;
 
-   protected:
+    enum // _flags masks
+    {
+        PlaceholderReg = 0x0001,
+        ContainsCollectedReference = 0x0008, // GPR contains a collected reference
+        IsLive = 0x0010, // Register is currently live
+        ContainsInternalPointer = 0x0080,
+        IsSinglePrecision = 0x0400,
+    };
 
-   flags32_t _flags;
+private:
+    TR_BackingStore *_backingStorage; // location where register is spilled if spilled
+    TR::AutomaticSymbol *_pinningArrayPointer; // pinning array object if containing internal ptr
 
-   enum // _flags masks
-      {
-      PlaceholderReg                = 0x0001,
-      ContainsCollectedReference    = 0x0008, // GPR contains a collected reference
-      IsLive                        = 0x0010, // Register is currently live
-      ContainsInternalPointer       = 0x0080,
-      IsSinglePrecision             = 0x0400,
-      };
+    TR::Register *_assignedRegister; // register to which this register is assigned
+    TR::Register *_siblingRegister; // Sibling to a register pair
 
+    TR::Instruction *_startOfRange; // start of live range
+    TR::Instruction *_endOfRange; // end of live range
+    TR::Node *_startOfRangeNode; // Node of _startOfRange. Needed if start of range is Register load
 
-   private:
+    ncount_t _totalUseCount; // holds the number of references to the register
+    ncount_t _futureUseCount; // used by register assigner to keep track of how many uses are left to assign
+    ncount_t _outOfLineUseCount; // holds the number of references to the register in out of line code sections
 
-   TR_BackingStore          *_backingStorage;        // location where register is spilled if spilled
-   TR::AutomaticSymbol       *_pinningArrayPointer;   // pinning array object if containing internal ptr
+    // used by register assigner to predispose virtuals to a particular real register so that they tend
+    // to end up being in the right register for instructions that care (like div or call)
+    uint16_t _association;
 
-   TR::Register              *_assignedRegister;      // register to which this register is assigned
-   TR::Register              *_siblingRegister;       // Sibling to a register pair
+    TR_RegisterKinds _kind;
+    uint32_t _index; // index into register table
+};
 
-   TR::Instruction   *_startOfRange;    // start of live range
-   TR::Instruction   *_endOfRange;      // end of live range
-   TR::Node           *_startOfRangeNode;// Node of _startOfRange. Needed if start of range is Register load
-
-   ncount_t          _totalUseCount;   // holds the number of references to the register
-   ncount_t          _futureUseCount;  // used by register assigner to keep track of how many uses are left to assign
-   ncount_t          _outOfLineUseCount;   // holds the number of references to the register in out of line code sections
-
-   // used by register assigner to predispose virtuals to a particular real register so that they tend
-   // to end up being in the right register for instructions that care (like div or call)
-   uint16_t         _association;
-
-   TR_RegisterKinds _kind;
-   uint32_t         _index;             // index into register table
-   };
-
-}
+} // namespace OMR
 
 #endif /* OMR_REGISTER_INCL */

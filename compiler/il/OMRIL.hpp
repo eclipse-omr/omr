@@ -27,10 +27,11 @@
  */
 #ifndef OMR_IL_CONNECTOR
 #define OMR_IL_CONNECTOR
+
 namespace OMR {
 class IL;
 typedef OMR::IL ILConnector;
-}
+} // namespace OMR
 #endif
 
 #include "infra/Annotations.hpp"
@@ -41,93 +42,87 @@ namespace TR {
 class IL;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE IL
-   {
+class OMR_EXTENSIBLE IL {
+private:
+    // these tables require special treatment of vector opcodes
+    static TR::ILOpCodes opCodesForConst[];
+    static TR::ILOpCodes opCodesForDirectLoad[];
+    static TR::ILOpCodes opCodesForDirectReadBarrier[];
+    static TR::ILOpCodes opCodesForDirectStore[];
+    static TR::ILOpCodes opCodesForDirectWriteBarrier[];
+    static TR::ILOpCodes opCodesForIndirectLoad[];
+    static TR::ILOpCodes opCodesForIndirectReadBarrier[];
+    static TR::ILOpCodes opCodesForIndirectStore[];
+    static TR::ILOpCodes opCodesForIndirectWriteBarrier[];
+    static TR::ILOpCodes opCodesForIndirectArrayLoad[];
+    static TR::ILOpCodes opCodesForIndirectArrayStore[];
+    static TR::ILOpCodes opCodesForRegisterLoad[];
+    static TR::ILOpCodes opCodesForRegisterStore[];
+    static TR::ILOpCodes opCodesForCompareEquals[];
+    static TR::ILOpCodes opCodesForIfCompareEquals[];
+    static TR::ILOpCodes opCodesForCompareNotEquals[];
+    static TR::ILOpCodes opCodesForIfCompareNotEquals[];
+    static TR::ILOpCodes opCodesForCompareLessThan[];
+    static TR::ILOpCodes opCodesForCompareLessOrEquals[];
+    static TR::ILOpCodes opCodesForIfCompareLessThan[];
+    static TR::ILOpCodes opCodesForIfCompareLessOrEquals[];
+    static TR::ILOpCodes opCodesForCompareGreaterThan[];
+    static TR::ILOpCodes opCodesForCompareGreaterOrEquals[];
+    static TR::ILOpCodes opCodesForIfCompareGreaterThan[];
+    static TR::ILOpCodes opCodesForIfCompareGreaterOrEquals[];
+    static TR::ILOpCodes opCodesForSelect[];
 
-   private:
+public:
+    TR::IL *self();
 
-   // these tables require special treatment of vector opcodes
-   static TR::ILOpCodes opCodesForConst[];
-   static TR::ILOpCodes opCodesForDirectLoad[];
-   static TR::ILOpCodes opCodesForDirectReadBarrier[];
-   static TR::ILOpCodes opCodesForDirectStore[];
-   static TR::ILOpCodes opCodesForDirectWriteBarrier[];
-   static TR::ILOpCodes opCodesForIndirectLoad[];
-   static TR::ILOpCodes opCodesForIndirectReadBarrier[];
-   static TR::ILOpCodes opCodesForIndirectStore[];
-   static TR::ILOpCodes opCodesForIndirectWriteBarrier[];
-   static TR::ILOpCodes opCodesForIndirectArrayLoad[];
-   static TR::ILOpCodes opCodesForIndirectArrayStore[];
-   static TR::ILOpCodes opCodesForRegisterLoad[];
-   static TR::ILOpCodes opCodesForRegisterStore[];
-   static TR::ILOpCodes opCodesForCompareEquals[];
-   static TR::ILOpCodes opCodesForIfCompareEquals[];
-   static TR::ILOpCodes opCodesForCompareNotEquals[];
-   static TR::ILOpCodes opCodesForIfCompareNotEquals[];
-   static TR::ILOpCodes opCodesForCompareLessThan[];
-   static TR::ILOpCodes opCodesForCompareLessOrEquals[];
-   static TR::ILOpCodes opCodesForIfCompareLessThan[];
-   static TR::ILOpCodes opCodesForIfCompareLessOrEquals[];
-   static TR::ILOpCodes opCodesForCompareGreaterThan[];
-   static TR::ILOpCodes opCodesForCompareGreaterOrEquals[];
-   static TR::ILOpCodes opCodesForIfCompareGreaterThan[];
-   static TR::ILOpCodes opCodesForIfCompareGreaterOrEquals[];
-   static TR::ILOpCodes opCodesForSelect[];
+    TR::ILOpCodes opCodeForCorrespondingIndirectLoad(TR::ILOpCodes loadOpCode);
+    TR::ILOpCodes opCodeForCorrespondingIndirectStore(TR::ILOpCodes storeOpCode);
+    /**
+     * \brief
+     *    Given a direct load opcode, return its corresponding direct store opcode
+     */
+    TR::ILOpCodes opCodeForCorrespondingDirectLoad(TR::ILOpCodes loadOpCode);
+    /**
+     * \brief
+     *    Given a direct store opcode, return its corresponding direct load opcode
+     */
+    TR::ILOpCodes opCodeForCorrespondingDirectStore(TR::ILOpCodes storeOpCode);
+    /**
+     * \brief
+     *    Given a load/store opcode, return its corresponding store/load opcode
+     */
+    TR::ILOpCodes opCodeForCorrespondingLoadOrStore(TR::ILOpCodes opCodes);
 
-   public:
+    TR::ILOpCodes opCodeForSelect(TR::DataType dt);
+    TR::ILOpCodes opCodeForConst(TR::DataType dt);
+    TR::ILOpCodes opCodeForDirectLoad(TR::DataType dt);
+    TR::ILOpCodes opCodeForDirectReadBarrier(TR::DataType dt);
+    TR::ILOpCodes opCodeForDirectStore(TR::DataType dt);
+    TR::ILOpCodes opCodeForDirectWriteBarrier(TR::DataType dt);
+    TR::ILOpCodes opCodeForIndirectLoad(TR::DataType dt);
+    TR::ILOpCodes opCodeForIndirectReadBarrier(TR::DataType dt);
+    TR::ILOpCodes opCodeForIndirectStore(TR::DataType dt);
+    TR::ILOpCodes opCodeForIndirectWriteBarrier(TR::DataType dt);
+    TR::ILOpCodes opCodeForIndirectArrayLoad(TR::DataType dt);
+    TR::ILOpCodes opCodeForIndirectArrayStore(TR::DataType dt);
+    TR::ILOpCodes opCodeForRegisterLoad(TR::DataType dt);
+    TR::ILOpCodes opCodeForRegisterStore(TR::DataType dt);
+    TR::ILOpCodes opCodeForCompareEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForIfCompareEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForCompareNotEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForIfCompareNotEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForCompareLessThan(TR::DataType dt);
+    TR::ILOpCodes opCodeForCompareLessOrEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForIfCompareLessThan(TR::DataType dt);
+    TR::ILOpCodes opCodeForIfCompareLessOrEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForCompareGreaterThan(TR::DataType dt);
+    TR::ILOpCodes opCodeForCompareGreaterOrEquals(TR::DataType dt);
+    TR::ILOpCodes opCodeForIfCompareGreaterThan(TR::DataType dt);
+    TR::ILOpCodes opCodeForIfCompareGreaterOrEquals(TR::DataType dt);
+};
 
-   TR::IL* self();
-
-   TR::ILOpCodes opCodeForCorrespondingIndirectLoad(TR::ILOpCodes loadOpCode);
-   TR::ILOpCodes opCodeForCorrespondingIndirectStore(TR::ILOpCodes storeOpCode);
-/**
- * \brief
- *    Given a direct load opcode, return its corresponding direct store opcode
- */
-   TR::ILOpCodes opCodeForCorrespondingDirectLoad(TR::ILOpCodes loadOpCode);
-/**
- * \brief
- *    Given a direct store opcode, return its corresponding direct load opcode
- */
-   TR::ILOpCodes opCodeForCorrespondingDirectStore(TR::ILOpCodes storeOpCode);
-/**
- * \brief
- *    Given a load/store opcode, return its corresponding store/load opcode
- */
-   TR::ILOpCodes opCodeForCorrespondingLoadOrStore(TR::ILOpCodes opCodes);
-
-   TR::ILOpCodes opCodeForSelect(TR::DataType dt);
-   TR::ILOpCodes opCodeForConst(TR::DataType dt);
-   TR::ILOpCodes opCodeForDirectLoad(TR::DataType dt);
-   TR::ILOpCodes opCodeForDirectReadBarrier(TR::DataType dt);
-   TR::ILOpCodes opCodeForDirectStore(TR::DataType dt);
-   TR::ILOpCodes opCodeForDirectWriteBarrier(TR::DataType dt);
-   TR::ILOpCodes opCodeForIndirectLoad(TR::DataType dt);
-   TR::ILOpCodes opCodeForIndirectReadBarrier(TR::DataType dt);
-   TR::ILOpCodes opCodeForIndirectStore(TR::DataType dt);
-   TR::ILOpCodes opCodeForIndirectWriteBarrier(TR::DataType dt);
-   TR::ILOpCodes opCodeForIndirectArrayLoad(TR::DataType dt);
-   TR::ILOpCodes opCodeForIndirectArrayStore(TR::DataType dt);
-   TR::ILOpCodes opCodeForRegisterLoad(TR::DataType dt);
-   TR::ILOpCodes opCodeForRegisterStore(TR::DataType dt);
-   TR::ILOpCodes opCodeForCompareEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForIfCompareEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForCompareNotEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForIfCompareNotEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForCompareLessThan(TR::DataType dt);
-   TR::ILOpCodes opCodeForCompareLessOrEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForIfCompareLessThan(TR::DataType dt);
-   TR::ILOpCodes opCodeForIfCompareLessOrEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForCompareGreaterThan(TR::DataType dt);
-   TR::ILOpCodes opCodeForCompareGreaterOrEquals(TR::DataType dt);
-   TR::ILOpCodes opCodeForIfCompareGreaterThan(TR::DataType dt);
-   TR::ILOpCodes opCodeForIfCompareGreaterOrEquals(TR::DataType dt);
-
-   };
-
-}
+} // namespace OMR
 
 #endif

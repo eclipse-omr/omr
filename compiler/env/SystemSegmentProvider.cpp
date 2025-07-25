@@ -22,80 +22,53 @@
 #include "env/SystemSegmentProvider.hpp"
 #include "env/MemorySegment.hpp"
 
-OMR::SystemSegmentProvider::SystemSegmentProvider(size_t segmentSize, TR::RawAllocator rawAllocator) :
-   TR::SegmentAllocator(segmentSize),
-   _rawAllocator(rawAllocator),
-   _currentBytesAllocated(0),
-   _highWaterMark(0),
-   _segments(std::less< TR::MemorySegment >(), SegmentSetAllocator(rawAllocator))
-   {
-   }
+OMR::SystemSegmentProvider::SystemSegmentProvider(size_t segmentSize, TR::RawAllocator rawAllocator)
+    : TR::SegmentAllocator(segmentSize)
+    , _rawAllocator(rawAllocator)
+    , _currentBytesAllocated(0)
+    , _highWaterMark(0)
+    , _segments(std::less<TR::MemorySegment>(), SegmentSetAllocator(rawAllocator))
+{}
 
 OMR::SystemSegmentProvider::~SystemSegmentProvider() throw()
-   {
-   for (auto it = _segments.begin(); it != _segments.end(); ++it)
-      {
-      _rawAllocator.deallocate((*it).base());
-      }
-   }
+{
+    for (auto it = _segments.begin(); it != _segments.end(); ++it) {
+        _rawAllocator.deallocate((*it).base());
+    }
+}
 
-TR::MemorySegment &
-OMR::SystemSegmentProvider::request(size_t requiredSize)
-   {
-   size_t adjustedSize = ( ( requiredSize + (defaultSegmentSize() - 1) ) / defaultSegmentSize() ) * defaultSegmentSize();
-   void *newSegmentArea = _rawAllocator.allocate(adjustedSize);
-   try
-      {
-      auto result = _segments.insert( TR::MemorySegment(newSegmentArea, adjustedSize) );
-      TR_ASSERT(result.first != _segments.end(), "Bad iterator");
-      TR_ASSERT(result.second, "Insertion failed");
-      _currentBytesAllocated += adjustedSize;
-      _highWaterMark = _currentBytesAllocated > _highWaterMark ? _currentBytesAllocated : _highWaterMark;
-      return const_cast<TR::MemorySegment &>(*(result.first));
-      }
-   catch (...)
-      {
-      _rawAllocator.deallocate(newSegmentArea);
-      throw;
-      }
-   }
+TR::MemorySegment &OMR::SystemSegmentProvider::request(size_t requiredSize)
+{
+    size_t adjustedSize = ((requiredSize + (defaultSegmentSize() - 1)) / defaultSegmentSize()) * defaultSegmentSize();
+    void *newSegmentArea = _rawAllocator.allocate(adjustedSize);
+    try {
+        auto result = _segments.insert(TR::MemorySegment(newSegmentArea, adjustedSize));
+        TR_ASSERT(result.first != _segments.end(), "Bad iterator");
+        TR_ASSERT(result.second, "Insertion failed");
+        _currentBytesAllocated += adjustedSize;
+        _highWaterMark = _currentBytesAllocated > _highWaterMark ? _currentBytesAllocated : _highWaterMark;
+        return const_cast<TR::MemorySegment &>(*(result.first));
+    } catch (...) {
+        _rawAllocator.deallocate(newSegmentArea);
+        throw;
+    }
+}
 
-void
-OMR::SystemSegmentProvider::release(TR::MemorySegment &segment) throw()
-   {
-   auto it = _segments.find(segment);
-   _rawAllocator.deallocate(segment.base());
-   _currentBytesAllocated -= segment.size();
-   TR_ASSERT(it != _segments.end(), "Segment lookup should never fail");
-   _segments.erase(it);
-   }
+void OMR::SystemSegmentProvider::release(TR::MemorySegment &segment) throw()
+{
+    auto it = _segments.find(segment);
+    _rawAllocator.deallocate(segment.base());
+    _currentBytesAllocated -= segment.size();
+    TR_ASSERT(it != _segments.end(), "Segment lookup should never fail");
+    _segments.erase(it);
+}
 
-size_t
-OMR::SystemSegmentProvider::bytesAllocated() const throw()
-   {
-   return _highWaterMark;
-   }
+size_t OMR::SystemSegmentProvider::bytesAllocated() const throw() { return _highWaterMark; }
 
-size_t
-OMR::SystemSegmentProvider::regionBytesAllocated() const throw()
-   {
-   return _highWaterMark;
-   }
+size_t OMR::SystemSegmentProvider::regionBytesAllocated() const throw() { return _highWaterMark; }
 
-size_t
-OMR::SystemSegmentProvider::systemBytesAllocated() const throw()
-   {
-   return _highWaterMark;
-   }
+size_t OMR::SystemSegmentProvider::systemBytesAllocated() const throw() { return _highWaterMark; }
 
-size_t
-OMR::SystemSegmentProvider::allocationLimit() const throw()
-   {
-   return static_cast<size_t>(-1);
-   }
+size_t OMR::SystemSegmentProvider::allocationLimit() const throw() { return static_cast<size_t>(-1); }
 
-void
-OMR::SystemSegmentProvider::setAllocationLimit(size_t)
-   {
-   return;
-   }
+void OMR::SystemSegmentProvider::setAllocationLimit(size_t) { return; }

@@ -27,10 +27,11 @@
  */
 #ifndef OMR_ALIASBUILDER_CONNECTOR
 #define OMR_ALIASBUILDER_CONNECTOR
+
 namespace OMR {
 class AliasBuilder;
 typedef OMR::AliasBuilder AliasBuilderConnector;
-}
+} // namespace OMR
 #endif
 
 #include "compile/Method.hpp"
@@ -44,6 +45,7 @@ typedef OMR::AliasBuilder AliasBuilderConnector;
 class TR_Memory;
 class TR_StackMemory;
 class TR_HeapMemory;
+
 namespace TR {
 class AliasBuilder;
 class Block;
@@ -52,154 +54,180 @@ class Node;
 class ResolvedMethodSymbol;
 class SymbolReference;
 class SymbolReferenceTable;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class AliasBuilder
-   {
-
+class AliasBuilder {
 public:
+    TR_ALLOC(TR_Memory::SymbolReferenceTable)
 
-   TR_ALLOC(TR_Memory::SymbolReferenceTable)
+    AliasBuilder(TR::SymbolReferenceTable *symRefTab, size_t sizeHintInElements, TR::Compilation *comp);
 
-   AliasBuilder(TR::SymbolReferenceTable *symRefTab, size_t sizeHintInElements, TR::Compilation *comp);
+    void createAliasInfo();
 
-   void createAliasInfo();
+    TR::SymbolReferenceTable *symRefTab() { return _symRefTab; }
 
-   TR::SymbolReferenceTable *symRefTab() { return _symRefTab; }
-   TR::Compilation *comp() { return _compilation; }
-   TR_Memory *trMemory() { return _trMemory; }
-   TR_StackMemory trStackMemory() { return _trMemory; }
-   TR_HeapMemory trHeapMemory() { return _trMemory; }
+    TR::Compilation *comp() { return _compilation; }
 
-   TR_BitVector & addressShadowSymRefs() { return _addressShadowSymRefs; }
-   TR_BitVector & intShadowSymRefs() { return _intShadowSymRefs; }
-   TR_BitVector & genericIntShadowSymRefs() { return _genericIntShadowSymRefs; }
-   TR_BitVector & genericIntArrayShadowSymRefs() { return _genericIntArrayShadowSymRefs; }
-   TR_BitVector & genericIntNonArrayShadowSymRefs() { return _genericIntNonArrayShadowSymRefs; }
-   TR_BitVector & nonIntPrimitiveShadowSymRefs() { return _nonIntPrimitiveShadowSymRefs; }
-   TR_BitVector & addressStaticSymRefs() { return _addressStaticSymRefs; }
-   TR_BitVector & intStaticSymRefs() { return _intStaticSymRefs; }
-   TR_BitVector & nonIntPrimitiveStaticSymRefs() { return _nonIntPrimitiveStaticSymRefs; }
-   TR_BitVector & methodSymRefs() { return _methodSymRefs; }
-   TR_BitVector & arrayElementSymRefs() { return _arrayElementSymRefs; }
-   TR_BitVector & immutableArrayElementSymRefs() { return _immutableArrayElementSymRefs; }
+    TR_Memory *trMemory() { return _trMemory; }
 
-   TR::SymbolReference *getSymRefForAliasing(TR::Node *node, TR::Node *addrChild);
+    TR_StackMemory trStackMemory() { return _trMemory; }
 
-   TR_BitVector & arrayletElementSymRefs() { return _arrayletElementSymRefs; }
-   TR_BitVector & unsafeSymRefNumbers() { return _unsafeSymRefNumbers; }
+    TR_HeapMemory trHeapMemory() { return _trMemory; }
 
-   TR_BitVector & gcSafePointSymRefNumbers() { return _gcSafePointSymRefNumbers; }
-   TR_BitVector & cpConstantSymRefs() { return _cpConstantSymRefs; }
-   TR_BitVector & cpSymRefs() { return _cpSymRefs; }
+    TR_BitVector &addressShadowSymRefs() { return _addressShadowSymRefs; }
 
-   TR_BitVector & catchLocalUseSymRefs() { return _catchLocalUseSymRefs; }
+    TR_BitVector &intShadowSymRefs() { return _intShadowSymRefs; }
 
-   TR_BitVector & defaultMethodDefAliases() { return _defaultMethodDefAliases; }
-   TR_BitVector & defaultMethodUseAliases() { return _defaultMethodUseAliases; }
-   TR_BitVector & methodsThatMayThrow() { return _methodsThatMayThrow; }
-   TR_BitVector & defaultMethodDefAliasesWithoutImmutable() { return _defaultMethodDefAliasesWithoutImmutable; }
-   TR_BitVector & defaultMethodDefAliasesWithoutUserField() { return _defaultMethodDefAliasesWithoutUserField; }
+    TR_BitVector &genericIntShadowSymRefs() { return _genericIntShadowSymRefs; }
 
-   // used in support of LoopAliasRefiner
-   TR_BitVector & refinedNonIntPrimitiveArrayShadows() { return _refinedNonIntPrimitiveArrayShadows; }
-   TR_BitVector & refinedAddressArrayShadows() { return _refinedAddressArrayShadows; }
-   TR_BitVector & refinedIntArrayShadows() { return _refinedIntArrayShadows; }
+    TR_BitVector &genericIntArrayShadowSymRefs() { return _genericIntArrayShadowSymRefs; }
 
-   bool litPoolGenericIntShadowHasBeenCreated(){ return _litPoolGenericIntShadowHasBeenCreated; }
-   void setLitPoolGenericIntShadowHasBeenCreated(){ _litPoolGenericIntShadowHasBeenCreated = true; }
+    TR_BitVector &genericIntNonArrayShadowSymRefs() { return _genericIntNonArrayShadowSymRefs; }
 
-   void updateSubSets(TR::SymbolReference *ref);
+    TR_BitVector &nonIntPrimitiveShadowSymRefs() { return _nonIntPrimitiveShadowSymRefs; }
 
-   TR_BitVector * methodAliases(TR::SymbolReference *);
+    TR_BitVector &addressStaticSymRefs() { return _addressStaticSymRefs; }
 
+    TR_BitVector &intStaticSymRefs() { return _intStaticSymRefs; }
 
-   void setVeryRefinedCallAliasSets(TR::ResolvedMethodSymbol *, TR_BitVector *);
-   TR_BitVector * getVeryRefinedCallAliasSets(TR::ResolvedMethodSymbol *);
+    TR_BitVector &nonIntPrimitiveStaticSymRefs() { return _nonIntPrimitiveStaticSymRefs; }
 
-   TR_BitVector & notOsrCatchLocalUseSymRefs() { return _notOsrCatchLocalUseSymRefs; }
-   void setCatchLocalUseSymRefs();
-   void gatherLocalUseInfo(TR::Node *, TR_BitVector&, vcount_t, bool);
-   void gatherLocalUseInfo(TR::Block *, bool);
-   void gatherLocalUseInfo(TR::Block *, TR_BitVector &, TR_ScratchList<TR_Pair<TR::Block, TR_BitVector> > *, vcount_t, bool);
+    TR_BitVector &methodSymRefs() { return _methodSymRefs; }
 
-   bool hasUseonlyAliasesOnlyDueToOSRCatchBlocks(TR::SymbolReference *symRef);
+    TR_BitVector &arrayElementSymRefs() { return _arrayElementSymRefs; }
 
-   bool conservativeGenericIntShadowAliasing();
-   void setConservativeGenericIntShadowAliasing(bool b) { _conservativeGenericIntShadowAliasingRequired = b; }
-   bool mutableGenericIntShadowHasBeenCreated() { return _mutableGenericIntShadowHasBeenCreated; }
-   void setMutableGenericIntShadowHasBeenCreated(bool b) { _mutableGenericIntShadowHasBeenCreated = b; }
+    TR_BitVector &immutableArrayElementSymRefs() { return _immutableArrayElementSymRefs; }
 
-   void addNonIntPrimitiveArrayShadows(TR_BitVector *);
-   void addAddressArrayShadows(TR_BitVector *);
-   void addIntArrayShadows(TR_BitVector *);
+    TR::SymbolReference *getSymRefForAliasing(TR::Node *node, TR::Node *addrChild);
+
+    TR_BitVector &arrayletElementSymRefs() { return _arrayletElementSymRefs; }
+
+    TR_BitVector &unsafeSymRefNumbers() { return _unsafeSymRefNumbers; }
+
+    TR_BitVector &gcSafePointSymRefNumbers() { return _gcSafePointSymRefNumbers; }
+
+    TR_BitVector &cpConstantSymRefs() { return _cpConstantSymRefs; }
+
+    TR_BitVector &cpSymRefs() { return _cpSymRefs; }
+
+    TR_BitVector &catchLocalUseSymRefs() { return _catchLocalUseSymRefs; }
+
+    TR_BitVector &defaultMethodDefAliases() { return _defaultMethodDefAliases; }
+
+    TR_BitVector &defaultMethodUseAliases() { return _defaultMethodUseAliases; }
+
+    TR_BitVector &methodsThatMayThrow() { return _methodsThatMayThrow; }
+
+    TR_BitVector &defaultMethodDefAliasesWithoutImmutable() { return _defaultMethodDefAliasesWithoutImmutable; }
+
+    TR_BitVector &defaultMethodDefAliasesWithoutUserField() { return _defaultMethodDefAliasesWithoutUserField; }
+
+    // used in support of LoopAliasRefiner
+    TR_BitVector &refinedNonIntPrimitiveArrayShadows() { return _refinedNonIntPrimitiveArrayShadows; }
+
+    TR_BitVector &refinedAddressArrayShadows() { return _refinedAddressArrayShadows; }
+
+    TR_BitVector &refinedIntArrayShadows() { return _refinedIntArrayShadows; }
+
+    bool litPoolGenericIntShadowHasBeenCreated() { return _litPoolGenericIntShadowHasBeenCreated; }
+
+    void setLitPoolGenericIntShadowHasBeenCreated() { _litPoolGenericIntShadowHasBeenCreated = true; }
+
+    void updateSubSets(TR::SymbolReference *ref);
+
+    TR_BitVector *methodAliases(TR::SymbolReference *);
+
+    void setVeryRefinedCallAliasSets(TR::ResolvedMethodSymbol *, TR_BitVector *);
+    TR_BitVector *getVeryRefinedCallAliasSets(TR::ResolvedMethodSymbol *);
+
+    TR_BitVector &notOsrCatchLocalUseSymRefs() { return _notOsrCatchLocalUseSymRefs; }
+
+    void setCatchLocalUseSymRefs();
+    void gatherLocalUseInfo(TR::Node *, TR_BitVector &, vcount_t, bool);
+    void gatherLocalUseInfo(TR::Block *, bool);
+    void gatherLocalUseInfo(TR::Block *, TR_BitVector &, TR_ScratchList<TR_Pair<TR::Block, TR_BitVector> > *, vcount_t,
+        bool);
+
+    bool hasUseonlyAliasesOnlyDueToOSRCatchBlocks(TR::SymbolReference *symRef);
+
+    bool conservativeGenericIntShadowAliasing();
+
+    void setConservativeGenericIntShadowAliasing(bool b) { _conservativeGenericIntShadowAliasingRequired = b; }
+
+    bool mutableGenericIntShadowHasBeenCreated() { return _mutableGenericIntShadowHasBeenCreated; }
+
+    void setMutableGenericIntShadowHasBeenCreated(bool b) { _mutableGenericIntShadowHasBeenCreated = b; }
+
+    void addNonIntPrimitiveArrayShadows(TR_BitVector *);
+    void addAddressArrayShadows(TR_BitVector *);
+    void addIntArrayShadows(TR_BitVector *);
 
 protected:
+    TR::AliasBuilder *self();
 
-   TR::AliasBuilder *self();
+    TR::Compilation *_compilation;
+    TR_Memory *_trMemory;
 
-   TR::Compilation *_compilation;
-   TR_Memory *_trMemory;
+    TR::SymbolReferenceTable *_symRefTab;
 
-   TR::SymbolReferenceTable *_symRefTab;
+    struct CallAliases : TR_Link<CallAliases> {
+        CallAliases(TR_BitVector *bv, TR::ResolvedMethodSymbol *m)
+            : _callAliases(bv)
+            , _methodSymbol(m)
+        {}
 
-   struct CallAliases : TR_Link<CallAliases>
-      {
-      CallAliases(TR_BitVector * bv, TR::ResolvedMethodSymbol * m) : _callAliases(bv), _methodSymbol(m) { }
-      TR_BitVector * _callAliases;
-      TR::ResolvedMethodSymbol * _methodSymbol;
-      };
+        TR_BitVector *_callAliases;
+        TR::ResolvedMethodSymbol *_methodSymbol;
+    };
 
-   TR_LinkHead<CallAliases> _callAliases;
+    TR_LinkHead<CallAliases> _callAliases;
 
-   TR_BitVector _addressShadowSymRefs;
-   TR_BitVector _intShadowSymRefs;
-   TR_BitVector _genericIntShadowSymRefs;
-   TR_BitVector _genericIntArrayShadowSymRefs;
-   TR_BitVector _genericIntNonArrayShadowSymRefs;
-   TR_BitVector _nonIntPrimitiveShadowSymRefs;
-   TR_BitVector _addressStaticSymRefs;
-   TR_BitVector _intStaticSymRefs;
-   TR_BitVector _nonIntPrimitiveStaticSymRefs;
-   TR_BitVector _methodSymRefs;
-   TR_BitVector _arrayElementSymRefs;
-   TR_BitVector _immutableArrayElementSymRefs;
+    TR_BitVector _addressShadowSymRefs;
+    TR_BitVector _intShadowSymRefs;
+    TR_BitVector _genericIntShadowSymRefs;
+    TR_BitVector _genericIntArrayShadowSymRefs;
+    TR_BitVector _genericIntNonArrayShadowSymRefs;
+    TR_BitVector _nonIntPrimitiveShadowSymRefs;
+    TR_BitVector _addressStaticSymRefs;
+    TR_BitVector _intStaticSymRefs;
+    TR_BitVector _nonIntPrimitiveStaticSymRefs;
+    TR_BitVector _methodSymRefs;
+    TR_BitVector _arrayElementSymRefs;
+    TR_BitVector _immutableArrayElementSymRefs;
 
-   TR_BitVector _arrayletElementSymRefs;
-   TR_BitVector _unsafeSymRefNumbers;
-   TR_BitVector _gcSafePointSymRefNumbers;
-   TR_BitVector _cpConstantSymRefs;
-   TR_BitVector _cpSymRefs;
+    TR_BitVector _arrayletElementSymRefs;
+    TR_BitVector _unsafeSymRefNumbers;
+    TR_BitVector _gcSafePointSymRefNumbers;
+    TR_BitVector _cpConstantSymRefs;
+    TR_BitVector _cpSymRefs;
 
-   TR_BitVector _catchLocalUseSymRefs;
-   TR_BitVector _defaultMethodDefAliases;
-   TR_BitVector _defaultMethodUseAliases;
-   TR_BitVector _methodsThatMayThrow;
+    TR_BitVector _catchLocalUseSymRefs;
+    TR_BitVector _defaultMethodDefAliases;
+    TR_BitVector _defaultMethodUseAliases;
+    TR_BitVector _methodsThatMayThrow;
 
-   TR_BitVector _defaultMethodDefAliasesWithoutImmutable;
-   TR_BitVector _defaultMethodDefAliasesWithoutUserField;
+    TR_BitVector _defaultMethodDefAliasesWithoutImmutable;
+    TR_BitVector _defaultMethodDefAliasesWithoutUserField;
 
-   // used for LoopAliasRefiner
-   TR_BitVector _refinedAddressArrayShadows;
-   TR_BitVector _refinedIntArrayShadows;
-   TR_BitVector _refinedNonIntPrimitiveArrayShadows;
+    // used for LoopAliasRefiner
+    TR_BitVector _refinedAddressArrayShadows;
+    TR_BitVector _refinedIntArrayShadows;
+    TR_BitVector _refinedNonIntPrimitiveArrayShadows;
 
-   bool _litPoolGenericIntShadowHasBeenCreated;
+    bool _litPoolGenericIntShadowHasBeenCreated;
 
-   TR_Array<TR_BitVector *> _userFieldMethodDefAliases;
+    TR_Array<TR_BitVector *> _userFieldMethodDefAliases;
 
-   TR_BitVector _notOsrCatchLocalUseSymRefs;
+    TR_BitVector _notOsrCatchLocalUseSymRefs;
 
-   // J9?
-   bool _conservativeGenericIntShadowAliasingRequired;
-   bool _mutableGenericIntShadowHasBeenCreated;
+    // J9?
+    bool _conservativeGenericIntShadowAliasingRequired;
+    bool _mutableGenericIntShadowHasBeenCreated;
+};
 
-   };
-
-}
+} // namespace OMR
 
 #endif
 

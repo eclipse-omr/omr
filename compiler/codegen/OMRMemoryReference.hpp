@@ -27,10 +27,11 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
+
 namespace OMR {
 class MemoryReference;
 typedef OMR::MemoryReference MemoryReferenceConnector;
-}
+} // namespace OMR
 #endif
 
 #include "env/TRMemory.hpp"
@@ -40,21 +41,18 @@ namespace TR {
 class MemoryReference;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE MemoryReference
-   {
-   public:
+class OMR_EXTENSIBLE MemoryReference {
+public:
+    TR_ALLOC(TR_Memory::MemoryReference)
 
-   TR_ALLOC(TR_Memory::MemoryReference)
+    TR::MemoryReference *self();
 
-   TR::MemoryReference *self();
+protected:
+    MemoryReference() {};
+};
 
-   protected:
-   MemoryReference() {};
-   };
-
-}
+} // namespace OMR
 
 #endif

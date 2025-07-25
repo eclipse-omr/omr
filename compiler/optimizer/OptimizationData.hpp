@@ -25,33 +25,36 @@
 #include "compile/Compilation.hpp"
 #include "env/TRMemory.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OptimizationData
-	{
-	public:
+class OptimizationData {
+public:
+    static void *operator new(size_t size, TR::Allocator a) { return a.allocate(size); }
 
-	static void *operator new(size_t size, TR::Allocator a)
-           { return a.allocate(size); }
-        static void  operator delete(void *ptr, size_t size)
-           { ((OptimizationData*)ptr)->allocator().deallocate(ptr, size); } /* t->allocator() must return the same allocator as used for new */
-        static void operator delete(void *p, TR::Allocator a) {}
+    static void operator delete(void *ptr, size_t size)
+    {
+        ((OptimizationData *)ptr)->allocator().deallocate(ptr, size);
+    } /* t->allocator() must return the same allocator as used for new */
 
-        /* Virtual destructor is necessary for the above delete operator to work
-         * See "Modern C++ Design" section 4.7
-         */
-        virtual ~OptimizationData() {}
+    static void operator delete(void *p, TR::Allocator a) {}
 
-        OptimizationData(TR::Compilation *comp) : _comp(comp) {}
+    /* Virtual destructor is necessary for the above delete operator to work
+     * See "Modern C++ Design" section 4.7
+     */
+    virtual ~OptimizationData() {}
 
-	TR::Compilation *comp() { return _comp; }
-	TR::Allocator allocator() { return comp()->allocator(); }
+    OptimizationData(TR::Compilation *comp)
+        : _comp(comp)
+    {}
 
-	private:
-	TR::Compilation *_comp;
-	};
+    TR::Compilation *comp() { return _comp; }
 
-}
+    TR::Allocator allocator() { return comp()->allocator(); }
+
+private:
+    TR::Compilation *_comp;
+};
+
+} // namespace TR
 
 #endif

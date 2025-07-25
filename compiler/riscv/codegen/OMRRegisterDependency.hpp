@@ -27,20 +27,28 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_CONNECTOR
+
 namespace OMR {
-namespace RV { class RegisterDependencyConditions; }
-typedef OMR::RV::RegisterDependencyConditions RegisterDependencyConditionsConnector;
+namespace RV {
+class RegisterDependencyConditions;
 }
+
+typedef OMR::RV::RegisterDependencyConditions RegisterDependencyConditionsConnector;
+} // namespace OMR
 #else
 #error OMR::RV::RegisterDependencyConditions expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #ifndef OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
+
 namespace OMR {
-namespace RV { class RegisterDependencyGroup; }
-typedef OMR::RV::RegisterDependencyGroup RegisterDependencyGroupConnector;
+namespace RV {
+class RegisterDependencyGroup;
 }
+
+typedef OMR::RV::RegisterDependencyGroup RegisterDependencyGroupConnector;
+} // namespace OMR
 #endif
 
 #include "compiler/codegen/OMRRegisterDependency.hpp"
@@ -56,235 +64,233 @@ namespace TR {
 class Instruction;
 class Node;
 class RegisterDependencyConditions;
-}
-namespace OMR
-{
-namespace RV
-{
-class OMR_EXTENSIBLE RegisterDependencyGroup : public OMR::RegisterDependencyGroup
-   {
-   public:
+} // namespace TR
 
-   /**
-    * @brief Assigns registers
-    * @param[in] currentInstruction : current instruction
-    * @param[in] kindToBeAssigned : kind of register to be assigned
-    * @param[in] numberOfRegisters : # of registers
-    * @param[in] cg : code generator
-    */
-   void assignRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned, uint32_t numberOfRegisters, TR::CodeGenerator *cg);
-   };
+namespace OMR { namespace RV {
+class OMR_EXTENSIBLE RegisterDependencyGroup : public OMR::RegisterDependencyGroup {
+public:
+    /**
+     * @brief Assigns registers
+     * @param[in] currentInstruction : current instruction
+     * @param[in] kindToBeAssigned : kind of register to be assigned
+     * @param[in] numberOfRegisters : # of registers
+     * @param[in] cg : code generator
+     */
+    void assignRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned,
+        uint32_t numberOfRegisters, TR::CodeGenerator *cg);
+};
 
-class RegisterDependencyConditions: public OMR::RegisterDependencyConditions
-   {
-   TR::RegisterDependencyGroup *_preConditions;
-   TR::RegisterDependencyGroup *_postConditions;
-   uint16_t _numPreConditions;
-   uint16_t _addCursorForPre;
-   uint16_t _numPostConditions;
-   uint16_t _addCursorForPost;
+class RegisterDependencyConditions : public OMR::RegisterDependencyConditions {
+    TR::RegisterDependencyGroup *_preConditions;
+    TR::RegisterDependencyGroup *_postConditions;
+    uint16_t _numPreConditions;
+    uint16_t _addCursorForPre;
+    uint16_t _numPostConditions;
+    uint16_t _addCursorForPost;
 
-   public:
+public:
+    TR_ALLOC(TR_Memory::RegisterDependencyConditions)
 
-   TR_ALLOC(TR_Memory::RegisterDependencyConditions)
+    /**
+     * @brief Constructor
+     */
+    RegisterDependencyConditions()
+        : _preConditions(NULL)
+        , _postConditions(NULL)
+        , _numPreConditions(0)
+        , _addCursorForPre(0)
+        , _numPostConditions(0)
+        , _addCursorForPost(0)
+    {}
 
-   /**
-    * @brief Constructor
-    */
-   RegisterDependencyConditions()
-      : _preConditions(NULL),
-        _postConditions(NULL),
-        _numPreConditions(0),
-        _addCursorForPre(0),
-        _numPostConditions(0),
-        _addCursorForPost(0)
-      {}
+    /**
+     * @brief Constructor
+     * @param[in] numPreConds : # of pre-conditions
+     * @param[in] numPostConds : # of post-conditions
+     * @param[in] m : memory
+     */
+    RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds, TR_Memory *m);
 
-   /**
-    * @brief Constructor
-    * @param[in] numPreConds : # of pre-conditions
-    * @param[in] numPostConds : # of post-conditions
-    * @param[in] m : memory
-    */
-   RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds, TR_Memory * m);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator object
+     * @param[in] node : node
+     * @param[in] extranum : additional # of conditions
+     * @param[in] cursorPtr : instruction cursor
+     */
+    RegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node, uint32_t extranum,
+        TR::Instruction **cursorPtr = NULL);
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator object
-    * @param[in] node : node
-    * @param[in] extranum : additional # of conditions
-    * @param[in] cursorPtr : instruction cursor
-    */
-   RegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node, uint32_t extranum, TR::Instruction **cursorPtr=NULL);
+    /**
+     * @brief Clones RegisterDependencyConditions
+     * @param[in] cg : CodeGenerator
+     * @param[in] added : conditions to be added
+     * @return cloned RegisterDependencyConditions
+     */
+    TR::RegisterDependencyConditions *clone(TR::CodeGenerator *cg, TR::RegisterDependencyConditions *added = NULL);
 
-   /**
-    * @brief Clones RegisterDependencyConditions
-    * @param[in] cg : CodeGenerator
-    * @param[in] added : conditions to be added
-    * @return cloned RegisterDependencyConditions
-    */
-   TR::RegisterDependencyConditions *clone(TR::CodeGenerator *cg, TR::RegisterDependencyConditions *added=NULL);
+    /**
+     * @brief Adds NoReg to post-condition
+     * @param[in] reg : register
+     * @param[in] cg : CodeGenerator
+     */
+    void unionNoRegPostCondition(TR::Register *reg, TR::CodeGenerator *cg);
 
-   /**
-    * @brief Adds NoReg to post-condition
-    * @param[in] reg : register
-    * @param[in] cg : CodeGenerator
-    */
-   void unionNoRegPostCondition(TR::Register *reg, TR::CodeGenerator *cg);
+    /**
+     * @brief Gets the number of pre-conditions
+     * @return the number of pre-conditions
+     */
+    uint32_t getNumPreConditions() { return _numPreConditions; }
 
-   /**
-    * @brief Gets the number of pre-conditions
-    * @return the number of pre-conditions
-    */
-   uint32_t getNumPreConditions() {return _numPreConditions;}
+    /**
+     * @brief Sets the number of pre-conditions
+     * @param[in] n : number of pre-conditions
+     * @param[in] m : memory
+     * @return the number of pre-conditions
+     */
+    uint32_t setNumPreConditions(uint16_t n, TR_Memory *m);
 
-   /**
-    * @brief Sets the number of pre-conditions
-    * @param[in] n : number of pre-conditions
-    * @param[in] m : memory
-    * @return the number of pre-conditions
-    */
-   uint32_t setNumPreConditions(uint16_t n, TR_Memory * m);
+    /**
+     * @brief Gets the number of post-conditions
+     * @return the number of post-conditions
+     */
+    uint32_t getNumPostConditions() { return _numPostConditions; }
 
-   /**
-    * @brief Gets the number of post-conditions
-    * @return the number of post-conditions
-    */
-   uint32_t getNumPostConditions() {return _numPostConditions;}
+    /**
+     * @brief Sets the number of post-conditions
+     * @param[in] n : number of pre-conditions
+     * @param[in] m : memory
+     * @return the number of post-conditions
+     */
+    uint32_t setNumPostConditions(uint16_t n, TR_Memory *m);
 
-   /**
-    * @brief Sets the number of post-conditions
-    * @param[in] n : number of pre-conditions
-    * @param[in] m : memory
-    * @return the number of post-conditions
-    */
-   uint32_t setNumPostConditions(uint16_t n, TR_Memory * m);
+    /**
+     * @brief Gets the add-cursor for pre-conditions
+     * @return add-cursor for pre-conditions
+     */
+    uint32_t getAddCursorForPre() { return _addCursorForPre; }
 
-   /**
-    * @brief Gets the add-cursor for pre-conditions
-    * @return add-cursor for pre-conditions
-    */
-   uint32_t getAddCursorForPre() {return _addCursorForPre;}
-   /**
-    * @brief Sets the add-cursor for pre-conditions
-    * @param[in] a : new value for add-cursor
-    * @return add-cursor for pre-conditions
-    */
-   uint32_t setAddCursorForPre(uint16_t a) {return (_addCursorForPre = a);}
+    /**
+     * @brief Sets the add-cursor for pre-conditions
+     * @param[in] a : new value for add-cursor
+     * @return add-cursor for pre-conditions
+     */
+    uint32_t setAddCursorForPre(uint16_t a) { return (_addCursorForPre = a); }
 
-   /**
-    * @brief Gets the add-cursor for post-conditions
-    * @return add-cursor for post-conditions
-    */
-   uint32_t getAddCursorForPost() {return _addCursorForPost;}
-   /**
-    * @brief Sets the add-cursor for post-conditions
-    * @param[in] a : new value for add-cursor
-    * @return add-cursor for post-conditions
-    */
-   uint32_t setAddCursorForPost(uint16_t a) {return (_addCursorForPost = a);}
+    /**
+     * @brief Gets the add-cursor for post-conditions
+     * @return add-cursor for post-conditions
+     */
+    uint32_t getAddCursorForPost() { return _addCursorForPost; }
 
-   /**
-    * @brief Gets pre-conditions
-    * @return pre-conditions
-    */
-   TR::RegisterDependencyGroup *getPreConditions()  {return _preConditions;}
+    /**
+     * @brief Sets the add-cursor for post-conditions
+     * @param[in] a : new value for add-cursor
+     * @return add-cursor for post-conditions
+     */
+    uint32_t setAddCursorForPost(uint16_t a) { return (_addCursorForPost = a); }
 
-   /**
-    * @brief Adds to pre-conditions
-    * @param[in] vr : register
-    * @param[in] rr : register number
-    * @param[in] flag : flag
-    */
-   void addPreCondition(TR::Register *vr, TR::RealRegister::RegNum rr, uint8_t flag = UsesDependentRegister);
+    /**
+     * @brief Gets pre-conditions
+     * @return pre-conditions
+     */
+    TR::RegisterDependencyGroup *getPreConditions() { return _preConditions; }
 
-   /**
-    * @brief Gets post-conditions
-    * @return post-conditions
-    */
-   TR::RegisterDependencyGroup *getPostConditions() {return _postConditions;}
+    /**
+     * @brief Adds to pre-conditions
+     * @param[in] vr : register
+     * @param[in] rr : register number
+     * @param[in] flag : flag
+     */
+    void addPreCondition(TR::Register *vr, TR::RealRegister::RegNum rr, uint8_t flag = UsesDependentRegister);
 
-   /**
-    * @brief Adds to post-conditions
-    * @param[in] vr : register
-    * @param[in] rr : register number
-    * @param[in] flag : flag
-    */
-   void addPostCondition(TR::Register *vr, TR::RealRegister::RegNum rr, uint8_t flag = UsesDependentRegister);
+    /**
+     * @brief Gets post-conditions
+     * @return post-conditions
+     */
+    TR::RegisterDependencyGroup *getPostConditions() { return _postConditions; }
 
-   /**
-    * @brief Assigns registers to pre-conditions
-    * @param[in] currentInstruction : current instruction
-    * @param[in] kindToBeAssigned : register kind to be assigned
-    * @param[in] cg : CodeGenerator
-    */
-   void assignPreConditionRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned, TR::CodeGenerator *cg);
+    /**
+     * @brief Adds to post-conditions
+     * @param[in] vr : register
+     * @param[in] rr : register number
+     * @param[in] flag : flag
+     */
+    void addPostCondition(TR::Register *vr, TR::RealRegister::RegNum rr, uint8_t flag = UsesDependentRegister);
 
-   /**
-    * @brief Assigns registers to post-conditions
-    * @param[in] currentInstruction : current instruction
-    * @param[in] kindToBeAssigned : register kind to be assigned
-    * @param[in] cg : CodeGenerator
-    */
-   void assignPostConditionRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned, TR::CodeGenerator *cg);
+    /**
+     * @brief Assigns registers to pre-conditions
+     * @param[in] currentInstruction : current instruction
+     * @param[in] kindToBeAssigned : register kind to be assigned
+     * @param[in] cg : CodeGenerator
+     */
+    void assignPreConditionRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned,
+        TR::CodeGenerator *cg);
 
-   /**
-    * @brief Searches a register in pre-conditions
-    * @param[in] rr : register number
-    * @return register
-    */
-   TR::Register *searchPreConditionRegister(TR::RealRegister::RegNum rr);
+    /**
+     * @brief Assigns registers to post-conditions
+     * @param[in] currentInstruction : current instruction
+     * @param[in] kindToBeAssigned : register kind to be assigned
+     * @param[in] cg : CodeGenerator
+     */
+    void assignPostConditionRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned,
+        TR::CodeGenerator *cg);
 
-   /**
-    * @brief Searches a register in post-conditions
-    * @param[in] rr : register number
-    * @return register
-    */
-   TR::Register *searchPostConditionRegister(TR::RealRegister::RegNum rr);
+    /**
+     * @brief Searches a register in pre-conditions
+     * @param[in] rr : register number
+     * @return register
+     */
+    TR::Register *searchPreConditionRegister(TR::RealRegister::RegNum rr);
 
-   /**
-    * @brief References the register or not
-    * @param[in] reg : register
-    * @return true when it references the register
-    */
-   bool refsRegister(TR::Register *r);
-   /**
-    * @brief Defines the register or not
-    * @param[in] reg : register
-    * @return true when it defines the register
-    */
-   bool defsRegister(TR::Register *r);
-   /**
-    * @brief Defines the real register or not
-    * @param[in] reg : register
-    * @return true when it defines the real register
-    */
-   bool defsRealRegister(TR::Register *r);
-   /**
-    * @brief Uses the register or not
-    * @param[in] reg : register
-    * @return true when it uses the register
-    */
-   bool usesRegister(TR::Register *r);
+    /**
+     * @brief Searches a register in post-conditions
+     * @param[in] rr : register number
+     * @return register
+     */
+    TR::Register *searchPostConditionRegister(TR::RealRegister::RegNum rr);
 
-   /**
-    * @brief Increment totalUseCounts of registers in the RegisterDependencyConditions
-    * @param[in] cg : CodeGenerator
-    */
-   void incRegisterTotalUseCounts(TR::CodeGenerator *cg);
+    /**
+     * @brief References the register or not
+     * @param[in] reg : register
+     * @return true when it references the register
+     */
+    bool refsRegister(TR::Register *r);
+    /**
+     * @brief Defines the register or not
+     * @param[in] reg : register
+     * @return true when it defines the register
+     */
+    bool defsRegister(TR::Register *r);
+    /**
+     * @brief Defines the real register or not
+     * @param[in] reg : register
+     * @return true when it defines the real register
+     */
+    bool defsRealRegister(TR::Register *r);
+    /**
+     * @brief Uses the register or not
+     * @param[in] reg : register
+     * @return true when it uses the register
+     */
+    bool usesRegister(TR::Register *r);
 
-   /**
-    * @brief Kills all placeholder registers held by the RegisterDependencyConditions
-    * except @param notKilledReg (usually the return register).
-    *
-    * @param[in] cg : CodeGenerator
-    * @param[in] notKilledReg : not-killed register
-    */
-   void stopUsingDepRegs(TR::CodeGenerator *cg, TR::Register *notKilledReg = NULL);
+    /**
+     * @brief Increment totalUseCounts of registers in the RegisterDependencyConditions
+     * @param[in] cg : CodeGenerator
+     */
+    void incRegisterTotalUseCounts(TR::CodeGenerator *cg);
 
-   };
+    /**
+     * @brief Kills all placeholder registers held by the RegisterDependencyConditions
+     * except @param notKilledReg (usually the return register).
+     *
+     * @param[in] cg : CodeGenerator
+     * @param[in] notKilledReg : not-killed register
+     */
+    void stopUsingDepRegs(TR::CodeGenerator *cg, TR::Register *notKilledReg = NULL);
+};
 
-} // RV
-} // OMR
+}} // namespace OMR::RV
 
 #endif

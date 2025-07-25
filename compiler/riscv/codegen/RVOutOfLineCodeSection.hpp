@@ -28,47 +28,46 @@
 namespace TR {
 class CodeGenerator;
 class LabelSymbol;
-}
+} // namespace TR
 
-class TR_RVOutOfLineCodeSection : public TR_OutOfLineCodeSection
-   {
-
+class TR_RVOutOfLineCodeSection : public TR_OutOfLineCodeSection {
 public:
-   /**
-    * @brief Constructor
-    * @param[in] entryLabel : entry label
-    * @param[in] cg : code generator
-    */
-   TR_RVOutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::CodeGenerator *cg)
-      : TR_OutOfLineCodeSection(entryLabel, cg)
-      {}
+    /**
+     * @brief Constructor
+     * @param[in] entryLabel : entry label
+     * @param[in] cg : code generator
+     */
+    TR_RVOutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::CodeGenerator *cg)
+        : TR_OutOfLineCodeSection(entryLabel, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] entryLabel : entry label
-    * @param[in] restartLabel : restart label
-    * @param[in] cg : code generator
-    */
-   TR_RVOutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
-      : TR_OutOfLineCodeSection(entryLabel, restartLabel, cg)
-      {}
+    /**
+     * @brief Constructor
+     * @param[in] entryLabel : entry label
+     * @param[in] restartLabel : restart label
+     * @param[in] cg : code generator
+     */
+    TR_RVOutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+        : TR_OutOfLineCodeSection(entryLabel, restartLabel, cg)
+    {}
 
-   // For calls
+    // For calls
 
-   /**
-    * @brief Constructor
-    * @param[in] callNode : call node
-    * @param[in] callOp : call opcode
-    * @param[in] targetReg : target register
-    * @param[in] entryLabel : entry label
-    * @param[in] restartLabel : restart label
-    * @param[in] cg : code generator
-    */
-   TR_RVOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg);
+    /**
+     * @brief Constructor
+     * @param[in] callNode : call node
+     * @param[in] callOp : call opcode
+     * @param[in] targetReg : target register
+     * @param[in] entryLabel : entry label
+     * @param[in] restartLabel : restart label
+     * @param[in] cg : code generator
+     */
+    TR_RVOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
+        TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg);
 
-   /**
-    * @brief Generates out-of-line code section dispatch
-    */
-   void generateRVOutOfLineCodeSectionDispatch();
-   };
+    /**
+     * @brief Generates out-of-line code section dispatch
+     */
+    void generateRVOutOfLineCodeSectionDispatch();
+};
 #endif

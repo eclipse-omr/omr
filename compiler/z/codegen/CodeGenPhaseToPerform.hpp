@@ -24,17 +24,7 @@
  * Only enum values defined in CodeGenPhaseEnum.hpp are allowed.
  */
 
-    ReserveCodeCachePhase,
-    LowerTreesPhase,
-    SetupForInstructionSelectionPhase,
-    InstructionSelectionPhase,
-    CreateStackAtlasPhase,
-    PeepholePhase,
-    RegisterAssigningPhase,
-    MapStackPhase,
-    PeepholePhase,
-    ExpandInstructionsPhase,
+ReserveCodeCachePhase, LowerTreesPhase, SetupForInstructionSelectionPhase, InstructionSelectionPhase,
+    CreateStackAtlasPhase, PeepholePhase, RegisterAssigningPhase, MapStackPhase, PeepholePhase, ExpandInstructionsPhase,
 
-    BinaryEncodingPhase,
-    EmitSnippetsPhase,
-    ProcessRelocationsPhase
+    BinaryEncodingPhase, EmitSnippetsPhase, ProcessRelocationsPhase

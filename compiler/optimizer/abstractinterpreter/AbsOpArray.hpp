@@ -31,53 +31,52 @@ namespace TR {
 /**
 .* Abstract representation of the operand array.
  */
-class AbsOpArray
-   {
-   public:
+class AbsOpArray {
+public:
+    AbsOpArray(uint32_t maxArraySize, TR::Region &region)
+        : _container(maxArraySize, NULL, region)
+    {}
 
-   AbsOpArray(uint32_t maxArraySize, TR::Region& region) :
-         _container(maxArraySize, NULL, region)
-      {}
+    /**
+     * @brief Clone the operand array
+     *
+     * @param region The memory region where the cloned operand array should be allocated.
+     * @return the cloned operand array
+     */
+    TR::AbsOpArray *clone(TR::Region &region) const;
 
-   /**
-    * @brief Clone the operand array
-    *
-    * @param region The memory region where the cloned operand array should be allocated.
-    * @return the cloned operand array
-    */
-   TR::AbsOpArray *clone(TR::Region& region) const;
+    /**
+     * @brief Perform an in-place merge with another operand array.
+     * The merge operation does not modify the state of another state
+     * or store any references of abstract values from another state to be merged with
+     *
+     * @param other The operand array to be merged with.
+     */
+    void merge(const TR::AbsOpArray *other, TR::Region &region);
 
-   /**
-    * @brief Perform an in-place merge with another operand array.
-    * The merge operation does not modify the state of another state
-    * or store any references of abstract values from another state to be merged with
-    *
-    * @param other The operand array to be merged with.
-    */
-   void merge(const TR::AbsOpArray* other, TR::Region& region);
+    /**
+     * @brief Get the abstract value at index i.
+     *
+     * @param i the array index
+     * @return the abstract value
+     */
+    TR::AbsValue *at(uint32_t i) const;
 
-   /**
-    * @brief Get the abstract value at index i.
-    *
-    * @param i the array index
-    * @return the abstract value
-    */
-   TR::AbsValue *at(uint32_t i) const;
+    /**
+     * @brief Set the abstract value at index i.
+     *
+     * @param i the array index
+     * @param value the abstract value to be set
+     */
+    void set(uint32_t i, TR::AbsValue *value);
 
-   /**
-    * @brief Set the abstract value at index i.
-    *
-    * @param i the array index
-    * @param value the abstract value to be set
-    */
-   void set(uint32_t i, TR::AbsValue* value);
+    size_t size() const { return _container.size(); }
 
-   size_t size() const { return _container.size(); }
-   void print(TR::Compilation* comp) const;
+    void print(TR::Compilation *comp) const;
 
-   private:
-   TR::vector<TR::AbsValue*, TR::Region&> _container;
-   };
+private:
+    TR::vector<TR::AbsValue *, TR::Region &> _container;
+};
 
-}
+} // namespace TR
 #endif

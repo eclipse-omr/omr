@@ -25,85 +25,70 @@
 #include <stddef.h>
 #include "env/FrontEnd.hpp"
 
-#define   LOCALE_ENV_VAR   "TR_ProcessOptionsWithLocale"
-#define   LOCALE_DEF   static const char *ignoreLocaleOption=feGetEnv(LOCALE_ENV_VAR)
-#define USE_LOCALE   (ignoreLocaleOption != NULL)
+#define LOCALE_ENV_VAR "TR_ProcessOptionsWithLocale"
+#define LOCALE_DEF static const char *ignoreLocaleOption = feGetEnv(LOCALE_ENV_VAR)
+#define USE_LOCALE (ignoreLocaleOption != NULL)
 
 // tolower that does not respect the locale: for ascii only
-int
-tolower_ignore_locale(int c)
-   {
-   LOCALE_DEF;
-   if (USE_LOCALE)
-      return tolower(c);
+int tolower_ignore_locale(int c)
+{
+    LOCALE_DEF;
+    if (USE_LOCALE)
+        return tolower(c);
 
-   return ((c >= 'A') && (c <= 'Z')) ? (c - 'A' + 'a') : c;
-   }
+    return ((c >= 'A') && (c <= 'Z')) ? (c - 'A' + 'a') : c;
+}
 
 // toupper that does not respect the locale: for ascii only
-int
-toupper_ignore_locale(int c)
-   {
-   LOCALE_DEF;
-   if (USE_LOCALE)
-      return toupper(c);
+int toupper_ignore_locale(int c)
+{
+    LOCALE_DEF;
+    if (USE_LOCALE)
+        return toupper(c);
 
-   return ((c >= 'a') && (c <= 'z')) ? (c - 'a' + 'A') : c;
-   }
+    return ((c >= 'a') && (c <= 'z')) ? (c - 'a' + 'A') : c;
+}
 
 // stricmp that does not respect the locale: for ascii comparisons only
-int
-stricmp_ignore_locale(const char *s1, const char *s2)
-   {
-   LOCALE_DEF;
-   if (USE_LOCALE)
-      return STRICMP(s1, s2);
+int stricmp_ignore_locale(const char *s1, const char *s2)
+{
+    LOCALE_DEF;
+    if (USE_LOCALE)
+        return STRICMP(s1, s2);
 
-   while (1)
-      {
-      char c1 = *s1++;
-      char c2 = *s2++;
-      int diff = tolower_ignore_locale(c1) - tolower_ignore_locale(c2);
-      if (diff != 0)
-         {
-         return diff;
-         }
-      else
-         {
-         if('\0' == c1)
-            {
-            return 0;
+    while (1) {
+        char c1 = *s1++;
+        char c2 = *s2++;
+        int diff = tolower_ignore_locale(c1) - tolower_ignore_locale(c2);
+        if (diff != 0) {
+            return diff;
+        } else {
+            if ('\0' == c1) {
+                return 0;
             }
-         }
-      }
-      return 0;
-   }
-
+        }
+    }
+    return 0;
+}
 
 // strnicmp that does not respect the locale: for ascii comparisons only
-int
-strnicmp_ignore_locale(const char *s1, const char *s2, size_t length)
-   {
-   LOCALE_DEF;
-   if (USE_LOCALE)
-      return STRNICMP(s1, s2, length);
+int strnicmp_ignore_locale(const char *s1, const char *s2, size_t length)
+{
+    LOCALE_DEF;
+    if (USE_LOCALE)
+        return STRNICMP(s1, s2, length);
 
-   while (length-- > 0)
-      {
-      char c1 = *s1++;
-      char c2 = *s2++;
-      int diff = tolower_ignore_locale(c1) - tolower_ignore_locale(c2);
-      if (diff != 0)
-         {
-         return diff;
-         }
-      else
-         {
-         if('\0' == c1)
-            {
-            return 0;
+    while (length-- > 0) {
+        char c1 = *s1++;
+        char c2 = *s2++;
+        int diff = tolower_ignore_locale(c1) - tolower_ignore_locale(c2);
+        if (diff != 0) {
+            return diff;
+        } else {
+            if ('\0' == c1) {
+                return 0;
             }
-         }
-      }
-      return 0;
-   }
+        }
+    }
+    return 0;
+}

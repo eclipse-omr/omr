@@ -27,10 +27,11 @@
  */
 #ifndef OMR_OPTIMIZATIONMANAGER_CONNECTOR
 #define OMR_OPTIMIZATIONMANAGER_CONNECTOR
+
 namespace OMR {
 class OptimizationManager;
 typedef OMR::OptimizationManager OptimizationManagerConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -48,195 +49,266 @@ typedef OMR::OptimizationManager OptimizationManagerConnector;
 
 class TR_Debug;
 class TR_FrontEnd;
+
 namespace TR {
 class SymbolReferenceTable;
 class Block;
 class CodeGenerator;
 class Optimization;
 class OptimizationManager;
-}
+} // namespace TR
 struct OptimizationStrategy;
 
 typedef TR::Optimization *(*OptimizationFactory)(TR::OptimizationManager *m);
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE OptimizationManager
-   {
-   public:
+class OMR_EXTENSIBLE OptimizationManager {
+public:
+    static void *operator new(size_t size, TR::Allocator a) { return a.allocate(size); }
 
-   static void *operator new(size_t size, TR::Allocator a)
-      { return a.allocate(size); }
-   static void  operator delete(void *ptr, TR::Allocator a)
-      {
-      // If there is an exception thrown during construction, the compilation
-      // will be aborted, and all memory associated with that compilation will get freed.
-      }
-   static void  operator delete(void *ptr, size_t size)
-      { ((OptimizationManager*)ptr)->allocator().deallocate(ptr, size); } /* t->allocator() must return the same allocator as used for new */
+    static void operator delete(void *ptr, TR::Allocator a)
+    {
+        // If there is an exception thrown during construction, the compilation
+        // will be aborted, and all memory associated with that compilation will get freed.
+    }
 
-   /* Virtual destructor is necessary for the above delete operator to work
-    * See "Modern C++ Design" section 4.7
-    */
-   virtual ~OptimizationManager() {}
+    static void operator delete(void *ptr, size_t size)
+    {
+        ((OptimizationManager *)ptr)->allocator().deallocate(ptr, size);
+    } /* t->allocator() must return the same allocator as used for new */
 
-   TR::OptimizationManager *self();
+    /* Virtual destructor is necessary for the above delete operator to work
+     * See "Modern C++ Design" section 4.7
+     */
+    virtual ~OptimizationManager() {}
 
-   OptimizationManager(TR::Optimizer *o, OptimizationFactory factory, OMR::Optimizations optNum, const OptimizationStrategy *groupOfOpts = NULL);
+    TR::OptimizationManager *self();
 
-   TR::Optimizer *           optimizer()                     { return _optimizer; }
-   TR::Compilation *         comp()                          { return _optimizer->comp(); }
+    OptimizationManager(TR::Optimizer *o, OptimizationFactory factory, OMR::Optimizations optNum,
+        const OptimizationStrategy *groupOfOpts = NULL);
 
-   TR::CodeGenerator *       cg();
-   TR_FrontEnd *             fe();
-   TR_Debug *            getDebug();
-   TR::SymbolReferenceTable *getSymRefTab();
+    TR::Optimizer *optimizer() { return _optimizer; }
 
-   TR_Memory *               trMemory();
-   TR_StackMemory            trStackMemory();
-   TR_HeapMemory             trHeapMemory();
-   TR_PersistentMemory *     trPersistentMemory();
+    TR::Compilation *comp() { return _optimizer->comp(); }
 
-   TR::Allocator             allocator();
+    TR::CodeGenerator *cg();
+    TR_FrontEnd *fe();
+    TR_Debug *getDebug();
+    TR::SymbolReferenceTable *getSymRefTab();
 
-   OptimizationFactory       factory()                       { return _factory; }
-   OMR::Optimizations        id()                            { return _id; }
-   const char *              name()                          { return OMR::Optimizer::getOptimizationName(_id); }
-   const OptimizationStrategy *    groupOfOpts()                   { return _groupOfOpts; }
+    TR_Memory *trMemory();
+    TR_StackMemory trStackMemory();
+    TR_HeapMemory trHeapMemory();
+    TR_PersistentMemory *trPersistentMemory();
 
-   int32_t                   numPassesCompleted()            { return _numPassesCompleted; }
-   void                      incNumPassesCompleted()         { ++_numPassesCompleted; }
-   void                      setNumPassesCompleted(int32_t i){ _numPassesCompleted = i; }
+    TR::Allocator allocator();
 
-   TR::OptimizationData *    getOptData()                    { return _optData; }
-   void                      setOptData(TR::OptimizationData *optData) { _optData = optData; }
+    OptimizationFactory factory() { return _factory; }
 
-   TR::OptimizationPolicy *  getOptPolicy()                    { return _optPolicy; }
-   void                      setOptPolicy(TR::OptimizationPolicy *optPolicy) { _optPolicy = optPolicy; }
+    OMR::Optimizations id() { return _id; }
 
-   TR::OptimizationUtil *    getOptUtil()                    { return _optUtil; }
-   void                      setOptUtil(TR::OptimizationUtil *optUtil) { _optUtil = optUtil; }
+    const char *name() { return OMR::Optimizer::getOptimizationName(_id); }
 
-   flags32_t                 flags()                         { return _flags; }
-   void                      setFlags(flags32_t flags)       { _flags.set(flags); }
+    const OptimizationStrategy *groupOfOpts() { return _groupOfOpts; }
 
-   bool                      enabled()                       { return _enabled; }
-   void                      setEnabled(bool enabled = true) { _enabled = enabled; }
+    int32_t numPassesCompleted() { return _numPassesCompleted; }
 
-   bool                      trace()                         { return _trace; }
-   void                      setTrace(bool t = true)         { _trace = t; }
+    void incNumPassesCompleted() { ++_numPassesCompleted; }
 
-   bool requested(TR::Block *block = NULL);
-   void setRequested(bool requested = true, TR::Block *block = NULL);
+    void setNumPassesCompleted(int32_t i) { _numPassesCompleted = i; }
 
-   List<TR::Block> *getRequestedBlocks()                        { return &_requestedBlocks; }
+    TR::OptimizationData *getOptData() { return _optData; }
 
-   void performChecks();
+    void setOptData(TR::OptimizationData *optData) { _optData = optData; }
 
-   enum
-      {
-      requiresStructure                    = 0x00000001,
-      verifyTrees                          = 0x00000002,
-      verifyBlocks                         = 0x00000004,
-      checkTheCFG                          = 0x00000008,
-      checkStructure                       = 0x00000010,
-      alteredCode                          = 0x00000020,
-      dumpStructure                        = 0x00000040,
-      requiresGlobalsUseDefInfo            = 0x00000080,
-      prefersGlobalsUseDefInfo             = 0x00000100,
-      requiresLocalsUseDefInfo             = 0x00000200,
-      requiresGlobalsValueNumbering        = 0x00000400,
-      stronglyPrefersGlobalsValueNumbering = 0x00000800,
-      prefersGlobalsValueNumbering         = 0x00001000,
-      requiresLocalsValueNumbering         = 0x00002000,
-      canAddSymbolReference                = 0x00004000,
-      doesNotRequireAliasSets              = 0x00008000,
-      performOnlyOnEnabledBlocks           = 0x00010000,
-      supportsIlGenOptLevel                = 0x00020000,
-      doesNotRequireTreeDumps              = 0x00040000,
-      doesNotRequireLoadsAsDefs            = 0x00080000,
-      lastRun                              = 0x00100000,
-      cannotOmitTrivialDefs                = 0x00200000,
-      maintainsUseDefInfo                  = 0x00400000,
-      requiresAccurateNodeCount            = 0x00800000,
-      doNotSetFrequencies                  = 0x01000000,
-      dummyLastEnum
-      };
+    TR::OptimizationPolicy *getOptPolicy() { return _optPolicy; }
 
-   bool getRequiresStructure()           { return _flags.testAny(requiresStructure); }
-   bool getRequiresUseDefInfo()          { return _flags.testAny(requiresGlobalsUseDefInfo | prefersGlobalsUseDefInfo | requiresLocalsUseDefInfo); }
-   bool getRequiresGlobalsUseDefInfo()   { return _flags.testAny(requiresGlobalsUseDefInfo);}
-   bool getPrefersGlobalsUseDefInfo()    { return _flags.testAny(prefersGlobalsUseDefInfo);}
-   bool getRequiresLocalsUseDefInfo()    { return _flags.testAny(requiresLocalsUseDefInfo);}
-   bool getDoesNotRequireLoadsAsDefsInUseDefs(){ return _flags.testAny(doesNotRequireLoadsAsDefs);}
-   bool getRequiresValueNumbering()      { return _flags.testAny(requiresGlobalsValueNumbering | stronglyPrefersGlobalsValueNumbering | prefersGlobalsValueNumbering | requiresLocalsValueNumbering); }
-   bool getRequiresGlobalsValueNumbering() { return _flags.testAny(requiresGlobalsValueNumbering);}
-   bool getStronglyPrefersGlobalsValueNumbering()  { return _flags.testAny(stronglyPrefersGlobalsValueNumbering);}
-   bool getPrefersGlobalsValueNumbering()  { return _flags.testAny(prefersGlobalsValueNumbering | stronglyPrefersGlobalsValueNumbering);}
-   bool getRequiresLocalsValueNumbering()  { return _flags.testAny(requiresLocalsValueNumbering);}
-   bool getRequiresAccurateNodeCount()  { return _flags.testAny(requiresAccurateNodeCount); }
-   bool getVerifyTrees()                 { return _flags.testAny(verifyTrees); }
-   bool getVerifyBlocks()                { return _flags.testAny(verifyBlocks); }
-   bool getCheckTheCFG()                 { return _flags.testAny(checkTheCFG); }
-   bool getCheckStructure()              { return _flags.testAny(checkStructure); }
-   bool getDumpStructure()               { return _flags.testAny(dumpStructure); }
-   bool getAlteredCode()                 { return _flags.testAny(alteredCode); }
-   bool getCanAddSymbolReference()       { return _flags.testAny(canAddSymbolReference); }
-   bool getDoesNotRequireAliasSets()     { return _flags.testAny(doesNotRequireAliasSets); }
-   bool getPerformOnlyOnEnabledBlocks()  { return _flags.testAny(performOnlyOnEnabledBlocks); }
-   bool getDoesNotRequireTreeDumps()     { return _flags.testAny(doesNotRequireTreeDumps); }
-   bool getSupportsIlGenOptLevel()       { return _flags.testAny(supportsIlGenOptLevel); }
-   bool getLastRun()                     { return _flags.testAny(lastRun); }
-   bool getCannotOmitTrivialDefs()       { return _flags.testAny(cannotOmitTrivialDefs); }
-   bool getMaintainsUseDefInfo()         { return _flags.testAny(maintainsUseDefInfo); }
-   bool getDoNotSetFrequencies()         { return _flags.testAny(doNotSetFrequencies); }
+    void setOptPolicy(TR::OptimizationPolicy *optPolicy) { _optPolicy = optPolicy; }
 
-   void setRequiresStructure(bool b)           { _flags.set(requiresStructure, b); }
-   void setRequiresGlobalsUseDefInfo(bool b)   { _flags.set(requiresGlobalsUseDefInfo, b); }
-   void setPrefersGlobalsUseDefInfo(bool b)    { _flags.set(prefersGlobalsUseDefInfo, b); }
-   void setRequiresLocalsUseDefInfo(bool b)   { _flags.set(requiresLocalsUseDefInfo, b); }
-   void setDoesNotRequireLoadsAsDefsInUseDefs(bool b){ _flags.set(doesNotRequireLoadsAsDefs, b);}
-   void setRequiresGlobalsValueNumbering(bool b)   { _flags.set(requiresGlobalsValueNumbering, b); }
-   void setPrefersGlobalsValueNumbering(bool b)    { _flags.set(prefersGlobalsValueNumbering, b); }
-   void setStronglyPrefersGlobalsValueNumbering(bool b)    { _flags.set(stronglyPrefersGlobalsValueNumbering, b); }
-   void setRequiresLocalsValueNumbering(bool b)   { _flags.set(requiresLocalsValueNumbering, b); }
-   void setRequiresAccurateNodeCount(bool b)    { _flags.set(requiresAccurateNodeCount,b); }
-   void setVerifyTrees(bool b)                 { _flags.set(verifyTrees, b); }
-   void setVerifyBlocks(bool b)                { _flags.set(verifyBlocks, b); }
-   void setCheckTheCFG(bool b)                 { _flags.set(checkTheCFG, b); }
-   void setCheckStructure(bool b)              { _flags.set(checkStructure, b); }
-   void setDumpStructure(bool b)               { _flags.set(dumpStructure, b); }
-   void setAlteredCode(bool b)                 { _flags.set(alteredCode, b); }
-   void setCanAddSymbolReference(bool b)       { _flags.set(canAddSymbolReference, b); }
-   void setDoesNotRequireAliasSets(bool b)     { _flags.set(doesNotRequireAliasSets, b); }
-   void setPerformOnlyOnEnabledBlocks(bool b)  { _flags.set(performOnlyOnEnabledBlocks, b); }
-   void setSupportsIlGenOptLevel(bool b)       { _flags.set(supportsIlGenOptLevel, b); }
-   void setLastRun(bool b)                     { _flags.set(lastRun,b); }
-   void setCannotOmitTrivialDefs(bool b)       { _flags.set(cannotOmitTrivialDefs, b); }
-   void setMaintainsUseDefInfo(bool b)         { _flags.set(maintainsUseDefInfo, b); }
-   void setDoNotSetFrequencies(bool b)         { _flags.set(doNotSetFrequencies, b); }
+    TR::OptimizationUtil *getOptUtil() { return _optUtil; }
 
-   protected:
+    void setOptUtil(TR::OptimizationUtil *optUtil) { _optUtil = optUtil; }
 
-   TR::Optimizer *           _optimizer;
-   OptimizationFactory       _factory;
+    flags32_t flags() { return _flags; }
 
-   OMR::Optimizations        _id;
-   const OptimizationStrategy *    _groupOfOpts;
+    void setFlags(flags32_t flags) { _flags.set(flags); }
 
-   int32_t                   _numPassesCompleted;
-   TR::OptimizationData *    _optData;          // opt specific data
-   TR::OptimizationPolicy *  _optPolicy;        // opt specific policy for project specific optimization heuristic
-   TR::OptimizationUtil *    _optUtil;          // opt specific utility for project specific optimization
+    bool enabled() { return _enabled; }
 
-   flags32_t                 _flags;
-   bool                      _enabled;          // via command line
-   bool                      _requested;        // by other opts
-   List<TR::Block>           _requestedBlocks;  // by other opts
-   bool                      _trace;
-   };
+    void setEnabled(bool enabled = true) { _enabled = enabled; }
 
-}
+    bool trace() { return _trace; }
+
+    void setTrace(bool t = true) { _trace = t; }
+
+    bool requested(TR::Block *block = NULL);
+    void setRequested(bool requested = true, TR::Block *block = NULL);
+
+    List<TR::Block> *getRequestedBlocks() { return &_requestedBlocks; }
+
+    void performChecks();
+
+    enum {
+        requiresStructure = 0x00000001,
+        verifyTrees = 0x00000002,
+        verifyBlocks = 0x00000004,
+        checkTheCFG = 0x00000008,
+        checkStructure = 0x00000010,
+        alteredCode = 0x00000020,
+        dumpStructure = 0x00000040,
+        requiresGlobalsUseDefInfo = 0x00000080,
+        prefersGlobalsUseDefInfo = 0x00000100,
+        requiresLocalsUseDefInfo = 0x00000200,
+        requiresGlobalsValueNumbering = 0x00000400,
+        stronglyPrefersGlobalsValueNumbering = 0x00000800,
+        prefersGlobalsValueNumbering = 0x00001000,
+        requiresLocalsValueNumbering = 0x00002000,
+        canAddSymbolReference = 0x00004000,
+        doesNotRequireAliasSets = 0x00008000,
+        performOnlyOnEnabledBlocks = 0x00010000,
+        supportsIlGenOptLevel = 0x00020000,
+        doesNotRequireTreeDumps = 0x00040000,
+        doesNotRequireLoadsAsDefs = 0x00080000,
+        lastRun = 0x00100000,
+        cannotOmitTrivialDefs = 0x00200000,
+        maintainsUseDefInfo = 0x00400000,
+        requiresAccurateNodeCount = 0x00800000,
+        doNotSetFrequencies = 0x01000000,
+        dummyLastEnum
+    };
+
+    bool getRequiresStructure() { return _flags.testAny(requiresStructure); }
+
+    bool getRequiresUseDefInfo()
+    {
+        return _flags.testAny(requiresGlobalsUseDefInfo | prefersGlobalsUseDefInfo | requiresLocalsUseDefInfo);
+    }
+
+    bool getRequiresGlobalsUseDefInfo() { return _flags.testAny(requiresGlobalsUseDefInfo); }
+
+    bool getPrefersGlobalsUseDefInfo() { return _flags.testAny(prefersGlobalsUseDefInfo); }
+
+    bool getRequiresLocalsUseDefInfo() { return _flags.testAny(requiresLocalsUseDefInfo); }
+
+    bool getDoesNotRequireLoadsAsDefsInUseDefs() { return _flags.testAny(doesNotRequireLoadsAsDefs); }
+
+    bool getRequiresValueNumbering()
+    {
+        return _flags.testAny(requiresGlobalsValueNumbering | stronglyPrefersGlobalsValueNumbering
+            | prefersGlobalsValueNumbering | requiresLocalsValueNumbering);
+    }
+
+    bool getRequiresGlobalsValueNumbering() { return _flags.testAny(requiresGlobalsValueNumbering); }
+
+    bool getStronglyPrefersGlobalsValueNumbering() { return _flags.testAny(stronglyPrefersGlobalsValueNumbering); }
+
+    bool getPrefersGlobalsValueNumbering()
+    {
+        return _flags.testAny(prefersGlobalsValueNumbering | stronglyPrefersGlobalsValueNumbering);
+    }
+
+    bool getRequiresLocalsValueNumbering() { return _flags.testAny(requiresLocalsValueNumbering); }
+
+    bool getRequiresAccurateNodeCount() { return _flags.testAny(requiresAccurateNodeCount); }
+
+    bool getVerifyTrees() { return _flags.testAny(verifyTrees); }
+
+    bool getVerifyBlocks() { return _flags.testAny(verifyBlocks); }
+
+    bool getCheckTheCFG() { return _flags.testAny(checkTheCFG); }
+
+    bool getCheckStructure() { return _flags.testAny(checkStructure); }
+
+    bool getDumpStructure() { return _flags.testAny(dumpStructure); }
+
+    bool getAlteredCode() { return _flags.testAny(alteredCode); }
+
+    bool getCanAddSymbolReference() { return _flags.testAny(canAddSymbolReference); }
+
+    bool getDoesNotRequireAliasSets() { return _flags.testAny(doesNotRequireAliasSets); }
+
+    bool getPerformOnlyOnEnabledBlocks() { return _flags.testAny(performOnlyOnEnabledBlocks); }
+
+    bool getDoesNotRequireTreeDumps() { return _flags.testAny(doesNotRequireTreeDumps); }
+
+    bool getSupportsIlGenOptLevel() { return _flags.testAny(supportsIlGenOptLevel); }
+
+    bool getLastRun() { return _flags.testAny(lastRun); }
+
+    bool getCannotOmitTrivialDefs() { return _flags.testAny(cannotOmitTrivialDefs); }
+
+    bool getMaintainsUseDefInfo() { return _flags.testAny(maintainsUseDefInfo); }
+
+    bool getDoNotSetFrequencies() { return _flags.testAny(doNotSetFrequencies); }
+
+    void setRequiresStructure(bool b) { _flags.set(requiresStructure, b); }
+
+    void setRequiresGlobalsUseDefInfo(bool b) { _flags.set(requiresGlobalsUseDefInfo, b); }
+
+    void setPrefersGlobalsUseDefInfo(bool b) { _flags.set(prefersGlobalsUseDefInfo, b); }
+
+    void setRequiresLocalsUseDefInfo(bool b) { _flags.set(requiresLocalsUseDefInfo, b); }
+
+    void setDoesNotRequireLoadsAsDefsInUseDefs(bool b) { _flags.set(doesNotRequireLoadsAsDefs, b); }
+
+    void setRequiresGlobalsValueNumbering(bool b) { _flags.set(requiresGlobalsValueNumbering, b); }
+
+    void setPrefersGlobalsValueNumbering(bool b) { _flags.set(prefersGlobalsValueNumbering, b); }
+
+    void setStronglyPrefersGlobalsValueNumbering(bool b) { _flags.set(stronglyPrefersGlobalsValueNumbering, b); }
+
+    void setRequiresLocalsValueNumbering(bool b) { _flags.set(requiresLocalsValueNumbering, b); }
+
+    void setRequiresAccurateNodeCount(bool b) { _flags.set(requiresAccurateNodeCount, b); }
+
+    void setVerifyTrees(bool b) { _flags.set(verifyTrees, b); }
+
+    void setVerifyBlocks(bool b) { _flags.set(verifyBlocks, b); }
+
+    void setCheckTheCFG(bool b) { _flags.set(checkTheCFG, b); }
+
+    void setCheckStructure(bool b) { _flags.set(checkStructure, b); }
+
+    void setDumpStructure(bool b) { _flags.set(dumpStructure, b); }
+
+    void setAlteredCode(bool b) { _flags.set(alteredCode, b); }
+
+    void setCanAddSymbolReference(bool b) { _flags.set(canAddSymbolReference, b); }
+
+    void setDoesNotRequireAliasSets(bool b) { _flags.set(doesNotRequireAliasSets, b); }
+
+    void setPerformOnlyOnEnabledBlocks(bool b) { _flags.set(performOnlyOnEnabledBlocks, b); }
+
+    void setSupportsIlGenOptLevel(bool b) { _flags.set(supportsIlGenOptLevel, b); }
+
+    void setLastRun(bool b) { _flags.set(lastRun, b); }
+
+    void setCannotOmitTrivialDefs(bool b) { _flags.set(cannotOmitTrivialDefs, b); }
+
+    void setMaintainsUseDefInfo(bool b) { _flags.set(maintainsUseDefInfo, b); }
+
+    void setDoNotSetFrequencies(bool b) { _flags.set(doNotSetFrequencies, b); }
+
+protected:
+    TR::Optimizer *_optimizer;
+    OptimizationFactory _factory;
+
+    OMR::Optimizations _id;
+    const OptimizationStrategy *_groupOfOpts;
+
+    int32_t _numPassesCompleted;
+    TR::OptimizationData *_optData; // opt specific data
+    TR::OptimizationPolicy *_optPolicy; // opt specific policy for project specific optimization heuristic
+    TR::OptimizationUtil *_optUtil; // opt specific utility for project specific optimization
+
+    flags32_t _flags;
+    bool _enabled; // via command line
+    bool _requested; // by other opts
+    List<TR::Block> _requestedBlocks; // by other opts
+    bool _trace;
+};
+
+} // namespace OMR
 
 #endif

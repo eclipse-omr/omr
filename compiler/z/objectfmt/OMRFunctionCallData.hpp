@@ -27,10 +27,14 @@
  */
 #ifndef OMR_FUNCTIONCALLDATA_CONNECTOR
 #define OMR_FUNCTIONCALLDATA_CONNECTOR
+
 namespace OMR {
-namespace Z { class FunctionCallData; }
-typedef OMR::Z::FunctionCallData FunctionCallDataConnector;
+namespace Z {
+class FunctionCallData;
 }
+
+typedef OMR::Z::FunctionCallData FunctionCallDataConnector;
+} // namespace OMR
 #endif
 
 #include "compiler/objectfmt/OMRFunctionCallData.hpp"
@@ -44,102 +48,83 @@ class Register;
 class RegisterDependencyConditions;
 class CodeGenerator;
 class Snippet;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace Z {
 
-namespace Z
-{
-
-class OMR_EXTENSIBLE FunctionCallData : public OMR::FunctionCallData
-   {
+class OMR_EXTENSIBLE FunctionCallData : public OMR::FunctionCallData {
 public:
+    /**
+     * @brief Z specific implementation of FunctionCallData
+     *
+     * @param methodSymRef : \c TR::SymbolReference of the function to call
+     * @param callNode : \c TR::Node associcated with the function call
+     * @param bufferAddress : \c In case encoding a function call, instruction
+     *          for call will be encoded from this address.
+     * @param targetAddress : \c a specific function address to call that
+     *          overrides the address in the symbol reference; or 0 if none
+     * @param returnAddressReg : \c A register to be used to hold the return
+     *          address for the call instruction
+     * @param entryPointReg : \c A register to use as Entry Point Register where
+     *          target address is out of the relative addresssible range of BRASL
+     * @param regDeps : \c TR::RegisterDependencyConditions to be attach to the
+     *          call
+     * @param prevInstr : \c TR::Instruction of the previous instruction, if any
+     * @param runtimeHelperInder : \c the runtime helper index if calling a helper
+     * @param reloKind : \c the external relocation kind associated with this
+     *          function call
+     * @param snippet : \c TR::Snippet in which call is encoded if function is
+     *          called from the snippet.
+     * @param cg : \c TR::CodeGenerator object
+     */
+    FunctionCallData(TR::CodeGenerator *cg, TR::SymbolReference *methodSymRef, TR::Node *callNode,
+        uint8_t *bufferAddress, intptr_t targetAddress, TR::Register *returnAddressReg, TR::Register *entryPointReg,
+        TR::RegisterDependencyConditions *regDeps, TR::Instruction *prevInstr, TR_RuntimeHelper runtimeHelperIndex,
+        TR_ExternalRelocationTargetKind reloKind, TR::Snippet *snippet)
+        : OMR::FunctionCallData(cg, methodSymRef, callNode, bufferAddress)
+        , targetAddress(targetAddress)
+        , returnAddressReg(returnAddressReg)
+        , entryPointReg(entryPointReg)
+        , regDeps(regDeps)
+        , prevInstr(prevInstr)
+        , runtimeHelperIndex(runtimeHelperIndex)
+        , reloKind(reloKind)
+        , snippet(snippet)
+        , out_loadInstr(NULL)
+        , out_callInstr(NULL)
+    {}
 
-   /**
-    * @brief Z specific implementation of FunctionCallData
-    *
-    * @param methodSymRef : \c TR::SymbolReference of the function to call
-    * @param callNode : \c TR::Node associcated with the function call
-    * @param bufferAddress : \c In case encoding a function call, instruction
-    *          for call will be encoded from this address. 
-    * @param targetAddress : \c a specific function address to call that
-    *          overrides the address in the symbol reference; or 0 if none
-    * @param returnAddressReg : \c A register to be used to hold the return
-    *          address for the call instruction
-    * @param entryPointReg : \c A register to use as Entry Point Register where
-    *          target address is out of the relative addresssible range of BRASL
-    * @param regDeps : \c TR::RegisterDependencyConditions to be attach to the
-    *          call
-    * @param prevInstr : \c TR::Instruction of the previous instruction, if any
-    * @param runtimeHelperInder : \c the runtime helper index if calling a helper
-    * @param reloKind : \c the external relocation kind associated with this
-    *          function call
-    * @param snippet : \c TR::Snippet in which call is encoded if function is
-    *          called from the snippet.
-    * @param cg : \c TR::CodeGenerator object
-    */
-   FunctionCallData(
-         TR::CodeGenerator *cg,
-         TR::SymbolReference *methodSymRef,
-         TR::Node *callNode,
-         uint8_t *bufferAddress,
-         intptr_t targetAddress,
-         TR::Register *returnAddressReg,
-         TR::Register *entryPointReg,
-         TR::RegisterDependencyConditions *regDeps,
-         TR::Instruction *prevInstr,
-         TR_RuntimeHelper runtimeHelperIndex,
-         TR_ExternalRelocationTargetKind reloKind,
-         TR::Snippet *snippet) :
-      OMR::FunctionCallData(cg, methodSymRef, callNode, bufferAddress),
-         targetAddress(targetAddress),
-         returnAddressReg(returnAddressReg),
-         entryPointReg(entryPointReg),
-         regDeps(regDeps),
-         prevInstr(prevInstr),
-         runtimeHelperIndex(runtimeHelperIndex),
-         reloKind(reloKind),
-         snippet(snippet),
-         out_loadInstr(NULL),
-         out_callInstr(NULL) {}
-         
+    /**
+     * If a non-zero targetAddress is provided, use that as the address of the function to call
+     */
+    uintptr_t targetAddress;
 
-   
-   /**
-    * If a non-zero targetAddress is provided, use that as the address of the function to call
-    */
-   uintptr_t targetAddress;
+    TR::Register *returnAddressReg;
 
-   TR::Register *returnAddressReg;
+    TR::Register *entryPointReg;
 
-   TR::Register *entryPointReg;
+    TR::RegisterDependencyConditions *regDeps;
 
-   TR::RegisterDependencyConditions *regDeps;
+    TR::Instruction *prevInstr;
 
-   TR::Instruction *prevInstr;
+    /**
+     * If an intermediate load instruction was used to materialize the function to
+     * call then it may be set in this field.
+     */
+    TR::Instruction *out_loadInstr;
 
-   /**
-    * If an intermediate load instruction was used to materialize the function to
-    * call then it may be set in this field.
-    */
-   TR::Instruction *out_loadInstr;
+    /**
+     * The call instruction that was generated to dispatch to the function.
+     */
+    TR::Instruction *out_callInstr;
 
-   /**
-    * The call instruction that was generated to dispatch to the function.
-    */
-   TR::Instruction *out_callInstr;
+    TR_RuntimeHelper runtimeHelperIndex;
 
-   TR_RuntimeHelper runtimeHelperIndex;
+    TR::Snippet *snippet;
 
-   TR::Snippet *snippet;
+    TR_ExternalRelocationTargetKind reloKind;
+};
 
-   TR_ExternalRelocationTargetKind reloKind;
-
-   };
-
-}
-
-}
+}} // namespace OMR::Z
 
 #endif

@@ -40,79 +40,67 @@
 namespace TR {
 class Compilation;
 class PersistentInfo;
-}
+} // namespace TR
 
-extern const char * objectName[];
+extern const char *objectName[];
 
-namespace TR
-   {
-   namespace Internal
-      {
-      // See TRMemory.hpp for rationale.
-      PersistentNewType persistent_new_object;
-      }
-   }
-
+namespace TR { namespace Internal {
+// See TRMemory.hpp for rationale.
+PersistentNewType persistent_new_object;
+}} // namespace TR::Internal
 
 // **************************************************************************
 //
 // deprecated uses of the global trMemory (not thread safe)
 //
 
-TR_PersistentMemory * trPersistentMemory = NULL;
+TR_PersistentMemory *trPersistentMemory = NULL;
 
-void *
-TR_MemoryBase::jitPersistentAlloc(size_t size, ObjectType ot)
-   {
-   TR_PersistentMemory *persistentMemory = TR::Compiler->persistentMemory();
-   return persistentMemory ? persistentMemory->allocatePersistentMemory(size, ot) : 0;
-   }
+void *TR_MemoryBase::jitPersistentAlloc(size_t size, ObjectType ot)
+{
+    TR_PersistentMemory *persistentMemory = TR::Compiler->persistentMemory();
+    return persistentMemory ? persistentMemory->allocatePersistentMemory(size, ot) : 0;
+}
 
-void TR_MemoryBase::jitPersistentFree(void * mem) { TR::Compiler->persistentMemory()->freePersistentMemory(mem); }
+void TR_MemoryBase::jitPersistentFree(void *mem) { TR::Compiler->persistentMemory()->freePersistentMemory(mem); }
 
-TR::PersistentInfo * TR_PersistentMemory::getNonThreadSafePersistentInfo() { return ::trPersistentMemory->getPersistentInfo(); }
+TR::PersistentInfo *TR_PersistentMemory::getNonThreadSafePersistentInfo()
+{
+    return ::trPersistentMemory->getPersistentInfo();
+}
 
-TR_PersistentMemory::TR_PersistentMemory(
-   TR::PersistentAllocator &persistentAllocator
-   ) :
-   TR_MemoryBase(),
-   _signature(MEMINFO_SIGNATURE),
-   _persistentInfo(this),
-   _persistentAllocator(TR::ref(persistentAllocator)),
-   _totalPersistentAllocations()
-   {
-   }
+TR_PersistentMemory::TR_PersistentMemory(TR::PersistentAllocator &persistentAllocator)
+    : TR_MemoryBase()
+    , _signature(MEMINFO_SIGNATURE)
+    , _persistentInfo(this)
+    , _persistentAllocator(TR::ref(persistentAllocator))
+    , _totalPersistentAllocations()
+{}
 
-TR_PersistentMemory::TR_PersistentMemory(
-   void *   jitConfig,
-   TR::PersistentAllocator &persistentAllocator
-   ) :
-   TR_MemoryBase(),
-   _signature(MEMINFO_SIGNATURE),
-   _persistentInfo(this),
-   _persistentAllocator(TR::ref(persistentAllocator)),
-   _totalPersistentAllocations()
-   {
-   }
+TR_PersistentMemory::TR_PersistentMemory(void *jitConfig, TR::PersistentAllocator &persistentAllocator)
+    : TR_MemoryBase()
+    , _signature(MEMINFO_SIGNATURE)
+    , _persistentInfo(this)
+    , _persistentAllocator(TR::ref(persistentAllocator))
+    , _totalPersistentAllocations()
+{}
 
-void
-TR_PersistentMemory::printMemStats()
-   {
-   fprintf(stderr, "TR_PersistentMemory Stats:\n");
-   for (uint32_t i = 0; i < TR_MemoryBase::NumObjectTypes; i++)
-      {
-      fprintf(stderr, "\t_totalPersistentAllocations[%s]=%lu\n", objectName[i], (unsigned long)_totalPersistentAllocations[i]);
-      }
-   fprintf(stderr, "\n");
-   }
+void TR_PersistentMemory::printMemStats()
+{
+    fprintf(stderr, "TR_PersistentMemory Stats:\n");
+    for (uint32_t i = 0; i < TR_MemoryBase::NumObjectTypes; i++) {
+        fprintf(stderr, "\t_totalPersistentAllocations[%s]=%lu\n", objectName[i],
+            (unsigned long)_totalPersistentAllocations[i]);
+    }
+    fprintf(stderr, "\n");
+}
 
-void
-TR_PersistentMemory::printMemStatsToVlog()
-   {
-   TR_VerboseLog::CriticalSection vlogLock;
-   TR_VerboseLog::writeLine(TR_Vlog_MEMORY, "TR_PersistentMemory Stats:");
-   for (uint32_t i = 0; i < TR_MemoryBase::NumObjectTypes; i++)
-      {
-      TR_VerboseLog::writeLine(TR_Vlog_MEMORY, "\t_totalPersistentAllocations[%s]=%lu", objectName[i], (unsigned long)_totalPersistentAllocations[i]);
-      }
-   }
+void TR_PersistentMemory::printMemStatsToVlog()
+{
+    TR_VerboseLog::CriticalSection vlogLock;
+    TR_VerboseLog::writeLine(TR_Vlog_MEMORY, "TR_PersistentMemory Stats:");
+    for (uint32_t i = 0; i < TR_MemoryBase::NumObjectTypes; i++) {
+        TR_VerboseLog::writeLine(TR_Vlog_MEMORY, "\t_totalPersistentAllocations[%s]=%lu", objectName[i],
+            (unsigned long)_totalPersistentAllocations[i]);
+    }
+}

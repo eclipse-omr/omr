@@ -24,16 +24,17 @@
 
 #include "env/OMRCPU.hpp"
 
-namespace TR
-{
-class OMR_EXTENSIBLE CPU : public OMR::CPUConnector
-   {
-   public:
+namespace TR {
+class OMR_EXTENSIBLE CPU : public OMR::CPUConnector {
+public:
+    CPU()
+        : OMR::CPUConnector()
+    {}
 
-   CPU() : OMR::CPUConnector() {}
-   CPU(const OMRProcessorDesc& processorDescription) : OMR::CPUConnector(processorDescription) {}
-
-   };
-}
+    CPU(const OMRProcessorDesc &processorDescription)
+        : OMR::CPUConnector(processorDescription)
+    {}
+};
+} // namespace TR
 
 #endif

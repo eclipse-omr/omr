@@ -24,19 +24,16 @@
 
 #include "ilgen/OMRBytecodeBuilder.hpp"
 
-namespace TR
-{
-   class BytecodeBuilder : public OMR::BytecodeBuilder
-      {
-      public:
-         BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, const char *name=NULL, int32_t bcLength=-1)
-            : OMR::BytecodeBuilder(methodBuilder, bcIndex, name, bcLength)
-            { }
-         void initialize(TR::IlGeneratorMethodDetails * details,
-                           TR::ResolvedMethodSymbol     * methodSymbol,
-                           TR::FrontEnd                 * fe,
-                           TR::SymbolReferenceTable     * symRefTab); 
-      };
+namespace TR {
+class BytecodeBuilder : public OMR::BytecodeBuilder {
+public:
+    BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, const char *name = NULL, int32_t bcLength = -1)
+        : OMR::BytecodeBuilder(methodBuilder, bcIndex, name, bcLength)
+    {}
+
+    void initialize(TR::IlGeneratorMethodDetails *details, TR::ResolvedMethodSymbol *methodSymbol, TR::FrontEnd *fe,
+        TR::SymbolReferenceTable *symRefTab);
+};
 
 } // namespace TR
 

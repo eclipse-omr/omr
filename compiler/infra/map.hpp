@@ -31,26 +31,24 @@
 
 namespace TR {
 
-template <
-   typename K,
-   typename V,
-   typename Cmp = std::less<K>,
-   typename Alloc = TR::Region&
->
-class map : public std::map<K, V, Cmp, TR::typed_allocator<std::pair<const K, V>, Alloc> >
-   {
-   private:
-   typedef std::map<K, V, Cmp, TR::typed_allocator<std::pair<const K, V>, Alloc> > Base;
+template<typename K, typename V, typename Cmp = std::less<K>, typename Alloc = TR::Region &>
+class map : public std::map<K, V, Cmp, TR::typed_allocator<std::pair<const K, V>, Alloc> > {
+private:
+    typedef std::map<K, V, Cmp, TR::typed_allocator<std::pair<const K, V>, Alloc> > Base;
 
-   public:
-   typedef typename Base::key_compare key_compare;
-   typedef typename Base::allocator_type allocator_type;
+public:
+    typedef typename Base::key_compare key_compare;
+    typedef typename Base::allocator_type allocator_type;
 
-   map(const key_compare &cmp, const allocator_type &alloc) : Base(cmp, alloc) {}
+    map(const key_compare &cmp, const allocator_type &alloc)
+        : Base(cmp, alloc)
+    {}
 
-   // This constructor is available when the comparison is default-constructible.
-   map(const allocator_type &alloc) : Base(key_compare(), alloc) {}
-   };
+    // This constructor is available when the comparison is default-constructible.
+    map(const allocator_type &alloc)
+        : Base(key_compare(), alloc)
+    {}
+};
 
 } // namespace TR
 

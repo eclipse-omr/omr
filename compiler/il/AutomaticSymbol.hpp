@@ -30,33 +30,31 @@ namespace TR {
 class Compilation;
 }
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE AutomaticSymbol : public OMR::AutomaticSymbolConnector
-   {
-
+class OMR_EXTENSIBLE AutomaticSymbol : public OMR::AutomaticSymbolConnector {
 protected:
+    AutomaticSymbol(int32_t o = 0)
+        : OMR::AutomaticSymbolConnector()
+    {}
 
-   AutomaticSymbol(int32_t o = 0) :
-      OMR::AutomaticSymbolConnector() { }
+    AutomaticSymbol(TR::DataType d)
+        : OMR::AutomaticSymbolConnector(d)
+    {}
 
-   AutomaticSymbol(TR::DataType d) :
-      OMR::AutomaticSymbolConnector(d) { }
+    AutomaticSymbol(TR::DataType d, uint32_t s)
+        : OMR::AutomaticSymbolConnector(d, s)
+    {}
 
-   AutomaticSymbol(TR::DataType d, uint32_t s) :
-      OMR::AutomaticSymbolConnector(d, s) { }
-
-   AutomaticSymbol(TR::DataType d, uint32_t s, const char * name) :
-      OMR::AutomaticSymbolConnector(d, s, name) { }
+    AutomaticSymbol(TR::DataType d, uint32_t s, const char *name)
+        : OMR::AutomaticSymbolConnector(d, s, name)
+    {}
 
 private:
+    // When adding another class to the heirarchy, add it as a friend here
+    friend class OMR::AutomaticSymbol;
+};
 
-   // When adding another class to the heirarchy, add it as a friend here
-   friend class OMR::AutomaticSymbol;
-
-   };
-
-}
+} // namespace TR
 
 #endif
