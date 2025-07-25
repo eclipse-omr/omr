@@ -32,13 +32,13 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#if defined(AIXPPC) || defined(OSX) || defined(J9ZOS390) || !defined(__cplusplus)
+#if defined(AIXPPC) || defined(OSX) || (defined(J9ZOS390) && !defined(__open_xl__)) || !defined(__cplusplus)
 #define OMRSIG_NO_THROW
-#elif __cplusplus < 201103L /* defined(AIXPPC) || defined(OSX) || defined(J9ZOS390) || !defined(__cplusplus) */
+#elif __cplusplus < 201103L /* defined(AIXPPC) || defined(OSX) || (defined(J9ZOS390) && !defined(__open_xl__)) || !defined(__cplusplus) */
 #define OMRSIG_NO_THROW throw()
 #else /* __cplusplus < 201103L */
 #define OMRSIG_NO_THROW noexcept
-#endif /* defined(AIXPPC) || defined(OSX) || defined(J9ZOS390) || !defined(__cplusplus) */
+#endif /* defined(AIXPPC) || defined(OSX) || (defined(J9ZOS390) && !defined(__open_xl__)) || !defined(__cplusplus) */
 
 #if defined(LINUXPPC)
 typedef __sighandler_t sighandler_t;
