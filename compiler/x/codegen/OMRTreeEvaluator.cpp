@@ -3854,6 +3854,184 @@ static void arraySetDefault(TR::Node* node, uint8_t elementSize, TR::Register* a
    cg->stopUsingRegister(EAX);
    }
 
+// Assumes valueReg is a GP register containing a single element, and that sizeReg is within the range 1..3.
+static void arraySet1to3Bytes(TR::Node* node, uint8_t elementSize, TR::Register* addressReg, TR::Register* valueReg, TR::Register* sizeReg, TR::CodeGenerator* cg, TR::LabelSymbol *doneLabel = NULL)
+   {
+   bool localDoneLabel = doneLabel == NULL;
+   generateMemRegInstruction(TR::InstOpCode::S1MemReg, node, generateX86MemoryReference(addressReg, 0, cg), valueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::S1MemReg, node, generateX86MemoryReference(addressReg, sizeReg, 0, -1, cg), valueReg, cg);
+   generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 2, cg);
+   if (localDoneLabel)
+      doneLabel = generateLabelSymbol(cg);
+   generateLabelInstruction(TR::InstOpCode::JBE4, node, doneLabel, cg);
+   generateMemRegInstruction(TR::InstOpCode::S1MemReg, node, generateX86MemoryReference(addressReg, 1, cg), valueReg, cg);
+   if (localDoneLabel)
+      generateLabelInstruction(TR::InstOpCode::label, node, doneLabel, cg);
+   }
+
+// Assumes valueReg is a GP register that contains a packed set of elements, and that sizeReg is within the range 4..15.
+static void arraySet4to15Bytes(TR::Node* node, uint8_t elementSize, TR::Register* addressReg, TR::Register* valueReg, TR::Register* sizeReg, TR::Register *lastWordAddressReg, TR::CodeGenerator* cg)
+   {
+   generateRegMemInstruction(TR::InstOpCode::LEARegMem(), node, lastWordAddressReg, generateX86MemoryReference(addressReg, sizeReg, 0, -4, cg), cg);
+   generateRegImmInstruction(TR::InstOpCode::ANDRegImms(), node, sizeReg, 8, cg);
+   generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, generateX86MemoryReference(addressReg, 0, cg), valueReg, cg);
+   generateRegImmInstruction(TR::InstOpCode::SHRRegImm1(), node, sizeReg, 1, cg);
+   generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, generateX86MemoryReference(lastWordAddressReg, 0, cg), valueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, generateX86MemoryReference(addressReg, sizeReg, 0, cg), valueReg, cg);
+   generateRegInstruction(TR::InstOpCode::NEGReg(), node, sizeReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, generateX86MemoryReference(lastWordAddressReg, sizeReg, 0, cg), valueReg, cg);
+   }
+
+// Assumes valueReg is an XMM register that contains a vector of elements, and that sizeReg is within the range 16..31.
+static void arraySet16to31Bytes(TR::Node* node, uint8_t elementSize, TR::Register* addressReg, TR::Register* xmmValueReg, TR::Register* sizeReg, TR::CodeGenerator* cg)
+   {
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, 0, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, sizeReg, 0, -16, cg), xmmValueReg, cg);
+   }
+
+// Assumes valueReg is an XMM register that contains a vector of elements, and that sizeReg is within the range 32..63.
+static void arraySet32to63Bytes(TR::Node* node, uint8_t elementSize, TR::Register* addressReg, TR::Register* xmmValueReg, TR::Register* sizeReg, TR::CodeGenerator* cg)
+   {
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, 0, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, 16, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, sizeReg, 0, -32, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, sizeReg, 0, -16, cg), xmmValueReg, cg);
+   }
+
+// Assumes valueReg is an XMM register that contains a vector of elements, and that sizeReg is >= 64.
+static void arraySet64ByteLoop(TR::Node* node, uint8_t elementSize, TR::Register* addressReg, TR::Register* xmmValueReg, TR::Register* sizeReg, TR::Register *scratch1Reg, TR::Register *scratch2Reg, TR::CodeGenerator* cg)
+   {
+   TR::LabelSymbol *loopLabel = generateLabelSymbol(cg);
+   TR::LabelSymbol *residueLabel = generateLabelSymbol(cg);
+
+   // Unaligned store to the first 16 bytes
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(addressReg, 0, cg), xmmValueReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::MOVRegReg(), node, scratch1Reg, addressReg, cg);
+   // Advance the address reg to the next 16-byte aligned address
+   generateRegImmInstruction(TR::InstOpCode::ADDRegImms(), node, addressReg, 16, cg);
+   generateRegImmInstruction(TR::InstOpCode::ANDRegImms(), node, addressReg, -16, cg);
+   // Calculate how many unaligned bytes were stored and subtract from the size
+   generateRegRegInstruction(TR::InstOpCode::SUBRegReg(), node, scratch1Reg, addressReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::ADDRegReg(), node, sizeReg, scratch1Reg, cg);
+   // Check if we have at least 64 bytes left to store
+   // Enter the 64-byte per iteration aligned store loop if so
+   // Otherwise go to the residue loop
+   generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 64, cg);
+   generateLabelInstruction(TR::InstOpCode::JB4, node, residueLabel, cg);
+   generateLabelInstruction(TR::InstOpCode::label, node, loopLabel, cg);
+   // 64-byte per iteration aligned store loop
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(addressReg, 0, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(addressReg, 16, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(addressReg, 32, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(addressReg, 48, cg), xmmValueReg, cg);
+   generateRegImmInstruction(TR::InstOpCode::ADDRegImms(), node, addressReg, 64, cg);
+   generateRegImmInstruction(TR::InstOpCode::SUBRegImms(), node, sizeReg, 64, cg);
+   generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 64, cg);
+   generateLabelInstruction(TR::InstOpCode::JAE4, node, loopLabel, cg);
+   // Residue
+   generateLabelInstruction(TR::InstOpCode::label, node, residueLabel, cg);
+   // At this point we have less than 64 bytes to store
+   // Calculate the address of the last 3 aligned stores
+   generateRegMemInstruction(TR::InstOpCode::LEARegMem(), node, scratch1Reg, generateX86MemoryReference(addressReg, sizeReg, 0, -48, cg), cg);
+   generateRegImmInstruction(TR::InstOpCode::ANDRegImms(), node, scratch1Reg, -16, cg);
+   // Calculate the address of the last (unaligned) store
+   generateRegMemInstruction(TR::InstOpCode::LEARegMem(), node, scratch2Reg, generateX86MemoryReference(addressReg, sizeReg, 0, -16, cg), cg);
+   // Do the stores
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(scratch1Reg, 0, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(scratch1Reg, 16, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVAPSMemReg, node, generateX86MemoryReference(scratch1Reg, 32, cg), xmmValueReg, cg);
+   generateMemRegInstruction(TR::InstOpCode::MOVUPSMemReg, node, generateX86MemoryReference(scratch2Reg, 0, cg), xmmValueReg, cg);
+   }
+
+static void arraySetXMM(TR::Node* node, uint8_t elementSize, TR::Register* addressReg, TR::Register* valueReg, TR::Register* sizeReg, const uintptr_t *size, TR::CodeGenerator* cg)
+   {
+   // This code is loosely based on the approach discussed in
+   // "Building Faster AMD64 Memset Routines" by Joe Bialek (January 11, 2021).
+   // https://msrc.microsoft.com/blog/2021/01/building-faster-amd64-memset-routines/
+   // We reduce path length and handle unaligned bytes more efficiently
+   // by setting some bytes multiple times, on the assumption
+   // that stores to overlapping memory ranges are cheaper than executing
+   // extra comparisons and branches to set each byte exactly once.
+   TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
+
+   TR::Register *scratch1Reg = cg->allocateRegister(TR_GPR);
+   TR::Register *scratch2Reg = cg->allocateRegister(TR_GPR);
+   TR::Register *xmmValueReg = cg->allocateRegister(TR_VRF);
+
+   if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512VL) ||
+       cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW))
+      {
+      generateRegRegInstruction(TR::InstOpCode::VPBROADCASTBRegMaskGPR, node, xmmValueReg, valueReg, cg);
+      }
+   else
+      {
+      generateRegRegInstruction(TR::InstOpCode::MOVDRegReg4, node, xmmValueReg, valueReg, cg);
+      TR::TreeEvaluator::broadcastHelper(node, xmmValueReg, TR::VectorLength128, TR::Int8, cg);
+      }
+
+   // If we don't know the size at compile-time or it's known to be less than 64 bytes, generate
+   // a series of tests for various sizes and branch to short, branch free sequences of stores.
+   // Currently `size` is expected to be NULL or >=64, since short compile-time sizes are handled
+   // in the main evaluator, otherwise we could avoid generating some of these tests for certain
+   // sizes.
+   if (size == NULL || *size < 64)
+   {
+      TR::LabelSymbol *ge64Label = generateLabelSymbol(cg);
+      TR::LabelSymbol *lt32Label = generateLabelSymbol(cg);
+      TR::LabelSymbol *lt16Label = generateLabelSymbol(cg);
+      TR::LabelSymbol *ge4lt16Label = generateLabelSymbol(cg);
+
+      generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 64, cg);
+      generateLabelInstruction(TR::InstOpCode::JAE4, node, ge64Label, cg);
+      generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 32, cg);
+      generateLabelInstruction(TR::InstOpCode::JB4, node, lt32Label, cg);
+
+      arraySet32to63Bytes(node, elementSize, addressReg, xmmValueReg, sizeReg, cg);
+      generateLabelInstruction(TR::InstOpCode::JMP4, node, doneLabel, cg);
+
+      generateLabelInstruction(TR::InstOpCode::label, node, lt32Label, cg);
+      generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 16, cg);
+      generateLabelInstruction(TR::InstOpCode::JB4, node, lt16Label, cg);
+
+      arraySet16to31Bytes(node, elementSize, addressReg, xmmValueReg, sizeReg, cg);
+      generateLabelInstruction(TR::InstOpCode::JMP4, node, doneLabel, cg);
+
+      generateLabelInstruction(TR::InstOpCode::label, node, lt16Label, cg);
+      generateRegImmInstruction(TR::InstOpCode::CMPRegImm4(), node, sizeReg, 4, cg);
+      generateLabelInstruction(TR::InstOpCode::JAE4, node, ge4lt16Label, cg);
+      generateRegRegInstruction(TR::InstOpCode::TEST4RegReg, node, sizeReg, sizeReg, cg);
+      generateLabelInstruction(TR::InstOpCode::JE4, node, doneLabel, cg);
+
+      arraySet1to3Bytes(node, elementSize, addressReg, valueReg, sizeReg, cg, doneLabel);
+      generateLabelInstruction(TR::InstOpCode::JMP4, node, doneLabel, cg);
+
+      generateLabelInstruction(TR::InstOpCode::label, node, ge4lt16Label, cg);
+      // The value is packed into the XMM reg, but arraySet4to15Bytes() needs a packed GPR. The original valueReg
+      // can't be clobbered, so we use scratch2Reg to hold the packed value.
+      generateRegRegInstruction(TR::InstOpCode::MOVDReg4Reg, node, scratch2Reg, xmmValueReg, cg);
+      arraySet4to15Bytes(node, elementSize, addressReg, scratch2Reg, sizeReg, scratch1Reg, cg);
+      generateLabelInstruction(TR::InstOpCode::JMP4, node, doneLabel, cg);
+
+      generateLabelInstruction(TR::InstOpCode::label, node, ge64Label, cg);
+      }
+
+   arraySet64ByteLoop(node, elementSize, addressReg, xmmValueReg, sizeReg, scratch1Reg, scratch2Reg, cg);
+
+   TR::RegisterDependencyConditions *deps = generateRegisterDependencyConditions(0, 6, cg);
+
+   deps->addPostCondition(addressReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(valueReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(sizeReg, TR::RealRegister::NoReg, cg);
+
+   deps->addPostCondition(scratch1Reg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(scratch2Reg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(xmmValueReg, TR::RealRegister::NoReg, cg);
+
+   deps->stopAddingConditions();
+
+   generateLabelInstruction(TR::InstOpCode::label, node, doneLabel, deps, cg);
+   }
+
 TR::Register *OMR::X86::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    // arrayset
@@ -3946,7 +4124,15 @@ TR::Register *OMR::X86::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::Cod
          }
       else
          {
-         arraySetDefault(node, elementSize, addressReg, valueReg, sizeReg, cg);
+         static bool disableArraySetXMM = feGetEnv("TR_disableArraySetXMM") != NULL;
+         if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2) && elementSize == 1 && !disableArraySetXMM)
+            {
+            arraySetXMM(node, elementSize, addressReg, valueReg, sizeReg, isSizeConst ? &size : NULL, cg);
+            }
+         else
+            {
+            arraySetDefault(node, elementSize, addressReg, valueReg, sizeReg, cg);
+            }
          }
       cg->decReferenceCount(sizeNode);
       cg->decReferenceCount(valueNode);
