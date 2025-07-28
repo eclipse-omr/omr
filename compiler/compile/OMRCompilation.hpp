@@ -27,8 +27,10 @@
  */
 #ifndef OMR_COMPILATION_CONNECTOR
 #define OMR_COMPILATION_CONNECTOR
-namespace OMR { class Compilation; }
-namespace OMR { typedef OMR::Compilation CompilationConnector; }
+namespace OMR {
+class Compilation;
+typedef OMR::Compilation CompilationConnector;
+}
 #endif
 
 /**
@@ -84,35 +86,41 @@ class TR_OSRCompilationData;
 class TR_PersistentClassInfo;
 class TR_PrexArgInfo;
 class TR_RandomGenerator;
-namespace TR { class RegisterCandidates; }
+namespace TR {
+class RegisterCandidates;
+}
 class TR_ResolvedMethod;
-namespace OMR { class RuntimeAssumption; }
+namespace OMR {
+class RuntimeAssumption;
+}
 class TR_VirtualGuard;
 class TR_VirtualGuardSite;
 struct TR_VirtualGuardSelection;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class CodeCache; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class IlGenRequest; }
-namespace TR { class IlVerifier; }
-namespace TR { class ILValidator; }
-namespace TR { class Instruction; }
-namespace TR { class KnownObjectTable; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class NodePool; }
-namespace TR { class Options; }
-namespace TR { class Optimizer; }
-namespace TR { class Recompilation; }
-namespace TR { class RegisterMappedSymbol; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
-namespace TR { class TypeLayout; }
+namespace TR {
+class Block;
+class CFG;
+class CodeCache;
+class CodeGenerator;
+class Compilation;
+class IlGenRequest;
+class IlVerifier;
+class ILValidator;
+class Instruction;
+class KnownObjectTable;
+class LabelSymbol;
+class Node;
+class NodePool;
+class Options;
+class Optimizer;
+class Recompilation;
+class RegisterMappedSymbol;
+class ResolvedMethodSymbol;
+class Symbol;
+class SymbolReference;
+class SymbolReferenceTable;
+class TreeTop;
+class TypeLayout;
+}
 typedef TR::SparseBitVector SharedSparseBitVector;
 
 #if _AIX

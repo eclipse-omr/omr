@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace Power { class CodeGenerator; } }
-namespace OMR { typedef OMR::Power::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace Power { class CodeGenerator; }
+typedef OMR::Power::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::Power::CodeGenerator expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -56,11 +58,13 @@ class TR_BackingStore;
 class TR_PPCLoadLabelItem;
 class TR_PPCOutOfLineCodeSection;
 class TR_PPCScratchRegisterManager;
-namespace TR { class CodeGenerator; }
-namespace TR { class ConstantDataSnippet; }
-namespace TR { class PPCImmInstruction; }
-namespace TR { class Snippet; }
-namespace TR { struct PPCLinkageProperties; }
+namespace TR {
+class CodeGenerator;
+class ConstantDataSnippet;
+class PPCImmInstruction;
+class Snippet;
+struct PPCLinkageProperties;
+}
 
 extern void loadFloatConstant(TR::CodeGenerator *cg,
                               TR::InstOpCode::Mnemonic loadOp,

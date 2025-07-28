@@ -28,8 +28,10 @@
 #include "optimizer/OptimizationManager.hpp"
 
 class TR_BitVector;
-namespace TR { class Block; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class TreeTop;
+}
 
 /*
  * Class TR_LocalReordering

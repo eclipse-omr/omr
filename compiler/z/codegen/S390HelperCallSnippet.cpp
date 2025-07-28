@@ -42,7 +42,9 @@
 #include "runtime/Runtime.hpp"
 #include "z/codegen/CallSnippet.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 uint8_t *
 TR::S390HelperCallSnippet::emitSnippetBody()

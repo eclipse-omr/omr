@@ -25,8 +25,10 @@
 #include "infra/vector.hpp"
 
 class TR_CallSite;
-namespace TR { class Block; }
-namespace TR { class AbsValue; }
+namespace TR {
+class Block;
+class AbsValue;
+}
 
 namespace TR {
 

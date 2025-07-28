@@ -26,12 +26,14 @@
 #include "env/TRMemory.hpp"
 #include "il/ILOpCodes.hpp"
 
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class Block;
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class Node;
+class Register;
+}
 
 /** \brief
  *

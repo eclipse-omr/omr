@@ -31,7 +31,9 @@
 #include "infra/Bit.hpp"
 
 class TR_HashTab;
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 /**
  * general purpose hash table that assume a key which fits in 8 bytes

@@ -27,17 +27,21 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
-namespace OMR { namespace ARM64 { class Snippet; } }
-namespace OMR { typedef OMR::ARM64::Snippet SnippetConnector; }
+namespace OMR {
+namespace ARM64 { class Snippet; }
+typedef OMR::ARM64::Snippet SnippetConnector;
+}
 #else
 #error OMR::ARM64::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+}
 
 namespace OMR
 {

@@ -25,12 +25,14 @@
 #include <stdint.h>
 #include "ilgen/VirtualMachineState.hpp"
 
-namespace TR { class IlBuilder; }
-namespace TR { class IlType; }
-namespace TR { class IlValue; }
-namespace TR { class MethodBuilder; }
-namespace TR { class VirtualMachineRegister; }
-namespace TR { class VirtualMachineOperandArray; }
+namespace TR {
+class IlBuilder;
+class IlType;
+class IlValue;
+class MethodBuilder;
+class VirtualMachineRegister;
+class VirtualMachineOperandArray;
+}
 
 namespace OMR
 {

@@ -31,8 +31,10 @@
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
 
-namespace TR { class Node; }
-namespace TR { class Optimizer; }
+namespace TR {
+class Node;
+class Optimizer;
+}
 
 // #define MAX_BLOCKS_FOR_STACK_ALLOCATION 16
 

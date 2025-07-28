@@ -25,7 +25,9 @@
 #include "infra/Annotations.hpp"
 #include "control/OMRCompilationStrategy.hpp"
 
-namespace TR { class CompilationStrategy; }
+namespace TR {
+class CompilationStrategy;
+}
 
 namespace TR
 {

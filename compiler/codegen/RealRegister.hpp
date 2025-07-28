@@ -30,7 +30,9 @@
 #include "codegen/RegisterConstants.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace TR
 {

@@ -33,8 +33,10 @@
  * Definitions of assorted classes used in Node and Node-associated tasks
  */
 
-namespace TR { class SymbolReference; }
-namespace TR { class Node; }
+namespace TR {
+class SymbolReference;
+class Node;
+}
 template <class T> class TR_Array;
 
 #define NUM_DEFAULT_RELOCATIONS 1

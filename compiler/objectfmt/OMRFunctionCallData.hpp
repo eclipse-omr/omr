@@ -27,8 +27,10 @@
  */
 #ifndef OMR_FUNCTIONCALLDATA_CONNECTOR
 #define OMR_FUNCTIONCALLDATA_CONNECTOR
-namespace OMR { class FunctionCallData; }
-namespace OMR { typedef OMR::FunctionCallData FunctionCallDataConnector; }
+namespace OMR {
+class FunctionCallData;
+typedef OMR::FunctionCallData FunctionCallDataConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -36,9 +38,11 @@ namespace OMR { typedef OMR::FunctionCallData FunctionCallDataConnector; }
 #include "env/TRMemory.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class SymbolReference;
+}
 
 namespace OMR
 {

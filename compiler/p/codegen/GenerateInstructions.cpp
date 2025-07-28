@@ -51,9 +51,11 @@
 #include "runtime/Runtime.hpp"
 
 class TR_VirtualGuardSite;
-namespace TR { class LabelSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class LabelSymbol;
+class RegisterDependencyConditions;
+class SymbolReference;
+}
 
 int estimateLikeliness(TR::CodeGenerator *cg, TR::Node *n);
 

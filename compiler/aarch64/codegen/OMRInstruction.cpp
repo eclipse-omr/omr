@@ -26,7 +26,9 @@
 #include "codegen/Instruction.hpp"
 #include "codegen/RegisterDependency.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node)
    : OMR::Instruction(cg, op, node),

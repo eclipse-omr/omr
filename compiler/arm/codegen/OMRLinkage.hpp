@@ -28,8 +28,10 @@
 #ifndef OMR_LINKAGE_CONNECTOR
 #define OMR_LINKAGE_CONNECTOR
 
-namespace OMR { namespace ARM { class Linkage; } }
-namespace OMR { typedef OMR::ARM::Linkage LinkageConnector; }
+namespace OMR {
+namespace ARM { class Linkage; }
+typedef OMR::ARM::Linkage LinkageConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRLinkage.hpp"
@@ -38,12 +40,14 @@ namespace OMR { typedef OMR::ARM::Linkage LinkageConnector; }
 #include "codegen/RealRegister.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 
 namespace TR {
 

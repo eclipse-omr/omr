@@ -24,7 +24,9 @@
 
 #include "env/OMREnvironment.hpp"
 
-namespace TR { class CPU; }
+namespace TR {
+class CPU;
+}
 
 namespace TR
 {

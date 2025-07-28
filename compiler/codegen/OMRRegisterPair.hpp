@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_PAIR_CONNECTOR
 #define OMR_REGISTER_PAIR_CONNECTOR
-namespace OMR { class RegisterPair; }
-namespace OMR { typedef OMR::RegisterPair RegisterPairConnector; }
+namespace OMR {
+class RegisterPair;
+typedef OMR::RegisterPair RegisterPairConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -36,8 +38,10 @@ namespace OMR { typedef OMR::RegisterPair RegisterPairConnector; }
 #include "codegen/Register.hpp"
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class RegisterPair; }
+namespace TR {
+class CodeGenerator;
+class RegisterPair;
+}
 
 template<typename QueueKind> class TR_Queue;
 

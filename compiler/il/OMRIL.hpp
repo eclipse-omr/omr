@@ -27,15 +27,19 @@
  */
 #ifndef OMR_IL_CONNECTOR
 #define OMR_IL_CONNECTOR
-namespace OMR { class IL; }
-namespace OMR { typedef OMR::IL ILConnector; }
+namespace OMR {
+class IL;
+typedef OMR::IL ILConnector;
+}
 #endif
 
 #include "infra/Annotations.hpp"
 #include "il/ILOpCodes.hpp"
 #include "il/DataTypes.hpp"
 
-namespace TR { class IL; }
+namespace TR {
+class IL;
+}
 
 namespace OMR
 {

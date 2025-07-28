@@ -36,8 +36,10 @@
 
 class TR_FrontEnd;
 class TR_PatchJNICallSite;
-namespace TR { class PatchNOPedGuardSite; }
-namespace TR { class PatchMultipleNOPedGuardSites; }
+namespace TR {
+class PatchNOPedGuardSite;
+class PatchMultipleNOPedGuardSites;
+}
 class TR_PreXRecompile;
 class TR_RedefinedClassPicSite;
 class TR_UnloadedClassPicSite;

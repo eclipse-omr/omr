@@ -35,20 +35,28 @@
 class TR_FrontEnd;
 class TR_OpaqueClassBlock;
 class TR_ResolvedMethod;
-namespace TR { class VPArrayInfo; }
-namespace TR { class VPClassPresence; }
-namespace TR { class VPClassType; }
-namespace TR { class VPConstString; }
-namespace TR { class VPKnownObject; }
-namespace TR { class VPObjectLocation; }
-namespace TR { class VPPreexistentObject; }
-namespace OMR { class ValuePropagation; }
-namespace TR { class VP_BCDValue; }
-namespace TR { class VP_BCDSign; }
+namespace TR {
+class VPArrayInfo;
+class VPClassPresence;
+class VPClassType;
+class VPConstString;
+class VPKnownObject;
+class VPObjectLocation;
+class VPPreexistentObject;
+}
+namespace OMR {
+class ValuePropagation;
+}
+namespace TR {
+class VP_BCDValue;
+class VP_BCDSign;
+}
 
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Compilation;
+class Node;
+class SymbolReference;
+}
 
 #define VP_HASH_TABLE_SIZE 251
 

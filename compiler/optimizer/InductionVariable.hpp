@@ -52,14 +52,16 @@ class TR_BlockStructure;
 class TR_Dominators;
 class TR_RegionStructure;
 class TR_Structure;
-namespace TR { class VPConstraint; }
-namespace TR { class VPIntRange; }
-namespace TR { class VPLongRange; }
-namespace TR { class AutomaticSymbol; }
-namespace TR { class NodeChecklist; }
-namespace TR { class Optimizer; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
+namespace TR {
+class VPConstraint;
+class VPIntRange;
+class VPLongRange;
+class AutomaticSymbol;
+class NodeChecklist;
+class Optimizer;
+class SymbolReferenceTable;
+class TreeTop;
+}
 template <class T> class TR_Array;
 
 struct SymRefPair

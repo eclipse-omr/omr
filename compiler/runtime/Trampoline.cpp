@@ -34,7 +34,9 @@
 #include "env/CompilerEnv.hpp"
 
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace TR {
 

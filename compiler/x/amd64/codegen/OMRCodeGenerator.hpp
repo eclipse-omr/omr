@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class CodeGenerator; } } }
-namespace OMR { typedef OMR::X86::AMD64::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class CodeGenerator; } }
+typedef OMR::X86::AMD64::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::X86::AMD64::CodeGenerator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -38,8 +40,10 @@ namespace OMR { typedef OMR::X86::AMD64::CodeGenerator CodeGeneratorConnector; }
 #include "codegen/RealRegister.hpp"
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class ILOpCode; }
-namespace TR { class Node; }
+namespace TR {
+class ILOpCode;
+class Node;
+}
 
 namespace OMR
 {

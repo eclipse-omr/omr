@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ILGENREQUEST_CONNECTOR
 #define OMR_ILGENREQUEST_CONNECTOR
-namespace OMR { class IlGenRequest; }
-namespace OMR { typedef OMR::IlGenRequest IlGenRequestConnector; }
+namespace OMR {
+class IlGenRequest;
+typedef OMR::IlGenRequest IlGenRequestConnector;
+}
 #endif
 
 #include "env/FilePointerDecl.hpp"
@@ -36,10 +38,12 @@ namespace OMR { typedef OMR::IlGenRequest IlGenRequestConnector; }
 
 class TR_FrontEnd;
 class TR_IlGenerator;
-namespace TR { class Compilation; }
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class Compilation;
+class IlGeneratorMethodDetails;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
+}
 
 namespace OMR
 {

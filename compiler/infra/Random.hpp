@@ -24,7 +24,9 @@
 
 #include <stdint.h>
 #include "env/TRMemory.hpp"
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 class TR_RandomGenerator
    {

@@ -25,12 +25,14 @@
 #include "codegen/RegisterConstants.hpp"
 #include "env/jittypes.h"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class MemoryReference;
+class Node;
+class Register;
+class SymbolReference;
+}
 
 void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *, TR::MemoryReference  *, TR::CodeGenerator *);
 void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *, intptr_t, TR::CodeGenerator *);

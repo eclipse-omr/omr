@@ -30,7 +30,9 @@
 #include "infra/Flags.hpp"
 #include "infra/Link.hpp"
 
-namespace TR { class CFGNode; }
+namespace TR {
+class CFGNode;
+}
 
 namespace TR
 {

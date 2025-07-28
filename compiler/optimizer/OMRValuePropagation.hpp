@@ -54,23 +54,29 @@ class TR_ResolvedMethod;
 class TR_Structure;
 class TR_StructureSubGraphNode;
 class TR_UseDefInfo;
-namespace TR { class VPClassType; }
-namespace TR { class VPConstraint; }
-namespace TR { class VPIntConst; }
-namespace TR { class VPNonNullObject; }
-namespace TR { class VPNullObject; }
-namespace TR { class VPPreexistentObject; }
-namespace TR { class VPUnreachablePath; }
+namespace TR {
+class VPClassType;
+class VPConstraint;
+class VPIntConst;
+class VPNonNullObject;
+class VPNullObject;
+class VPPreexistentObject;
+class VPUnreachablePath;
+}
 class TR_ValueNumberInfo;
-namespace OMR { class ValuePropagation; }
+namespace OMR {
+class ValuePropagation;
+}
 class TR_VirtualGuard;
-namespace TR { class Block; }
-namespace TR { class CFGEdge; }
-namespace TR { class CFGNode; }
-namespace TR { class StaticSymbol; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFGEdge;
+class CFGNode;
+class StaticSymbol;
+class Symbol;
+class SymbolReference;
+class TreeTop;
+}
 template <class T> class TR_Array;
 template <class T> class TR_Stack;
 

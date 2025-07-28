@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace X86 { class CodeGenerator; } }
-namespace OMR { typedef OMR::X86::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace X86 { class CodeGenerator; }
+typedef OMR::X86::CodeGenerator CodeGeneratorConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRCodeGenerator.hpp"
@@ -61,18 +63,24 @@ namespace OMR { typedef OMR::X86::CodeGenerator CodeGeneratorConnector; }
 #include "codegen/GCStackAtlas.hpp"
 
 class TR_GCStackMap;
-namespace TR { class X86ConstantDataSnippet; }
-namespace TR { class X86DataSnippet; }
+namespace TR {
+class X86ConstantDataSnippet;
+class X86DataSnippet;
+}
 class TR_OutlinedInstructions;
-namespace OMR { namespace X86 { class CodeGenerator; } }
-namespace TR { class CodeGenerator; }
-namespace TR { class MemoryReference; }
-namespace TR { class X86ImmInstruction;         }
-namespace TR { class X86LabelInstruction;       }
-namespace TR { class X86MemTableInstruction;    }
-namespace TR { class X86ScratchRegisterManager; }
-namespace TR { class X86VFPSaveInstruction;     }
-namespace TR { struct X86LinkageProperties; }
+namespace OMR {
+namespace X86 { class CodeGenerator; }
+}
+namespace TR {
+class CodeGenerator;
+class MemoryReference;
+class X86ImmInstruction;
+class X86LabelInstruction;
+class X86MemTableInstruction;
+class X86ScratchRegisterManager;
+class X86VFPSaveInstruction;
+struct X86LinkageProperties;
+}
 
 namespace TR {
 

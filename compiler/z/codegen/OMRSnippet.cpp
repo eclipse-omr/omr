@@ -53,7 +53,9 @@
 #include "z/codegen/CallSnippet.hpp"
 #include "z/codegen/S390HelperCallSnippet.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 OMR::Z::Snippet::Snippet(
       TR::CodeGenerator *cg,

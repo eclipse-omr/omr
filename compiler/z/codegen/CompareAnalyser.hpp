@@ -27,11 +27,13 @@
 #include "codegen/CodeGenerator.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class LabelSymbol; }
-namespace TR { class Machine; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class LabelSymbol;
+class Machine;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 
 #define EvalChild1   0x01
 #define EvalChild2   0x02

@@ -38,15 +38,17 @@
 #include "infra/Array.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SystemLinkage; }
+namespace TR {
+class Block;
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+class SystemLinkage;
+}
 template <class T> class List;
 
 namespace TR

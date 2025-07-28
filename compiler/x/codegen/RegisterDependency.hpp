@@ -27,9 +27,11 @@
 #include "codegen/RegisterDependencyStruct.hpp"
 
 class TR_Memory;
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class Register;
+}
 
 namespace TR
 {

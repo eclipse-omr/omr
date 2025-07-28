@@ -35,11 +35,13 @@
 
 class TR_BitVector;
 class TR_FrontEnd;
-namespace TR { class CFG; }
-namespace TR { class Block; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class CFG;
+class Block;
+class Node;
+class SymbolReference;
+class TreeTop;
+}
 
 namespace TR {
 

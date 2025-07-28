@@ -24,7 +24,9 @@
 
 #include "optimizer/ValuePropagation.hpp"
 
-namespace TR { class CFGNode; }
+namespace TR {
+class CFGNode;
+}
 class TR_StructureSubGraphNode;
 class TR_BitVector;
 

@@ -47,7 +47,9 @@
 #include "env/VMJ9.h"
 #endif
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 /**
  *   Linked list of named counter infos.

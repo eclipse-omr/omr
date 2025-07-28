@@ -27,8 +27,10 @@
  */
 #ifndef OMR_LINKAGE_CONNECTOR
 #define OMR_LINKAGE_CONNECTOR
-namespace OMR { namespace X86 { class Linkage; } }
-namespace OMR { typedef OMR::X86::Linkage LinkageConnector; }
+namespace OMR {
+namespace X86 { class Linkage; }
+typedef OMR::X86::Linkage LinkageConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRLinkage.hpp"
@@ -48,15 +50,17 @@ namespace OMR { typedef OMR::X86::Linkage LinkageConnector; }
 #include "codegen/X86LinkageProperties.hpp"
 
 class TR_FrontEnd;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class MethodSymbol; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class AutomaticSymbol;
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class MethodSymbol;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+}
 
 enum { NOT_LINKAGE = -1 };
 

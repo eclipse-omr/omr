@@ -22,7 +22,9 @@
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorder.hpp"
 
-namespace TR { class MethodBuilder; }
+namespace TR {
+class MethodBuilder;
+}
 
 OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb, const char *fileName)
 : _mb(mb), _nextID(0), _idSize(8),  _file(fileName, std::fstream::out | std::fstream::trunc)

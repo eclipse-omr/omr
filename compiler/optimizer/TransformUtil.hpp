@@ -24,7 +24,9 @@
 
 #include "optimizer/OMRTransformUtil.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
    {

@@ -24,7 +24,9 @@
 
 #include "optimizer/OMRRecognizedCallTransformer.hpp"
 
-namespace TR { class OptimizationManager; }
+namespace TR {
+class OptimizationManager;
+}
 
 namespace TR
 {

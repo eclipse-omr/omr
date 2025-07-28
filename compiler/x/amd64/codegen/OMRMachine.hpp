@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class Machine; } } }
-namespace OMR { typedef OMR::X86::AMD64::Machine MachineConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class Machine; } }
+typedef OMR::X86::AMD64::Machine MachineConnector;
+}
 #else
 #error OMR::X86::AMD64::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -36,10 +38,12 @@ namespace OMR { typedef OMR::X86::AMD64::Machine MachineConnector; }
 #include "x/codegen/OMRMachine.hpp"
 
 #include <stdint.h>
-namespace TR { class CodeGenerator; }
-namespace TR { class RealRegister; }
-namespace TR { class Register; }
-namespace TR { class Machine; }
+namespace TR {
+class CodeGenerator;
+class RealRegister;
+class Register;
+class Machine;
+}
 
 namespace OMR
 {

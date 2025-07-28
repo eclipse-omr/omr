@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { namespace Z { class Instruction; } }
-namespace OMR { typedef OMR::Z::Instruction InstructionConnector; }
+namespace OMR {
+namespace Z { class Instruction; }
+typedef OMR::Z::Instruction InstructionConnector;
+}
 #else
 #error OMR::Z::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -48,13 +50,15 @@ namespace OMR { typedef OMR::Z::Instruction InstructionConnector; }
 #include "infra/Flags.hpp"
 
 class TR_Debug;
-namespace TR { class S390ImmInstruction; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class RealRegister; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class S390ImmInstruction;
+class CodeGenerator;
+class Instruction;
+class MemoryReference;
+class Node;
+class RealRegister;
+class RegisterDependencyConditions;
+}
 
 #define printInstr(comp, instr)  (comp->getDebug() ? comp->getDebug()->printInstruction((instr)) : (void)0)
 

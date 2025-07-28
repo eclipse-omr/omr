@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
-namespace OMR { namespace Z { class Snippet; } }
-namespace OMR { typedef OMR::Z::Snippet SnippetConnector; }
+namespace OMR {
+namespace Z { class Snippet; }
+typedef OMR::Z::Snippet SnippetConnector;
+}
 #else
 #error OMR::Z::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -40,10 +42,12 @@ namespace OMR { typedef OMR::Z::Snippet SnippetConnector; }
 #include "env/jittypes.h"
 #include "infra/Flags.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+class SymbolReference;
+}
 
 namespace OMR
 {

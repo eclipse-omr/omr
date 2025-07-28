@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SNIPPETDELEGATE_CONNECTOR
 #define OMR_SNIPPETDELEGATE_CONNECTOR
-namespace OMR { namespace Z { class SnippetDelegate; } }
-namespace OMR { typedef OMR::Z::SnippetDelegate SnippetDelegateConnector; }
+namespace OMR {
+namespace Z { class SnippetDelegate; }
+typedef OMR::Z::SnippetDelegate SnippetDelegateConnector;
+}
 #else
 #error OMR::Z::SnippetDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif

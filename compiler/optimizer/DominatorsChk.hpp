@@ -30,7 +30,9 @@
 #include "il/Node.hpp"
 
 class TR_BitVector;
-namespace TR { class Block; }
+namespace TR {
+class Block;
+}
 
 // Calculate the dominator tree. This uses the simple but O(n^2) algorithm
 // described in Muchnick.

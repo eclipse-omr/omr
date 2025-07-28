@@ -28,8 +28,10 @@
 
 #ifndef OMR_CODECACHEMEMORYSEGMENT_CONNECTOR
 #define OMR_CODECACHEMEMORYSEGMENT_CONNECTOR
-namespace OMR { class CodeCacheMemorySegment; }
-namespace OMR { typedef CodeCacheMemorySegment CodeCacheMemorySegmentConnector; }
+namespace OMR {
+class CodeCacheMemorySegment;
+typedef CodeCacheMemorySegment CodeCacheMemorySegmentConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -38,8 +40,10 @@ namespace OMR { typedef CodeCacheMemorySegment CodeCacheMemorySegmentConnector; 
 #include "runtime/CodeCacheTypes.hpp"
 
 
-namespace TR { class CodeCacheMemorySegment; }
-namespace TR { class CodeCacheManager; }
+namespace TR {
+class CodeCacheMemorySegment;
+class CodeCacheManager;
+}
 
 namespace OMR
 {

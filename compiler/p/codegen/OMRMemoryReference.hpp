@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
-namespace OMR { namespace Power { class MemoryReference; } }
-namespace OMR { typedef OMR::Power::MemoryReference MemoryReferenceConnector; }
+namespace OMR {
+namespace Power { class MemoryReference; }
+typedef OMR::Power::MemoryReference MemoryReferenceConnector;
+}
 #else
 #error OMR::Power::MemoryReference expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -44,14 +46,16 @@ namespace OMR { typedef OMR::Power::MemoryReference MemoryReferenceConnector; }
 #include "il/Symbol.hpp"
 #include "il/SymbolReference.hpp"
 
-namespace TR { class PPCPairedRelocation; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class UnresolvedDataSnippet; }
+namespace TR {
+class PPCPairedRelocation;
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class MemoryReference;
+class Node;
+class RegisterDependencyConditions;
+class UnresolvedDataSnippet;
+}
 
 namespace OMR
 {

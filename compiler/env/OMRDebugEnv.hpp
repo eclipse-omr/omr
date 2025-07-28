@@ -27,8 +27,10 @@
  */
 #ifndef OMR_DEBUG_ENV_CONNECTOR
 #define OMR_DEBUG_ENV_CONNECTOR
-namespace OMR { class DebugEnv; }
-namespace OMR { typedef OMR::DebugEnv DebugEnvConnector; }
+namespace OMR {
+class DebugEnv;
+typedef OMR::DebugEnv DebugEnvConnector;
+}
 #endif
 
 

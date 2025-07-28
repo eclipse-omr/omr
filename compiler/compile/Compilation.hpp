@@ -30,8 +30,10 @@ class TR_FrontEnd;
 class TR_Memory;
 class TR_OptimizationPlan;
 class TR_ResolvedMethod;
-namespace TR { class IlGenRequest; }
-namespace TR { class Options; }
+namespace TR {
+class IlGenRequest;
+class Options;
+}
 struct OMR_VMThread;
 
 namespace TR

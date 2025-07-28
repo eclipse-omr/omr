@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class RealRegister; } } }
-namespace OMR { typedef OMR::X86::AMD64::RealRegister RealRegisterConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class RealRegister; } }
+typedef OMR::X86::AMD64::RealRegister RealRegisterConnector;
+}
 #else
 #error OMR::X86::AMD64::RealRegister expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -38,7 +40,9 @@ namespace OMR { typedef OMR::X86::AMD64::RealRegister RealRegisterConnector; }
 #include <stdint.h>
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace OMR
 {

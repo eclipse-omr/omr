@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CLASSENV_CONNECTOR
 #define OMR_CLASSENV_CONNECTOR
-namespace OMR { class ClassEnv; }
-namespace OMR { typedef OMR::ClassEnv ClassEnvConnector; }
+namespace OMR {
+class ClassEnv;
+typedef OMR::ClassEnv ClassEnvConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -38,11 +40,13 @@ namespace OMR { typedef OMR::ClassEnv ClassEnvConnector; }
 #include "il/DataTypes.hpp"
 
 struct OMR_VMThread;
-namespace TR { class ClassEnv; }
-namespace TR { class Compilation; }
-namespace TR { class SymbolReference; }
-namespace TR { class TypeLayout; }
-namespace TR { class Region; }
+namespace TR {
+class ClassEnv;
+class Compilation;
+class SymbolReference;
+class TypeLayout;
+class Region;
+}
 class TR_ResolvedMethod;
 class TR_Memory;
 class TR_PersistentClassInfo;

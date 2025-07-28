@@ -27,8 +27,10 @@
  */
 #ifndef OMR_OBJECT_MODEL_CONNECTOR
 #define OMR_OBJECT_MODEL_CONNECTOR
-namespace OMR { class ObjectModel; }
-namespace OMR { typedef OMR::ObjectModel ObjectModelConnector; }
+namespace OMR {
+class ObjectModel;
+typedef OMR::ObjectModel ObjectModelConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -37,11 +39,17 @@ namespace OMR { typedef OMR::ObjectModel ObjectModelConnector; }
 #include "il/DataTypes.hpp"
 
 class TR_OpaqueClassBlock;
-namespace OMR { class ObjectModel; }
-namespace TR { class Compilation; }
-namespace TR { class Node; }
+namespace OMR {
+class ObjectModel;
+}
+namespace TR {
+class Compilation;
+class Node;
+}
 #ifdef TR_TARGET_ARM64
-namespace TR { class DataType; }
+namespace TR {
+class DataType;
+}
 #endif
 
 namespace OMR

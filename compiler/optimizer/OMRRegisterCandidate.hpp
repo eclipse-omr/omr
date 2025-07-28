@@ -41,13 +41,15 @@
 
 class TR_GlobalRegisterAllocator;
 class TR_Structure;
-namespace TR { class Compilation; }
-namespace TR { class Symbol; }
-namespace TR { class TreeTop; }
-namespace TR { class NodeChecklist; }
-namespace TR { class RegisterCandidate; }
-namespace TR { class RegisterCandidates; }
-namespace TR { class GlobalSet; }
+namespace TR {
+class Compilation;
+class Symbol;
+class TreeTop;
+class NodeChecklist;
+class RegisterCandidate;
+class RegisterCandidates;
+class GlobalSet;
+}
 
 enum TR_RegisterCandidateTypes
    {

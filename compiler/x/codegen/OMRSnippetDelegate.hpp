@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SNIPPETDELEGATE_CONNECTOR
 #define OMR_SNIPPETDELEGATE_CONNECTOR
-namespace OMR { namespace X86 { class SnippetDelegate; } }
-namespace OMR { typedef OMR::X86::SnippetDelegate SnippetDelegateConnector; }
+namespace OMR {
+namespace X86 { class SnippetDelegate; }
+typedef OMR::X86::SnippetDelegate SnippetDelegateConnector;
+}
 #else
 #error OMR::X86::SnippetDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif

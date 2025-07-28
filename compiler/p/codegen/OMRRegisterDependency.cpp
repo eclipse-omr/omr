@@ -54,7 +54,9 @@
 #include "p/codegen/PPCOpsDefines.hpp"
 #include "ras/Debug.hpp"
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 TR::RegisterDependencyConditions* TR_PPCScratchRegisterDependencyConditions::createDependencyConditions(TR::CodeGenerator *cg,
                                                                                                           TR_PPCScratchRegisterDependencyConditions *pre,

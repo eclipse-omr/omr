@@ -26,8 +26,10 @@
 #include "infra/vector.hpp"
 #include <stdint.h>
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class Node;
+}
 
 namespace TR {
 

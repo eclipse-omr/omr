@@ -27,8 +27,10 @@
  */
 #ifndef OMR_LINKAGE_CONNECTOR
 #define OMR_LINKAGE_CONNECTOR
-namespace OMR { namespace RV { class Linkage; } }
-namespace OMR { typedef OMR::RV::Linkage LinkageConnector; }
+namespace OMR {
+namespace RV { class Linkage; }
+typedef OMR::RV::Linkage LinkageConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRLinkage.hpp"
@@ -41,15 +43,17 @@ namespace OMR { typedef OMR::RV::Linkage LinkageConnector; }
 #include "env/TRMemory.hpp"
 
 class TR_FrontEnd;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class AutomaticSymbol;
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class MemoryReference;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+}
 
 namespace TR {
 

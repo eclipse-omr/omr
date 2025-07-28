@@ -136,8 +136,10 @@
 #endif
 
 class TR_IGNode;
-namespace TR { class DebugCounterBase; }
-namespace TR { class SimpleRegex; }
+namespace TR {
+class DebugCounterBase;
+class SimpleRegex;
+}
 
 #define OPT_DETAILS "O^O CODE GENERATION: "
 

@@ -39,10 +39,12 @@
 #include "infra/Assert.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class SymbolReference;
+}
 
 class MemToMemMacroOp
    {

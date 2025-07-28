@@ -27,9 +27,11 @@
 #include "env/TRMemory.hpp"
 #include "env/jittypes.h"
 
-namespace TR { class Compilation; }
-namespace TR { class Method; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Compilation;
+class Method;
+class TreeTop;
+}
 
 // This is the type of the debugging counters.
 #define SMALL_COUNTER_TYPE uint32_t

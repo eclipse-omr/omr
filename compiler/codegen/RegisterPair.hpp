@@ -25,7 +25,9 @@
 #include "codegen/RegisterConstants.hpp"
 #include "codegen/OMRRegisterPair.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 namespace TR
 {
