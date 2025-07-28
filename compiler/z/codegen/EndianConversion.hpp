@@ -25,52 +25,53 @@
 #ifdef TR_BIGEND_TO_LITEND
 // byte order big to little long (8 bytes)
 inline uint64_t bol(uint64_t arg)
-   {
-   char *x = (char *) &arg;
-   for (int i = 0; i < 4; ++i)
-      {
-      char y = x[i];
-      x[i] = x[7 - i];
-      x[7 - i] = y;
-      }
-   return arg;
-   }
+{
+    char *x = (char *)&arg;
+    for (int i = 0; i < 4; ++i) {
+        char y = x[i];
+        x[i] = x[7 - i];
+        x[7 - i] = y;
+    }
+    return arg;
+}
 
 // byte order big to little int (4 bytes)
 inline uint32_t boi(uint32_t arg)
-   {
-   char *x = (char *) &arg;
-   for (int i = 0; i < 2; ++i)
-      {
-      char y = x[i];
-      x[i] = x[3 - i];
-      x[3 - i] = y;
-      }
-   return arg;
-   }
+{
+    char *x = (char *)&arg;
+    for (int i = 0; i < 2; ++i) {
+        char y = x[i];
+        x[i] = x[3 - i];
+        x[3 - i] = y;
+    }
+    return arg;
+}
 
 // byte order big to little address (4 or 8 bytes)
 inline intptr_t boa(intptr_t arg)
-   {
-   if (sizeof(intptr_t) == 4)
-      return boi(arg);
-   else
-      return bol(arg);
-   }
+{
+    if (sizeof(intptr_t) == 4)
+        return boi(arg);
+    else
+        return bol(arg);
+}
 
 // byte order big to little short (2 bytes)
 inline uint16_t bos(uint16_t arg)
-   {
-   char *x = (char *) &arg;
-   int i = 0;
-   char y = x[i];
-   x[i] = x[1];
-   x[1] = y;
-   return arg;
-   }
+{
+    char *x = (char *)&arg;
+    int i = 0;
+    char y = x[i];
+    x[i] = x[1];
+    x[1] = y;
+    return arg;
+}
 #else
-inline uint64_t bol(uint64_t arg)   { return arg; }
-inline uint32_t boi(uint32_t arg)   { return arg; }
+inline uint64_t bol(uint64_t arg) { return arg; }
+
+inline uint32_t boi(uint32_t arg) { return arg; }
+
 inline intptr_t boa(intptr_t arg) { return arg; }
-inline uint16_t bos(uint16_t arg)   { return arg; }
+
+inline uint16_t bos(uint16_t arg) { return arg; }
 #endif

@@ -38,7 +38,7 @@ class Register;
 class RegisterDependencyConditions;
 class Snippet;
 class SymbolReference;
-}
+} // namespace TR
 class TR_VirtualGuardSite;
 
 /*
@@ -49,11 +49,8 @@ class TR_VirtualGuardSite;
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateInstruction(
-                   TR::CodeGenerator *cg,
-                   TR::InstOpCode::Mnemonic op,
-                   TR::Node *node,
-                   TR::Instruction *preced = NULL);
+TR::Instruction *generateInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates label instruction
@@ -64,12 +61,8 @@ TR::Instruction *generateInstruction(
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateLABEL(
-                   TR::CodeGenerator *cg,
-                   TR::InstOpCode::Mnemonic op,
-                   TR::Node *node,
-                   TR::LabelSymbol *sym,
-                   TR::Instruction *preced = NULL);
+TR::Instruction *generateLABEL(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates label instruction with register dependency
@@ -81,13 +74,8 @@ TR::Instruction *generateLABEL(
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateLABEL(
-                   TR::CodeGenerator *cg,
-                   TR::InstOpCode::Mnemonic op,
-                   TR::Node *node,
-                   TR::LabelSymbol *sym,
-                   TR::RegisterDependencyConditions *cond,
-                   TR::Instruction *preced = NULL);
+TR::Instruction *generateLABEL(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
+    TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates admin instruction
@@ -98,12 +86,8 @@ TR::Instruction *generateLABEL(
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateADMIN(
-                   TR::CodeGenerator *cg,
-                   TR::InstOpCode::Mnemonic op,
-                   TR::Node *node,
-                   TR::Node *fenceNode = NULL,
-                   TR::Instruction *preced = NULL);
+TR::Instruction *generateADMIN(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+    TR::Node *fenceNode = NULL, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates admin instruction with register dependency
@@ -115,118 +99,49 @@ TR::Instruction *generateADMIN(
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateADMIN(
-                   TR::CodeGenerator *cg,
-                   TR::InstOpCode::Mnemonic op,
-                   TR::Node *node,
-                   TR::RegisterDependencyConditions *cond,
-                   TR::Node *fenceNode = NULL,
-                   TR::Instruction *preced = NULL);
+TR::Instruction *generateADMIN(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+    TR::RegisterDependencyConditions *cond, TR::Node *fenceNode = NULL, TR::Instruction *preced = NULL);
 
-TR::Instruction *generateRTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *treg,
-                                TR::Register      *s1reg,
-                                TR::Register      *s2reg,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateRTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::Register *s1reg,
+    TR::Register *s2reg, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
+TR::Instruction *generateITYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::Register *sreg,
+    uint32_t imm, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateITYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *treg,
-                                TR::Register      *sreg,
-                                uint32_t          imm,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateITYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::Register *sreg,
+    uint32_t imm, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateITYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *treg,
-                                TR::Register      *sreg,
-                                uint32_t          imm,
-                                TR::RegisterDependencyConditions *cond,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateLOAD(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *trgReg,
+    TR::MemoryReference *memRef, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
+TR::Instruction *generateSTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *s1reg, TR::Register *s2reg,
+    uint32_t imm, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateLOAD(  TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *trgReg,
-                                TR::MemoryReference *memRef,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateSTORE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::MemoryReference *memRef,
+    TR::Register *srcReg, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateSTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *s1reg,
-                                TR::Register      *s2reg,
-                                uint32_t          imm,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateBTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::LabelSymbol *sym, TR::Register *src1,
+    TR::Register *src2, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateSTORE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::MemoryReference *memRef,
-                                TR::Register      *srcReg,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateUTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, uint32_t imm, TR::Register *reg,
+    TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateBTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::LabelSymbol   *sym,
-                                TR::Register      *src1,
-                                TR::Register      *src2,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateJTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *trgReg, uintptr_t imm,
+    TR::RegisterDependencyConditions *cond, TR::SymbolReference *sr, TR::Snippet *s, TR::CodeGenerator *cg,
+    TR::Instruction *previous = NULL);
 
-TR::Instruction *generateUTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                uint32_t          imm,
-                                TR::Register      *reg,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateJTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *trgReg, TR::LabelSymbol *label,
+    TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateJTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *trgReg,
-                                uintptr_t        imm,
-                                TR::RegisterDependencyConditions *cond,
-                                TR::SymbolReference *sr,
-                                TR::Snippet       *s,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateJTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *trgReg, TR::LabelSymbol *label,
+    TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 
-TR::Instruction *generateJTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *trgReg,
-                                TR::LabelSymbol   *label,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
-
-TR::Instruction *generateJTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *trgReg,
-                                TR::LabelSymbol   *label,
-                                TR::RegisterDependencyConditions *cond,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
-
-TR::Instruction *generateJTYPE( TR::InstOpCode::Mnemonic op,
-                                TR::Node          *n,
-                                TR::Register      *trgReg,
-                                TR::LabelSymbol   *label,
-                                TR::Snippet       *snippet,
-                                TR::RegisterDependencyConditions *cond,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction   *previous = NULL);
+TR::Instruction *generateJTYPE(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *trgReg, TR::LabelSymbol *label,
+    TR::Snippet *snippet, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg,
+    TR::Instruction *previous = NULL);
 
 #ifdef J9_PROJECT_SPECIFIC
-TR::Instruction *generateVGNOP( TR::Node *n,
-                                TR_VirtualGuardSite *site,
-                                TR::RegisterDependencyConditions *cond,
-                                TR::LabelSymbol *sym,
-                                TR::CodeGenerator *cg,
-                                TR::Instruction *previous = NULL);
+TR::Instruction *generateVGNOP(TR::Node *n, TR_VirtualGuardSite *site, TR::RegisterDependencyConditions *cond,
+    TR::LabelSymbol *sym, TR::CodeGenerator *cg, TR::Instruction *previous = NULL);
 #endif // J9_PROJECT_SPECIFIC
 #endif

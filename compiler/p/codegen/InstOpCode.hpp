@@ -25,22 +25,26 @@
 #include "codegen/OMRInstOpCode.hpp"
 
 #ifndef OPS_MAX
-#define OPS_MAX    TR::InstOpCode::NumOpCodes
+#define OPS_MAX TR::InstOpCode::NumOpCodes
 #endif
 
-namespace TR
-{
+namespace TR {
 
-class InstOpCode: public OMR::InstOpCodeConnector
-   {
-   public:
-   InstOpCode()	: 			OMR::InstOpCodeConnector(bad) {}
-   InstOpCode(TR::InstOpCode::Mnemonic m): OMR::InstOpCodeConnector(m) {}
+class InstOpCode : public OMR::InstOpCodeConnector {
+public:
+    InstOpCode()
+        : OMR::InstOpCodeConnector(bad)
+    {}
 
-   TR::InstOpCode::Mnemonic getOpCodeValue()                 {return _mnemonic;}
-   TR::InstOpCode::Mnemonic setOpCodeValue(TR::InstOpCode::Mnemonic op) {return (_mnemonic = op);}
-   TR::InstOpCode::Mnemonic getRecordFormOpCodeValue()       {return (TR::InstOpCode::Mnemonic)(_mnemonic+1);}
+    InstOpCode(TR::InstOpCode::Mnemonic m)
+        : OMR::InstOpCodeConnector(m)
+    {}
 
-   };
-}
+    TR::InstOpCode::Mnemonic getOpCodeValue() { return _mnemonic; }
+
+    TR::InstOpCode::Mnemonic setOpCodeValue(TR::InstOpCode::Mnemonic op) { return (_mnemonic = op); }
+
+    TR::InstOpCode::Mnemonic getRecordFormOpCodeValue() { return (TR::InstOpCode::Mnemonic)(_mnemonic + 1); }
+};
+} // namespace TR
 #endif

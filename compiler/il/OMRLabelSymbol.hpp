@@ -27,10 +27,11 @@
  */
 #ifndef OMR_LABELSYMBOL_CONNECTOR
 #define OMR_LABELSYMBOL_CONNECTOR
+
 namespace OMR {
 class LabelSymbol;
 typedef OMR::LabelSymbol LabelSymbolConnector;
-}
+} // namespace OMR
 #endif
 
 #include "il/Symbol.hpp"
@@ -41,6 +42,7 @@ typedef OMR::LabelSymbol LabelSymbolConnector;
 #include "infra/Assert.hpp"
 
 class TR_Debug;
+
 namespace TR {
 class Block;
 class CodeGenerator;
@@ -51,90 +53,89 @@ class ParameterSymbol;
 class Snippet;
 class StaticSymbol;
 class SymbolReference;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
-
-namespace OMR
-{
+namespace OMR {
 
 /**
  * A symbol representing a label.
  *
  * A label has an instruction, a code location...
  */
-class OMR_EXTENSIBLE LabelSymbol : public TR::Symbol
-   {
+class OMR_EXTENSIBLE LabelSymbol : public TR::Symbol {
 public:
-   TR::LabelSymbol * self();
+    TR::LabelSymbol *self();
 
-   template <typename AllocatorType>
-   static TR::LabelSymbol * create(AllocatorType, TR::CodeGenerator*);
+    template<typename AllocatorType> static TR::LabelSymbol *create(AllocatorType, TR::CodeGenerator *);
 
-   template <typename AllocatorType>
-   static TR::LabelSymbol * create(AllocatorType, TR::CodeGenerator*, TR::Block*);
+    template<typename AllocatorType> static TR::LabelSymbol *create(AllocatorType, TR::CodeGenerator *, TR::Block *);
 
 protected:
-
-   LabelSymbol(TR::CodeGenerator *cg);
-   LabelSymbol(TR::CodeGenerator *cg, TR::Block *labb);
-
-public:
-
-   // Using declaration is required here or else the
-   // debug getName will hide the parent class getName
-   using TR::Symbol::getName;
-   const char * getName(TR_Debug * debug);
-
-   TR::Instruction * getInstruction()                   { return _instruction;       }
-   TR::Instruction * setInstruction(TR::Instruction *p) { return (_instruction = p); }
-
-   uint8_t * getCodeLocation()           { return _codeLocation; }
-   void      setCodeLocation(uint8_t *p) { _codeLocation = p; }
-
-   int32_t getEstimatedCodeLocation()          { return _estimatedCodeLocation; }
-   int32_t setEstimatedCodeLocation(int32_t p) { return (_estimatedCodeLocation = p); }
-
-   TR::Snippet * getSnippet()               { return _snippet; }
-   TR::Snippet * setSnippet(TR::Snippet *s) { return (_snippet = s); }
-
-   void setDirectlyTargeted() { _directlyTargeted = true; }
-   TR_YesNoMaybe isTargeted(TR::CodeGenerator *cg);
-
-private:
-
-   TR::Instruction *  _instruction;
-
-   uint8_t *          _codeLocation;
-
-   int32_t            _estimatedCodeLocation;
-
-   TR::Snippet *      _snippet;
-
-   bool               _directlyTargeted;
+    LabelSymbol(TR::CodeGenerator *cg);
+    LabelSymbol(TR::CodeGenerator *cg, TR::Block *labb);
 
 public:
-   /*------------- TR_RelativeLabelSymbol -----------------*/
-   template <typename AllocatorType>
-   static TR::LabelSymbol *createRelativeLabel(AllocatorType m, TR::CodeGenerator * cg, intptr_t offset);
+    // Using declaration is required here or else the
+    // debug getName will hide the parent class getName
+    using TR::Symbol::getName;
+    const char *getName(TR_Debug *debug);
 
-   /**
-    * Mark a LabelSymbol as a RelativeLabelSymbol, inializing members as
-    * appropriate.
-    *
-    * A relative label provides an offset/distance (and changes the name of a
-    * symbol to the offset).
-    *
-    * @todo This leaks memory right now.
-    */
-   void makeRelativeLabelSymbol(intptr_t offset);
+    TR::Instruction *getInstruction() { return _instruction; }
 
-   intptr_t getDistance();
+    TR::Instruction *setInstruction(TR::Instruction *p) { return (_instruction = p); }
+
+    uint8_t *getCodeLocation() { return _codeLocation; }
+
+    void setCodeLocation(uint8_t *p) { _codeLocation = p; }
+
+    int32_t getEstimatedCodeLocation() { return _estimatedCodeLocation; }
+
+    int32_t setEstimatedCodeLocation(int32_t p) { return (_estimatedCodeLocation = p); }
+
+    TR::Snippet *getSnippet() { return _snippet; }
+
+    TR::Snippet *setSnippet(TR::Snippet *s) { return (_snippet = s); }
+
+    void setDirectlyTargeted() { _directlyTargeted = true; }
+
+    TR_YesNoMaybe isTargeted(TR::CodeGenerator *cg);
+
 private:
-   intptr_t     _offset;
-  };
+    TR::Instruction *_instruction;
 
-}
+    uint8_t *_codeLocation;
+
+    int32_t _estimatedCodeLocation;
+
+    TR::Snippet *_snippet;
+
+    bool _directlyTargeted;
+
+public:
+    /*------------- TR_RelativeLabelSymbol -----------------*/
+    template<typename AllocatorType>
+    static TR::LabelSymbol *createRelativeLabel(AllocatorType m, TR::CodeGenerator *cg, intptr_t offset);
+
+    /**
+     * Mark a LabelSymbol as a RelativeLabelSymbol, inializing members as
+     * appropriate.
+     *
+     * A relative label provides an offset/distance (and changes the name of a
+     * symbol to the offset).
+     *
+     * @todo This leaks memory right now.
+     */
+    void makeRelativeLabelSymbol(intptr_t offset);
+
+    intptr_t getDistance();
+
+private:
+    intptr_t _offset;
+};
+
+} // namespace OMR
+
 /**
  * Static creation function.
  */

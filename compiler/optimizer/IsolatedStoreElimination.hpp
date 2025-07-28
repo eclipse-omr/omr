@@ -31,12 +31,13 @@ class TR_BitVector;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_UseDefInfo;
+
 namespace TR {
 class SymbolReference;
 class Block;
 class TreeTop;
-}
-template <class T> class TR_Array;
+} // namespace TR
+template<class T> class TR_Array;
 
 // Isolated Store Elimination
 //
@@ -45,62 +46,60 @@ template <class T> class TR_Array;
 // stores might be created after commoning (local and global) and
 // local dead store elimination may not be able to catch all the cases.
 //
-class TR_IsolatedStoreElimination : public TR::Optimization
-   {
-   public:
-   // Performs isolated store elimination
-   //
-   TR_IsolatedStoreElimination(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_IsolatedStoreElimination(manager);
-      }
+class TR_IsolatedStoreElimination : public TR::Optimization {
+public:
+    // Performs isolated store elimination
+    //
+    TR_IsolatedStoreElimination(TR::OptimizationManager *manager);
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_IsolatedStoreElimination(manager);
+    }
 
-   protected:
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   char *_optDetailsMessage;
-   bool _mustUseUseDefInfo; // temporary
+protected:
+    char *_optDetailsMessage;
+    bool _mustUseUseDefInfo; // temporary
 
-   private :
+private:
+    bool _deferUseDefInfoInvalidation; // true if useDefInfo is invalidated during performWithUseDefInfo() but
+                                       // useDefInfo is still used (conservatively) later on in the optimization.
 
-   bool _deferUseDefInfoInvalidation;  // true if useDefInfo is invalidated during performWithUseDefInfo() but useDefInfo is still used
-                                       // (conservatively) later on in the optimization.
+    int32_t performWithUseDefInfo();
+    int32_t performWithoutUseDefInfo();
+    bool canRemoveStoreNode(TR::Node *node);
+    void collectDefParentInfo(int32_t defIndex, TR::Node *, TR_UseDefInfo *);
+    bool groupIsolatedStores(int32_t defIndex, TR_BitVector *, TR_UseDefInfo *);
+    void examineNode(TR::Node *, vcount_t visitCount, bool);
 
-   int32_t performWithUseDefInfo();
-   int32_t performWithoutUseDefInfo();
-   bool    canRemoveStoreNode(TR::Node *node);
-   void    collectDefParentInfo(int32_t defIndex,TR::Node *, TR_UseDefInfo *);
-   bool    groupIsolatedStores(int32_t defIndex,TR_BitVector *,TR_UseDefInfo *);
-   void    examineNode(TR::Node *, vcount_t visitCount, bool);
+    void performDeadStructureRemoval(TR_UseDefInfo *);
+    bool findStructuresAndNodesUsedIn(TR_UseDefInfo *, TR_Structure *, vcount_t, TR_BitVector *, TR_BitVector *,
+        bool *);
+    bool markNodesAndLocateSideEffectIn(TR::Node *, vcount_t, TR_BitVector *, TR_BitVector *);
 
-   void performDeadStructureRemoval(TR_UseDefInfo *);
-   bool findStructuresAndNodesUsedIn(TR_UseDefInfo *, TR_Structure *, vcount_t, TR_BitVector *, TR_BitVector *, bool *);
-   bool markNodesAndLocateSideEffectIn(TR::Node *, vcount_t, TR_BitVector *, TR_BitVector *);
+    void analyzeSingleBlockLoop(TR_RegionStructure *, TR::Block *);
 
-   void analyzeSingleBlockLoop(TR_RegionStructure *, TR::Block *);
+    void removeRedundantSpills();
 
-   void removeRedundantSpills();
+    enum defStatus {
+        notVisited = 0,
+        inTransit,
+        notToBeRemoved,
+        toBeRemoved,
+        doNotExamine
+    };
 
-   enum defStatus
-      {
-      notVisited =0,
-      inTransit,
-      notToBeRemoved,
-      toBeRemoved,
-      doNotExamine
-      };
+    TR_BitVector *_usedSymbols;
+    TR_Array<TR::Node *> *_storeNodes;
+    TR_Array<int32_t> *_defParentOfUse;
+    TR_Array<defStatus> *_defStatus;
+    TR_Array<TR_BitVector *> *_groupsOfStoreNodes;
+    TR_BitVector *_trivialDefs;
 
-   TR_BitVector        *_usedSymbols;
-   TR_Array<TR::Node *> *_storeNodes;
-   TR_Array<int32_t>  *_defParentOfUse;
-   TR_Array<defStatus>  *_defStatus;
-   TR_Array<TR_BitVector *> *_groupsOfStoreNodes;
-   TR_BitVector       *_trivialDefs;
-
-   TR::TreeTop *_currentTree;
-   };
+    TR::TreeTop *_currentTree;
+};
 
 #endif

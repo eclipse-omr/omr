@@ -47,34 +47,25 @@ namespace TR {
  *  pointer dereferences to be unaligned, and resolve to the high-half of the
  *  virtual address space often reserved for kernel / supervisor use.
  **/
-class DebugSegmentProvider : public TR::SegmentAllocator
-   {
+class DebugSegmentProvider : public TR::SegmentAllocator {
 public:
-   DebugSegmentProvider(size_t defaultSegmentSize, TR::RawAllocator rawAllocator);
-   ~DebugSegmentProvider() throw();
-   virtual TR::MemorySegment &request(size_t requiredSize);
-   virtual void release(TR::MemorySegment &segment) throw();
-   virtual size_t bytesAllocated() const throw();
-   virtual size_t regionBytesAllocated() const throw();
-   virtual size_t systemBytesAllocated() const throw();
-   virtual size_t allocationLimit() const throw();
-   virtual void setAllocationLimit(size_t);
+    DebugSegmentProvider(size_t defaultSegmentSize, TR::RawAllocator rawAllocator);
+    ~DebugSegmentProvider() throw();
+    virtual TR::MemorySegment &request(size_t requiredSize);
+    virtual void release(TR::MemorySegment &segment) throw();
+    virtual size_t bytesAllocated() const throw();
+    virtual size_t regionBytesAllocated() const throw();
+    virtual size_t systemBytesAllocated() const throw();
+    virtual size_t allocationLimit() const throw();
+    virtual void setAllocationLimit(size_t);
 
 private:
-   TR::RawAllocator _rawAllocator;
-   size_t _bytesAllocated;
-   typedef TR::typed_allocator<
-      TR::MemorySegment,
-      TR::RawAllocator
-      > SegmentSetAllocator;
+    TR::RawAllocator _rawAllocator;
+    size_t _bytesAllocated;
+    typedef TR::typed_allocator<TR::MemorySegment, TR::RawAllocator> SegmentSetAllocator;
 
-   std::set<
-      TR::MemorySegment,
-      std::less< TR::MemorySegment >,
-      SegmentSetAllocator
-      > _segments;
-
-   };
+    std::set<TR::MemorySegment, std::less<TR::MemorySegment>, SegmentSetAllocator> _segments;
+};
 
 } // namespace TR
 

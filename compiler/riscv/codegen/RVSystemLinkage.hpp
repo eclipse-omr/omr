@@ -35,137 +35,124 @@ class Node;
 class ParameterSymbol;
 class RegisterDependencyConditions;
 class ResolvedMethodSymbol;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
 namespace TR {
 
 struct RVSystemLinkageProperties : public RVLinkageProperties {
-   RVSystemLinkageProperties();
+    RVSystemLinkageProperties();
 };
 
-class RVSystemLinkage : public TR::Linkage
-   {
-   protected:
+class RVSystemLinkage : public TR::Linkage {
+protected:
+    static const TR::RVSystemLinkageProperties _properties;
 
-   static const TR::RVSystemLinkageProperties _properties;
+public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     */
+    RVSystemLinkage(TR::CodeGenerator *cg);
 
-   public:
+    /**
+     * @brief Gets linkage properties
+     * @return Linkage properties
+     */
+    virtual const TR::RVLinkageProperties &getProperties();
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    */
-   RVSystemLinkage(TR::CodeGenerator *cg);
+    /**
+     * @brief Gets the RightToLeft flag
+     * @return RightToLeft flag
+     */
+    virtual uint32_t getRightToLeft();
+    /**
+     * @brief Maps symbols to locations on stack
+     * @param[in] method : method for which symbols are mapped on stack
+     */
+    virtual void mapStack(TR::ResolvedMethodSymbol *method);
+    /**
+     * @brief Maps an automatic symbol to an index on stack
+     * @param[in] p : automatic symbol
+     * @param[in/out] stackIndex : index on stack
+     */
+    virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
+    /**
+     * @brief Initializes RV RealRegister linkage
+     */
+    virtual void initRVRealRegisterLinkage();
 
-   /**
-    * @brief Gets linkage properties
-    * @return Linkage properties
-    */
-   virtual const TR::RVLinkageProperties& getProperties();
+    /**
+     * @brief Creates method prologue
+     * @param[in] cursor : instruction cursor
+     */
+    virtual void createPrologue(TR::Instruction *cursor);
+    /**
+     * @brief Creates method prologue
+     * @param[in] cursor : instruction cursor
+     */
+    virtual void createPrologue(TR::Instruction *cursor, List<TR::ParameterSymbol> &parm);
 
-   /**
-    * @brief Gets the RightToLeft flag
-    * @return RightToLeft flag
-    */
-   virtual uint32_t getRightToLeft();
-   /**
-    * @brief Maps symbols to locations on stack
-    * @param[in] method : method for which symbols are mapped on stack
-    */
-   virtual void mapStack(TR::ResolvedMethodSymbol *method);
-   /**
-    * @brief Maps an automatic symbol to an index on stack
-    * @param[in] p : automatic symbol
-    * @param[in/out] stackIndex : index on stack
-    */
-   virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
-   /**
-    * @brief Initializes RV RealRegister linkage
-    */
-   virtual void initRVRealRegisterLinkage();
+    /**
+     * @brief Creates method epilogue
+     * @param[in] cursor : instruction cursor
+     */
+    virtual void createEpilogue(TR::Instruction *cursor);
 
-   /**
-    * @brief Creates method prologue
-    * @param[in] cursor : instruction cursor
-    */
-   virtual void createPrologue(TR::Instruction *cursor);
-   /**
-    * @brief Creates method prologue
-    * @param[in] cursor : instruction cursor
-    */
-   virtual void createPrologue(TR::Instruction *cursor, List<TR::ParameterSymbol> &parm);
+    /**
+     * @brief Builds method arguments
+     * @param[in] node : caller node
+     * @param[in] dependencies : register dependency conditions
+     */
+    virtual int32_t buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies);
 
-   /**
-    * @brief Creates method epilogue
-    * @param[in] cursor : instruction cursor
-    */
-   virtual void createEpilogue(TR::Instruction *cursor);
+    /**
+     * @brief Builds dispatch to method (either direct or indirect)
+     * @param[in] node : caller node
+     */
+    virtual TR::Register *buildDispatch(TR::Node *callNode);
 
-   /**
-    * @brief Builds method arguments
-    * @param[in] node : caller node
-    * @param[in] dependencies : register dependency conditions
-    */
-   virtual int32_t buildArgs(
-         TR::Node *callNode,
-         TR::RegisterDependencyConditions *dependencies);
+    /**
+     * @brief Builds direct dispatch to method
+     * @param[in] node : caller node
+     */
+    virtual TR::Register *buildDirectDispatch(TR::Node *callNode) { return buildDispatch(callNode); }
 
+    /**
+     * @brief Builds indirect dispatch to method
+     * @param[in] node : caller node
+     */
+    virtual TR::Register *buildIndirectDispatch(TR::Node *callNode) { return buildDispatch(callNode); }
 
-   /**
-    * @brief Builds dispatch to method (either direct or indirect)
-    * @param[in] node : caller node
-    */
-   virtual TR::Register *buildDispatch(TR::Node *callNode);
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from a method compiled with the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for compiled methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromCompiledMethod();
 
-   /**
-    * @brief Builds direct dispatch to method
-    * @param[in] node : caller node
-    */
-   virtual TR::Register *buildDirectDispatch(TR::Node *callNode)
-      {
-      return buildDispatch(callNode);
-      }
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from an interpreter using the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromInterpretedMethod();
+};
 
-   /**
-    * @brief Builds indirect dispatch to method
-    * @param[in] node : caller node
-    */
-   virtual TR::Register *buildIndirectDispatch(TR::Node *callNode)
-      {
-      return buildDispatch(callNode);
-      }
-
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from a method compiled with the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for compiled methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromCompiledMethod();
-
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from an interpreter using the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromInterpretedMethod();
-
-   };
-
-}
+} // namespace TR
 
 #endif

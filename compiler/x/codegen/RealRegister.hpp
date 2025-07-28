@@ -30,26 +30,20 @@
 namespace TR {
 class CodeGenerator;
 class Register;
-}
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE RealRegister : public OMR::RealRegisterConnector
-   {
-   public:
+class OMR_EXTENSIBLE RealRegister : public OMR::RealRegisterConnector {
+public:
+    RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, TR::RealRegister::RegNum ri, TR::RealRegister::RegMask m,
+        TR::CodeGenerator *cg)
+        : OMR::RealRegisterConnector(rk, w, s, (RegNum)ri, (RegMask)m, cg)
+    {}
+};
 
-   RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, TR::RealRegister::RegNum  ri, TR::RealRegister::RegMask m, TR::CodeGenerator *cg):
-      OMR::RealRegisterConnector(rk, w, s, (RegNum)ri, (RegMask)m, cg) {}
+} // namespace TR
 
-   };
-
-}
-
-inline TR::RealRegister *toRealRegister(TR::Register *r)
-   {
-   return static_cast<TR::RealRegister *>(r);
-   }
-
+inline TR::RealRegister *toRealRegister(TR::Register *r) { return static_cast<TR::RealRegister *>(r); }
 
 #endif

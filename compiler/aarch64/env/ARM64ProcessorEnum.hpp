@@ -24,4 +24,4 @@
  * definitions are permitted.
  */
 
-   ARMv8_A,
+ARMv8_A,

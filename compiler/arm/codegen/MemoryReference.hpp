@@ -24,38 +24,38 @@
 
 #include "codegen/OMRMemoryReference.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector
-   {
-   public:
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
+public:
+    MemoryReference(TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(cg)
+    {}
 
-   MemoryReference(TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(cg) {}
+    MemoryReference(TR::Register *br, TR::Register *ir, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, cg)
+    {}
 
-   MemoryReference(TR::Register *br, TR::Register *ir, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(br, ir, cg) {}
+    MemoryReference(TR::Register *br, TR::Register *ir, uint8_t scale, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, scale, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      TR::Register *ir,
-      uint8_t scale,
-      TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(br, ir, scale, cg) {}
+    MemoryReference(TR::Register *br, int32_t disp, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, disp, cg)
+    {}
 
-   MemoryReference(TR::Register *br, int32_t disp, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(br, disp, cg) {}
+    MemoryReference(TR::Node *rootLoadOrStore, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(rootLoadOrStore, len, cg)
+    {}
 
-   MemoryReference(TR::Node *rootLoadOrStore, uint32_t len, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(rootLoadOrStore, len, cg) {}
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, symRef, len, cg)
+    {}
 
-   MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(node, symRef, len, cg) {}
-
-   MemoryReference(MemoryReference& mr, int32_t n, uint32_t len, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(mr, n, len, cg) {}
-
-   };
-}
+    MemoryReference(MemoryReference &mr, int32_t n, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(mr, n, len, cg)
+    {}
+};
+} // namespace TR
 
 #endif

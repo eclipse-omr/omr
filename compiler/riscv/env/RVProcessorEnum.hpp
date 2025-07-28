@@ -24,4 +24,4 @@
  * definitions are permitted.
  */
 
-   RV64G,
+RV64G,

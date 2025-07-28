@@ -27,94 +27,89 @@
 #include "infra/Link.hpp"
 
 class TR_Memory;
+
 namespace TR {
 class Block;
 class ResolvedMethodSymbol;
-}
+} // namespace TR
 
-
-template <typename ByteCode, typename ResolvedMethod> class TR_ByteCodeIterator
-   {
+template<typename ByteCode, typename ResolvedMethod> class TR_ByteCodeIterator {
 public:
-   TR_ByteCodeIterator(TR::ResolvedMethodSymbol *resolvedMethodSym, ResolvedMethod *m, TR::Compilation *comp)
-      : _methodSymbol(resolvedMethodSym),
-        _method(m),
-        _compilation(comp),
-        _trMemory(comp->trMemory()),
-        _maxByteCodeIndex(m->maxBytecodeIndex())
-      { }
+    TR_ByteCodeIterator(TR::ResolvedMethodSymbol *resolvedMethodSym, ResolvedMethod *m, TR::Compilation *comp)
+        : _methodSymbol(resolvedMethodSym)
+        , _method(m)
+        , _compilation(comp)
+        , _trMemory(comp->trMemory())
+        , _maxByteCodeIndex(m->maxBytecodeIndex())
+    {}
 
-   struct TryCatchInfo : TR_Link<TryCatchInfo>
-      {
-      void *operator new(size_t s, void *p) { return p; }
+    struct TryCatchInfo : TR_Link<TryCatchInfo> {
+        void *operator new(size_t s, void *p) { return p; }
 
-      TryCatchInfo(int32_t s, int32_t e, int32_t h, uint32_t c) :
-         _startIndex(s),
-         _endIndex(e),
-         _handlerIndex(h),
-         _catchType(c),
-         _firstBlock(0),
-         _lastBlock(0),
-         _catchBlock(0)
-         {
-         }
+        TryCatchInfo(int32_t s, int32_t e, int32_t h, uint32_t c)
+            : _startIndex(s)
+            , _endIndex(e)
+            , _handlerIndex(h)
+            , _catchType(c)
+            , _firstBlock(0)
+            , _lastBlock(0)
+            , _catchBlock(0)
+        {}
 
-      void initialize(int32_t s, int32_t e, int32_t h, uint32_t c)
-         {
-         _startIndex = s;
-         _endIndex = e;
-         _handlerIndex = h;
-         _catchType = c;
-         }
+        void initialize(int32_t s, int32_t e, int32_t h, uint32_t c)
+        {
+            _startIndex = s;
+            _endIndex = e;
+            _handlerIndex = h;
+            _catchType = c;
+        }
 
-      bool operator==(TryCatchInfo & o)
-         {
-         return _handlerIndex == o._handlerIndex && _catchType == o._catchType;
-         }
+        bool operator==(TryCatchInfo &o) { return _handlerIndex == o._handlerIndex && _catchType == o._catchType; }
 
-      int32_t       _startIndex;
-      int32_t       _endIndex;
-      int32_t       _handlerIndex;
-      uint32_t      _catchType;
-      TR::Block    * _firstBlock;
-      TR::Block    * _lastBlock;
-      TR::Block    * _catchBlock;
-      };
+        int32_t _startIndex;
+        int32_t _endIndex;
+        int32_t _handlerIndex;
+        uint32_t _catchType;
+        TR::Block *_firstBlock;
+        TR::Block *_lastBlock;
+        TR::Block *_catchBlock;
+    };
 
-   TR::Compilation *comp()                const       { return _compilation; }
-   TR_Memory *trMemory()                   const       { return _trMemory; }
-   virtual TR::ResolvedMethodSymbol *methodSymbol() const   { return _methodSymbol; }
-   ResolvedMethod          *method()       const       { return _method; }
+    TR::Compilation *comp() const { return _compilation; }
 
-   int32_t  bcIndex()                      const       { return _bcIndex; }
-   void     setIndex(int32_t i)                        { _bcIndex = i; }
+    TR_Memory *trMemory() const { return _trMemory; }
 
-   int32_t  maxByteCodeIndex()             const       { return _maxByteCodeIndex; }
+    virtual TR::ResolvedMethodSymbol *methodSymbol() const { return _methodSymbol; }
 
+    ResolvedMethod *method() const { return _method; }
 
+    int32_t bcIndex() const { return _bcIndex; }
 
-   // Abstract Methods - subclasses must provide these
-   ByteCode first();
-   ByteCode next();
-   ByteCode current();
+    void setIndex(int32_t i) { _bcIndex = i; }
+
+    int32_t maxByteCodeIndex() const { return _maxByteCodeIndex; }
+
+    // Abstract Methods - subclasses must provide these
+    ByteCode first();
+    ByteCode next();
+    ByteCode current();
 
 protected:
-   // Abstract Methods - subclasses must provide these
-   void printByteCodePrologue();
-   void printByteCode();
-   void printByteCodeEpilogue();
+    // Abstract Methods - subclasses must provide these
+    void printByteCodePrologue();
+    void printByteCode();
+    void printByteCodeEpilogue();
 
-   bool isBranch();
-   int32_t branchDesination(int32_t base);
+    bool isBranch();
+    int32_t branchDesination(int32_t base);
 
-   TR::ResolvedMethodSymbol * _methodSymbol;
-   ResolvedMethod          * _method;
-   TR::Compilation        * _compilation;
-   TR_Memory               * _trMemory;
-   int32_t             const _maxByteCodeIndex;
+    TR::ResolvedMethodSymbol *_methodSymbol;
+    ResolvedMethod *_method;
+    TR::Compilation *_compilation;
+    TR_Memory *_trMemory;
+    int32_t const _maxByteCodeIndex;
 
-
-   int32_t                   _bcIndex;
-   };
+    int32_t _bcIndex;
+};
 
 #endif

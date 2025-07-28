@@ -31,87 +31,80 @@ class SymbolReference;
 class CodeGenerator;
 class Node;
 class Register;
-}
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector
-   {
-   private:
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
+private:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] br : base register
+     * @param[in] ir : index register
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Register *br, TR::Register *ir, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] br : base register
-    * @param[in] ir : index register
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Register *br,
-      TR::Register *ir,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, ir, cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] br : base register
+     * @param[in] ir : index register
+     * @param[in] scale : scale of index
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Register *br, TR::Register *ir, uint8_t scale, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, scale, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] br : base register
-    * @param[in] ir : index register
-    * @param[in] scale : scale of index
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(
-      TR::Register *br,
-      TR::Register *ir,
-      uint8_t scale,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, ir, scale, cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] br : base register
+     * @param[in] disp : displacement
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Register *br, int32_t disp, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, disp, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] br : base register
-    * @param[in] disp : displacement
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Register *br,
-      int32_t disp,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, disp, cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] node : load or store node
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Node *node, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] node : load or store node
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Node *node,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(node, cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] node : node
+     * @param[in] symRef : symbol reference
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, symRef, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] node : node
-    * @param[in] symRef : symbol reference
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Node *node,
-      TR::SymbolReference *symRef,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(node, symRef, cg) {}
+public:
+    static TR::MemoryReference *create(TR::CodeGenerator *cg);
+    static TR::MemoryReference *createWithIndexReg(TR::CodeGenerator *cg, TR::Register *baseReg, TR::Register *indexReg,
+        uint8_t scale = 0, TR::ARM64ExtendCode extendCode = TR::ARM64ExtendCode::EXT_UXTX);
+    static TR::MemoryReference *createWithDisplacement(TR::CodeGenerator *cg, TR::Register *baseReg,
+        int64_t displacement);
+    static TR::MemoryReference *createWithRootLoadOrStore(TR::CodeGenerator *cg, TR::Node *rootLoadOrStore);
+    static TR::MemoryReference *createWithSymRef(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef);
+};
 
-   public:
-
-   static TR::MemoryReference *create(TR::CodeGenerator *cg);
-   static TR::MemoryReference *createWithIndexReg(TR::CodeGenerator *cg, TR::Register *baseReg, TR::Register *indexReg, uint8_t scale = 0, TR::ARM64ExtendCode extendCode = TR::ARM64ExtendCode::EXT_UXTX);
-   static TR::MemoryReference *createWithDisplacement(TR::CodeGenerator *cg, TR::Register *baseReg, int64_t displacement);
-   static TR::MemoryReference *createWithRootLoadOrStore(TR::CodeGenerator *cg, TR::Node *rootLoadOrStore);
-   static TR::MemoryReference *createWithSymRef(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef);
-   };
-
-} // TR
+} // namespace TR
 
 #endif

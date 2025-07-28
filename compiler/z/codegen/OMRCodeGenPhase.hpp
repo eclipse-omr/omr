@@ -28,39 +28,37 @@
 
 #ifndef OMR_CODEGEN_PHASE_CONNECTOR
 #define OMR_CODEGEN_PHASE_CONNECTOR
+
 namespace OMR {
-namespace Z { class CodeGenPhase; }
-typedef OMR::Z::CodeGenPhase CodeGenPhaseConnector;
+namespace Z {
+class CodeGenPhase;
 }
+
+typedef OMR::Z::CodeGenPhase CodeGenPhaseConnector;
+} // namespace OMR
 #else
 #error OMR::Z::CodeGenPhase expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRCodeGenPhase.hpp"
 
-namespace OMR
-{
+namespace OMR { namespace Z {
 
-namespace Z
-{
+class OMR_EXTENSIBLE CodeGenPhase : public OMR::CodeGenPhase {
+protected:
+    CodeGenPhase(TR::CodeGenerator *cg)
+        : OMR::CodeGenPhase(cg)
+    {}
 
-class OMR_EXTENSIBLE CodeGenPhase : public OMR::CodeGenPhase
-   {
-   protected:
+public:
+    static void performMarkLoadAsZeroOrSignExtensionPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performSetBranchOnCountFlagPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
 
-   CodeGenPhase(TR::CodeGenerator *cg): OMR::CodeGenPhase(cg) {}
-
-   public:
-   static void performMarkLoadAsZeroOrSignExtensionPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performSetBranchOnCountFlagPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-
-   // override base class implementation because new phases are being added
-   static int getNumPhases();
-   const char * getName();
-   static const char* getName(PhaseValue phase);
-   };
-}
-
-}
+    // override base class implementation because new phases are being added
+    static int getNumPhases();
+    const char *getName();
+    static const char *getName(PhaseValue phase);
+};
+}} // namespace OMR::Z
 
 #endif

@@ -29,66 +29,56 @@
 namespace TR {
 class CodeGenerator;
 class Node;
-}
+} // namespace TR
 
-#define EvalChild1   0x01
-#define EvalChild2   0x02
-#define CopyReg1     0x04
-#define SubReg1Reg2  0x08
-#define SubReg3Reg2  0x10
-#define SubReg1Mem2  0x20
-#define SubReg3Mem2  0x40
+#define EvalChild1 0x01
+#define EvalChild2 0x02
+#define CopyReg1 0x04
+#define SubReg1Reg2 0x08
+#define SubReg3Reg2 0x10
+#define SubReg1Mem2 0x20
+#define SubReg3Mem2 0x40
 
-class TR_X86SubtractAnalyser  : public TR_Analyser
-   {
+class TR_X86SubtractAnalyser : public TR_Analyser {
+    static const uint8_t _actionMap[NUM_ACTIONS];
+    TR::CodeGenerator *_cg;
 
-   static const uint8_t _actionMap[NUM_ACTIONS];
-   TR::CodeGenerator    *_cg;
+public:
+    TR_X86SubtractAnalyser(TR::CodeGenerator *cg)
+        : _cg(cg)
+    {}
 
-   public:
+    void integerSubtractAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regRegOpCode,
+        TR::InstOpCode::Mnemonic regMemOpCode, TR::InstOpCode::Mnemonic copyOpCode, bool needsEflags = false,
+        TR::Node *borrow = 0);
 
-   TR_X86SubtractAnalyser(TR::CodeGenerator *cg)
-      : _cg(cg)
-      {}
+    void integerSubtractAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild,
+        TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode,
+        TR::InstOpCode::Mnemonic copyOpCode, bool needsEflags = false, TR::Node *borrow = 0);
 
-   void integerSubtractAnalyser(TR::Node      *root,
-                                TR::InstOpCode::Mnemonic regRegOpCode,
-                                TR::InstOpCode::Mnemonic regMemOpCode,
-                                TR::InstOpCode::Mnemonic copyOpCode,
-                                bool needsEflags = false,
-                                TR::Node *borrow = 0);
+    TR::Register *integerSubtractAnalyserImpl(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild,
+        TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode,
+        TR::InstOpCode::Mnemonic copyOpCode, bool needsEflags, TR::Node *borrow);
 
-   void integerSubtractAnalyserWithExplicitOperands(TR::Node      *root,
-                                                    TR::Node      *firstChild,
-                                                    TR::Node      *secondChild,
-                                                    TR::InstOpCode::Mnemonic regRegOpCode,
-                                                    TR::InstOpCode::Mnemonic regMemOpCode,
-                                                    TR::InstOpCode::Mnemonic copyOpCode,
-                                                    bool needsEflags = false,
-                                                    TR::Node *borrow = 0);
+    void longSubtractAnalyser(TR::Node *root);
+    void longSubtractAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild);
+    TR::Register *longSubtractAnalyserImpl(TR::Node *root, TR::Node *&firstChild, TR::Node *&secondChild);
 
-   TR::Register *integerSubtractAnalyserImpl(TR::Node      *root,
-                                         TR::Node      *firstChild,
-                                         TR::Node      *secondChild,
-                                         TR::InstOpCode::Mnemonic regRegOpCode,
-                                         TR::InstOpCode::Mnemonic regMemOpCode,
-                                         TR::InstOpCode::Mnemonic copyOpCode,
-                                         bool needsEflags,
-                                         TR::Node *borrow);
+    bool getEvalChild1() { return (_actionMap[getInputs()] & EvalChild1) ? true : false; }
 
-   void longSubtractAnalyser(TR::Node *root);
-   void longSubtractAnalyserWithExplicitOperands(TR::Node *root, TR::Node *firstChild, TR::Node *secondChild);
-   TR::Register* longSubtractAnalyserImpl(TR::Node *root, TR::Node *&firstChild, TR::Node *&secondChild);
+    bool getEvalChild2() { return (_actionMap[getInputs()] & EvalChild2) ? true : false; }
 
-   bool getEvalChild1()  {return (_actionMap[getInputs()] & EvalChild1)  ? true : false;}
-   bool getEvalChild2()  {return (_actionMap[getInputs()] & EvalChild2)  ? true : false;}
-   bool getCopyReg1()    {return (_actionMap[getInputs()] & CopyReg1)    ? true : false;}
-   bool getSubReg1Reg2() {return (_actionMap[getInputs()] & SubReg1Reg2) ? true : false;}
-   bool getSubReg3Reg2() {return (_actionMap[getInputs()] & SubReg3Reg2) ? true : false;}
-   bool getSubReg1Mem2() {return (_actionMap[getInputs()] & SubReg1Mem2) ? true : false;}
-   bool getSubReg3Mem2() {return (_actionMap[getInputs()] & SubReg3Mem2) ? true : false;}
+    bool getCopyReg1() { return (_actionMap[getInputs()] & CopyReg1) ? true : false; }
 
-   bool isVolatileMemoryOperand(TR::Node *node);
-   };
+    bool getSubReg1Reg2() { return (_actionMap[getInputs()] & SubReg1Reg2) ? true : false; }
+
+    bool getSubReg3Reg2() { return (_actionMap[getInputs()] & SubReg3Reg2) ? true : false; }
+
+    bool getSubReg1Mem2() { return (_actionMap[getInputs()] & SubReg1Mem2) ? true : false; }
+
+    bool getSubReg3Mem2() { return (_actionMap[getInputs()] & SubReg3Mem2) ? true : false; }
+
+    bool isVolatileMemoryOperand(TR::Node *node);
+};
 
 #endif

@@ -25,28 +25,20 @@
 #include "objectfmt/OMRFunctionCallData.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE FunctionCallData : public OMR::FunctionCallDataConnector
-   {
+class OMR_EXTENSIBLE FunctionCallData : public OMR::FunctionCallDataConnector {
 public:
+    FunctionCallData(TR::CodeGenerator *cg, TR::SymbolReference *methodSymRef, TR::Node *callNode)
+        : OMR::FunctionCallDataConnector(cg, methodSymRef, callNode)
+    {}
 
-   FunctionCallData(
-         TR::CodeGenerator *cg,
-         TR::SymbolReference *methodSymRef,
-         TR::Node *callNode) :
-      OMR::FunctionCallDataConnector(cg, methodSymRef, callNode) {}
+    FunctionCallData(TR::CodeGenerator *cg, TR::SymbolReference *methodSymRef, TR::Node *callNode,
+        uint8_t *bufferAddress)
+        : OMR::FunctionCallDataConnector(cg, methodSymRef, callNode, bufferAddress)
+    {}
+};
 
-   FunctionCallData(
-         TR::CodeGenerator *cg,
-         TR::SymbolReference *methodSymRef,
-         TR::Node *callNode,
-         uint8_t *bufferAddress) :
-      OMR::FunctionCallDataConnector(cg, methodSymRef, callNode, bufferAddress) {}
-
-   };
-
-}
+} // namespace TR
 
 #endif

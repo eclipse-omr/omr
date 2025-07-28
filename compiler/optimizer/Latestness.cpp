@@ -52,96 +52,83 @@ class Optimizer;
 // choosing only those points that are latest.
 //
 //
-TR_DataFlowAnalysis::Kind TR_Latestness::getKind()
-   {
-   return Latestness;
-   }
+TR_DataFlowAnalysis::Kind TR_Latestness::getKind() { return Latestness; }
 
-TR_Latestness *TR_Latestness::asLatestness()
-   {
-   return this;
-   }
+TR_Latestness *TR_Latestness::asLatestness() { return this; }
 
-int32_t TR_Latestness::getNumberOfBits()
-   {
-   return _delayedness->_numberOfBits;
-   }
-
-
-
+int32_t TR_Latestness::getNumberOfBits() { return _delayedness->_numberOfBits; }
 
 TR_Latestness::TR_Latestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure, bool trace)
-   : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
-   {
-   _delayedness = new (comp->allocator()) TR_Delayedness(comp, optimizer, rootStructure, trace);
+    : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
+{
+    _delayedness = new (comp->allocator()) TR_Delayedness(comp, optimizer, rootStructure, trace);
 
-   _supportedNodesAsArray = _delayedness->_supportedNodesAsArray;
+    _supportedNodesAsArray = _delayedness->_supportedNodesAsArray;
 
-   if (trace)
-      traceMsg(comp, "Starting Latestness\n");
+    if (trace)
+        traceMsg(comp, "Starting Latestness\n");
 
-   TR::CFG *cfg = comp->getFlowGraph();
-   _numberOfNodes = cfg->getNextNodeNumber();
-   TR_ASSERT(_numberOfNodes > 0, "Latestness, node numbers not assigned");
+    TR::CFG *cfg = comp->getFlowGraph();
+    _numberOfNodes = cfg->getNextNodeNumber();
+    TR_ASSERT(_numberOfNodes > 0, "Latestness, node numbers not assigned");
 
-   _numberOfBits = getNumberOfBits();
+    _numberOfBits = getNumberOfBits();
 
-   _inSetInfo = (ContainerType **)trMemory()->allocateStackMemory(_numberOfNodes*sizeof(ContainerType *));
-   for (int32_t i=0;i<_numberOfNodes;i++)
-      allocateContainer(_inSetInfo+i);
+    _inSetInfo = (ContainerType **)trMemory()->allocateStackMemory(_numberOfNodes * sizeof(ContainerType *));
+    for (int32_t i = 0; i < _numberOfNodes; i++)
+        allocateContainer(_inSetInfo + i);
 
-   // Allocate temp bit vectors from block info, since it is local to this analysis
-   ContainerType *intersection, *negation;
-   allocateBlockInfoContainer(&intersection);
-   allocateBlockInfoContainer(&negation);
+    // Allocate temp bit vectors from block info, since it is local to this analysis
+    ContainerType *intersection, *negation;
+    allocateBlockInfoContainer(&intersection);
+    allocateBlockInfoContainer(&negation);
 
-   TR::CFGNode *nextNode;
-   for (nextNode = cfg->getFirstNode(); nextNode; nextNode = nextNode->getNext())
-      {
-      TR_BlockStructure *blockStructure = (toBlock(nextNode))->getStructureOf();
-      if ((blockStructure == NULL) || (blockStructure->getBlock()->getSuccessors().empty() && blockStructure->getBlock()->getExceptionSuccessors().empty()))
-         continue;
+    TR::CFGNode *nextNode;
+    for (nextNode = cfg->getFirstNode(); nextNode; nextNode = nextNode->getNext()) {
+        TR_BlockStructure *blockStructure = (toBlock(nextNode))->getStructureOf();
+        if ((blockStructure == NULL)
+            || (blockStructure->getBlock()->getSuccessors().empty()
+                && blockStructure->getBlock()->getExceptionSuccessors().empty()))
+            continue;
 
-      /////analyzeTreeTopsInBlockStructure(blockStructure);
-      /////analysisInfo->_containsExceptionTreeTop = _containsExceptionTreeTop;
-      initializeInfo(intersection);
-      for (auto succ = nextNode->getSuccessors().begin(); succ != nextNode->getSuccessors().end(); ++succ)
-         {
-         TR::CFGNode *succBlock = (*succ)->getTo();
-         compose(intersection, _delayedness->_inSetInfo[succBlock->getNumber()]);
-         }
-
-      /////if (getAnalysisInfo(blockStructure)->_containsExceptionTreeTop)
-         {
-         for (auto succ = nextNode->getExceptionSuccessors().begin(); succ != nextNode->getExceptionSuccessors().end(); ++succ)
-            {
+        /////analyzeTreeTopsInBlockStructure(blockStructure);
+        /////analysisInfo->_containsExceptionTreeTop = _containsExceptionTreeTop;
+        initializeInfo(intersection);
+        for (auto succ = nextNode->getSuccessors().begin(); succ != nextNode->getSuccessors().end(); ++succ) {
             TR::CFGNode *succBlock = (*succ)->getTo();
             compose(intersection, _delayedness->_inSetInfo[succBlock->getNumber()]);
+        }
+
+        /////if (getAnalysisInfo(blockStructure)->_containsExceptionTreeTop)
+        {
+            for (auto succ = nextNode->getExceptionSuccessors().begin();
+                 succ != nextNode->getExceptionSuccessors().end(); ++succ) {
+                TR::CFGNode *succBlock = (*succ)->getTo();
+                compose(intersection, _delayedness->_inSetInfo[succBlock->getNumber()]);
             }
-         }
+        }
 
-      negation->setAll(_numberOfBits);
-      *negation -= *intersection;
-      copyFromInto(negation, _inSetInfo[blockStructure->getNumber()]);
-      *(_inSetInfo[blockStructure->getNumber()]) |= *(_delayedness->_earliestness->_globalAnticipatability->_localAnticipatability.getDownwardExposedAnalysisInfo(blockStructure->getBlock()->getNumber()));
-      *(_inSetInfo[blockStructure->getNumber()]) &= *(_delayedness->_inSetInfo[blockStructure->getNumber()]);
+        negation->setAll(_numberOfBits);
+        *negation -= *intersection;
+        copyFromInto(negation, _inSetInfo[blockStructure->getNumber()]);
+        *(_inSetInfo[blockStructure->getNumber()]) |= *(
+            _delayedness->_earliestness->_globalAnticipatability->_localAnticipatability.getDownwardExposedAnalysisInfo(
+                blockStructure->getBlock()->getNumber()));
+        *(_inSetInfo[blockStructure->getNumber()]) &= *(_delayedness->_inSetInfo[blockStructure->getNumber()]);
 
-      if (trace)
-         {
-         traceMsg(comp, "\nIn Set of Block : %d\n", blockStructure->getNumber());
-         _inSetInfo[blockStructure->getNumber()]->print(comp);
-         }
-      }
+        if (trace) {
+            traceMsg(comp, "\nIn Set of Block : %d\n", blockStructure->getNumber());
+            _inSetInfo[blockStructure->getNumber()]->print(comp);
+        }
+    }
 
-   if (trace)
-      traceMsg(comp, "\nEnding Latestness\n");
+    if (trace)
+        traceMsg(comp, "\nEnding Latestness\n");
 
-   // Null out info that will not be used by callers
-   _delayedness->_inSetInfo = NULL;
-   _blockAnalysisInfo = NULL;
-   }
-
-
+    // Null out info that will not be used by callers
+    _delayedness->_inSetInfo = NULL;
+    _blockAnalysisInfo = NULL;
+}
 
 // Overrides the implementation in the superclass as this analysis
 // is slightly different from conventional bit vector analyses.
@@ -150,37 +137,30 @@ TR_Latestness::TR_Latestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR
 // This analysis has a trivial analyzeNode(...) method as a result.
 //
 //
-void TR_Latestness::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, ContainerType *)
-   {
-   }
+void TR_Latestness::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, ContainerType *) {}
 
 void TR_Latestness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStructure)
-   {
-   TR::Block *block = blockStructure->getBlock();
-   TR::TreeTop *currentTree = block->getExit();
-   TR::TreeTop *entryTree = block->getEntry();
-   /////copyFromInto(_regularInfo, _outSetInfo[blockStructure->getNumber()]);
-   bool notSeenTreeWithChecks = true;
-   _containsExceptionTreeTop = false;
+{
+    TR::Block *block = blockStructure->getBlock();
+    TR::TreeTop *currentTree = block->getExit();
+    TR::TreeTop *entryTree = block->getEntry();
+    /////copyFromInto(_regularInfo, _outSetInfo[blockStructure->getNumber()]);
+    bool notSeenTreeWithChecks = true;
+    _containsExceptionTreeTop = false;
 
-   while (!(currentTree == entryTree))
-      {
-      if (notSeenTreeWithChecks)
-         {
-         bool currentTreeHasChecks = treeHasChecks(currentTree);
-         if (currentTreeHasChecks)
-            {
-            notSeenTreeWithChecks = false;
-            _containsExceptionTreeTop = true;
-            /////compose(_regularInfo, _exceptionInfo);
-            /////compose(_outSetInfo[blockStructure->getNumber()], _exceptionInfo);
+    while (!(currentTree == entryTree)) {
+        if (notSeenTreeWithChecks) {
+            bool currentTreeHasChecks = treeHasChecks(currentTree);
+            if (currentTreeHasChecks) {
+                notSeenTreeWithChecks = false;
+                _containsExceptionTreeTop = true;
+                /////compose(_regularInfo, _exceptionInfo);
+                /////compose(_outSetInfo[blockStructure->getNumber()], _exceptionInfo);
             }
-         }
-      else
-         break;
+        } else
+            break;
 
-      if (!(currentTree == entryTree))
-         currentTree = currentTree->getPrevTreeTop();
-      }
-
-   }
+        if (!(currentTree == entryTree))
+            currentTree = currentTree->getPrevTreeTop();
+    }
+}

@@ -34,12 +34,11 @@ namespace TR {
 class Compilation;
 }
 
-
-void ia32CodeCacheParameters(int32_t *, void **, int32_t *, int32_t*);
-void amd64CodeCacheParameters(int32_t *, void **, int32_t *, int32_t*);
-void ppcCodeCacheParameters(int32_t *, void **, int32_t *, int32_t*);
-void armCodeCacheParameters(int32_t *, void **, int32_t *, int32_t*);
-void s390zLinux64CodeCacheParameters(int32_t *, void **, int32_t *, int32_t*);
+void ia32CodeCacheParameters(int32_t *, void **, int32_t *, int32_t *);
+void amd64CodeCacheParameters(int32_t *, void **, int32_t *, int32_t *);
+void ppcCodeCacheParameters(int32_t *, void **, int32_t *, int32_t *);
+void armCodeCacheParameters(int32_t *, void **, int32_t *, int32_t *);
+void s390zLinux64CodeCacheParameters(int32_t *, void **, int32_t *, int32_t *);
 
 uint32_t getPPCCacheLineSize();
 
@@ -47,26 +46,22 @@ extern void setDllSlip(const char *codeStart, const char *codeEnd, const char *d
 
 void initializeJitRuntimeHelperTable(char jvmpi);
 
-
 // -----------------------------------------------------------------------------
 
-
-enum TR_CCPreLoadedCode
-   {
-   TR_AllocPrefetch = 0,
+enum TR_CCPreLoadedCode {
+    TR_AllocPrefetch = 0,
 #if defined(TR_TARGET_POWER)
-   TR_ObjAlloc,
-   TR_VariableLenArrayAlloc,
-   TR_ConstLenArrayAlloc,
-   TR_writeBarrier,
-   TR_writeBarrierAndCardMark,
-   TR_cardMark,
-   TR_arrayStoreCHK,
+    TR_ObjAlloc,
+    TR_VariableLenArrayAlloc,
+    TR_ConstLenArrayAlloc,
+    TR_writeBarrier,
+    TR_writeBarrierAndCardMark,
+    TR_cardMark,
+    TR_arrayStoreCHK,
 #endif // TR_TARGET_POWER
-   TR_NonZeroAllocPrefetch,
-   TR_numCCPreLoadedCode
-   };
-
+    TR_NonZeroAllocPrefetch,
+    TR_numCCPreLoadedCode
+};
 
 /**
  * Runtime Helper Table.
@@ -74,36 +69,32 @@ enum TR_CCPreLoadedCode
  * \note the value of these enumerators are used to index into
  *       trampolines
  */
-enum TR_RuntimeHelper
-   {
-#define SETVAL(A,G) A = (G),
+enum TR_RuntimeHelper {
+#define SETVAL(A, G) A = (G),
 #include "runtime/Helpers.inc"
 #undef SETVAL
 
 #if defined(TR_HOST_X86)
 #if defined(TR_HOST_64BIT)
-   TR_numRuntimeHelpers = TR_AMD64numRuntimeHelpers
+    TR_numRuntimeHelpers = TR_AMD64numRuntimeHelpers
 #else
-   TR_numRuntimeHelpers = TR_IA32numRuntimeHelpers
+    TR_numRuntimeHelpers = TR_IA32numRuntimeHelpers
 #endif
 #elif defined(TR_HOST_POWER)
-   TR_numRuntimeHelpers = TR_PPCnumRuntimeHelpers
+    TR_numRuntimeHelpers = TR_PPCnumRuntimeHelpers
 #elif defined(TR_HOST_ARM)
-   TR_numRuntimeHelpers = TR_ARMnumRuntimeHelpers
+    TR_numRuntimeHelpers = TR_ARMnumRuntimeHelpers
 #elif defined(TR_HOST_ARM64)
-   TR_numRuntimeHelpers = TR_ARM64numRuntimeHelpers
+    TR_numRuntimeHelpers = TR_ARM64numRuntimeHelpers
 #elif defined(TR_HOST_S390)
-   TR_numRuntimeHelpers = TR_S390numRuntimeHelpers
+    TR_numRuntimeHelpers = TR_S390numRuntimeHelpers
 #elif defined(TR_HOST_RISCV)
-   TR_numRuntimeHelpers = TR_RISCVnumRuntimeHelpers
+    TR_numRuntimeHelpers = TR_RISCVnumRuntimeHelpers
 #endif
+};
 
-   };
-
-class TR_RuntimeHelperTable
-   {
+class TR_RuntimeHelperTable {
 public:
-
     static const intptr_t INVALID_FUNCTION_POINTER = 0xdeadb00f;
 
     /**
@@ -112,103 +103,98 @@ public:
      * Looks up the given helper table and returns the function pointer if it's a function index.
      * For constant number entries, return INVALID_FUNCTION_POINTER.
      */
-    void* getFunctionPointer(TR_RuntimeHelper h);
+    void *getFunctionPointer(TR_RuntimeHelper h);
 
-   /**
-    * \brief
-    *
-    * For helper functions, this API returns the raw entry address. If the runtime
-    * helper's corresponding linkage is not a function, return the helper as data.
-    *
-    */
-   void* getFunctionEntryPointOrConst(TR_RuntimeHelper h);
+    /**
+     * \brief
+     *
+     * For helper functions, this API returns the raw entry address. If the runtime
+     * helper's corresponding linkage is not a function, return the helper as data.
+     *
+     */
+    void *getFunctionEntryPointOrConst(TR_RuntimeHelper h);
 
-   /**
-    * \brief
-    *
-    * Returns the linkage type of the given helper index. The linkage types are set during
-    * the JIT initilization phase.
-    */
-   TR_LinkageConventions getLinkage(TR_RuntimeHelper h)
-      {
-      return h < TR_numRuntimeHelpers ? _linkage[h] : TR_None;
-      }
+    /**
+     * \brief
+     *
+     * Returns the linkage type of the given helper index. The linkage types are set during
+     * the JIT initilization phase.
+     */
+    TR_LinkageConventions getLinkage(TR_RuntimeHelper h) { return h < TR_numRuntimeHelpers ? _linkage[h] : TR_None; }
 
-   /**
-    * \brief
-    *
-    * Sets the address and linkage convention.
-    *
-    * Linkage convention is essential when calling a helper
-    * For example, on X86, there are private linkage, System V ABI, fastcall, cdecl, etc.
-    */
-   void setAddress(TR_RuntimeHelper h, void * a, TR_LinkageConventions lc = TR_Helper)
-      {
-      _helpers[h] = a;
-      _linkage[h] = lc;
-      }
+    /**
+     * \brief
+     *
+     * Sets the address and linkage convention.
+     *
+     * Linkage convention is essential when calling a helper
+     * For example, on X86, there are private linkage, System V ABI, fastcall, cdecl, etc.
+     */
+    void setAddress(TR_RuntimeHelper h, void *a, TR_LinkageConventions lc = TR_Helper)
+    {
+        _helpers[h] = a;
+        _linkage[h] = lc;
+    }
 
-   /**
-    * \brief
-    *
-    * Stores the given pointer as a helper constant.
-    */
-   void setConstant(TR_RuntimeHelper h, void * a)
-      {
-      _helpers[h] = a;
-      _linkage[h] = TR_None;
-      }
+    /**
+     * \brief
+     *
+     * Stores the given pointer as a helper constant.
+     */
+    void setConstant(TR_RuntimeHelper h, void *a)
+    {
+        _helpers[h] = a;
+        _linkage[h] = TR_None;
+    }
 
 private:
-   /**
-    * \brief
-    * Translate address is to allow converting a C function pointer
-    * to an address callable by assembly.
-    */
-   void* translateAddress(void* a);
+    /**
+     * \brief
+     * Translate address is to allow converting a C function pointer
+     * to an address callable by assembly.
+     */
+    void *translateAddress(void *a);
 
-   void*                 _helpers[TR_numRuntimeHelpers];
-   TR_LinkageConventions _linkage[TR_numRuntimeHelpers];
-   };
+    void *_helpers[TR_numRuntimeHelpers];
+    TR_LinkageConventions _linkage[TR_numRuntimeHelpers];
+};
 
 extern TR_RuntimeHelperTable runtimeHelpers;
-
 
 /**
  * \brief
  * Returns the value to which the runtime helper index corresponds to.
  * The values stored in the helper table are either entry point addresses or constant values, depending on the
  * linkage type.
-*/
-inline void*                 runtimeHelperValue(TR_RuntimeHelper h) { return runtimeHelpers.getFunctionEntryPointOrConst(h); }
-inline TR_LinkageConventions runtimeHelperLinkage(TR_RuntimeHelper h) { return runtimeHelpers.getLinkage(h); }
+ */
+inline void *runtimeHelperValue(TR_RuntimeHelper h) { return runtimeHelpers.getFunctionEntryPointOrConst(h); }
 
+inline TR_LinkageConventions runtimeHelperLinkage(TR_RuntimeHelper h) { return runtimeHelpers.getLinkage(h); }
 
 // -----------------------------------------------------------------------------
 
 // Relocation flags and masks
-typedef enum
-   {
-   RELOCATION_TYPE_EIP_OFFSET            = 0x1,
-   RELOCATION_TYPE_WIDE_OFFSET           = 0x2,
+typedef enum {
+    RELOCATION_TYPE_EIP_OFFSET = 0x1,
+    RELOCATION_TYPE_WIDE_OFFSET = 0x2,
 
-   ITERATED_RELOCATION_TYPE_ORDERED_PAIR = 0x4,
+    ITERATED_RELOCATION_TYPE_ORDERED_PAIR = 0x4,
 
-   // ITERATED_RELOCATION_TYPE_ORDERED_PAIR is not stored in the binary template
-   // as the isOrderedPairRelocation API is used to determine whether a given
-   // relocation is an Orderd Pair Relocation or not.
-   RELOCATION_CROSS_PLATFORM_FLAGS_MASK  = (RELOCATION_TYPE_EIP_OFFSET | RELOCATION_TYPE_WIDE_OFFSET),
+    // ITERATED_RELOCATION_TYPE_ORDERED_PAIR is not stored in the binary template
+    // as the isOrderedPairRelocation API is used to determine whether a given
+    // relocation is an Orderd Pair Relocation or not.
+    RELOCATION_CROSS_PLATFORM_FLAGS_MASK = (RELOCATION_TYPE_EIP_OFFSET | RELOCATION_TYPE_WIDE_OFFSET),
 
-   RELOCATION_RELOC_FLAGS_MASK           = (~RELOCATION_CROSS_PLATFORM_FLAGS_MASK),
-   RELOCATION_RELOC_FLAGS_SHIFT          = 4,
+    RELOCATION_RELOC_FLAGS_MASK = (~RELOCATION_CROSS_PLATFORM_FLAGS_MASK),
+    RELOCATION_RELOC_FLAGS_SHIFT = 4,
 
-   } TR_RelocationFlagUtilities;
+} TR_RelocationFlagUtilities;
 
 // These macros are intended for use when HI_VALUE and LO_VALUE will be recombined after LO_VALUE is sign-extended
 // (e.g. when LO_VALUE is used with an instruction that takes a signed 16-bit operand).
 // In this case we have to adjust HI_VALUE now so that the original value will be obtained once the two are recombined.
-#define HI_VALUE(x)               (((x)>>16) + (((x)>>15)&1))
-#define LO_VALUE(x)               ((int16_t)(x))
+#define HI_VALUE(x) (((x) >> 16) + (((x) >> 15) & 1))
+#define LO_VALUE(x) ((int16_t)(x))
 
 /*
  * WARNING: If you add a new relocation type, then you need to handle it
@@ -218,200 +204,188 @@ typedef enum
  */
 
 /*
- * Define some internal temporary types for use during compilation which will get converted to actual relocation types later on
- * (purposely all capital to differentiate from actual relo types and larger than actual relocation type so we catch any incorrect
- * use that treats the temp type as actual relocation type)
+ * Define some internal temporary types for use during compilation which will get converted to actual relocation types
+ * later on (purposely all capital to differentiate from actual relo types and larger than actual relocation type so we
+ * catch any incorrect use that treats the temp type as actual relocation type)
  */
-enum
-   {
-   TR_HEAP_BASE = 100,
-   TR_HEAP_TOP = 101,
-   TR_HEAP_BASE_FOR_BARRIER_RANGE = 102,
-   TR_ACTIVE_CARD_TABLE_BASE = 103,
-   TR_HEAP_SIZE_FOR_BARRIER_RANGE = 104
-   };
+enum {
+    TR_HEAP_BASE = 100,
+    TR_HEAP_TOP = 101,
+    TR_HEAP_BASE_FOR_BARRIER_RANGE = 102,
+    TR_ACTIVE_CARD_TABLE_BASE = 103,
+    TR_HEAP_SIZE_FOR_BARRIER_RANGE = 104
+};
 
 /* actual relocation types */
-typedef enum
-   {
-   TR_NoRelocation                        = -1,
-   TR_ConstantPool                        = 0,
-   TR_HelperAddress                       = 1,
-   TR_RelativeMethodAddress               = 2,
-   TR_AbsoluteMethodAddress               = 3,
-   TR_DataAddress                         = 4,
-   TR_ClassObject                         = 5,
-   TR_MethodObject                        = 6,
-   TR_InterfaceObject                     = 7,
-   TR_AbsoluteHelperAddress               = 8,
-   TR_FixedSequenceAddress                = 9,
-   TR_FixedSequenceAddress2               = 10,
-   TR_JNIVirtualTargetAddress             = 11,
-   TR_JNIStaticTargetAddress              = 12,
-   TR_ArrayCopyHelper                     = 13,
-   TR_ArrayCopyToc                        = 14,
-   TR_BodyInfoAddress                     = 15,
-   TR_Thunks                              = 16,
-   TR_StaticRamMethodConst                = 17,
-   TR_Trampolines                         = 18,
-   TR_PicTrampolines                      = 19,
-   TR_CheckMethodEnter                    = 20,
-   TR_RamMethod                           = 21,
-   TR_RamMethodSequence                   = 22,
-   TR_RamMethodSequenceReg                = 23,
-   TR_VerifyClassObjectForAlloc           = 24,
-   TR_ConstantPoolOrderedPair             = 25,
-   TR_AbsoluteMethodAddressOrderedPair    = 26,
-   TR_VerifyRefArrayForAlloc              = 27,
-   TR_J2IThunks                           = 28,
-   TR_GlobalValue                         = 29,
-   TR_BodyInfoAddressLoad                 = 30,
-   TR_ValidateInstanceField               = 31,
-   TR_InlinedStaticMethodWithNopGuard     = 32,
-   TR_InlinedSpecialMethodWithNopGuard    = 33,
-   TR_InlinedVirtualMethodWithNopGuard    = 34,
-   TR_InlinedInterfaceMethodWithNopGuard  = 35,
-   TR_SpecialRamMethodConst               = 36,
-   TR_InlinedHCRMethod                    = 37,
-   TR_ValidateStaticField                 = 38,
-   TR_ValidateClass                       = 39,
-   TR_ClassAddress                        = 40,
-   TR_HCR                                 = 41,
-   TR_ProfiledMethodGuardRelocation       = 42,
-   TR_ProfiledClassGuardRelocation        = 43,
-   TR_HierarchyGuardRelocation            = 44,
-   TR_AbstractGuardRelocation             = 45,
-   TR_ProfiledInlinedMethodRelocation     = 46,
-   TR_MethodPointer                       = 47,
-   TR_ClassPointer                        = 48,
-   TR_CheckMethodExit                     = 49,
-   TR_ValidateArbitraryClass              = 50,
-   TR_EmitClass                           = 51,
-   TR_JNISpecialTargetAddress             = 52,
-   TR_VirtualRamMethodConst               = 53,
-   TR_InlinedInterfaceMethod              = 54,
-   TR_InlinedVirtualMethod                = 55,
-   TR_NativeMethodAbsolute                = 56,
-   TR_NativeMethodRelative                = 57,
-   TR_ArbitraryClassAddress               = 58,
-   TR_DebugCounter                        = 59,
-   TR_ClassUnloadAssumption               = 60, // this should not be used in AOT relocations
-   TR_J2IVirtualThunkPointer              = 61,
-   TR_InlinedAbstractMethodWithNopGuard   = 62,
-   TR_ValidateRootClass                   = 63,
-   TR_ValidateClassByName                 = 64,
-   TR_ValidateProfiledClass               = 65,
-   TR_ValidateClassFromCP                 = 66,
-   TR_ValidateDefiningClassFromCP         = 67,
-   TR_ValidateStaticClassFromCP           = 68,
-   TR_ValidateClassFromMethod             = 69,
-   TR_ValidateComponentClassFromArrayClass= 70,
-   TR_ValidateArrayClassFromComponentClass= 71,
-   TR_ValidateSuperClassFromClass         = 72,
-   TR_ValidateClassInstanceOfClass        = 73,
-   TR_ValidateSystemClassByName           = 74,
-   TR_ValidateClassFromITableIndexCP      = 75,
-   TR_ValidateDeclaringClassFromFieldOrStatic=76,
-   TR_ValidateClassClass                  = 77,
-   TR_ValidateConcreteSubClassFromClass   = 78,
-   TR_ValidateClassChain                  = 79,
-   TR_ValidateRomClass                    = 80,
-   TR_ValidatePrimitiveClass              = 81,
-   TR_ValidateMethodFromInlinedSite       = 82,
-   TR_ValidateMethodByName                = 83,
-   TR_ValidateMethodFromClass             = 84,
-   TR_ValidateStaticMethodFromCP          = 85,
-   TR_ValidateSpecialMethodFromCP         = 86,
-   TR_ValidateVirtualMethodFromCP         = 87,
-   TR_ValidateVirtualMethodFromOffset     = 88,
-   TR_ValidateInterfaceMethodFromCP       = 89,
-   TR_ValidateMethodFromClassAndSig       = 90,
-   TR_ValidateStackWalkerMaySkipFramesRecord=91,
-   TR_ValidateArrayClassFromJavaVM        = 92,
-   TR_ValidateClassInfoIsInitialized      = 93,
-   TR_ValidateMethodFromSingleImplementer = 94,
-   TR_ValidateMethodFromSingleInterfaceImplementer = 95,
-   TR_ValidateMethodFromSingleAbstractImplementer = 96,
-   TR_ValidateImproperInterfaceMethodFromCP=97,
-   TR_SymbolFromManager                   = 98,
-   TR_MethodCallAddress                   = 99,
-   TR_DiscontiguousSymbolFromManager      = 100,
-   TR_ResolvedTrampolines                 = 101,
-   TR_BlockFrequency                      = 102,
-   TR_RecompQueuedFlag                    = 103,
-   TR_InlinedStaticMethod                 = 104,
-   TR_InlinedSpecialMethod                = 105,
-   TR_InlinedAbstractMethod               = 106,
-   TR_Breakpoint                          = 107,
-   TR_InlinedMethodPointer                = 108,
-   TR_VMINLMethod                         = 109,
-   TR_ValidateJ2IThunkFromMethod          = 110,
-   TR_StaticDefaultValueInstance          = 111,
-   TR_ValidateIsClassVisible              = 112,
-   TR_CatchBlockCounter                   = 113,
-   TR_StartPC                             = 114,
-   TR_MethodEnterExitHookAddress          = 115,
-   TR_ValidateDynamicMethodFromCallsiteIndex = 116,
-   TR_ValidateHandleMethodFromCPIndex     = 117,
-   TR_CallsiteTableEntryAddress           = 118,
-   TR_MethodTypeTableEntryAddress         = 119,
-   TR_NumExternalRelocationKinds          = 120,
-   TR_ExternalRelocationTargetKindMask    = 0xff,
-   } TR_ExternalRelocationTargetKind;
-
+typedef enum {
+    TR_NoRelocation = -1,
+    TR_ConstantPool = 0,
+    TR_HelperAddress = 1,
+    TR_RelativeMethodAddress = 2,
+    TR_AbsoluteMethodAddress = 3,
+    TR_DataAddress = 4,
+    TR_ClassObject = 5,
+    TR_MethodObject = 6,
+    TR_InterfaceObject = 7,
+    TR_AbsoluteHelperAddress = 8,
+    TR_FixedSequenceAddress = 9,
+    TR_FixedSequenceAddress2 = 10,
+    TR_JNIVirtualTargetAddress = 11,
+    TR_JNIStaticTargetAddress = 12,
+    TR_ArrayCopyHelper = 13,
+    TR_ArrayCopyToc = 14,
+    TR_BodyInfoAddress = 15,
+    TR_Thunks = 16,
+    TR_StaticRamMethodConst = 17,
+    TR_Trampolines = 18,
+    TR_PicTrampolines = 19,
+    TR_CheckMethodEnter = 20,
+    TR_RamMethod = 21,
+    TR_RamMethodSequence = 22,
+    TR_RamMethodSequenceReg = 23,
+    TR_VerifyClassObjectForAlloc = 24,
+    TR_ConstantPoolOrderedPair = 25,
+    TR_AbsoluteMethodAddressOrderedPair = 26,
+    TR_VerifyRefArrayForAlloc = 27,
+    TR_J2IThunks = 28,
+    TR_GlobalValue = 29,
+    TR_BodyInfoAddressLoad = 30,
+    TR_ValidateInstanceField = 31,
+    TR_InlinedStaticMethodWithNopGuard = 32,
+    TR_InlinedSpecialMethodWithNopGuard = 33,
+    TR_InlinedVirtualMethodWithNopGuard = 34,
+    TR_InlinedInterfaceMethodWithNopGuard = 35,
+    TR_SpecialRamMethodConst = 36,
+    TR_InlinedHCRMethod = 37,
+    TR_ValidateStaticField = 38,
+    TR_ValidateClass = 39,
+    TR_ClassAddress = 40,
+    TR_HCR = 41,
+    TR_ProfiledMethodGuardRelocation = 42,
+    TR_ProfiledClassGuardRelocation = 43,
+    TR_HierarchyGuardRelocation = 44,
+    TR_AbstractGuardRelocation = 45,
+    TR_ProfiledInlinedMethodRelocation = 46,
+    TR_MethodPointer = 47,
+    TR_ClassPointer = 48,
+    TR_CheckMethodExit = 49,
+    TR_ValidateArbitraryClass = 50,
+    TR_EmitClass = 51,
+    TR_JNISpecialTargetAddress = 52,
+    TR_VirtualRamMethodConst = 53,
+    TR_InlinedInterfaceMethod = 54,
+    TR_InlinedVirtualMethod = 55,
+    TR_NativeMethodAbsolute = 56,
+    TR_NativeMethodRelative = 57,
+    TR_ArbitraryClassAddress = 58,
+    TR_DebugCounter = 59,
+    TR_ClassUnloadAssumption = 60, // this should not be used in AOT relocations
+    TR_J2IVirtualThunkPointer = 61,
+    TR_InlinedAbstractMethodWithNopGuard = 62,
+    TR_ValidateRootClass = 63,
+    TR_ValidateClassByName = 64,
+    TR_ValidateProfiledClass = 65,
+    TR_ValidateClassFromCP = 66,
+    TR_ValidateDefiningClassFromCP = 67,
+    TR_ValidateStaticClassFromCP = 68,
+    TR_ValidateClassFromMethod = 69,
+    TR_ValidateComponentClassFromArrayClass = 70,
+    TR_ValidateArrayClassFromComponentClass = 71,
+    TR_ValidateSuperClassFromClass = 72,
+    TR_ValidateClassInstanceOfClass = 73,
+    TR_ValidateSystemClassByName = 74,
+    TR_ValidateClassFromITableIndexCP = 75,
+    TR_ValidateDeclaringClassFromFieldOrStatic = 76,
+    TR_ValidateClassClass = 77,
+    TR_ValidateConcreteSubClassFromClass = 78,
+    TR_ValidateClassChain = 79,
+    TR_ValidateRomClass = 80,
+    TR_ValidatePrimitiveClass = 81,
+    TR_ValidateMethodFromInlinedSite = 82,
+    TR_ValidateMethodByName = 83,
+    TR_ValidateMethodFromClass = 84,
+    TR_ValidateStaticMethodFromCP = 85,
+    TR_ValidateSpecialMethodFromCP = 86,
+    TR_ValidateVirtualMethodFromCP = 87,
+    TR_ValidateVirtualMethodFromOffset = 88,
+    TR_ValidateInterfaceMethodFromCP = 89,
+    TR_ValidateMethodFromClassAndSig = 90,
+    TR_ValidateStackWalkerMaySkipFramesRecord = 91,
+    TR_ValidateArrayClassFromJavaVM = 92,
+    TR_ValidateClassInfoIsInitialized = 93,
+    TR_ValidateMethodFromSingleImplementer = 94,
+    TR_ValidateMethodFromSingleInterfaceImplementer = 95,
+    TR_ValidateMethodFromSingleAbstractImplementer = 96,
+    TR_ValidateImproperInterfaceMethodFromCP = 97,
+    TR_SymbolFromManager = 98,
+    TR_MethodCallAddress = 99,
+    TR_DiscontiguousSymbolFromManager = 100,
+    TR_ResolvedTrampolines = 101,
+    TR_BlockFrequency = 102,
+    TR_RecompQueuedFlag = 103,
+    TR_InlinedStaticMethod = 104,
+    TR_InlinedSpecialMethod = 105,
+    TR_InlinedAbstractMethod = 106,
+    TR_Breakpoint = 107,
+    TR_InlinedMethodPointer = 108,
+    TR_VMINLMethod = 109,
+    TR_ValidateJ2IThunkFromMethod = 110,
+    TR_StaticDefaultValueInstance = 111,
+    TR_ValidateIsClassVisible = 112,
+    TR_CatchBlockCounter = 113,
+    TR_StartPC = 114,
+    TR_MethodEnterExitHookAddress = 115,
+    TR_ValidateDynamicMethodFromCallsiteIndex = 116,
+    TR_ValidateHandleMethodFromCPIndex = 117,
+    TR_CallsiteTableEntryAddress = 118,
+    TR_MethodTypeTableEntryAddress = 119,
+    TR_NumExternalRelocationKinds = 120,
+    TR_ExternalRelocationTargetKindMask = 0xff,
+} TR_ExternalRelocationTargetKind;
 
 namespace TR {
 
-enum SymbolType
-   {
-   typeOpaque,
-   typeClass,
-   typeMethod,
-   };
+enum SymbolType {
+    typeOpaque,
+    typeClass,
+    typeMethod,
+};
 
-}
+} // namespace TR
 
 typedef struct TR_RelocationRecordInformation {
-   uintptr_t data1;
-   uintptr_t data2;
-   uintptr_t data3;
-   uintptr_t data4;
-   uintptr_t data5;
+    uintptr_t data1;
+    uintptr_t data2;
+    uintptr_t data3;
+    uintptr_t data4;
+    uintptr_t data5;
 } TR_RelocationRecordInformation;
 
+typedef enum {
+    orderedPairSequence1 = 1,
+    orderedPairSequence2 = 2
+} TR_OrderedPairSequenceKind;
 
-
-typedef enum
-   {
-   orderedPairSequence1 = 1,
-   orderedPairSequence2 = 2
-   } TR_OrderedPairSequenceKind;
-
-typedef enum
-   {
-   fixedSequence1 = 1,
-   fixedSequence2 = 2,
-   fixedSequence3 = 3,
-   fixedSequence4 = 4,
-   fixedSequence5 = 5,
-   fixedSequence6 = 6
-   } TR_FixedSequenceKind;
-
-
+typedef enum {
+    fixedSequence1 = 1,
+    fixedSequence2 = 2,
+    fixedSequence3 = 3,
+    fixedSequence4 = 4,
+    fixedSequence5 = 5,
+    fixedSequence6 = 6
+} TR_FixedSequenceKind;
 
 // Multi Code Cache Routine for S390 for checking whether an entry point is within reach of a RIL instruction.
 // In RIL instruction, the relative address is specified in number of half words.
-#define CHECK_32BIT_TRAMPOLINE_RANGE(x,rip)  (((intptr_t)(x) == (intptr_t)(rip) + ((intptr_t)((int32_t)(((intptr_t)(x) - (intptr_t)(rip))/2)))*2) && (x % 2 == 0))
+#define CHECK_32BIT_TRAMPOLINE_RANGE(x, rip)                                                                 \
+    (((intptr_t)(x) == (intptr_t)(rip) + ((intptr_t)((int32_t)(((intptr_t)(x) - (intptr_t)(rip)) / 2))) * 2) \
+        && (x % 2 == 0))
 
 // Routine to check trampoline range for x86-64
-#define IS_32BIT_RIP_JUMP(x,rip)  ((intptr_t)(x) == (intptr_t)(rip) + (int32_t)((intptr_t)(x) - (intptr_t)(rip)))
+#define IS_32BIT_RIP_JUMP(x, rip) ((intptr_t)(x) == (intptr_t)(rip) + (int32_t)((intptr_t)(x) - (intptr_t)(rip)))
 
 // Branch limit for PPC and ARM ARM64
-#define BRANCH_FORWARD_LIMIT      (0x01fffffc)
-#define BRANCH_BACKWARD_LIMIT     ((int32_t)0xfe000000)
-
-
-
-
+#define BRANCH_FORWARD_LIMIT (0x01fffffc)
+#define BRANCH_BACKWARD_LIMIT ((int32_t)0xfe000000)
 
 #endif

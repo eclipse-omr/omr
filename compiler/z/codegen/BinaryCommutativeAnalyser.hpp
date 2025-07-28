@@ -32,101 +32,92 @@ class CodeGenerator;
 class LabelSymbol;
 class Node;
 class Register;
-}
+} // namespace TR
 
-#define EvalChild1  0x01
-#define EvalChild2  0x02
-#define CopyReg1    0x04
-#define CopyReg2    0x08
-#define OpReg1Reg2  0x10
-#define OpReg2Reg1  0x20
-#define OpReg1Mem2  0x40
-#define OpReg2Mem1  0x80
-#define OpReg3Mem1  0x001
-#define OpReg3Mem2  0x002
+#define EvalChild1 0x01
+#define EvalChild2 0x02
+#define CopyReg1 0x04
+#define CopyReg2 0x08
+#define OpReg1Reg2 0x10
+#define OpReg2Reg1 0x20
+#define OpReg1Mem2 0x40
+#define OpReg2Mem1 0x80
+#define OpReg3Mem1 0x001
+#define OpReg3Mem2 0x002
 #define InvalidBCACEMap 0x004
 
-class TR_S390BinaryCommutativeAnalyser : public TR_Analyser
-   {
-   static const uint8_t actionMap[NUM_ACTIONS];
-   static const uint16_t clobEvalActionMap[NUM_ACTIONS];
+class TR_S390BinaryCommutativeAnalyser : public TR_Analyser {
+    static const uint8_t actionMap[NUM_ACTIONS];
+    static const uint16_t clobEvalActionMap[NUM_ACTIONS];
 
-   TR::CodeGenerator    *_cg;
-   bool                 reversedOperands;
+    TR::CodeGenerator *_cg;
+    bool reversedOperands;
 
-   public:
+public:
+    TR_S390BinaryCommutativeAnalyser(TR::CodeGenerator *cg)
+        : _cg(cg)
+        , reversedOperands(false)
+    {}
 
-   TR_S390BinaryCommutativeAnalyser(TR::CodeGenerator *cg)
-      : _cg(cg),
-        reversedOperands(false)
-      {}
+    void genericAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode, TR::InstOpCode::Mnemonic copyOpCode,
+        bool nonClobberingDestination = false, TR::LabelSymbol *targetLabel = NULL,
+        TR::InstOpCode::S390BranchCondition fBranchOpCond = TR::InstOpCode::COND_NOP,
+        TR::InstOpCode::S390BranchCondition rBranchOpCond = TR::InstOpCode::COND_NOP);
 
+    void integerAddAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode, TR::InstOpCode::Mnemonic copyOpCode);
 
-   void genericAnalyser(TR::Node       *root,
-                        TR::InstOpCode::Mnemonic regToRegOpCode,
-                        TR::InstOpCode::Mnemonic memToRegOpCode,
-                        TR::InstOpCode::Mnemonic copyOpCode,
-                        bool           nonClobberingDestination = false,
-                        TR::LabelSymbol *targetLabel = NULL,
-                        TR::InstOpCode::S390BranchCondition fBranchOpCond = TR::InstOpCode::COND_NOP,
-                        TR::InstOpCode::S390BranchCondition rBranchOpCond = TR::InstOpCode::COND_NOP);
+    void floatBinaryCommutativeAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode)
+    {
+        genericAnalyser(root, regToRegOpCode, memToRegOpCode, TR::InstOpCode::LER);
+    }
 
-   void integerAddAnalyser(TR::Node       *root,
-                           TR::InstOpCode::Mnemonic regToRegOpCode,
-                           TR::InstOpCode::Mnemonic memToRegOpCode,
-                           TR::InstOpCode::Mnemonic copyOpCode);
+    void doubleBinaryCommutativeAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode)
+    {
+        genericAnalyser(root, regToRegOpCode, memToRegOpCode, TR::InstOpCode::LDR);
+    }
 
-   void floatBinaryCommutativeAnalyser(TR::Node       *root,
-                        TR::InstOpCode::Mnemonic regToRegOpCode,
-                        TR::InstOpCode::Mnemonic memToRegOpCode)
-   {
-   genericAnalyser(root,regToRegOpCode,memToRegOpCode,TR::InstOpCode::LER);
-   }
+    bool getReversedOperands() { return reversedOperands; }
 
-   void doubleBinaryCommutativeAnalyser(TR::Node       *root,
-                        TR::InstOpCode::Mnemonic regToRegOpCode,
-                        TR::InstOpCode::Mnemonic memToRegOpCode)
-   {
-   genericAnalyser(root,regToRegOpCode,memToRegOpCode,TR::InstOpCode::LDR);
-   }
+    bool setReversedOperands(bool b) { return reversedOperands = b; }
 
-   bool getReversedOperands()       {return reversedOperands;}
-   bool setReversedOperands(bool b) {return reversedOperands = b;}
-   bool notReversedOperands()       {return reversedOperands = ((reversedOperands == false) ? true : false);}
+    bool notReversedOperands() { return reversedOperands = ((reversedOperands == false) ? true : false); }
 
-   bool getEvalChild1() {return (actionMap[getInputs()] & EvalChild1) ? true : false;}
-   bool getEvalChild2() {return (actionMap[getInputs()] & EvalChild2) ? true : false;}
+    bool getEvalChild1() { return (actionMap[getInputs()] & EvalChild1) ? true : false; }
 
-   bool conversionIsRemoved(TR::Node * root, TR::Node * &child);
+    bool getEvalChild2() { return (actionMap[getInputs()] & EvalChild2) ? true : false; }
 
-   bool getCopyReg1();
+    bool conversionIsRemoved(TR::Node *root, TR::Node *&child);
 
-   bool getCopyReg2();
+    bool getCopyReg1();
 
-   bool getOpReg1Reg2();
+    bool getCopyReg2();
 
-   bool getOpReg2Reg1();
+    bool getOpReg1Reg2();
 
-   bool getOpReg1Mem2();
+    bool getOpReg2Reg1();
 
-   bool getOpReg3Mem2();
+    bool getOpReg1Mem2();
 
-   bool getOpReg2Mem1();
+    bool getOpReg3Mem2();
 
-   bool getOpReg3Mem1();
+    bool getOpReg2Mem1();
 
-   bool getCopyRegs();
+    bool getOpReg3Mem1();
 
-   bool getInvalid();
+    bool getCopyRegs();
 
-   void remapInputs(TR::Node *, TR::Register *, TR::Node *, TR::Register *, bool nonClobberingDestination = false);
+    bool getInvalid();
 
-   TR::CodeGenerator *cg() {return _cg;}
+    void remapInputs(TR::Node *, TR::Register *, TR::Node *, TR::Register *, bool nonClobberingDestination = false);
 
-   private:
-   TR::Register* allocateAddSubRegister(TR::Node* node, TR::Register* src1Reg);
+    TR::CodeGenerator *cg() { return _cg; }
 
-
-   };
+private:
+    TR::Register *allocateAddSubRegister(TR::Node *node, TR::Register *src1Reg);
+};
 
 #endif

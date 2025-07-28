@@ -32,11 +32,12 @@
 #include "infra/deque.hpp"
 
 class TR_FrontEnd;
+
 namespace TR {
 class CFGEdge;
 class ResolvedMethodSymbol;
-}
-template <class T> class ListElement;
+} // namespace TR
+template<class T> class ListElement;
 
 // Calculate the dominator tree. This uses the Lengauer and Tarjan algorithm
 // described in Muchnick.
@@ -49,121 +50,128 @@ template <class T> class ListElement;
 // in the array is a dummy node that is used as the root for the forest.
 //
 
-class TR_Dominators
-   {
-   public:
-   TR_ALLOC(TR_Memory::Dominators)
+class TR_Dominators {
+public:
+    TR_ALLOC(TR_Memory::Dominators)
 
-   TR_Dominators(TR::Compilation *, bool post = false);
-   TR::Block       *getDominator(TR::Block *);
-   int             dominates(TR::Block *block, TR::Block *other);
+    TR_Dominators(TR::Compilation *, bool post = false);
+    TR::Block *getDominator(TR::Block *);
+    int dominates(TR::Block *block, TR::Block *other);
 
-   TR::Compilation * comp()         { return _compilation; }
-   bool trace() { return _trace; }
+    TR::Compilation *comp() { return _compilation; }
 
-   protected:
+    bool trace() { return _trace; }
 
-   typedef TR_BitVector BitVector;
+protected:
+    typedef TR_BitVector BitVector;
 
-   private:
+private:
+    struct BBInfo {
+        explicit BBInfo(TR::Region &region)
+            : _bucket(region)
+            , _block(NULL)
+            , _parent(-1)
+            , _idom(-1)
+            , _ancestor(-1)
+            , _label(-1)
+            , _child(-1)
+            , _sdno(-1)
+            , _size(0)
+        {}
 
-   struct BBInfo
-      {
-      explicit BBInfo(TR::Region &region) :
-         _bucket(region), _block(NULL), _parent(-1), _idom(-1), _ancestor(-1), _label(-1), _child(-1), _sdno(-1), _size(0)
-         {}
-      TR::Block     *_block;     // The block whose info this is
-      int32_t       _parent;    // The parent in the depth-first spanning tree
-      int32_t       _idom;      // The immediate dominator for this block
-      int32_t       _ancestor;  // The ancestor in the forest
-      int32_t       _label;     // The node in the ancestor chain with minimal
-                                // semidominator number
-      BitVector _bucket;    // The blocks whose semidominator is this node
-      int32_t       _child;
+        TR::Block *_block; // The block whose info this is
+        int32_t _parent; // The parent in the depth-first spanning tree
+        int32_t _idom; // The immediate dominator for this block
+        int32_t _ancestor; // The ancestor in the forest
+        int32_t _label; // The node in the ancestor chain with minimal
+                        // semidominator number
+        BitVector _bucket; // The blocks whose semidominator is this node
+        int32_t _child;
 
-      int32_t       _sdno;      // The index of the semidominator for this block
-      int32_t       _size;      // size and child are used for balancing the forest
+        int32_t _sdno; // The index of the semidominator for this block
+        int32_t _size; // size and child are used for balancing the forest
 
-      int32_t getIndex() {return _block?_block->getNumber()+1:-1;}
+        int32_t getIndex() { return _block ? _block->getNumber() + 1 : -1; }
 #ifdef DEBUG
-      void print(TR_FrontEnd *fe, TR::FILE *pOutFile);
+        void print(TR_FrontEnd *fe, TR::FILE *pOutFile);
 #else
-      void print(TR_FrontEnd *fe, TR::FILE *pOutFile) { }
+        void print(TR_FrontEnd *fe, TR::FILE *pOutFile) {}
 #endif
-      };
+    };
 
-   struct StackInfo
-      {
-      typedef TR::CFGEdgeList list_type;
-      typedef TR::CFGEdgeList::iterator iterator_type;
-      StackInfo(list_type &list, iterator_type position, int32_t parent) :
-         list(list),
-         listPosition(position),
-         parent(parent)
-         {
-         }
+    struct StackInfo {
+        typedef TR::CFGEdgeList list_type;
+        typedef TR::CFGEdgeList::iterator iterator_type;
 
-      StackInfo(const StackInfo &other) :
-         list(other.list),
-         listPosition(other.listPosition),
-         parent(other.parent)
-         {
-         }
+        StackInfo(list_type &list, iterator_type position, int32_t parent)
+            : list(list)
+            , listPosition(position)
+            , parent(parent)
+        {}
 
-      list_type &list;
-      iterator_type listPosition;
-      int32_t parent;
-      };
+        StackInfo(const StackInfo &other)
+            : list(other.list)
+            , listPosition(other.listPosition)
+            , parent(other.parent)
+        {}
 
-   BBInfo& getInfo(int32_t index) {return _info[index];}
-   int32_t blockNumber(int32_t index) {return _info[index]._block->getNumber();}
+        list_type &list;
+        iterator_type listPosition;
+        int32_t parent;
+    };
 
-   void    findDominators(TR::Block *start);
-   void    initialize(TR::Block *block, BBInfo *parent);
-   int32_t eval(int32_t);
-   void    compress(int32_t);
-   void    link(int32_t, int32_t);
+    BBInfo &getInfo(int32_t index) { return _info[index]; }
 
-   protected:
-   TR::Region _region;
-   public:
-   TR::deque<int32_t, TR::Region&> _dfNumbers;
-   private:
-   TR::Compilation *_compilation;
-   TR::deque<BBInfo, TR::Region&>  _info;
-   TR::deque<TR::Block *, TR::Region&> _dominators;
-   int32_t         _numNodes;
-   int32_t         _topDfNum;
-   vcount_t        _visitCount;
+    int32_t blockNumber(int32_t index) { return _info[index]._block->getNumber(); }
 
-   protected:
-   TR::CFG *         _cfg;
-   bool            _postDominators;
-   bool            _isValid;
-   bool            _trace;
-   };
+    void findDominators(TR::Block *start);
+    void initialize(TR::Block *block, BBInfo *parent);
+    int32_t eval(int32_t);
+    void compress(int32_t);
+    void link(int32_t, int32_t);
 
+protected:
+    TR::Region _region;
 
+public:
+    TR::deque<int32_t, TR::Region &> _dfNumbers;
 
-class TR_PostDominators : public TR_Dominators
-   {
-   public:
-   TR_ALLOC(TR_Memory::Dominators)
+private:
+    TR::Compilation *_compilation;
+    TR::deque<BBInfo, TR::Region &> _info;
+    TR::deque<TR::Block *, TR::Region &> _dominators;
+    int32_t _numNodes;
+    int32_t _topDfNum;
+    vcount_t _visitCount;
 
-   typedef TR_BitVector** DependentsTable;
+protected:
+    TR::CFG *_cfg;
+    bool _postDominators;
+    bool _isValid;
+    bool _trace;
+};
 
-   TR_PostDominators(TR::Compilation * comp) : TR_Dominators(comp, true)
-      , _directControlDependents(NULL)//comp->getFlowGraph()->getNumberOfNodes()+1, comp->allocator("PostDominators"))
-      {
-      }
+class TR_PostDominators : public TR_Dominators {
+public:
+    TR_ALLOC(TR_Memory::Dominators)
 
-   void findControlDependents();
-   bool isValid() {return _isValid;}
-   int32_t numberOfBlocksControlled(int32_t block);
+    typedef TR_BitVector **DependentsTable;
 
-   private:
-   typedef TR_BitVector BitVector;
-   int32_t countBlocksControlled(int32_t block, BitVector &seen);
-   DependentsTable _directControlDependents;
-   };
+    TR_PostDominators(TR::Compilation *comp)
+        : TR_Dominators(comp, true)
+        , _directControlDependents(
+              NULL) // comp->getFlowGraph()->getNumberOfNodes()+1, comp->allocator("PostDominators"))
+    {}
+
+    void findControlDependents();
+
+    bool isValid() { return _isValid; }
+
+    int32_t numberOfBlocksControlled(int32_t block);
+
+private:
+    typedef TR_BitVector BitVector;
+    int32_t countBlocksControlled(int32_t block, BitVector &seen);
+    DependentsTable _directControlDependents;
+};
 #endif

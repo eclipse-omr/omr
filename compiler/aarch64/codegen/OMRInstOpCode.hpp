@@ -27,87 +27,82 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
+
 namespace OMR {
-namespace ARM64 { class InstOpCode; }
-typedef OMR::ARM64::InstOpCode InstOpCodeConnector;
+namespace ARM64 {
+class InstOpCode;
 }
+
+typedef OMR::ARM64::InstOpCode InstOpCodeConnector;
+} // namespace OMR
 #else
 #error OMR::ARM64::InstOpCode expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRInstOpCode.hpp"
 
-namespace OMR
-{
+namespace OMR { namespace ARM64 {
 
-namespace ARM64
-{
+class InstOpCode : public OMR::InstOpCode {
+protected:
+    /**
+     * @brief Constructor
+     */
+    InstOpCode()
+        : OMR::InstOpCode(bad)
+    {}
 
-class InstOpCode: public OMR::InstOpCode
-   {
-   protected:
+    /**
+     * @brief Constructor
+     * @param[in] m : mnemonic
+     */
+    InstOpCode(Mnemonic m)
+        : OMR::InstOpCode(m)
+    {}
 
-   /**
-    * @brief Constructor
-    */
-   InstOpCode() : OMR::InstOpCode(bad) {}
-   /**
-    * @brief Constructor
-    * @param[in] m : mnemonic
-    */
-   InstOpCode(Mnemonic m) : OMR::InstOpCode(m) {}
+public:
+    enum AArch64BarrierLimitation {
+        sy = 0xF, // Full System full barrier
+        st = 0xE, // Full System write barrier
+        ld = 0xD, // Full System read barrier
+        ish = 0xB, // Inner Shareable full barrier
+        ishst = 0xA, // Inner Shareable write barrier
+        ishld = 0x9, // Inner Shareable read barrier
+        nsh = 0x7, // Non-shareable full barrier
+        nshst = 0x6, // Non-shareable write barrier
+        nshld = 0x5, // Non-shareable read barrier
+        osh = 0x3, // Outer Shareable full barrier
+        oshst = 0x2, // Outer Shareable write barrier
+        oshld = 0x1 // Outer Shareable load barrier
+    };
 
-   public:
-      enum AArch64BarrierLimitation
-         {
-         sy = 0xF,    // Full System full barrier
-         st = 0xE,    // Full System write barrier
-         ld = 0xD,    // Full System read barrier
-         ish = 0xB,   // Inner Shareable full barrier
-         ishst = 0xA, // Inner Shareable write barrier
-         ishld = 0x9, // Inner Shareable read barrier
-         nsh = 0x7,   // Non-shareable full barrier
-         nshst = 0x6, // Non-shareable write barrier
-         nshld = 0x5, // Non-shareable read barrier
-         osh = 0x3,   // Outer Shareable full barrier
-         oshst = 0x2, // Outer Shareable write barrier
-         oshld = 0x1  // Outer Shareable load barrier
-         };
+    typedef uint32_t OpCodeBinaryEntry;
+    static const OpCodeBinaryEntry binaryEncodings[ARM64NumOpCodes];
 
-      typedef uint32_t OpCodeBinaryEntry;
-      static const OpCodeBinaryEntry binaryEncodings[ARM64NumOpCodes];
+    /*
+     * @brief Answers binary encoding of Mnemonic
+     * @param[in] m : mnemonic
+     * @return binary encoding
+     */
+    static const OpCodeBinaryEntry getOpCodeBinaryEncoding(Mnemonic m) { return binaryEncodings[m]; }
 
-      /*
-       * @brief Answers binary encoding of Mnemonic
-       * @param[in] m : mnemonic
-       * @return binary encoding
-       */
-      static const OpCodeBinaryEntry getOpCodeBinaryEncoding(Mnemonic m)
-      {
-      return binaryEncodings[m];
-      }
+    /*
+     * @brief Answers binary encoding of InstOpCode
+     * @return binary encoding
+     */
+    const OpCodeBinaryEntry getOpCodeBinaryEncoding() { return getOpCodeBinaryEncoding(_mnemonic); }
 
-   /*
-    * @brief Answers binary encoding of InstOpCode
-    * @return binary encoding
-    */
-   const OpCodeBinaryEntry getOpCodeBinaryEncoding()
-      {
-      return getOpCodeBinaryEncoding(_mnemonic);
-      }
+    /*
+     * @brief Copies binary encoding of the opcode to buffer
+     * @param[in] cursor : instruction cursor
+     * @return instruction cursor
+     */
+    uint8_t *copyBinaryToBuffer(uint8_t *cursor)
+    {
+        *(uint32_t *)cursor = *(uint32_t *)&binaryEncodings[_mnemonic];
+        return cursor;
+    }
+};
 
-   /*
-    * @brief Copies binary encoding of the opcode to buffer
-    * @param[in] cursor : instruction cursor
-    * @return instruction cursor
-    */
-   uint8_t *copyBinaryToBuffer(uint8_t *cursor)
-      {
-      *(uint32_t *)cursor = *(uint32_t *)&binaryEncodings[_mnemonic];
-      return cursor;
-      }
-   };
-
-} // ARM64
-} // OMR
+}} // namespace OMR::ARM64
 #endif

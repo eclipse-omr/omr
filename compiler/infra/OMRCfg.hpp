@@ -27,10 +27,11 @@
  */
 #ifndef OMR_CFG_CONNECTOR
 #define OMR_CFG_CONNECTOR
+
 namespace OMR {
 class CFG;
 typedef OMR::CFG CFGConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -52,6 +53,7 @@ class TR_BitVector;
 class TR_BlockCloner;
 class TR_BlockFrequencyInfo;
 class TR_ExternalProfiler;
+
 namespace TR {
 class Block;
 class CFG;
@@ -60,9 +62,8 @@ class CFGNode;
 class Compilation;
 class ResolvedMethodSymbol;
 class TreeTop;
-}
-template <class T> class TR_Array;
-
+} // namespace TR
+template<class T> class TR_Array;
 
 #define MAX_STATIC_EDGE_FREQ 15
 #define INITIAL_BLOCK_FREQUENCY_FACTOR 20
@@ -78,337 +79,352 @@ template <class T> class TR_Array;
 #define MAX_COLD_BLOCK_COUNT 5
 #define NUMBER_BLOCK_FREQUENCIES 6
 
-#define MAX_WARM_BLOCK_COUNT ((MAX_BLOCK_COUNT + MAX_COLD_BLOCK_COUNT)/10)
-#define MAX_HOT_BLOCK_COUNT (2*MAX_WARM_BLOCK_COUNT)
-#define MAX_VERY_HOT_BLOCK_COUNT (3*MAX_WARM_BLOCK_COUNT)
-#define MAX_SCORCHING_BLOCK_COUNT (5*MAX_WARM_BLOCK_COUNT)
+#define MAX_WARM_BLOCK_COUNT ((MAX_BLOCK_COUNT + MAX_COLD_BLOCK_COUNT) / 10)
+#define MAX_HOT_BLOCK_COUNT (2 * MAX_WARM_BLOCK_COUNT)
+#define MAX_VERY_HOT_BLOCK_COUNT (3 * MAX_WARM_BLOCK_COUNT)
+#define MAX_SCORCHING_BLOCK_COUNT (5 * MAX_WARM_BLOCK_COUNT)
 
 #define MAX_REMOVE_EDGE_NESTING_DEPTH 125
 
 #define LOW_FREQ 5
 #define AVG_FREQ 150
 
+namespace OMR {
 
-namespace OMR
-{
+bool alwaysTrue(TR::CFGEdge *e);
 
-bool alwaysTrue(TR::CFGEdge * e);
+class CFG {
+public:
+    TR_ALLOC(TR_Memory::CFG)
 
-class CFG
-   {
-   public:
+    CFG(TR::Compilation *c, TR::ResolvedMethodSymbol *m)
+        : _structureMemoryRegion(c->trMemory()->heapMemoryRegion())
+        , _internalMemoryRegion(c->trMemory()->heapMemoryRegion())
+    {
+        init(c, m);
+    }
 
-   TR_ALLOC(TR_Memory::CFG)
+    CFG(TR::Compilation *c, TR::ResolvedMethodSymbol *m, TR::Region &r)
+        : _structureMemoryRegion(c->trMemory()->heapMemoryRegion())
+        , _internalMemoryRegion(r)
+    {
+        init(c, m);
+    }
 
-   CFG(TR::Compilation *c, TR::ResolvedMethodSymbol *m) :
-      _structureMemoryRegion(c->trMemory()->heapMemoryRegion()),
-      _internalMemoryRegion(c->trMemory()->heapMemoryRegion())
-      {
-         init(c, m);
-      }
+    void init(TR::Compilation *c, TR::ResolvedMethodSymbol *m)
+    {
+        _compilation = c;
+        _method = m;
+        _rootStructure = NULL;
+        _pStart = NULL;
+        _pEnd = NULL;
+        _nextNodeNumber = 0;
+        _numEdges = 0;
+        _mightHaveUnreachableBlocks = false;
+        _doesHaveUnreachableBlocks = false;
+        _removingUnreachableBlocks = false;
+        _ignoreUnreachableBlocks = false;
+        _removeEdgeNestingDepth = 0;
+        _forwardTraversalOrder = NULL;
+        _backwardTraversalOrder = NULL;
+        _forwardTraversalLength = 0;
+        _backwardTraversalLength = 0;
+        _maxFrequency = -1;
+        _maxEdgeFrequency = -1;
+        _oldMaxFrequency = -1;
+        _oldMaxEdgeFrequency = -1;
+        _frequencySet = NULL;
+        _calledFrequency = 0;
+        _initialBlockFrequency = -1;
+        _edgeProbabilities = NULL;
+    }
 
-   CFG(TR::Compilation *c, TR::ResolvedMethodSymbol *m, TR::Region &r) :
-      _structureMemoryRegion(c->trMemory()->heapMemoryRegion()),
-      _internalMemoryRegion(r)
-      {
-         init(c, m);
-      }
+    TR::CFG *self();
 
-   void init(TR::Compilation *c, TR::ResolvedMethodSymbol *m)
-   {
-      _compilation = c;
-      _method = m;
-      _rootStructure = NULL;
-      _pStart = NULL;
-      _pEnd = NULL;
-      _nextNodeNumber = 0;
-      _numEdges = 0;
-      _mightHaveUnreachableBlocks = false;
-      _doesHaveUnreachableBlocks = false;
-      _removingUnreachableBlocks = false;
-      _ignoreUnreachableBlocks = false;
-      _removeEdgeNestingDepth = 0;
-      _forwardTraversalOrder = NULL;
-      _backwardTraversalOrder = NULL;
-      _forwardTraversalLength = 0;
-      _backwardTraversalLength = 0;
-      _maxFrequency = -1;
-      _maxEdgeFrequency = -1;
-      _oldMaxFrequency = -1;
-      _oldMaxEdgeFrequency = -1;
-      _frequencySet = NULL;
-      _calledFrequency = 0;
-      _initialBlockFrequency = -1;
-      _edgeProbabilities = NULL;
-   }
+    TR::Compilation *comp() { return _compilation; }
 
-   TR::CFG * self();
+    TR::ResolvedMethodSymbol *getMethodSymbol() { return _method; }
 
-   TR::Compilation *comp() { return _compilation; }
-   TR::ResolvedMethodSymbol *getMethodSymbol() {return _method; }
+    TR_Memory *trMemory() { return comp()->trMemory(); }
 
-   TR_Memory *trMemory() { return comp()->trMemory(); }
-   TR_HeapMemory trHeapMemory() { return trMemory(); }
-   TR_StackMemory trStackMemory() { return trMemory(); }
-   TR::Region &structureMemoryRegion() { return _structureMemoryRegion; }
+    TR_HeapMemory trHeapMemory() { return trMemory(); }
 
-   void setStartAndEnd(TR::CFGNode * s, TR::CFGNode * e) { addNode(s); addNode(e); setStart(s); setEnd(e); }
+    TR_StackMemory trStackMemory() { return trMemory(); }
 
-   TR::CFGNode *getStart() {return _pStart;}
-   TR::CFGNode *setStart(TR::CFGNode *p) {return (_pStart = p);}
+    TR::Region &structureMemoryRegion() { return _structureMemoryRegion; }
 
-   TR::CFGNode *getEnd() {return _pEnd;}
-   TR::CFGNode *setEnd(TR::CFGNode *p) {return (_pEnd = p);}
+    void setStartAndEnd(TR::CFGNode *s, TR::CFGNode *e)
+    {
+        addNode(s);
+        addNode(e);
+        setStart(s);
+        setEnd(e);
+    }
 
-   TR_Structure *getStructure() {return _rootStructure;}
-   TR_Structure *setStructure(TR_Structure *p);
-   TR_Structure *invalidateStructure();
+    TR::CFGNode *getStart() { return _pStart; }
 
-   TR::CFGNode *getFirstNode() {return _nodes.getFirst();}
-   TR_LinkHead1<TR::CFGNode> & getNodes() {return _nodes;}
+    TR::CFGNode *setStart(TR::CFGNode *p) { return (_pStart = p); }
 
-   int32_t getNumberOfNodes() {return _nodes.getSize();}
-   int32_t getNextNodeNumber() {return _nextNodeNumber;}
-   void setNextNodeNumber(int32_t n) {_nextNodeNumber = n;}
-   int32_t allocateNodeNumber() {return _nextNodeNumber++;}
+    TR::CFGNode *getEnd() { return _pEnd; }
 
-   TR::CFGNode *addNode(TR::CFGNode *n, TR_RegionStructure *parent = NULL, bool isEntryInParent = false);
+    TR::CFGNode *setEnd(TR::CFGNode *p) { return (_pEnd = p); }
 
-   void addEdge(TR::CFGEdge *e);
+    TR_Structure *getStructure() { return _rootStructure; }
 
-   /**
-    * Create and store edge from CFGNode f to CFGNode t
-    * @param f   CFGNode from
-    * @param t   CFGNode to
-    * @return    Pointer to newly created edge
-    */
-   TR::CFGEdge *addEdge(TR::CFGNode *f, TR::CFGNode *t);
+    TR_Structure *setStructure(TR_Structure *p);
+    TR_Structure *invalidateStructure();
 
-   /**
-    * Create and store exception edge from CFGNode f to CFGNode t
-    *
-    * The new edge will not be added if there is an existing exception edge
-    * from the "from" node to an existing block which catches the same
-    * exceptions as the new "to" block.
-    *
-    * @param f   CFGNode from
-    * @param t   CFGNode to
-    */
-   void addExceptionEdge(TR::CFGNode *f, TR::CFGNode *t);
+    TR::CFGNode *getFirstNode() { return _nodes.getFirst(); }
 
-   /**
-    * Create and store exception edge from CFGNode f to CFGNode t
-    *
-    * The new edge will be added even if there is an existing exception edge
-    * exiting the "from" node.
-    *
-    * @param f   CFGNode from
-    * @param t   CFGNode to
-    */
-   void addExceptionEdgeUnchecked(TR::CFGNode *f, TR::CFGNode *t);
-   void addSuccessorEdges(TR::Block * block);
+    TR_LinkHead1<TR::CFGNode> &getNodes() { return _nodes; }
 
-   void copyExceptionSuccessors(TR::CFGNode *from, TR::CFGNode *to, bool (*predicate)(TR::CFGEdge *) = OMR::alwaysTrue);
+    int32_t getNumberOfNodes() { return _nodes.getSize(); }
 
-   bool getMightHaveUnreachableBlocks() { return _mightHaveUnreachableBlocks; }
-   void setHasUnreachableBlocks() { _doesHaveUnreachableBlocks = true; }
-   bool getHasUnreachableBlocks() { return _doesHaveUnreachableBlocks; }
+    int32_t getNextNodeNumber() { return _nextNodeNumber; }
 
-   bool getIgnoreUnreachableBlocks() { return _ignoreUnreachableBlocks;}
-   void setIgnoreUnreachableBlocks(bool flag) {_ignoreUnreachableBlocks = flag; }
+    void setNextNodeNumber(int32_t n) { _nextNodeNumber = n; }
 
-   /// Connect the treetops between b1 and b2 and add the successor edges to b1.
-   void join(TR::Block * b1, TR::Block * b2);
+    int32_t allocateNodeNumber() { return _nextNodeNumber++; }
 
-   /// Will add b1 to the cfg and call join between b1 and b2
-   void insertBefore(TR::Block * b1, TR::Block * b2);
+    TR::CFGNode *addNode(TR::CFGNode *n, TR_RegionStructure *parent = NULL, bool isEntryInParent = false);
 
+    void addEdge(TR::CFGEdge *e);
 
-   void removeUnreachableBlocks();
-   int32_t compareExceptionSuccessors(TR::CFGNode *, TR::CFGNode *);
+    /**
+     * Create and store edge from CFGNode f to CFGNode t
+     * @param f   CFGNode from
+     * @param t   CFGNode to
+     * @return    Pointer to newly created edge
+     */
+    TR::CFGEdge *addEdge(TR::CFGNode *f, TR::CFGNode *t);
 
-   /**
-    * Set up profiling frequencies for nodes and edges, normalized to the
-    * maxBlockCount in TR::Recompilation.
-    *
-    * Returns true if profiling information was available and used.
-    */
-   bool setFrequencies();
-   void resetFrequencies();
+    /**
+     * Create and store exception edge from CFGNode f to CFGNode t
+     *
+     * The new edge will not be added if there is an existing exception edge
+     * from the "from" node to an existing block which catches the same
+     * exceptions as the new "to" block.
+     *
+     * @param f   CFGNode from
+     * @param t   CFGNode to
+     */
+    void addExceptionEdge(TR::CFGNode *f, TR::CFGNode *t);
 
-   TR::CFGNode *removeNode(TR::CFGNode *n);
+    /**
+     * Create and store exception edge from CFGNode f to CFGNode t
+     *
+     * The new edge will be added even if there is an existing exception edge
+     * exiting the "from" node.
+     *
+     * @param f   CFGNode from
+     * @param t   CFGNode to
+     */
+    void addExceptionEdgeUnchecked(TR::CFGNode *f, TR::CFGNode *t);
+    void addSuccessorEdges(TR::Block *block);
 
-   /// Remove an edge.
-   ///
-   /// \return true if blocks were removed as a result of removing
-   /// the edge.
-   bool removeEdge(TR::CFGEdge *e);
-   bool removeEdge(TR::CFGNode *from, TR::CFGNode *to);
-   bool removeEdge(TR::CFGEdge *e, bool recursiveImpl);
-   void removeEdge(TR::CFGEdgeList &succList, int32_t selfNumber, int32_t destNumber);
+    void copyExceptionSuccessors(TR::CFGNode *from, TR::CFGNode *to,
+        bool (*predicate)(TR::CFGEdge *) = OMR::alwaysTrue);
 
-   void removeBlock(TR::Block *);
+    bool getMightHaveUnreachableBlocks() { return _mightHaveUnreachableBlocks; }
 
-   void findReachableBlocks(TR_BitVector *result);
+    void setHasUnreachableBlocks() { _doesHaveUnreachableBlocks = true; }
 
-   /// reset the visit count on all nodes and edges
-   void resetVisitCounts(vcount_t);
+    bool getHasUnreachableBlocks() { return _doesHaveUnreachableBlocks; }
 
-   TR::TreeTop * findLastTreeTop();
-   TR::Block * * createArrayOfBlocks(TR_AllocationKind = stackAlloc);
+    bool getIgnoreUnreachableBlocks() { return _ignoreUnreachableBlocks; }
 
-   /// Find all blocks that are in loops
-   void findLoopingBlocks(TR_BitVector&);
+    void setIgnoreUnreachableBlocks(bool flag) { _ignoreUnreachableBlocks = flag; }
 
-   int32_t createTraversalOrder(bool forward, TR_AllocationKind allocationKind, TR_BitVector *backEdges = NULL);
-   TR::CFGNode *getForwardTraversalElement(int32_t idx) { return _forwardTraversalOrder[idx]; }
-   int32_t getForwardTraversalLength() { return _forwardTraversalLength; }
-   TR::CFGNode *getBackwardTraversalElement(int32_t idx) { return _backwardTraversalOrder[idx]; }
-   int32_t getBackwardTraversalLength() { return _backwardTraversalLength; }
+    /// Connect the treetops between b1 and b2 and add the successor edges to b1.
+    void join(TR::Block *b1, TR::Block *b2);
 
-   TR_BlockCloner * clone();
+    /// Will add b1 to the cfg and call join between b1 and b2
+    void insertBefore(TR::Block *b1, TR::Block *b2);
 
-   void propagateColdInfo(bool);
+    void removeUnreachableBlocks();
+    int32_t compareExceptionSuccessors(TR::CFGNode *, TR::CFGNode *);
 
+    /**
+     * Set up profiling frequencies for nodes and edges, normalized to the
+     * maxBlockCount in TR::Recompilation.
+     *
+     * Returns true if profiling information was available and used.
+     */
+    bool setFrequencies();
+    void resetFrequencies();
 
-   bool consumePseudoRandomFrequencies();
+    TR::CFGNode *removeNode(TR::CFGNode *n);
 
+    /// Remove an edge.
+    ///
+    /// \return true if blocks were removed as a result of removing
+    /// the edge.
+    bool removeEdge(TR::CFGEdge *e);
+    bool removeEdge(TR::CFGNode *from, TR::CFGNode *to);
+    bool removeEdge(TR::CFGEdge *e, bool recursiveImpl);
+    void removeEdge(TR::CFGEdgeList &succList, int32_t selfNumber, int32_t destNumber);
 
-   void setMaxFrequency(int32_t f) { _maxFrequency = f; }
-   int32_t getMaxFrequency() { return _maxFrequency; }
-   int32_t getLowFrequency();
-   int32_t getAvgFrequency();
+    void removeBlock(TR::Block *);
 
-   void setMaxEdgeFrequency(int32_t f) { _maxEdgeFrequency = f; }
-   int32_t getMaxEdgeFrequency() { return _maxEdgeFrequency; }
+    void findReachableBlocks(TR_BitVector *result);
 
-   int32_t getOldMaxEdgeFrequency() { return _oldMaxEdgeFrequency; }
+    /// reset the visit count on all nodes and edges
+    void resetVisitCounts(vcount_t);
 
-   TR_BitVector *getFrequencySet() { return _frequencySet; }
+    TR::TreeTop *findLastTreeTop();
+    TR::Block **createArrayOfBlocks(TR_AllocationKind = stackAlloc);
 
-   int32_t getInitialBlockFrequency() { return _initialBlockFrequency; }
+    /// Find all blocks that are in loops
+    void findLoopingBlocks(TR_BitVector &);
 
-   void propagateFrequencyInfoFrom(TR_Structure *str);
-   void processAcyclicRegion(TR_RegionStructure *region);
-   void processNaturalLoop(TR_RegionStructure *region);
-   void walkStructure(TR_RegionStructure *region);
-   bool setEdgeFrequenciesFrom();
-   void computeEntryFactorsFrom(TR_Structure *str, float &factor);
-   void computeEntryFactorsAcyclic(TR_RegionStructure *region);
-   void computeEntryFactorsLoop(TR_RegionStructure *region);
-   float computeOutsideEdgeFactor(TR::CFGEdge *outEdge, TR::CFGNode *pred);
-   float computeInsideEdgeFactor(TR::CFGEdge *inEdge, TR::CFGNode *pred);
-   void propagateEntryFactorsFrom(TR_Structure *str, float factor);
+    int32_t createTraversalOrder(bool forward, TR_AllocationKind allocationKind, TR_BitVector *backEdges = NULL);
 
-   void scaleEdgeFrequencies();
+    TR::CFGNode *getForwardTraversalElement(int32_t idx) { return _forwardTraversalOrder[idx]; }
 
-   void setBlockAndEdgeFrequenciesBasedOnStructure();
-   void getBranchCounters (TR::Node *node, TR::Block *block, int32_t *taken, int32_t *notTaken, TR::Compilation *comp);
+    int32_t getForwardTraversalLength() { return _forwardTraversalLength; }
 
-   void normalizeFrequencies(TR_BitVector *);
+    TR::CFGNode *getBackwardTraversalElement(int32_t idx) { return _backwardTraversalOrder[idx]; }
 
-   void setEdgeFrequenciesOnNode(TR::CFGNode *node, int32_t branchToCount, int32_t fallThroughCount, TR::Compilation *comp);
-   void setUniformEdgeFrequenciesOnNode(TR::CFGNode *node, int32_t branchToCount, bool addFrequency, TR::Compilation *comp);
+    int32_t getBackwardTraversalLength() { return _backwardTraversalLength; }
 
-   void setEdgeProbability(TR::CFGEdge *edge, double prob)
-         {
-         if (_edgeProbabilities)
-           {
-           TR_ASSERT(edge->getId() != -1, "Edge from %d to %d has id -1\n",
-                                          edge->getFrom()->getNumber(),
-                                          edge->getTo()->getNumber());
+    TR_BlockCloner *clone();
 
-           _edgeProbabilities[edge->getId()] = prob;
-           }
-         }
+    void propagateColdInfo(bool);
 
-   double getEdgeProbability(TR::CFGEdge *edge)
-         {
-         if (_edgeProbabilities)
-            {
-            TR_ASSERT(edge->getId() != -1, "Edge from %d to %d has id -1\n",
-                                          edge->getFrom()->getNumber(),
-                                          edge->getTo()->getNumber());
+    bool consumePseudoRandomFrequencies();
+
+    void setMaxFrequency(int32_t f) { _maxFrequency = f; }
+
+    int32_t getMaxFrequency() { return _maxFrequency; }
+
+    int32_t getLowFrequency();
+    int32_t getAvgFrequency();
+
+    void setMaxEdgeFrequency(int32_t f) { _maxEdgeFrequency = f; }
+
+    int32_t getMaxEdgeFrequency() { return _maxEdgeFrequency; }
+
+    int32_t getOldMaxEdgeFrequency() { return _oldMaxEdgeFrequency; }
+
+    TR_BitVector *getFrequencySet() { return _frequencySet; }
+
+    int32_t getInitialBlockFrequency() { return _initialBlockFrequency; }
+
+    void propagateFrequencyInfoFrom(TR_Structure *str);
+    void processAcyclicRegion(TR_RegionStructure *region);
+    void processNaturalLoop(TR_RegionStructure *region);
+    void walkStructure(TR_RegionStructure *region);
+    bool setEdgeFrequenciesFrom();
+    void computeEntryFactorsFrom(TR_Structure *str, float &factor);
+    void computeEntryFactorsAcyclic(TR_RegionStructure *region);
+    void computeEntryFactorsLoop(TR_RegionStructure *region);
+    float computeOutsideEdgeFactor(TR::CFGEdge *outEdge, TR::CFGNode *pred);
+    float computeInsideEdgeFactor(TR::CFGEdge *inEdge, TR::CFGNode *pred);
+    void propagateEntryFactorsFrom(TR_Structure *str, float factor);
+
+    void scaleEdgeFrequencies();
+
+    void setBlockAndEdgeFrequenciesBasedOnStructure();
+    void getBranchCounters(TR::Node *node, TR::Block *block, int32_t *taken, int32_t *notTaken, TR::Compilation *comp);
+
+    void normalizeFrequencies(TR_BitVector *);
+
+    void setEdgeFrequenciesOnNode(TR::CFGNode *node, int32_t branchToCount, int32_t fallThroughCount,
+        TR::Compilation *comp);
+    void setUniformEdgeFrequenciesOnNode(TR::CFGNode *node, int32_t branchToCount, bool addFrequency,
+        TR::Compilation *comp);
+
+    void setEdgeProbability(TR::CFGEdge *edge, double prob)
+    {
+        if (_edgeProbabilities) {
+            TR_ASSERT(edge->getId() != -1, "Edge from %d to %d has id -1\n", edge->getFrom()->getNumber(),
+                edge->getTo()->getNumber());
+
+            _edgeProbabilities[edge->getId()] = prob;
+        }
+    }
+
+    double getEdgeProbability(TR::CFGEdge *edge)
+    {
+        if (_edgeProbabilities) {
+            TR_ASSERT(edge->getId() != -1, "Edge from %d to %d has id -1\n", edge->getFrom()->getNumber(),
+                edge->getTo()->getNumber());
             return _edgeProbabilities[edge->getId()];
-            }
-         else
+        } else
             return 0;
-         }
+    }
 
+    bool updateBlockFrequency(TR::Block *block, int32_t newFreq);
+    void updateBlockFrequencyFromEdges(TR::Block *block);
 
-   bool updateBlockFrequency(TR::Block *block, int32_t newFreq);
-   void updateBlockFrequencyFromEdges(TR::Block *block);
+    // Is branch profiling data available?
+    //
+    bool hasBranchProfilingData() { return false; }
 
-   // Is branch profiling data available?
-   //
-   bool hasBranchProfilingData() { return false; }
+    // Extract branch counter information from available branch profiling data
+    //
+    void getBranchCountersFromProfilingData(TR::Node *node, TR::Block *block, int32_t *taken, int32_t *notTaken)
+    {
+        return;
+    }
 
-   // Extract branch counter information from available branch profiling data
-   //
-   void getBranchCountersFromProfilingData(TR::Node *node, TR::Block *block, int32_t *taken, int32_t *notTaken) { return; }
+    TR::Region &getInternalMemoryRegion();
 
-   TR::Region& getInternalMemoryRegion();
+    // FIXME: These public members should eventually be wrapped in an interface.
+    int32_t _max_edge_freq;
+    int32_t _calledFrequency;
+    int32_t _initialBlockFrequency;
+    static const int32_t MAX_PROF_EDGE_FREQ = 0x3FFE;
 
-   //FIXME: These public members should eventually be wrapped in an interface.
-   int32_t                  _max_edge_freq;
-   int32_t                  _calledFrequency;
-   int32_t                  _initialBlockFrequency;
-   static const int32_t MAX_PROF_EDGE_FREQ=0x3FFE;
-   enum OrphanType
-      {
-      IsParented = 0,
-      IsOrphanedNode,
-      IsOrphanedRegion
-      };
+    enum OrphanType {
+        IsParented = 0,
+        IsOrphanedNode,
+        IsOrphanedRegion
+    };
 
-   static const char *blockFrequencyNames[];
+    static const char *blockFrequencyNames[];
 
 protected:
-   TR::Compilation *_compilation;
-   TR::ResolvedMethodSymbol *_method;
+    TR::Compilation *_compilation;
+    TR::ResolvedMethodSymbol *_method;
 
-   TR::CFGNode *_pStart;
-   TR::CFGNode *_pEnd;
-   TR::Region _structureMemoryRegion;
-   TR::Region _internalMemoryRegion;
-   TR_Structure *_rootStructure;
+    TR::CFGNode *_pStart;
+    TR::CFGNode *_pEnd;
+    TR::Region _structureMemoryRegion;
+    TR::Region _internalMemoryRegion;
+    TR_Structure *_rootStructure;
 
-   TR_LinkHead1<TR::CFGNode> _nodes;
-   int32_t _numEdges;
-   int32_t _nextNodeNumber;
+    TR_LinkHead1<TR::CFGNode> _nodes;
+    int32_t _numEdges;
+    int32_t _nextNodeNumber;
 
-   bool _mightHaveUnreachableBlocks;
-   bool _doesHaveUnreachableBlocks;
-   bool _ignoreUnreachableBlocks;
-   bool _removingUnreachableBlocks;
+    bool _mightHaveUnreachableBlocks;
+    bool _doesHaveUnreachableBlocks;
+    bool _ignoreUnreachableBlocks;
+    bool _removingUnreachableBlocks;
 
+    TR::CFGNode **_forwardTraversalOrder;
+    int32_t _forwardTraversalLength;
 
-   TR::CFGNode **_forwardTraversalOrder;
-   int32_t _forwardTraversalLength;
+    TR::CFGNode **_backwardTraversalOrder;
+    int32_t _backwardTraversalLength;
 
-   TR::CFGNode **_backwardTraversalOrder;
-   int32_t _backwardTraversalLength;
+    void normalizeNodeFrequencies(TR_BitVector *, TR_Array<TR::CFGEdge *> *);
+    void normalizeEdgeFrequencies(TR_Array<TR::CFGEdge *> *);
 
-   void normalizeNodeFrequencies(TR_BitVector *,TR_Array<TR::CFGEdge *> *);
-   void normalizeEdgeFrequencies(TR_Array<TR::CFGEdge *> *);
+    int32_t _removeEdgeNestingDepth;
 
-   int32_t                  _removeEdgeNestingDepth;
+    int32_t _maxFrequency;
+    int32_t _maxEdgeFrequency;
+    int32_t _oldMaxFrequency;
+    int32_t _oldMaxEdgeFrequency;
+    TR_BitVector *_frequencySet;
+    double *_edgeProbabilities; // temp array
 
-   int32_t                  _maxFrequency;
-   int32_t                  _maxEdgeFrequency;
-   int32_t                  _oldMaxFrequency;
-   int32_t                  _oldMaxEdgeFrequency;
-   TR_BitVector            *_frequencySet;
-   double                  *_edgeProbabilities; // temp array
+    OrphanType unreachableOrphan(TR::CFG *cfg, TR::CFGNode *from, TR::CFGNode *to);
+};
 
-   OrphanType unreachableOrphan(TR::CFG *cfg, TR::CFGNode *from, TR::CFGNode *to);
-
-   };
-
-}
-
-
-
+} // namespace OMR
 
 /**
  * The following class is an API that can be used to iterate over multiple
@@ -417,93 +433,84 @@ protected:
  * It is primarily used in the form of a TR_SuccessorIterator and
  * TR_PredecessorIterator
  */
-class TR_CFGIterator
-   {
+class TR_CFGIterator {
 public:
-   TR_CFGIterator(TR::CFGEdgeList& regularEdges, TR::CFGEdgeList& exceptionEdges) :
-      _regularEdges(regularEdges),
-      _exceptionEdges(exceptionEdges),
-      _regularEdgeIterator(_regularEdges.begin()),
-      _exceptionEdgeIterator(_exceptionEdges.begin())
-      {
-      }
+    TR_CFGIterator(TR::CFGEdgeList &regularEdges, TR::CFGEdgeList &exceptionEdges)
+        : _regularEdges(regularEdges)
+        , _exceptionEdges(exceptionEdges)
+        , _regularEdgeIterator(_regularEdges.begin())
+        , _exceptionEdgeIterator(_exceptionEdges.begin())
+    {}
 
-   /**
-    * Get the first Element of the combinedList, return NULL if empty
-    */
-   TR::CFGEdge* getFirst()
-      {
-      _regularEdgeIterator = _regularEdges.begin();
-      _exceptionEdgeIterator = _exceptionEdges.begin();
-      return getCurrent();
-      }
+    /**
+     * Get the first Element of the combinedList, return NULL if empty
+     */
+    TR::CFGEdge *getFirst()
+    {
+        _regularEdgeIterator = _regularEdges.begin();
+        _exceptionEdgeIterator = _exceptionEdges.begin();
+        return getCurrent();
+    }
 
-   /**
-    * Get the current Element that the iterator points to
-    */
-   TR::CFGEdge* getCurrent()
-      {
-      return _regularEdgeIterator == _regularEdges.end() ? ( _exceptionEdgeIterator == _exceptionEdges.end() ? NULL : *_exceptionEdgeIterator ) : *_regularEdgeIterator;
-      }
+    /**
+     * Get the current Element that the iterator points to
+     */
+    TR::CFGEdge *getCurrent()
+    {
+        return _regularEdgeIterator == _regularEdges.end()
+            ? (_exceptionEdgeIterator == _exceptionEdges.end() ? NULL : *_exceptionEdgeIterator)
+            : *_regularEdgeIterator;
+    }
 
-   /**
-    * Get the next element, return NULL if we've hit the end of the list
-    */
-   TR::CFGEdge* getNext()
-      {
-      if (_regularEdgeIterator != _regularEdges.end())
-         {
-         ++_regularEdgeIterator;
-         }
-      else if (_exceptionEdgeIterator != _exceptionEdges.end())
-         {
-         ++_exceptionEdgeIterator;
-         }
-      return getCurrent();
-      }
+    /**
+     * Get the next element, return NULL if we've hit the end of the list
+     */
+    TR::CFGEdge *getNext()
+    {
+        if (_regularEdgeIterator != _regularEdges.end()) {
+            ++_regularEdgeIterator;
+        } else if (_exceptionEdgeIterator != _exceptionEdges.end()) {
+            ++_exceptionEdgeIterator;
+        }
+        return getCurrent();
+    }
 
 private:
-   TR::CFGEdgeList &_regularEdges;
-   TR::CFGEdgeList &_exceptionEdges;
-   TR::CFGEdgeList::iterator _regularEdgeIterator;
-   TR::CFGEdgeList::iterator _exceptionEdgeIterator;
-   };
+    TR::CFGEdgeList &_regularEdges;
+    TR::CFGEdgeList &_exceptionEdges;
+    TR::CFGEdgeList::iterator _regularEdgeIterator;
+    TR::CFGEdgeList::iterator _exceptionEdgeIterator;
+};
 
-class TR_SuccessorIterator : public TR_CFGIterator
-   {
+class TR_SuccessorIterator : public TR_CFGIterator {
 public:
-   TR_SuccessorIterator(TR::CFGNode * node)
-      : TR_CFGIterator(node->getSuccessors(), node->getExceptionSuccessors())
-      {
-      }
-   };
+    TR_SuccessorIterator(TR::CFGNode *node)
+        : TR_CFGIterator(node->getSuccessors(), node->getExceptionSuccessors())
+    {}
+};
 
-
-class TR_PredecessorIterator : public TR_CFGIterator
-   {
+class TR_PredecessorIterator : public TR_CFGIterator {
 public:
-   TR_PredecessorIterator(TR::CFGNode * node)
-      : TR_CFGIterator(node->getPredecessors(), node->getExceptionPredecessors())
-      {
-      }
-   };
+    TR_PredecessorIterator(TR::CFGNode *node)
+        : TR_CFGIterator(node->getPredecessors(), node->getExceptionPredecessors())
+    {}
+};
 
-class TR_OrderedExceptionHandlerIterator
-   {
+class TR_OrderedExceptionHandlerIterator {
 public:
-   TR_ALLOC(TR_Memory::OrderedExceptionHandlerIterator)
+    TR_ALLOC(TR_Memory::OrderedExceptionHandlerIterator)
 
-   TR_OrderedExceptionHandlerIterator(TR::Block * tryBlock, TR::Region &workingMemoryRegion);
+    TR_OrderedExceptionHandlerIterator(TR::Block *tryBlock, TR::Region &workingMemoryRegion);
 
-   TR::Block * getFirst();
+    TR::Block *getFirst();
 
-   TR::Block * getNext();
+    TR::Block *getNext();
+
 private:
+    TR::Block *getCurrent();
 
-   TR::Block * getCurrent();
-
-   TR::Block ** _handlers;
-   uint32_t _index, _dim;
-   };
+    TR::Block **_handlers;
+    uint32_t _index, _dim;
+};
 
 #endif

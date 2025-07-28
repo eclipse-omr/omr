@@ -32,82 +32,67 @@ namespace TR {
 class X86DataSnippet;
 }
 class TR_ScratchRegisterManager;
+
 namespace TR {
 class CodeGenerator;
 class LabelSymbol;
 class Node;
 class Register;
 class SymbolReference;
-}
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector
-   {
-   public:
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
+public:
+    MemoryReference(TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(cg)
+    {}
 
-   MemoryReference(TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(cg) {}
+    MemoryReference(TR::Register *br, TR::SymbolReference *sr, TR::Register *ir, uint8_t s, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, sr, ir, s, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      TR::SymbolReference *sr,
-      TR::Register *ir,
-      uint8_t s,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, sr, ir, s, cg) {}
+    MemoryReference(TR::Register *br, TR::Register *ir, uint8_t s, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, s, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      TR::Register *ir,
-      uint8_t s,
-      TR::CodeGenerator*cg) :
-         OMR::MemoryReferenceConnector(br, ir, s, cg) {}
+    MemoryReference(TR::Register *br, intptr_t disp, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, disp, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      intptr_t disp,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, disp, cg) {}
+    MemoryReference(intptr_t disp, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(disp, cg)
+    {}
 
-   MemoryReference(intptr_t disp,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(disp, cg) {}
+    MemoryReference(TR::Register *br, TR::Register *ir, uint8_t s, intptr_t disp, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, s, disp, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      TR::Register *ir,
-      uint8_t s,
-      intptr_t disp,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, ir, s, disp, cg) {}
+    MemoryReference(TR::X86DataSnippet *cds, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(cds, cg)
+    {}
 
-   MemoryReference(TR::X86DataSnippet *cds,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(cds, cg) {}
+    MemoryReference(TR::LabelSymbol *label, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(label, cg)
+    {}
 
-   MemoryReference(TR::LabelSymbol *label,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(label, cg) {}
+    MemoryReference(TR::Node *rootLoadOrStore, TR::CodeGenerator *cg, bool canRematerializeAddressAdds)
+        : OMR::MemoryReferenceConnector(rootLoadOrStore, cg, canRematerializeAddressAdds)
+    {}
 
-   MemoryReference(TR::Node *rootLoadOrStore,
-      TR::CodeGenerator *cg,
-      bool canRematerializeAddressAdds) :
-         OMR::MemoryReferenceConnector(rootLoadOrStore, cg, canRematerializeAddressAdds) {}
+    MemoryReference(TR::SymbolReference *symRef, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(symRef, cg)
+    {}
 
-   MemoryReference(TR::SymbolReference *symRef,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(symRef, cg) {}
+    MemoryReference(TR::SymbolReference *symRef, intptr_t displacement, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(symRef, displacement, cg)
+    {}
 
-   MemoryReference(TR::SymbolReference *symRef,
-      intptr_t displacement,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(symRef, displacement, cg) {}
-
-   MemoryReference(MemoryReference& mr,
-      intptr_t n,
-      TR::CodeGenerator *cg,
-      TR_ScratchRegisterManager *srm = NULL) :
-         OMR::MemoryReferenceConnector(mr, n, cg) {}
-
-   };
-}
+    MemoryReference(MemoryReference &mr, intptr_t n, TR::CodeGenerator *cg, TR_ScratchRegisterManager *srm = NULL)
+        : OMR::MemoryReferenceConnector(mr, n, cg)
+    {}
+};
+} // namespace TR
 
 #endif

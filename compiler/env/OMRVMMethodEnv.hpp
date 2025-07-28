@@ -27,43 +27,40 @@
  */
 #ifndef OMR_VMMETHODENV_CONNECTOR
 #define OMR_VMMETHODENV_CONNECTOR
+
 namespace OMR {
 class VMMethodEnv;
 typedef OMR::VMMethodEnv VMMethodEnvConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stdint.h>
 #include "infra/Annotations.hpp"
 #include "env/jittypes.h"
 
+namespace OMR {
 
-namespace OMR
-{
-
-class OMR_EXTENSIBLE VMMethodEnv
-   {
+class OMR_EXTENSIBLE VMMethodEnv {
 public:
+    /**
+     * \brief  Does this method contain any backward branches?
+     * \return true if there are backward branches, false if there aren't or unknown
+     */
+    bool hasBackwardBranches(TR_OpaqueMethodBlock *method) { return false; }
 
-   /**
-    * \brief  Does this method contain any backward branches?
-    * \return true if there are backward branches, false if there aren't or unknown
-    */
-   bool hasBackwardBranches(TR_OpaqueMethodBlock *method) { return false; }
+    /**
+     * \brief  Is this method compiled?
+     * \return true if compiled, false if not or unknown
+     */
+    bool isCompiledMethod(TR_OpaqueMethodBlock *method) { return false; }
 
-   /**
-    * \brief  Is this method compiled?
-    * \return true if compiled, false if not or unknown
-    */ 
-   bool isCompiledMethod(TR_OpaqueMethodBlock *method) { return false; }
+    /**
+     * \brief  Ask for the start PC of the provided method
+     * \return the start PC, or 0 if unknown or not compiled
+     */
+    uintptr_t startPC(TR_OpaqueMethodBlock *method) { return 0; }
+};
 
-   /**
-    * \brief  Ask for the start PC of the provided method
-    * \return the start PC, or 0 if unknown or not compiled
-    */
-   uintptr_t startPC(TR_OpaqueMethodBlock *method) { return 0; }
-   };
-
-}
+} // namespace OMR
 
 #endif

@@ -27,47 +27,44 @@
  */
 #ifndef OMR_DEBUG_ENV_CONNECTOR
 #define OMR_DEBUG_ENV_CONNECTOR
+
 namespace OMR {
 class DebugEnv;
 typedef OMR::DebugEnv DebugEnvConnector;
-}
+} // namespace OMR
 #endif
-
 
 #include "infra/Annotations.hpp"
 #include "env/jittypes.h"
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE DebugEnv
-   {
+class OMR_EXTENSIBLE DebugEnv {
 public:
-   DebugEnv() {}
+    DebugEnv() {}
 
-   void breakPoint();
+    void breakPoint();
 
-   const char *extraAssertMessage(TR::Compilation *comp) { return ""; }
+    const char *extraAssertMessage(TR::Compilation *comp) { return ""; }
 
-   int32_t hexAddressWidthInChars() { return _hexAddressWidthInChars; }
+    int32_t hexAddressWidthInChars() { return _hexAddressWidthInChars; }
 
-   // Deprecate in favour of 'pointerPrintfMaxLenInChars' ?
-   //
-   int32_t hexAddressFieldWidthInChars() { return _hexAddressFieldWidthInChars; }
+    // Deprecate in favour of 'pointerPrintfMaxLenInChars' ?
+    //
+    int32_t hexAddressFieldWidthInChars() { return _hexAddressFieldWidthInChars; }
 
-   int32_t codeByteColumnWidth() { return _codeByteColumnWidth; }
+    int32_t codeByteColumnWidth() { return _codeByteColumnWidth; }
 
-   int32_t pointerPrintfMaxLenInChars() { return _hexAddressFieldWidthInChars; }
+    int32_t pointerPrintfMaxLenInChars() { return _hexAddressFieldWidthInChars; }
 
 protected:
+    int32_t _hexAddressWidthInChars;
 
-   int32_t _hexAddressWidthInChars;
+    int32_t _hexAddressFieldWidthInChars;
 
-   int32_t _hexAddressFieldWidthInChars;
+    int32_t _codeByteColumnWidth;
+};
 
-   int32_t _codeByteColumnWidth;
-   };
-
-}
+} // namespace OMR
 
 #endif

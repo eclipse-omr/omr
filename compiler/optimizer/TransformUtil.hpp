@@ -28,21 +28,15 @@ namespace TR {
 class Compilation;
 }
 
-namespace TR
-   {
-   class OMR_EXTENSIBLE TransformUtil : public OMR::TransformUtilConnector
-      {
-      public:
+namespace TR {
+class OMR_EXTENSIBLE TransformUtil : public OMR::TransformUtilConnector {
+public:
+    static TR::Node *generateArrayElementShiftAmountTrees(TR::Compilation *comp, TR::Node *object) { return NULL; }
 
-	   static TR::Node *generateArrayElementShiftAmountTrees(
-	         TR::Compilation *comp,
-	         TR::Node *object) { return NULL; }
-
-      TransformUtil() :
-         OMR::TransformUtilConnector()
-         {
-         }
-      };
-   }
+    TransformUtil()
+        : OMR::TransformUtilConnector()
+    {}
+};
+} // namespace TR
 
 #endif

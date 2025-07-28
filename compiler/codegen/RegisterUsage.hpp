@@ -29,21 +29,23 @@ namespace TR {
 class Register;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class RegisterUsage
-   {
-   public:
-   TR_ALLOC(TR_Memory::Register)
+class RegisterUsage {
+public:
+    TR_ALLOC(TR_Memory::Register)
 
-   RegisterUsage(TR::Register *v, ncount_t u): virtReg(v), useCount(u), mergeFuc(0) {}
+    RegisterUsage(TR::Register *v, ncount_t u)
+        : virtReg(v)
+        , useCount(u)
+        , mergeFuc(0)
+    {}
 
-   TR::Register *   virtReg;
-   ncount_t     useCount;
-   ncount_t     mergeFuc;  // cache a virtual's original future use
-   };
+    TR::Register *virtReg;
+    ncount_t useCount;
+    ncount_t mergeFuc; // cache a virtual's original future use
+};
 
-}
+} // namespace OMR
 
 #endif

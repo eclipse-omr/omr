@@ -27,10 +27,11 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
+
 namespace OMR {
 class TreeEvaluator;
 typedef OMR::TreeEvaluator TreeEvaluatorConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -39,83 +40,84 @@ typedef OMR::TreeEvaluator TreeEvaluatorConnector;
 #include "il/Node.hpp"
 
 class TR_OpaqueClassBlock;
+
 namespace TR {
 class SymbolReference;
 class CodeGenerator;
 class Register;
-}
+} // namespace TR
 
+namespace OMR {
 
-namespace OMR
-{
+class OMR_EXTENSIBLE TreeEvaluator {
+public:
+    static TR::Register *brdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *brdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *srdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *srdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *irdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *irdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *lrdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *lrdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *frdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *frdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *drdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *drdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *ardbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *ardbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *swrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *swrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *bwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *bwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *iwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *iwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *lwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *lwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
 
-class OMR_EXTENSIBLE TreeEvaluator
-   {
-   public:
-   static TR::Register *brdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *brdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *srdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *srdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *irdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *irdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *lrdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *lrdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *frdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *frdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *drdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *drdbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *ardbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *ardbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *swrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *swrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *bwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *bwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *iwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *iwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *lwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *lwrtbariEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static bool instanceOfOrCheckCastNeedEqualityTest(TR::Node *castClassNode, TR::CodeGenerator *cg);
+    static bool instanceOfOrCheckCastNeedSuperTest(TR::Node *castClassNode, TR::CodeGenerator *cg);
 
-   static bool instanceOfOrCheckCastNeedEqualityTest(TR::Node * castClassNode, TR::CodeGenerator *cg);
-   static bool instanceOfOrCheckCastNeedSuperTest(TR::Node * castClassNode, TR::CodeGenerator *cg);
+    static TR_GlobalRegisterNumber getHighGlobalRegisterNumberIfAny(TR::Node *node, TR::CodeGenerator *cg);
 
-   static TR_GlobalRegisterNumber getHighGlobalRegisterNumberIfAny(TR::Node *node, TR::CodeGenerator *cg);
+    static int32_t classDepth(TR::Node *castClassNode, TR::CodeGenerator *cg);
+    static int32_t checkNonNegativePowerOfTwo(int32_t value);
+    static int32_t checkNonNegativePowerOfTwo(int64_t value);
+    static int32_t checkPositiveOrNegativePowerOfTwo(int32_t value);
+    static int32_t checkPositiveOrNegativePowerOfTwo(int64_t value);
 
-   static int32_t classDepth(TR::Node * castClassNode, TR::CodeGenerator * cg);
-   static int32_t checkNonNegativePowerOfTwo(int32_t value);
-   static int32_t checkNonNegativePowerOfTwo(int64_t value);
-   static int32_t checkPositiveOrNegativePowerOfTwo(int32_t value);
-   static int32_t checkPositiveOrNegativePowerOfTwo(int64_t value);
+    /**
+     * @brief unImpOpEvaluator A dummy evaluator for IL opcodes that could be
+     * supported by a codegen but that are not implemented
+     */
+    static TR::Register *unImpOpEvaluator(TR::Node *node, TR::CodeGenerator *cg);
 
-   /**
-    * @brief unImpOpEvaluator A dummy evaluator for IL opcodes that could be
-    * supported by a codegen but that are not implemented
-    */
-   static TR::Register *unImpOpEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    /**
+     * @brief badILOpEvaluator A dummy evaluator for IL opcodes that are not
+     * supported by a codegen (e.g. because they are specific to another codegen
+     * or are not applicable to a particular project)
+     */
+    static TR::Register *badILOpEvaluator(TR::Node *node, TR::CodeGenerator *cg);
 
-   /**
-    * @brief badILOpEvaluator A dummy evaluator for IL opcodes that are not
-    * supported by a codegen (e.g. because they are specific to another codegen
-    * or are not applicable to a particular project)
-    */
-   static TR::Register *badILOpEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *compressedRefsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *computeCCEvaluator(TR::Node *node, TR::CodeGenerator *cg);
 
-   static TR::Register *compressedRefsEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   static TR::Register *computeCCEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-   struct TR_ArithmeticOverflowCheckNodes { TR::Node *operationNode, *leftChild, *rightChild; };
-   static bool nodeIsIArithmeticOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
-   static bool nodeIsLArithmeticOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
-   static bool nodeIsIAddOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
-   static bool nodeIsISubOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
-   static bool nodeIsLAddOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
-   static bool nodeIsLSubOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
-   static void evaluateNodesWithFutureUses(TR::Node *node, TR::CodeGenerator *cg);
-   static void initializeStrictlyFutureUseCounts(TR::Node *node, vcount_t visitCount, TR::CodeGenerator *cg);
+    struct TR_ArithmeticOverflowCheckNodes {
+        TR::Node *operationNode, *leftChild, *rightChild;
+    };
 
-   protected:
-   static bool isStaticClassSymRef(TR::SymbolReference * symRef);
+    static bool nodeIsIArithmeticOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
+    static bool nodeIsLArithmeticOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
+    static bool nodeIsIAddOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
+    static bool nodeIsISubOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
+    static bool nodeIsLAddOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
+    static bool nodeIsLSubOverflowCheck(TR::Node *node, TR_ArithmeticOverflowCheckNodes *u);
+    static void evaluateNodesWithFutureUses(TR::Node *node, TR::CodeGenerator *cg);
+    static void initializeStrictlyFutureUseCounts(TR::Node *node, vcount_t visitCount, TR::CodeGenerator *cg);
 
-   };
+protected:
+    static bool isStaticClassSymRef(TR::SymbolReference *symRef);
+};
 
-}
+} // namespace OMR
 
 #endif

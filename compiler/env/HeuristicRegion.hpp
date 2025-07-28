@@ -26,28 +26,23 @@
 
 #include "compile/Compilation.hpp"
 
-namespace TR 
-{
+namespace TR {
 
-class HeuristicRegion
-   {
+class HeuristicRegion {
 public:
-   HeuristicRegion(TR::Compilation *comp) :
-      _comp(comp)
-      {
-      _comp->enterHeuristicRegion();
-      }
+    HeuristicRegion(TR::Compilation *comp)
+        : _comp(comp)
+    {
+        _comp->enterHeuristicRegion();
+    }
 
-   ~HeuristicRegion()
-      {
-      _comp->exitHeuristicRegion();
-      }
+    ~HeuristicRegion() { _comp->exitHeuristicRegion(); }
 
 private:
-   TR::Compilation *_comp;
-   };
+    TR::Compilation *_comp;
+};
 
-}
+} // namespace TR
 
 #endif // OMR_HEURISTIC_REGION_HPP
 

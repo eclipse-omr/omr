@@ -29,13 +29,14 @@
 extern void arm64CodeSync(unsigned char *codeStart, unsigned int codeSize);
 
 extern "C" void _patchVirtualGuard(uint8_t *locationAddr, uint8_t *destinationAddr, int32_t smpFlag)
-   {
-   int64_t distance = (int64_t)destinationAddr - (int64_t)locationAddr;
+{
+    int64_t distance = (int64_t)destinationAddr - (int64_t)locationAddr;
 
-   omrthread_jit_write_protect_disable();
+    omrthread_jit_write_protect_disable();
 
-   *(uint32_t *)locationAddr = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::b) | ((distance >> 2) & 0x3ffffff); /* imm26 */
-   arm64CodeSync((unsigned char *)locationAddr, ARM64_INSTRUCTION_LENGTH);
+    *(uint32_t *)locationAddr
+        = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::b) | ((distance >> 2) & 0x3ffffff); /* imm26 */
+    arm64CodeSync((unsigned char *)locationAddr, ARM64_INSTRUCTION_LENGTH);
 
-   omrthread_jit_write_protect_enable();
-   }
+    omrthread_jit_write_protect_enable();
+}

@@ -24,10 +24,11 @@
 
 #ifndef OMR_MONITORTABLE_CONNECTOR
 #define OMR_MONITORTABLE_CONNECTOR
+
 namespace OMR {
 class MonitorTable;
 typedef MonitorTable MonitorTableConnector;
-}
+} // namespace OMR
 #endif
 
 #include "infra/Annotations.hpp"
@@ -36,41 +37,41 @@ typedef MonitorTable MonitorTableConnector;
 namespace TR {
 class MonitorTable;
 class Monitor;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 // singleton
-class OMR_EXTENSIBLE MonitorTable
-   {
-   public:
+class OMR_EXTENSIBLE MonitorTable {
+public:
+    static TR::MonitorTable *get() { return _instance; }
 
-   static TR::MonitorTable *get() { return _instance; }
+    void free() { TR_UNIMPLEMENTED(); }
 
-   void free() { TR_UNIMPLEMENTED(); }
-   void removeAndDestroy(TR::Monitor *monitor) { TR_UNIMPLEMENTED(); }
+    void removeAndDestroy(TR::Monitor *monitor) { TR_UNIMPLEMENTED(); }
 
-   TR::Monitor *getScratchMemoryPoolMonitor() { return _scratchMemoryPoolMonitor; }
+    TR::Monitor *getScratchMemoryPoolMonitor() { return _scratchMemoryPoolMonitor; }
 
-   protected:
+protected:
+    TR::MonitorTable *self();
 
-   TR::MonitorTable *self();
+    static TR::MonitorTable *_instance;
 
-   static TR::MonitorTable *_instance;
+    // Used by SCRATCH segments allocations
+    // A copy of this goes into TR_PersistentMemory as well
+    //
+    TR::Monitor *_scratchMemoryPoolMonitor;
 
-   // Used by SCRATCH segments allocations
-   // A copy of this goes into TR_PersistentMemory as well
-   //
-   TR::Monitor *_scratchMemoryPoolMonitor;
+private:
+    friend class TR::Monitor;
+    friend class TR::MonitorTable;
 
-   private:
+    TR::Monitor *create(const char *name)
+    {
+        TR_UNIMPLEMENTED();
+        return 0;
+    }
+};
 
-   friend class TR::Monitor;
-   friend class TR::MonitorTable;
-
-   TR::Monitor *create(const char *name) { TR_UNIMPLEMENTED(); return 0; }
-   };
-
-}
+} // namespace OMR
 
 #endif

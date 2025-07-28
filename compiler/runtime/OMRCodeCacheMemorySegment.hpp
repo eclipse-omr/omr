@@ -28,10 +28,11 @@
 
 #ifndef OMR_CODECACHEMEMORYSEGMENT_CONNECTOR
 #define OMR_CODECACHEMEMORYSEGMENT_CONNECTOR
+
 namespace OMR {
 class CodeCacheMemorySegment;
 typedef CodeCacheMemorySegment CodeCacheMemorySegmentConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -39,46 +40,59 @@ typedef CodeCacheMemorySegment CodeCacheMemorySegmentConnector;
 #include "infra/Annotations.hpp"
 #include "runtime/CodeCacheTypes.hpp"
 
-
 namespace TR {
 class CodeCacheMemorySegment;
 class CodeCacheManager;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE CodeCacheMemorySegment
-   {
+class OMR_EXTENSIBLE CodeCacheMemorySegment {
 public:
-   CodeCacheMemorySegment() : _base(NULL), _alloc(NULL), _top(NULL) { }
-   CodeCacheMemorySegment(uint8_t *memory, size_t size) : _base(memory), _alloc(memory), _top(memory+size) { }
-   CodeCacheMemorySegment(uint8_t *memory, uint8_t *top) : _base(memory), _alloc(memory), _top(top) { }
+    CodeCacheMemorySegment()
+        : _base(NULL)
+        , _alloc(NULL)
+        , _top(NULL)
+    {}
 
-   TR::CodeCacheMemorySegment *self();
+    CodeCacheMemorySegment(uint8_t *memory, size_t size)
+        : _base(memory)
+        , _alloc(memory)
+        , _top(memory + size)
+    {}
 
-   void *operator new(size_t size, TR::CodeCacheMemorySegment *segment) { return segment; }
+    CodeCacheMemorySegment(uint8_t *memory, uint8_t *top)
+        : _base(memory)
+        , _alloc(memory)
+        , _top(top)
+    {}
 
-   void operator delete(void *pmem, TR::CodeCacheMemorySegment *segment) { /* do nothing */ }
+    TR::CodeCacheMemorySegment *self();
 
-   uint8_t *segmentBase() const  { return _base; }
-   uint8_t *segmentAlloc() const { return _alloc; }
-   uint8_t *segmentTop() const   { return _top; }
+    void *operator new(size_t size, TR::CodeCacheMemorySegment *segment) { return segment; }
 
-   void adjustAlloc(int64_t adjust);
+    void operator delete(void *pmem, TR::CodeCacheMemorySegment *segment) { /* do nothing */ }
 
-   void setSegmentBase(uint8_t *newBase);
-   void setSegmentAlloc(uint8_t *newAlloc);
-   void setSegmentTop(uint8_t *newTop);
+    uint8_t *segmentBase() const { return _base; }
 
-   // memory is backed by something else
-   void free(TR::CodeCacheManager *manager);
+    uint8_t *segmentAlloc() const { return _alloc; }
 
-   uint8_t *_base;
-   uint8_t *_alloc;
-   uint8_t *_top;
-   };
+    uint8_t *segmentTop() const { return _top; }
 
-}
+    void adjustAlloc(int64_t adjust);
+
+    void setSegmentBase(uint8_t *newBase);
+    void setSegmentAlloc(uint8_t *newAlloc);
+    void setSegmentTop(uint8_t *newTop);
+
+    // memory is backed by something else
+    void free(TR::CodeCacheManager *manager);
+
+    uint8_t *_base;
+    uint8_t *_alloc;
+    uint8_t *_top;
+};
+
+} // namespace OMR
 
 #endif

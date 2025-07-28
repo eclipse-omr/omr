@@ -34,27 +34,31 @@ class LabelSymbol;
 class Node;
 class Register;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 
-class TR_S390OutOfLineCodeSection : public TR_OutOfLineCodeSection
-   {
-   TR::InstOpCode::Mnemonic        _targetRegMovOpcode;
-public:
-   TR_S390OutOfLineCodeSection(TR::LabelSymbol * entryLabel, TR::LabelSymbol * restartLabel,
-                               TR::CodeGenerator *cg) : TR_OutOfLineCodeSection(entryLabel, restartLabel, cg)
-                              {}
-
-   TR_S390OutOfLineCodeSection(TR::LabelSymbol * entryLabel,
-                               TR::CodeGenerator *cg) : TR_OutOfLineCodeSection(entryLabel, cg)
-                              {}
-   // For calls
-   //
-   TR_S390OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg);
-
-   TR_S390OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::InstOpCode::Mnemonic targetRegMovOpcode, TR::CodeGenerator *cg);
+class TR_S390OutOfLineCodeSection : public TR_OutOfLineCodeSection {
+    TR::InstOpCode::Mnemonic _targetRegMovOpcode;
 
 public:
-   TR::RegisterDependencyConditions *formEvaluatedArgumentDepList();
-   void generateS390OutOfLineCodeSectionDispatch();
-   };
+    TR_S390OutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+        : TR_OutOfLineCodeSection(entryLabel, restartLabel, cg)
+    {}
+
+    TR_S390OutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::CodeGenerator *cg)
+        : TR_OutOfLineCodeSection(entryLabel, cg)
+    {}
+
+    // For calls
+    //
+    TR_S390OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
+        TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg);
+
+    TR_S390OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
+        TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::InstOpCode::Mnemonic targetRegMovOpcode,
+        TR::CodeGenerator *cg);
+
+public:
+    TR::RegisterDependencyConditions *formEvaluatedArgumentDepList();
+    void generateS390OutOfLineCodeSectionDispatch();
+};
 #endif

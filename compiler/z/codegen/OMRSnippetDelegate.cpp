@@ -24,8 +24,8 @@
 // a different name to the codesection (csect) for this file so that it
 // doesn't conflict with another file with the same name.
 //
-#pragma csect(CODE,"OMRZSnipDel#C")
-#pragma csect(STATIC,"OMRZSnipDel#S")
-#pragma csect(TEST,"OMRZSnipDel#T")
+#pragma csect(CODE, "OMRZSnipDel#C")
+#pragma csect(STATIC, "OMRZSnipDel#S")
+#pragma csect(TEST, "OMRZSnipDel#T")
 
 #include "codegen/SnippetDelegate.hpp"

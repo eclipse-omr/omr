@@ -27,10 +27,11 @@
  */
 #ifndef OMR_OBJECTFORMAT_CONNECTOR
 #define OMR_OBJECTFORMAT_CONNECTOR
+
 namespace OMR {
 class ObjectFormat;
 typedef OMR::ObjectFormat ObjectFormatConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -42,10 +43,9 @@ typedef OMR::ObjectFormat ObjectFormatConnector;
 namespace TR {
 class FunctionCallData;
 class Instruction;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * @class ObjectFormat
@@ -77,61 +77,57 @@ namespace OMR
  *    the contents and populating it accordingly at each call site with i
  *    whatever data values are necessary to encode the call.
  */
-class OMR_EXTENSIBLE ObjectFormat
-   {
-
+class OMR_EXTENSIBLE ObjectFormat {
 public:
+    TR_ALLOC(TR_Memory::ObjectFormat)
 
-   TR_ALLOC(TR_Memory::ObjectFormat)
+    /**
+     * @brief Emit a sequence of \c TR::Instruction 's to call a function using this
+     *        object format.
+     *
+     * @param[in,out] data : a populated \c TR::FunctionCallData structure with
+     *            valid parameters for this call site.  Note that this function
+     *            may alter the contents of this structure.
+     *
+     * @return : the final \c TR::Instruction produced in the instruction stream to emit a
+     *           call to a function for this object format.
+     */
+    virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data) = 0;
 
-   /**
-    * @brief Emit a sequence of \c TR::Instruction 's to call a function using this
-    *        object format.
-    *
-    * @param[in,out] data : a populated \c TR::FunctionCallData structure with
-    *            valid parameters for this call site.  Note that this function
-    *            may alter the contents of this structure.
-    *
-    * @return : the final \c TR::Instruction produced in the instruction stream to emit a
-    *           call to a function for this object format.
-    */
-   virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data) = 0;
+    /**
+     * @brief Emit the binary code to call a function using this object format.
+     *        This function is suitable for calling during binary encoding and does not
+     *        use \c TR::Instruction 's.
+     *
+     * @param[in,out] data : a populated \c TR::FunctionCallData structure with valid
+     *            parameters for this call site.  Note that this function may alter
+     *            the contents of this structure.
+     *
+     * @return : the next buffer address following the necessary instruction(s) to emit
+     *           a function call using this object format.
+     */
+    virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data) = 0;
 
-   /**
-    * @brief Emit the binary code to call a function using this object format.
-    *        This function is suitable for calling during binary encoding and does not
-    *        use \c TR::Instruction 's.
-    *
-    * @param[in,out] data : a populated \c TR::FunctionCallData structure with valid
-    *            parameters for this call site.  Note that this function may alter
-    *            the contents of this structure.
-    *
-    * @return : the next buffer address following the necessary instruction(s) to emit
-    *           a function call using this object format.
-    */
-   virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data) = 0;
+    /**
+     * @brief Return the length in bytes of the binary encoding sequence to generate a
+     *        call to a function using this object format.  If the exact length
+     *        cannot be determined, this should return a conservatively correct estimate
+     *        that is at least as large as the actual length.
+     *
+     * @return : the length in bytes of the encoding of a function call
+     */
+    virtual int32_t estimateBinaryLength() = 0;
 
-   /**
-    * @brief Return the length in bytes of the binary encoding sequence to generate a
-    *        call to a function using this object format.  If the exact length
-    *        cannot be determined, this should return a conservatively correct estimate
-    *        that is at least as large as the actual length.
-    *
-    * @return : the length in bytes of the encoding of a function call
-    */
-   virtual int32_t estimateBinaryLength() = 0;
+    /**
+     * @brief Print an encoded function call to a file stream
+     *
+     * @param[in] file : the \c TR::FILE to print to
+     * @param[in] data : a populated \c TR::FunctionCallData structure with valid parameters
+     *          for an encoded function call.
+     */
+    virtual uint8_t *printEncodedFunctionCall(TR::FILE *file, TR::FunctionCallData &data) = 0;
+};
 
-   /**
-    * @brief Print an encoded function call to a file stream
-    *
-    * @param[in] file : the \c TR::FILE to print to
-    * @param[in] data : a populated \c TR::FunctionCallData structure with valid parameters
-    *          for an encoded function call.
-    */
-   virtual uint8_t* printEncodedFunctionCall(TR::FILE *file, TR::FunctionCallData &data) = 0;
-
-   };
-
-}
+} // namespace OMR
 
 #endif

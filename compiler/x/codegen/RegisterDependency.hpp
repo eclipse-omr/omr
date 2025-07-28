@@ -27,29 +27,30 @@
 #include "codegen/RegisterDependencyStruct.hpp"
 
 class TR_Memory;
+
 namespace TR {
 class CodeGenerator;
 class Node;
 class Register;
-}
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 class OMR_EXTENSIBLE RegisterDependencyGroup : public OMR::RegisterDependencyGroupConnector {};
 
-class RegisterDependencyConditions : public OMR::RegisterDependencyConditionsConnector
-   {
-   public:
+class RegisterDependencyConditions : public OMR::RegisterDependencyConditionsConnector {
+public:
+    RegisterDependencyConditions()
+        : OMR::RegisterDependencyConditionsConnector()
+    {}
 
-   RegisterDependencyConditions() : OMR::RegisterDependencyConditionsConnector () {}
+    RegisterDependencyConditions(uint32_t numPreConds, uint32_t numPostConds, TR_Memory *m)
+        : OMR::RegisterDependencyConditionsConnector(numPreConds, numPostConds, m)
+    {}
 
-   RegisterDependencyConditions(uint32_t numPreConds, uint32_t numPostConds, TR_Memory * m) :
-      OMR::RegisterDependencyConditionsConnector(numPreConds, numPostConds, m) {}
-
-   RegisterDependencyConditions(TR::Node *node, TR::CodeGenerator *cg, uint32_t additionalRegDeps = 0) :
-      OMR::RegisterDependencyConditionsConnector(node, cg, additionalRegDeps) {}
-
-   };
-}
+    RegisterDependencyConditions(TR::Node *node, TR::CodeGenerator *cg, uint32_t additionalRegDeps = 0)
+        : OMR::RegisterDependencyConditionsConnector(node, cg, additionalRegDeps)
+    {}
+};
+} // namespace TR
 
 #endif

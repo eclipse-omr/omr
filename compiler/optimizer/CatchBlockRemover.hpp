@@ -26,42 +26,40 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 
-
 /*
  * Class TR_CatchBlockRemover
  * ==========================
  *
  * Catch block removal is a simple optimization that aims to do two things
  *
- * 1) Eliminate catch blocks that have no incoming exception edges, i.e. the 
- * optimizer has proven that no exception thrown from any of its exception 
- * predecessors (usually blocks generated for the try region) can reach a 
+ * 1) Eliminate catch blocks that have no incoming exception edges, i.e. the
+ * optimizer has proven that no exception thrown from any of its exception
+ * predecessors (usually blocks generated for the try region) can reach a
  * particular catch block.
- * 
- * 2) Eliminate exception edges that cannot be taken, e.g. if a particular 
- * block had all its exception points removed by the optimizer then it can 
- * no longer throw anything; so all the exception edges going out from the 
- * block can be deleted. It also eliminates an exception edge if the possible 
+ *
+ * 2) Eliminate exception edges that cannot be taken, e.g. if a particular
+ * block had all its exception points removed by the optimizer then it can
+ * no longer throw anything; so all the exception edges going out from the
+ * block can be deleted. It also eliminates an exception edge if the possible
  * exceptions are still not ones that can be caught by a particular catch block.
- * 
- * These transformations simplify the flow of control in general and make it 
+ *
+ * These transformations simplify the flow of control in general and make it
  * simpler for later analyses to work.
  */
 
-class TR_CatchBlockRemover : public TR::Optimization
-   {
-   public:
-   TR_CatchBlockRemover(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_CatchBlockRemover(manager);
-      }
+class TR_CatchBlockRemover : public TR::Optimization {
+public:
+    TR_CatchBlockRemover(TR::OptimizationManager *manager);
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_CatchBlockRemover(manager);
+    }
 
-   private :
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   };
+private:
+};
 
 #endif

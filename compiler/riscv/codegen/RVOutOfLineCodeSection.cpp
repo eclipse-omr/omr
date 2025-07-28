@@ -21,18 +21,11 @@
 
 #include "codegen/RVOutOfLineCodeSection.hpp"
 
-TR_RVOutOfLineCodeSection::TR_RVOutOfLineCodeSection(TR::Node *callNode,
-                            TR::ILOpCodes callOp,
-                            TR::Register *targetReg,
-                            TR::LabelSymbol *entryLabel,
-                            TR::LabelSymbol *restartLabel,
-                            TR::CodeGenerator *cg) :
-                            TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
-   {
-   generateRVOutOfLineCodeSectionDispatch();
-   }
+TR_RVOutOfLineCodeSection::TR_RVOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
+    TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+    : TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
+{
+    generateRVOutOfLineCodeSectionDispatch();
+}
 
-void TR_RVOutOfLineCodeSection::generateRVOutOfLineCodeSectionDispatch()
-   {
-   TR_UNIMPLEMENTED();
-   }
+void TR_RVOutOfLineCodeSection::generateRVOutOfLineCodeSectionDispatch() { TR_UNIMPLEMENTED(); }

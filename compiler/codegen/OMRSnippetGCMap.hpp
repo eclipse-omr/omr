@@ -27,10 +27,11 @@
  */
 #ifndef OMR_SNIPPETGCMAP_CONNECTOR
 #define OMR_SNIPPETGCMAP_CONNECTOR
+
 namespace OMR {
 class SnippetGCMap;
 typedef OMR::SnippetGCMap SnippetGCMapConnector;
-}
+} // namespace OMR
 #endif
 
 #include "infra/Flags.hpp"
@@ -38,48 +39,46 @@ typedef OMR::SnippetGCMap SnippetGCMapConnector;
 namespace TR {
 class Instruction;
 class CodeGenerator;
-}
+} // namespace TR
 class TR_GCStackMap;
 
-namespace OMR
-{
+namespace OMR {
 
-class SnippetGCMap
-   {
-   public:
+class SnippetGCMap {
+public:
+    SnippetGCMap()
+        : _flags(0)
+        , _GCRegisterMask(0)
+        , _stackMap(0)
+    {}
 
-   SnippetGCMap() :
-      _flags(0),
-      _GCRegisterMask(0),
-      _stackMap(0)
-      {
-      }
+    TR_GCStackMap *getStackMap() { return _stackMap; }
 
-   TR_GCStackMap *getStackMap() { return _stackMap; }
-   void setStackMap(TR_GCStackMap *m) { _stackMap = m; }
+    void setStackMap(TR_GCStackMap *m) { _stackMap = m; }
 
-   uint32_t getGCRegisterMask() { return _GCRegisterMask; }
-   void setGCRegisterMask(uint32_t regMask) { _GCRegisterMask = regMask; }
+    uint32_t getGCRegisterMask() { return _GCRegisterMask; }
 
-   bool isGCSafePoint() { return _flags.testAll(TO_MASK8(GCSafePoint)); }
-   void setGCSafePoint() { _flags.set(TO_MASK8(GCSafePoint)); }
-   void resetGCSafePoint() { _flags.reset(TO_MASK8(GCSafePoint)); }
+    void setGCRegisterMask(uint32_t regMask) { _GCRegisterMask = regMask; }
 
-   void registerStackMap(TR::Instruction *instruction, TR::CodeGenerator *cg);
-   void registerStackMap(uint8_t *callSiteAddress, TR::CodeGenerator *cg);
+    bool isGCSafePoint() { return _flags.testAll(TO_MASK8(GCSafePoint)); }
 
-   enum
-      {
-      GCSafePoint = 0
-      };
+    void setGCSafePoint() { _flags.set(TO_MASK8(GCSafePoint)); }
 
-   protected:
+    void resetGCSafePoint() { _flags.reset(TO_MASK8(GCSafePoint)); }
 
-   flags8_t _flags;
-   uint32_t _GCRegisterMask;
-   TR_GCStackMap *_stackMap;
-   };
+    void registerStackMap(TR::Instruction *instruction, TR::CodeGenerator *cg);
+    void registerStackMap(uint8_t *callSiteAddress, TR::CodeGenerator *cg);
 
-}
+    enum {
+        GCSafePoint = 0
+    };
+
+protected:
+    flags8_t _flags;
+    uint32_t _GCRegisterMask;
+    TR_GCStackMap *_stackMap;
+};
+
+} // namespace OMR
 
 #endif

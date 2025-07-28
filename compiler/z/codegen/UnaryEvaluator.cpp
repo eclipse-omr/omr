@@ -64,242 +64,222 @@ class SymbolReference;
 /**
  * 64bit version lconstHelper: load long integer constant (64-bit signed 2's complement)
  */
-TR::Register *
-lconstHelper64(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   TR::Register * longRegister = cg->allocateRegister();
-   node->setRegister(longRegister);
-   int64_t longValue = node->getLongInt();
-   genLoadLongConstant(cg, node, longValue, longRegister);
+TR::Register *lconstHelper64(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    TR::Register *longRegister = cg->allocateRegister();
+    node->setRegister(longRegister);
+    int64_t longValue = node->getLongInt();
+    genLoadLongConstant(cg, node, longValue, longRegister);
 
-   return longRegister;
-   }
+    return longRegister;
+}
 
 /**
  * iconst Evaluator: load integer constant (32-bit signed 2's complement)
  * @see generateLoad32BitConstant
  */
-TR::Register *
-OMR::Z::TreeEvaluator::iconstEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Register * tempReg = node->setRegister(cg->allocateRegister());
-   generateLoad32BitConstant(cg, node, node->getInt(), tempReg, true);
-   return tempReg;
-   }
+TR::Register *OMR::Z::TreeEvaluator::iconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Register *tempReg = node->setRegister(cg->allocateRegister());
+    generateLoad32BitConstant(cg, node, node->getInt(), tempReg, true);
+    return tempReg;
+}
 
 /**
  * aconst Evaluator: load address constant (zero value means NULL)
  */
-TR::Register *
-OMR::Z::TreeEvaluator::aconstEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Register* targetRegister = cg->allocateRegister();
+TR::Register *OMR::Z::TreeEvaluator::aconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Register *targetRegister = cg->allocateRegister();
 
-   node->setRegister(targetRegister);
+    node->setRegister(targetRegister);
 
-   genLoadAddressConstant(cg, node, node->getAddress(), targetRegister);
+    genLoadAddressConstant(cg, node, node->getAddress(), targetRegister);
 
-   return targetRegister;
-   }
+    return targetRegister;
+}
 
 /**
  * lconst Evaluator: load long integer constant (64-bit signed 2's complement)
  */
-TR::Register *
-OMR::Z::TreeEvaluator::lconstEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   return lconstHelper64(node, cg);
-   }
+TR::Register *OMR::Z::TreeEvaluator::lconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return lconstHelper64(node, cg);
+}
 
 /**
  * bconst Evaluator: load byte integer constant (8-bit signed 2's complement)
  */
-TR::Register *
-OMR::Z::TreeEvaluator::bconstEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Register * tempReg = node->setRegister(cg->allocateRegister());
-   generateLoad32BitConstant(cg, node, node->getByte(), tempReg, true);
-   return tempReg;
-   }
+TR::Register *OMR::Z::TreeEvaluator::bconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Register *tempReg = node->setRegister(cg->allocateRegister());
+    generateLoad32BitConstant(cg, node, node->getByte(), tempReg, true);
+    return tempReg;
+}
 
 /**
  * sconst Evaluator: load short integer constant (16-bit signed 2's complement)
  */
-TR::Register *
-OMR::Z::TreeEvaluator::sconstEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Register * tempReg = node->setRegister(cg->allocateRegister());
-   int32_t value = node->isUnsigned() ? node->getConst<uint16_t>() : node->getShortInt();
-   generateLoad32BitConstant(cg, node, value, tempReg, true);
-   return tempReg;
-   }
+TR::Register *OMR::Z::TreeEvaluator::sconstEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Register *tempReg = node->setRegister(cg->allocateRegister());
+    int32_t value = node->isUnsigned() ? node->getConst<uint16_t>() : node->getShortInt();
+    generateLoad32BitConstant(cg, node, value, tempReg, true);
+    return tempReg;
+}
 
 /**
  * labsEvaluator -
  */
-TR::Register *
-OMR::Z::TreeEvaluator::labsEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Node * firstChild = node->getFirstChild();
-   TR::Register * targetRegister = cg->allocateRegister();;
-   TR::Register * sourceRegister = cg->evaluate(firstChild);
-   generateRRInstruction(cg, TR::InstOpCode::LPGR, node, targetRegister, sourceRegister);
-   node->setRegister(targetRegister);
-   cg->decReferenceCount(firstChild);
-   return targetRegister;
-   }
+TR::Register *OMR::Z::TreeEvaluator::labsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Register *targetRegister = cg->allocateRegister();
+    ;
+    TR::Register *sourceRegister = cg->evaluate(firstChild);
+    generateRRInstruction(cg, TR::InstOpCode::LPGR, node, targetRegister, sourceRegister);
+    node->setRegister(targetRegister);
+    cg->decReferenceCount(firstChild);
+    return targetRegister;
+}
 
 /**
  * iabsEvaluator -
  */
-TR::Register *
-OMR::Z::TreeEvaluator::iabsEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Node * firstChild = node->getFirstChild();
-   TR::Compilation *comp = cg->comp();
+TR::Register *OMR::Z::TreeEvaluator::iabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Compilation *comp = cg->comp();
 
-   TR::Register * sourceRegister = cg->evaluate(firstChild);
-   TR::Register * targetRegister;
-   TR::InstOpCode::Mnemonic opCode  = TR::InstOpCode::bad;
-   if (node->getOpCodeValue() == TR::fabs)
-      opCode = TR::InstOpCode::LPEBR;
-   else if (node->getOpCodeValue() == TR::dabs)
-      opCode = TR::InstOpCode::LPDBR;
-   else if (node->getOpCodeValue() == TR::iabs)
-      opCode = TR::InstOpCode::getLoadPositiveRegWidenOpCode();
-   else if (cg->comp()->target().is64Bit())
-      opCode = TR::InstOpCode::LPGR;
-   else
-      TR_ASSERT( 0,"labs for 32 bit not implemented yet");
+    TR::Register *sourceRegister = cg->evaluate(firstChild);
+    TR::Register *targetRegister;
+    TR::InstOpCode::Mnemonic opCode = TR::InstOpCode::bad;
+    if (node->getOpCodeValue() == TR::fabs)
+        opCode = TR::InstOpCode::LPEBR;
+    else if (node->getOpCodeValue() == TR::dabs)
+        opCode = TR::InstOpCode::LPDBR;
+    else if (node->getOpCodeValue() == TR::iabs)
+        opCode = TR::InstOpCode::getLoadPositiveRegWidenOpCode();
+    else if (cg->comp()->target().is64Bit())
+        opCode = TR::InstOpCode::LPGR;
+    else
+        TR_ASSERT(0, "labs for 32 bit not implemented yet");
 
-        if (node->getOpCodeValue() == TR::fabs
-            || node->getOpCodeValue() == TR::dabs
-            )
-      {
-      if (cg->canClobberNodesRegister(firstChild))
-         targetRegister = sourceRegister;
-      else
-         targetRegister = cg->allocateRegister(TR_FPR);
-      }
-   else
-      {
-      if (cg->canClobberNodesRegister(firstChild))
-         targetRegister = sourceRegister;
-      else
-         targetRegister = cg->allocateRegister();
-      }
+    if (node->getOpCodeValue() == TR::fabs || node->getOpCodeValue() == TR::dabs) {
+        if (cg->canClobberNodesRegister(firstChild))
+            targetRegister = sourceRegister;
+        else
+            targetRegister = cg->allocateRegister(TR_FPR);
+    } else {
+        if (cg->canClobberNodesRegister(firstChild))
+            targetRegister = sourceRegister;
+        else
+            targetRegister = cg->allocateRegister();
+    }
 
-      {
-      generateRRInstruction(cg, opCode, node, targetRegister, sourceRegister);
-      }
+    {
+        generateRRInstruction(cg, opCode, node, targetRegister, sourceRegister);
+    }
 
-   node->setRegister(targetRegister);
-   cg->decReferenceCount(firstChild);
-   return targetRegister;
-   }
+    node->setRegister(targetRegister);
+    cg->decReferenceCount(firstChild);
+    return targetRegister;
+}
 
 /**
  * l2aEvaluator - compressed pointers
  */
-TR::Register *
-OMR::Z::TreeEvaluator::l2aEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   if (!comp->useCompressedPointers())
-      {
-      return TR::TreeEvaluator::addressCastEvaluator<64, true>(node, cg);
-      }
+TR::Register *OMR::Z::TreeEvaluator::l2aEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    if (!comp->useCompressedPointers()) {
+        return TR::TreeEvaluator::addressCastEvaluator<64, true>(node, cg);
+    }
 
-   // if comp->useCompressedPointers
-   //
-   // pattern match the sequence under the l2a
-   //    aloadi f      l2a                       <- node
-   //       aload O       ladd
-   //                       lshl
-   //                          i2l
-   //                            iloadi f        <- load
-   //                               aload O
-   //                          iconst shftKonst
-   //                       lconst HB
-   //
-   // -or- if the load is known to be null
-   //  l2a
-   //    i2l
-   //      iloadi f
-   //         aload O
-   //
-   TR::Node *firstChild = node->getFirstChild();
-   // after remat changes, this assume is no longer valid
-   //
-   /*
-   bool hasCompPtrs = false;
-   if ((firstChild->getOpCode().isAdd() ||
-        firstChild->getOpCodeValue() == TR::lshl) &&
-         firstChild->containsCompressionSequence())
-      hasCompPtrs = true;
-   else if (node->isNull())
-      hasCompPtrs = true;
+    // if comp->useCompressedPointers
+    //
+    // pattern match the sequence under the l2a
+    //    aloadi f      l2a                       <- node
+    //       aload O       ladd
+    //                       lshl
+    //                          i2l
+    //                            iloadi f        <- load
+    //                               aload O
+    //                          iconst shftKonst
+    //                       lconst HB
+    //
+    // -or- if the load is known to be null
+    //  l2a
+    //    i2l
+    //      iloadi f
+    //         aload O
+    //
+    TR::Node *firstChild = node->getFirstChild();
+    // after remat changes, this assume is no longer valid
+    //
+    /*
+    bool hasCompPtrs = false;
+    if ((firstChild->getOpCode().isAdd() ||
+         firstChild->getOpCodeValue() == TR::lshl) &&
+          firstChild->containsCompressionSequence())
+       hasCompPtrs = true;
+    else if (node->isNull())
+       hasCompPtrs = true;
 
-   TR_ASSERT(hasCompPtrs, "no compression sequence found under l2a node [%p]\n", node);
-   */
+    TR_ASSERT(hasCompPtrs, "no compression sequence found under l2a node [%p]\n", node);
+    */
 
-   TR::Register* source = cg->evaluate(firstChild);
+    TR::Register *source = cg->evaluate(firstChild);
 
-   // first child is either iu2l (when shift==0) or
-   // the first child is a compression sequence. in the
-   // latter case, we may need to make a copy if the register
-   // is shared across the decompression sequence
-   if (comp->useCompressedPointers() && (TR::Compiler->om.compressedReferenceShift() == 0 || firstChild->containsCompressionSequence()) && !node->isl2aForCompressedArrayletLeafLoad())
-      source->setContainsCollectedReference();
+    // first child is either iu2l (when shift==0) or
+    // the first child is a compression sequence. in the
+    // latter case, we may need to make a copy if the register
+    // is shared across the decompression sequence
+    if (comp->useCompressedPointers()
+        && (TR::Compiler->om.compressedReferenceShift() == 0 || firstChild->containsCompressionSequence())
+        && !node->isl2aForCompressedArrayletLeafLoad())
+        source->setContainsCollectedReference();
 
-   node->setRegister(source);
+    node->setRegister(source);
 
-   cg->decReferenceCount(firstChild);
+    cg->decReferenceCount(firstChild);
 
-   return source;
-   }
+    return source;
+}
 
-TR::Register *
-OMR::Z::TreeEvaluator::dsqrtEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Node * firstChild = node->getFirstChild();
-   TR::Register * targetRegister = cg->allocateRegister(TR_FPR);
+TR::Register *OMR::Z::TreeEvaluator::dsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Register *targetRegister = cg->allocateRegister(TR_FPR);
 
-   if (firstChild->getOpCodeValue() == TR::dloadi &&
-       firstChild->getReferenceCount() == 1 &&
-       firstChild->getRegister() == NULL)
-      {
-      generateRXEInstruction(cg, TR::InstOpCode::SQDB, node, targetRegister, TR::MemoryReference::create(cg, firstChild), 0);
-      }
-   else
-      {
-      TR::Register * opRegister = cg->evaluate(firstChild);
-      generateRRInstruction(cg, TR::InstOpCode::SQDBR, node, targetRegister, opRegister);
-      cg->decReferenceCount(firstChild);
-      }
-   node->setRegister(targetRegister);
-   return targetRegister;
-   }
+    if (firstChild->getOpCodeValue() == TR::dloadi && firstChild->getReferenceCount() == 1
+        && firstChild->getRegister() == NULL) {
+        generateRXEInstruction(cg, TR::InstOpCode::SQDB, node, targetRegister,
+            TR::MemoryReference::create(cg, firstChild), 0);
+    } else {
+        TR::Register *opRegister = cg->evaluate(firstChild);
+        generateRRInstruction(cg, TR::InstOpCode::SQDBR, node, targetRegister, opRegister);
+        cg->decReferenceCount(firstChild);
+    }
+    node->setRegister(targetRegister);
+    return targetRegister;
+}
 
-TR::Register *
-OMR::Z::TreeEvaluator::fsqrtEvaluator(TR::Node * node, TR::CodeGenerator * cg)
-   {
-   TR::Node *firstChild = node->getFirstChild();
-   TR::Register *targetRegister = NULL;
-   TR::Register *opRegister = cg->evaluate(firstChild);
+TR::Register *OMR::Z::TreeEvaluator::fsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Register *targetRegister = NULL;
+    TR::Register *opRegister = cg->evaluate(firstChild);
 
-   if(cg->canClobberNodesRegister(firstChild))
-      {
-      targetRegister = opRegister;
-      }
-   else
-      {
-      targetRegister = cg->allocateRegister(TR_FPR);
-      }
-   generateRRInstruction(cg, TR::InstOpCode::SQEBR, node, targetRegister, opRegister);
+    if (cg->canClobberNodesRegister(firstChild)) {
+        targetRegister = opRegister;
+    } else {
+        targetRegister = cg->allocateRegister(TR_FPR);
+    }
+    generateRRInstruction(cg, TR::InstOpCode::SQEBR, node, targetRegister, opRegister);
 
-   node->setRegister(targetRegister);
-   cg->decReferenceCount(firstChild);
-   return node->getRegister();
-   }
+    node->setRegister(targetRegister);
+    cg->decReferenceCount(firstChild);
+    return node->getRegister();
+}

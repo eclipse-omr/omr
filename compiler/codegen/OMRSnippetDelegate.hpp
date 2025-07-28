@@ -27,25 +27,22 @@
  */
 #ifndef OMR_SNIPPETDELEGATE_CONNECTOR
 #define OMR_SNIPPETDELEGATE_CONNECTOR
+
 namespace OMR {
 class SnippetDelegate;
 typedef OMR::SnippetDelegate SnippetDelegateConnector;
-}
+} // namespace OMR
 #endif
 
 #include "infra/Annotations.hpp"
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE SnippetDelegate
-   {
+class OMR_EXTENSIBLE SnippetDelegate {
 protected:
+    SnippetDelegate() {}
+};
 
-   SnippetDelegate() {}
-
-   };
-
-}
+} // namespace OMR
 
 #endif
