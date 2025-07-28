@@ -25,12 +25,12 @@
 #include <stdint.h>
 
 namespace TR { class Block; }
-namespace TR { class ResolvedMethodSymbol;  } 
+namespace TR { class ResolvedMethodSymbol;  }
 
 class TR_IlGenerator
    {
    public:
-   virtual bool genIL() = 0; 
+   virtual bool genIL() = 0;
    virtual int32_t currentByteCodeIndex() = 0;
    virtual TR::Block *getCurrentBlock() = 0;
    virtual int32_t currentCallSiteIndex() { return -1; }
