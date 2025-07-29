@@ -432,6 +432,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"disableJProfilingThread",            "O\tdisable separate thread for JProfiling", SET_OPTION_BIT(TR_DisableJProfilerThread), "F", NOT_IN_SUBSET},
    {"disableKnownObjectTable",            "O\tdisable support for including heap object info in symbol references", SET_OPTION_BIT(TR_DisableKnownObjectTable), "F"},
    {"disableLastITableCache",             "C\tdisable using class lastITable cache for interface dispatches",  SET_OPTION_BIT(TR_DisableLastITableCache), "F"},
+   {"enableLastITableCache",              "C\tenable using class lastITable cache for interface dispatches",  RESET_OPTION_BIT(TR_DisableLastITableCache), "F"},
    {"disableLeafRoutineDetection",        "O\tdisable lleaf routine detection on zlinux", SET_OPTION_BIT(TR_DisableLeafRoutineDetection), "F"},
    {"disableLinkageRegisterAllocation",   "O\tdon't turn parm loads into RegLoads in first basic block",  SET_OPTION_BIT(TR_DisableLinkageRegisterAllocation), "F"},
    {"disableLiveMonitorMetadata",         "O\tdisable the creation of live monitor metadata", SET_OPTION_BIT(TR_DisableLiveMonitorMetadata), "F"},
@@ -3204,7 +3205,7 @@ OMR::Options::getDefaultOptions()
       return "samplingFrequency=2";
 
    if (TR::Compiler->target.cpu.isZ())
-      return "samplingFrequency=2,numInterfaceCallCacheSlots=4";
+      return "samplingFrequency=2,numInterfaceCallCacheSlots=4,disableLastITableCache";
 
    return "optLevel=cold,count=1000,bcount=1,milcount=1";
    }
