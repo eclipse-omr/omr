@@ -593,7 +593,7 @@ class InstOpCode: public OMR::InstOpCode
       return 0;
       }
 
-   OMR::X86::Encoding getSIMDEncoding(TR::CPU *target, TR::VectorLength vl)
+   OMR::X86::Encoding getSIMDEncoding(TR::CPU *target, TR::VectorLength vl, bool useEVEX = true)
       {
       uint32_t flags = getInstructionFeatureHints();
       TR_ASSERT_FATAL(flags, "Missing CPU feature flags for the instruction");
@@ -603,7 +603,7 @@ class InstOpCode: public OMR::InstOpCode
       switch (vl)
          {
          case TR::VectorLength128:
-            if (flags & X86FeatureProp_EVEX128Supported)
+            if (flags & X86FeatureProp_EVEX128Supported && useEVEX)
                {
                supported = target->supportsFeature(OMR_FEATURE_X86_AVX512F);
 
@@ -654,7 +654,7 @@ class InstOpCode: public OMR::InstOpCode
 
             break;
          case TR::VectorLength256:
-            if (flags & X86FeatureProp_EVEX256Supported)
+            if (flags & X86FeatureProp_EVEX256Supported && useEVEX)
                {
                supported = target->supportsFeature(OMR_FEATURE_X86_AVX512F);
 
@@ -693,6 +693,7 @@ class InstOpCode: public OMR::InstOpCode
 
                break;
          case TR::VectorLength512:
+            TR_ASSERT_FATAL(useEVEX, "getSIMDEncoding(): 512-bit vectors require EVEX prefix");
             supported = (flags & X86FeatureProp_EVEX512Supported) && target->supportsFeature(OMR_FEATURE_X86_AVX512F);
 
             if (supported && (flags & X86FeatureProp_AVX512BW))
