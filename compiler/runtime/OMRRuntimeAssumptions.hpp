@@ -93,17 +93,17 @@ class RuntimeAssumption
     * and must be run under the assumptionTableMutex
     */
    RuntimeAssumption * getNextAssumptionForSameJittedBodyEvenIfDead() const
-      { 
+      {
       return (RuntimeAssumption *)( ((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE );
       }
-   
+
    /**
     * Update the next pointer for the same jitted body to the specified RuntimeAssumption
     *
     * This update preserves the MARK_FOR_DELETE bit.
     * Note this API only intended for use by utility methods of the RuntimeAssumptionTable
     * and must be run under the assumptionTableMutex
-    */ 
+    */
    void setNextAssumptionForSameJittedBody(RuntimeAssumption *link)
       {
       _nextAssumptionForSameJittedBody = (RuntimeAssumption*)(
@@ -150,9 +150,9 @@ class RuntimeAssumption
    /**
     * Returns true when the assumption has previously been marked using the markForDetach routine
     */
-   bool isMarkedForDetach() const 
+   bool isMarkedForDetach() const
       {
-      return ( ((uintptr_t)(_nextAssumptionForSameJittedBody) & MARK_FOR_DELETE ) == MARK_FOR_DELETE); 
+      return ( ((uintptr_t)(_nextAssumptionForSameJittedBody) & MARK_FOR_DELETE ) == MARK_FOR_DELETE);
       }
 
    /** \brief
@@ -262,7 +262,7 @@ class RuntimeAssumption
    };
 
 /**
- * An abstract class representing a category of runtime assumptions that will 
+ * An abstract class representing a category of runtime assumptions that will
  * patch code at a particular location to unconditionally jump to a destination.
  */
 class LocationRedirectRuntimeAssumption : public RuntimeAssumption
@@ -275,7 +275,7 @@ class LocationRedirectRuntimeAssumption : public RuntimeAssumption
    };
 
 /**
- * An abstract class representing a category of runtime assumptions that will 
+ * An abstract class representing a category of runtime assumptions that will
  * patch code at a particular location to change its value to another value.
  */
 class ValueModifyRuntimeAssumption : public RuntimeAssumption
@@ -389,7 +389,7 @@ class PatchSites
    void add(uint8_t *location, uint8_t *destination);
 
    bool equals(PatchSites *other);
-   bool containsLocation(uint8_t *location);   
+   bool containsLocation(uint8_t *location);
 
    void addReference();
    static void reclaim(PatchSites *sites);
@@ -410,7 +410,7 @@ class PatchMultipleNOPedGuardSites : public OMR::LocationRedirectRuntimeAssumpti
 
    virtual bool equals(OMR::RuntimeAssumption &other)
       {
-      PatchMultipleNOPedGuardSites *site = other.asPMNGSite(); 
+      PatchMultipleNOPedGuardSites *site = other.asPMNGSite();
       return site != 0 && _patchSites->equals(site->getPatchSites());
       }
 
@@ -430,6 +430,46 @@ class PatchMultipleNOPedGuardSites : public OMR::LocationRedirectRuntimeAssumpti
    private:
    PatchSites *_patchSites;
    }; // TR::PatchMultipleNOPedGuardSites
+
+class JProfBFPatchSites
+   {
+   private:
+   size_t    _refCount;
+   size_t    _size;
+   size_t    _maxSize;
+   size_t    _counterBumpInstructionLength;
+
+
+   /**
+    * For each JProfiling body with the capability of patching, would contain this runtime assumption.
+    * Runtime Assumption for the JProfiling method contains the pointers to the
+    * instruction that increments counters for block frequency and the
+    * instruction value.
+    * Instruction at each location is cached in this assumption to allow
+    * patching the points back to enable JProfiling.
+    */
+   uint8_t **_patchPoints;
+   uint8_t *_bumpInstructions;
+
+   // Cache lower and upper bounds
+   uint8_t *_firstLocation;
+   uint8_t *_lastLocation;
+   public:
+   TR_PERSISTENT_ALLOC_THROW(TR_Memory::JProfBFPatchSites);
+   JProfBFPatchSites(TR_PersistentMemory *pm, size_t maxSize, size_t counterBumpInstructionLength);
+
+   size_t   getSize() { return _size; }
+   uint8_t *getFirstLocation() { return _firstLocation; }
+   uint8_t *getLastLocation() { return _lastLocation; }
+   uint8_t *getLocation(size_t index);
+   uint8_t *getBumpInstructionPointer(size_t index);
+
+   void add(uint8_t *location, uint8_t instrLength);
+
+   void addReference();
+   bool equals(JProfBFPatchSites *other);
+   static void reclaim(JProfBFPatchSites *sites);
+   };
 
 }  // namespace TR
 
