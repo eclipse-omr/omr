@@ -1512,7 +1512,6 @@ static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *
    TR::Register *srcReg = cg->evaluate(firstChild);
    TR::Register *resReg;
 
-   TR::Register *shiftReg = cg->allocateRegister(TR_VRF);
    TR::Register *temp = cg->allocateRegister(TR_VRF);
    TR::Register *tempGPR;
    TR::Register *tempVSX;
@@ -1544,12 +1543,8 @@ static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *
 
    node->setRegister(resReg);
 
-   //set shift amount to -32 bits. Since only the lowest 6 bits of shiftReg are used by vrld as an unsigned integer, this will result in a shift of 32 bits
-   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, shiftReg, -16);
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, shiftReg, shiftReg, shiftReg);
-
    //Evaluate sum across vector operand by rotating and performing lanewise addition
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::vrld, node, temp, srcReg, shiftReg);
+   generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxsldwi, node, temp, srcReg, srcReg, 3);
    generateTrg1Src2Instruction(cg, addOp, node, tempVSX, srcReg, temp);
    generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, temp, tempVSX, tempVSX, 2);
    generateTrg1Src2Instruction(cg, addOp, node, tempVSX, tempVSX, temp);
@@ -1560,12 +1555,11 @@ static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *
       generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, tempGPR, tempVSX);
       cg->stopUsingRegister(tempVSX);
    }
-   else // type === TR::Float
+   else // type == TR::Float
    {
       generateTrg1Src1Instruction(cg, TR::InstOpCode::xscvspdpn, node, tempVSX, tempVSX);
    }
 
-   cg->stopUsingRegister(shiftReg);
    cg->stopUsingRegister(temp);
    cg->decReferenceCount(firstChild);
 
