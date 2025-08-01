@@ -630,12 +630,12 @@ public:
    TR::Instruction *generateDebugCounter(const char *name, TR::Register *deltaReg, int8_t fidelity = TR::DebugCounter::Undetermined);
    TR::Instruction *generateDebugCounter(TR::Instruction *cursor, const char *name, int32_t delta = 1, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1);
    TR::Instruction *generateDebugCounter(TR::Instruction *cursor, const char *name, TR::Register *deltaReg, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1);
-   TR::Instruction *generateDebugCounter(const char *name, TR::RegisterDependencyConditions &cond, int32_t delta = 1, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1, TR::Instruction *cursor = NULL);
+   TR::Instruction *generateDebugCounter(const char *name, TR::RegisterDependencyConditions &cond, int32_t delta = 1, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1, TR::Instruction *cursor = NULL, TR::Register *addressRegister = NULL);
    TR::Instruction *generateDebugCounter(const char *name, TR::Register *deltaReg, TR::RegisterDependencyConditions &cond, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1, TR::Instruction *cursor = NULL);
    TR::Instruction *generateDebugCounter(const char *name, TR_ScratchRegisterManager &srm, int32_t delta = 1, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1, TR::Instruction *cursor = NULL);
    TR::Instruction *generateDebugCounter(const char *name, TR::Register *deltaReg, TR_ScratchRegisterManager &srm, int8_t fidelity = TR::DebugCounter::Undetermined, int32_t staticDelta = 1, TR::Instruction *cursor = NULL);
 
-   TR::Instruction *generateDebugCounterBump(TR::Instruction *cursor, TR::DebugCounterBase *counter, int32_t delta, TR::RegisterDependencyConditions *cond){ return cursor; }
+   TR::Instruction *generateDebugCounterBump(TR::Instruction *cursor, TR::DebugCounterBase *counter, int32_t delta, TR::RegisterDependencyConditions *cond, TR::Register *addressRegister = NULL){ return cursor; }
    TR::Instruction *generateDebugCounterBump(TR::Instruction *cursor, TR::DebugCounterBase *counter, TR::Register *deltaReg, TR::RegisterDependencyConditions *cond){ return cursor; }
    TR::Instruction *generateDebugCounterBump(TR::Instruction *cursor, TR::DebugCounterBase *counter, int32_t delta, TR_ScratchRegisterManager &srm){ return cursor; }
    TR::Instruction *generateDebugCounterBump(TR::Instruction *cursor, TR::DebugCounterBase *counter, TR::Register *deltaReg, TR_ScratchRegisterManager &srm){ return cursor; }
