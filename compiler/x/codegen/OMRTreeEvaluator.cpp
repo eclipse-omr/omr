@@ -5515,13 +5515,20 @@ TR::Register* OMR::X86::TreeEvaluator::vectorCompareEvaluator(TR::Node* node, TR
       }
    else
       {
-// For PRE-AVX512
+// For PRE-AVX512 (Integers)
 //   EQ  -> EQ(a,b)
 //   NE  -> NOT (EQ(a,b))
 //   GT  -> GT(a,b)
 //   GTE -> NOT(GT(b,a))
 //   LT  -> GT(b,a)
 //   LTE -> NOT (GT(a,b))
+//
+// For PRE-AVX512 (Float)
+//   LT  -> LT(a,b)
+//   LTE -> LTE(a,b)
+//   GT  -> LT(b,a)
+//   GTE -> LTE(b,a)
+//
       TR::Register *resultReg = cg->allocateRegister(TR_VRF);
       TR::InstOpCode cmpOpcode = TR::InstOpCode::bad;
       TR::InstOpCode invCmpOpcode = TR::InstOpCode::bad;
@@ -5557,6 +5564,35 @@ TR::Register* OMR::X86::TreeEvaluator::vectorCompareEvaluator(TR::Node* node, TR
                break;
             default:
                TR_ASSERT_FATAL(0, "Unsupported comparison predicate");
+               break;
+            }
+         }
+      else
+         {
+         // All ordered floating-point comparisons involving a NaN must return false.
+         // The CMPPS instruction uses an immediate value (predicate) to select the
+         // comparison operation. For floating-pint vcmpgt/vcmpge operations we use
+         // LT/LTE predicates and swap the lhs/rhs operands due to a subtle issue
+         // with NaN handling on SSE. On SSE, GT/GTE predicates are not available.
+         // The alternative SSE predicates NLT/NLE must not be used because they
+         // negate the result of LT/LTE operation. This is illegal when handling
+         // NaN values because the result any comparison involving NaN should be
+         // false.
+         switch (OMR::ILOpCode::getVectorOperation(opcode))
+            {
+            case TR::vcmpge:
+            case TR::vmcmpge:
+               // GTE -> LTE(b,a)
+               predicate = 2; // LTE predicate
+               swapOperands = true;
+               break;
+            case TR::vcmpgt:
+            case TR::vmcmpgt:
+               // GT  -> LT(b,a)
+               swapOperands = true;
+               predicate = 1; // LT predicate
+               break;
+            default:
                break;
             }
          }
