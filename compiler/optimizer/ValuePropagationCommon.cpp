@@ -2409,6 +2409,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
    bool isISO88591Decoder = (rm == TR::sun_nio_cs_ISO_8859_1_Decoder_decodeISO8859_1);
    bool isSBCSEncoder = (rm == TR::sun_nio_cs_ext_SBCS_Encoder_encodeSBCS)? true:false;
    bool isSBCSDecoder = (rm == TR::sun_nio_cs_ext_SBCS_Decoder_decodeSBCS)? true:false;
+   bool isEncodeFromLatin1 = (rm == TR::sun_nio_cs_SingleByteEncoder_encodeFromLatin1Impl)? true:false;
    bool isDecodeToLatin1 = (rm == TR::sun_nio_cs_SingleByteDecoder_decodeToLatin1Impl)? true:false;
    bool isEncodeUtf16 = (rm == TR::sun_nio_cs_UTF16_Encoder_encodeUTF16Big || rm == TR::sun_nio_cs_UTF16_Encoder_encodeUTF16Little);
 
@@ -2473,7 +2474,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
    else
       strideNode = TR::Node::create(callNode, TR::iconst, 0, 2);
 
-   if ( isISO88591Encoder || isAsciiEncoder || isSBCSEncoder || isEncodeUtf16 ||
+   if ( isISO88591Encoder || isAsciiEncoder || isSBCSEncoder || isEncodeFromLatin1 || isEncodeUtf16 ||
        (rm == TR::sun_nio_cs_US_ASCII_Encoder_encodeASCII)         ||
        (rm == TR::sun_nio_cs_UTF_8_Encoder_encodeUTF_8))
        encode = true;
@@ -2484,7 +2485,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
       if (encode)
          {
          srcOff = TR::TransformUtil::generateConvertArrayElementIndexToOffsetTrees(comp(), srcOff, strideNode, 0, false);
-         arrayTranslateNode->setSourceIsByteArrayTranslate(false);
+         arrayTranslateNode->setSourceIsByteArrayTranslate(isEncodeFromLatin1);
          arrayTranslateNode->setTargetIsByteArrayTranslate(true);
          }
       else
@@ -2506,7 +2507,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
          src = TR::Node::create(is64BitTarget? TR::aladd : TR::aiadd, 2, srcObj, node);
          node = TR::Node::create(is64BitTarget ? TR::ladd : TR::iadd, 2, dstOff, hdrSize);
          dst = TR::Node::create(is64BitTarget? TR::aladd : TR::aiadd, 2, dstObj, node);
-         arrayTranslateNode->setSourceIsByteArrayTranslate(false);
+         arrayTranslateNode->setSourceIsByteArrayTranslate(isEncodeFromLatin1);
          arrayTranslateNode->setTargetIsByteArrayTranslate(true);
          }
       else
@@ -2521,7 +2522,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
          }
       }
 
-   if (encode && !isSBCSEncoder)
+   if (encode && !isSBCSEncoder && !isEncodeFromLatin1)
       {
       arrayTranslateNode->setTableBackedByRawStorage(true);
       if (isISO88591Encoder)
@@ -2606,7 +2607,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
 
       termCharNode = TR::Node::create(callNode,TR::iconst, 0, termchar);
       }
-   else if (isSBCSEncoder) //only z
+   else if (isSBCSEncoder || isEncodeFromLatin1) //only z
       {
       arrayTranslateNode->setTermCharNodeIsHint(false);
       arrayTranslateNode->setSourceCellIsTermChar(false);
@@ -2615,7 +2616,6 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
       TR::Node *tableNodeAddr = tableRef? TR::Node::createLoad(callNode, tableRef):callNode->getChild(childId++)->duplicateTree();
       tableNode = TR::Node::create(is64BitTarget? TR::aladd : TR::aiadd, 2, tableNodeAddr, hdrSize);
       }
-
    else if (isSBCSDecoder) //only z
       {
       arrayTranslateNode->setTermCharNodeIsHint(true);
@@ -4310,6 +4310,7 @@ void OMR::ValuePropagation::transformConverterCall(TR::TreeTop *callTree)
       len = callNode->getChild(childId++);//->createLongIfNeeded();
 
    if ( (rm == TR::sun_nio_cs_ext_SBCS_Encoder_encodeSBCS) ||
+         (rm == TR::sun_nio_cs_SingleByteEncoder_encodeFromLatin1Impl) ||
          (rm == TR::sun_nio_cs_ext_SBCS_Decoder_decodeSBCS) ||
 	 (rm == TR::sun_nio_cs_SingleByteDecoder_decodeToLatin1Impl))
       {
@@ -4440,6 +4441,7 @@ void OMR::ValuePropagation::transformConverterCall(TR::TreeTop *callTree)
          case TR::sun_nio_cs_UTF_8_Decoder_decodeUTF_8:
          case TR::sun_nio_cs_UTF_8_Encoder_encodeUTF_8:
 	 case TR::sun_nio_cs_SingleByteDecoder_decodeToLatin1Impl:
+         case TR::sun_nio_cs_SingleByteEncoder_encodeFromLatin1Impl:
          default:
             threshold = 0;
             break;
