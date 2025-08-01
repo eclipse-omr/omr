@@ -35,6 +35,10 @@ The OMR coding standards have evolved over time, and just like the source code, 
 
 Exceptions have been and will continue to be made in extreme circumstances, such as a large contribution of pre-existing code where forcing adherence could have the unintentional side effect of introducing bugs due to manual code rewriting.
 
+**Important:** The compiler component (specifically the C/C++ code under the
+`compiler` directory) is formatted using `clang-format`. See the
+[Compiler Coding Standard](compiler/CodingStandard.md) doc for details.
+
 ### New code
 
 * All new functions and files should conform to the rules.
@@ -701,7 +705,7 @@ Wrong
 ```c
 int32_t x, *y;
 ```
-  
+
 * In C code, variables must be declared at the top of a scope. In C++ code, variables may be declared anywhere inside a scope. Although some C compilers may allow variables to be declared throughout a scope, some do not (e.g. MSVC).
 
 Correct
@@ -817,7 +821,7 @@ if((count+1)==limit){
 	...
 }
 ```
-  
+
 * Do not include spaces between function names and parameter lists.
 
 Correct
@@ -839,10 +843,10 @@ helper (0, count);
 ### Infinite loops
 * Infinite loops generally require a ```break```, ```return``` or ```goto``` to terminate. Therefore infinite loops are discouraged.
 * The preferred idiom for infinite loops is ```for (;;)```.
- 
+
 ### Operators
 * The increment and decrement operators (++ and --) are discouraged. Use += or -= instead.
- 
+
 Correct
 ```c
 if (NULL != result) {
@@ -869,12 +873,12 @@ for (index = 0; index < size; index++) {
 
 * Use parentheses to specify order of operation, unless the order is completely unambiguous.
 * If in doubt, use more parentheses.
- 
+
 Correct
 ```c
 result = (size * count) + offset;
-if (0 == (value & mask)) { ...	
-if ((0 == a) && (0 != b)) { ... 
+if (0 == (value & mask)) { ...
+if ((0 == a) && (0 != b)) { ...
 end = ((uint8_t *)start) + size;
 ```
 Wrong
@@ -1208,7 +1212,7 @@ if (checkValid()) {
 	doit();
 }
 ```
- 
+
 ### Variables
 
 * Variable names start with a lowercase letter.
@@ -1463,16 +1467,16 @@ use the fully qualified name to allow easier search.
 
 Bad
 ```
-namespace OMR { 
+namespace OMR {
 
-Foo::Func(int*) ... 
+Foo::Func(int*) ...
 
-} 
+}
 ```
 
-Good 
+Good
 ```
-OMR::Foo::Func(int*) 
+OMR::Foo::Func(int*)
 ```
 
 ## Platform Codes
