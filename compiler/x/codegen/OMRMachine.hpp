@@ -46,7 +46,6 @@ typedef OMR::X86::Machine MachineConnector;
 #include "il/DataTypes.hpp"
 #include "infra/Assert.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "infra/TRlist.hpp"
 class TR_BackingStore;
 class TR_Debug;

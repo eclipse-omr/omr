@@ -67,7 +67,6 @@
 #include "x/codegen/X86FPConversionSnippet.hpp"
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 
 namespace TR {
 class Instruction;

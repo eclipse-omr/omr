@@ -61,7 +61,6 @@
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 
 extern bool existsNextInstructionToTestFlags(TR::Instruction *startInstr, uint8_t testMask);
 

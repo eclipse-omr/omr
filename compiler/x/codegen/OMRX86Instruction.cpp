@@ -62,7 +62,6 @@
 #endif
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "OMRX86Instruction.hpp"
 
 class TR_VirtualGuardSite;

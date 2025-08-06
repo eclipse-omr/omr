@@ -49,7 +49,6 @@
 #include "ras/DebugCounter.hpp"
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 
 ////////////////////////
 // Hack markers

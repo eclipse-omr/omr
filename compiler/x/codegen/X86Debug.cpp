@@ -55,7 +55,6 @@
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "env/CompilerEnv.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
