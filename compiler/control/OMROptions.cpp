@@ -117,6 +117,11 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
                                        "aggressive recompilation mechanism",
                                TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_aggressiveRecompilationChances, 0, "F%d", NOT_IN_SUBSET},
    {"aggressiveSwitchingToProfiling", "O\tAllow switching hot methods to profiling more aggressively", SET_OPTION_BIT(TR_AggressiveSwitchingToProfiling), "F" },
+   {"allowJitBodyToOutliveInlinedCode",
+      "I\tAllow JIT body to outlive inlined code. "
+      "This avoids tracking which code will remain loaded. "
+      "The generated code may not be correct once inlined code is actually unloaded.",
+      SET_OPTION_BIT(TR_AllowJitBodyToOutliveInlinedCode), "F" },
    {"allowVPRangeNarrowingBasedOnDeclaredType",
       "I\tallow value propagation to assume that integers declared "
       "narrower than 32-bits (boolean, byte, char, short) are in-range",
@@ -650,6 +655,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"dontIncreaseCountsForNonBootstrapMethods", "M\t", RESET_OPTION_BIT(TR_IncreaseCountsForNonBootstrapMethods), "F", NOT_IN_SUBSET }, // Xjit: option
    {"dontInline=",                        "O{regex}\tlist of callee methods to not inline",
                                           TR::Options::setRegex, offsetof(OMR::Options, _dontInline), 0, "P"},
+   {"dontInlineUnloadableMethods",        "O\trefuse to inline methods that could be unloaded before the outermost method", SET_OPTION_BIT(TR_DontInlineUnloadableMethods), "F"},
    {"dontJitIfSlotsSharedByRefAndNonRef", "O\tfail the compilation (in FSD mode) if a slot needs to be shared between an address and a nonaddress.",     SET_OPTION_BIT(TR_DontJitIfSlotsSharedByRefAndNonRef), "F"},
    {"dontLowerCountsForAotCold",          "M\tDo not lower counts for cold aot runs", RESET_OPTION_BIT(TR_LowerCountsForAotCold), "F", NOT_IN_SUBSET },
    {"dontRestrictInlinerDuringStartup",   "O\tdo not restrict trivial inliner during startup", RESET_OPTION_BIT(TR_RestrictInlinerDuringStartup), "F", NOT_IN_SUBSET},
@@ -1284,6 +1290,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"traceRelocatableDataDetailsCG",    "L\ttrace relocation data details when generating relocatable code", SET_OPTION_BIT(TR_TraceRelocatableDataDetailsCG), "P"},
    {"traceRematerialization",           "L\ttrace rematerialization",                      TR::Options::traceOptimization, rematerialization, 0, "P"},
    {"traceReorderArrayIndexExpr",       "L\ttrace reorder array index expressions",        TR::Options::traceOptimization, reorderArrayIndexExpr, 0, "P"},
+   {"traceRetainedMethods",             "L\ttrace retained methods",                       SET_OPTION_BIT(TR_TraceRetainedMethods), "P" },
    {"traceSamplingJProfiling",          "L\ttrace samplingjProfiling",                     TR::Options::traceOptimization, samplingJProfiling, 0, "P"},
    {"traceSEL",                         "L\ttrace sign extension load",                    TR::Options::traceOptimization, signExtendLoads, 0, "P"},
    {"traceSequenceSimplification",      "L\ttrace arithmetic sequence simplification",     TR::Options::traceOptimization, expressionsSimplification, 0, "P"},
