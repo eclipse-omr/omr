@@ -63,7 +63,8 @@ static const J9HookInterface hookFunctionTable = {
 #define HOOK_FLAGS(interface, event) (((uint8_t*)((interface) + 1))[event])
 
 /* records are stored at the END of the interface in descending order */
-#define HOOK_RECORD(interface, event) (((J9HookRecord**)( (uint8_t*)(interface) + (interface)->size ))[ -1 - (event)])
+#define HOOK_RECORD(interface, event) \
+	(((J9HookRecord **)((uint8_t *)(interface) + (interface)->size))[~(intptr_t)(event)])
 
 /* e.g.
  0: J9CommonInterface::interface

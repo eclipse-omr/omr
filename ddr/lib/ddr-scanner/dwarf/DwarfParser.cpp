@@ -19,6 +19,10 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
+/* Required for getline() */ 
+#define _POSIX_C_SOURCE 200809L
+
+#include <stdio.h>
 #include "ddr/scanner/dwarf/DwarfFunctions.hpp"
 #include "ddr/scanner/dwarf/DwarfScanner.hpp"
 
@@ -119,14 +123,14 @@ dwarf_init(int fd,
 	char *toolpath = NULL;
 
 	if (
-#if defined(AIXPPC)
+#if defined(AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__))
 		// AIX with OpenXL
 		findTool(&toolpath, "which llvm-dwarfdump 2>/dev/null")
-#else /* defined (AIXPPC) */
+#else /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
 		// macOS
 		findTool(&toolpath, "xcrun -f dwarfdump 2>/dev/null")
 	||  findTool(&toolpath, "xcrun -f dwarfdump-classic 2>/dev/null")
-#endif /* defined (AIXPPC) */
+#endif /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
 	) {
 		stringstream command;
 		command << toolpath << " " << DwarfScanner::getScanFileName() << " 2>&1";
@@ -536,7 +540,9 @@ parseAttribute(char *line, Dwarf_Die *lastCreatedDie,
 				const char *firstQuote = strchr(valueStart, '"');
 				const char *secondQuote = (NULL != firstQuote) ? strchr(firstQuote + 1, '"') : NULL;
 				if (NULL != secondQuote) {
-					newAttr->_stringdata = strndup(firstQuote + 1, secondQuote - firstQuote - 1);
+					//newAttr->_stringdata = strndup(firstQuote + 1, secondQuote - firstQuote - 1);
+					//temporary placeholder to get around compilation, replace with alt implementation later.
+					newAttr->_stringdata = strdup(firstQuote + 1);
 				}
 				if (NULL == newAttr->_stringdata) {
 					ret = DW_DLV_ERROR;
