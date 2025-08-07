@@ -2778,8 +2778,6 @@ class X86FPRegRegInstruction : public TR::X86RegRegInstruction
       kTargetOnFPStack   = 0x08   // target operand is on the FP stack
       };
 
-   uint32_t assignTargetSourceRegisters();
-
    void applyRegistersToOpCode(uint8_t *opCode, TR::Machine * machine)
       {
 

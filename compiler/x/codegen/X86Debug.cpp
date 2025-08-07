@@ -55,7 +55,6 @@
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "env/CompilerEnv.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -398,7 +397,6 @@ TR_Debug::printRegisterInfoHeader(TR::FILE *pOutFile, TR::Instruction  * instr)
    if (pOutFile == NULL)
       return;
 
-   trfprintf(pOutFile, "\n\n  FP stack height: %d", _cg->machine()->getFPTopOfStack() + 1);
    trfprintf(pOutFile,   "\n  Referenced Regs:        Register         State        Assigned      Total Future Flags\n");
    trfflush(pOutFile);
    }
@@ -2230,19 +2228,7 @@ TR_Debug::getName(TR::RealRegister * reg, TR_RegisterSizes size)
          case TR::RealRegister::st5: return "st(5)";
          case TR::RealRegister::st6: return "st(6)";
          case TR::RealRegister::st7: return "st(7)";
-         case TR::RealRegister::NoReg:
-            switch (toX86FPStackRegister(reg)->getFPStackRegisterNumber())
-               {
-               case TR_X86FPStackRegister::fp0: return "fp0";
-               case TR_X86FPStackRegister::fp1: return "fp1";
-               case TR_X86FPStackRegister::fp2: return "fp2";
-               case TR_X86FPStackRegister::fp3: return "fp3";
-               case TR_X86FPStackRegister::fp4: return "fp4";
-               case TR_X86FPStackRegister::fp5: return "fp5";
-               case TR_X86FPStackRegister::fp6: return "fp6";
-               case TR_X86FPStackRegister::fp7: return "fp7";
-               default: TR_ASSERT( 0, "unexpected FPR number"); return unknownRegisterName('f');
-               }
+
          default: TR_ASSERT( 0, "unexpected FPR number"); return unknownRegisterName('s');
          }
       }

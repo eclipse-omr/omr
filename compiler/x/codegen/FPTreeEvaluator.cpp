@@ -67,7 +67,6 @@
 #include "x/codegen/X86FPConversionSnippet.hpp"
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 
 namespace TR { class Instruction; }
 
@@ -1259,8 +1258,6 @@ TR::Register *OMR::X86::TreeEvaluator::fRegStoreEvaluator(TR::Node *node, TR::Co
    TR::Node *child = node->getFirstChild();
    int32_t globalRegNum = node->getGlobalRegisterNumber();
    TR::Machine *machine = cg->machine();
-   int32_t fpStackSlot = globalRegNum - machine->getNumGlobalGPRs();
-   TR::Register *childGlobalReg = cg->machine()->getFPStackRegister(fpStackSlot);
    TR::Register *globalReg = cg->evaluate(child);
 
    TR_ASSERT_FATAL(globalReg->getKind() == TR_FPR, "Register must be type TR_FPR in fRegStoreEvaluator");
@@ -1275,8 +1272,6 @@ TR::Register *OMR::X86::TreeEvaluator::dRegStoreEvaluator(TR::Node *node, TR::Co
    TR::Node *child = node->getFirstChild();
    int32_t globalRegNum = node->getGlobalRegisterNumber();
    TR::Machine *machine = cg->machine();
-   int32_t fpStackSlot = globalRegNum - machine->getNumGlobalGPRs();
-   TR::Register *childGlobalReg = cg->machine()->getFPStackRegister(fpStackSlot);
    TR::Register *globalReg = cg->evaluate(child);
 
    TR_ASSERT_FATAL(globalReg->getKind() == TR_FPR, "Register must be type TR_FPR in dRegStoreEvaluator");

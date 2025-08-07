@@ -62,7 +62,6 @@
 #endif
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "OMRX86Instruction.hpp"
 
 
@@ -3510,69 +3509,6 @@ TR::X86FPRegRegInstruction::X86FPRegRegInstruction(TR::Instruction *precedingIns
                                                        TR::CodeGenerator *cg)
    : TR::X86RegRegInstruction(sreg, treg, op, precedingInstruction, cg)
    {
-   }
-
-// General method for coercing the source and target operands onto the FP stack for
-// an instruction.
-//
-uint32_t TR::X86FPRegRegInstruction::assignTargetSourceRegisters()
-   {
-
-   TR::Register *sourceRegister = getSourceRegister();
-   TR::Register *targetRegister = getTargetRegister();
-   TR::Machine *machine = cg()->machine();
-
-   uint32_t result = kSourceOnFPStack | kTargetOnFPStack;
-
-   // Assign source register to a virtual FP stack register.
-   //
-   targetRegister->block();
-   if (toX86FPStackRegister(sourceRegister->getAssignedRealRegister()) == NULL)
-      {
-      // The FP register is not on the FP stack
-      //
-      if (sourceRegister->getTotalUseCount() != sourceRegister->getFutureUseCount())
-         {
-         // FP register has been spilled from the stack
-         //
-         (void)machine->reverseFPRSpillState(this->getPrev(), sourceRegister);
-         }
-      else
-         {
-         // Source has not been referenced before.
-         //
-         result &= ~kSourceOnFPStack;
-         }
-      }
-
-   if (sourceRegister->decFutureUseCount() == 0) result |= kSourceCanBePopped;
-   targetRegister->unblock();
-
-   // Assign target register to a virtual FP stack register.
-   //
-   sourceRegister->block();
-   if (toX86FPStackRegister(targetRegister->getAssignedRealRegister()) == NULL)
-      {
-      // The FP register is not on the FP stack
-      //
-      if (targetRegister->getTotalUseCount() != targetRegister->getFutureUseCount())
-         {
-         // FP register has been spilled from the stack
-         //
-         (void)machine->reverseFPRSpillState(this->getPrev(), targetRegister);
-         }
-      else
-         {
-         // Target has not been referenced before.
-         //
-         result &= ~kTargetOnFPStack;
-         }
-      }
-
-   if (targetRegister->decFutureUseCount() == 0) result |= kTargetCanBePopped;
-   sourceRegister->unblock();
-
-   return result;
    }
 
 ////////////////////////////////////////////////////////////////////////////////
