@@ -4436,7 +4436,7 @@ TR::Register *OMR::Power::TreeEvaluator::vsqrtEvaluator(TR::Node *node, TR::Code
      }
    }
 
-static TR::Register *vminDoubleHelper(TR::Node *node, TR::CodeGenerator *cg)
+static TR::Register *vminFPHelper(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
    {
    TR::Node *firstChild = node->getFirstChild();
    TR::Node *secondChild = node->getSecondChild();
@@ -4452,21 +4452,39 @@ static TR::Register *vminDoubleHelper(TR::Node *node, TR::CodeGenerator *cg)
 
    node->setRegister(resReg);
 
+   //Choose comparison/minimum instructions to use based on element type
+   TR::InstOpCode::Mnemonic cmpOp;
+   TR::InstOpCode::Mnemonic minOp;
+
+   switch(type)
+     {
+     case TR::Float:
+       cmpOp = TR::InstOpCode::xvcmpeqsp;
+       minOp = TR::InstOpCode::xvminsp;
+       break;
+     case TR::Double:
+       cmpOp = TR::InstOpCode::xvcmpeqdp;
+       minOp = TR::InstOpCode::xvmindp;
+       break;
+     default:
+       TR_ASSERT(false, "vminFPHelper cannot be called on vector type %s\n", type.toString()); return NULL;
+     }
+
    /*
    To match with java library behavior, vmin should return NaN if EITHER of the operands is NaN.
    However, since the VSX minimum instruction only returns NaN when BOTH operands are NaN, some extra steps are needed.
    */
 
    //Check the first operand for NaN elements, and convert corresponding elements in second operand to NaN
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xvcmpeqdp, node, cmpReg, firstReg, firstReg);
+   generateTrg1Src2Instruction(cg, cmpOp, node, cmpReg, firstReg, firstReg);
    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlorc, node, tempA, secondReg, cmpReg);
 
    //Check the second operand for NaN elements, and convert corresponding elements in first operand to NaN
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xvcmpeqdp, node, cmpReg, secondReg, secondReg);
+   generateTrg1Src2Instruction(cg, cmpOp, node, cmpReg, secondReg, secondReg);
    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlorc, node, tempB, firstReg, cmpReg);
 
    //VSX minimum (will return NaN if both operands are NaN)
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xvmindp, node, resReg, tempA, tempB);
+   generateTrg1Src2Instruction(cg, minOp, node, resReg, tempA, tempB);
 
    cg->stopUsingRegister(cmpReg);
    cg->stopUsingRegister(tempA);
@@ -4494,15 +4512,14 @@ TR::Register *OMR::Power::TreeEvaluator::vminEvaluator(TR::Node *node, TR::CodeG
      case TR::Int64:
        return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vminsd);
      case TR::Float:
-       return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vminfp);
      case TR::Double:
-       return vminDoubleHelper(node, cg);
+       return vminFPHelper(node, cg, node->getDataType().getVectorElementType());
      default:
        TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
      }
    }
 
-TR::Register *vmaxDoubleHelper(TR::Node *node, TR::CodeGenerator *cg)
+TR::Register *vmaxFPHelper(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
    {
    TR::Node *firstChild = node->getFirstChild();
    TR::Node *secondChild = node->getSecondChild();
@@ -4518,21 +4535,39 @@ TR::Register *vmaxDoubleHelper(TR::Node *node, TR::CodeGenerator *cg)
 
    node->setRegister(resReg);
 
+   //Choose comparison/minimum instructions to use based on element type
+   TR::InstOpCode::Mnemonic cmpOp;
+   TR::InstOpCode::Mnemonic maxOp;
+
+   switch(type)
+     {
+     case TR::Float:
+       cmpOp = TR::InstOpCode::xvcmpeqsp;
+       maxOp = TR::InstOpCode::xvmaxsp;
+       break;
+     case TR::Double:
+       cmpOp = TR::InstOpCode::xvcmpeqdp;
+       maxOp = TR::InstOpCode::xvmaxdp;
+       break;
+     default:
+       TR_ASSERT(false, "vmaxFPHelper cannot be called on vector type %s\n", type.toString()); return NULL;
+     }
+
    /*
    To match with java library behavior, vmax should return NaN if EITHER of the operands is NaN.
    However, since the VSX maximum instruction only returns NaN when BOTH operands are NaN, some extra steps are needed.
    */
 
    //Check the first operand for NaN elements, and convert corresponding elements in second operand to NaN
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xvcmpeqdp, node, cmpReg, firstReg, firstReg);
+   generateTrg1Src2Instruction(cg, cmpOp, node, cmpReg, firstReg, firstReg);
    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlorc, node, tempA, secondReg, cmpReg);
 
    //Check the second operand for NaN elements, and convert corresponding elements in first operand to NaN
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xvcmpeqdp, node, cmpReg, secondReg, secondReg);
+   generateTrg1Src2Instruction(cg, cmpOp, node, cmpReg, secondReg, secondReg);
    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlorc, node, tempB, firstReg, cmpReg);
 
    //VSX maximum (will return NaN if both operands are NaN)
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xvmaxdp, node, resReg, tempA, tempB);
+   generateTrg1Src2Instruction(cg, maxOp, node, resReg, tempA, tempB);
 
    cg->stopUsingRegister(cmpReg);
    cg->stopUsingRegister(tempA);
@@ -4560,9 +4595,8 @@ TR::Register *OMR::Power::TreeEvaluator::vmaxEvaluator(TR::Node *node, TR::CodeG
      case TR::Int64:
        return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vmaxsd);
      case TR::Float:
-       return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vmaxfp);
      case TR::Double:
-       return vmaxDoubleHelper(node, cg);
+       return vmaxFPHelper(node, cg, node->getDataType().getVectorElementType());
      default:
        TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
      }
