@@ -1306,7 +1306,8 @@ TR::Instruction *generateS390DebugCounterBumpInstruction(
                    TR::Node * n,
                    TR::Snippet* cas,
                    int32_t d = 1,
-                   TR::Instruction *preced = 0);
+                   TR::Instruction *preced = 0,
+                   TR::Register *addressRegister = 0);
 
 TR::Instruction *generateShiftRightImmediate(
                   TR::CodeGenerator *cg,

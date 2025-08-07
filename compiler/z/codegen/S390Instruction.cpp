@@ -1026,6 +1026,8 @@ TR::S390PseudoInstruction::estimateBinaryLength(int32_t currentEstimate)
 void
 TR::S390DebugCounterBumpInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
    {
+   if (getRegisterOperand(1))
+      return Instruction::assignRegisters(kindToBeAssigned);
    // Find a free real register for DCB to use during binary encoding to avoid spilling scratch registers
    for (auto i = TR::RealRegister::FirstGPR + 1; i <= TR::RealRegister::LastAssignableGPR; i++)
       {
@@ -1065,11 +1067,14 @@ TR::S390DebugCounterBumpInstruction::generateBinaryEncoding()
 
    int32_t offsetToLongDispSlot = (cg()->getLinkage())->getOffsetToLongDispSlot();
 
-   TR::RealRegister * scratchReg  = getAssignableReg();
+   TR::Register * assignableRegister = getRegisterOperand(1);
+   if (assignableRegister == NULL)
+      assignableRegister = getAssignableReg();
+   TR::RealRegister * scratchReg  = toRealRegister(assignableRegister);
    bool spillNeeded = true;
 
    // If we found a free register during RA, we don't need to spill
-   if (scratchReg)
+   if (assignableRegister)
       {
       spillNeeded = false;
       }
