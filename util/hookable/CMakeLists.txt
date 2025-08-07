@@ -44,6 +44,9 @@ target_compile_definitions(j9hook_obj
 		$<TARGET_PROPERTY:omr_base,INTERFACE_COMPILE_DEFINITIONS>
 )
 
+
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/hookable.cpp" APPEND PROPERTY COMPILE_FLAGS "-O0")
+
 omr_add_exports(j9hook_obj
 	J9HookInitializeInterface
 	omrhook_lib_control

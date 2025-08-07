@@ -499,11 +499,11 @@ DwarfScanner::getName(Dwarf_Die die, string *name, Dwarf_Off *dieOffset)
 				}
 				Dwarf_Die spec = NULL;
 				if (
-#if defined(J9ZOS390)
+#if defined(J9ZOS390) && !defined(__open_xl__)
 					DW_DLV_ERROR == dwarf_offdie(_debug, offset, &spec, &err)
-#else /* defined(J9ZOS390) */
+#else /* defined(J9ZOS390) && !defined(__open_xl__) */
 					DW_DLV_ERROR == dwarf_offdie_b(_debug, offset, 1, &spec, &err)
-#endif /* defined(J9ZOS390) */
+#endif /* defined(J9ZOS390) && !defined(__open_xl__) */
 				) {
 					ERRMSG("Getting die from specification offset: %s\n", dwarf_errmsg(err));
 					rc = DDR_RC_ERROR;
@@ -750,12 +750,12 @@ DwarfScanner::getTypeTag(Dwarf_Die die, Dwarf_Die *typeDie, Dwarf_Half *tag)
 		/* Use the offset to get the Die containing the type tag. */
 		Dwarf_Die newDie = NULL;
 		if (
-#if defined(J9ZOS390)
+#if defined(J9ZOS390) && !defined(__open_xl__)
 			/* z/OS dwarf library doesn't have dwarf_offdie_b, only dwarf_offdie. */
 			DW_DLV_ERROR == dwarf_offdie(_debug, offset, &newDie, &err)
-#else /* defined(J9ZOS390) */
+#else /* defined(J9ZOS390) && !defined(__open_xl__) */
 			DW_DLV_ERROR == dwarf_offdie_b(_debug, offset, 1, &newDie, &err)
-#endif /* defined(J9ZOS390) */
+#endif /* defined(J9ZOS390) && !defined(__open_xl__) */
 		) {
 			ERRMSG("Getting typedie from type offset: %s\n", dwarf_errmsg(err));
 			goto getTypeDone;
