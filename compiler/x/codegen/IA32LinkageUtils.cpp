@@ -43,250 +43,190 @@
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR
+namespace TR {
+
+TR::Register *IA32LinkageUtils::pushIntegerWordArg(TR::Node *child, TR::CodeGenerator *cg)
 {
-
-TR::Register *IA32LinkageUtils::pushIntegerWordArg(
-      TR::Node *child,
-      TR::CodeGenerator *cg)
-   {
-   TR::Register *pushRegister;
-   if (child->getRegister() == NULL)
-      {
-      if (child->getOpCode().isLoadConst())
-         {
-         int32_t value = child->getInt();
-         TR::InstOpCode::Mnemonic pushOp;
-         if (value >= -128 && value <= 127)
-            {
-            pushOp = TR::InstOpCode::PUSHImms;
-            }
-         else
-            {
-            pushOp = TR::InstOpCode::PUSHImm4;
+    TR::Register *pushRegister;
+    if (child->getRegister() == NULL) {
+        if (child->getOpCode().isLoadConst()) {
+            int32_t value = child->getInt();
+            TR::InstOpCode::Mnemonic pushOp;
+            if (value >= -128 && value <= 127) {
+                pushOp = TR::InstOpCode::PUSHImms;
+            } else {
+                pushOp = TR::InstOpCode::PUSHImm4;
             }
 
-         generateImmInstruction(pushOp, child, value, cg);
-         cg->decReferenceCount(child);
-         return NULL;
-         }
-      else if (child->getOpCodeValue() == TR::loadaddr)
-         {
-         TR::SymbolReference * symRef = child->getSymbolReference();
-         TR::StaticSymbol *sym = symRef->getSymbol()->getStaticSymbol();
-         if (sym)
-            {
-            TR_ASSERT(!symRef->isUnresolved(), "pushIntegerWordArg loadaddr expecting resolved symbol");
-            generateImmSymInstruction(TR::InstOpCode::PUSHImm4, child, static_cast<int32_t>(reinterpret_cast<intptr_t>(sym->getStaticAddress())), symRef, cg);
+            generateImmInstruction(pushOp, child, value, cg);
             cg->decReferenceCount(child);
             return NULL;
+        } else if (child->getOpCodeValue() == TR::loadaddr) {
+            TR::SymbolReference *symRef = child->getSymbolReference();
+            TR::StaticSymbol *sym = symRef->getSymbol()->getStaticSymbol();
+            if (sym) {
+                TR_ASSERT(!symRef->isUnresolved(), "pushIntegerWordArg loadaddr expecting resolved symbol");
+                generateImmSymInstruction(TR::InstOpCode::PUSHImm4, child,
+                    static_cast<int32_t>(reinterpret_cast<intptr_t>(sym->getStaticAddress())), symRef, cg);
+                cg->decReferenceCount(child);
+                return NULL;
             }
-         }
-      else if (child->getOpCodeValue() == TR::fbits2i &&
-               !child->normalizeNanValues() &&
-               child->getReferenceCount() == 1)
-         {
-         pushRegister = pushFloatArg(child->getFirstChild(), cg);
-         cg->decReferenceCount(child);
-         return pushRegister;
-         }
-      else if (child->getOpCode().isMemoryReference() &&
-               (child->getReferenceCount() == 1) &&
-               (child->getSymbolReference() != cg->comp()->getSymRefTab()->findVftSymbolRef()))
-         {
-         TR::MemoryReference  *tempMR = generateX86MemoryReference(child, cg);
-         generateMemInstruction(TR::InstOpCode::PUSHMem, child, tempMR, cg);
-         tempMR->decNodeReferenceCounts(cg);
-         cg->decReferenceCount(child);
-         return NULL;
-         }
-      }
-
-   pushRegister = cg->evaluate(child);
-   generateRegInstruction(TR::InstOpCode::PUSHReg, child, pushRegister, cg);
-   cg->decReferenceCount(child);
-   return pushRegister;
-   }
-
-
-TR::Register *IA32LinkageUtils::pushLongArg(
-      TR::Node *child,
-      TR::CodeGenerator *cg)
-   {
-   TR::Register *pushRegister;
-   if (child->getRegister() == NULL)
-      {
-      if (child->getOpCode().isLoadConst())
-         {
-         TR::InstOpCode::Mnemonic pushOp;
-
-         int32_t highValue = child->getLongIntHigh();
-         if (highValue >= -128 && highValue <= 127)
-            {
-            pushOp = TR::InstOpCode::PUSHImms;
-            }
-         else
-            {
-            pushOp = TR::InstOpCode::PUSHImm4;
-            }
-         generateImmInstruction(pushOp, child, highValue, cg);
-
-         int32_t lowValue = child->getLongIntLow();
-         if (lowValue >= -128 && lowValue <= 127)
-            {
-            pushOp = TR::InstOpCode::PUSHImms;
-            }
-         else
-            {
-            pushOp = TR::InstOpCode::PUSHImm4;
-            }
-         generateImmInstruction(pushOp, child, lowValue, cg);
-         cg->decReferenceCount(child);
-         return NULL;
-         }
-      else if (child->getOpCodeValue() == TR::dbits2l &&
-               !child->normalizeNanValues() &&
-               child->getReferenceCount() == 1)
-         {
-         pushRegister = pushDoubleArg(child->getFirstChild(), cg);
-         cg->decReferenceCount(child);
-         return pushRegister;
-         }
-      else if (child->getOpCode().isMemoryReference() &&
-                child->getReferenceCount() == 1)
-         {
-         TR::MemoryReference  *lowMR = generateX86MemoryReference(child, cg);
-         generateMemInstruction(TR::InstOpCode::PUSHMem, child, generateX86MemoryReference(*lowMR,4, cg), cg);
-         generateMemInstruction(TR::InstOpCode::PUSHMem, child, lowMR, cg);
-         lowMR->decNodeReferenceCounts(cg);
-         return NULL;
-         }
-      }
-
-   pushRegister = cg->evaluate(child);
-   generateRegInstruction(TR::InstOpCode::PUSHReg, child, pushRegister->getHighOrder(), cg);
-   generateRegInstruction(TR::InstOpCode::PUSHReg, child, pushRegister->getLowOrder(), cg);
-   cg->decReferenceCount(child);
-   return pushRegister;
-   }
-
-
-TR::Register *IA32LinkageUtils::pushFloatArg(
-      TR::Node *child,
-      TR::CodeGenerator *cg)
-   {
-   TR::Register *pushRegister;
-   if (child->getRegister() == NULL)
-      {
-      if (child->getOpCodeValue() == TR::fconst)
-         {
-         int32_t value = child->getFloatBits();
-         TR::InstOpCode::Mnemonic pushOp;
-         if (value >= -128 && value <= 127)
-            {
-            pushOp = TR::InstOpCode::PUSHImms;
-            }
-         else
-            {
-            pushOp = TR::InstOpCode::PUSHImm4;
-            }
-         generateImmInstruction(pushOp, child, value, cg);
-         cg->decReferenceCount(child);
-         return NULL;
-         }
-      else if (child->getReferenceCount() == 1)
-         {
-         if (child->getOpCode().isLoad())
-            {
-            TR::MemoryReference  *tempMR = generateX86MemoryReference(child, cg);
+        } else if (child->getOpCodeValue() == TR::fbits2i && !child->normalizeNanValues()
+            && child->getReferenceCount() == 1) {
+            pushRegister = pushFloatArg(child->getFirstChild(), cg);
+            cg->decReferenceCount(child);
+            return pushRegister;
+        } else if (child->getOpCode().isMemoryReference() && (child->getReferenceCount() == 1)
+            && (child->getSymbolReference() != cg->comp()->getSymRefTab()->findVftSymbolRef())) {
+            TR::MemoryReference *tempMR = generateX86MemoryReference(child, cg);
             generateMemInstruction(TR::InstOpCode::PUSHMem, child, tempMR, cg);
             tempMR->decNodeReferenceCounts(cg);
             cg->decReferenceCount(child);
             return NULL;
+        }
+    }
+
+    pushRegister = cg->evaluate(child);
+    generateRegInstruction(TR::InstOpCode::PUSHReg, child, pushRegister, cg);
+    cg->decReferenceCount(child);
+    return pushRegister;
+}
+
+TR::Register *IA32LinkageUtils::pushLongArg(TR::Node *child, TR::CodeGenerator *cg)
+{
+    TR::Register *pushRegister;
+    if (child->getRegister() == NULL) {
+        if (child->getOpCode().isLoadConst()) {
+            TR::InstOpCode::Mnemonic pushOp;
+
+            int32_t highValue = child->getLongIntHigh();
+            if (highValue >= -128 && highValue <= 127) {
+                pushOp = TR::InstOpCode::PUSHImms;
+            } else {
+                pushOp = TR::InstOpCode::PUSHImm4;
             }
-      else if (child->getOpCodeValue() == TR::ibits2f)
-         {
-         pushRegister = pushIntegerWordArg(child->getFirstChild(), cg);
-         cg->decReferenceCount(child);
-         return pushRegister;
-         }
-      }
-   }
+            generateImmInstruction(pushOp, child, highValue, cg);
 
-   pushRegister = cg->evaluate(child);
-   TR::RealRegister *espReal = cg->machine()->getRealRegister(TR::RealRegister::esp);
-   generateRegImmInstruction(TR::InstOpCode::SUB4RegImms, child, espReal, 4, cg);
-
-   generateMemRegInstruction(TR::InstOpCode::MOVSSMemReg, child, generateX86MemoryReference(espReal, 0, cg), pushRegister, cg);
-
-   cg->decReferenceCount(child);
-   return pushRegister;
-   }
-
-
-TR::Register *IA32LinkageUtils::pushDoubleArg(
-      TR::Node *child,
-      TR::CodeGenerator *cg)
-   {
-   TR::Register *pushRegister;
-   if (child->getRegister() == NULL)
-      {
-      if (child->getOpCodeValue() == TR::dconst)
-         {
-         TR::InstOpCode::Mnemonic pushOp;
-
-         int32_t highValue = child->getLongIntHigh();
-         if (highValue >= -128 && highValue <= 127)
-            {
-            pushOp = TR::InstOpCode::PUSHImms;
+            int32_t lowValue = child->getLongIntLow();
+            if (lowValue >= -128 && lowValue <= 127) {
+                pushOp = TR::InstOpCode::PUSHImms;
+            } else {
+                pushOp = TR::InstOpCode::PUSHImm4;
             }
-         else
-            {
-            pushOp = TR::InstOpCode::PUSHImm4;
-            }
-         generateImmInstruction(pushOp, child, highValue, cg);
-
-         int32_t lowValue = child->getLongIntLow();
-         if (lowValue >= -128 && lowValue <= 127)
-            {
-            pushOp = TR::InstOpCode::PUSHImms;
-            }
-         else
-            {
-            pushOp = TR::InstOpCode::PUSHImm4;
-            }
-         generateImmInstruction(pushOp, child, lowValue, cg);
-         cg->decReferenceCount(child);
-         return NULL;
-         }
-      else if (child->getReferenceCount() == 1)
-         {
-         if (child->getOpCode().isLoad())
-            {
-            TR::MemoryReference  *lowMR = generateX86MemoryReference(child, cg);
+            generateImmInstruction(pushOp, child, lowValue, cg);
+            cg->decReferenceCount(child);
+            return NULL;
+        } else if (child->getOpCodeValue() == TR::dbits2l && !child->normalizeNanValues()
+            && child->getReferenceCount() == 1) {
+            pushRegister = pushDoubleArg(child->getFirstChild(), cg);
+            cg->decReferenceCount(child);
+            return pushRegister;
+        } else if (child->getOpCode().isMemoryReference() && child->getReferenceCount() == 1) {
+            TR::MemoryReference *lowMR = generateX86MemoryReference(child, cg);
             generateMemInstruction(TR::InstOpCode::PUSHMem, child, generateX86MemoryReference(*lowMR, 4, cg), cg);
             generateMemInstruction(TR::InstOpCode::PUSHMem, child, lowMR, cg);
             lowMR->decNodeReferenceCounts(cg);
+            return NULL;
+        }
+    }
+
+    pushRegister = cg->evaluate(child);
+    generateRegInstruction(TR::InstOpCode::PUSHReg, child, pushRegister->getHighOrder(), cg);
+    generateRegInstruction(TR::InstOpCode::PUSHReg, child, pushRegister->getLowOrder(), cg);
+    cg->decReferenceCount(child);
+    return pushRegister;
+}
+
+TR::Register *IA32LinkageUtils::pushFloatArg(TR::Node *child, TR::CodeGenerator *cg)
+{
+    TR::Register *pushRegister;
+    if (child->getRegister() == NULL) {
+        if (child->getOpCodeValue() == TR::fconst) {
+            int32_t value = child->getFloatBits();
+            TR::InstOpCode::Mnemonic pushOp;
+            if (value >= -128 && value <= 127) {
+                pushOp = TR::InstOpCode::PUSHImms;
+            } else {
+                pushOp = TR::InstOpCode::PUSHImm4;
+            }
+            generateImmInstruction(pushOp, child, value, cg);
             cg->decReferenceCount(child);
             return NULL;
+        } else if (child->getReferenceCount() == 1) {
+            if (child->getOpCode().isLoad()) {
+                TR::MemoryReference *tempMR = generateX86MemoryReference(child, cg);
+                generateMemInstruction(TR::InstOpCode::PUSHMem, child, tempMR, cg);
+                tempMR->decNodeReferenceCounts(cg);
+                cg->decReferenceCount(child);
+                return NULL;
+            } else if (child->getOpCodeValue() == TR::ibits2f) {
+                pushRegister = pushIntegerWordArg(child->getFirstChild(), cg);
+                cg->decReferenceCount(child);
+                return pushRegister;
             }
-         else if (child->getOpCodeValue() == TR::lbits2d)
-            {
-            pushRegister = pushLongArg(child->getFirstChild(), cg);
-            cg->decReferenceCount(child);
-            return pushRegister;
-            }
-         }
-      }
+        }
+    }
 
-   pushRegister = cg->evaluate(child);
-   TR::RealRegister *espReal = cg->machine()->getRealRegister(TR::RealRegister::esp);
-   generateRegImmInstruction(TR::InstOpCode::SUB4RegImms, child, espReal, 8, cg);
+    pushRegister = cg->evaluate(child);
+    TR::RealRegister *espReal = cg->machine()->getRealRegister(TR::RealRegister::esp);
+    generateRegImmInstruction(TR::InstOpCode::SUB4RegImms, child, espReal, 4, cg);
 
-   generateMemRegInstruction(TR::InstOpCode::MOVSDMemReg, child, generateX86MemoryReference(espReal, 0, cg), pushRegister, cg);
+    generateMemRegInstruction(TR::InstOpCode::MOVSSMemReg, child, generateX86MemoryReference(espReal, 0, cg),
+        pushRegister, cg);
 
-   cg->decReferenceCount(child);
-   return pushRegister;
-   }
-
+    cg->decReferenceCount(child);
+    return pushRegister;
 }
+
+TR::Register *IA32LinkageUtils::pushDoubleArg(TR::Node *child, TR::CodeGenerator *cg)
+{
+    TR::Register *pushRegister;
+    if (child->getRegister() == NULL) {
+        if (child->getOpCodeValue() == TR::dconst) {
+            TR::InstOpCode::Mnemonic pushOp;
+
+            int32_t highValue = child->getLongIntHigh();
+            if (highValue >= -128 && highValue <= 127) {
+                pushOp = TR::InstOpCode::PUSHImms;
+            } else {
+                pushOp = TR::InstOpCode::PUSHImm4;
+            }
+            generateImmInstruction(pushOp, child, highValue, cg);
+
+            int32_t lowValue = child->getLongIntLow();
+            if (lowValue >= -128 && lowValue <= 127) {
+                pushOp = TR::InstOpCode::PUSHImms;
+            } else {
+                pushOp = TR::InstOpCode::PUSHImm4;
+            }
+            generateImmInstruction(pushOp, child, lowValue, cg);
+            cg->decReferenceCount(child);
+            return NULL;
+        } else if (child->getReferenceCount() == 1) {
+            if (child->getOpCode().isLoad()) {
+                TR::MemoryReference *lowMR = generateX86MemoryReference(child, cg);
+                generateMemInstruction(TR::InstOpCode::PUSHMem, child, generateX86MemoryReference(*lowMR, 4, cg), cg);
+                generateMemInstruction(TR::InstOpCode::PUSHMem, child, lowMR, cg);
+                lowMR->decNodeReferenceCounts(cg);
+                cg->decReferenceCount(child);
+                return NULL;
+            } else if (child->getOpCodeValue() == TR::lbits2d) {
+                pushRegister = pushLongArg(child->getFirstChild(), cg);
+                cg->decReferenceCount(child);
+                return pushRegister;
+            }
+        }
+    }
+
+    pushRegister = cg->evaluate(child);
+    TR::RealRegister *espReal = cg->machine()->getRealRegister(TR::RealRegister::esp);
+    generateRegImmInstruction(TR::InstOpCode::SUB4RegImms, child, espReal, 8, cg);
+
+    generateMemRegInstruction(TR::InstOpCode::MOVSDMemReg, child, generateX86MemoryReference(espReal, 0, cg),
+        pushRegister, cg);
+
+    cg->decReferenceCount(child);
+    return pushRegister;
+}
+
+} // namespace TR

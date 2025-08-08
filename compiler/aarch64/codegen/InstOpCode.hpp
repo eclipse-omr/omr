@@ -24,23 +24,25 @@
 
 #include "codegen/OMRInstOpCode.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class InstOpCode: public OMR::InstOpCodeConnector
-   {
-   public:
+class InstOpCode : public OMR::InstOpCodeConnector {
+public:
+    /**
+     * @brief Constructor
+     */
+    InstOpCode()
+        : OMR::InstOpCodeConnector(bad)
+    {}
 
-   /**
-    * @brief Constructor
-    */
-   InstOpCode() : OMR::InstOpCodeConnector(bad) {}
-   /**
-    * @brief Constructor
-    * @param[in] m : mnemonic
-    */
-   InstOpCode(TR::InstOpCode::Mnemonic m) : OMR::InstOpCodeConnector(m) {}
-   };
+    /**
+     * @brief Constructor
+     * @param[in] m : mnemonic
+     */
+    InstOpCode(TR::InstOpCode::Mnemonic m)
+        : OMR::InstOpCodeConnector(m)
+    {}
+};
 
-}
+} // namespace TR
 #endif

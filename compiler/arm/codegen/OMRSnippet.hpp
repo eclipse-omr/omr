@@ -27,55 +27,53 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
-namespace OMR { namespace ARM { class Snippet; } }
-namespace OMR { typedef OMR::ARM::Snippet SnippetConnector; }
+
+namespace OMR {
+namespace ARM {
+class Snippet;
+}
+
+typedef OMR::ARM::Snippet SnippetConnector;
+} // namespace OMR
 #else
 #error OMR::ARM::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
 
-
 #include "compiler/codegen/OMRSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace ARM {
 
-namespace ARM
-{
+class OMR_EXTENSIBLE Snippet : public OMR::Snippet {
+public:
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
 
-class OMR_EXTENSIBLE Snippet : public OMR::Snippet
-   {
-   public:
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
 
-   Snippet(TR::CodeGenerator *cg, TR::Node * node, TR::LabelSymbol * label, bool isGCSafePoint);
+    enum Kind {
+        IsUnknown,
+        IsCall,
+        IsUnresolvedCall,
+        IsVirtual,
+        IsVirtualUnresolved,
+        IsInterfaceCall,
+        IsStackCheckFailure,
+        IsUnresolvedData,
+        IsRecompilation,
+        IsHelperCall,
+        IsMonitorEnter,
+        IsMonitorExit,
+        numKinds
+    };
 
-   Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
+    virtual Kind getKind() { return IsUnknown; }
+};
 
-   enum Kind
-      {
-      IsUnknown,
-      IsCall,
-         IsUnresolvedCall,
-      IsVirtual,
-         IsVirtualUnresolved,
-         IsInterfaceCall,
-      IsStackCheckFailure,
-      IsUnresolvedData,
-      IsRecompilation,
-      IsHelperCall,
-         IsMonitorEnter,
-         IsMonitorExit,
-      numKinds
-      };
-
-   virtual Kind getKind() { return IsUnknown; }
-   };
-
-}
-
-}
+}} // namespace OMR::ARM
 
 #endif

@@ -24,22 +24,22 @@
 
 #include "codegen/OMRUnresolvedDataSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class SymbolReference;
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 
-class UnresolvedDataSnippet : public OMR::UnresolvedDataSnippetConnector
-   {
-
+class UnresolvedDataSnippet : public OMR::UnresolvedDataSnippetConnector {
 public:
+    UnresolvedDataSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef, bool isStore,
+        bool isGCSafePoint)
+        : OMR::UnresolvedDataSnippetConnector(cg, node, symRef, isStore, isGCSafePoint)
+    {}
+};
 
-   UnresolvedDataSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef, bool isStore, bool isGCSafePoint) :
-      OMR::UnresolvedDataSnippetConnector(cg, node, symRef, isStore, isGCSafePoint) { }
-   };
-
-}
+} // namespace TR
 
 #endif

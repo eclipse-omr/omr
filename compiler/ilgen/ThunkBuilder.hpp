@@ -24,16 +24,14 @@
 
 #include "ilgen/OMRThunkBuilder.hpp"
 
-namespace TR
-{
-   class ThunkBuilder : public OMR::ThunkBuilder
-      {
-      public:
-         ThunkBuilder(TR::TypeDictionary *types, const char *name, TR::IlType *returnType,
-                      uint32_t numCalleeParams, TR::IlType **calleeParamTypes)
-            : OMR::ThunkBuilder(types, name, returnType, numCalleeParams, calleeParamTypes)
-            { }
-      };
+namespace TR {
+class ThunkBuilder : public OMR::ThunkBuilder {
+public:
+    ThunkBuilder(TR::TypeDictionary *types, const char *name, TR::IlType *returnType, uint32_t numCalleeParams,
+        TR::IlType **calleeParamTypes)
+        : OMR::ThunkBuilder(types, name, returnType, numCalleeParams, calleeParamTypes)
+    {}
+};
 
 } // namespace TR
 

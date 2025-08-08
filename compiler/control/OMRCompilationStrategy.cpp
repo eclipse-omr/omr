@@ -21,7 +21,4 @@
 
 #include "control/CompilationStrategy.hpp"
 
-TR::CompilationStrategy* OMR::CompilationStrategy::self()
-   {
-   return static_cast<TR::CompilationStrategy *>(this);
-   }
+TR::CompilationStrategy *OMR::CompilationStrategy::self() { return static_cast<TR::CompilationStrategy *>(this); }

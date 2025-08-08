@@ -35,112 +35,94 @@
 
 #include "ilgen/IlType.hpp"
 
+const char *OMR::IlType::signatureNameForType[TR::NumOMRTypes] = {
+    "V", // NoType
+    "B", // Int8
+    "C", // Int16
+    "I", // Int32
+    "J", // Int64
+    "F", // Float
+    "D", // Double
+    "L", // Address
+    "A" // Aggregate
+};
 
-const char *
-OMR::IlType::signatureNameForType[TR::NumOMRTypes] =
-   {
-   "V",  // NoType
-   "B",  // Int8
-   "C",  // Int16
-   "I",  // Int32
-   "J",  // Int64
-   "F",  // Float
-   "D",  // Double
-   "L",  // Address
-   "A"   // Aggregate
-   };
+const char *OMR::IlType::signatureNameForVectorType[TR::NumVectorElementTypes] = {
+    "V1", // VectorInt8
+    "V2", // VectorInt16
+    "V4", // VectorInt32
+    "V8", // VectorInt64
+    "VF", // VectorFloat
+    "VD", // VectorDouble
+};
 
-const char *
-OMR::IlType::signatureNameForVectorType[TR::NumVectorElementTypes] =
-   {
-   "V1", // VectorInt8
-   "V2", // VectorInt16
-   "V4", // VectorInt32
-   "V8", // VectorInt64
-   "VF", // VectorFloat
-   "VD", // VectorDouble
-   };
+const char *OMR::IlType::signatureNameForMaskType[TR::NumVectorElementTypes] = {
+    "M1", // MaskInt8
+    "M2", // MaskInt16
+    "M4", // MaskInt32
+    "M8", // MaskInt64
+    "MF", // MaskFloat
+    "MD", // MaskDouble
+};
 
-const char *
-OMR::IlType::signatureNameForMaskType[TR::NumVectorElementTypes] =
-   {
-   "M1", // MaskInt8
-   "M2", // MaskInt16
-   "M4", // MaskInt32
-   "M8", // MaskInt64
-   "MF", // MaskFloat
-   "MD", // MaskDouble
-   };
-
-const uint8_t
-OMR::IlType::primitiveTypeAlignment[TR::NumOMRTypes] =
-   {
-   1,  // NoType
-   1,  // Int8
-   2,  // Int16
-   4,  // Int32
-   8,  // Int64
-   4,  // Float
-   8,  // Double
+const uint8_t OMR::IlType::primitiveTypeAlignment[TR::NumOMRTypes] = {
+    1, // NoType
+    1, // Int8
+    2, // Int16
+    4, // Int32
+    8, // Int64
+    4, // Float
+    8, // Double
 #if TR_TARGET_64BIT // HOST?
-   8,  // Address/Word
+    8, // Address/Word
 #else
-   4,  // Address/Word
+    4, // Address/Word
 #endif
 #if TR_TARGET_64BIT // HOST?
-   8,  // Address/Word
+    8, // Address/Word
 #else
-   4,  // Address/Word
+    4, // Address/Word
 #endif
-   };
+};
 
-const uint8_t
-OMR::IlType::primitiveVectorTypeAlignment[TR::NumVectorElementTypes] =
-   {
-   16, // VectorInt8
-   16, // VectorInt16
-   16, // VectorInt32
-   16, // VectorInt64
-   16, // VectorFloat
-   16  // VectorDouble
-   };
+const uint8_t OMR::IlType::primitiveVectorTypeAlignment[TR::NumVectorElementTypes] = {
+    16, // VectorInt8
+    16, // VectorInt16
+    16, // VectorInt32
+    16, // VectorInt64
+    16, // VectorFloat
+    16 // VectorDouble
+};
 
-char *
-OMR::IlType::getSignatureName()
-   {
-   TR::DataType dt = getPrimitiveType();
-   if (dt == TR::Address)
-      return (char *)_name;
+char *OMR::IlType::getSignatureName()
+{
+    TR::DataType dt = getPrimitiveType();
+    if (dt == TR::Address)
+        return (char *)_name;
 
-   if (dt.isVector())
-      return (char *) signatureNameForVectorType[dt.getVectorElementType() - 1];
+    if (dt.isVector())
+        return (char *)signatureNameForVectorType[dt.getVectorElementType() - 1];
 
-   if (dt.isMask())
-      return (char *) signatureNameForMaskType[dt.getVectorElementType() - 1];
+    if (dt.isMask())
+        return (char *)signatureNameForMaskType[dt.getVectorElementType() - 1];
 
-   return (char *) signatureNameForType[dt];
-   }
+    return (char *)signatureNameForType[dt];
+}
 
-TR::IlType *
-OMR::IlType::primitiveType(TR::TypeDictionary *d)
-   {
-   return static_cast<TR::IlType *>(this);
-   }
+TR::IlType *OMR::IlType::primitiveType(TR::TypeDictionary *d) { return static_cast<TR::IlType *>(this); }
 
-size_t
-OMR::IlType::getSize()
-   {
-   TR_ASSERT_FATAL(0, "The input type does not have a defined size\n");
-   return 0;
-   }
+size_t OMR::IlType::getSize()
+{
+    TR_ASSERT_FATAL(0, "The input type does not have a defined size\n");
+    return 0;
+}
 
-void *
-OMR::IlType::client()
-   {
-   if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::IlType *>(this));
-   return _client;
-   }
+void *OMR::IlType::client()
+{
+    if (_client == NULL && _clientAllocator != NULL)
+        _client = _clientAllocator(static_cast<TR::IlType *>(this));
+    return _client;
+}
 
 ClientAllocator OMR::IlType::_clientAllocator = NULL;
 ClientAllocator OMR::IlType::_getImpl = NULL;

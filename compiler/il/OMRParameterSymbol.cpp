@@ -29,68 +29,59 @@
 #include "il/Symbol.hpp"
 #include "infra/Flags.hpp"
 
-TR::ParameterSymbol *
-OMR::ParameterSymbol::self()
-   {
-   return static_cast<TR::ParameterSymbol*>(this);
-   }
+TR::ParameterSymbol *OMR::ParameterSymbol::self() { return static_cast<TR::ParameterSymbol *>(this); }
 
-OMR::ParameterSymbol::ParameterSymbol(TR::DataType d, int32_t slot) :
-   TR::RegisterMappedSymbol(d),
-   _registerIndex(-1),
-   _allocatedHigh(-1),
-   _allocatedLow(-1),
-   _fixedType(0),
-   _isPreexistent(false),
-   _knownObjectIndex(TR::KnownObjectTable::UNKNOWN)
-   {
-   _flags.setValue(KindMask, IsParameter);
-   _addressSize = TR::ParameterSymbol::convertTypeToSize(TR::Address);
-   self()->setOffset(slot * TR::ParameterSymbol::convertTypeToSize(TR::Address));
-   }
+OMR::ParameterSymbol::ParameterSymbol(TR::DataType d, int32_t slot)
+    : TR::RegisterMappedSymbol(d)
+    , _registerIndex(-1)
+    , _allocatedHigh(-1)
+    , _allocatedLow(-1)
+    , _fixedType(0)
+    , _isPreexistent(false)
+    , _knownObjectIndex(TR::KnownObjectTable::UNKNOWN)
+{
+    _flags.setValue(KindMask, IsParameter);
+    _addressSize = TR::ParameterSymbol::convertTypeToSize(TR::Address);
+    self()->setOffset(slot * TR::ParameterSymbol::convertTypeToSize(TR::Address));
+}
 
-OMR::ParameterSymbol::ParameterSymbol(TR::DataType d, int32_t slot, size_t size) :
-   TR::RegisterMappedSymbol(d, (uint32_t)size), // cast argument size explicitly \TODO: Document why?
-   _registerIndex(-1),
-   _allocatedHigh(-1),
-   _allocatedLow(-1),
-   _fixedType(0),
-   _isPreexistent(false),
-   _knownObjectIndex(TR::KnownObjectTable::UNKNOWN)
-   {
-   _flags.setValue(KindMask, IsParameter);
-   _addressSize = TR::ParameterSymbol::convertTypeToSize(TR::Address);
-   self()->setOffset(slot * TR::ParameterSymbol::convertTypeToSize(TR::Address));
-   }
+OMR::ParameterSymbol::ParameterSymbol(TR::DataType d, int32_t slot, size_t size)
+    : TR::RegisterMappedSymbol(d, (uint32_t)size)
+    , // cast argument size explicitly \TODO: Document why?
+    _registerIndex(-1)
+    , _allocatedHigh(-1)
+    , _allocatedLow(-1)
+    , _fixedType(0)
+    , _isPreexistent(false)
+    , _knownObjectIndex(TR::KnownObjectTable::UNKNOWN)
+{
+    _flags.setValue(KindMask, IsParameter);
+    _addressSize = TR::ParameterSymbol::convertTypeToSize(TR::Address);
+    self()->setOffset(slot * TR::ParameterSymbol::convertTypeToSize(TR::Address));
+}
 
-void
-OMR::ParameterSymbol::setParameterOffset(int32_t o)
-   {
-   self()->setOffset(o);
-   }
+void OMR::ParameterSymbol::setParameterOffset(int32_t o) { self()->setOffset(o); }
 
-int32_t
-OMR::ParameterSymbol::getSlot()
-   {
-   return self()->getParameterOffset() / (uint32_t)_addressSize; // cast _addressSize explicity
-   }
+int32_t OMR::ParameterSymbol::getSlot()
+{
+    return self()->getParameterOffset() / (uint32_t)_addressSize; // cast _addressSize explicity
+}
 
-template <typename AllocatorType>
-TR::ParameterSymbol * OMR::ParameterSymbol::create(AllocatorType m, TR::DataType d, int32_t slot)
-   {
-   return new (m) TR::ParameterSymbol(d, slot);
-   }
+template<typename AllocatorType>
+TR::ParameterSymbol *OMR::ParameterSymbol::create(AllocatorType m, TR::DataType d, int32_t slot)
+{
+    return new (m) TR::ParameterSymbol(d, slot);
+}
 
-template <typename AllocatorType>
-TR::ParameterSymbol * OMR::ParameterSymbol::create(AllocatorType m, TR::DataType d, int32_t slot, size_t size)
-   {
-   return new (m) TR::ParameterSymbol(d, slot, size);
-   }
+template<typename AllocatorType>
+TR::ParameterSymbol *OMR::ParameterSymbol::create(AllocatorType m, TR::DataType d, int32_t slot, size_t size)
+{
+    return new (m) TR::ParameterSymbol(d, slot, size);
+}
 
-
-template TR::ParameterSymbol * OMR::ParameterSymbol::create(TR_StackMemory, TR::DataType, int32_t);
-template TR::ParameterSymbol * OMR::ParameterSymbol::create(TR_StackMemory, TR::DataType, int32_t, size_t);
-template TR::ParameterSymbol * OMR::ParameterSymbol::create(TR_HeapMemory, TR::DataType, int32_t);
-template TR::ParameterSymbol * OMR::ParameterSymbol::create(TR_HeapMemory, TR::DataType, int32_t, size_t);
-template TR::ParameterSymbol * OMR::ParameterSymbol::create(PERSISTENT_NEW_DECLARE, TR::DataType, int32_t);
-template TR::ParameterSymbol * OMR::ParameterSymbol::create(PERSISTENT_NEW_DECLARE, TR::DataType, int32_t, size_t);
+template TR::ParameterSymbol *OMR::ParameterSymbol::create(TR_StackMemory, TR::DataType, int32_t);
+template TR::ParameterSymbol *OMR::ParameterSymbol::create(TR_StackMemory, TR::DataType, int32_t, size_t);
+template TR::ParameterSymbol *OMR::ParameterSymbol::create(TR_HeapMemory, TR::DataType, int32_t);
+template TR::ParameterSymbol *OMR::ParameterSymbol::create(TR_HeapMemory, TR::DataType, int32_t, size_t);
+template TR::ParameterSymbol *OMR::ParameterSymbol::create(PERSISTENT_NEW_DECLARE, TR::DataType, int32_t);
+template TR::ParameterSymbol *OMR::ParameterSymbol::create(PERSISTENT_NEW_DECLARE, TR::DataType, int32_t, size_t);

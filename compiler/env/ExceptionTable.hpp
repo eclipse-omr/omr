@@ -30,52 +30,55 @@
 #include "infra/List.hpp"
 
 class TR_ResolvedMethod;
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-template <class T> class TR_Array;
 
-struct TR_PCMapEntry
-   {
-   TR_ALLOC(TR_Memory::PCMapEntry)
+namespace TR {
+class Block;
+class Compilation;
+} // namespace TR
+template<class T> class TR_Array;
 
-   uint16_t _instructionStartPC;
-   uint16_t _instructionEndPC;
-   uint16_t _bytecodeStartPC;
-   uint16_t _bytecodeEndPC;
-   };
+struct TR_PCMapEntry {
+    TR_ALLOC(TR_Memory::PCMapEntry)
 
-struct TR_ExceptionTableEntry
-   {
-   TR_ALLOC(TR_Memory::ExceptionTableEntry)
+    uint16_t _instructionStartPC;
+    uint16_t _instructionEndPC;
+    uint16_t _bytecodeStartPC;
+    uint16_t _bytecodeEndPC;
+};
 
-   TR_ResolvedMethod *   _method;
-   uint32_t              _instructionStartPC;
-   uint32_t              _instructionEndPC;
-   uint32_t              _instructionHandlerPC;
-   uint32_t              _catchType;
-   bool                  _isSyntheticHandler; // indicate whether the exception handler is inserted by the compiler rather than existing in the source code
-   TR_ByteCodeInfo       _byteCodeInfo;
-   };
+struct TR_ExceptionTableEntry {
+    TR_ALLOC(TR_Memory::ExceptionTableEntry)
 
-struct TR_ExceptionTableEntryIterator
-   {
-   TR_ALLOC(TR_Memory::ExceptionTableEntryIterator)
+    TR_ResolvedMethod *_method;
+    uint32_t _instructionStartPC;
+    uint32_t _instructionEndPC;
+    uint32_t _instructionHandlerPC;
+    uint32_t _catchType;
+    bool _isSyntheticHandler; // indicate whether the exception handler is inserted by the compiler rather than existing
+                              // in the source code
+    TR_ByteCodeInfo _byteCodeInfo;
+};
 
-   TR_ExceptionTableEntryIterator(TR::Compilation *comp);
+struct TR_ExceptionTableEntryIterator {
+    TR_ALLOC(TR_Memory::ExceptionTableEntryIterator)
 
-   TR_ExceptionTableEntry * getFirst();
-   TR_ExceptionTableEntry * getNext();
+    TR_ExceptionTableEntryIterator(TR::Compilation *comp);
 
-   uint32_t                 size();
+    TR_ExceptionTableEntry *getFirst();
+    TR_ExceptionTableEntry *getNext();
+
+    uint32_t size();
+
 private:
-   TR_ExceptionTableEntry * getCurrent();
-   void                     addSnippetRanges(List<TR_ExceptionTableEntry> &, TR::Block *, TR::Block *, uint32_t, TR_ResolvedMethod *, TR::Compilation *);
+    TR_ExceptionTableEntry *getCurrent();
+    void addSnippetRanges(List<TR_ExceptionTableEntry> &, TR::Block *, TR::Block *, uint32_t, TR_ResolvedMethod *,
+        TR::Compilation *);
 
-   TR::Compilation *                          _compilation;
-   TR_Array<List<TR_ExceptionTableEntry> > * _tableEntries;
-   ListIterator<TR_ExceptionTableEntry>      _entryIterator;
-   int32_t                                   _inlineDepth;
-   uint32_t                                  _handlerIndex;
-   };
+    TR::Compilation *_compilation;
+    TR_Array<List<TR_ExceptionTableEntry> > *_tableEntries;
+    ListIterator<TR_ExceptionTableEntry> _entryIterator;
+    int32_t _inlineDepth;
+    uint32_t _handlerIndex;
+};
 
 #endif

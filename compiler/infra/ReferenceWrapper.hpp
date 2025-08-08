@@ -32,82 +32,54 @@
 
 namespace TR {
 
-template <typename T>
-class reference_wrapper {
+template<typename T> class reference_wrapper {
 public:
-  typedef T type;
-  typedef T& reference_type;
-  inline explicit reference_wrapper(reference_type ref) throw();
-  inline reference_wrapper(const reference_wrapper &other) throw();
-  inline reference_wrapper &operator =(const reference_wrapper &other) throw();
-  inline reference_type get() throw();
-  inline operator reference_type() throw();
+    typedef T type;
+    typedef T &reference_type;
+    inline explicit reference_wrapper(reference_type ref) throw();
+    inline reference_wrapper(const reference_wrapper &other) throw();
+    inline reference_wrapper &operator=(const reference_wrapper &other) throw();
+    inline reference_type get() throw();
+    inline operator reference_type() throw();
 
 private:
-  T * m_ref;
+    T *m_ref;
 };
 
-template <typename T>
-reference_wrapper<T>::reference_wrapper(reference_type ref) throw():
-  m_ref(&ref)
+template<typename T>
+reference_wrapper<T>::reference_wrapper(reference_type ref) throw()
+    : m_ref(&ref)
+{}
+
+template<typename T>
+reference_wrapper<T>::reference_wrapper(const reference_wrapper &other) throw()
+    : m_ref(other.m_ref)
+{}
+
+template<typename T> reference_wrapper<T> &reference_wrapper<T>::operator=(const reference_wrapper &other) throw()
 {
+    m_ref = other.m_ref;
+    return *this;
 }
 
-template <typename T>
-reference_wrapper<T>::reference_wrapper(const reference_wrapper &other) throw():
-  m_ref(other.m_ref)
+template<typename T> typename reference_wrapper<T>::reference_type reference_wrapper<T>::get() throw()
 {
+    return *m_ref;
 }
 
-template <typename T>
-reference_wrapper<T> &
-reference_wrapper<T>::operator =(const reference_wrapper &other) throw()
+template<typename T> reference_wrapper<T>::operator reference_type() throw() { return *m_ref; }
+
+template<typename T> reference_wrapper<T> inline ref(T &reference) { return reference_wrapper<T>(reference); }
+
+template<typename T> reference_wrapper<T> inline ref(reference_wrapper<T> wrapper) { return wrapper; }
+
+template<typename T> reference_wrapper<const T> inline cref(const T &reference)
 {
-  m_ref = other.m_ref;
-  return *this;
+    return reference_wrapper<const T>(reference);
 }
 
-template <typename T>
-typename reference_wrapper<T>::reference_type
-reference_wrapper<T>::get() throw()
-{
-  return *m_ref;
-}
+template<typename T> reference_wrapper<const T> inline cref(reference_wrapper<T> wrapper) { return wrapper; }
 
-template <typename T>
-reference_wrapper<T>::operator reference_type() throw()
-{
-  return *m_ref;
-}
-
-template <typename T>
-reference_wrapper<T>
-inline ref(T& reference)
-{
-  return reference_wrapper<T>(reference);
-}
-
-template <typename T>
-reference_wrapper<T>
-inline ref(reference_wrapper<T> wrapper)
-{
-  return wrapper;
-}
-
-template <typename T>
-reference_wrapper<const T>
-inline cref(const T& reference)
-{
-  return reference_wrapper<const T>(reference);
-}
-
-template <typename T>
-reference_wrapper<const T>
-inline cref(reference_wrapper<T> wrapper)
-{
-  return wrapper;
-}
-
-}
+} // namespace TR
 
 #endif // REFERENCE_WRAPPER_HPP

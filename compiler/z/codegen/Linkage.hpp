@@ -27,21 +27,22 @@
 #include "codegen/LinkageConventionsEnum.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
-
-namespace TR
-{
-
-class OMR_EXTENSIBLE Linkage : public OMR::LinkageConnector
-   {
-   public:
-
-   Linkage(TR::CodeGenerator *cg)
-      : OMR::LinkageConnector(cg) {}
-
-   Linkage(TR::CodeGenerator *cg, TR_LinkageConventions elc)
-      : OMR::LinkageConnector(cg, elc) {}
-   };
+namespace TR {
+class CodeGenerator;
 }
+
+namespace TR {
+
+class OMR_EXTENSIBLE Linkage : public OMR::LinkageConnector {
+public:
+    Linkage(TR::CodeGenerator *cg)
+        : OMR::LinkageConnector(cg)
+    {}
+
+    Linkage(TR::CodeGenerator *cg, TR_LinkageConventions elc)
+        : OMR::LinkageConnector(cg, elc)
+    {}
+};
+} // namespace TR
 
 #endif

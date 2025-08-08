@@ -25,59 +25,51 @@
 #include "infra/List.hpp"
 
 void TR_IGNode::decWorkingDegreeOfNeighbours()
-   {
-   ListIterator<TR_IGNode> iterator(&getAdjList());
-   TR_IGNode *cursor = iterator.getFirst();
+{
+    ListIterator<TR_IGNode> iterator(&getAdjList());
+    TR_IGNode *cursor = iterator.getFirst();
 
-   while (cursor)
-      {
-      if (!cursor->isRemovedFromIG())
-         {
-         cursor->decWorkingDegree();
-         }
+    while (cursor) {
+        if (!cursor->isRemovedFromIG()) {
+            cursor->decWorkingDegree();
+        }
 
-      cursor = iterator.getNext();
-      }
+        cursor = iterator.getNext();
+    }
 
-   setWorkingDegree(0);
-   }
-
+    setWorkingDegree(0);
+}
 
 #ifdef DEBUG
-void TR_IGNode::print(TR::Compilation * comp)
-   {
-   diagnostic("[ %5d ]  :  IGnode addr:   %p", _index, this);
-   diagnostic("\n              data addr:     %p", _pEntity);
-   diagnostic("\n              flags [%04x]:  ", _flags.getValue());
+void TR_IGNode::print(TR::Compilation *comp)
+{
+    diagnostic("[ %5d ]  :  IGnode addr:   %p", _index, this);
+    diagnostic("\n              data addr:     %p", _pEntity);
+    diagnostic("\n              flags [%04x]:  ", _flags.getValue());
 
-   if (_flags.getValue() == 0)
-      {
-      diagnostic("none");
-      }
-   else
-      {
-      if (isRemovedFromIG()) {diagnostic("isRemovedFromIG ");}
-      }
+    if (_flags.getValue() == 0) {
+        diagnostic("none");
+    } else {
+        if (isRemovedFromIG()) {
+            diagnostic("isRemovedFromIG ");
+        }
+    }
 
-   diagnostic("\n              ------------------------------------------------------------------");
-   diagnostic("\n              colour:              ");
+    diagnostic("\n              ------------------------------------------------------------------");
+    diagnostic("\n              colour:              ");
 
-   if (_colour == UNCOLOURED)
-      {
-      diagnostic("uncoloured");
-      }
-   else
-      {
-      diagnostic("%08x", _colour);
-      }
+    if (_colour == UNCOLOURED) {
+        diagnostic("uncoloured");
+    } else {
+        diagnostic("%08x", _colour);
+    }
 
-   diagnostic("\n              degree:              %d", _degree);
+    diagnostic("\n              degree:              %d", _degree);
 
-   diagnostic("\n              interfering ranges:");
+    diagnostic("\n              interfering ranges:");
 
-   int32_t icount = 0;
-   if (_degree > 0)
-      {
+    int32_t icount = 0;
+    if (_degree > 0) {
 #if 0
       TR_BitVector *adjSet = new (STACK_NEW) TR_BitVector(ig->getNumNodes(), stackAlloc);
 
@@ -100,22 +92,19 @@ void TR_IGNode::print(TR::Compilation * comp)
                      ++icount, igNodeIndex, ig->getNodeTable(igNodeIndex));
          }
 #else
-      ListIterator<TR_IGNode> iterator(&getAdjList());
-      TR_IGNode *adjCursor = iterator.getFirst();
+        ListIterator<TR_IGNode> iterator(&getAdjList());
+        TR_IGNode *adjCursor = iterator.getFirst();
 
-      while (adjCursor)
-         {
-         diagnostic("\n                 #%-3d [ %5d : %p ]", ++icount, adjCursor->getIndex(), adjCursor);
-         adjCursor = iterator.getNext();
-         }
+        while (adjCursor) {
+            diagnostic("\n                 #%-3d [ %5d : %p ]", ++icount, adjCursor->getIndex(), adjCursor);
+            adjCursor = iterator.getNext();
+        }
 #endif
 
-      }
-   else
-      {
-      diagnostic("\n                 [ none ]");
-      }
+    } else {
+        diagnostic("\n                 [ none ]");
+    }
 
-   diagnostic("\n\n");
-   }
+    diagnostic("\n\n");
+}
 #endif

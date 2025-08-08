@@ -29,31 +29,38 @@
 #include "codegen/Register.hpp"
 #include "il/DataTypes.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+} // namespace TR
 
 namespace TR {
 
-class IA32SystemLinkage : public TR::X86SystemLinkage
-   {
-   public:
+class IA32SystemLinkage : public TR::X86SystemLinkage {
+public:
+    IA32SystemLinkage(TR::CodeGenerator *cg);
+    void setUpStackSizeForCallNode(TR::Node *);
 
-   IA32SystemLinkage(TR::CodeGenerator *cg);
-   void setUpStackSizeForCallNode(TR::Node*);
-   protected:
-   virtual int32_t buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *deps);
-   virtual TR::Register *buildIndirectDispatch(TR::Node *callNode);
-   virtual TR::Register *buildDirectDispatch(TR::Node *callNode, bool spillFPRegs);
-   int32_t layoutParm(TR::Node*, int32_t&, uint16_t&, uint16_t&, TR::parmLayoutResult&);
-   int32_t layoutParm(TR::ParameterSymbol*, int32_t&, uint16_t&, uint16_t&, TR::parmLayoutResult&);
-   virtual TR::Register *buildVolatileAndReturnDependencies(TR::Node *callNode, TR::RegisterDependencyConditions *deps);
-   virtual TR::RealRegister* getSingleWordFrameAllocationRegister() { return machine()->getRealRegister(TR::RealRegister::ecx); }
-   private:
-   virtual uint32_t getAlignment(TR::DataType);
-   };
+protected:
+    virtual int32_t buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *deps);
+    virtual TR::Register *buildIndirectDispatch(TR::Node *callNode);
+    virtual TR::Register *buildDirectDispatch(TR::Node *callNode, bool spillFPRegs);
+    int32_t layoutParm(TR::Node *, int32_t &, uint16_t &, uint16_t &, TR::parmLayoutResult &);
+    int32_t layoutParm(TR::ParameterSymbol *, int32_t &, uint16_t &, uint16_t &, TR::parmLayoutResult &);
+    virtual TR::Register *buildVolatileAndReturnDependencies(TR::Node *callNode,
+        TR::RegisterDependencyConditions *deps);
 
-}
+    virtual TR::RealRegister *getSingleWordFrameAllocationRegister()
+    {
+        return machine()->getRealRegister(TR::RealRegister::ecx);
+    }
+
+private:
+    virtual uint32_t getAlignment(TR::DataType);
+};
+
+} // namespace TR
 
 #endif

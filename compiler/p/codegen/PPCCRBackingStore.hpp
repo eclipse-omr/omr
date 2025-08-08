@@ -31,30 +31,29 @@ class TR_PPCCRBackingStore;
 
 // Pseudo-safe downcast function, used exclusively for cr spill/restore
 //
-inline TR_PPCCRBackingStore *toPPCCRBackingStore(TR_BackingStore *r)
-   {
-   return (TR_PPCCRBackingStore *)r;
-   }
+inline TR_PPCCRBackingStore *toPPCCRBackingStore(TR_BackingStore *r) { return (TR_PPCCRBackingStore *)r; }
 
-class TR_PPCCRBackingStore: public TR_BackingStore
-   {
-   private:
+class TR_PPCCRBackingStore : public TR_BackingStore {
+private:
+    TR_BackingStore *original;
+    uint8_t ccrFieldIndex;
 
-   TR_BackingStore *original;
-   uint8_t ccrFieldIndex;
+public:
+    TR_PPCCRBackingStore();
 
-   public:
+    TR_PPCCRBackingStore(TR::Compilation *comp, TR_BackingStore *orig)
+        : TR_BackingStore(comp->getSymRefTab(), orig->getSymbolReference()->getSymbol(),
+              orig->getSymbolReference()->getOffset())
+        , original(orig)
+    {}
 
-   TR_PPCCRBackingStore();
+    uint8_t getCcrFieldIndex() { return ccrFieldIndex; }
 
-   TR_PPCCRBackingStore(TR::Compilation * comp, TR_BackingStore *orig)
-     : TR_BackingStore(comp->getSymRefTab(), orig->getSymbolReference()->getSymbol(), orig->getSymbolReference()->getOffset()), original(orig)
-      {}
+    uint8_t setCcrFieldIndex(uint8_t cfi) { return (ccrFieldIndex = cfi); }
 
-   uint8_t getCcrFieldIndex() {return ccrFieldIndex;}
-   uint8_t setCcrFieldIndex(uint8_t cfi) {return (ccrFieldIndex=cfi);}
-   TR_BackingStore *getOriginal() {return original;}
-   TR_BackingStore *setOriginal(TR_BackingStore *o) {return (original = o);}
-   };
+    TR_BackingStore *getOriginal() { return original; }
+
+    TR_BackingStore *setOriginal(TR_BackingStore *o) { return (original = o); }
+};
 
 #endif

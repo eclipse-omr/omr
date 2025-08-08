@@ -45,59 +45,45 @@ namespace TR {
  * or not the facility is active.
  */
 
-class RegionProfiler
-   {
+class RegionProfiler {
 public:
-   RegionProfiler(TR::Region &region, TR::Compilation &compilation, const char *format, ...) :
-      _region(region),
-      _initialRegionSize(_region.bytesAllocated()),
-      _initialSegmentProviderSize(_region._segmentProvider.bytesAllocated()),
-      _compilation(compilation)
-      {
-      if (_compilation.getOption(TR_ProfileMemoryRegions))
-         {
-         va_list args;
-         va_start(args, format);
-         int len = vsnprintf(_identifier, sizeof(_identifier), format, args);
-         TR_ASSERT(len < sizeof(_identifier), "Region profiler identifier truncated as it exceeded max length %d", sizeof(_identifier));
-         _identifier[sizeof(_identifier) - 1] = '\0';
-         va_end(args);
-         }
-      }
+    RegionProfiler(TR::Region &region, TR::Compilation &compilation, const char *format, ...)
+        : _region(region)
+        , _initialRegionSize(_region.bytesAllocated())
+        , _initialSegmentProviderSize(_region._segmentProvider.bytesAllocated())
+        , _compilation(compilation)
+    {
+        if (_compilation.getOption(TR_ProfileMemoryRegions)) {
+            va_list args;
+            va_start(args, format);
+            int len = vsnprintf(_identifier, sizeof(_identifier), format, args);
+            TR_ASSERT(len < sizeof(_identifier), "Region profiler identifier truncated as it exceeded max length %d",
+                sizeof(_identifier));
+            _identifier[sizeof(_identifier) - 1] = '\0';
+            va_end(args);
+        }
+    }
 
-   ~RegionProfiler()
-      {
-      if (_compilation.getOption(TR_ProfileMemoryRegions))
-         {
-         TR::DebugCounter::incStaticDebugCounter(
-            &_compilation,
-            TR::DebugCounter::debugCounterName(
-               &_compilation,
-               "kbytesAllocated.details/%s",
-               _identifier
-               ),
-            static_cast<int32_t>((_region.bytesAllocated() - _initialRegionSize) / 1024)
-            );
-         TR::DebugCounter::incStaticDebugCounter(
-            &_compilation,
-            TR::DebugCounter::debugCounterName(
-               &_compilation,
-               "segmentAllocation.details/%s",
-                _identifier
-                ),
-            static_cast<int32_t>((_region._segmentProvider.bytesAllocated() - _initialSegmentProviderSize) / 1024)
-            );
-         }
-      }
+    ~RegionProfiler()
+    {
+        if (_compilation.getOption(TR_ProfileMemoryRegions)) {
+            TR::DebugCounter::incStaticDebugCounter(&_compilation,
+                TR::DebugCounter::debugCounterName(&_compilation, "kbytesAllocated.details/%s", _identifier),
+                static_cast<int32_t>((_region.bytesAllocated() - _initialRegionSize) / 1024));
+            TR::DebugCounter::incStaticDebugCounter(&_compilation,
+                TR::DebugCounter::debugCounterName(&_compilation, "segmentAllocation.details/%s", _identifier),
+                static_cast<int32_t>((_region._segmentProvider.bytesAllocated() - _initialSegmentProviderSize) / 1024));
+        }
+    }
 
 private:
-   TR::Region &_region;
-   size_t const _initialRegionSize;
-   size_t const _initialSegmentProviderSize;
-   TR::Compilation &_compilation;
-   char _identifier[256];
-   };
+    TR::Region &_region;
+    size_t const _initialRegionSize;
+    size_t const _initialSegmentProviderSize;
+    TR::Compilation &_compilation;
+    char _identifier[256];
+};
 
-}
+} // namespace TR
 
 #endif

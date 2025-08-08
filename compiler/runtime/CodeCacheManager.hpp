@@ -26,15 +26,15 @@
 
 class TR_FrontEnd;
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE CodeCacheManager : public OMR::CodeCacheManagerConnector
-   {
-   public:
-   CodeCacheManager(TR::RawAllocator rawAllocator) : OMR::CodeCacheManagerConnector(rawAllocator) { }
-   };
+class OMR_EXTENSIBLE CodeCacheManager : public OMR::CodeCacheManagerConnector {
+public:
+    CodeCacheManager(TR::RawAllocator rawAllocator)
+        : OMR::CodeCacheManagerConnector(rawAllocator)
+    {}
+};
 
-}
+} // namespace TR
 
 #endif

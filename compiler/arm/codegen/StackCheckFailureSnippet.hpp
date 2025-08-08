@@ -29,30 +29,27 @@
 
 namespace TR {
 
-class ARMStackCheckFailureSnippet : public TR::Snippet
-   {
-   TR::LabelSymbol *reStartLabel;
+class ARMStackCheckFailureSnippet : public TR::Snippet {
+    TR::LabelSymbol *reStartLabel;
 
-   public:
+public:
+    ARMStackCheckFailureSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *restartlab,
+        TR::LabelSymbol *snippetlab)
+        : TR::Snippet(cg, node, snippetlab, true)
+        , reStartLabel(restartlab)
+    {}
 
-   ARMStackCheckFailureSnippet(TR::CodeGenerator *cg,
-                               TR::Node        *node,
-                               TR::LabelSymbol *restartlab,
-                               TR::LabelSymbol *snippetlab)
-      : TR::Snippet(cg, node, snippetlab, true), reStartLabel(restartlab)
-      {
-      }
+    virtual Kind getKind() { return IsStackCheckFailure; }
 
-   virtual Kind getKind() { return IsStackCheckFailure; }
+    TR::LabelSymbol *getReStartLabel() { return reStartLabel; }
 
-   TR::LabelSymbol *getReStartLabel()                  {return reStartLabel;}
-   TR::LabelSymbol *setReStartLabel(TR::LabelSymbol *l) {return (reStartLabel = l);}
+    TR::LabelSymbol *setReStartLabel(TR::LabelSymbol *l) { return (reStartLabel = l); }
 
-   virtual uint8_t *emitSnippetBody();
+    virtual uint8_t *emitSnippetBody();
 
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
-   };
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
+};
 
-}
+} // namespace TR
 
 #endif

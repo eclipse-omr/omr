@@ -27,8 +27,14 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class Machine; } } }
-namespace OMR { typedef OMR::X86::AMD64::Machine MachineConnector; }
+
+namespace OMR {
+namespace X86 { namespace AMD64 {
+class Machine;
+}} // namespace X86::AMD64
+
+typedef OMR::X86::AMD64::Machine MachineConnector;
+} // namespace OMR
 #else
 #error OMR::X86::AMD64::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -36,65 +42,50 @@ namespace OMR { typedef OMR::X86::AMD64::Machine MachineConnector; }
 #include "x/codegen/OMRMachine.hpp"
 
 #include <stdint.h>
-namespace TR { class CodeGenerator; }
-namespace TR { class RealRegister; }
-namespace TR { class Register; }
-namespace TR { class Machine; }
 
-namespace OMR
-{
+namespace TR {
+class CodeGenerator;
+class RealRegister;
+class Register;
+class Machine;
+} // namespace TR
 
-namespace X86
-{
+namespace OMR { namespace X86 { namespace AMD64 {
 
-namespace AMD64
-{
+class OMR_EXTENSIBLE Machine : public OMR::X86::Machine {
+    enum {
+        AMD64_NUM_GPR = 16,
+        AMD64_NUM_FPR = 8, // x87 registers
+        AMD64_NUM_XMMR = 16,
+        AMD64_MAX_GLOBAL_GPRS = 14,
+        AMD64_MAX_8BIT_GLOBAL_GPRS = AMD64_MAX_GLOBAL_GPRS,
+        AMD64_MAX_GLOBAL_FPRS = 16,
+    };
 
-class OMR_EXTENSIBLE Machine : public OMR::X86::Machine
-   {
+    TR::Register *_registerAssociationsStorage[TR::RealRegister::NumRegisters];
+    TR::Register *_xmmGlobalRegisterStorage[AMD64_NUM_XMMR];
+    uint32_t _globalRegisterNumberToRealRegisterMapStorage[AMD64_MAX_GLOBAL_GPRS + AMD64_MAX_GLOBAL_FPRS];
 
-   enum
-      {
-      AMD64_NUM_GPR              = 16,
-      AMD64_NUM_FPR              = 8,  // x87 registers
-      AMD64_NUM_XMMR             = 16,
-      AMD64_MAX_GLOBAL_GPRS      = 14,
-      AMD64_MAX_8BIT_GLOBAL_GPRS = AMD64_MAX_GLOBAL_GPRS,
-      AMD64_MAX_GLOBAL_FPRS      = 16,
-      };
+public:
+    Machine(TR::CodeGenerator *cg);
 
-   TR::Register         *_registerAssociationsStorage[TR::RealRegister::NumRegisters];
-   TR::Register         *_xmmGlobalRegisterStorage[AMD64_NUM_XMMR];
-   uint32_t _globalRegisterNumberToRealRegisterMapStorage[AMD64_MAX_GLOBAL_GPRS + AMD64_MAX_GLOBAL_FPRS];
+    static uint8_t numGPRRegsWithheld(TR::CodeGenerator *cg);
+    static uint8_t numRegsWithheld(TR::CodeGenerator *cg);
 
-   public:
+    static bool disableNewPickRegister()
+    {
+        if (!_dnprIsInitialized) {
+            _dnprIsInitialized = true;
+        }
+        return _disableNewPickRegister;
+    }
 
-   Machine(TR::CodeGenerator *cg);
+    static bool enableNewPickRegister();
 
-   static uint8_t numGPRRegsWithheld(TR::CodeGenerator *cg);
-   static uint8_t numRegsWithheld(TR::CodeGenerator *cg);
+private:
+    static bool _disableNewPickRegister, _dnprIsInitialized;
+};
 
-   static bool disableNewPickRegister()
-      {
-      if (!_dnprIsInitialized)
-         {
-         _dnprIsInitialized = true;
-         }
-      return _disableNewPickRegister;
-      }
-
-   static bool enableNewPickRegister();
-
-   private:
-
-   static bool _disableNewPickRegister, _dnprIsInitialized;
-
-   };
-
-} // namespace AMD64
-
-} // namespace X86
-
-} // namespace OMR
+}}} // namespace OMR::X86::AMD64
 
 #endif

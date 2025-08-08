@@ -27,65 +27,64 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
-namespace OMR { namespace Power { class Snippet; } }
-namespace OMR { typedef OMR::Power::Snippet SnippetConnector; }
+
+namespace OMR {
+namespace Power {
+class Snippet;
+}
+
+typedef OMR::Power::Snippet SnippetConnector;
+} // namespace OMR
 #else
 #error OMR::Power::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace Power {
 
-namespace Power
-{
+class OMR_EXTENSIBLE Snippet : public OMR::Snippet {
+public:
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
 
-class OMR_EXTENSIBLE Snippet : public OMR::Snippet
-   {
-   public:
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
 
-   Snippet(TR::CodeGenerator *cg, TR::Node * node, TR::LabelSymbol * label, bool isGCSafePoint);
+    enum Kind {
+        IsUnknown,
+        IsCall,
+        IsUnresolvedCall,
+        IsVirtual,
+        IsVirtualUnresolved,
+        IsInterfaceCall,
+        IsHelperCall,
+        IsMonitorEnter,
+        IsMonitorExit,
+        IsReadMonitor,
+        IsLockReservationEnter,
+        IsLockReservationExit,
+        IsArrayCopyCall,
+        IsHeapAlloc,
+        IsAllocPrefetch,
+        IsNonZeroAllocPrefetch,
+        IsRecompilation,
+        IsForceRecompilation,
+        IsStackCheckFailure,
+        IsUnresolvedData,
+        IsInterfaceCastSnippet,
+        IsTLB1,
+        IsTLB1LoadArgs,
+        numKinds
+    };
 
-   Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
+    virtual Kind getKind() { return IsUnknown; }
+};
 
-   enum Kind
-      {
-      IsUnknown,
-      IsCall,
-         IsUnresolvedCall,
-      IsVirtual,
-         IsVirtualUnresolved,
-         IsInterfaceCall,
-      IsHelperCall,
-         IsMonitorEnter,
-         IsMonitorExit,
-         IsReadMonitor,
-         IsLockReservationEnter,
-         IsLockReservationExit,
-         IsArrayCopyCall,
-      IsHeapAlloc,
-      IsAllocPrefetch,
-      IsNonZeroAllocPrefetch,
-      IsRecompilation,
-      IsForceRecompilation,
-      IsStackCheckFailure,
-      IsUnresolvedData,
-      IsInterfaceCastSnippet,
-      IsTLB1,
-         IsTLB1LoadArgs,
-      numKinds
-      };
-
-   virtual Kind getKind() { return IsUnknown; }
-   };
-
-}
-
-}
+}} // namespace OMR::Power
 
 #endif

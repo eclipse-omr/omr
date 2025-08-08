@@ -24,51 +24,40 @@
 TR_RuntimeHelperTable runtimeHelpers;
 
 #if (defined(__IBMCPP__) || (defined(__IBMC__) && !defined(__MVS__)) || defined(__open_xl__)) && !defined(LINUXPPC64)
- #if defined(AIXPPC)
-  #define JIT_HELPER(x) extern "C" void *x
- #else
-  #define JIT_HELPER(x) extern "C" __cdecl x()
- #endif
+#if defined(AIXPPC)
+#define JIT_HELPER(x) extern "C" void *x
 #else
- #if defined(LINUXPPC64)
-  #define JIT_HELPER(x) extern "C" void *x
- #elif defined(LINUX)
-  #define JIT_HELPER(x) extern "C" void x()
- #else
-  #define JIT_HELPER(x) extern "C" x()
- #endif
+#define JIT_HELPER(x) extern "C" __cdecl x()
+#endif
+#else
+#if defined(LINUXPPC64)
+#define JIT_HELPER(x) extern "C" void *x
+#elif defined(LINUX)
+#define JIT_HELPER(x) extern "C" void x()
+#else
+#define JIT_HELPER(x) extern "C" x()
+#endif
 #endif
 
+void *TR_RuntimeHelperTable::translateAddress(void *a) { return a; }
 
-void*
-TR_RuntimeHelperTable::translateAddress(void * a)
-   {
-   return a;
-   }
+void *TR_RuntimeHelperTable::getFunctionEntryPointOrConst(TR_RuntimeHelper h)
+{
+    if (h < TR_numRuntimeHelpers) {
+        if (_linkage[h] == TR_Helper)
+            return translateAddress(_helpers[h]);
+        else
+            return _helpers[h];
+    } else
+        return reinterpret_cast<void *>(TR_RuntimeHelperTable::INVALID_FUNCTION_POINTER);
+}
 
-void* TR_RuntimeHelperTable::getFunctionEntryPointOrConst(TR_RuntimeHelper h)
-   {
-   if (h < TR_numRuntimeHelpers)
-      {
-      if (_linkage[h] == TR_Helper)
-         return translateAddress(_helpers[h]);
-      else
-         return _helpers[h];
-      }
-   else
-      return reinterpret_cast<void*>(TR_RuntimeHelperTable::INVALID_FUNCTION_POINTER);
-   }
+void *TR_RuntimeHelperTable::getFunctionPointer(TR_RuntimeHelper h)
+{
+    if ((h < TR_numRuntimeHelpers) && (_linkage[h] == TR_Helper))
+        return _helpers[h];
+    else
+        return reinterpret_cast<void *>(TR_RuntimeHelperTable::INVALID_FUNCTION_POINTER);
+}
 
-void*
-TR_RuntimeHelperTable::getFunctionPointer(TR_RuntimeHelper h)
-   {
-   if ((h < TR_numRuntimeHelpers) && (_linkage[h] == TR_Helper))
-      return _helpers[h];
-   else
-      return reinterpret_cast<void*>(TR_RuntimeHelperTable::INVALID_FUNCTION_POINTER);
-   }
-
-void
-initializeJitRuntimeHelperTable(char isSMP)
-   {
-   }
+void initializeJitRuntimeHelperTable(char isSMP) {}

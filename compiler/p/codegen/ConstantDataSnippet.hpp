@@ -24,19 +24,17 @@
 
 #include "codegen/OMRConstantDataSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
-namespace TR
-   {
-   class ConstantDataSnippet : public OMR::ConstantDataSnippetConnector
-      {
-      public:
-
-      ConstantDataSnippet(TR::CodeGenerator *cg) :
-         OMR::ConstantDataSnippetConnector(cg)
-         {
-         }
-      };
-   }
+namespace TR {
+class ConstantDataSnippet : public OMR::ConstantDataSnippetConnector {
+public:
+    ConstantDataSnippet(TR::CodeGenerator *cg)
+        : OMR::ConstantDataSnippetConnector(cg)
+    {}
+};
+} // namespace TR
 
 #endif

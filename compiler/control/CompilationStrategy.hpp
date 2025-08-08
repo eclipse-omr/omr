@@ -25,15 +25,17 @@
 #include "infra/Annotations.hpp"
 #include "control/OMRCompilationStrategy.hpp"
 
-namespace TR { class CompilationStrategy; }
+namespace TR {
+class CompilationStrategy;
+}
 
-namespace TR
-{
-class OMR_EXTENSIBLE CompilationStrategy: public OMR::CompilationStrategyConnector
-   {
-   public:
-   CompilationStrategy(): OMR::CompilationStrategyConnector() {}
-   };
+namespace TR {
+class OMR_EXTENSIBLE CompilationStrategy : public OMR::CompilationStrategyConnector {
+public:
+    CompilationStrategy()
+        : OMR::CompilationStrategyConnector()
+    {}
+};
 } // namespace TR
 
 #endif

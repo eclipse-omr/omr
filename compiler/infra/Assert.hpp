@@ -79,175 +79,160 @@
  * [1]: https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Ri-expects
  */
 
-
 #ifndef TR_ASSERT_HPP
 #define TR_ASSERT_HPP
 
-#include "infra/Annotations.hpp"                // OMR_NORETURN
+#include "infra/Annotations.hpp" // OMR_NORETURN
 #include "compile/CompilationException.hpp"
 
 #include <cstddef>
 
-namespace TR
-   {
-   class Node;
-   class Instruction;
+namespace TR {
+class Node;
+class Instruction;
 
-   void OMR_NORETURN trap();
+void OMR_NORETURN trap();
 
-   /**
-    * Represents context to be printed alongside an assertion failure message.
-    *
-    * After printing the message and stack trace associated with an assertion failure, the relevant context will be
-    * printed to stderr by calling its printContext function. Contextual information generally includes relevant details
-    * about the state of the compiler at the time of the failure, such as the tree containing a node which resulted in
-    * an assertion failure.
-    */
-   class AssertionContext
-      {
-      public:
+/**
+ * Represents context to be printed alongside an assertion failure message.
+ *
+ * After printing the message and stack trace associated with an assertion failure, the relevant context will be
+ * printed to stderr by calling its printContext function. Contextual information generally includes relevant details
+ * about the state of the compiler at the time of the failure, such as the tree containing a node which resulted in
+ * an assertion failure.
+ */
+class AssertionContext {
+public:
+    /**
+     * Prints contextual information about the assertion for debugging purposes.
+     *
+     * It is valid for this function to itself result in an assertion failure (potentially with its own context)
+     * during the process of printing. To prevent boundless recursion, the context of such an assertion failure will
+     * not be printed.
+     */
+    virtual void printContext() const = 0;
+};
 
-      /**
-       * Prints contextual information about the assertion for debugging purposes.
-       *
-       * It is valid for this function to itself result in an assertion failure (potentially with its own context)
-       * during the process of printing. To prevent boundless recursion, the context of such an assertion failure will
-       * not be printed.
-       */
-      virtual void printContext() const = 0;
-      };
+/**
+ * An assertion context which does not print any information.
+ */
+class NullAssertionContext : public AssertionContext {
+public:
+    virtual void printContext() const {}
+};
 
-   /**
-    * An assertion context which does not print any information.
-    */
-   class NullAssertionContext : public AssertionContext
-      {
-      public:
-      virtual void printContext() const {}
-      };
+/**
+ * An assertion context which prints the treetop containing a particular node.
+ */
+class NodeAssertionContext : public AssertionContext {
+    TR::Node *_node;
 
-   /**
-    * An assertion context which prints the treetop containing a particular node.
-    */
-   class NodeAssertionContext : public AssertionContext
-      {
-      TR::Node *_node;
+public:
+    NodeAssertionContext(TR::Node *node)
+        : _node(node)
+    {}
 
-      public:
-      NodeAssertionContext(TR::Node *node) : _node(node) {}
+    virtual void printContext() const;
+};
 
-      virtual void printContext() const;
-      };
+/**
+ * An assertion context which prints instructions surrounding a particular instructions.
+ */
+class InstructionAssertionContext : public AssertionContext {
+    TR::Instruction *_instruction;
 
-   /**
-    * An assertion context which prints instructions surrounding a particular instructions.
-    */
-   class InstructionAssertionContext : public AssertionContext
-      {
-      TR::Instruction *_instruction;
+public:
+    InstructionAssertionContext(TR::Instruction *instruction)
+        : _instruction(instruction)
+    {}
 
-      public:
-      InstructionAssertionContext(TR::Instruction *instruction) : _instruction(instruction) {}
+    virtual void printContext() const;
+};
 
-      virtual void printContext() const;
-      };
+// Don't use these directly.
+//
+// Use the TR_ASSERT* macros instead as they control the string
+// contents in production builds.
+void OMR_NORETURN fatal_assertion(const char *file, int line, const char *condition, const char *format, ...);
+void OMR_NORETURN fatal_assertion_with_detail(const AssertionContext &ctx, const char *file, int line,
+    const char *condition, const char *format, ...);
 
-   // Don't use these directly.
-   //
-   // Use the TR_ASSERT* macros instead as they control the string
-   // contents in production builds.
-   void OMR_NORETURN fatal_assertion(const char *file, int line, const char *condition, const char *format, ...);
-   void OMR_NORETURN fatal_assertion_with_detail(const AssertionContext& ctx, const char *file, int line, const char *condition, const char *format, ...);
+// Non fatal assertions may in some circumstances return, so do not mark them as
+// no-return.
+void assertion(const char *file, int line, const char *condition, const char *format, ...);
 
-   // Non fatal assertions may in some circumstances return, so do not mark them as
-   // no-return.
-   void              assertion(const char *file, int line, const char *condition, const char *format, ...);
+/**
+ * Assertion failure exception type.
+ *
+ * Thrown only by TR_ASSERT_SAFE_FATAL, when softFailOnAssumes is set.
+ */
+struct AssertionFailure : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Assertion Failure"; }
+};
 
-   /**
-    * Assertion failure exception type.
-    *
-    * Thrown only by TR_ASSERT_SAFE_FATAL, when softFailOnAssumes is set.
-    */
-   struct AssertionFailure : public virtual CompilationException
-      {
-      virtual const char* what() const throw() { return "Assertion Failure"; }
-      };
-
-   }
-
-
+} // namespace TR
 
 // Macro Definitions
 
-#define TR_ASSERT_FATAL(condition, format, ...) \
-         do { (condition) ? (void)0 : TR::fatal_assertion(__FILE__, __LINE__, #condition, format, ##__VA_ARGS__); } while(0)
+#define TR_ASSERT_FATAL(condition, format, ...)                                                             \
+    do {                                                                                                    \
+        (condition) ? (void)0 : TR::fatal_assertion(__FILE__, __LINE__, #condition, format, ##__VA_ARGS__); \
+    } while (0)
 
-#define TR_ASSERT_FATAL_WITH_DETAIL(ctx, condition, format, ...) \
-   do { \
-      if (!(condition)) \
-         TR::fatal_assertion_with_detail(ctx, __FILE__, __LINE__, #condition, format, ##__VA_ARGS__); \
-   } while (0)
+#define TR_ASSERT_FATAL_WITH_DETAIL(ctx, condition, format, ...)                                         \
+    do {                                                                                                 \
+        if (!(condition))                                                                                \
+            TR::fatal_assertion_with_detail(ctx, __FILE__, __LINE__, #condition, format, ##__VA_ARGS__); \
+    } while (0)
 
-#define TR_ASSERT_FATAL_WITH_NODE(node, condition, format, ...) \
-   do { \
-      TR::Node *nodeVal = (node); \
-      TR_ASSERT_FATAL_WITH_DETAIL( \
-         TR::NodeAssertionContext(nodeVal), \
-         condition, \
-         "Node %p [%s]: " format, \
-         nodeVal, \
-         nodeVal ? nodeVal->getOpCode().getName() : "null", \
-         ##__VA_ARGS__ \
-      ); \
-   } while (0)
+#define TR_ASSERT_FATAL_WITH_NODE(node, condition, format, ...)                                                     \
+    do {                                                                                                            \
+        TR::Node *nodeVal = (node);                                                                                 \
+        TR_ASSERT_FATAL_WITH_DETAIL(TR::NodeAssertionContext(nodeVal), condition, "Node %p [%s]: " format, nodeVal, \
+            nodeVal ? nodeVal->getOpCode().getName() : "null", ##__VA_ARGS__);                                      \
+    } while (0)
 
-#define TR_ASSERT_FATAL_WITH_INSTRUCTION(instr, condition, format, ...) \
-   do { \
-      TR::Instruction *instrVal = (instr); \
-      TR::Node *instrNode = instrVal ? instrVal->getNode() : NULL; \
-      TR_ASSERT_FATAL_WITH_DETAIL( \
-         TR::InstructionAssertionContext(instrVal), \
-         condition, \
-         "Instruction %p [%s] (generated from node %p [%s]): " format, \
-         instrVal, \
-         instrVal ? instrVal->getOpCode().getMnemonicName() : "null", \
-         instrNode, \
-         instrNode ? instrNode->getOpCode().getName() : "null", \
-         ##__VA_ARGS__ \
-      ); \
-   } while (0)
+#define TR_ASSERT_FATAL_WITH_INSTRUCTION(instr, condition, format, ...)                   \
+    do {                                                                                  \
+        TR::Instruction *instrVal = (instr);                                              \
+        TR::Node *instrNode = instrVal ? instrVal->getNode() : NULL;                      \
+        TR_ASSERT_FATAL_WITH_DETAIL(TR::InstructionAssertionContext(instrVal), condition, \
+            "Instruction %p [%s] (generated from node %p [%s]): " format, instrVal,       \
+            instrVal ? instrVal->getOpCode().getMnemonicName() : "null", instrNode,       \
+            instrNode ? instrNode->getOpCode().getName() : "null", ##__VA_ARGS__);        \
+    } while (0)
 
-#define TR_UNIMPLEMENTED() \
-         ::TR::fatal_assertion(__FILE__, __LINE__, NULL, "Unimplemented function: %s", __FUNCTION__)
+#define TR_UNIMPLEMENTED() ::TR::fatal_assertion(__FILE__, __LINE__, NULL, "Unimplemented function: %s", __FUNCTION__)
 
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
 
-   #define TR_ASSERT(condition, format, ...) \
-         do { (condition) ? (void)0 : TR::assertion(__FILE__, __LINE__, #condition, format, ##__VA_ARGS__); } while(0)
+#define TR_ASSERT(condition, format, ...)                                                             \
+    do {                                                                                              \
+        (condition) ? (void)0 : TR::assertion(__FILE__, __LINE__, #condition, format, ##__VA_ARGS__); \
+    } while (0)
 
-   #define TR_ASSERT_SAFE_FATAL(condition, format, ...) \
-         do { (condition) ? (void)0 : TR::assertion(__FILE__, __LINE__, #condition, format, ##__VA_ARGS__); } while(0)
+#define TR_ASSERT_SAFE_FATAL(condition, format, ...)                                                  \
+    do {                                                                                              \
+        (condition) ? (void)0 : TR::assertion(__FILE__, __LINE__, #condition, format, ##__VA_ARGS__); \
+    } while (0)
 
 #else
 
-   #define TR_ASSERT(condition, format, ...) (void)0
+#define TR_ASSERT(condition, format, ...) (void)0
 
-   #define TR_ASSERT_SAFE_FATAL(condition, format, ...) \
-         do { (condition) ? (void)0 : TR::assertion(__FILE__, __LINE__, NULL, NULL); } while(0)
-
+#define TR_ASSERT_SAFE_FATAL(condition, format, ...)                           \
+    do {                                                                       \
+        (condition) ? (void)0 : TR::assertion(__FILE__, __LINE__, NULL, NULL); \
+    } while (0)
 
 #endif
-
-
 
 #if defined(DEBUG) || defined(EXPECT_BUILD)
-   #define Expect(x) TR_ASSERT((x), "Expectation Failure:")
-   #define Ensure(x) TR_ASSERT((x), "Ensure Failure:")
+#define Expect(x) TR_ASSERT((x), "Expectation Failure:")
+#define Ensure(x) TR_ASSERT((x), "Ensure Failure:")
 #else
-   #define Expect(x) (void)0
-   #define Ensure(x) (void)0
+#define Expect(x) (void)0
+#define Ensure(x) (void)0
 #endif
-
-
 
 #endif

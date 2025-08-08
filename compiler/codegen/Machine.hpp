@@ -24,18 +24,16 @@
 
 #include "codegen/OMRMachine.hpp"
 
-namespace TR { class CodeGenerator; }
-
-namespace TR
-{
-class OMR_EXTENSIBLE Machine : public OMR::MachineConnector
-   {
-   public:
-
-   Machine(TR::CodeGenerator *cg) :
-      OMR::MachineConnector(cg) {};
-
-   };
+namespace TR {
+class CodeGenerator;
 }
+
+namespace TR {
+class OMR_EXTENSIBLE Machine : public OMR::MachineConnector {
+public:
+    Machine(TR::CodeGenerator *cg)
+        : OMR::MachineConnector(cg) {};
+};
+} // namespace TR
 
 #endif

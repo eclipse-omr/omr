@@ -48,139 +48,123 @@
 #include "runtime/Runtime.hpp"
 
 uint8_t *TR::PPCHelperCallSnippet::emitSnippetBody()
-   {
-   uint8_t             *buffer = cg()->getBinaryBufferCursor();
-   uint8_t             *gtrmpln, *trmpln;
+{
+    uint8_t *buffer = cg()->getBinaryBufferCursor();
+    uint8_t *gtrmpln, *trmpln;
 
-   getSnippetLabel()->setCodeLocation(buffer);
+    getSnippetLabel()->setCodeLocation(buffer);
 
-   return genHelperCall(buffer);
-   }
+    return genHelperCall(buffer);
+}
 
+void TR_Debug::print(TR::FILE *pOutFile, TR::PPCHelperCallSnippet *snippet)
+{
+    uint8_t *cursor = snippet->getSnippetLabel()->getCodeLocation();
+    TR::LabelSymbol *restartLabel = snippet->getRestartLabel();
 
-void
-TR_Debug::print(TR::FILE *pOutFile, TR::PPCHelperCallSnippet * snippet)
-   {
-   uint8_t *cursor = snippet->getSnippetLabel()->getCodeLocation();
-   TR::LabelSymbol *restartLabel = snippet->getRestartLabel();
+    if (snippet->getKind() == TR::Snippet::IsArrayCopyCall) {
+        cursor = print(pOutFile, (TR::PPCArrayCopyCallSnippet *)snippet, cursor);
+    } else {
+        printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "Helper Call Snippet");
+    }
 
-   if (snippet->getKind() == TR::Snippet::IsArrayCopyCall)
-      {
-      cursor = print(pOutFile, (TR::PPCArrayCopyCallSnippet *)snippet, cursor);
-      }
-   else
-      {
-      printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "Helper Call Snippet");
-      }
+    const char *info = "";
+    int32_t distance;
+    if (isBranchToTrampoline(snippet->getDestination(), cursor, distance))
+        info = " Through trampoline";
 
-   const char *info = "";
-   int32_t     distance;
-   if (isBranchToTrampoline(snippet->getDestination(), cursor, distance))
-      info = " Through trampoline";
+    printPrefix(pOutFile, NULL, cursor, 4);
+    distance = *((int32_t *)cursor) & 0x03fffffc;
+    distance = (distance << 6) >> 6; // sign extend
+    trfprintf(pOutFile, "%s \t" POINTER_PRINTF_FORMAT "\t\t; %s %s", restartLabel ? "bl" : "b",
+        (intptr_t)cursor + distance, getName(snippet->getDestination()), info);
 
-   printPrefix(pOutFile, NULL, cursor, 4);
-   distance = *((int32_t *) cursor) & 0x03fffffc;
-   distance = (distance << 6) >> 6;   // sign extend
-   trfprintf(pOutFile, "%s \t" POINTER_PRINTF_FORMAT "\t\t; %s %s",
-      restartLabel ? "bl" : "b", (intptr_t)cursor + distance, getName(snippet->getDestination()), info);
+    if (restartLabel) {
+        cursor += 4;
+        printPrefix(pOutFile, NULL, cursor, 4);
+        distance = *((int32_t *)cursor) & 0x03fffffc;
+        distance = (distance << 6) >> 6; // sign extend
+        trfprintf(pOutFile, "b \t" POINTER_PRINTF_FORMAT "\t\t; Restart", (intptr_t)cursor + distance);
+    }
+}
 
-   if (restartLabel)
-      {
-      cursor += 4;
-      printPrefix(pOutFile, NULL, cursor, 4);
-      distance = *((int32_t *) cursor) & 0x03fffffc;
-      distance = (distance << 6) >> 6;   // sign extend
-      trfprintf(pOutFile, "b \t" POINTER_PRINTF_FORMAT "\t\t; Restart", (intptr_t)cursor + distance);
-      }
-   }
-
-uint32_t TR::PPCHelperCallSnippet::getLength(int32_t estimatedSnippetStart)
-   {
-   return getHelperCallLength();
-   }
+uint32_t TR::PPCHelperCallSnippet::getLength(int32_t estimatedSnippetStart) { return getHelperCallLength(); }
 
 uint8_t *TR::PPCHelperCallSnippet::genHelperCall(uint8_t *buffer)
-   {
-   intptr_t helperAddress = (intptr_t)getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress();
+{
+    intptr_t helperAddress = (intptr_t)getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress();
 
-   if (cg()->directCallRequiresTrampoline(helperAddress, (intptr_t)buffer))
-      {
-      helperAddress = TR::CodeCacheManager::instance()->findHelperTrampoline(getDestination()->getReferenceNumber(), (void *)buffer);
+    if (cg()->directCallRequiresTrampoline(helperAddress, (intptr_t)buffer)) {
+        helperAddress = TR::CodeCacheManager::instance()->findHelperTrampoline(getDestination()->getReferenceNumber(),
+            (void *)buffer);
 
-      TR_ASSERT_FATAL(cg()->comp()->target().cpu.isTargetWithinIFormBranchRange(helperAddress, (intptr_t)buffer),
-                      "Helper address is out of range");
-      }
+        TR_ASSERT_FATAL(cg()->comp()->target().cpu.isTargetWithinIFormBranchRange(helperAddress, (intptr_t)buffer),
+            "Helper address is out of range");
+    }
 
-   intptr_t distance = helperAddress - (intptr_t)buffer;
+    intptr_t distance = helperAddress - (intptr_t)buffer;
 
-   // b|bl distance
-   *(int32_t *)buffer = 0x48000000 | (distance & 0x03fffffc);
-   if (_restartLabel != NULL)
-      {
-      *(int32_t *)buffer |= 0x00000001;
-      }
+    // b|bl distance
+    *(int32_t *)buffer = 0x48000000 | (distance & 0x03fffffc);
+    if (_restartLabel != NULL) {
+        *(int32_t *)buffer |= 0x00000001;
+    }
 
-   cg()->addProjectSpecializedRelocation(buffer,(uint8_t *)getDestination(), NULL, TR_HelperAddress,
-                          __FILE__, __LINE__, getNode());
-   buffer += 4;
+    cg()->addProjectSpecializedRelocation(buffer, (uint8_t *)getDestination(), NULL, TR_HelperAddress, __FILE__,
+        __LINE__, getNode());
+    buffer += 4;
 
-   gcMap().registerStackMap(buffer, cg());
+    gcMap().registerStackMap(buffer, cg());
 
-   if (_restartLabel != NULL)
-      {
-      int32_t returnDistance = _restartLabel->getCodeLocation() - buffer;
-      *(int32_t *)buffer = 0x48000000 | (returnDistance & 0x03fffffc);
-      buffer += 4;
-      }
+    if (_restartLabel != NULL) {
+        int32_t returnDistance = _restartLabel->getCodeLocation() - buffer;
+        *(int32_t *)buffer = 0x48000000 | (returnDistance & 0x03fffffc);
+        buffer += 4;
+    }
 
-   return buffer;
-   }
+    return buffer;
+}
 
-uint32_t TR::PPCHelperCallSnippet::getHelperCallLength()
-   {
-   return ((_restartLabel==NULL)?4:8);
-   }
+uint32_t TR::PPCHelperCallSnippet::getHelperCallLength() { return ((_restartLabel == NULL) ? 4 : 8); }
 
 uint8_t *TR::PPCArrayCopyCallSnippet::emitSnippetBody()
-   {
-   TR::Node *node = getNode();
-   TR_ASSERT(node->getOpCodeValue() == TR::arraycopy &&
-          node->getChild(2)->getOpCode().isLoadConst(), "only valid for arraycopies with a constant length\n");
+{
+    TR::Node *node = getNode();
+    TR_ASSERT(node->getOpCodeValue() == TR::arraycopy && node->getChild(2)->getOpCode().isLoadConst(),
+        "only valid for arraycopies with a constant length\n");
 
-   uint8_t *buffer = cg()->getBinaryBufferCursor();
-   getSnippetLabel()->setCodeLocation(buffer);
-   TR::RealRegister *lengthReg = cg()->machine()->getRealRegister(_lengthRegNum);
-   TR::Node *lengthNode = node->getChild(2);
-   int64_t byteLen = (lengthNode->getType().isInt32() ?
-                      lengthNode->getInt() : lengthNode->getLongInt());
-   TR::InstOpCode opcode;
+    uint8_t *buffer = cg()->getBinaryBufferCursor();
+    getSnippetLabel()->setCodeLocation(buffer);
+    TR::RealRegister *lengthReg = cg()->machine()->getRealRegister(_lengthRegNum);
+    TR::Node *lengthNode = node->getChild(2);
+    int64_t byteLen = (lengthNode->getType().isInt32() ? lengthNode->getInt() : lengthNode->getLongInt());
+    TR::InstOpCode opcode;
 
-   // li lengthReg, #byteLen
-   opcode.setOpCodeValue(TR::InstOpCode::li);
-   buffer = opcode.copyBinaryToBuffer(buffer);
-   lengthReg->setRegisterFieldRT((uint32_t *)buffer);
-   TR_ASSERT(byteLen <= UPPER_IMMED,"byteLen too big to encode\n");
-   *(int32_t *)buffer |= byteLen;
-   buffer += 4;
+    // li lengthReg, #byteLen
+    opcode.setOpCodeValue(TR::InstOpCode::li);
+    buffer = opcode.copyBinaryToBuffer(buffer);
+    lengthReg->setRegisterFieldRT((uint32_t *)buffer);
+    TR_ASSERT(byteLen <= UPPER_IMMED, "byteLen too big to encode\n");
+    *(int32_t *)buffer |= byteLen;
+    buffer += 4;
 
-   return TR::PPCHelperCallSnippet::genHelperCall(buffer);
-   }
+    return TR::PPCHelperCallSnippet::genHelperCall(buffer);
+}
 
-uint8_t*
-TR_Debug::print(TR::FILE *pOutFile, TR::PPCArrayCopyCallSnippet *snippet, uint8_t *cursor)
-   {
-   printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "ArrayCopy Helper Call Snippet");
+uint8_t *TR_Debug::print(TR::FILE *pOutFile, TR::PPCArrayCopyCallSnippet *snippet, uint8_t *cursor)
+{
+    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "ArrayCopy Helper Call Snippet");
 
-   TR::RealRegister *lengthReg = _cg->machine()->getRealRegister(snippet->getLengthRegNum());
+    TR::RealRegister *lengthReg = _cg->machine()->getRealRegister(snippet->getLengthRegNum());
 
-   printPrefix(pOutFile, NULL, cursor, 4);
-   trfprintf(pOutFile, "li \t%s, %d", getName(lengthReg), *((int32_t *) cursor) & 0x0000ffff);
-   cursor += 4;
+    printPrefix(pOutFile, NULL, cursor, 4);
+    trfprintf(pOutFile, "li \t%s, %d", getName(lengthReg), *((int32_t *)cursor) & 0x0000ffff);
+    cursor += 4;
 
-   return cursor;
-   }
+    return cursor;
+}
 
 uint32_t TR::PPCArrayCopyCallSnippet::getLength(int32_t estimatedSnippetStart)
-   {
-   return TR::PPCHelperCallSnippet::getHelperCallLength() + 4;
-   }
+{
+    return TR::PPCHelperCallSnippet::getHelperCallLength() + 4;
+}

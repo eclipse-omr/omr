@@ -34,102 +34,77 @@
 #include "env/MemorySegment.hpp"
 #include "env/DebugSegmentProvider.hpp"
 
-TR::DebugSegmentProvider::DebugSegmentProvider(size_t segmentSize, TR::RawAllocator rawAllocator) :
-   TR::SegmentAllocator(segmentSize),
-   _rawAllocator(rawAllocator),
-   _segments(std::less< TR::MemorySegment >(), SegmentSetAllocator(rawAllocator))
-   {
-   }
+TR::DebugSegmentProvider::DebugSegmentProvider(size_t segmentSize, TR::RawAllocator rawAllocator)
+    : TR::SegmentAllocator(segmentSize)
+    , _rawAllocator(rawAllocator)
+    , _segments(std::less<TR::MemorySegment>(), SegmentSetAllocator(rawAllocator))
+{}
 
 TR::DebugSegmentProvider::~DebugSegmentProvider() throw()
-   {
-   for ( auto it = _segments.begin(); it != _segments.end(); it = _segments.begin() )
-      {
+{
+    for (auto it = _segments.begin(); it != _segments.end(); it = _segments.begin()) {
 #if (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX)
-      munmap(it->base(), it->size());
+        munmap(it->base(), it->size());
 #elif defined(OMR_OS_WINDOWS)
-      VirtualFree(it->base(), 0, MEM_RELEASE);
+        VirtualFree(it->base(), 0, MEM_RELEASE);
 #else
-      _rawAllocator.deallocate(it->base(), it->size());
+        _rawAllocator.deallocate(it->base(), it->size());
 #endif /* (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX) */
-      _segments.erase(it);
-      }
-   }
+        _segments.erase(it);
+    }
+}
 
-TR::MemorySegment &
-TR::DebugSegmentProvider::request(size_t requiredSize)
-   {
-   size_t adjustedSize = ( ( requiredSize + (defaultSegmentSize() - 1) ) / defaultSegmentSize() ) * defaultSegmentSize();
+TR::MemorySegment &TR::DebugSegmentProvider::request(size_t requiredSize)
+{
+    size_t adjustedSize = ((requiredSize + (defaultSegmentSize() - 1)) / defaultSegmentSize()) * defaultSegmentSize();
 #if (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX)
-   void *newSegmentArea = mmap(NULL, adjustedSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-   if (newSegmentArea == MAP_FAILED) throw std::bad_alloc();
+    void *newSegmentArea = mmap(NULL, adjustedSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    if (newSegmentArea == MAP_FAILED)
+        throw std::bad_alloc();
 #elif defined(OMR_OS_WINDOWS)
-   void *newSegmentArea = VirtualAlloc(NULL, adjustedSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-   if (!newSegmentArea) throw std::bad_alloc();
+    void *newSegmentArea = VirtualAlloc(NULL, adjustedSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!newSegmentArea)
+        throw std::bad_alloc();
 #else
-   void *newSegmentArea = _rawAllocator.allocate(requiredSize);
+    void *newSegmentArea = _rawAllocator.allocate(requiredSize);
 #endif /* (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX) */
-   try
-      {
-      auto result = _segments.insert( TR::MemorySegment(newSegmentArea, adjustedSize) );
-      TR_ASSERT(result.first != _segments.end(), "Bad iterator");
-      TR_ASSERT(result.second, "Insertion failed");
-      _bytesAllocated += adjustedSize;
-      return const_cast<TR::MemorySegment &>(*(result.first));
-      }
-   catch (...)
-      {
+    try {
+        auto result = _segments.insert(TR::MemorySegment(newSegmentArea, adjustedSize));
+        TR_ASSERT(result.first != _segments.end(), "Bad iterator");
+        TR_ASSERT(result.second, "Insertion failed");
+        _bytesAllocated += adjustedSize;
+        return const_cast<TR::MemorySegment &>(*(result.first));
+    } catch (...) {
 #if (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX)
-      munmap(newSegmentArea, adjustedSize);
+        munmap(newSegmentArea, adjustedSize);
 #elif defined(OMR_OS_WINDOWS)
-      VirtualFree(newSegmentArea, 0, MEM_RELEASE);
+        VirtualFree(newSegmentArea, 0, MEM_RELEASE);
 #else
-     _rawAllocator.deallocate(newSegmentArea, adjustedSize);
+        _rawAllocator.deallocate(newSegmentArea, adjustedSize);
 #endif /* (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX) */
-      throw;
-      }
-   }
+        throw;
+    }
+}
 
-void
-TR::DebugSegmentProvider::release(TR::MemorySegment &segment) throw()
-   {
+void TR::DebugSegmentProvider::release(TR::MemorySegment &segment) throw()
+{
 #if (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX)
-   void * remap = mmap(segment.base(), segment.size(), PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-   TR_ASSERT(remap == segment.base(), "Remapping of memory failed!");
+    void *remap = mmap(segment.base(), segment.size(), PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    TR_ASSERT(remap == segment.base(), "Remapping of memory failed!");
 #elif defined(OMR_OS_WINDOWS)
-   VirtualFree(segment.base(), segment.size(), MEM_DECOMMIT);
-   VirtualAlloc(segment.base(), segment.size(), MEM_COMMIT, PAGE_NOACCESS);
+    VirtualFree(segment.base(), segment.size(), MEM_DECOMMIT);
+    VirtualAlloc(segment.base(), segment.size(), MEM_COMMIT, PAGE_NOACCESS);
 #else
-   memset(segment.base(), 0xEF, segment.size());
+    memset(segment.base(), 0xEF, segment.size());
 #endif /* (defined(LINUX) && !defined(OMRZTPF)) || defined(__APPLE__) || defined(_AIX) */
-   }
+}
 
-size_t
-TR::DebugSegmentProvider::bytesAllocated() const throw()
-   {
-   return _bytesAllocated;
-   }
+size_t TR::DebugSegmentProvider::bytesAllocated() const throw() { return _bytesAllocated; }
 
-size_t
-TR::DebugSegmentProvider::regionBytesAllocated() const throw()
-   {
-   return _bytesAllocated;
-   }
+size_t TR::DebugSegmentProvider::regionBytesAllocated() const throw() { return _bytesAllocated; }
 
-size_t
-TR::DebugSegmentProvider::systemBytesAllocated() const throw()
-   {
-   return _bytesAllocated;
-   }
+size_t TR::DebugSegmentProvider::systemBytesAllocated() const throw() { return _bytesAllocated; }
 
-size_t
-TR::DebugSegmentProvider::allocationLimit() const throw()
-   {
-   return static_cast<size_t>(-1);
-   }
+size_t TR::DebugSegmentProvider::allocationLimit() const throw() { return static_cast<size_t>(-1); }
 
-void
-TR::DebugSegmentProvider::setAllocationLimit(size_t allocationLimit)
-   {
-   return;
-   }
+void TR::DebugSegmentProvider::setAllocationLimit(size_t allocationLimit) { return; }

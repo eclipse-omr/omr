@@ -24,18 +24,15 @@
 
 #include "optimizer/OMRValuePropagation.hpp"
 
+namespace TR {
 
-namespace TR
-{
+class ValuePropagation : public OMR::ValuePropagation {
+public:
+    ValuePropagation(TR::OptimizationManager *manager)
+        : OMR::ValuePropagation(manager)
+    {}
+};
 
-class ValuePropagation : public OMR::ValuePropagation
-   {
-   public:
-
-   ValuePropagation(TR::OptimizationManager *manager) :
-      OMR::ValuePropagation(manager) {}
-   };
-
-}
+} // namespace TR
 
 #endif

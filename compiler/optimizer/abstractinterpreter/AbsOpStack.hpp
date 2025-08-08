@@ -31,62 +31,66 @@ namespace TR {
 /**
  * Abstract representation of the operand stack.
  */
-class AbsOpStack
-   {
-   public:
-   explicit AbsOpStack(TR::Region& region) :
-         _container(region)
-      {}
+class AbsOpStack {
+public:
+    explicit AbsOpStack(TR::Region &region)
+        : _container(region)
+    {}
 
-   /**
-    * @brief Clone an operand stack
-    *
-    * @param region The memory region where the cloned operand stack should be allocated.
-    * @return the cloned operand stack
-    */
-   TR::AbsOpStack* clone(TR::Region& region) const;
+    /**
+     * @brief Clone an operand stack
+     *
+     * @param region The memory region where the cloned operand stack should be allocated.
+     * @return the cloned operand stack
+     */
+    TR::AbsOpStack *clone(TR::Region &region) const;
 
-   /**
-    * @brief Perform an in-place merge another operand stack.
-    * The merge operation does not modify the state of another state
-    * or store any references of abstract values from another state to be merged with
-    *
-    * @param other the operand stack to be merged with
-    */
-   void merge(const TR::AbsOpStack* other, TR::Region& region);
+    /**
+     * @brief Perform an in-place merge another operand stack.
+     * The merge operation does not modify the state of another state
+     * or store any references of abstract values from another state to be merged with
+     *
+     * @param other the operand stack to be merged with
+     */
+    void merge(const TR::AbsOpStack *other, TR::Region &region);
 
-   /**
-    * @brief Push an abstract value onto the operand stack.
-    *
-    * @param value the value to be pushed
-    */
-   void push(TR::AbsValue* value) { _container.push_back(value); }
+    /**
+     * @brief Push an abstract value onto the operand stack.
+     *
+     * @param value the value to be pushed
+     */
+    void push(TR::AbsValue *value) { _container.push_back(value); }
 
-   /**
-    * @brief Peek the top value on the operand stack (stack top; not lattice top).
-    * @note the stack must not be empty
-    *
-    * @return the abstract value
-    */
-   TR::AbsValue* peek() const { TR_ASSERT_FATAL(size() > 0, "Peek an empty stack!"); return _container.back(); }
+    /**
+     * @brief Peek the top value on the operand stack (stack top; not lattice top).
+     * @note the stack must not be empty
+     *
+     * @return the abstract value
+     */
+    TR::AbsValue *peek() const
+    {
+        TR_ASSERT_FATAL(size() > 0, "Peek an empty stack!");
+        return _container.back();
+    }
 
-   /**
-    * @brief Get and pop a value off of the operand stack.
-    * @note the stack must not be empty.
-    *
-    * @return the abstract value
-    */
-   TR::AbsValue* pop();
+    /**
+     * @brief Get and pop a value off of the operand stack.
+     * @note the stack must not be empty.
+     *
+     * @return the abstract value
+     */
+    TR::AbsValue *pop();
 
-   bool empty() const { return _container.empty(); }
-   size_t size() const { return _container.size(); }
+    bool empty() const { return _container.empty(); }
 
-   void print(TR::Compilation* comp) const;
+    size_t size() const { return _container.size(); }
 
-   private:
-   TR::vector<TR::AbsValue*, TR::Region&> _container;
-   };
+    void print(TR::Compilation *comp) const;
 
-}
+private:
+    TR::vector<TR::AbsValue *, TR::Region &> _container;
+};
+
+} // namespace TR
 
 #endif

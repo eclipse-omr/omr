@@ -24,49 +24,34 @@
 
 #include "il/OMRDataTypes.hpp"
 
-namespace TR
-   {
+namespace TR {
 
-   enum VectorOperation
-      {
-#define VECTOR_OPERATION_MACRO(                 \
-      operation, \
-      name, \
-      prop1, \
-      prop2, \
-      prop3, \
-      prop4, \
-      dataType, \
-      typeProps, \
-      childProps, \
-      swapChildrenOperation, \
-      reverseBranchOperation, \
-      boolCompareOpcode, \
-      ifCompareOpcode, \
-      ...) operation,
+enum VectorOperation {
+#define VECTOR_OPERATION_MACRO(operation, name, prop1, prop2, prop3, prop4, dataType, typeProps, childProps, \
+    swapChildrenOperation, reverseBranchOperation, boolCompareOpcode, ifCompareOpcode, ...)                  \
+    operation,
 
-      vBadOperation = 0,
+    vBadOperation = 0,
 
-      #include "il/VectorOperations.enum"
+#include "il/VectorOperations.enum"
 #undef VECTOR_OPERATION_MACRO
 
-      NumVectorOperations,
+    NumVectorOperations,
 
-      firstTwoTypeVectorOperation = vcast
-      };
+    firstTwoTypeVectorOperation = vcast
+};
 
-   enum ILOpCodes
-      {
-      #include "il/ILOpCodesEnum.hpp"
-      NumScalarIlOps,
+enum ILOpCodes {
+#include "il/ILOpCodesEnum.hpp"
+    NumScalarIlOps,
 
-      NumOneVectorTypeOperations = TR::firstTwoTypeVectorOperation,
-      NumTwoVectorTypeOperations = TR::NumVectorOperations - TR::firstTwoTypeVectorOperation,
+    NumOneVectorTypeOperations = TR::firstTwoTypeVectorOperation,
+    NumTwoVectorTypeOperations = TR::NumVectorOperations - TR::firstTwoTypeVectorOperation,
 
-      NumOneVectorTypeOps = NumOneVectorTypeOperations * TR::NumVectorTypes,
-      NumTwoVectorTypeOps = NumTwoVectorTypeOperations * TR::NumVectorTypes * TR::NumVectorTypes,
-      NumAllIlOps = TR::NumScalarIlOps + NumOneVectorTypeOps + NumTwoVectorTypeOps
-      };
-   }
+    NumOneVectorTypeOps = NumOneVectorTypeOperations * TR::NumVectorTypes,
+    NumTwoVectorTypeOps = NumTwoVectorTypeOperations * TR::NumVectorTypes * TR::NumVectorTypes,
+    NumAllIlOps = TR::NumScalarIlOps + NumOneVectorTypeOps + NumTwoVectorTypeOps
+};
+} // namespace TR
 
 #endif

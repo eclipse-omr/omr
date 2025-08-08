@@ -21,162 +21,154 @@
 
 #include "optimizer/abstractinterpreter/InliningMethodSummary.hpp"
 
-uint32_t TR::InliningMethodSummary::testArgument(TR::AbsValue* arg, uint32_t argPos)
-   {
-   if (!arg)
-      return 0;
+uint32_t TR::InliningMethodSummary::testArgument(TR::AbsValue *arg, uint32_t argPos)
+{
+    if (!arg)
+        return 0;
 
-   if (arg->isTop())
-      return 0;
+    if (arg->isTop())
+        return 0;
 
-   if (_optsByArg.size() <= argPos || _optsByArg[argPos] == NULL || _optsByArg[argPos]->size() == 0)
-      return 0;
+    if (_optsByArg.size() <= argPos || _optsByArg[argPos] == NULL || _optsByArg[argPos]->size() == 0)
+        return 0;
 
-   uint32_t benefit = 0;
+    uint32_t benefit = 0;
 
-   for (size_t i = 0; i < _optsByArg[argPos]->size(); i ++)
-      {
-      TR::PotentialOptimizationPredicate* predicate = (*_optsByArg[argPos])[i];
-      if (predicate->test(arg))
-         {
-         benefit += 1;
-         }
-      }
+    for (size_t i = 0; i < _optsByArg[argPos]->size(); i++) {
+        TR::PotentialOptimizationPredicate *predicate = (*_optsByArg[argPos])[i];
+        if (predicate->test(arg)) {
+            benefit += 1;
+        }
+    }
 
-   return benefit;
-   }
+    return benefit;
+}
 
-void TR::InliningMethodSummary::trace(TR::Compilation* comp)
-   {
-   traceMsg(comp, "Inlining Method Summary:\n");
+void TR::InliningMethodSummary::trace(TR::Compilation *comp)
+{
+    traceMsg(comp, "Inlining Method Summary:\n");
 
-   if (_optsByArg.size() == 0)
-      {
-      traceMsg(comp, "EMPTY\n\n");
-      return;
-      }
+    if (_optsByArg.size() == 0) {
+        traceMsg(comp, "EMPTY\n\n");
+        return;
+    }
 
-   for (size_t i = 0; i < _optsByArg.size(); i ++)
-      {
-      if (_optsByArg[i] != NULL)
-         {
-         for (size_t j = 0; j < _optsByArg[i]->size(); j ++)
-            {
-            TR::PotentialOptimizationPredicate* predicate = (*_optsByArg[i])[j];
+    for (size_t i = 0; i < _optsByArg.size(); i++) {
+        if (_optsByArg[i] != NULL) {
+            for (size_t j = 0; j < _optsByArg[i]->size(); j++) {
+                TR::PotentialOptimizationPredicate *predicate = (*_optsByArg[i])[j];
 
-            traceMsg(comp, "%s @%d for Argument %d ", predicate->getName(), predicate->getBytecodeIndex(), i);
-            predicate->trace(comp);
-            traceMsg(comp, "\n");
+                traceMsg(comp, "%s @%d for Argument %d ", predicate->getName(), predicate->getBytecodeIndex(), i);
+                predicate->trace(comp);
+                traceMsg(comp, "\n");
             }
-         }
-      }
+        }
+    }
+}
 
-   }
+void TR::InliningMethodSummary::addPotentialOptimizationByArgument(TR::PotentialOptimizationPredicate *predicate,
+    uint32_t argPos)
+{
+    if (_optsByArg.size() <= argPos)
+        _optsByArg.resize(argPos + 1);
 
+    if (!_optsByArg[argPos])
+        _optsByArg[argPos] = new (region()) PredicateContainer(region());
 
-void TR::InliningMethodSummary::addPotentialOptimizationByArgument(TR::PotentialOptimizationPredicate* predicate, uint32_t argPos)
-   {
-   if (_optsByArg.size() <= argPos)
-      _optsByArg.resize(argPos + 1);
+    _optsByArg[argPos]->push_back(predicate);
+}
 
-   if (!_optsByArg[argPos])
-       _optsByArg[argPos] = new (region()) PredicateContainer(region());
+const char *TR::PotentialOptimizationPredicate::getName()
+{
+    switch (_kind) {
+        case Kind::BranchFolding:
+            return "Branch Folding";
+        case Kind::CheckCastFolding:
+            return "CheckCast Folding";
+        case Kind::NullCheckFolding:
+            return "NullCheck Folding";
+        case Kind::InstanceOfFolding:
+            return "InstanceOf Folding";
+        default:
+            TR_ASSERT_FATAL(false, "Unexpected Kind");
+            return "Unknown Kind";
+    }
+}
 
-   _optsByArg[argPos]->push_back(predicate);
-   }
+bool TR::PotentialOptimizationVPPredicate::holdPartialOrderRelation(TR::VPConstraint *valueConstraint,
+    TR::VPConstraint *testConstraint)
+{
+    if (testConstraint->asIntConstraint()) // partial relation for int constraint
+    {
+        if (testConstraint->getLowInt() <= valueConstraint->getLowInt()
+            && testConstraint->getHighInt() >= valueConstraint->getHighInt())
+            return true;
+        else
+            return false;
+    } else if (testConstraint->asClassPresence()) // partial relation for nullness
+    {
+        if (testConstraint->isNonNullObject() && valueConstraint->isNonNullObject())
+            return true;
+        else if (testConstraint->isNullObject() && valueConstraint->isNullObject())
+            return true;
+        else
+            return false;
+    } else if (testConstraint->asClassType()) // testing for checkcast
+    {
+        TR_ASSERT_FATAL(testConstraint->getClassType()->asResolvedClass(),
+            "testConstraint unexpectedly admits unresolved class type");
+        if (valueConstraint->isNullObject())
+            return true; // VPClassType always accepts null
 
-const char* TR::PotentialOptimizationPredicate::getName()
-   {
-   switch (_kind)
-      {
-      case Kind::BranchFolding:
-         return "Branch Folding";
-      case Kind::CheckCastFolding:
-         return "CheckCast Folding";
-      case Kind::NullCheckFolding:
-         return "NullCheck Folding";
-      case Kind::InstanceOfFolding:
-         return "InstanceOf Folding";
-      default:
-         TR_ASSERT_FATAL(false, "Unexpected Kind");
-         return "Unknown Kind";
-      }
-   }
+        if (valueConstraint->isClassObject() == TR_yes)
+            return false; // valueConstraint->getClass() doesn't mean the right thing
 
-bool TR::PotentialOptimizationVPPredicate::holdPartialOrderRelation(TR::VPConstraint* valueConstraint, TR::VPConstraint* testConstraint)
-   {
-   if (testConstraint->asIntConstraint()) // partial relation for int constraint
-      {
-      if (testConstraint->getLowInt() <= valueConstraint->getLowInt() && testConstraint->getHighInt() >= valueConstraint->getHighInt())
-         return true;
-      else
-         return false;
-      }
-   else if (testConstraint->asClassPresence()) // partial relation for nullness
-      {
-      if (testConstraint->isNonNullObject() && valueConstraint->isNonNullObject())
-         return true;
-      else if (testConstraint->isNullObject() && valueConstraint->isNullObject())
-         return true;
-      else
-         return false;
-      }
-   else if (testConstraint->asClassType()) // testing for checkcast
-      {
-      TR_ASSERT_FATAL(testConstraint->getClassType()->asResolvedClass(), "testConstraint unexpectedly admits unresolved class type");
-      if (valueConstraint->isNullObject())
-         return true; // VPClassType always accepts null
+        TR_OpaqueClassBlock *valueClass = valueConstraint->getClass();
+        if (valueClass == NULL)
+            return false; // unknown type
 
-      if (valueConstraint->isClassObject() == TR_yes)
-         return false; // valueConstraint->getClass() doesn't mean the right thing
+        TR_YesNoMaybe isSubtype
+            = _vp->fe()->isInstanceOf(valueClass, testConstraint->getClass(), valueConstraint->isFixedClass(), true);
 
-      TR_OpaqueClassBlock *valueClass = valueConstraint->getClass();
-      if (valueClass == NULL)
-         return false; // unknown type
+        return isSubtype == TR_yes;
+    } else if (testConstraint->asClass()) // partial relation for instanceof
+    {
+        TR_ASSERT_FATAL(testConstraint->isClassObject() != TR_yes, "testConstraint unexpectedly admits class object");
+        TR_ASSERT_FATAL(testConstraint->getClass() != NULL, "testConstraint class unexpectedly admits null");
+        TR_ASSERT_FATAL(testConstraint->isNonNullObject(), "testConstraint unexpectedly admits null");
+        TR_ASSERT_FATAL(testConstraint->getPreexistence() == NULL, "testConstraint has unexpected pre-existence info");
+        TR_ASSERT_FATAL(testConstraint->getArrayInfo() == NULL, "testConstraint has unexpected array info");
+        TR_ASSERT_FATAL(testConstraint->getObjectLocation() == NULL, "testContraint has an unexpected location");
+        if (valueConstraint->isNullObject())
+            return true;
 
-      TR_YesNoMaybe isSubtype = _vp->fe()->isInstanceOf(
-         valueClass, testConstraint->getClass(), valueConstraint->isFixedClass(), true);
+        if (valueConstraint->isClassObject() == TR_yes)
+            return false; // valueConstraint->getClass() doesn't mean the right thing
 
-      return isSubtype == TR_yes;
-      }
-   else if (testConstraint->asClass()) // partial relation for instanceof
-      {
-      TR_ASSERT_FATAL(testConstraint->isClassObject() != TR_yes, "testConstraint unexpectedly admits class object");
-      TR_ASSERT_FATAL(testConstraint->getClass() != NULL, "testConstraint class unexpectedly admits null");
-      TR_ASSERT_FATAL(testConstraint->isNonNullObject(), "testConstraint unexpectedly admits null");
-      TR_ASSERT_FATAL(testConstraint->getPreexistence() == NULL, "testConstraint has unexpected pre-existence info");
-      TR_ASSERT_FATAL(testConstraint->getArrayInfo() == NULL, "testConstraint has unexpected array info");
-      TR_ASSERT_FATAL(testConstraint->getObjectLocation() == NULL, "testContraint has an unexpected location");
-      if (valueConstraint->isNullObject())
-         return true;
+        TR_OpaqueClassBlock *valueClass = valueConstraint->getClass();
+        if (valueClass == NULL)
+            return false; // unknown type
 
-      if (valueConstraint->isClassObject() == TR_yes)
-         return false; // valueConstraint->getClass() doesn't mean the right thing
+        TR_YesNoMaybe isInstance
+            = _vp->fe()->isInstanceOf(valueClass, testConstraint->getClass(), valueConstraint->isFixedClass(), true);
 
-      TR_OpaqueClassBlock *valueClass = valueConstraint->getClass();
-      if (valueClass == NULL)
-         return false; // unknown type
+        return (valueConstraint->isNonNullObject() && isInstance == TR_yes) || isInstance == TR_no;
+    }
 
-      TR_YesNoMaybe isInstance = _vp->fe()->isInstanceOf(
-         valueClass, testConstraint->getClass(), valueConstraint->isFixedClass(), true);
-
-      return (valueConstraint->isNonNullObject() && isInstance == TR_yes) || isInstance == TR_no;
-      }
-
-   return false;
-   }
+    return false;
+}
 
 bool TR::PotentialOptimizationVPPredicate::test(TR::AbsValue *value)
-   {
-   if (value->isTop())
-      return false;
+{
+    if (value->isTop())
+        return false;
 
-   TR::AbsVPValue* vpValue = static_cast<TR::AbsVPValue*>(value);
-   return holdPartialOrderRelation(vpValue->getConstraint(), _constraint);
-   }
+    TR::AbsVPValue *vpValue = static_cast<TR::AbsVPValue *>(value);
+    return holdPartialOrderRelation(vpValue->getConstraint(), _constraint);
+}
 
-void TR::PotentialOptimizationVPPredicate::trace(TR::Compilation* comp)
-   {
-   traceMsg(comp, "Predicate Constraint: ");
-   _constraint->print(_vp);
-   }
+void TR::PotentialOptimizationVPPredicate::trace(TR::Compilation *comp)
+{
+    traceMsg(comp, "Predicate Constraint: ");
+    _constraint->print(_vp);
+}

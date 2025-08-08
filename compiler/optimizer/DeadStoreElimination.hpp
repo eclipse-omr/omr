@@ -25,7 +25,9 @@
 #include "optimizer/OptimizationManager.hpp"
 #include "optimizer/IsolatedStoreElimination.hpp"
 
-namespace TR { class Optimization; }
+namespace TR {
+class Optimization;
+}
 
 // Dead Store Elimination
 //
@@ -40,21 +42,19 @@ namespace TR { class Optimization; }
 // built for size reasons.
 //
 
+class TR_DeadStoreElimination : public TR_IsolatedStoreElimination {
+public:
+    // Performs dead store elimination using the
+    // use/def values of relevant nodes.
+    //
+    TR_DeadStoreElimination(TR::OptimizationManager *manager);
 
-class TR_DeadStoreElimination : public TR_IsolatedStoreElimination
-   {
-   public:
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_DeadStoreElimination(manager);
+    }
 
-   // Performs dead store elimination using the
-   // use/def values of relevant nodes.
-   //
-   TR_DeadStoreElimination(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_DeadStoreElimination(manager);
-      }
-
-   virtual const char * optDetailString() const throw();
-   };
+    virtual const char *optDetailString() const throw();
+};
 
 #endif

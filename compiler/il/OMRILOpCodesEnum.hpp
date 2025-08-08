@@ -22,28 +22,15 @@
 #ifndef OMR_ILOPCODES_ENUM_INCL
 #define OMR_ILOPCODES_ENUM_INCL
 
-#define OPCODE_MACRO(\
-   opcode, \
-   name, \
-   prop1, \
-   prop2, \
-   prop3, \
-   prop4, \
-   dataType, \
-   typeProps, \
-   childProps, \
-   swapChildrenOpcode, \
-   reverseBranchOpcode, \
-   boolCompareOpcode, \
-   ifCompareOpcode, \
-   ...) opcode,
+#define OPCODE_MACRO(opcode, name, prop1, prop2, prop3, prop4, dataType, typeProps, childProps, swapChildrenOpcode, \
+    reverseBranchOpcode, boolCompareOpcode, ifCompareOpcode, ...)                                                   \
+    opcode,
 
-   FirstOMROp,
-   BadILOp = 0,
+FirstOMROp, BadILOp = 0,
 
 #include "il/Opcodes.enum"
 
-   LastScalarOMROp = Prefetch,
+            LastScalarOMROp = Prefetch,
 
 #undef OPCODE_MACRO
 

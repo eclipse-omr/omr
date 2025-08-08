@@ -30,73 +30,48 @@
 #include "infra/List.hpp"
 
 void OMR::RegisterPair::block()
-   {
-   _lowOrder->block();
-   _highOrder->block();
-   }
+{
+    _lowOrder->block();
+    _highOrder->block();
+}
 
 void OMR::RegisterPair::unblock()
-   {
-   _lowOrder->unblock();
-   _highOrder->unblock();
-   }
+{
+    _lowOrder->unblock();
+    _highOrder->unblock();
+}
 
-bool OMR::RegisterPair::usesRegister(TR::Register* reg)
-   {
-   if (self() == reg || _lowOrder == reg || _highOrder == reg )
-      {
-      return true;
-      }
-   else
-      {
-      return false;
-      }
-   }
+bool OMR::RegisterPair::usesRegister(TR::Register *reg)
+{
+    if (self() == reg || _lowOrder == reg || _highOrder == reg) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
-TR::Register *
-OMR::RegisterPair::getLowOrder()
-   {
-   return _lowOrder;
-   }
+TR::Register *OMR::RegisterPair::getLowOrder() { return _lowOrder; }
 
-TR::Register *
-OMR::RegisterPair::setLowOrder(TR::Register *lo, TR::CodeGenerator *cg)
-   {
-   if (!lo->isLive() && cg->getLiveRegisters(lo->getKind())!=NULL)
-      cg->getLiveRegisters(lo->getKind())->addRegister(lo);
+TR::Register *OMR::RegisterPair::setLowOrder(TR::Register *lo, TR::CodeGenerator *cg)
+{
+    if (!lo->isLive() && cg->getLiveRegisters(lo->getKind()) != NULL)
+        cg->getLiveRegisters(lo->getKind())->addRegister(lo);
 
-   return (_lowOrder = lo);
-   }
+    return (_lowOrder = lo);
+}
 
-TR::Register *
-OMR::RegisterPair::getHighOrder()
-   {
-   return _highOrder;
-   }
+TR::Register *OMR::RegisterPair::getHighOrder() { return _highOrder; }
 
-TR::Register *
-OMR::RegisterPair::setHighOrder(TR::Register *ho, TR::CodeGenerator *cg)
-   {
-   if (!ho->isLive() && cg->getLiveRegisters(ho->getKind())!=NULL)
-      cg->getLiveRegisters(ho->getKind())->addRegister(ho);
+TR::Register *OMR::RegisterPair::setHighOrder(TR::Register *ho, TR::CodeGenerator *cg)
+{
+    if (!ho->isLive() && cg->getLiveRegisters(ho->getKind()) != NULL)
+        cg->getLiveRegisters(ho->getKind())->addRegister(ho);
 
-   return (_highOrder = ho);
-   }
+    return (_highOrder = ho);
+}
 
-TR::Register *
-OMR::RegisterPair::getRegister()
-   {
-   return NULL;
-   }
+TR::Register *OMR::RegisterPair::getRegister() { return NULL; }
 
-TR::RegisterPair *
-OMR::RegisterPair::getRegisterPair()
-   {
-   return self();
-   }
+TR::RegisterPair *OMR::RegisterPair::getRegisterPair() { return self(); }
 
-TR::RegisterPair *
-OMR::RegisterPair::self()
-   {
-   return static_cast<TR::RegisterPair*>(this);
-   }
+TR::RegisterPair *OMR::RegisterPair::self() { return static_cast<TR::RegisterPair *>(this); }
