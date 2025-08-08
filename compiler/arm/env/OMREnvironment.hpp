@@ -27,48 +27,42 @@
  */
 #ifndef OMR_ENVIRONMENT_CONNECTOR
 #define OMR_ENVIRONMENT_CONNECTOR
+
 namespace OMR {
-namespace ARM { class Environment; }
-typedef OMR::ARM::Environment EnvironmentConnector;
+namespace ARM {
+class Environment;
 }
+
+typedef OMR::ARM::Environment EnvironmentConnector;
+} // namespace OMR
 #else
 #error OMR::ARM::Environment expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/env/OMREnvironment.hpp"
 
+namespace OMR { namespace ARM {
 
-namespace OMR
-{
-
-namespace ARM
-{
-
-class Environment : public OMR::Environment
-   {
+class Environment : public OMR::Environment {
 public:
+    Environment()
+        : OMR::Environment()
+        , _isEABI(false)
+    {}
 
-   Environment() :
-      OMR::Environment(),
-         _isEABI(false)
-      {}
+    Environment(TR::MajorOperatingSystem o, TR::Bitness b)
+        : OMR::Environment(o, b)
+        , _isEABI(false)
+    {}
 
-   Environment(TR::MajorOperatingSystem o, TR::Bitness b) :
-      OMR::Environment(o, b),
-         _isEABI(false)
-      {}
+    bool isEABI() { return _isEABI; }
 
-   bool isEABI() { return _isEABI; }
-   void setEABI(bool b) { _isEABI = b; }
+    void setEABI(bool b) { _isEABI = b; }
 
 private:
+    bool _isEABI;
+};
 
-   bool _isEABI;
-   };
-
-}
-
-}
-
+}} // namespace OMR::ARM
 
 #endif

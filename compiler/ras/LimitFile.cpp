@@ -51,251 +51,218 @@
 
 #define FILTER_POOL_CHUNK_SIZE 32768
 
-#define FILTER_SIZE (sizeof(TR::CompilationFilters) + sizeof(TR_FilterBST*) * FILTER_HASH_SIZE)
-void
-TR_Debug::clearFilters(TR::CompilationFilters * filters)
-   {
-   char *buf = (char*) findOrCreateFilters(filters);
-   int32_t size = FILTER_SIZE;
-   memset(buf, 0, size);
+#define FILTER_SIZE (sizeof(TR::CompilationFilters) + sizeof(TR_FilterBST *) * FILTER_HASH_SIZE)
 
-   filters->filterHash = (TR_FilterBST **)(buf + sizeof(TR::CompilationFilters));
-   filters->setDefaultExclude(false);
-   filters->excludedMethodFilter = NULL;
-   }
+void TR_Debug::clearFilters(TR::CompilationFilters *filters)
+{
+    char *buf = (char *)findOrCreateFilters(filters);
+    int32_t size = FILTER_SIZE;
+    memset(buf, 0, size);
 
-void
-TR_Debug::clearFilters(bool loadLimit)
-   {
-   if (loadLimit)
-      clearFilters(_relocationFilters);
-   else
-      clearFilters(_compilationFilters);
-   }
+    filters->filterHash = (TR_FilterBST **)(buf + sizeof(TR::CompilationFilters));
+    filters->setDefaultExclude(false);
+    filters->excludedMethodFilter = NULL;
+}
 
-TR::CompilationFilters *
-TR_Debug::findOrCreateFilters(TR::CompilationFilters * filters)
-   {
-   if (filters)
-      return filters;
-   else
-      {
-      int32_t size = sizeof(TR::CompilationFilters) + sizeof(TR_FilterBST*) * FILTER_HASH_SIZE;
+void TR_Debug::clearFilters(bool loadLimit)
+{
+    if (loadLimit)
+        clearFilters(_relocationFilters);
+    else
+        clearFilters(_compilationFilters);
+}
 
-      char * buf = (char *)(TR::Compiler->regionAllocator.allocate(size));
+TR::CompilationFilters *TR_Debug::findOrCreateFilters(TR::CompilationFilters *filters)
+{
+    if (filters)
+        return filters;
+    else {
+        int32_t size = sizeof(TR::CompilationFilters) + sizeof(TR_FilterBST *) * FILTER_HASH_SIZE;
 
-      filters = (TR::CompilationFilters *)buf;
-      clearFilters(filters);
-      return filters;
-      }
-  }
+        char *buf = (char *)(TR::Compiler->regionAllocator.allocate(size));
 
-TR::CompilationFilters *
-TR_Debug::findOrCreateFilters(bool loadLimit)
-   {
-   if (loadLimit)
-      // initializing filters using the new interface
-      return _relocationFilters=findOrCreateFilters(_relocationFilters);
-   else
-      // initializing filters using the new interface
-      return _compilationFilters=findOrCreateFilters(_compilationFilters);
-   }
+        filters = (TR::CompilationFilters *)buf;
+        clearFilters(filters);
+        return filters;
+    }
+}
 
-TR_FilterBST *
-TR_Debug::addFilter(const char *& filterString, int32_t scanningExclude, int32_t optionSetIndex, int32_t lineNum, TR::CompilationFilters * anyFilters)
-   {
-   uint32_t filterType = scanningExclude ? TR_FILTER_EXCLUDE_NAME_ONLY : TR_FILTER_NAME_ONLY;
+TR::CompilationFilters *TR_Debug::findOrCreateFilters(bool loadLimit)
+{
+    if (loadLimit)
+        // initializing filters using the new interface
+        return _relocationFilters = findOrCreateFilters(_relocationFilters);
+    else
+        // initializing filters using the new interface
+        return _compilationFilters = findOrCreateFilters(_compilationFilters);
+}
 
-   // Allocate the filter hash table, if it hasn't been already.
-   //
-   TR::CompilationFilters * filters = findOrCreateFilters(anyFilters);
+TR_FilterBST *TR_Debug::addFilter(const char *&filterString, int32_t scanningExclude, int32_t optionSetIndex,
+    int32_t lineNum, TR::CompilationFilters *anyFilters)
+{
+    uint32_t filterType = scanningExclude ? TR_FILTER_EXCLUDE_NAME_ONLY : TR_FILTER_NAME_ONLY;
 
-   TR_FilterBST * filterBST = new (TR::Compiler->regionAllocator) TR_FilterBST(filterType, optionSetIndex, lineNum);
+    // Allocate the filter hash table, if it hasn't been already.
+    //
+    TR::CompilationFilters *filters = findOrCreateFilters(anyFilters);
 
-   int32_t nameLength;
-   if (*filterString == '{')
-      {
-      const char *filterCursor = filterString;
-      filterType = scanningExclude ? TR_FILTER_EXCLUDE_REGEX : TR_FILTER_REGEX;
-      filterBST->setFilterType(filterType);
+    TR_FilterBST *filterBST = new (TR::Compiler->regionAllocator) TR_FilterBST(filterType, optionSetIndex, lineNum);
 
-      // Create the regular expression from the regex string
-      //
-      TR::SimpleRegex *regex = TR::SimpleRegex::create(filterCursor);
-      if (!regex)
-         {
-         TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", filterCursor);
-         return 0;
-         }
-      nameLength = static_cast<int32_t>(filterCursor - filterString);
-      filterBST->setRegex(regex);
-      filterBST->setNext(filters->hasRegexFilter()? filters->filterRegexList : NULL);
-      filters->filterRegexList = filterBST;
-      filters->setHasRegexFilter();
-      }
-   else
-      {
-      // Note - the following call changes the filterType field in the filterBST
-      //
-      nameLength = scanFilterName(filterString, filterBST);
-      if (!nameLength)
-         return 0;
+    int32_t nameLength;
+    if (*filterString == '{') {
+        const char *filterCursor = filterString;
+        filterType = scanningExclude ? TR_FILTER_EXCLUDE_REGEX : TR_FILTER_REGEX;
+        filterBST->setFilterType(filterType);
 
-      // Add the filter to the appropriate data structure
-      //
-      filterType = filterBST->getFilterType();
-      if (filterType == TR_FILTER_EXCLUDE_NAME_ONLY ||
-          filterType == TR_FILTER_NAME_ONLY)
-         {
-         if (filters->filterNameList)
-            filterBST->insert(filters->filterNameList);
-         else
-            filters->filterNameList = filterBST;
-         filters->setHasNameFilter();
-         }
-      else
-         {
-         TR_FilterBST **bucket = &(filters->filterHash[nameLength % FILTER_HASH_SIZE]);
+        // Create the regular expression from the regex string
+        //
+        TR::SimpleRegex *regex = TR::SimpleRegex::create(filterCursor);
+        if (!regex) {
+            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", filterCursor);
+            return 0;
+        }
+        nameLength = static_cast<int32_t>(filterCursor - filterString);
+        filterBST->setRegex(regex);
+        filterBST->setNext(filters->hasRegexFilter() ? filters->filterRegexList : NULL);
+        filters->filterRegexList = filterBST;
+        filters->setHasRegexFilter();
+    } else {
+        // Note - the following call changes the filterType field in the filterBST
+        //
+        nameLength = scanFilterName(filterString, filterBST);
+        if (!nameLength)
+            return 0;
 
-         if (*bucket)
-            filterBST->insert(*bucket);
-         else
-            *bucket = filterBST;
+        // Add the filter to the appropriate data structure
+        //
+        filterType = filterBST->getFilterType();
+        if (filterType == TR_FILTER_EXCLUDE_NAME_ONLY || filterType == TR_FILTER_NAME_ONLY) {
+            if (filters->filterNameList)
+                filterBST->insert(filters->filterNameList);
+            else
+                filters->filterNameList = filterBST;
+            filters->setHasNameFilter();
+        } else {
+            TR_FilterBST **bucket = &(filters->filterHash[nameLength % FILTER_HASH_SIZE]);
 
-         if (filterType == TR_FILTER_NAME_AND_SIG ||
-             filterType == TR_FILTER_EXCLUDE_NAME_AND_SIG)
-            filters->setHasNameSigFilter();
-         else
-            filters->setHasClassNameSigFilter();
-         }
-      }
+            if (*bucket)
+                filterBST->insert(*bucket);
+            else
+                *bucket = filterBST;
 
-   // We start by assuming we are including everything by default.
-   // If we find a +ve filter (i.e. include only this) which is not part of an
-   // option subset, change the default to be exclude everything.
-   //
-   if (!scanningExclude && optionSetIndex == 0)
-      {
-      filters->setDefaultExclude(true);
-      }
+            if (filterType == TR_FILTER_NAME_AND_SIG || filterType == TR_FILTER_EXCLUDE_NAME_AND_SIG)
+                filters->setHasNameSigFilter();
+            else
+                filters->setHasClassNameSigFilter();
+        }
+    }
 
-   filterString += nameLength;
-   return filterBST;
-   }
+    // We start by assuming we are including everything by default.
+    // If we find a +ve filter (i.e. include only this) which is not part of an
+    // option subset, change the default to be exclude everything.
+    //
+    if (!scanningExclude && optionSetIndex == 0) {
+        filters->setDefaultExclude(true);
+    }
 
-TR_FilterBST *
-TR_Debug::addFilter(const char *& filterString, int32_t scanningExclude, int32_t optionSetIndex, int32_t lineNum, bool loadLimit)
-   {
-   if (loadLimit)
-      {
-      // initializing filters using the new interface
-      _relocationFilters=findOrCreateFilters(_relocationFilters);
-      return addFilter(filterString, scanningExclude, optionSetIndex, lineNum, _relocationFilters);
-      }
-   else
-      {
-      // initializing filters using the new interface
-      _compilationFilters=findOrCreateFilters(_compilationFilters);
-      return addFilter(filterString, scanningExclude, optionSetIndex, lineNum, _compilationFilters);
-      }
-   }
+    filterString += nameLength;
+    return filterBST;
+}
 
-TR_FilterBST *
-TR_Debug::addExcludedMethodFilter(bool loadLimit)
-   {
-   TR_FilterBST * filterBST = new (TR::Compiler->regionAllocator) TR_FilterBST(TR_FILTER_EXCLUDE_SPECIFIC_METHOD, TR_EXCLUDED_OPTIONSET_INDEX);
-   if (loadLimit)
-      {
-      _relocationFilters=findOrCreateFilters(_relocationFilters);
-      _relocationFilters->excludedMethodFilter = filterBST;
-      }
-   else
-      {
-      _compilationFilters = findOrCreateFilters(_compilationFilters);
-      _compilationFilters->excludedMethodFilter = filterBST;
-      }
-   return filterBST;
-   }
+TR_FilterBST *TR_Debug::addFilter(const char *&filterString, int32_t scanningExclude, int32_t optionSetIndex,
+    int32_t lineNum, bool loadLimit)
+{
+    if (loadLimit) {
+        // initializing filters using the new interface
+        _relocationFilters = findOrCreateFilters(_relocationFilters);
+        return addFilter(filterString, scanningExclude, optionSetIndex, lineNum, _relocationFilters);
+    } else {
+        // initializing filters using the new interface
+        _compilationFilters = findOrCreateFilters(_compilationFilters);
+        return addFilter(filterString, scanningExclude, optionSetIndex, lineNum, _compilationFilters);
+    }
+}
 
-bool
-TR_Debug::scanInlineFilters(FILE * inlineFile, int32_t & lineNumber, TR::CompilationFilters * filters)
-   {
-   char          limitReadBuffer[1024];
-   bool          inlineFileError = false;
-   TR_FilterBST* filter = NULL;
+TR_FilterBST *TR_Debug::addExcludedMethodFilter(bool loadLimit)
+{
+    TR_FilterBST *filterBST = new (TR::Compiler->regionAllocator)
+        TR_FilterBST(TR_FILTER_EXCLUDE_SPECIFIC_METHOD, TR_EXCLUDED_OPTIONSET_INDEX);
+    if (loadLimit) {
+        _relocationFilters = findOrCreateFilters(_relocationFilters);
+        _relocationFilters->excludedMethodFilter = filterBST;
+    } else {
+        _compilationFilters = findOrCreateFilters(_compilationFilters);
+        _compilationFilters->excludedMethodFilter = filterBST;
+    }
+    return filterBST;
+}
 
-   while(fgets(limitReadBuffer, sizeof(limitReadBuffer), inlineFile))
-      {
-      ++lineNumber;
-      //ignore range for now
-      //if (lineNumber < firstLine || lineNumber > lastLine)
-      //   continue;
+bool TR_Debug::scanInlineFilters(FILE *inlineFile, int32_t &lineNumber, TR::CompilationFilters *filters)
+{
+    char limitReadBuffer[1024];
+    bool inlineFileError = false;
+    TR_FilterBST *filter = NULL;
 
-      char includeFlag = limitReadBuffer[0];
+    while (fgets(limitReadBuffer, sizeof(limitReadBuffer), inlineFile)) {
+        ++lineNumber;
+        // ignore range for now
+        // if (lineNumber < firstLine || lineNumber > lastLine)
+        //    continue;
 
-      if (includeFlag == '[')
-         {
-         //TR_VerboseLog::writeLine(TR_Vlog_INFO, "Sub inline file entry start --> '%s'", limitReadBuffer);
+        char includeFlag = limitReadBuffer[0];
 
-         if (filter)
-            {
-            filter->subGroup = findOrCreateFilters(filter->subGroup);
-            filter->subGroup->setDefaultExclude(true);
-            inlineFileError = !scanInlineFilters(inlineFile, lineNumber, filter->subGroup);
+        if (includeFlag == '[') {
+            // TR_VerboseLog::writeLine(TR_Vlog_INFO, "Sub inline file entry start --> '%s'", limitReadBuffer);
+
+            if (filter) {
+                filter->subGroup = findOrCreateFilters(filter->subGroup);
+                filter->subGroup->setDefaultExclude(true);
+                inlineFileError = !scanInlineFilters(inlineFile, lineNumber, filter->subGroup);
             }
 
-         }
-      else if (includeFlag == ']')
-         {
-         //TR_VerboseLog::writeLine(TR_Vlog_INFO, "Sub inline file entry end --> '%s'", limitReadBuffer);
-         // always return true (success)
-         // this will ignore the rest of the filters if no matching open bracket.
-         return true;
-         }
-      else if (includeFlag == '+' || includeFlag == '-')
-         {
-         const char *p = limitReadBuffer + 1;
-         int32_t optionSet;
-         if (*p >= '0' && *p <= '9')
-            optionSet = *(p++) - '0';
-         else
-            optionSet = 0;
-         if (*(p++) != ' ')
-            {
-            inlineFileError = true;
-            break;
+        } else if (includeFlag == ']') {
+            // TR_VerboseLog::writeLine(TR_Vlog_INFO, "Sub inline file entry end --> '%s'", limitReadBuffer);
+            //  always return true (success)
+            //  this will ignore the rest of the filters if no matching open bracket.
+            return true;
+        } else if (includeFlag == '+' || includeFlag == '-') {
+            const char *p = limitReadBuffer + 1;
+            int32_t optionSet;
+            if (*p >= '0' && *p <= '9')
+                optionSet = *(p++) - '0';
+            else
+                optionSet = 0;
+            if (*(p++) != ' ') {
+                inlineFileError = true;
+                break;
             }
-         // Skip hotness level if it is present
-         //
-         if (*p == '(')
-            {
-            for (p++; *p && *p != ')'; p++)
-               {}
-            if (*(p++) != ')')
-               {
-               inlineFileError = true;
-               break;
-               }
-            if (*(p++) != ' ')
-               {
-               inlineFileError = true;
-               break;
-               }
+            // Skip hotness level if it is present
+            //
+            if (*p == '(') {
+                for (p++; *p && *p != ')'; p++) {
+                }
+                if (*(p++) != ')') {
+                    inlineFileError = true;
+                    break;
+                }
+                if (*(p++) != ' ') {
+                    inlineFileError = true;
+                    break;
+                }
             }
 
-         filter = addFilter(p, (('+' == includeFlag) ? 0 : 1), optionSet, lineNumber, filters);
+            filter = addFilter(p, (('+' == includeFlag) ? 0 : 1), optionSet, lineNumber, filters);
 
-         if (!filter)
-            {
-            inlineFileError = true;
-            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad inline file entry --> '%s'", limitReadBuffer);
-            break;
+            if (!filter) {
+                inlineFileError = true;
+                TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad inline file entry --> '%s'", limitReadBuffer);
+                break;
             }
-         }
-      }
+        }
+    }
 
-   return !inlineFileError;
-   }
+    return !inlineFileError;
+}
 
 /** \brief
  *     This function opens the inlinefile and adds its entries to a TR::CompilationFilters.
@@ -322,51 +289,50 @@ TR_Debug::scanInlineFilters(FILE * inlineFile, int32_t & lineNumber, TR::Compila
  *     The unmodified parameter option if there is a problem with the file, aborting JIT initialization.
  *     Otherwise a pointer to the next comma or NULL.
  */
-const char *
-TR_Debug::inlinefileOption(const char *option, void *base, TR::OptionTable *entry, TR::Options *cmdLineOptions)
-   {
-   const char *endOpt = option;
-   const char *name = option;
-   const char *fail = option;
+const char *TR_Debug::inlinefileOption(const char *option, void *base, TR::OptionTable *entry,
+    TR::Options *cmdLineOptions)
+{
+    const char *endOpt = option;
+    const char *name = option;
+    const char *fail = option;
 
-   // move to the end of this option
-   for (; *endOpt && *endOpt != ','; endOpt++)
-      {}
+    // move to the end of this option
+    for (; *endOpt && *endOpt != ','; endOpt++) {
+    }
 
-   int32_t len = static_cast<int32_t>(endOpt - name);
-   if (!len)
-      return option;
+    int32_t len = static_cast<int32_t>(endOpt - name);
+    if (!len)
+        return option;
 
-   char *inlineFileName = (char *)(TR::Compiler->regionAllocator.allocate(len+1));
-   memcpy(inlineFileName, name, len);
-   inlineFileName[len] = 0; // NULL terminate the copied string
-   entry->msgInfo = (intptr_t)inlineFileName;
+    char *inlineFileName = (char *)(TR::Compiler->regionAllocator.allocate(len + 1));
+    memcpy(inlineFileName, name, len);
+    inlineFileName[len] = 0; // NULL terminate the copied string
+    entry->msgInfo = (intptr_t)inlineFileName;
 
-   FILE *inlineFile = fopen(inlineFileName, "r");
-   bool success = false;
+    FILE *inlineFile = fopen(inlineFileName, "r");
+    bool success = false;
 
-   if (inlineFile)
-      {
-      // initializing _inlineFilters using the new interface
-      _inlineFilters = findOrCreateFilters(_inlineFilters);
-      TR::CompilationFilters * filters = _inlineFilters;
+    if (inlineFile) {
+        // initializing _inlineFilters using the new interface
+        _inlineFilters = findOrCreateFilters(_inlineFilters);
+        TR::CompilationFilters *filters = _inlineFilters;
 
-      filters->setDefaultExclude(true);
+        filters->setDefaultExclude(true);
 
-      int32_t lineNumber = 0;
+        int32_t lineNumber = 0;
 
-      success = scanInlineFilters(inlineFile, lineNumber, filters);
+        success = scanInlineFilters(inlineFile, lineNumber, filters);
 
-      fclose(inlineFile);
-      }
+        fclose(inlineFile);
+    }
 
-   if (!success)
-      {
-      TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Unable to read inline file --> '%s'", inlineFileName);
-      return fail; // We want to fail if we can't read the file because it is too easy to miss that the file wasn't picked up
-      }
-   return endOpt;
-   }
+    if (!success) {
+        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Unable to read inline file --> '%s'", inlineFileName);
+        return fail; // We want to fail if we can't read the file because it is too easy to miss that the file wasn't
+                     // picked up
+    }
+    return endOpt;
+}
 
 /** \brief
  *     Processes a limitfile= option, parses and applies the limitfile to compilation control.
@@ -406,917 +372,803 @@ TR_Debug::inlinefileOption(const char *option, void *base, TR::OptionTable *entr
  *     The unmodified parameter option if there is a problem with the file, aborting JIT initialization.
  *     Otherwise a pointer to the next comma or NULL.
  */
-const char *
-TR_Debug::limitfileOption(const char *option, void *base, TR::OptionTable *entry, TR::Options * cmdLineOptions, bool loadLimit, TR_PseudoRandomNumbersListElement **pseudoRandomListHeadPtr)
-   {
-   const char *endOpt = option;
-   const char *name = option;
-   const char *fail = option;
+const char *TR_Debug::limitfileOption(const char *option, void *base, TR::OptionTable *entry,
+    TR::Options *cmdLineOptions, bool loadLimit, TR_PseudoRandomNumbersListElement **pseudoRandomListHeadPtr)
+{
+    const char *endOpt = option;
+    const char *name = option;
+    const char *fail = option;
 
-   bool range = false;
-   if (*endOpt == '(')
-      {
-      ++endOpt;
-      ++name;
-      range = true;
-      }
+    bool range = false;
+    if (*endOpt == '(') {
+        ++endOpt;
+        ++name;
+        range = true;
+    }
 
-   for (; *endOpt && *endOpt != ','; endOpt++)
-      {}
-   int32_t len = static_cast<int32_t>(endOpt - name);
-   if (!len)
-      return option;
+    for (; *endOpt && *endOpt != ','; endOpt++) {
+    }
+    int32_t len = static_cast<int32_t>(endOpt - name);
+    if (!len)
+        return option;
 
-   char *limitFileName = (char *)(TR::Compiler->regionAllocator.allocate(len+1));
-   memcpy(limitFileName, name, len);
-   limitFileName[len] = 0;
-   entry->msgInfo = (intptr_t)limitFileName;
+    char *limitFileName = (char *)(TR::Compiler->regionAllocator.allocate(len + 1));
+    memcpy(limitFileName, name, len);
+    limitFileName[len] = 0;
+    entry->msgInfo = (intptr_t)limitFileName;
 
-   intptr_t firstLine = 1, lastLine = INT_MAX;
-   if (range)
-      {
-      if (!*endOpt)
-         return option;
-      firstLine = TR::Options::getNumericValue(++endOpt);
-      if (*endOpt == ',')
-         lastLine = TR::Options::getNumericValue(++endOpt);
-      if (*endOpt != ')')
-         return option;
-      ++endOpt;
-      }
-
-   FILE *limitFile = fopen(limitFileName, "r");
-   if (limitFile)
-      {
-      TR::CompilationFilters * filters = findOrCreateFilters(loadLimit);
-      filters->setDefaultExclude(true);
-
-      char          limitReadBuffer[1024];
-      bool          limitFileError = false;
-      int32_t       lineNumber = 0;
-
-      TR_PseudoRandomNumbersListElement *pseudoRandomListHead = NULL;
-      if (pseudoRandomListHeadPtr)
-         pseudoRandomListHead = *pseudoRandomListHeadPtr;
-      TR_PseudoRandomNumbersListElement *curPseudoRandomListElem = pseudoRandomListHead;
-      int32_t curIndex = 0;
-
-      while(fgets(limitReadBuffer, sizeof(limitReadBuffer), limitFile))
-         {
-         ++lineNumber;
-         if (lineNumber < firstLine || lineNumber > lastLine)
-            continue;
-
-         char includeFlag = limitReadBuffer[0];
-         if (strncmp(limitReadBuffer,"-precompileMethod",17) == 0)
-            {
-            const char *p = limitReadBuffer + 18;
-            if (!addFilter(p, 0, 0, lineNumber, loadLimit))
-               {
-               limitFileError = true;
-               break;
-               }
-            }
-         else if (strncmp(limitReadBuffer,"-noprecompileMethod",19) == 0)
-            {
-            const char *p = limitReadBuffer + 20;
-            if (!addFilter(p, 1, 0, lineNumber, loadLimit))
-               {
-               limitFileError = true;
-               break;
-               }
-            }
-         else if (includeFlag == '+' || includeFlag == '-')
-            {
-            const char *p = limitReadBuffer + 1;
-            int32_t optionSet;
-            if (*p >= '0' && *p <= '9')
-               optionSet = *(p++) - '0';
-            else
-               optionSet = 0;
-            if (*(p++) != ' ')
-               {
-               limitFileError = true;
-               break;
-               }
-            // Skip hotness level if it is present
-            //
-            if (*p == '(')
-               {
-               for (p++; *p && *p != ')'; p++)
-                  {}
-               if (*(p++) != ')')
-                  {
-                  limitFileError = true;
-                  break;
-                  }
-               if (*(p++) != ' ')
-                  {
-                  limitFileError = true;
-                  break;
-                  }
-               }
-
-            //if (optionSet > 0)
-            //   filters->setDefaultExclude(false);
-
-            if (!addFilter(p, (('+' == includeFlag) ? 0 : 1), optionSet, lineNumber, loadLimit))
-               {
-               limitFileError = true;
-               break;
-               }
-            }
-         else if (strncmp(limitReadBuffer,PSEUDO_RANDOM_NUMBER_PREFIX, PSEUDO_RANDOM_NUMBER_PREFIX_LEN) == 0)
-            {
-            char *p = limitReadBuffer + PSEUDO_RANDOM_NUMBER_PREFIX_LEN;
-
-            if (*(p++) != ' ')
-               {
-               limitFileError = true;
-               break;
-               }
-
-            bool isNegative = false;
-            if (*(p) == '-')
-               {
-               p++;
-               isNegative = true;
-               }
-
-            int32_t randNum;
-            while (OMR_ISDIGIT(p[0]))
-               {
-               randNum = atoi(p);
-               while(OMR_ISDIGIT(p[0]))
-                  ++p;
-
-               if (isNegative)
-                  randNum = -1*randNum;
-
-               if ((curPseudoRandomListElem == NULL) ||
-                   (curIndex == PSEUDO_RANDOM_NUMBERS_SIZE))
-                  {
-                  int32_t sz = sizeof(TR_PseudoRandomNumbersListElement);
-                  TR_PseudoRandomNumbersListElement *newPseudoRandomListElem = (TR_PseudoRandomNumbersListElement *)(TR::Compiler->regionAllocator.allocate(sz));
-                  newPseudoRandomListElem->_next = NULL;
-                  curIndex = 0;
-
-                  if (curPseudoRandomListElem == NULL)
-                     *pseudoRandomListHeadPtr = newPseudoRandomListElem;
-                  else
-                     curPseudoRandomListElem->_next =  newPseudoRandomListElem;
-
-                  curPseudoRandomListElem =  newPseudoRandomListElem;
-                  }
-
-               if (curPseudoRandomListElem == NULL)
-                  {
-                  limitFileError = true;
-                  break;
-                  }
-
-               curPseudoRandomListElem->_pseudoRandomNumbers[curIndex++] = randNum;
-               curPseudoRandomListElem->_curIndex = curIndex;
-
-               if (*p == PSEUDO_RANDOM_SUFFIX)
-                  break;
-
-               if (*(p++) != ' ')
-                  {
-                  limitFileError = true;
-                  break;
-                  }
-
-               isNegative = false;
-               if (*(p) == '-')
-                  {
-                  p++;
-                      isNegative = true;
-                  }
-               }
-            }
-         }
-      if (limitFileError)
-         {
-         TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad limit file entry --> '%s'", limitReadBuffer);
-         return fail;
-         }
-      fclose(limitFile);
-      }
-   else
-      {
-      TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Unable to read limit file --> '%s'", limitFileName);
-      return fail; //We want to fail if we can't read the file because it is too easy to miss that the file wasn't picked up
-      }
-   return endOpt;
-   }
-
-const char *
-TR_Debug::limitOption(const char *option, void *base, TR::OptionTable *entry, TR::Options * cmdLineOptions, TR::CompilationFilters *&filters)
-   {
-   const char *p = option;
-
-   filters = findOrCreateFilters(filters);
-   TR_FilterBST *filter = addFilter(p, static_cast<int32_t>(entry->parm1), 0, 0, filters);
-
-   if (!filter)
-      return option;
-
-   int32_t len = static_cast<int32_t>(p - option);
-   char *limitName = (char *)(TR::Compiler->regionAllocator.allocate(len+1));
-   memcpy(limitName, option, len);
-   limitName[len] = 0;
-   entry->msgInfo = (intptr_t)limitName;
-
-   // Look for option subset if this is "limit" rather than "exclude"
-   //
-   TR::SimpleRegex *methodRegex = filter->getRegex();
-   if (methodRegex && !entry->parm1 && (*p == '(' || *p == '{'))
-      {
-      TR::SimpleRegex *optLevelRegex = NULL;
-
-      // Scan off the opt level regex if it is present
-      //
-      if (*p == '{')
-         {
-         optLevelRegex = TR::SimpleRegex::create(p);
-         if (!optLevelRegex || *p != '(')
-            {
-            if (!optLevelRegex) {
-               TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", p);
-            }
+    intptr_t firstLine = 1, lastLine = INT_MAX;
+    if (range) {
+        if (!*endOpt)
             return option;
+        firstLine = TR::Options::getNumericValue(++endOpt);
+        if (*endOpt == ',')
+            lastLine = TR::Options::getNumericValue(++endOpt);
+        if (*endOpt != ')')
+            return option;
+        ++endOpt;
+    }
+
+    FILE *limitFile = fopen(limitFileName, "r");
+    if (limitFile) {
+        TR::CompilationFilters *filters = findOrCreateFilters(loadLimit);
+        filters->setDefaultExclude(true);
+
+        char limitReadBuffer[1024];
+        bool limitFileError = false;
+        int32_t lineNumber = 0;
+
+        TR_PseudoRandomNumbersListElement *pseudoRandomListHead = NULL;
+        if (pseudoRandomListHeadPtr)
+            pseudoRandomListHead = *pseudoRandomListHeadPtr;
+        TR_PseudoRandomNumbersListElement *curPseudoRandomListElem = pseudoRandomListHead;
+        int32_t curIndex = 0;
+
+        while (fgets(limitReadBuffer, sizeof(limitReadBuffer), limitFile)) {
+            ++lineNumber;
+            if (lineNumber < firstLine || lineNumber > lastLine)
+                continue;
+
+            char includeFlag = limitReadBuffer[0];
+            if (strncmp(limitReadBuffer, "-precompileMethod", 17) == 0) {
+                const char *p = limitReadBuffer + 18;
+                if (!addFilter(p, 0, 0, lineNumber, loadLimit)) {
+                    limitFileError = true;
+                    break;
+                }
+            } else if (strncmp(limitReadBuffer, "-noprecompileMethod", 19) == 0) {
+                const char *p = limitReadBuffer + 20;
+                if (!addFilter(p, 1, 0, lineNumber, loadLimit)) {
+                    limitFileError = true;
+                    break;
+                }
+            } else if (includeFlag == '+' || includeFlag == '-') {
+                const char *p = limitReadBuffer + 1;
+                int32_t optionSet;
+                if (*p >= '0' && *p <= '9')
+                    optionSet = *(p++) - '0';
+                else
+                    optionSet = 0;
+                if (*(p++) != ' ') {
+                    limitFileError = true;
+                    break;
+                }
+                // Skip hotness level if it is present
+                //
+                if (*p == '(') {
+                    for (p++; *p && *p != ')'; p++) {
+                    }
+                    if (*(p++) != ')') {
+                        limitFileError = true;
+                        break;
+                    }
+                    if (*(p++) != ' ') {
+                        limitFileError = true;
+                        break;
+                    }
+                }
+
+                // if (optionSet > 0)
+                //    filters->setDefaultExclude(false);
+
+                if (!addFilter(p, (('+' == includeFlag) ? 0 : 1), optionSet, lineNumber, loadLimit)) {
+                    limitFileError = true;
+                    break;
+                }
+            } else if (strncmp(limitReadBuffer, PSEUDO_RANDOM_NUMBER_PREFIX, PSEUDO_RANDOM_NUMBER_PREFIX_LEN) == 0) {
+                char *p = limitReadBuffer + PSEUDO_RANDOM_NUMBER_PREFIX_LEN;
+
+                if (*(p++) != ' ') {
+                    limitFileError = true;
+                    break;
+                }
+
+                bool isNegative = false;
+                if (*(p) == '-') {
+                    p++;
+                    isNegative = true;
+                }
+
+                int32_t randNum;
+                while (OMR_ISDIGIT(p[0])) {
+                    randNum = atoi(p);
+                    while (OMR_ISDIGIT(p[0]))
+                        ++p;
+
+                    if (isNegative)
+                        randNum = -1 * randNum;
+
+                    if ((curPseudoRandomListElem == NULL) || (curIndex == PSEUDO_RANDOM_NUMBERS_SIZE)) {
+                        int32_t sz = sizeof(TR_PseudoRandomNumbersListElement);
+                        TR_PseudoRandomNumbersListElement *newPseudoRandomListElem
+                            = (TR_PseudoRandomNumbersListElement *)(TR::Compiler->regionAllocator.allocate(sz));
+                        newPseudoRandomListElem->_next = NULL;
+                        curIndex = 0;
+
+                        if (curPseudoRandomListElem == NULL)
+                            *pseudoRandomListHeadPtr = newPseudoRandomListElem;
+                        else
+                            curPseudoRandomListElem->_next = newPseudoRandomListElem;
+
+                        curPseudoRandomListElem = newPseudoRandomListElem;
+                    }
+
+                    if (curPseudoRandomListElem == NULL) {
+                        limitFileError = true;
+                        break;
+                    }
+
+                    curPseudoRandomListElem->_pseudoRandomNumbers[curIndex++] = randNum;
+                    curPseudoRandomListElem->_curIndex = curIndex;
+
+                    if (*p == PSEUDO_RANDOM_SUFFIX)
+                        break;
+
+                    if (*(p++) != ' ') {
+                        limitFileError = true;
+                        break;
+                    }
+
+                    isNegative = false;
+                    if (*(p) == '-') {
+                        p++;
+                        isNegative = true;
+                    }
+                }
             }
-         }
-      // If an option subset was found, save the information for later
-      // processing
-      //
-      const char *startOptString = ++p;
-      int32_t parenNest = 1;
-      for (; *p; p++)
-         {
-         if (*p == '(')
-            parenNest++;
-         else if (*p == ')')
-            {
-            if (--parenNest == 0)
-               {
-               p++;
-               break;
-               }
+        }
+        if (limitFileError) {
+            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad limit file entry --> '%s'", limitReadBuffer);
+            return fail;
+        }
+        fclose(limitFile);
+    } else {
+        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Unable to read limit file --> '%s'", limitFileName);
+        return fail; // We want to fail if we can't read the file because it is too easy to miss that the file wasn't
+                     // picked up
+    }
+    return endOpt;
+}
+
+const char *TR_Debug::limitOption(const char *option, void *base, TR::OptionTable *entry, TR::Options *cmdLineOptions,
+    TR::CompilationFilters *&filters)
+{
+    const char *p = option;
+
+    filters = findOrCreateFilters(filters);
+    TR_FilterBST *filter = addFilter(p, static_cast<int32_t>(entry->parm1), 0, 0, filters);
+
+    if (!filter)
+        return option;
+
+    int32_t len = static_cast<int32_t>(p - option);
+    char *limitName = (char *)(TR::Compiler->regionAllocator.allocate(len + 1));
+    memcpy(limitName, option, len);
+    limitName[len] = 0;
+    entry->msgInfo = (intptr_t)limitName;
+
+    // Look for option subset if this is "limit" rather than "exclude"
+    //
+    TR::SimpleRegex *methodRegex = filter->getRegex();
+    if (methodRegex && !entry->parm1 && (*p == '(' || *p == '{')) {
+        TR::SimpleRegex *optLevelRegex = NULL;
+
+        // Scan off the opt level regex if it is present
+        //
+        if (*p == '{') {
+            optLevelRegex = TR::SimpleRegex::create(p);
+            if (!optLevelRegex || *p != '(') {
+                if (!optLevelRegex) {
+                    TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", p);
+                }
+                return option;
             }
-         }
-      if (parenNest)
-         return startOptString;
+        }
+        // If an option subset was found, save the information for later
+        // processing
+        //
+        const char *startOptString = ++p;
+        int32_t parenNest = 1;
+        for (; *p; p++) {
+            if (*p == '(')
+                parenNest++;
+            else if (*p == ')') {
+                if (--parenNest == 0) {
+                    p++;
+                    break;
+                }
+            }
+        }
+        if (parenNest)
+            return startOptString;
 
-      // Save the option set - its option string will be processed after
-      // the main options have been finished.
-      //
-      TR::OptionSet *newSet = (TR::OptionSet *)(TR::Compiler->regionAllocator.allocate(sizeof(TR::OptionSet)));
-      newSet->init(startOptString);
-      newSet->setMethodRegex(methodRegex);
-      newSet->setOptLevelRegex(optLevelRegex);
-      cmdLineOptions->saveOptionSet(newSet);
-      }
+        // Save the option set - its option string will be processed after
+        // the main options have been finished.
+        //
+        TR::OptionSet *newSet = (TR::OptionSet *)(TR::Compiler->regionAllocator.allocate(sizeof(TR::OptionSet)));
+        newSet->init(startOptString);
+        newSet->setMethodRegex(methodRegex);
+        newSet->setOptLevelRegex(optLevelRegex);
+        cmdLineOptions->saveOptionSet(newSet);
+    }
 
-   return p;
-   }
+    return p;
+}
 
-const char *
-TR_Debug::limitOption(const char *option, void *base, TR::OptionTable *entry, TR::Options * cmdLineOptions, bool loadLimit)
-   {
-   if (loadLimit)
-      {
-      return limitOption(option, base, entry, cmdLineOptions, _relocationFilters);
-      }
-   else
-      {
-      return limitOption(option, base, entry, cmdLineOptions, _compilationFilters);
-      }
-   }
+const char *TR_Debug::limitOption(const char *option, void *base, TR::OptionTable *entry, TR::Options *cmdLineOptions,
+    bool loadLimit)
+{
+    if (loadLimit) {
+        return limitOption(option, base, entry, cmdLineOptions, _relocationFilters);
+    } else {
+        return limitOption(option, base, entry, cmdLineOptions, _compilationFilters);
+    }
+}
 
-
-void * TR_FilterBST::operator new(size_t size, TR::PersistentAllocator &allocator)
-   {
-   return allocator.allocate(size);
-   }
-
+void *TR_FilterBST::operator new(size_t size, TR::PersistentAllocator &allocator) { return allocator.allocate(size); }
 
 TR_FilterBST *TR_FilterBST::find(const char *methodName, int32_t methodNameLen)
-   {
-   // Find the filter for the given method name in the tree rooted at node.
-   //
-   int32_t       rc;
-   TR_FilterBST *node;
+{
+    // Find the filter for the given method name in the tree rooted at node.
+    //
+    int32_t rc;
+    TR_FilterBST *node;
 
-   for (node = this; node; node = node->getChild(rc))
-      {
-      rc = strncmp(methodName, node->getName(), methodNameLen);
-      if (rc == 0)
-         {
-         rc = methodNameLen - node->getNameLen();
-         if (rc == 0)
-            break;
-         }
-      rc = (rc < 0) ? 0 : 1;
-      }
-   return node;
-   }
-
-TR_FilterBST *TR_FilterBST::find(const char *methodName, int32_t methodNameLen, const char *methodClass, int32_t methodClassLen, const char *methodSignature, int32_t methodSignatureLen)
-   {
-   // Find the filter for the given method name, class and signature in the
-   // tree rooted at node.
-   //
-   int32_t       rc;
-   TR_FilterBST *node;
-
-   for (node = this; node; node = node->getChild(rc))
-      {
-      rc = strncmp(methodName, node->getName(), methodNameLen);
-      if (rc == 0)
-         rc = methodNameLen - node->getNameLen();
-      if (rc == 0)
-         {
-         rc = strncmp(methodClass, node->getClass(), methodClassLen);
-         if (rc == 0)
-            rc = methodClassLen - static_cast<int32_t>(strlen(node->getClass()));
-         if (rc == 0)
-            {
-            rc = strncmp(methodSignature, node->getSignature(), methodSignatureLen);
+    for (node = this; node; node = node->getChild(rc)) {
+        rc = strncmp(methodName, node->getName(), methodNameLen);
+        if (rc == 0) {
+            rc = methodNameLen - node->getNameLen();
             if (rc == 0)
-               rc = methodSignatureLen - static_cast<int32_t>(strlen(node->getSignature()));
+                break;
+        }
+        rc = (rc < 0) ? 0 : 1;
+    }
+    return node;
+}
+
+TR_FilterBST *TR_FilterBST::find(const char *methodName, int32_t methodNameLen, const char *methodClass,
+    int32_t methodClassLen, const char *methodSignature, int32_t methodSignatureLen)
+{
+    // Find the filter for the given method name, class and signature in the
+    // tree rooted at node.
+    //
+    int32_t rc;
+    TR_FilterBST *node;
+
+    for (node = this; node; node = node->getChild(rc)) {
+        rc = strncmp(methodName, node->getName(), methodNameLen);
+        if (rc == 0)
+            rc = methodNameLen - node->getNameLen();
+        if (rc == 0) {
+            rc = strncmp(methodClass, node->getClass(), methodClassLen);
             if (rc == 0)
-               break;
+                rc = methodClassLen - static_cast<int32_t>(strlen(node->getClass()));
+            if (rc == 0) {
+                rc = strncmp(methodSignature, node->getSignature(), methodSignatureLen);
+                if (rc == 0)
+                    rc = methodSignatureLen - static_cast<int32_t>(strlen(node->getSignature()));
+                if (rc == 0)
+                    break;
             }
-         }
-      rc = (rc < 0) ? 0 : 1;
-      }
-   return node;
-   }
+        }
+        rc = (rc < 0) ? 0 : 1;
+    }
+    return node;
+}
 
 TR_FilterBST *TR_FilterBST::findRegex(const char *methodSpec)
-   {
-   TR_FilterBST *f;
-   for (f=this; f && !f->_regex->match(methodSpec); f = f->getNext());
-   return f;
-   }
+{
+    TR_FilterBST *f;
+    for (f = this; f && !f->_regex->match(methodSpec); f = f->getNext())
+        ;
+    return f;
+}
 
 void TR_FilterBST::insert(TR_FilterBST *node)
-   {
-   // Insert this filter into the tree rooted at node. If the filter already
-   // exists, don't insert the new one.
-   //
-   int32_t rc;
+{
+    // Insert this filter into the tree rooted at node. If the filter already
+    // exists, don't insert the new one.
+    //
+    int32_t rc;
 
-   while (node)
-      {
-      rc = strcmp(getName(), node->getName());
-      if (rc == 0)
-         {
-         rc = strcmp(getClass(), node->getClass());
-         if (rc == 0)
-            {
-            rc = strcmp(getSignature(), node->getSignature());
-            if (rc == 0)
-               break;
+    while (node) {
+        rc = strcmp(getName(), node->getName());
+        if (rc == 0) {
+            rc = strcmp(getClass(), node->getClass());
+            if (rc == 0) {
+                rc = strcmp(getSignature(), node->getSignature());
+                if (rc == 0)
+                    break;
             }
-         }
+        }
 
-      TR_FilterBST *child;
-      rc = (rc < 0) ? 0 : 1;
-      child = node->getChild(rc);
-      if (child)
-         node = child;
-      else
-	 {
-         node->setChild(rc, this);
-         break;
-	 }
-      }
-   }
-
-void
-TR_Debug::print(TR_FilterBST * filter)
-   {
-   TR_VerboseLog::CriticalSection vlogLock;
-   /*
-   if (filter->_optionSet)
-      TR_VerboseLog::write("   {%d}", filter->_optionSet);
-
-   if (filter->_lineNumber)
-      TR_VerboseLog::write("   [%d]", filter->_lineNumber);
-   */
-
-   switch (filter->_filterType)
-      {
-      case TR_FILTER_EXCLUDE_NAME_ONLY:
-         TR_VerboseLog::write("   -%s", "NAME_ONLY");
-         break;
-      case TR_FILTER_EXCLUDE_NAME_AND_SIG:
-         TR_VerboseLog::write("   -%s", "NAME_AND_SIG");
-         break;
-      case TR_FILTER_EXCLUDE_SPECIFIC_METHOD:
-         TR_VerboseLog::write("   -%s", "SPECIFIC_METHOD");
-         break;
-      case TR_FILTER_EXCLUDE_REGEX:
-         TR_VerboseLog::write("   -%s", "REGEX");
-         break;
-      case TR_FILTER_NAME_ONLY:
-         TR_VerboseLog::write("   +%s", "NAME_ONLY");
-         break;
-      case TR_FILTER_NAME_AND_SIG:
-         TR_VerboseLog::write("   +%s", "NAME_AND_SIG");
-         break;
-      case TR_FILTER_SPECIFIC_METHOD:
-         TR_VerboseLog::write("   +%s", "SPECIFIC_METHOD");
-         break;
-      case TR_FILTER_REGEX:
-         TR_VerboseLog::write("   +%s", "REGEX");
-         break;
-      }
-
-   switch (filter->_filterType)
-      {
-      case TR_FILTER_EXCLUDE_NAME_ONLY:
-         TR_VerboseLog::write("   {^*.%s(*}\n", filter->getName());
-         break;
-      case TR_FILTER_EXCLUDE_NAME_AND_SIG:
-         TR_VerboseLog::write("   {^*.%s%s}\n", filter->getName(), filter->getSignature());
-         break;
-      case TR_FILTER_EXCLUDE_SPECIFIC_METHOD:
-         TR_VerboseLog::write("   {^%s.%s%s}\n", filter->getClass(), filter->getName(), filter->getSignature());
-         break;
-      case TR_FILTER_EXCLUDE_REGEX:
-         TR_VerboseLog::write("  ");
-         filter->getRegex()->print(true);
-         TR_VerboseLog::write("\n");
-         break;
-      case TR_FILTER_NAME_ONLY:
-         TR_VerboseLog::write("   {*.%s(*}\n", filter->getName());
-         break;
-      case TR_FILTER_NAME_AND_SIG:
-         TR_VerboseLog::write("   {*.%s%s}\n", filter->getName(), filter->getSignature());
-         break;
-      case TR_FILTER_SPECIFIC_METHOD:
-         TR_VerboseLog::write("   {%s.%s%s}\n", filter->getClass(), filter->getName(), filter->getSignature());
-         break;
-      case TR_FILTER_REGEX:
-         TR_VerboseLog::write("  ");
-         filter->getRegex()->print(false);
-         TR_VerboseLog::write("\n");
-         break;
-      }
-
-      if (filter->subGroup)
-         {
-         TR_VerboseLog::write("   [\n");
-         printFilters(filter->subGroup);
-         TR_VerboseLog::write("   ]\n");
-         }
-   }
-
-void
-TR_Debug::printFilters(TR::CompilationFilters * filters)
-   {
-   int32_t i;
-   if (filters)
-      {
-      if (filters->filterHash)
-         {
-         for (i = 0; i < FILTER_HASH_SIZE; i++)
-            if (filters->filterHash[i])
-               printFilterTree(filters->filterHash[i]);
-         }
-
-      if (filters->filterNameList)
-         {
-         printFilterTree(filters->filterNameList);
-         }
-
-      if (filters->filterRegexList)
-         {
-         for (TR_FilterBST * filter = filters->filterRegexList; filter; filter = filter->getNext())
-            print(filter);
-         }
-
-     }
-   }
-
-void
-TR_Debug::printFilters()
-   {
-   TR_VerboseLog::CriticalSection vlogLock;
-   TR_VerboseLog::writeLine("<compilationFilters>");
-   printFilters(_compilationFilters);
-   TR_VerboseLog::writeLine("</compilationFilters>");
-
-   TR_VerboseLog::writeLine("<relocationFilters>");
-   printFilters(_relocationFilters);
-   TR_VerboseLog::writeLine("</relocationFilters>");
-
-   TR_VerboseLog::writeLine("<inlineFilters>");
-   printFilters(_inlineFilters);
-   TR_VerboseLog::writeLine("</inlineFilters>");
-   }
-
-void
-TR_Debug::printFilterTree(TR_FilterBST *root)
-   {
-   if (root->getChild(0))
-      printFilterTree(root->getChild(0));
-   print(root);
-   if (root->getChild(1))
-      printFilterTree(root->getChild(1));
-   }
-
-int32_t
-TR_Debug::scanFilterName(const char *string, TR_FilterBST *filter)
-   {
-   // help for OMR parsing
-   bool seenFileName = false;
-   bool seenLineNumber = false;
-   bool omrPattern = false;
-
-   // Walk the filter to determine the type.
-   //
-   //TR_VerboseLog::writeLine("filterName: %s", string);
-   const char *nameChars = NULL;
-   int32_t nameLen = 0;
-   const char *classChars = NULL;
-   int32_t classLen = 0;
-   const char *signatureChars = string;
-   int32_t signatureLen = 0;
-   char  filterType = filter->getFilterType();
-   if (*string == '/' || *string == '.') // hack that works for linux
-      omrPattern = true;
-
-   while (*string && *string != '\t' && *string != ',' && *string != '\n')
-      {
-      if (omrPattern)
-         {
-         if (*string == ':')
-            {
-            if (!seenFileName)
-               {
-               classChars = signatureChars;
-               classLen = signatureLen;
-               signatureChars = string+1;
-               signatureLen = 0;
-               seenFileName = true;
-               }
-            else if (!seenLineNumber)
-               {
-               nameChars = signatureChars;
-               nameLen = signatureLen;
-               signatureChars = string+1;
-               signatureLen = 0;
-               seenLineNumber = true;
-               }
-            }
-         else if (seenLineNumber && *string == ' ')
-            {
+        TR_FilterBST *child;
+        rc = (rc < 0) ? 0 : 1;
+        child = node->getChild(rc);
+        if (child)
+            node = child;
+        else {
+            node->setChild(rc, this);
             break;
+        }
+    }
+}
+
+void TR_Debug::print(TR_FilterBST *filter)
+{
+    TR_VerboseLog::CriticalSection vlogLock;
+    /*
+    if (filter->_optionSet)
+       TR_VerboseLog::write("   {%d}", filter->_optionSet);
+
+    if (filter->_lineNumber)
+       TR_VerboseLog::write("   [%d]", filter->_lineNumber);
+    */
+
+    switch (filter->_filterType) {
+        case TR_FILTER_EXCLUDE_NAME_ONLY:
+            TR_VerboseLog::write("   -%s", "NAME_ONLY");
+            break;
+        case TR_FILTER_EXCLUDE_NAME_AND_SIG:
+            TR_VerboseLog::write("   -%s", "NAME_AND_SIG");
+            break;
+        case TR_FILTER_EXCLUDE_SPECIFIC_METHOD:
+            TR_VerboseLog::write("   -%s", "SPECIFIC_METHOD");
+            break;
+        case TR_FILTER_EXCLUDE_REGEX:
+            TR_VerboseLog::write("   -%s", "REGEX");
+            break;
+        case TR_FILTER_NAME_ONLY:
+            TR_VerboseLog::write("   +%s", "NAME_ONLY");
+            break;
+        case TR_FILTER_NAME_AND_SIG:
+            TR_VerboseLog::write("   +%s", "NAME_AND_SIG");
+            break;
+        case TR_FILTER_SPECIFIC_METHOD:
+            TR_VerboseLog::write("   +%s", "SPECIFIC_METHOD");
+            break;
+        case TR_FILTER_REGEX:
+            TR_VerboseLog::write("   +%s", "REGEX");
+            break;
+    }
+
+    switch (filter->_filterType) {
+        case TR_FILTER_EXCLUDE_NAME_ONLY:
+            TR_VerboseLog::write("   {^*.%s(*}\n", filter->getName());
+            break;
+        case TR_FILTER_EXCLUDE_NAME_AND_SIG:
+            TR_VerboseLog::write("   {^*.%s%s}\n", filter->getName(), filter->getSignature());
+            break;
+        case TR_FILTER_EXCLUDE_SPECIFIC_METHOD:
+            TR_VerboseLog::write("   {^%s.%s%s}\n", filter->getClass(), filter->getName(), filter->getSignature());
+            break;
+        case TR_FILTER_EXCLUDE_REGEX:
+            TR_VerboseLog::write("  ");
+            filter->getRegex()->print(true);
+            TR_VerboseLog::write("\n");
+            break;
+        case TR_FILTER_NAME_ONLY:
+            TR_VerboseLog::write("   {*.%s(*}\n", filter->getName());
+            break;
+        case TR_FILTER_NAME_AND_SIG:
+            TR_VerboseLog::write("   {*.%s%s}\n", filter->getName(), filter->getSignature());
+            break;
+        case TR_FILTER_SPECIFIC_METHOD:
+            TR_VerboseLog::write("   {%s.%s%s}\n", filter->getClass(), filter->getName(), filter->getSignature());
+            break;
+        case TR_FILTER_REGEX:
+            TR_VerboseLog::write("  ");
+            filter->getRegex()->print(false);
+            TR_VerboseLog::write("\n");
+            break;
+    }
+
+    if (filter->subGroup) {
+        TR_VerboseLog::write("   [\n");
+        printFilters(filter->subGroup);
+        TR_VerboseLog::write("   ]\n");
+    }
+}
+
+void TR_Debug::printFilters(TR::CompilationFilters *filters)
+{
+    int32_t i;
+    if (filters) {
+        if (filters->filterHash) {
+            for (i = 0; i < FILTER_HASH_SIZE; i++)
+                if (filters->filterHash[i])
+                    printFilterTree(filters->filterHash[i]);
+        }
+
+        if (filters->filterNameList) {
+            printFilterTree(filters->filterNameList);
+        }
+
+        if (filters->filterRegexList) {
+            for (TR_FilterBST *filter = filters->filterRegexList; filter; filter = filter->getNext())
+                print(filter);
+        }
+    }
+}
+
+void TR_Debug::printFilters()
+{
+    TR_VerboseLog::CriticalSection vlogLock;
+    TR_VerboseLog::writeLine("<compilationFilters>");
+    printFilters(_compilationFilters);
+    TR_VerboseLog::writeLine("</compilationFilters>");
+
+    TR_VerboseLog::writeLine("<relocationFilters>");
+    printFilters(_relocationFilters);
+    TR_VerboseLog::writeLine("</relocationFilters>");
+
+    TR_VerboseLog::writeLine("<inlineFilters>");
+    printFilters(_inlineFilters);
+    TR_VerboseLog::writeLine("</inlineFilters>");
+}
+
+void TR_Debug::printFilterTree(TR_FilterBST *root)
+{
+    if (root->getChild(0))
+        printFilterTree(root->getChild(0));
+    print(root);
+    if (root->getChild(1))
+        printFilterTree(root->getChild(1));
+}
+
+int32_t TR_Debug::scanFilterName(const char *string, TR_FilterBST *filter)
+{
+    // help for OMR parsing
+    bool seenFileName = false;
+    bool seenLineNumber = false;
+    bool omrPattern = false;
+
+    // Walk the filter to determine the type.
+    //
+    // TR_VerboseLog::writeLine("filterName: %s", string);
+    const char *nameChars = NULL;
+    int32_t nameLen = 0;
+    const char *classChars = NULL;
+    int32_t classLen = 0;
+    const char *signatureChars = string;
+    int32_t signatureLen = 0;
+    char filterType = filter->getFilterType();
+    if (*string == '/' || *string == '.') // hack that works for linux
+        omrPattern = true;
+
+    while (*string && *string != '\t' && *string != ',' && *string != '\n') {
+        if (omrPattern) {
+            if (*string == ':') {
+                if (!seenFileName) {
+                    classChars = signatureChars;
+                    classLen = signatureLen;
+                    signatureChars = string + 1;
+                    signatureLen = 0;
+                    seenFileName = true;
+                } else if (!seenLineNumber) {
+                    nameChars = signatureChars;
+                    nameLen = signatureLen;
+                    signatureChars = string + 1;
+                    signatureLen = 0;
+                    seenLineNumber = true;
+                }
+            } else if (seenLineNumber && *string == ' ') {
+                break;
             }
 
-         else
-            signatureLen++;
-         }
-      else
-         {
-         if (*string == ' ')
-            break;
+            else
+                signatureLen++;
+        } else {
+            if (*string == ' ')
+                break;
 
-         if (*string == '.')
-	    {
-            classChars = signatureChars;
-            classLen = signatureLen;
-            signatureChars = string+1;
-            signatureLen = 0;
-	    filterType = filter->isExclude() ? TR_FILTER_EXCLUDE_SPECIFIC_METHOD : TR_FILTER_SPECIFIC_METHOD;
-	    }
-
-         else if (*string == '(')
-	    {
-            nameChars = signatureChars;
-            nameLen = signatureLen;
-            signatureChars = string;
-            signatureLen = 1;
-            if (filterType == TR_FILTER_EXCLUDE_NAME_ONLY ||
-                filterType == TR_FILTER_NAME_ONLY)
-               {
-               filterType = filter->isExclude() ? TR_FILTER_EXCLUDE_NAME_AND_SIG : TR_FILTER_NAME_AND_SIG;
-               }
-	    }
-         else
-            signatureLen++;
-         }
-
-      string++;
-      }
-
-   if (!nameChars)
-      {
-      nameChars = signatureChars;
-      nameLen = signatureLen;
-      signatureChars = NULL;
-      signatureLen = 0;
-      }
-
-   // signal for OMR style signature
-   if (omrPattern)
-      {
-      // need to swap name and signature, since name is currently the line number
-      const char *tempChars = nameChars;
-      int32_t tempLen = nameLen;
-      nameChars = signatureChars;
-      nameLen = signatureLen;
-      signatureChars = tempChars;
-      signatureLen = tempLen;
-      filterType = filter->isExclude() ? TR_FILTER_EXCLUDE_SPECIFIC_METHOD : TR_FILTER_SPECIFIC_METHOD;
-      }
-
-   // Keep copies of the method name, class, and signature, and point
-   // the filter members to them
-   //
-   int32_t length = nameLen + classLen + signatureLen;
-   char *buf = (char*)(TR::Compiler->regionAllocator.allocate(length + 3)); // NULL terminated strings
-
-   filter->setName(buf, nameLen);
-   if (nameChars)
-      {
-      strncpy(buf, nameChars, nameLen);
-      buf += nameLen;
-      }
-   *(buf++) = 0;
-   filter->setClass(buf);
-   if (classChars)
-      {
-      strncpy(buf, classChars, classLen);
-      buf += classLen;
-      }
-   *(buf++) = 0;
-   filter->setSignature(buf);
-   if (signatureChars)
-      {
-      strncpy(buf, signatureChars, signatureLen);
-      buf += signatureLen;
-      }
-   *(buf++) = 0;
-
-   filter->setFilterType(filterType);
-   return length;
-   }
-
-
-bool
-TR_Debug::methodSigCanBeCompiled(const char *methodSig, TR_FilterBST * & filter, TR::Method::Type methodType)
-   {
-   return methodSigCanBeCompiledOrRelocated(methodSig, filter, false, methodType);
-   }
-
-bool
-TR_Debug::methodSigCanBeRelocated(const char *methodSig, TR_FilterBST * & filter)
-   {
-   return methodSigCanBeCompiledOrRelocated(methodSig, filter, true, TR::Method::J9);
-   }
-
-bool
-TR_Debug::methodSigCanBeFound(const char *methodSig, TR::CompilationFilters * filters, TR_FilterBST * & filter, TR::Method::Type methodType)
-   {
-   const char *methodClass, *methodName, *methodSignature;
-   uint32_t methodClassLen, methodNameLen, methodSignatureLen;
-
-   methodClass = methodSig;
-   if (methodType != TR::Method::J9)
-      {
-      if (methodSig[0] == '/' || methodSig[0] == '.') // omr method pattern
-         {
-         methodClass = methodSig;
-         methodSignature = strchr(methodSig, ':');
-         methodClassLen = static_cast<uint32_t>(methodSignature - methodClass);
-         methodSignature++;
-         methodName = strchr(methodSignature, ':');
-         methodSignatureLen = static_cast<uint32_t>(methodName - methodSignature);
-         methodName++;
-         methodNameLen = static_cast<uint32_t>(strlen(methodName));
-         }
-      else
-         {
-         methodName = methodSig;
-         methodClassLen = 0;
-         methodSignature = "";
-         methodSignatureLen = 0;
-         methodNameLen = static_cast<uint32_t>(strlen(methodName));
-         }
-      }
-   else
-      {
-      if (methodSig[0] == '/') // omr method pattern
-         {
-         methodClass = methodSig;
-         methodSignature = strchr(methodSig, ':');
-         methodClassLen = static_cast<uint32_t>(methodSignature - methodClass);
-         methodSignature++;
-         methodName = strchr(methodSignature, ':');
-         methodSignatureLen = static_cast<uint32_t>(methodName - methodSignature);
-         methodName++;
-         methodNameLen = static_cast<uint32_t>(strlen(methodName));
-         }
-      else
-         {
-         methodName  = strchr(methodSig, '.');
-         methodClassLen = static_cast<uint32_t>(methodName - methodClass);
-         methodName++;
-         methodSignature = strchr(methodName, '(');
-         methodSignatureLen = static_cast<uint32_t>(strlen(methodSignature));
-         TR_ASSERT(methodSignature, "unable to pattern match java method signature");
-         methodNameLen = static_cast<uint32_t>(methodSignature - methodName);
-         }
-      }
-
-   int32_t length = methodNameLen + methodSignatureLen;
-
-   if (filters->hasClassNameSigFilter() || filters->hasNameSigFilter())
-      {
-      if (filters->hasClassNameSigFilter())
-	 {
-	 // Search for the class+name+signature.
-	 //
-	 filter = filters->filterHash[(length+methodClassLen) % FILTER_HASH_SIZE];
-         if (filter)
-            filter = filter->find(methodName, methodNameLen, methodClass, methodClassLen, methodSignature, methodSignatureLen);
-	 }
-
-      if (!filter && filters->hasNameSigFilter())
-	 {
-	 // Search for the name+signature.
-	 //
-	 filter = filters->filterHash[length % FILTER_HASH_SIZE];
-         if (filter)
-            filter = filter->find(methodName, methodNameLen, "", 0, methodSignature, methodSignatureLen);
-	 }
-      }
-
-   if (!filter && filters->hasNameFilter())
-      {
-      // Search the name filter list.
-      //
-      filter = filters->filterNameList;
-      if (filter)
-         filter = filter->find(methodName, methodNameLen);
-      }
-
-   if (!filter && filters->hasRegexFilter())
-      {
-      // Search the regex filter list.
-      //
-      filter = filters->filterRegexList;
-      if (filter)
-         filter = filter->findRegex(methodSig);
-      }
-
-   bool excluded = filters->defaultExclude() != 0;
-   if (filter)
-      {
-      switch (filter->getFilterType())
-         {
-         case TR_FILTER_EXCLUDE_NAME_ONLY:
-         case TR_FILTER_EXCLUDE_NAME_AND_SIG:
-         case TR_FILTER_EXCLUDE_SPECIFIC_METHOD:
-         case TR_FILTER_EXCLUDE_REGEX:
-            excluded = true;
-            break;
-         default:
-            excluded = false;
-            break;
-         }
-      }
-
-   return !excluded;
-   }
-
-bool
-TR_Debug::methodCanBeFound(TR_Memory *trMemory, TR_ResolvedMethod *method, TR::CompilationFilters * filters, TR_FilterBST * & filter)
-   {
-   const char * methodSig = method->signature(trMemory);
-   return methodSigCanBeFound(methodSig, filters, filter, method->convertToMethod()->methodType());
-   }
-
-bool
-TR_Debug::methodSigCanBeCompiledOrRelocated(const char *methodSig, TR_FilterBST * & filter, bool loadLimit, TR::Method::Type methodType)
-   {
-   TR::CompilationFilters *compOrReloFilter = NULL;
-
-   if (loadLimit)
-      {
-      if (!_relocationFilters)
-         return true;
-      else
-         compOrReloFilter = _relocationFilters;
-      }
-   else
-      {
-      if (!_compilationFilters)
-         return true;
-      else
-         compOrReloFilter = _compilationFilters;
-      }
-
-   bool found = methodSigCanBeFound(methodSig, compOrReloFilter, filter, methodType);
-   if (!found)
-      {
-      if (compOrReloFilter->excludedMethodFilter)
-         {
-         // The -Xjit:ifExcluded(...) option set is used to set alternate compile options for methods
-         // that are excluded from compilation.  This can be useful for debugging timing-sensitive
-         // optimization bugs where dropping optimization levels can make problems go away.
-         //
-         // If there is an excludedMethodFilter set then excluded methods should be compiled
-         // using that option set.
-         //
-         found = true;
-         filter = compOrReloFilter->excludedMethodFilter;
-         }
-      }
-
-   return found;
-   }
-
-bool
-TR_Debug::methodCanBeCompiled(TR_Memory *trMemory, TR_ResolvedMethod *method, TR_FilterBST * & filter)
-   {
-   const char * methodSig = method->signature(trMemory);
-   return methodSigCanBeCompiled(methodSig, filter, method->convertToMethod()->methodType());
-   }
-
-bool
-TR_Debug::methodCanBeRelocated(TR_Memory *trMemory, TR_ResolvedMethod *method, TR_FilterBST * & filter)
-   {
-   const char * methodSig = method->signature(trMemory);
-   return methodSigCanBeRelocated(methodSig, filter);
-   }
-
-int32_t *
-TR_Debug::loadCustomStrategy(char *fileName)
-   {
-   TR_VerboseLog::CriticalSection vlogLock;
-   int32_t *customStrategy = NULL;
-   FILE *optFile = fopen(fileName, "r");
-   if (optFile)
-      {
-      char lineBuffer[1000];
-      int32_t optNumBuffer[1000];
-      int32_t optCount = 0;
-
-      while(fgets(lineBuffer, sizeof(lineBuffer), optFile))
-         {
-         if (optCount >= (sizeof(optNumBuffer)/sizeof(optNumBuffer[0])))
-            {
-            TR_VerboseLog::writeLine(TR_Vlog_INFO, "Reached limit of %d optFile lines; ignoring subsequent lines", optCount);
-            break;
+            if (*string == '.') {
+                classChars = signatureChars;
+                classLen = signatureLen;
+                signatureChars = string + 1;
+                signatureLen = 0;
+                filterType = filter->isExclude() ? TR_FILTER_EXCLUDE_SPECIFIC_METHOD : TR_FILTER_SPECIFIC_METHOD;
             }
 
-         int optIndex;
-         if (!sscanf(lineBuffer, "Performing %d: ", &optIndex))
-            continue;
+            else if (*string == '(') {
+                nameChars = signatureChars;
+                nameLen = signatureLen;
+                signatureChars = string;
+                signatureLen = 1;
+                if (filterType == TR_FILTER_EXCLUDE_NAME_ONLY || filterType == TR_FILTER_NAME_ONLY) {
+                    filterType = filter->isExclude() ? TR_FILTER_EXCLUDE_NAME_AND_SIG : TR_FILTER_NAME_AND_SIG;
+                }
+            } else
+                signatureLen++;
+        }
 
-         char *name = strchr(lineBuffer, ':') + 2; // 2 moves past the colon and the space
-         int32_t nameLen = static_cast<int32_t>(strcspn(name, " \n"));
+        string++;
+    }
 
-         int32_t optNum;
-         for (optNum = 0; optNum < OMR::numOpts; optNum++)
-            {
-            const char *actualName = OMR::Optimizer::getOptimizationName((OMR::Optimizations)optNum);
-            if (!strncmp(name, actualName, nameLen))
-               {
-               int32_t flags = 0;
-               if (strstr(name+nameLen, "mustBeDone"))
-                  flags |= TR::Options::MustBeDone;
-               optNumBuffer[optCount++] = optNum | flags;
-               break;
-               }
+    if (!nameChars) {
+        nameChars = signatureChars;
+        nameLen = signatureLen;
+        signatureChars = NULL;
+        signatureLen = 0;
+    }
+
+    // signal for OMR style signature
+    if (omrPattern) {
+        // need to swap name and signature, since name is currently the line number
+        const char *tempChars = nameChars;
+        int32_t tempLen = nameLen;
+        nameChars = signatureChars;
+        nameLen = signatureLen;
+        signatureChars = tempChars;
+        signatureLen = tempLen;
+        filterType = filter->isExclude() ? TR_FILTER_EXCLUDE_SPECIFIC_METHOD : TR_FILTER_SPECIFIC_METHOD;
+    }
+
+    // Keep copies of the method name, class, and signature, and point
+    // the filter members to them
+    //
+    int32_t length = nameLen + classLen + signatureLen;
+    char *buf = (char *)(TR::Compiler->regionAllocator.allocate(length + 3)); // NULL terminated strings
+
+    filter->setName(buf, nameLen);
+    if (nameChars) {
+        strncpy(buf, nameChars, nameLen);
+        buf += nameLen;
+    }
+    *(buf++) = 0;
+    filter->setClass(buf);
+    if (classChars) {
+        strncpy(buf, classChars, classLen);
+        buf += classLen;
+    }
+    *(buf++) = 0;
+    filter->setSignature(buf);
+    if (signatureChars) {
+        strncpy(buf, signatureChars, signatureLen);
+        buf += signatureLen;
+    }
+    *(buf++) = 0;
+
+    filter->setFilterType(filterType);
+    return length;
+}
+
+bool TR_Debug::methodSigCanBeCompiled(const char *methodSig, TR_FilterBST *&filter, TR::Method::Type methodType)
+{
+    return methodSigCanBeCompiledOrRelocated(methodSig, filter, false, methodType);
+}
+
+bool TR_Debug::methodSigCanBeRelocated(const char *methodSig, TR_FilterBST *&filter)
+{
+    return methodSigCanBeCompiledOrRelocated(methodSig, filter, true, TR::Method::J9);
+}
+
+bool TR_Debug::methodSigCanBeFound(const char *methodSig, TR::CompilationFilters *filters, TR_FilterBST *&filter,
+    TR::Method::Type methodType)
+{
+    const char *methodClass, *methodName, *methodSignature;
+    uint32_t methodClassLen, methodNameLen, methodSignatureLen;
+
+    methodClass = methodSig;
+    if (methodType != TR::Method::J9) {
+        if (methodSig[0] == '/' || methodSig[0] == '.') // omr method pattern
+        {
+            methodClass = methodSig;
+            methodSignature = strchr(methodSig, ':');
+            methodClassLen = static_cast<uint32_t>(methodSignature - methodClass);
+            methodSignature++;
+            methodName = strchr(methodSignature, ':');
+            methodSignatureLen = static_cast<uint32_t>(methodName - methodSignature);
+            methodName++;
+            methodNameLen = static_cast<uint32_t>(strlen(methodName));
+        } else {
+            methodName = methodSig;
+            methodClassLen = 0;
+            methodSignature = "";
+            methodSignatureLen = 0;
+            methodNameLen = static_cast<uint32_t>(strlen(methodName));
+        }
+    } else {
+        if (methodSig[0] == '/') // omr method pattern
+        {
+            methodClass = methodSig;
+            methodSignature = strchr(methodSig, ':');
+            methodClassLen = static_cast<uint32_t>(methodSignature - methodClass);
+            methodSignature++;
+            methodName = strchr(methodSignature, ':');
+            methodSignatureLen = static_cast<uint32_t>(methodName - methodSignature);
+            methodName++;
+            methodNameLen = static_cast<uint32_t>(strlen(methodName));
+        } else {
+            methodName = strchr(methodSig, '.');
+            methodClassLen = static_cast<uint32_t>(methodName - methodClass);
+            methodName++;
+            methodSignature = strchr(methodName, '(');
+            methodSignatureLen = static_cast<uint32_t>(strlen(methodSignature));
+            TR_ASSERT(methodSignature, "unable to pattern match java method signature");
+            methodNameLen = static_cast<uint32_t>(methodSignature - methodName);
+        }
+    }
+
+    int32_t length = methodNameLen + methodSignatureLen;
+
+    if (filters->hasClassNameSigFilter() || filters->hasNameSigFilter()) {
+        if (filters->hasClassNameSigFilter()) {
+            // Search for the class+name+signature.
+            //
+            filter = filters->filterHash[(length + methodClassLen) % FILTER_HASH_SIZE];
+            if (filter)
+                filter = filter->find(methodName, methodNameLen, methodClass, methodClassLen, methodSignature,
+                    methodSignatureLen);
+        }
+
+        if (!filter && filters->hasNameSigFilter()) {
+            // Search for the name+signature.
+            //
+            filter = filters->filterHash[length % FILTER_HASH_SIZE];
+            if (filter)
+                filter = filter->find(methodName, methodNameLen, "", 0, methodSignature, methodSignatureLen);
+        }
+    }
+
+    if (!filter && filters->hasNameFilter()) {
+        // Search the name filter list.
+        //
+        filter = filters->filterNameList;
+        if (filter)
+            filter = filter->find(methodName, methodNameLen);
+    }
+
+    if (!filter && filters->hasRegexFilter()) {
+        // Search the regex filter list.
+        //
+        filter = filters->filterRegexList;
+        if (filter)
+            filter = filter->findRegex(methodSig);
+    }
+
+    bool excluded = filters->defaultExclude() != 0;
+    if (filter) {
+        switch (filter->getFilterType()) {
+            case TR_FILTER_EXCLUDE_NAME_ONLY:
+            case TR_FILTER_EXCLUDE_NAME_AND_SIG:
+            case TR_FILTER_EXCLUDE_SPECIFIC_METHOD:
+            case TR_FILTER_EXCLUDE_REGEX:
+                excluded = true;
+                break;
+            default:
+                excluded = false;
+                break;
+        }
+    }
+
+    return !excluded;
+}
+
+bool TR_Debug::methodCanBeFound(TR_Memory *trMemory, TR_ResolvedMethod *method, TR::CompilationFilters *filters,
+    TR_FilterBST *&filter)
+{
+    const char *methodSig = method->signature(trMemory);
+    return methodSigCanBeFound(methodSig, filters, filter, method->convertToMethod()->methodType());
+}
+
+bool TR_Debug::methodSigCanBeCompiledOrRelocated(const char *methodSig, TR_FilterBST *&filter, bool loadLimit,
+    TR::Method::Type methodType)
+{
+    TR::CompilationFilters *compOrReloFilter = NULL;
+
+    if (loadLimit) {
+        if (!_relocationFilters)
+            return true;
+        else
+            compOrReloFilter = _relocationFilters;
+    } else {
+        if (!_compilationFilters)
+            return true;
+        else
+            compOrReloFilter = _compilationFilters;
+    }
+
+    bool found = methodSigCanBeFound(methodSig, compOrReloFilter, filter, methodType);
+    if (!found) {
+        if (compOrReloFilter->excludedMethodFilter) {
+            // The -Xjit:ifExcluded(...) option set is used to set alternate compile options for methods
+            // that are excluded from compilation.  This can be useful for debugging timing-sensitive
+            // optimization bugs where dropping optimization levels can make problems go away.
+            //
+            // If there is an excludedMethodFilter set then excluded methods should be compiled
+            // using that option set.
+            //
+            found = true;
+            filter = compOrReloFilter->excludedMethodFilter;
+        }
+    }
+
+    return found;
+}
+
+bool TR_Debug::methodCanBeCompiled(TR_Memory *trMemory, TR_ResolvedMethod *method, TR_FilterBST *&filter)
+{
+    const char *methodSig = method->signature(trMemory);
+    return methodSigCanBeCompiled(methodSig, filter, method->convertToMethod()->methodType());
+}
+
+bool TR_Debug::methodCanBeRelocated(TR_Memory *trMemory, TR_ResolvedMethod *method, TR_FilterBST *&filter)
+{
+    const char *methodSig = method->signature(trMemory);
+    return methodSigCanBeRelocated(methodSig, filter);
+}
+
+int32_t *TR_Debug::loadCustomStrategy(char *fileName)
+{
+    TR_VerboseLog::CriticalSection vlogLock;
+    int32_t *customStrategy = NULL;
+    FILE *optFile = fopen(fileName, "r");
+    if (optFile) {
+        char lineBuffer[1000];
+        int32_t optNumBuffer[1000];
+        int32_t optCount = 0;
+
+        while (fgets(lineBuffer, sizeof(lineBuffer), optFile)) {
+            if (optCount >= (sizeof(optNumBuffer) / sizeof(optNumBuffer[0]))) {
+                TR_VerboseLog::writeLine(TR_Vlog_INFO, "Reached limit of %d optFile lines; ignoring subsequent lines",
+                    optCount);
+                break;
             }
-         if (optNum == OMR::numOpts)
-            TR_VerboseLog::writeLine(TR_Vlog_INFO, "Ignoring optFile line; no matching opt name for '%s'", name);
 
-         }
+            int optIndex;
+            if (!sscanf(lineBuffer, "Performing %d: ", &optIndex))
+                continue;
 
-      if (optCount > 0)
-         {
-         int32_t srcSize = optCount * sizeof(optNumBuffer[0]);
-         customStrategy = (int32_t*)(TR::Compiler->regionAllocator.allocate(srcSize + sizeof(optNumBuffer[0]))); // One extra for the endOpts entry
-         memcpy(customStrategy, optNumBuffer, srcSize);
-         customStrategy[optCount] = OMR::endOpts;
-         }
-      else
-         {
-         TR_VerboseLog::writeLine(TR_Vlog_INFO, "Ignoring optFile; contains no suitable opt names");
-         }
-      }
-   else
-      {
-      TR_VerboseLog::writeLine(TR_Vlog_INFO, "optFile not found: '%s'", fileName);
-      }
-   return customStrategy;
-   }
+            char *name = strchr(lineBuffer, ':') + 2; // 2 moves past the colon and the space
+            int32_t nameLen = static_cast<int32_t>(strcspn(name, " \n"));
+
+            int32_t optNum;
+            for (optNum = 0; optNum < OMR::numOpts; optNum++) {
+                const char *actualName = OMR::Optimizer::getOptimizationName((OMR::Optimizations)optNum);
+                if (!strncmp(name, actualName, nameLen)) {
+                    int32_t flags = 0;
+                    if (strstr(name + nameLen, "mustBeDone"))
+                        flags |= TR::Options::MustBeDone;
+                    optNumBuffer[optCount++] = optNum | flags;
+                    break;
+                }
+            }
+            if (optNum == OMR::numOpts)
+                TR_VerboseLog::writeLine(TR_Vlog_INFO, "Ignoring optFile line; no matching opt name for '%s'", name);
+        }
+
+        if (optCount > 0) {
+            int32_t srcSize = optCount * sizeof(optNumBuffer[0]);
+            customStrategy = (int32_t *)(TR::Compiler->regionAllocator.allocate(
+                srcSize + sizeof(optNumBuffer[0]))); // One extra for the endOpts entry
+            memcpy(customStrategy, optNumBuffer, srcSize);
+            customStrategy[optCount] = OMR::endOpts;
+        } else {
+            TR_VerboseLog::writeLine(TR_Vlog_INFO, "Ignoring optFile; contains no suitable opt names");
+        }
+    } else {
+        TR_VerboseLog::writeLine(TR_Vlog_INFO, "optFile not found: '%s'", fileName);
+    }
+    return customStrategy;
+}

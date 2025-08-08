@@ -29,72 +29,73 @@
 #include "optimizer/abstractinterpreter/InliningProposal.hpp"
 
 namespace TR {
-class BenefitInlinerWrapper : public TR::Optimization
-   {
-   public:
-   BenefitInlinerWrapper(TR::OptimizationManager* manager) : TR::Optimization(manager) {}
+class BenefitInlinerWrapper : public TR::Optimization {
+public:
+    BenefitInlinerWrapper(TR::OptimizationManager *manager)
+        : TR::Optimization(manager)
+    {}
 
-   static TR::Optimization* create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) BenefitInlinerWrapper(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) BenefitInlinerWrapper(manager);
+    }
 
-   virtual int32_t perform();
+    virtual int32_t perform();
 
-   virtual const char * optDetailString() const throw()
-      {
-      return "O^O BENEFIT INLINER: ";
-      }
-   };
+    virtual const char *optDetailString() const throw() { return "O^O BENEFIT INLINER: "; }
+};
 
-class BenefitInlinerBase : public TR_InlinerBase
-   {
-   protected:
-   BenefitInlinerBase(TR::Optimizer* optimizer, TR::Optimization* optimization) :
-         TR_InlinerBase(optimizer, optimization),
-         _inliningProposal(NULL),
-         _region(comp()->region()),
-         _budget(getInliningBudget(comp()->getMethodSymbol())),
-         _inliningDependencyTree(NULL),
-         _nextIDTNodeToInlineInto(NULL)
-      {}
+class BenefitInlinerBase : public TR_InlinerBase {
+protected:
+    BenefitInlinerBase(TR::Optimizer *optimizer, TR::Optimization *optimization)
+        : TR_InlinerBase(optimizer, optimization)
+        , _inliningProposal(NULL)
+        , _region(comp()->region())
+        , _budget(getInliningBudget(comp()->getMethodSymbol()))
+        , _inliningDependencyTree(NULL)
+        , _nextIDTNodeToInlineInto(NULL)
+    {}
 
+    virtual bool inlineCallTargets(TR::ResolvedMethodSymbol *symbol, TR_CallStack *callStack,
+        TR_InnerPreexistenceInfo *info);
 
-   virtual bool inlineCallTargets(TR::ResolvedMethodSymbol* symbol, TR_CallStack* callStack, TR_InnerPreexistenceInfo* info);
+    bool inlineIntoIDTNode(TR::ResolvedMethodSymbol *symbol, TR_CallStack *callStack, TR::IDTNode *idtNode);
 
-   bool inlineIntoIDTNode(TR::ResolvedMethodSymbol *symbol, TR_CallStack *callStack, TR::IDTNode *idtNode);
+    virtual bool exceedsSizeThreshold(TR_CallSite *callSite, int bytecodeSize, TR::Block *callNodeBlock,
+        TR_ByteCodeInfo &bcInfo, int32_t numLocals = 0, TR_ResolvedMethod *caller = 0,
+        TR_ResolvedMethod *calleeResolvedMethod = 0, TR::Node *callNode = 0, bool allConsts = false)
+    {
+        return false;
+    }
 
-   virtual bool exceedsSizeThreshold(TR_CallSite *callSite, int bytecodeSize, TR::Block * callNodeBlock, TR_ByteCodeInfo & bcInfo,  int32_t numLocals=0, TR_ResolvedMethod * caller = 0, TR_ResolvedMethod * calleeResolvedMethod = 0, TR::Node * callNode = 0, bool allConsts = false)
-      {return false;}
-   virtual bool analyzeCallSite(TR_CallStack * callStack, TR::TreeTop * callNodeTreeTop, TR::Node * parent, TR::Node * callNode, TR_CallTarget *calltargetToInline);
+    virtual bool analyzeCallSite(TR_CallStack *callStack, TR::TreeTop *callNodeTreeTop, TR::Node *parent,
+        TR::Node *callNode, TR_CallTarget *calltargetToInline);
 
-   TR::Region& region() { return _region; }
+    TR::Region &region() { return _region; }
 
-   TR::InliningProposal* _inliningProposal;
+    TR::InliningProposal *_inliningProposal;
 
-   protected:
-   TR::Region _region;
+protected:
+    TR::Region _region;
 
-   int32_t getInliningBudget(TR::ResolvedMethodSymbol* callerSymbol);
+    int32_t getInliningBudget(TR::ResolvedMethodSymbol *callerSymbol);
 
-   uint32_t _budget;
+    uint32_t _budget;
 
-   TR::IDT* _inliningDependencyTree;
+    TR::IDT *_inliningDependencyTree;
 
-   TR::IDTNode* _nextIDTNodeToInlineInto;
-   };
+    TR::IDTNode *_nextIDTNodeToInlineInto;
+};
 
-class BenefitInliner : public BenefitInlinerBase
-   {
-   public:
-   BenefitInliner(TR::Optimizer* optimizer, TR::Optimization* optimization) :
-         BenefitInlinerBase(optimizer, optimization)
-      {};
+class BenefitInliner : public BenefitInlinerBase {
+public:
+    BenefitInliner(TR::Optimizer *optimizer, TR::Optimization *optimization)
+        : BenefitInlinerBase(optimizer, optimization) {};
 
-   void buildInliningDependencyTree();
-   void inlinerPacking();
-   };
+    void buildInliningDependencyTree();
+    void inlinerPacking();
+};
 
-}
+} // namespace TR
 
 #endif

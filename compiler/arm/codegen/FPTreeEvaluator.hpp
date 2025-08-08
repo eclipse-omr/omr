@@ -24,10 +24,10 @@
 
 // FPCW values
 //
-#define SINGLE_PRECISION_ROUND_TO_ZERO      0x0c7f
-#define DOUBLE_PRECISION_ROUND_TO_ZERO      0x0e7f
-#define SINGLE_PRECISION_ROUND_TO_NEAREST   0x007f
-#define DOUBLE_PRECISION_ROUND_TO_NEAREST   0x027f
+#define SINGLE_PRECISION_ROUND_TO_ZERO 0x0c7f
+#define DOUBLE_PRECISION_ROUND_TO_ZERO 0x0e7f
+#define SINGLE_PRECISION_ROUND_TO_NEAREST 0x007f
+#define DOUBLE_PRECISION_ROUND_TO_NEAREST 0x027f
 
 // Binary representation of double 1.0
 //
@@ -37,7 +37,6 @@
 #define IEEE_DOUBLE_1_0 0x3ff0000000000000LL
 #endif
 
-extern void insertPrecisionAdjustment(TR_Register *reg,
-									  TR::Node     *node);
+extern void insertPrecisionAdjustment(TR_Register *reg, TR::Node *node);
 #endif
 

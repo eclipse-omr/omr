@@ -38,394 +38,319 @@
 #include "p/codegen/PPCTableOfConstants.hpp"
 #include "runtime/Runtime.hpp"
 
-void OMR::ConstantDataSnippet::addConstantRequest(void              *v,
-                                                  TR::DataType       type,
-                                                  TR::Instruction *nibble0,
-                                                  TR::Instruction *nibble1,
-                                                  TR::Instruction *nibble2,
-                                                  TR::Instruction *nibble3,
-                                                  TR::Node *node,
-                                                  bool isUnloadablePicSite)
-   {
-   TR::Compilation *comp = cg()->comp();
-   union {
-      float       fvalue;
-      int32_t     ivalue;
-   } fin, fex;
+void OMR::ConstantDataSnippet::addConstantRequest(void *v, TR::DataType type, TR::Instruction *nibble0,
+    TR::Instruction *nibble1, TR::Instruction *nibble2, TR::Instruction *nibble3, TR::Node *node,
+    bool isUnloadablePicSite)
+{
+    TR::Compilation *comp = cg()->comp();
 
-   union {
-      double      dvalue;
-      int64_t     lvalue;
-   } din, dex;
+    union {
+        float fvalue;
+        int32_t ivalue;
+    } fin, fex;
 
-   intptr_t   ain, aex;
+    union {
+        double dvalue;
+        int64_t lvalue;
+    } din, dex;
 
-   switch(type)
-      {
-      case TR::Float:
-         {
-         ListIterator< PPCConstant<float> >  fiterator(&_floatConstants);
-         PPCConstant<float>                 *fcursor=fiterator.getFirst();
+    intptr_t ain, aex;
 
-         fin.fvalue = *(float *)v;
-         while (fcursor != NULL)
-            {
-            fex.fvalue = fcursor->getConstantValue();
-            if (fin.ivalue == fex.ivalue)
-               break;
-            fcursor = fiterator.getNext();
+    switch (type) {
+        case TR::Float: {
+            ListIterator<PPCConstant<float> > fiterator(&_floatConstants);
+            PPCConstant<float> *fcursor = fiterator.getFirst();
+
+            fin.fvalue = *(float *)v;
+            while (fcursor != NULL) {
+                fex.fvalue = fcursor->getConstantValue();
+                if (fin.ivalue == fex.ivalue)
+                    break;
+                fcursor = fiterator.getNext();
             }
-         if (fcursor == NULL)
-            {
-            fcursor = new (_cg->trHeapMemory()) PPCConstant<float>(_cg, fin.fvalue);
-            _floatConstants.add(fcursor);
+            if (fcursor == NULL) {
+                fcursor = new (_cg->trHeapMemory()) PPCConstant<float>(_cg, fin.fvalue);
+                _floatConstants.add(fcursor);
             }
-         fcursor->addValueRequest(nibble0, nibble1, nibble2, nibble3);
-         }
-         break;
+            fcursor->addValueRequest(nibble0, nibble1, nibble2, nibble3);
+        } break;
 
-      case TR::Double:
-         {
-         ListIterator< PPCConstant<double> > diterator(&_doubleConstants);
-         PPCConstant<double>                *dcursor=diterator.getFirst();
+        case TR::Double: {
+            ListIterator<PPCConstant<double> > diterator(&_doubleConstants);
+            PPCConstant<double> *dcursor = diterator.getFirst();
 
-         din.dvalue = *(double *)v;
-         while (dcursor != NULL)
-            {
-            dex.dvalue = dcursor->getConstantValue();
-            if (din.lvalue == dex.lvalue)
-               break;
-            dcursor = diterator.getNext();
+            din.dvalue = *(double *)v;
+            while (dcursor != NULL) {
+                dex.dvalue = dcursor->getConstantValue();
+                if (din.lvalue == dex.lvalue)
+                    break;
+                dcursor = diterator.getNext();
             }
-         if (dcursor == NULL)
-            {
-            dcursor = new (_cg->trHeapMemory()) PPCConstant<double>(_cg, din.dvalue);
-            _doubleConstants.add(dcursor);
+            if (dcursor == NULL) {
+                dcursor = new (_cg->trHeapMemory()) PPCConstant<double>(_cg, din.dvalue);
+                _doubleConstants.add(dcursor);
             }
-         dcursor->addValueRequest(nibble0, nibble1, nibble2, nibble3);
-         }
-         break;
+            dcursor->addValueRequest(nibble0, nibble1, nibble2, nibble3);
+        } break;
 
-      case TR::Address:
-         {
-         ListIterator< PPCConstant<intptr_t> >  aiterator(&_addressConstants);
-         PPCConstant<intptr_t>                 *acursor=aiterator.getFirst();
+        case TR::Address: {
+            ListIterator<PPCConstant<intptr_t> > aiterator(&_addressConstants);
+            PPCConstant<intptr_t> *acursor = aiterator.getFirst();
 
-         ain = *(intptr_t *)v;
-         while (acursor != NULL)
-            {
-            aex = acursor->getConstantValue();
-            // if pointers require relocation, then not all pointers may be relocated for the same reason
-            //   so be conservative and do not combine them (e.g. HCR versus profiled inlined site enablement)
-            if (ain == aex &&
-                (!cg()->profiledPointersRequireRelocation() || acursor->getNode() == node))
-               break;
-            acursor = aiterator.getNext();
+            ain = *(intptr_t *)v;
+            while (acursor != NULL) {
+                aex = acursor->getConstantValue();
+                // if pointers require relocation, then not all pointers may be relocated for the same reason
+                //   so be conservative and do not combine them (e.g. HCR versus profiled inlined site enablement)
+                if (ain == aex && (!cg()->profiledPointersRequireRelocation() || acursor->getNode() == node))
+                    break;
+                acursor = aiterator.getNext();
             }
-         if (acursor && acursor->isUnloadablePicSite()!=isUnloadablePicSite)
-            {
-            TR_ASSERT(0, "Existing address constant does not have a matching unloadable state.\n" );
-            acursor = NULL; // If asserts are turned off then we should just create a duplicate constant
+            if (acursor && acursor->isUnloadablePicSite() != isUnloadablePicSite) {
+                TR_ASSERT(0, "Existing address constant does not have a matching unloadable state.\n");
+                acursor = NULL; // If asserts are turned off then we should just create a duplicate constant
             }
-         if (acursor == NULL)
-            {
-            acursor = new (_cg->trHeapMemory()) PPCConstant<intptr_t>(_cg, ain, node, isUnloadablePicSite);
-            _addressConstants.add(acursor);
+            if (acursor == NULL) {
+                acursor = new (_cg->trHeapMemory()) PPCConstant<intptr_t>(_cg, ain, node, isUnloadablePicSite);
+                _addressConstants.add(acursor);
             }
             acursor->addValueRequest(nibble0, nibble1, nibble2, nibble3);
-         }
-         break;
+        } break;
 
-      default:
-         TR_ASSERT(0, "Only float and address constants are supported. Data type is %s.\n", type.toString());
-      }
-   }
+        default:
+            TR_ASSERT(0, "Only float and address constants are supported. Data type is %s.\n", type.toString());
+    }
+}
 
+bool OMR::ConstantDataSnippet::getRequestorsFromNibble(TR::Instruction *nibble, TR::Instruction **q, bool remove)
+{
+    ListIterator<PPCConstant<double> > diterator(&_doubleConstants);
+    PPCConstant<double> *dcursor = diterator.getFirst();
+    int32_t count;
 
-bool OMR::ConstantDataSnippet::getRequestorsFromNibble(TR::Instruction* nibble, TR::Instruction **q, bool remove)
-   {
-   ListIterator< PPCConstant<double> >  diterator(&_doubleConstants);
-   PPCConstant<double>                 *dcursor=diterator.getFirst();
-   int32_t count;
+    if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
+        count = 1;
+    else if (cg()->comp()->target().is64Bit())
+        count = 4;
+    else
+        count = 2;
 
-   if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
-      count = 1;
-   else if (cg()->comp()->target().is64Bit())
-      count = 4;
-   else
-      count = 2;
+    q[0] = NULL;
+    q[1] = NULL;
+    q[2] = NULL;
+    q[3] = NULL;
 
-   q[0] = NULL;
-   q[1] = NULL;
-   q[2] = NULL;
-   q[3] = NULL;
+    while (dcursor != NULL) {
+        TR_Array<TR::Instruction *> &requestors = dcursor->getRequestors();
+        for (int32_t i = 0; i < requestors.size(); i += count) {
+            for (int32_t j = 0; j < count; j++) {
+                if (requestors[i + j] == nibble) {
+                    for (int32_t k = 0; k < count; k++)
+                        q[k] = requestors[i + k];
 
-   while (dcursor != NULL)
-      {
-      TR_Array<TR::Instruction *> &requestors = dcursor->getRequestors();
-      for (int32_t i = 0; i < requestors.size(); i+=count)
-         {
-         for (int32_t j = 0; j < count; j++)
-            {
-            if (requestors[i + j] == nibble)
-               {
-               for (int32_t k = 0; k < count; k++)
-                  q[k] = requestors[i + k];
+                    if (remove) {
+                        for (int32_t k = 0; k < count; k++)
+                            requestors.remove(i);
+                    }
 
-               if (remove)
-                  {
-                  for (int32_t k = 0; k < count; k++)
-                     requestors.remove(i);
-                  }
-
-               return true;
-               }
+                    return true;
+                }
             }
-         }
-      dcursor = diterator.getNext();
-      }
-   ListIterator< PPCConstant<float> >  fiterator(&_floatConstants);
-   PPCConstant<float>               *fcursor=fiterator.getFirst();
-   while (fcursor != NULL)
-      {
-      TR_Array<TR::Instruction *> &requestors = fcursor->getRequestors();
-      for (int32_t i = 0; i < requestors.size(); i+=count)
-         {
-         for (int32_t j = 0; j < count; j++)
-            {
-            if (requestors[i + j] == nibble)
-               {
-               for (int32_t k = 0; k < count; k++)
-                  q[k] = requestors[i + k];
+        }
+        dcursor = diterator.getNext();
+    }
+    ListIterator<PPCConstant<float> > fiterator(&_floatConstants);
+    PPCConstant<float> *fcursor = fiterator.getFirst();
+    while (fcursor != NULL) {
+        TR_Array<TR::Instruction *> &requestors = fcursor->getRequestors();
+        for (int32_t i = 0; i < requestors.size(); i += count) {
+            for (int32_t j = 0; j < count; j++) {
+                if (requestors[i + j] == nibble) {
+                    for (int32_t k = 0; k < count; k++)
+                        q[k] = requestors[i + k];
 
-               if (remove)
-                  {
-                  for (int32_t k = 0; k < count; k++)
-                     requestors.remove(i);
-                  }
+                    if (remove) {
+                        for (int32_t k = 0; k < count; k++)
+                            requestors.remove(i);
+                    }
 
-               return true;
-               }
+                    return true;
+                }
             }
-         }
-      fcursor = fiterator.getNext();
-      }
-   ListIterator< PPCConstant<intptr_t> >  aiterator(&_addressConstants);
-   PPCConstant<intptr_t>               *acursor=aiterator.getFirst();
-   while (acursor != NULL)
-      {
-      TR_Array<TR::Instruction *> &requestors = acursor->getRequestors();
-      for (int32_t i = 0; i < requestors.size(); i+=count)
-         {
-         for (int32_t j = 0; j < count; j++)
-            {
-            if (requestors[i + j] == nibble)
-               {
-               for (int32_t k = 0; k < count; k++)
-                  q[k] = requestors[i + k];
+        }
+        fcursor = fiterator.getNext();
+    }
+    ListIterator<PPCConstant<intptr_t> > aiterator(&_addressConstants);
+    PPCConstant<intptr_t> *acursor = aiterator.getFirst();
+    while (acursor != NULL) {
+        TR_Array<TR::Instruction *> &requestors = acursor->getRequestors();
+        for (int32_t i = 0; i < requestors.size(); i += count) {
+            for (int32_t j = 0; j < count; j++) {
+                if (requestors[i + j] == nibble) {
+                    for (int32_t k = 0; k < count; k++)
+                        q[k] = requestors[i + k];
 
-               if (remove)
-                  {
-                  for (int32_t k = 0; k < count; k++)
-                     requestors.remove(i);
-                  }
+                    if (remove) {
+                        for (int32_t k = 0; k < count; k++)
+                            requestors.remove(i);
+                    }
 
-               return true;
-               }
+                    return true;
+                }
             }
-         }
-      acursor = aiterator.getNext();
-      }
-   return false;
-   }
+        }
+        acursor = aiterator.getNext();
+    }
+    return false;
+}
 
-void
-OMR::ConstantDataSnippet::emitAddressConstant(PPCConstant<intptr_t> *acursor, uint8_t *codeCursor)
-   {
-   if (cg()->profiledPointersRequireRelocation())
-      {
-      TR::Node *node = acursor->getNode();
-      if (node != NULL && node->getOpCodeValue() == TR::aconst)
-         {
-         if (cg()->comp()->getOption(TR_UseSymbolValidationManager))
-            {
-            TR::SymbolType type;
+void OMR::ConstantDataSnippet::emitAddressConstant(PPCConstant<intptr_t> *acursor, uint8_t *codeCursor)
+{
+    if (cg()->profiledPointersRequireRelocation()) {
+        TR::Node *node = acursor->getNode();
+        if (node != NULL && node->getOpCodeValue() == TR::aconst) {
+            if (cg()->comp()->getOption(TR_UseSymbolValidationManager)) {
+                TR::SymbolType type;
 
-            if (node->isClassPointerConstant())
-               type = TR::SymbolType::typeClass;
-            else if (node->isMethodPointerConstant())
-               type = TR::SymbolType::typeMethod;
-            else
-               TR_ASSERT_FATAL(false, "Unable to relocate node %p", node);
+                if (node->isClassPointerConstant())
+                    type = TR::SymbolType::typeClass;
+                else if (node->isMethodPointerConstant())
+                    type = TR::SymbolType::typeMethod;
+                else
+                    TR_ASSERT_FATAL(false, "Unable to relocate node %p", node);
 
-            cg()->addExternalRelocation(
-               TR::ExternalRelocation::create(
-                  codeCursor,
-                  (uint8_t *)node->getAddress(),
-                  (uint8_t*)type,
-                  TR_SymbolFromManager,
-                  cg()),
-               __FILE__,
-               __LINE__,
-               node);
+                cg()->addExternalRelocation(TR::ExternalRelocation::create(codeCursor, (uint8_t *)node->getAddress(),
+                                                (uint8_t *)type, TR_SymbolFromManager, cg()),
+                    __FILE__, __LINE__, node);
+            } else {
+                TR_ExternalRelocationTargetKind kind = TR_NoRelocation;
+                if (node->isClassPointerConstant())
+                    kind = TR_ClassPointer;
+                else if (node->isMethodPointerConstant())
+                    kind = (node->getInlinedSiteIndex() == -1) ? TR_RamMethod : TR_MethodPointer;
+
+                if (kind != TR_NoRelocation) {
+                    cg()->addExternalRelocation(TR::ExternalRelocation::create(codeCursor, (uint8_t *)node, kind, cg()),
+                        __FILE__, __LINE__, node);
+                }
             }
-         else
-            {
-            TR_ExternalRelocationTargetKind kind=TR_NoRelocation;
-            if (node->isClassPointerConstant())
-               kind = TR_ClassPointer;
-            else if (node->isMethodPointerConstant())
-               kind = (node->getInlinedSiteIndex() == -1) ? TR_RamMethod : TR_MethodPointer;
+        }
+    } else {
+        cg()->jitAddPicToPatchOnClassRedefinition((void *)acursor->getConstantValue(), (void *)codeCursor);
 
-            if (kind != TR_NoRelocation)
-               {
-               cg()->addExternalRelocation(
-                  TR::ExternalRelocation::create(
-                     codeCursor,
-                     (uint8_t *)node,
-                     kind,
-                     cg()),
-                  __FILE__,
-                  __LINE__,
-                  node);
-               }
-            }
-         }
-      }
-   else
-      {
-      cg()->jitAddPicToPatchOnClassRedefinition((void *)acursor->getConstantValue(), (void *)codeCursor);
+        if (acursor->isUnloadablePicSite()) {
+            // Register an unload assumption on the lower 32bit of the class constant.
+            // The patching code thinks it's low bit tagging an instruction not a class pointer!!
+            int PICOffset = 0; // For LE or BE 32-bit
+            if (cg()->comp()->target().cpu.isBigEndian() && cg()->comp()->target().is64Bit())
+                PICOffset = 4;
+            cg()->jitAddPicToPatchOnClassUnload((void *)acursor->getConstantValue(), (void *)(codeCursor + PICOffset));
+        }
+    }
 
-      if (acursor->isUnloadablePicSite())
-         {
-         // Register an unload assumption on the lower 32bit of the class constant.
-         // The patching code thinks it's low bit tagging an instruction not a class pointer!!
-         int PICOffset = 0; // For LE or BE 32-bit
-         if (cg()->comp()->target().cpu.isBigEndian() && cg()->comp()->target().is64Bit())
-            PICOffset = 4;
-         cg()->
-         jitAddPicToPatchOnClassUnload((void *)acursor->getConstantValue(), (void *)(codeCursor+PICOffset));
-         }
-      }
-
-   acursor->patchRequestors(cg(), reinterpret_cast<intptr_t>(codeCursor));
-   }
-
+    acursor->patchRequestors(cg(), reinterpret_cast<intptr_t>(codeCursor));
+}
 
 uint8_t *OMR::ConstantDataSnippet::emitSnippetBody()
-   {
-   uint8_t *codeCursor = cg()->getBinaryBufferCursor();
+{
+    uint8_t *codeCursor = cg()->getBinaryBufferCursor();
 
-   setSnippetBinaryStart(codeCursor);
+    setSnippetBinaryStart(codeCursor);
 
-   // Align cursor to 8 bytes alignment
-   codeCursor = (uint8_t *)((intptr_t)(codeCursor+7) & ~7);
+    // Align cursor to 8 bytes alignment
+    codeCursor = (uint8_t *)((intptr_t)(codeCursor + 7) & ~7);
 
-   // Emit order is double, address, float. In this order we can ensure the 8 bytes alignment of double and address.
+    // Emit order is double, address, float. In this order we can ensure the 8 bytes alignment of double and address.
 
-   ListIterator<PPCConstant<double>> diterator(&_doubleConstants);
-   PPCConstant<double> *dcursor=diterator.getFirst();
-   while (dcursor != NULL)
-      {
-      if (dcursor->getRequestors().size() > 0)
-         {
-         *(double *)codeCursor = dcursor->getConstantValue();
-         dcursor->patchRequestors(cg(), reinterpret_cast<intptr_t>(codeCursor));
-         codeCursor += 8;
-         }
+    ListIterator<PPCConstant<double> > diterator(&_doubleConstants);
+    PPCConstant<double> *dcursor = diterator.getFirst();
+    while (dcursor != NULL) {
+        if (dcursor->getRequestors().size() > 0) {
+            *(double *)codeCursor = dcursor->getConstantValue();
+            dcursor->patchRequestors(cg(), reinterpret_cast<intptr_t>(codeCursor));
+            codeCursor += 8;
+        }
 
-      dcursor = diterator.getNext();
-      }
+        dcursor = diterator.getNext();
+    }
 
-   ListIterator<PPCConstant<intptr_t>> aiterator(&_addressConstants);
-   PPCConstant<intptr_t> *acursor=aiterator.getFirst();
-   while (acursor != NULL)
-      {
-      if (acursor->getRequestors().size() > 0)
-         {
-         *(intptr_t *)codeCursor = acursor->getConstantValue();
-         emitAddressConstant(acursor, codeCursor);
-         codeCursor += sizeof(intptr_t);
-         }
+    ListIterator<PPCConstant<intptr_t> > aiterator(&_addressConstants);
+    PPCConstant<intptr_t> *acursor = aiterator.getFirst();
+    while (acursor != NULL) {
+        if (acursor->getRequestors().size() > 0) {
+            *(intptr_t *)codeCursor = acursor->getConstantValue();
+            emitAddressConstant(acursor, codeCursor);
+            codeCursor += sizeof(intptr_t);
+        }
 
-      acursor = aiterator.getNext();
-      }
+        acursor = aiterator.getNext();
+    }
 
-   ListIterator<PPCConstant<float>> fiterator(&_floatConstants);
-   PPCConstant<float> *fcursor=fiterator.getFirst();
-   while (fcursor != NULL)
-      {
-      if (fcursor->getRequestors().size() > 0)
-         {
-         *(float *)codeCursor = fcursor->getConstantValue();
-         fcursor->patchRequestors(cg(), reinterpret_cast<intptr_t>(codeCursor));
-         codeCursor += 4;
-         }
+    ListIterator<PPCConstant<float> > fiterator(&_floatConstants);
+    PPCConstant<float> *fcursor = fiterator.getFirst();
+    while (fcursor != NULL) {
+        if (fcursor->getRequestors().size() > 0) {
+            *(float *)codeCursor = fcursor->getConstantValue();
+            fcursor->patchRequestors(cg(), reinterpret_cast<intptr_t>(codeCursor));
+            codeCursor += 4;
+        }
 
-      fcursor = fiterator.getNext();
-      }
+        fcursor = fiterator.getNext();
+    }
 
-   return codeCursor;
-   }
-
-
+    return codeCursor;
+}
 
 uint32_t OMR::ConstantDataSnippet::getLength()
-   {
-      return _doubleConstants.getSize()*8 + _floatConstants.getSize()*4 + _addressConstants.getSize()*sizeof(intptr_t) + 4;
-   }
-
+{
+    return _doubleConstants.getSize() * 8 + _floatConstants.getSize() * 4
+        + _addressConstants.getSize() * sizeof(intptr_t) + 4;
+}
 
 #if DEBUG
 void OMR::ConstantDataSnippet::print(TR::FILE *outFile)
-   {
-   if (outFile == NULL)
-      return;
+{
+    if (outFile == NULL)
+        return;
 
-   TR_FrontEnd *fe = cg()->comp()->fe();
+    TR_FrontEnd *fe = cg()->comp()->fe();
 
-   uint8_t   *codeCursor = getSnippetBinaryStart();
-   uint8_t   *codeStart  = cg()->getBinaryBufferStart();
+    uint8_t *codeCursor = getSnippetBinaryStart();
+    uint8_t *codeStart = cg()->getBinaryBufferStart();
 
-   trfprintf(outFile, "\n%08x\t\t\t\t\t; Constant Data", codeCursor-codeStart);
+    trfprintf(outFile, "\n%08x\t\t\t\t\t; Constant Data", codeCursor - codeStart);
 
-   ListIterator< PPCConstant<double> >  diterator(&_doubleConstants);
-   PPCConstant<double>                 *dcursor=diterator.getFirst();
-   while (dcursor != NULL)
-      {
-      if (cg()->comp()->target().is32Bit() || dcursor->getRequestors().size()>0)
-         {
-         trfprintf(outFile, "\n%08x %08x %08x\t\t; %16f Double", codeCursor-codeStart,
-                 *(int32_t *)codeCursor, *(int32_t *)(codeCursor+4), dcursor->getConstantValue());
-         codeCursor += 8;
-         }
-      dcursor = diterator.getNext();
-      }
+    ListIterator<PPCConstant<double> > diterator(&_doubleConstants);
+    PPCConstant<double> *dcursor = diterator.getFirst();
+    while (dcursor != NULL) {
+        if (cg()->comp()->target().is32Bit() || dcursor->getRequestors().size() > 0) {
+            trfprintf(outFile, "\n%08x %08x %08x\t\t; %16f Double", codeCursor - codeStart, *(int32_t *)codeCursor,
+                *(int32_t *)(codeCursor + 4), dcursor->getConstantValue());
+            codeCursor += 8;
+        }
+        dcursor = diterator.getNext();
+    }
 
-   ListIterator< PPCConstant<float> >  fiterator(&_floatConstants);
-   PPCConstant<float>                 *fcursor=fiterator.getFirst();
-   while (fcursor != NULL)
-      {
-      if (cg()->comp()->target().is32Bit() || fcursor->getRequestors().size()>0)
-         {
-         trfprintf(outFile, "\n%08x %08x\t\t; %16f Float", codeCursor-codeStart,
-                 *(int32_t *)codeCursor, fcursor->getConstantValue());
-         codeCursor += 4;
-         }
-      fcursor = fiterator.getNext();
-      }
+    ListIterator<PPCConstant<float> > fiterator(&_floatConstants);
+    PPCConstant<float> *fcursor = fiterator.getFirst();
+    while (fcursor != NULL) {
+        if (cg()->comp()->target().is32Bit() || fcursor->getRequestors().size() > 0) {
+            trfprintf(outFile, "\n%08x %08x\t\t; %16f Float", codeCursor - codeStart, *(int32_t *)codeCursor,
+                fcursor->getConstantValue());
+            codeCursor += 4;
+        }
+        fcursor = fiterator.getNext();
+    }
 
-   ListIterator< PPCConstant<intptr_t> >  aiterator(&_addressConstants);
-   PPCConstant<intptr_t>                 *acursor=aiterator.getFirst();
-   while (acursor != NULL)
-      {
-      if (acursor->getRequestors().size()>0)
-         {
-         trfprintf(outFile, "\n%08x %08x\t\t; %p Address", codeCursor-codeStart,
-                 *(int32_t *)codeCursor, acursor->getConstantValue());
-         codeCursor += 4;
-         }
-      acursor = aiterator.getNext();
-      }
-   }
+    ListIterator<PPCConstant<intptr_t> > aiterator(&_addressConstants);
+    PPCConstant<intptr_t> *acursor = aiterator.getFirst();
+    while (acursor != NULL) {
+        if (acursor->getRequestors().size() > 0) {
+            trfprintf(outFile, "\n%08x %08x\t\t; %p Address", codeCursor - codeStart, *(int32_t *)codeCursor,
+                acursor->getConstantValue());
+            codeCursor += 4;
+        }
+        acursor = aiterator.getNext();
+    }
+}
 #endif

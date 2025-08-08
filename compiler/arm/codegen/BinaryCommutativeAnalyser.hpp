@@ -35,58 +35,62 @@ namespace TR {
 class CodeGenerator;
 }
 
-#define EvalChild1  0x01
-#define EvalChild2  0x02
-#define CopyReg1    0x04
-#define CopyReg2    0x08
-#define OpReg1Reg2  0x10
-#define OpReg2Reg1  0x20
-#define OpReg1Mem2  0x40
-#define OpReg2Mem1  0x80
+#define EvalChild1 0x01
+#define EvalChild2 0x02
+#define CopyReg1 0x04
+#define CopyReg2 0x08
+#define OpReg1Reg2 0x10
+#define OpReg2Reg1 0x20
+#define OpReg1Mem2 0x40
+#define OpReg2Mem1 0x80
 
-class TR_ARMBinaryCommutativeAnalyser : public TR_Analyser
-   {
-   static const uint8_t actionMap[NUM_ACTIONS];
-   TR::CodeGenerator *_cg;
-   bool reversedOperands;
+class TR_ARMBinaryCommutativeAnalyser : public TR_Analyser {
+    static const uint8_t actionMap[NUM_ACTIONS];
+    TR::CodeGenerator *_cg;
+    bool reversedOperands;
 
-   public:
+public:
+    TR_ARMBinaryCommutativeAnalyser(TR::CodeGenerator *cg)
+        : _cg(cg)
+        , reversedOperands(false)
+    {}
 
-   TR_ARMBinaryCommutativeAnalyser(TR::CodeGenerator *cg) : _cg(cg), reversedOperands(false) {}
+    void genericAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode, TR::InstOpCode::Mnemonic copyOpCode,
+        bool nonClobberingDestination = false);
 
-   void genericAnalyser(TR::Node       *root,
-                        TR::InstOpCode::Mnemonic regToRegOpCode,
-                        TR::InstOpCode::Mnemonic copyOpCode,
-                        bool           nonClobberingDestination = false);
+    void genericLongAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic lowRegToRegOpCode,
+        TR::InstOpCode::Mnemonic highRegToRegOpCode, TR::InstOpCode::Mnemonic lowMemToRegOpCode,
+        TR::InstOpCode::Mnemonic highMemToRegOpCode, TR::InstOpCode::Mnemonic copyOpCode);
 
-   void genericLongAnalyser(TR::Node       *root,
-                            TR::InstOpCode::Mnemonic lowRegToRegOpCode,
-                            TR::InstOpCode::Mnemonic highRegToRegOpCode,
-                            TR::InstOpCode::Mnemonic lowMemToRegOpCode,
-                            TR::InstOpCode::Mnemonic highMemToRegOpCode,
-                            TR::InstOpCode::Mnemonic copyOpCode);
+    void integerAddAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode);
 
-   void integerAddAnalyser(TR::Node       *root,
-                           TR::InstOpCode::Mnemonic regToRegOpCode);
+    void longAddAnalyser(TR::Node *root);
 
-   void longAddAnalyser(TR::Node *root);
+    bool getReversedOperands() { return reversedOperands; }
 
-   bool getReversedOperands()       {return reversedOperands;}
-   bool setReversedOperands(bool b) {return (reversedOperands = b);}
-   bool notReversedOperands()       {return (reversedOperands = ((reversedOperands == false) ? true : false));}
+    bool setReversedOperands(bool b) { return (reversedOperands = b); }
 
-   bool getEvalChild1() {return (actionMap[getInputs()] & EvalChild1) ? true : false;}
-   bool getEvalChild2() {return (actionMap[getInputs()] & EvalChild2) ? true : false;}
-   bool getCopyReg1()   {return (actionMap[getInputs()] & CopyReg1)   ? true : false;}
-   bool getCopyReg2()   {return (actionMap[getInputs()] & CopyReg2)   ? true : false;}
-   bool getOpReg1Reg2() {return (actionMap[getInputs()] & OpReg1Reg2) ? true : false;}
-   bool getOpReg2Reg1() {return (actionMap[getInputs()] & OpReg2Reg1) ? true : false;}
-   bool getOpReg1Mem2() {return (actionMap[getInputs()] & OpReg1Mem2) ? true : false;}
-   bool getOpReg2Mem1() {return (actionMap[getInputs()] & OpReg2Mem1) ? true : false;}
-   bool getCopyRegs()   {return (actionMap[getInputs()] & (CopyReg1 | CopyReg2)) ? true : false;}
+    bool notReversedOperands() { return (reversedOperands = ((reversedOperands == false) ? true : false)); }
 
-   TR::CodeGenerator *cg() {return _cg;}
+    bool getEvalChild1() { return (actionMap[getInputs()] & EvalChild1) ? true : false; }
 
-   };
+    bool getEvalChild2() { return (actionMap[getInputs()] & EvalChild2) ? true : false; }
+
+    bool getCopyReg1() { return (actionMap[getInputs()] & CopyReg1) ? true : false; }
+
+    bool getCopyReg2() { return (actionMap[getInputs()] & CopyReg2) ? true : false; }
+
+    bool getOpReg1Reg2() { return (actionMap[getInputs()] & OpReg1Reg2) ? true : false; }
+
+    bool getOpReg2Reg1() { return (actionMap[getInputs()] & OpReg2Reg1) ? true : false; }
+
+    bool getOpReg1Mem2() { return (actionMap[getInputs()] & OpReg1Mem2) ? true : false; }
+
+    bool getOpReg2Mem1() { return (actionMap[getInputs()] & OpReg2Mem1) ? true : false; }
+
+    bool getCopyRegs() { return (actionMap[getInputs()] & (CopyReg1 | CopyReg2)) ? true : false; }
+
+    TR::CodeGenerator *cg() { return _cg; }
+};
 
 #endif

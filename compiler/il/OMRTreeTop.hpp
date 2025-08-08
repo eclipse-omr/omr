@@ -27,10 +27,11 @@
  */
 #ifndef OMR_TREETOP_CONNECTOR
 #define OMR_TREETOP_CONNECTOR
+
 namespace OMR {
 class TreeTop;
 typedef OMR::TreeTop TreeTopConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -44,80 +45,80 @@ class Instruction;
 class Node;
 class SymbolReference;
 class TreeTop;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE TreeTop
-   {
-
+class OMR_EXTENSIBLE TreeTop {
 public:
-   TR_ALLOC_WITHOUT_NEW(TR_Memory::TreeTop)
+    TR_ALLOC_WITHOUT_NEW(TR_Memory::TreeTop)
 
-   /// Downcast to concrete type
-   TR::TreeTop * self();
+    /// Downcast to concrete type
+    TR::TreeTop *self();
 
-   static TR::TreeTop *create(TR::Compilation *comp);
-   static TR::TreeTop *create(TR::Compilation *comp, TR::Node *node, TR::TreeTop *next = NULL, TR::TreeTop *prev = NULL);
-   static TR::TreeTop *create(TR::Compilation *comp, TR::TreeTop *precedingTreeTop, TR::Node *node);
+    static TR::TreeTop *create(TR::Compilation *comp);
+    static TR::TreeTop *create(TR::Compilation *comp, TR::Node *node, TR::TreeTop *next = NULL,
+        TR::TreeTop *prev = NULL);
+    static TR::TreeTop *create(TR::Compilation *comp, TR::TreeTop *precedingTreeTop, TR::Node *node);
 
-   static TR::TreeTop *createIncTree  (TR::Compilation * comp, TR::Node *, TR::SymbolReference *, int32_t incAmount, TR::TreeTop *precedingTreeTop = NULL, bool isRecompCounter = false);
-   static TR::TreeTop *createResetTree(TR::Compilation * comp, TR::Node *, TR::SymbolReference *, int32_t resetAmount, TR::TreeTop *precedingTreeTop = NULL, bool isRecompCounter = false);
+    static TR::TreeTop *createIncTree(TR::Compilation *comp, TR::Node *, TR::SymbolReference *, int32_t incAmount,
+        TR::TreeTop *precedingTreeTop = NULL, bool isRecompCounter = false);
+    static TR::TreeTop *createResetTree(TR::Compilation *comp, TR::Node *, TR::SymbolReference *, int32_t resetAmount,
+        TR::TreeTop *precedingTreeTop = NULL, bool isRecompCounter = false);
 
-   TR::TreeTop *duplicateTree();
+    TR::TreeTop *duplicateTree();
 
-   static void insertTreeTops(TR::Compilation *comp, TR::TreeTop* beforeInsertionPoint, TR::TreeTop *firstTree, TR::TreeTop *lastTree);
-   void insertTreeTopsAfterMe(TR::TreeTop *firstTree, TR::TreeTop *lastTree = NULL);
-   void insertTreeTopsBeforeMe(TR::TreeTop *firstTree, TR::TreeTop *lastTree = NULL);
-   static void removeDeadTrees(TR::Compilation * comp, TR::TreeTop* list[]);
-   static void removeDeadTrees(TR::Compilation * comp, TR::TreeTop* first, TR::TreeTop* last);
+    static void insertTreeTops(TR::Compilation *comp, TR::TreeTop *beforeInsertionPoint, TR::TreeTop *firstTree,
+        TR::TreeTop *lastTree);
+    void insertTreeTopsAfterMe(TR::TreeTop *firstTree, TR::TreeTop *lastTree = NULL);
+    void insertTreeTopsBeforeMe(TR::TreeTop *firstTree, TR::TreeTop *lastTree = NULL);
+    static void removeDeadTrees(TR::Compilation *comp, TR::TreeTop *list[]);
+    static void removeDeadTrees(TR::Compilation *comp, TR::TreeTop *first, TR::TreeTop *last);
 
-   void * operator new(size_t s, bool trace, TR_Memory *m);
-   void operator delete(void *ptr, bool trace, TR_Memory *m);
+    void *operator new(size_t s, bool trace, TR_Memory *m);
+    void operator delete(void *ptr, bool trace, TR_Memory *m);
 
-   explicit TreeTop(
-            TR::Node  *node = NULL,
-            TR::TreeTop *next = NULL,
-            TR::TreeTop *prev = NULL) :
-   _pNext(next), _pPrev(prev), _pNode(node) {} ;
+    explicit TreeTop(TR::Node *node = NULL, TR::TreeTop *next = NULL, TR::TreeTop *prev = NULL)
+        : _pNext(next)
+        , _pPrev(prev)
+        , _pNode(node) {};
 
-   TreeTop(TR::TreeTop *precedingTreeTop, TR::Node *node, TR::Compilation *c);
+    TreeTop(TR::TreeTop *precedingTreeTop, TR::Node *node, TR::Compilation *c);
 
-   TR::TreeTop *getNextTreeTop();
-   TR::TreeTop *setNextTreeTop(TR::TreeTop *p);
-   TR::TreeTop *getPrevTreeTop();
-   TR::TreeTop *setPrevTreeTop(TR::TreeTop *p);
-   TR::Node    *getNode();
-   TR::Node    *setNode(TR::Node *p);
+    TR::TreeTop *getNextTreeTop();
+    TR::TreeTop *setNextTreeTop(TR::TreeTop *p);
+    TR::TreeTop *getPrevTreeTop();
+    TR::TreeTop *setPrevTreeTop(TR::TreeTop *p);
+    TR::Node *getNode();
+    TR::Node *setNode(TR::Node *p);
 
-   void join(TR::TreeTop * p);
-   TR::TreeTop* insertAfter(TR::TreeTop *tt);  // tt is inserted after this
-   TR::TreeTop* insertBefore(TR::TreeTop *tt); // tt is inserted before this
-   void unlink(bool decRefCountRecursively);   // unlink and single out "this" tree; only one tree is unlinked
+    void join(TR::TreeTop *p);
+    TR::TreeTop *insertAfter(TR::TreeTop *tt); // tt is inserted after this
+    TR::TreeTop *insertBefore(TR::TreeTop *tt); // tt is inserted before this
+    void unlink(bool decRefCountRecursively); // unlink and single out "this" tree; only one tree is unlinked
 
-   bool isPossibleDef();
+    bool isPossibleDef();
 
-   void insertNewTreeTop(TR::TreeTop *beforeNewTreeTop, TR::TreeTop * afterNewTreeTop);
+    void insertNewTreeTop(TR::TreeTop *beforeNewTreeTop, TR::TreeTop *afterNewTreeTop);
 
-   TR::TreeTop *getExtendedBlockExitTreeTop();
-   TR::Block   *getEnclosingBlock(bool forward=false);
-   TR::TreeTop *getNextRealTreeTop();
-   TR::TreeTop *getPrevRealTreeTop();
+    TR::TreeTop *getExtendedBlockExitTreeTop();
+    TR::Block *getEnclosingBlock(bool forward = false);
+    TR::TreeTop *getNextRealTreeTop();
+    TR::TreeTop *getPrevRealTreeTop();
 
-   bool isLegalToChangeBranchDestination(TR::Compilation *);
-   bool adjustBranchOrSwitchTreeTop(TR::Compilation *, TR::TreeTop *, TR::TreeTop *);
+    bool isLegalToChangeBranchDestination(TR::Compilation *);
+    bool adjustBranchOrSwitchTreeTop(TR::Compilation *, TR::TreeTop *, TR::TreeTop *);
 
-   TR::Instruction *getLastInstruction() {return *(TR::Instruction **)((char *)self() - sizeof(void *)); }
-   void setLastInstruction(TR::Instruction *i){ *(TR::Instruction **)((char *)self() - sizeof(void *)) = i;}
+    TR::Instruction *getLastInstruction() { return *(TR::Instruction **)((char *)self() - sizeof(void *)); }
+
+    void setLastInstruction(TR::Instruction *i) { *(TR::Instruction **)((char *)self() - sizeof(void *)) = i; }
 
 protected:
-   TR::TreeTop * _pNext;
-   TR::TreeTop * _pPrev;
-   TR::Node    * _pNode;
+    TR::TreeTop *_pNext;
+    TR::TreeTop *_pPrev;
+    TR::Node *_pNode;
+};
 
-   };
-
-}
+} // namespace OMR
 
 #endif

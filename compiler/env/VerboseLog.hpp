@@ -31,106 +31,102 @@
  * When adding a tag, update the table in VerboseLog.cpp
  * Tags should be of the format '\n#TAGNAME:  '
  */
-enum TR_VlogTag
-   {
-   TR_Vlog_null=0,
+enum TR_VlogTag {
+    TR_Vlog_null = 0,
 
-   TR_Vlog_INFO,
-   TR_Vlog_SAMPLING,
-   TR_Vlog_IPROFILER,
-   TR_Vlog_CODECACHE,
-   TR_Vlog_JITSTATE,
-   TR_Vlog_PERF,
-   TR_Vlog_MEMORY,
-   TR_Vlog_FAILURE,
-   TR_Vlog_JITDUMP,
-   TR_Vlog_SCHINTS,
-   TR_Vlog_GCCYCLE,
-   TR_Vlog_J2I,
-   TR_Vlog_CR,       //(compilation request)
-   TR_Vlog_RA,       //(runtime assumption)
-   TR_Vlog_HK,       //(hook)
-   TR_Vlog_HD,       //(hook details)
-   TR_Vlog_MH,       //(method handle)
-   TR_Vlog_MHD,      //(method handle details)
-   TR_Vlog_DLT,
-   TR_Vlog_COMP,
-   TR_Vlog_COMPSTART,
-   TR_Vlog_COMPFAIL,
-   TR_Vlog_PRECOMP,
-   TR_Vlog_MMAP,
-   TR_Vlog_OSR,      //(on-stack replacement)
-   TR_Vlog_OSRD,     //(on-stack replacement details)
-   TR_Vlog_HWPROFILER,
-   TR_Vlog_INL,      //(inlining)
-   TR_Vlog_GC,
-   TR_Vlog_GPU,
-   TR_Vlog_PATCH,
-   TR_Vlog_DISPATCH,
-   TR_Vlog_RECLAMATION,
-   TR_Vlog_PROFILING,
-   TR_Vlog_JITServer,
-   TR_Vlog_AOTCOMPRESSION,
-   TR_Vlog_BI,       //(benefit inliner)
-   TR_Vlog_FSD,
-   TR_Vlog_VECTOR_API,
-   TR_Vlog_CHECKPOINT_RESTORE,
-   TR_Vlog_METHOD_STATS,
-   TR_Vlog_numTags
-   };
+    TR_Vlog_INFO,
+    TR_Vlog_SAMPLING,
+    TR_Vlog_IPROFILER,
+    TR_Vlog_CODECACHE,
+    TR_Vlog_JITSTATE,
+    TR_Vlog_PERF,
+    TR_Vlog_MEMORY,
+    TR_Vlog_FAILURE,
+    TR_Vlog_JITDUMP,
+    TR_Vlog_SCHINTS,
+    TR_Vlog_GCCYCLE,
+    TR_Vlog_J2I,
+    TR_Vlog_CR, //(compilation request)
+    TR_Vlog_RA, //(runtime assumption)
+    TR_Vlog_HK, //(hook)
+    TR_Vlog_HD, //(hook details)
+    TR_Vlog_MH, //(method handle)
+    TR_Vlog_MHD, //(method handle details)
+    TR_Vlog_DLT,
+    TR_Vlog_COMP,
+    TR_Vlog_COMPSTART,
+    TR_Vlog_COMPFAIL,
+    TR_Vlog_PRECOMP,
+    TR_Vlog_MMAP,
+    TR_Vlog_OSR, //(on-stack replacement)
+    TR_Vlog_OSRD, //(on-stack replacement details)
+    TR_Vlog_HWPROFILER,
+    TR_Vlog_INL, //(inlining)
+    TR_Vlog_GC,
+    TR_Vlog_GPU,
+    TR_Vlog_PATCH,
+    TR_Vlog_DISPATCH,
+    TR_Vlog_RECLAMATION,
+    TR_Vlog_PROFILING,
+    TR_Vlog_JITServer,
+    TR_Vlog_AOTCOMPRESSION,
+    TR_Vlog_BI, //(benefit inliner)
+    TR_Vlog_FSD,
+    TR_Vlog_VECTOR_API,
+    TR_Vlog_CHECKPOINT_RESTORE,
+    TR_Vlog_METHOD_STATS,
+    TR_Vlog_numTags
+};
 
 /*
  * TR_VerboseLog stores the config of the jit early on, and can use it for printing to the verbose log
  * Each verbose write should have a Tag (see TR_VlogTag for list of options).  The tag is of the form: '\n#TAG:  '
  */
-class TR_VerboseLog
-   {
-   public:
-   // writeLine and write provide multi line write capabilities, and are to be
-   // used with CriticalSection or vlogAcquire() and vlogRelease() to ensure
-   // nicely formatted verbose logs
-   static void write(const char *format, ...);
-   static void write(TR_VlogTag tag, const char *format, ...);
-   static void writeLine(TR_VlogTag tag, const char *format, ...);
-   static void writeLine(const char *format, ...);
-   //writeLineLocked is a single line print function, it provides the locks for you
-   static void writeLineLocked(TR_VlogTag tag, const char *format, ...);
-   static void vlogAcquire(); //defined in each front end
-   static void vlogRelease(); //defined in each front end
+class TR_VerboseLog {
+public:
+    // writeLine and write provide multi line write capabilities, and are to be
+    // used with CriticalSection or vlogAcquire() and vlogRelease() to ensure
+    // nicely formatted verbose logs
+    static void write(const char *format, ...);
+    static void write(TR_VlogTag tag, const char *format, ...);
+    static void writeLine(TR_VlogTag tag, const char *format, ...);
+    static void writeLine(const char *format, ...);
+    // writeLineLocked is a single line print function, it provides the locks for you
+    static void writeLineLocked(TR_VlogTag tag, const char *format, ...);
+    static void vlogAcquire(); // defined in each front end
+    static void vlogRelease(); // defined in each front end
 
-   class CriticalSection
-      {
-      public:
-      CriticalSection(bool lock = true) : _locked(false)
-         {
-         if (lock)
-            {
-            vlogAcquire();
-            _locked = true;
+    class CriticalSection {
+    public:
+        CriticalSection(bool lock = true)
+            : _locked(false)
+        {
+            if (lock) {
+                vlogAcquire();
+                _locked = true;
             }
-         }
+        }
 
-      ~CriticalSection()
-         {
-         if (_locked)
-            vlogRelease();
-         }
+        ~CriticalSection()
+        {
+            if (_locked)
+                vlogRelease();
+        }
 
-      private:
-      bool _locked;
-      };
+    private:
+        bool _locked;
+    };
 
-   //only called once early on, after we can print to the vlog
-   static void initialize(void *config);
+    // only called once early on, after we can print to the vlog
+    static void initialize(void *config);
 
-   private:
+private:
+    static void privateStaticAsserts();
 
-   static void privateStaticAsserts();
-
-   static void vwrite(const char *format, va_list args); //defined in each front end
-   static void writeTimeStamp();
-   static const char *_vlogTable[];
-   static void *_config; //we will use void * as the different implementations have different config types
-   };
+    static void vwrite(const char *format, va_list args); // defined in each front end
+    static void writeTimeStamp();
+    static const char *_vlogTable[];
+    static void *_config; // we will use void * as the different implementations have different config types
+};
 
 #endif // VERBOSELOG_HPP

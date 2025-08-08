@@ -42,656 +42,593 @@
 #include "infra/Assert.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 
-void
-TR_S390CompareAnalyser::integerCompareAnalyser(TR::Node * root, TR::InstOpCode::Mnemonic regRegOpCode, TR::InstOpCode::Mnemonic regMemOpCode,
-   TR::InstOpCode::Mnemonic memRegOpCode)
-   {
-   TR_UNIMPLEMENTED();
-   return;
-   }
+void TR_S390CompareAnalyser::integerCompareAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regRegOpCode,
+    TR::InstOpCode::Mnemonic regMemOpCode, TR::InstOpCode::Mnemonic memRegOpCode)
+{
+    TR_UNIMPLEMENTED();
+    return;
+}
 
-TR::RegisterDependencyConditions *
-TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser(TR::Node * root, TR::InstOpCode::Mnemonic branchOp, TR::InstOpCode::S390BranchCondition brCmpLowTrueCond,
-   TR::InstOpCode::S390BranchCondition brCmpHighTrueCond, TR::InstOpCode::S390BranchCondition brCmpHighFalseCond, TR::LabelSymbol * trueTarget, TR::LabelSymbol * falseTarget,
-   bool &internalControlFlowStarted)
-   {
-   TR::Node * firstChild = root->getFirstChild();
-   TR::Node * secondChild = root->getSecondChild();
-   TR::Register * firstRegister = firstChild->getRegister();
-   TR::Register * secondRegister = secondChild->getRegister();
-   bool firstIU2L = false;
-   bool secondIU2L = false;
-   bool useFirstHighOrder = false;
-   bool useSecondHighOrder = false;
-   bool firstHighZero = false;
-   bool secondHighZero = false;
-   bool isUnsignedCmp = root->getOpCode().isUnsignedCompare();
+TR::RegisterDependencyConditions *TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser(TR::Node *root,
+    TR::InstOpCode::Mnemonic branchOp, TR::InstOpCode::S390BranchCondition brCmpLowTrueCond,
+    TR::InstOpCode::S390BranchCondition brCmpHighTrueCond, TR::InstOpCode::S390BranchCondition brCmpHighFalseCond,
+    TR::LabelSymbol *trueTarget, TR::LabelSymbol *falseTarget, bool &internalControlFlowStarted)
+{
+    TR::Node *firstChild = root->getFirstChild();
+    TR::Node *secondChild = root->getSecondChild();
+    TR::Register *firstRegister = firstChild->getRegister();
+    TR::Register *secondRegister = secondChild->getRegister();
+    bool firstIU2L = false;
+    bool secondIU2L = false;
+    bool useFirstHighOrder = false;
+    bool useSecondHighOrder = false;
+    bool firstHighZero = false;
+    bool secondHighZero = false;
+    bool isUnsignedCmp = root->getOpCode().isUnsignedCompare();
 
-   // can generate better code for compares when one or more children are TR::iu2l
-   // but only when we don't need the result of the iu2l for another parent.
-   // Unsigned compare is used for address comparisons, and as such will almost
-   // never be compared to constants, including NULL.  Avoid complications with
-   // below optimization and just skip it.
-   if ( firstChild->isHighWordZero() && !isUnsignedCmp && (brCmpLowTrueCond==TR::InstOpCode::COND_BE || brCmpLowTrueCond==TR::InstOpCode::COND_BNE) )
-      {
-      firstHighZero = true;
-      }
+    // can generate better code for compares when one or more children are TR::iu2l
+    // but only when we don't need the result of the iu2l for another parent.
+    // Unsigned compare is used for address comparisons, and as such will almost
+    // never be compared to constants, including NULL.  Avoid complications with
+    // below optimization and just skip it.
+    if (firstChild->isHighWordZero() && !isUnsignedCmp
+        && (brCmpLowTrueCond == TR::InstOpCode::COND_BE || brCmpLowTrueCond == TR::InstOpCode::COND_BNE)) {
+        firstHighZero = true;
+    }
 
-   if ( secondChild->isHighWordZero() && !isUnsignedCmp)
-      {
-      secondHighZero = true;
-      }
+    if (secondChild->isHighWordZero() && !isUnsignedCmp) {
+        secondHighZero = true;
+    }
 
-   setInputs(firstChild, firstRegister, secondChild, secondRegister,
-             true, false, _cg->comp());
+    setInputs(firstChild, firstRegister, secondChild, secondRegister, true, false, _cg->comp());
 
-   TR::MemoryReference * lowFirstMR = NULL;
-   TR::MemoryReference * highFirstMR = NULL;
-   TR::MemoryReference * lowSecondMR = NULL;
-   TR::MemoryReference * highSecondMR = NULL;
-   TR::Register * delayedFirst = NULL;
-   TR::Register * delayedSecond = NULL;
+    TR::MemoryReference *lowFirstMR = NULL;
+    TR::MemoryReference *highFirstMR = NULL;
+    TR::MemoryReference *lowSecondMR = NULL;
+    TR::MemoryReference *highSecondMR = NULL;
+    TR::Register *delayedFirst = NULL;
+    TR::Register *delayedSecond = NULL;
 
-   if (_cg->whichChildToEvaluate(root) == 0)
-      {
-      if (getEvalChild1())
-         {
-         if (firstChild->getReferenceCount() == 1 &&
-            firstChild->getRegister() == NULL &&
-            (firstChild->getOpCodeValue() == TR::lload || (firstChild->getOpCodeValue() == TR::iload && firstIU2L)))
-            {
-            lowFirstMR = TR::MemoryReference::create(_cg, firstChild);
-            delayedFirst = _cg->allocateRegister();
-            if (!firstIU2L)
-               {
-               highFirstMR = generateS390MemoryReference(*lowFirstMR, 4, _cg);
-               generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedFirst, highFirstMR);
-               }
+    if (_cg->whichChildToEvaluate(root) == 0) {
+        if (getEvalChild1()) {
+            if (firstChild->getReferenceCount() == 1 && firstChild->getRegister() == NULL
+                && (firstChild->getOpCodeValue() == TR::lload
+                    || (firstChild->getOpCodeValue() == TR::iload && firstIU2L))) {
+                lowFirstMR = TR::MemoryReference::create(_cg, firstChild);
+                delayedFirst = _cg->allocateRegister();
+                if (!firstIU2L) {
+                    highFirstMR = generateS390MemoryReference(*lowFirstMR, 4, _cg);
+                    generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedFirst, highFirstMR);
+                }
+            } else {
+                firstRegister = _cg->evaluate(firstChild);
             }
-         else
-            {
-            firstRegister = _cg->evaluate(firstChild);
+        }
+        if (getEvalChild2()) {
+            if (secondChild->getReferenceCount() == 1 && secondChild->getRegister() == NULL
+                && (secondChild->getOpCodeValue() == TR::lload
+                    || (secondChild->getOpCodeValue() == TR::iload && secondIU2L))) {
+                lowSecondMR = TR::MemoryReference::create(_cg, secondChild);
+                delayedSecond = _cg->allocateRegister();
+                if (!secondIU2L) {
+                    highSecondMR = generateS390MemoryReference(*lowSecondMR, 4, _cg);
+                    generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedSecond, highSecondMR);
+                }
+            } else {
+                secondRegister = _cg->evaluate(secondChild);
             }
-         }
-      if (getEvalChild2())
-         {
-         if (secondChild->getReferenceCount() == 1 &&
-            secondChild->getRegister() == NULL &&
-            (secondChild->getOpCodeValue() == TR::lload || (secondChild->getOpCodeValue() == TR::iload && secondIU2L)))
-            {
-            lowSecondMR = TR::MemoryReference::create(_cg, secondChild);
-            delayedSecond = _cg->allocateRegister();
-            if (!secondIU2L)
-               {
-               highSecondMR = generateS390MemoryReference(*lowSecondMR, 4, _cg);
-               generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedSecond, highSecondMR);
-               }
+        }
+    } else {
+        if (getEvalChild2()) {
+            if (secondChild->getReferenceCount() == 1 && secondChild->getRegister() == NULL
+                && (secondChild->getOpCodeValue() == TR::lload
+                    || (secondChild->getOpCodeValue() == TR::iload && secondIU2L))) {
+                lowSecondMR = TR::MemoryReference::create(_cg, secondChild);
+                delayedSecond = _cg->allocateRegister();
+                if (!secondIU2L) {
+                    highSecondMR = generateS390MemoryReference(*lowSecondMR, 4, _cg);
+                    generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedSecond, highSecondMR);
+                }
+            } else {
+                secondRegister = _cg->evaluate(secondChild);
             }
-         else
-            {
-            secondRegister = _cg->evaluate(secondChild);
+        }
+        if (getEvalChild1()) {
+            if (firstChild->getReferenceCount() == 1 && firstChild->getRegister() == NULL
+                && (firstChild->getOpCodeValue() == TR::lload
+                    || (firstChild->getOpCodeValue() == TR::iload && firstIU2L))) {
+                lowFirstMR = TR::MemoryReference::create(_cg, firstChild);
+                delayedFirst = _cg->allocateRegister();
+                if (!firstIU2L) {
+                    highFirstMR = generateS390MemoryReference(*lowFirstMR, 4, _cg);
+                    generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedFirst, highFirstMR);
+                }
+            } else {
+                firstRegister = _cg->evaluate(firstChild);
             }
-         }
-      }
-   else
-      {
-      if (getEvalChild2())
-         {
-         if (secondChild->getReferenceCount() == 1 &&
-            secondChild->getRegister() == NULL &&
-            (secondChild->getOpCodeValue() == TR::lload || (secondChild->getOpCodeValue() == TR::iload && secondIU2L)))
-            {
-            lowSecondMR = TR::MemoryReference::create(_cg, secondChild);
-            delayedSecond = _cg->allocateRegister();
-            if (!secondIU2L)
-               {
-               highSecondMR = generateS390MemoryReference(*lowSecondMR, 4, _cg);
-               generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedSecond, highSecondMR);
-               }
-            }
-         else
-            {
-            secondRegister = _cg->evaluate(secondChild);
-            }
-         }
-      if (getEvalChild1())
-         {
-         if (firstChild->getReferenceCount() == 1 &&
-            firstChild->getRegister() == NULL &&
-            (firstChild->getOpCodeValue() == TR::lload || (firstChild->getOpCodeValue() == TR::iload && firstIU2L)))
-            {
-            lowFirstMR = TR::MemoryReference::create(_cg, firstChild);
-            delayedFirst = _cg->allocateRegister();
-            if (!firstIU2L)
-               {
-               highFirstMR = generateS390MemoryReference(*lowFirstMR, 4, _cg);
-               generateRXInstruction(_cg, TR::InstOpCode::L, root, delayedFirst, highFirstMR);
-               }
-            }
-         else
-            {
-            firstRegister = _cg->evaluate(firstChild);
-            }
-         }
-      }
+        }
+    }
 
-   if (firstHighZero && firstRegister && firstRegister->getRegisterPair())
-      {
-      if (!useFirstHighOrder)
-         {
-         firstRegister = firstRegister->getLowOrder();
-         }
-      else
-         {
-         firstRegister = firstRegister->getHighOrder();
-         }
-      }
+    if (firstHighZero && firstRegister && firstRegister->getRegisterPair()) {
+        if (!useFirstHighOrder) {
+            firstRegister = firstRegister->getLowOrder();
+        } else {
+            firstRegister = firstRegister->getHighOrder();
+        }
+    }
 
-   if (secondHighZero && secondRegister && secondRegister->getRegisterPair())
-      {
-      if (!useSecondHighOrder)
-         {
-         secondRegister = secondRegister->getLowOrder();
-         }
-      else
-         {
-         secondRegister = secondRegister->getHighOrder();
-         }
-      }
+    if (secondHighZero && secondRegister && secondRegister->getRegisterPair()) {
+        if (!useSecondHighOrder) {
+            secondRegister = secondRegister->getLowOrder();
+        } else {
+            secondRegister = secondRegister->getHighOrder();
+        }
+    }
 
-   TR::MemoryReference * lowMR = NULL;
-   TR::MemoryReference * highMR = NULL;
-   TR::RegisterDependencyConditions * deps;
-   bool hasGlobalDeps = ((root->getNumChildren() == 3) ? true : false);
-   uint32_t numAdditionalRegDeps = hasGlobalDeps ? 5 : 7;
+    TR::MemoryReference *lowMR = NULL;
+    TR::MemoryReference *highMR = NULL;
+    TR::RegisterDependencyConditions *deps;
+    bool hasGlobalDeps = ((root->getNumChildren() == 3) ? true : false);
+    uint32_t numAdditionalRegDeps = hasGlobalDeps ? 5 : 7;
 
-   if (getCmpReg1Reg2())
-      {
-      TR_ASSERT( delayedFirst == NULL && delayedSecond == NULL, "Bad combination in long ordered compare analyser\n");
-      TR::Register * firstLow;
+    if (getCmpReg1Reg2()) {
+        TR_ASSERT(delayedFirst == NULL && delayedSecond == NULL, "Bad combination in long ordered compare analyser\n");
+        TR::Register *firstLow;
 
-      if (hasGlobalDeps)
-         {
-         TR::Node * thirdChild = root->getChild(2);
-         _cg->evaluate(thirdChild);
-         deps = generateRegisterDependencyConditions(_cg, thirdChild, numAdditionalRegDeps);
-         }
-      else
-         {
-         deps = new (_cg->trHeapMemory()) TR::RegisterDependencyConditions(0, numAdditionalRegDeps, _cg);
-         }
+        if (hasGlobalDeps) {
+            TR::Node *thirdChild = root->getChild(2);
+            _cg->evaluate(thirdChild);
+            deps = generateRegisterDependencyConditions(_cg, thirdChild, numAdditionalRegDeps);
+        } else {
+            deps = new (_cg->trHeapMemory()) TR::RegisterDependencyConditions(0, numAdditionalRegDeps, _cg);
+        }
 
-      if (firstHighZero == false)
-         {
-         firstLow = firstRegister->getLowOrder();
-         if (hasGlobalDeps)
-            {
-            deps->addPostConditionIfNotAlreadyInserted(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
-            deps->addPostConditionIfNotAlreadyInserted(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
+        if (firstHighZero == false) {
+            firstLow = firstRegister->getLowOrder();
+            if (hasGlobalDeps) {
+                deps->addPostConditionIfNotAlreadyInserted(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
+                deps->addPostConditionIfNotAlreadyInserted(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
+            } else {
+                deps->addPostCondition(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
+                deps->addPostCondition(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
             }
-         else
-            {
-            deps->addPostCondition(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
-            deps->addPostCondition(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
-            }
-         }
-      else
-         {
-         firstLow = firstRegister;
-         deps->addPostConditionIfNotAlreadyInserted(firstLow, TR::RealRegister::AssignAny);
-         TR_ASSERT(firstLow->getRegisterPair() == NULL,
-            "TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser: Using reg pair as single reg\n");
-         }
+        } else {
+            firstLow = firstRegister;
+            deps->addPostConditionIfNotAlreadyInserted(firstLow, TR::RealRegister::AssignAny);
+            TR_ASSERT(firstLow->getRegisterPair() == NULL,
+                "TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser: Using reg pair as single reg\n");
+        }
 
-      TR::Register * secondLow = NULL;
-      if (secondHighZero == false)
-         {
-         secondLow = secondRegister->getLowOrder();
-         if (hasGlobalDeps)
+        TR::Register *secondLow = NULL;
+        if (secondHighZero == false) {
+            secondLow = secondRegister->getLowOrder();
+            if (hasGlobalDeps) {
+                deps->addPostConditionIfNotAlreadyInserted(secondRegister->getHighOrder(), TR::RealRegister::AssignAny);
+                deps->addPostConditionIfNotAlreadyInserted(secondRegister->getLowOrder(), TR::RealRegister::AssignAny);
+            } else {
+                deps->addPostCondition(secondRegister->getHighOrder(), TR::RealRegister::AssignAny);
+                deps->addPostCondition(secondRegister->getLowOrder(), TR::RealRegister::AssignAny);
+            }
+        } else {
+            secondLow = secondRegister;
+            deps->addPostConditionIfNotAlreadyInserted(secondLow, TR::RealRegister::AssignAny);
+            TR_ASSERT(secondLow->getRegisterPair() == NULL,
+                "TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser: Using reg pair as single reg\n");
+        }
+
+        if (firstHighZero) {
+            if (secondHighZero == false) // if both are ui2l, then we just need an unsigned low order compare
             {
+                generateRRInstruction(_cg, TR::InstOpCode::LTR, root, secondRegister->getHighOrder(),
+                    secondRegister->getHighOrder());
+            }
+        } else if (secondHighZero) {
+            generateRRInstruction(_cg, TR::InstOpCode::LTR, root, firstRegister->getHighOrder(),
+                firstRegister->getHighOrder());
+        } else {
+            if (isUnsignedCmp) {
+                generateRRInstruction(_cg, TR::InstOpCode::CLR, root, firstRegister->getHighOrder(),
+                    secondRegister->getHighOrder());
+            } else {
+                generateRRInstruction(_cg, TR::InstOpCode::CR, root, firstRegister->getHighOrder(),
+                    secondRegister->getHighOrder());
+            }
+        }
+
+        if (firstHighZero == false || secondHighZero == false) {
+            TR::LabelSymbol *cflowRegionStart = generateLabelSymbol(_cg);
+            cflowRegionStart->setStartInternalControlFlow();
+            internalControlFlowStarted = true;
+            generateS390LabelInstruction(_cg, TR::InstOpCode::label, root, cflowRegionStart);
+
+            // See if we can prove results as false
+            if (brCmpHighFalseCond != TR::InstOpCode::COND_NOP) {
+                generateS390BranchInstruction(_cg, branchOp, brCmpHighFalseCond, root, falseTarget);
+            }
+            // See if we can prove the result as true
+            if (brCmpHighTrueCond != TR::InstOpCode::COND_NOP) {
+                generateS390BranchInstruction(_cg, branchOp, brCmpHighTrueCond, root, trueTarget);
+            }
+        }
+        generateRRInstruction(_cg, TR::InstOpCode::CLR, root, firstLow, secondLow);
+    }
+    ///// Reg + Mem  /////////////////////////////////////////
+    else if (getCmpReg1Mem2()) {
+        // If 2nd child is a TR::iu2l, then the memory contents is only an int and should be loaded into lowMR.
+        // The highword is just zero.
+        if (secondIU2L) {
+            highMR = NULL;
+            lowMR = TR::MemoryReference::create(_cg, secondChild);
+        } else {
+            highMR = TR::MemoryReference::create(_cg, secondChild);
+            lowMR = generateS390MemoryReference(*highMR, 4, _cg);
+        }
+        numAdditionalRegDeps += 2;
+
+        if (hasGlobalDeps) {
+            TR::Node *thirdChild = root->getChild(2);
+            _cg->evaluate(thirdChild);
+            deps = generateRegisterDependencyConditions(_cg, thirdChild, numAdditionalRegDeps);
+        } else {
+            deps = new (_cg->trHeapMemory()) TR::RegisterDependencyConditions(0, numAdditionalRegDeps, _cg);
+        }
+        if (highMR != NULL)
+            deps->addAssignAnyPostCondOnMemRef(highMR);
+
+        TR::Register *firstLow;
+        if (delayedFirst) {
+            firstLow = NULL;
+            deps->addPostConditionIfNotAlreadyInserted(delayedFirst, TR::RealRegister::AssignAny);
+        } else if (firstHighZero == false) {
+            firstLow = firstRegister->getLowOrder();
+            if (hasGlobalDeps) {
+                deps->addPostConditionIfNotAlreadyInserted(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
+                deps->addPostConditionIfNotAlreadyInserted(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
+            } else {
+                deps->addPostCondition(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
+                deps->addPostCondition(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
+            }
+        } else {
+            firstLow = firstRegister;
+            deps->addPostConditionIfNotAlreadyInserted(firstLow, TR::RealRegister::AssignAny);
+        }
+
+        if (secondIU2L) {
+            generateRRInstruction(_cg, TR::InstOpCode::LTR, root, firstRegister->getHighOrder(),
+                firstRegister->getHighOrder());
+        } else {
+            TR::Register *temp = NULL;
+            if (delayedFirst) {
+                temp = delayedFirst;
+            } else {
+                temp = firstRegister->getHighOrder();
+            }
+            if (temp != NULL) {
+                if (isUnsignedCmp) {
+                    generateRXInstruction(_cg, TR::InstOpCode::CL, firstChild, temp, highMR);
+                } else {
+                    generateRXInstruction(_cg, TR::InstOpCode::C, firstChild, temp, highMR);
+                }
+            } else {
+                // if NULL, no need to compare the highOrder
+                brCmpHighFalseCond = TR::InstOpCode::COND_NOP;
+                brCmpHighTrueCond = TR::InstOpCode::COND_NOP;
+            }
+        }
+
+        if (firstHighZero == false || secondHighZero == false) {
+            TR::LabelSymbol *cflowRegionStart = generateLabelSymbol(_cg);
+            cflowRegionStart->setStartInternalControlFlow();
+            internalControlFlowStarted = true;
+            generateS390LabelInstruction(_cg, TR::InstOpCode::label, root, cflowRegionStart);
+
+            // See if we can prove results as false
+            if (brCmpHighFalseCond != TR::InstOpCode::COND_NOP) {
+                generateS390BranchInstruction(_cg, branchOp, brCmpHighFalseCond, root, falseTarget);
+            }
+            // See if we can prove the result as true
+            if (brCmpHighTrueCond != TR::InstOpCode::COND_NOP) {
+                generateS390BranchInstruction(_cg, branchOp, brCmpHighTrueCond, root, trueTarget);
+            }
+        }
+
+        if (delayedFirst) {
+            generateRXInstruction(_cg, TR::InstOpCode::L, firstChild, delayedFirst, lowFirstMR);
+            firstLow = delayedFirst;
+        }
+        generateRXInstruction(_cg, TR::InstOpCode::CL, firstChild, firstLow, lowMR);
+    }
+    ///////  Mem + Reg  ///////////////////////////////////////
+    else // Must be CmpMem1Reg2
+    {
+        TR_ASSERT(0, "TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser: Unchecked code");
+
+        // If 1st child is a TR::iu2l, then the memory contents is only an int and should be loaded into lowMR.
+        // The highword is just zero.
+        if (firstIU2L) {
+            highMR = NULL;
+            lowMR = TR::MemoryReference::create(_cg, firstChild);
+        } else {
+            highMR = TR::MemoryReference::create(_cg, firstChild);
+            lowMR = generateS390MemoryReference(*highMR, 4, _cg);
+        }
+
+        numAdditionalRegDeps += 2;
+        if (hasGlobalDeps) {
+            TR::Node *thirdChild = root->getChild(2);
+            _cg->evaluate(thirdChild);
+            deps = generateRegisterDependencyConditions(_cg, thirdChild, numAdditionalRegDeps);
+        } else {
+            deps = new (_cg->trHeapMemory()) TR::RegisterDependencyConditions(0, numAdditionalRegDeps, _cg);
+        }
+
+        if (highMR != NULL)
+            deps->addAssignAnyPostCondOnMemRef(highMR);
+
+        TR::Register *secondLow;
+        if (delayedSecond) {
+            deps->addPostConditionIfNotAlreadyInserted(delayedSecond, TR::RealRegister::AssignAny);
+            secondLow = NULL;
+        } else if (secondHighZero == false) {
             deps->addPostConditionIfNotAlreadyInserted(secondRegister->getHighOrder(), TR::RealRegister::AssignAny);
-            deps->addPostConditionIfNotAlreadyInserted(secondRegister->getLowOrder(), TR::RealRegister::AssignAny);
-            }
-         else
+            secondLow = secondRegister->getLowOrder();
+        } else {
+            secondLow = secondRegister;
+        }
+        if (secondLow) {
+            deps->addPostConditionIfNotAlreadyInserted(secondLow, TR::RealRegister::AssignAny);
+        }
+
+        if (firstIU2L) {
+            if (secondHighZero == false) // if both are ui2l, then we just need an unsigned low order compare
             {
-            deps->addPostCondition(secondRegister->getHighOrder(), TR::RealRegister::AssignAny);
-            deps->addPostCondition(secondRegister->getLowOrder(), TR::RealRegister::AssignAny);
+                generateRRInstruction(_cg, TR::InstOpCode::LTR, root, secondRegister->getHighOrder(),
+                    secondRegister->getHighOrder());
             }
-         }
-      else
-         {
-         secondLow = secondRegister;
-         deps->addPostConditionIfNotAlreadyInserted(secondLow, TR::RealRegister::AssignAny);
-         TR_ASSERT(secondLow->getRegisterPair() == NULL,
-            "TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser: Using reg pair as single reg\n");
-         }
-
-      if (firstHighZero)
-         {
-         if (secondHighZero == false)   // if both are ui2l, then we just need an unsigned low order compare
-            {
-            generateRRInstruction(_cg, TR::InstOpCode::LTR, root, secondRegister->getHighOrder(), secondRegister->getHighOrder());
+        } else {
+            TR::Register *temp;
+            if (delayedSecond) {
+                temp = delayedSecond;
+            } else {
+                temp = secondRegister->getHighOrder();
             }
-         }
-      else if (secondHighZero)
-         {
-         generateRRInstruction(_cg, TR::InstOpCode::LTR, root, firstRegister->getHighOrder(), firstRegister->getHighOrder());
-         }
-      else
-         {
-         if (isUnsignedCmp)
-            {
-            generateRRInstruction(_cg, TR::InstOpCode::CLR, root, firstRegister->getHighOrder(), secondRegister->getHighOrder());
+            if (isUnsignedCmp) {
+                generateRXInstruction(_cg, TR::InstOpCode::CL, firstChild, temp, highMR);
+            } else {
+                generateRXInstruction(_cg, TR::InstOpCode::C, firstChild, temp, highMR);
             }
-         else
-            {
-            generateRRInstruction(_cg, TR::InstOpCode::CR, root, firstRegister->getHighOrder(), secondRegister->getHighOrder());
+        }
+
+        if (firstHighZero == false || secondHighZero == false) {
+            TR::LabelSymbol *cflowRegionStart = generateLabelSymbol(_cg);
+            cflowRegionStart->setStartInternalControlFlow();
+            internalControlFlowStarted = true;
+            generateS390LabelInstruction(_cg, TR::InstOpCode::label, root, cflowRegionStart);
+
+            // See if we can prove results as false
+            if (brCmpHighFalseCond != TR::InstOpCode::COND_NOP) {
+                generateS390BranchInstruction(_cg, branchOp, brCmpHighTrueCond, root, falseTarget);
             }
-         }
-
-      if (firstHighZero == false || secondHighZero == false)
-         {
-         TR::LabelSymbol * cflowRegionStart = generateLabelSymbol(_cg);
-         cflowRegionStart->setStartInternalControlFlow();
-         internalControlFlowStarted = true;
-         generateS390LabelInstruction(_cg, TR::InstOpCode::label, root, cflowRegionStart);
-
-         // See if we can prove results as false
-         if (brCmpHighFalseCond != TR::InstOpCode::COND_NOP)
-            {
-            generateS390BranchInstruction(_cg, branchOp, brCmpHighFalseCond, root, falseTarget);
+            // See if we can prove the result as true
+            if (brCmpHighTrueCond != TR::InstOpCode::COND_NOP) {
+                generateS390BranchInstruction(_cg, branchOp, brCmpHighFalseCond, root, trueTarget);
             }
-         // See if we can prove the result as true
-         if (brCmpHighTrueCond != TR::InstOpCode::COND_NOP)
-            {
-            generateS390BranchInstruction(_cg, branchOp, brCmpHighTrueCond, root, trueTarget);
-            }
-         }
-      generateRRInstruction(_cg, TR::InstOpCode::CLR, root, firstLow, secondLow);
-      }
-   ///// Reg + Mem  /////////////////////////////////////////
-   else if (getCmpReg1Mem2())
-      {
-      // If 2nd child is a TR::iu2l, then the memory contents is only an int and should be loaded into lowMR.
-      // The highword is just zero.
-      if (secondIU2L)
-         {
-          highMR = NULL;
-          lowMR = TR::MemoryReference::create(_cg, secondChild);
-         }
-      else
-         {
-         highMR = TR::MemoryReference::create(_cg, secondChild);
-         lowMR = generateS390MemoryReference(*highMR, 4, _cg);
-         }
-      numAdditionalRegDeps += 2;
+        }
 
-      if (hasGlobalDeps)
-         {
-         TR::Node * thirdChild = root->getChild(2);
-         _cg->evaluate(thirdChild);
-         deps = generateRegisterDependencyConditions(_cg, thirdChild, numAdditionalRegDeps);
-         }
-      else
-         {
-         deps = new (_cg->trHeapMemory()) TR::RegisterDependencyConditions(0, numAdditionalRegDeps, _cg);
-         }
-      if (highMR != NULL)
-         deps->addAssignAnyPostCondOnMemRef(highMR);
+        if (delayedSecond) {
+            generateRXInstruction(_cg, TR::InstOpCode::L, firstChild, delayedSecond, lowSecondMR);
+            secondLow = delayedSecond;
+        }
 
-      TR::Register * firstLow;
-      if (delayedFirst)
-         {
-         firstLow = NULL;
-         deps->addPostConditionIfNotAlreadyInserted(delayedFirst, TR::RealRegister::AssignAny);
-         }
-      else if (firstHighZero == false)
-         {
-         firstLow = firstRegister->getLowOrder();
-         if (hasGlobalDeps)
-            {
-            deps->addPostConditionIfNotAlreadyInserted(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
-            deps->addPostConditionIfNotAlreadyInserted(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
-            }
-         else
-            {
-            deps->addPostCondition(firstRegister->getHighOrder(), TR::RealRegister::AssignAny);
-            deps->addPostCondition(firstRegister->getLowOrder(), TR::RealRegister::AssignAny);
-            }
-         }
-      else
-         {
-         firstLow = firstRegister;
-         deps->addPostConditionIfNotAlreadyInserted(firstLow, TR::RealRegister::AssignAny);
-         }
+        generateRXInstruction(_cg, TR::InstOpCode::CL, root, secondLow, lowMR);
+    }
 
-      if (secondIU2L)
-         {
-         generateRRInstruction(_cg, TR::InstOpCode::LTR, root, firstRegister->getHighOrder(), firstRegister->getHighOrder());
-         }
-      else
-         {
-         TR::Register * temp = NULL;
-         if (delayedFirst)
-            {
-            temp = delayedFirst;
-            }
-         else
-            {
-            temp = firstRegister->getHighOrder();
-            }
-         if (temp != NULL)
-            {
-            if (isUnsignedCmp)
-               {
-               generateRXInstruction(_cg, TR::InstOpCode::CL, firstChild, temp, highMR);
-               }
-            else
-               {
-               generateRXInstruction(_cg, TR::InstOpCode::C, firstChild, temp, highMR);
-               }
-            }
-         else
-            {
-            // if NULL, no need to compare the highOrder
-            brCmpHighFalseCond = TR::InstOpCode::COND_NOP;
-            brCmpHighTrueCond  = TR::InstOpCode::COND_NOP;
-            }
-         }
+    // Perform required branch on compare of low values
+    if (brCmpLowTrueCond != TR::InstOpCode::COND_NOP) {
+        generateS390BranchInstruction(_cg, branchOp, brCmpLowTrueCond, root, trueTarget);
+    }
 
-      if (firstHighZero == false || secondHighZero == false)
-         {
-         TR::LabelSymbol * cflowRegionStart = generateLabelSymbol(_cg);
-         cflowRegionStart->setStartInternalControlFlow();
-         internalControlFlowStarted = true;
-         generateS390LabelInstruction(_cg, TR::InstOpCode::label, root, cflowRegionStart);
+    if (delayedFirst) {
+        _cg->stopUsingRegister(delayedFirst);
+    }
 
-         // See if we can prove results as false
-         if (brCmpHighFalseCond != TR::InstOpCode::COND_NOP)
-            {
-            generateS390BranchInstruction(_cg, branchOp, brCmpHighFalseCond, root, falseTarget);
-            }
-         // See if we can prove the result as true
-         if (brCmpHighTrueCond != TR::InstOpCode::COND_NOP)
-            {
-            generateS390BranchInstruction(_cg, branchOp, brCmpHighTrueCond, root, trueTarget);
-            }
-         }
+    if (delayedSecond) {
+        _cg->stopUsingRegister(delayedSecond);
+    }
 
-      if (delayedFirst)
-         {
-         generateRXInstruction(_cg, TR::InstOpCode::L, firstChild, delayedFirst, lowFirstMR);
-         firstLow = delayedFirst;
-         }
-      generateRXInstruction(_cg, TR::InstOpCode::CL, firstChild, firstLow, lowMR);
-      }
-   ///////  Mem + Reg  ///////////////////////////////////////
-   else // Must be CmpMem1Reg2
-      {
-      TR_ASSERT( 0, "TR_S390CompareAnalyser::longOrderedCompareAndBranchAnalyser: Unchecked code");
+    if (hasGlobalDeps) {
+        TR::Node *thirdChild = root->getChild(2);
+        _cg->decReferenceCount(thirdChild);
+    }
 
-      // If 1st child is a TR::iu2l, then the memory contents is only an int and should be loaded into lowMR.
-      // The highword is just zero.
-      if (firstIU2L)
-         {
-          highMR = NULL;
-          lowMR = TR::MemoryReference::create(_cg, firstChild);
-         }
-      else
-         {
-         highMR = TR::MemoryReference::create(_cg, firstChild);
-         lowMR = generateS390MemoryReference(*highMR, 4, _cg);
-         }
+    _cg->decReferenceCount(firstChild);
 
-      numAdditionalRegDeps += 2;
-      if (hasGlobalDeps)
-         {
-         TR::Node * thirdChild = root->getChild(2);
-         _cg->evaluate(thirdChild);
-         deps = generateRegisterDependencyConditions(_cg, thirdChild, numAdditionalRegDeps);
-         }
-      else
-         {
-         deps = new (_cg->trHeapMemory()) TR::RegisterDependencyConditions(0, numAdditionalRegDeps, _cg);
-         }
+    if (root->getFirstChild()
+        != firstChild) // May have skipped original first child earlier (i.e. if 1st child is iu2l)
+        _cg->decReferenceCount(root->getFirstChild());
 
-      if (highMR != NULL)
-         deps->addAssignAnyPostCondOnMemRef(highMR);
+    _cg->decReferenceCount(secondChild);
 
-      TR::Register * secondLow;
-      if (delayedSecond)
-         {
-         deps->addPostConditionIfNotAlreadyInserted(delayedSecond, TR::RealRegister::AssignAny);
-         secondLow = NULL;
-         }
-      else if (secondHighZero == false)
-         {
-         deps->addPostConditionIfNotAlreadyInserted(secondRegister->getHighOrder(), TR::RealRegister::AssignAny);
-         secondLow = secondRegister->getLowOrder();
-         }
-      else
-         {
-         secondLow = secondRegister;
-         }
-      if (secondLow)
-         {
-         deps->addPostConditionIfNotAlreadyInserted(secondLow, TR::RealRegister::AssignAny);
-         }
+    if (root->getSecondChild() != secondChild)
+        _cg->decReferenceCount(root->getSecondChild());
 
-      if (firstIU2L)
-         {
-         if (secondHighZero == false)   // if both are ui2l, then we just need an unsigned low order compare
-            {
-            generateRRInstruction(_cg, TR::InstOpCode::LTR, root, secondRegister->getHighOrder(), secondRegister->getHighOrder());
-            }
-         }
-      else
-         {
-         TR::Register * temp;
-         if (delayedSecond)
-            {
-            temp = delayedSecond;
-            }
-         else
-            {
-            temp = secondRegister->getHighOrder();
-            }
-         if (isUnsignedCmp)
-            {
-            generateRXInstruction(_cg, TR::InstOpCode::CL, firstChild, temp, highMR);
-            }
-         else
-            {
-            generateRXInstruction(_cg, TR::InstOpCode::C, firstChild, temp, highMR);
-            }
-         }
+    if (lowFirstMR) {
+        lowFirstMR->stopUsingMemRefRegister(_cg);
+    }
+    if (highFirstMR) {
+        highFirstMR->stopUsingMemRefRegister(_cg);
+    }
+    if (lowSecondMR) {
+        lowSecondMR->stopUsingMemRefRegister(_cg);
+    }
+    if (highSecondMR) {
+        highSecondMR->stopUsingMemRefRegister(_cg);
+    }
+    if (lowMR != NULL) {
+        lowMR->stopUsingMemRefRegister(_cg);
+    }
+    if (highMR != NULL) {
+        highMR->stopUsingMemRefRegister(_cg);
+    }
 
-      if (firstHighZero == false || secondHighZero == false)
-         {
-         TR::LabelSymbol * cflowRegionStart = generateLabelSymbol(_cg);
-         cflowRegionStart->setStartInternalControlFlow();
-         internalControlFlowStarted = true;
-         generateS390LabelInstruction(_cg, TR::InstOpCode::label, root, cflowRegionStart);
+    return deps;
+}
 
-         // See if we can prove results as false
-         if (brCmpHighFalseCond != TR::InstOpCode::COND_NOP)
-            {
-            generateS390BranchInstruction(_cg, branchOp, brCmpHighTrueCond, root, falseTarget);
-            }
-         // See if we can prove the result as true
-         if (brCmpHighTrueCond != TR::InstOpCode::COND_NOP)
-            {
-            generateS390BranchInstruction(_cg, branchOp, brCmpHighFalseCond, root, trueTarget);
-            }
-         }
+void TR_S390CompareAnalyser::longEqualityCompareAndBranchAnalyser(TR::Node *root, TR::LabelSymbol *firstBranchLabel,
+    TR::LabelSymbol *secondBranchLabel, TR::InstOpCode::Mnemonic secondBranchOp)
+{
+    TR_ASSERT(0, "TR_S390CompareAnalyser::longEqualityCompareAndBranchAnalyser: Not implemented");
+    return;
+}
 
-      if (delayedSecond)
-         {
-         generateRXInstruction(_cg, TR::InstOpCode::L, firstChild, delayedSecond, lowSecondMR);
-         secondLow = delayedSecond;
-         }
+TR::Register *TR_S390CompareAnalyser::longEqualityBooleanAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic setOpCode,
+    TR::InstOpCode::Mnemonic combineOpCode)
+{
+    TR_ASSERT(0, "TR_S390CompareAnalyser::longEqualityBooleanAnalyser: Not implemented");
+    return NULL;
+}
 
-      generateRXInstruction(_cg, TR::InstOpCode::CL, root, secondLow, lowMR);
-      }
+TR::Register *TR_S390CompareAnalyser::longOrderedBooleanAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic highSetOpCode,
+    TR::InstOpCode::Mnemonic lowSetOpCode)
+{
+    TR_ASSERT(0, "TR_S390CompareAnalyser::longOrderedBooleanAnalyser: Not implemented");
+    return NULL;
+}
 
-   // Perform required branch on compare of low values
-   if (brCmpLowTrueCond != TR::InstOpCode::COND_NOP)
-      {
-      generateS390BranchInstruction(_cg, branchOp, brCmpLowTrueCond, root, trueTarget);
-      }
+TR::Register *TR_S390CompareAnalyser::longCMPAnalyser(TR::Node *root)
+{
+    TR_ASSERT(0, "TR_S390CompareAnalyser::longCMPAnalyser: Not implemented");
+    return NULL;
+}
 
-   if (delayedFirst)
-      {
-      _cg->stopUsingRegister(delayedFirst);
-      }
-
-   if (delayedSecond)
-      {
-      _cg->stopUsingRegister(delayedSecond);
-      }
-
-
-   if (hasGlobalDeps)
-      {
-      TR::Node * thirdChild = root->getChild(2);
-      _cg->decReferenceCount(thirdChild);
-      }
-
-   _cg->decReferenceCount(firstChild);
-
-   if (root->getFirstChild() != firstChild)  // May have skipped original first child earlier (i.e. if 1st child is iu2l)
-      _cg->decReferenceCount(root->getFirstChild());
-
-   _cg->decReferenceCount(secondChild);
-
-   if (root->getSecondChild() != secondChild)
-      _cg->decReferenceCount(root->getSecondChild());
-
-   if (lowFirstMR)
-      {
-      lowFirstMR->stopUsingMemRefRegister(_cg);
-      }
-   if (highFirstMR)
-      {
-      highFirstMR->stopUsingMemRefRegister(_cg);
-      }
-   if (lowSecondMR)
-      {
-      lowSecondMR->stopUsingMemRefRegister(_cg);
-      }
-   if (highSecondMR)
-      {
-      highSecondMR->stopUsingMemRefRegister(_cg);
-      }
-   if (lowMR != NULL)
-      {
-      lowMR->stopUsingMemRefRegister(_cg);
-      }
-   if (highMR != NULL)
-      {
-      highMR->stopUsingMemRefRegister(_cg);
-      }
-
-
-   return deps;
-   }
-
-void
-TR_S390CompareAnalyser::longEqualityCompareAndBranchAnalyser(TR::Node * root, TR::LabelSymbol * firstBranchLabel,
-   TR::LabelSymbol * secondBranchLabel, TR::InstOpCode::Mnemonic  secondBranchOp)
-   {
-   TR_ASSERT( 0, "TR_S390CompareAnalyser::longEqualityCompareAndBranchAnalyser: Not implemented");
-   return;
-   }
-
-
-TR::Register *
-TR_S390CompareAnalyser::longEqualityBooleanAnalyser(TR::Node * root, TR::InstOpCode::Mnemonic setOpCode, TR::InstOpCode::Mnemonic combineOpCode)
-   {
-   TR_ASSERT( 0, "TR_S390CompareAnalyser::longEqualityBooleanAnalyser: Not implemented");
-   return NULL;
-   }
-
-TR::Register *
-TR_S390CompareAnalyser::longOrderedBooleanAnalyser(TR::Node * root, TR::InstOpCode::Mnemonic highSetOpCode, TR::InstOpCode::Mnemonic lowSetOpCode)
-   {
-   TR_ASSERT( 0,"TR_S390CompareAnalyser::longOrderedBooleanAnalyser: Not implemented");
-   return NULL;
-   }
-
-TR::Register *
-TR_S390CompareAnalyser::longCMPAnalyser(TR::Node * root)
-   {
-   TR_ASSERT( 0, "TR_S390CompareAnalyser::longCMPAnalyser: Not implemented");
-   return NULL;
-   }
-
-const uint8_t TR_S390CompareAnalyser::_actionMap[NUM_ACTIONS] =
-   {
-   // Reg1 Mem1 Clob1 Reg2 Mem2 Clob2
-   EvalChild1 |        //  0    0     0    0    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     0    0    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     0    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  0    0     0    0    1     1
-   CmpReg1Mem2, EvalChild1 |        //  0    0     0    1    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     0    1    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     0    1    1     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     0    1    1     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     1    0    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     1    0    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     1    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  0    0     1    0    1     1
-   CmpReg1Mem2, EvalChild1 |        //  0    0     1    1    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     1    1    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     1    1    1     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  0    0     1    1    1     1
-   EvalChild2 | CmpReg1Reg2, EvalChild2 |        //  0    1     0    0    0     0
-   CmpMem1Reg2, EvalChild2 |        //  0    1     0    0    0     1
-   CmpMem1Reg2, EvalChild1 |        //  0    1     0    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  0    1     0    0    1     1
-   CmpReg1Mem2, EvalChild2 |        //  0    1     0    1    0     0
-   CmpMem1Reg2, EvalChild2 |        //  0    1     0    1    0     1
-   CmpMem1Reg2, EvalChild2 |        //  0    1     0    1    1     0
-   CmpMem1Reg2, EvalChild2 |        //  0    1     0    1    1     1
-   CmpMem1Reg2, EvalChild2 |        //  0    1     1    0    0     0
-   CmpMem1Reg2, EvalChild2 |        //  0    1     1    0    0     1
-   CmpMem1Reg2, EvalChild1 |        //  0    1     1    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  0    1     1    0    1     1
-   CmpReg1Mem2, EvalChild2 |        //  0    1     1    1    0     0
-   CmpMem1Reg2, EvalChild2 |        //  0    1     1    1    0     1
-   CmpMem1Reg2, EvalChild2 |        //  0    1     1    1    1     0
-   CmpMem1Reg2, EvalChild2 |        //  0    1     1    1    1     1
-   CmpMem1Reg2, EvalChild1 |        //  1    0     0    0    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     0    0    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     0    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  1    0     0    0    1     1
-   CmpReg1Mem2, EvalChild1 |        //  1    0     0    1    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     0    1    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     0    1    1     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     0    1    1     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     1    0    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     1    0    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     1    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  1    0     1    0    1     1
-   CmpReg1Mem2, EvalChild1 |        //  1    0     1    1    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     1    1    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     1    1    1     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    0     1    1    1     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     0    0    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     0    0    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     0    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  1    1     0    0    1     1
-   CmpReg1Mem2, EvalChild1 |        //  1    1     0    1    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     0    1    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     0    1    1     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     0    1    1     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     1    0    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     1    0    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     1    0    1     0
-   CmpReg1Mem2, EvalChild1 |        //  1    1     1    0    1     1
-   CmpReg1Mem2, EvalChild1 |        //  1    1     1    1    0     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     1    1    0     1
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     1    1    1     0
-   EvalChild2 | CmpReg1Reg2, EvalChild1 |        //  1    1     1    1    1     1
-   EvalChild2 | CmpReg1Reg2
-   };
+const uint8_t TR_S390CompareAnalyser::_actionMap[NUM_ACTIONS] = {
+    // Reg1 Mem1 Clob1 Reg2 Mem2 Clob2
+    EvalChild1 | //  0    0     0    0    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     0    0    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     0    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  0    0     0    0    1     1
+        CmpReg1Mem2,
+    EvalChild1 | //  0    0     0    1    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     0    1    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     0    1    1     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     0    1    1     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     1    0    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     1    0    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     1    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  0    0     1    0    1     1
+        CmpReg1Mem2,
+    EvalChild1 | //  0    0     1    1    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     1    1    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     1    1    1     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  0    0     1    1    1     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild2 | //  0    1     0    0    0     0
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     0    0    0     1
+        CmpMem1Reg2,
+    EvalChild1 | //  0    1     0    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  0    1     0    0    1     1
+        CmpReg1Mem2,
+    EvalChild2 | //  0    1     0    1    0     0
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     0    1    0     1
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     0    1    1     0
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     0    1    1     1
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     1    0    0     0
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     1    0    0     1
+        CmpMem1Reg2,
+    EvalChild1 | //  0    1     1    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  0    1     1    0    1     1
+        CmpReg1Mem2,
+    EvalChild2 | //  0    1     1    1    0     0
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     1    1    0     1
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     1    1    1     0
+        CmpMem1Reg2,
+    EvalChild2 | //  0    1     1    1    1     1
+        CmpMem1Reg2,
+    EvalChild1 | //  1    0     0    0    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     0    0    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     0    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  1    0     0    0    1     1
+        CmpReg1Mem2,
+    EvalChild1 | //  1    0     0    1    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     0    1    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     0    1    1     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     0    1    1     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     1    0    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     1    0    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     1    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  1    0     1    0    1     1
+        CmpReg1Mem2,
+    EvalChild1 | //  1    0     1    1    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     1    1    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     1    1    1     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    0     1    1    1     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     0    0    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     0    0    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     0    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  1    1     0    0    1     1
+        CmpReg1Mem2,
+    EvalChild1 | //  1    1     0    1    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     0    1    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     0    1    1     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     0    1    1     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     1    0    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     1    0    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     1    0    1     0
+        CmpReg1Mem2,
+    EvalChild1 | //  1    1     1    0    1     1
+        CmpReg1Mem2,
+    EvalChild1 | //  1    1     1    1    0     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     1    1    0     1
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     1    1    1     0
+        EvalChild2 | CmpReg1Reg2,
+    EvalChild1 | //  1    1     1    1    1     1
+        EvalChild2 | CmpReg1Reg2
+};

@@ -27,37 +27,44 @@
  */
 #ifndef OMR_COMPILATIONSTRATEGY_CONNECTOR
 #define OMR_COMPILATIONSTRATEGY_CONNECTOR
+
 namespace OMR {
 class CompilationStrategy;
 typedef OMR::CompilationStrategy CompilationStrategyConnector;
-}
+} // namespace OMR
 #endif
 
 #include "env/TRMemory.hpp"
 
 class TR_OptimizationPlan;
 struct TR_MethodToBeCompiled;
+
 namespace TR {
 class Recompilation;
 class CompilationStrategy;
-}
+} // namespace TR
 class TR_MethodEvent; // defined in downstream project
 
-namespace OMR
-{
-class OMR_EXTENSIBLE CompilationStrategy
-   {
-   public:
-   TR_PERSISTENT_ALLOC(TR_Memory::PersistentInfo);
-   TR::CompilationStrategy* self();
-   CompilationStrategy() {}
-   TR_OptimizationPlan *processEvent(TR_MethodEvent *event, bool *newPlanCreated) { return NULL; }
-   bool adjustOptimizationPlan(TR_MethodToBeCompiled *entry, int32_t adj) {return false;}
-   void beforeCodeGen(TR_OptimizationPlan *plan, TR::Recompilation *recomp) {}
-   void postCompilation(TR_OptimizationPlan *plan, TR::Recompilation *recomp) {}
-   void shutdown() {} // called at shutdown time; useful for stats
-   bool enableSwitchToProfiling() { return true; } // turn profiling on during optimizations
-   };
-} // namespace TR
+namespace OMR {
+class OMR_EXTENSIBLE CompilationStrategy {
+public:
+    TR_PERSISTENT_ALLOC(TR_Memory::PersistentInfo);
+    TR::CompilationStrategy *self();
+
+    CompilationStrategy() {}
+
+    TR_OptimizationPlan *processEvent(TR_MethodEvent *event, bool *newPlanCreated) { return NULL; }
+
+    bool adjustOptimizationPlan(TR_MethodToBeCompiled *entry, int32_t adj) { return false; }
+
+    void beforeCodeGen(TR_OptimizationPlan *plan, TR::Recompilation *recomp) {}
+
+    void postCompilation(TR_OptimizationPlan *plan, TR::Recompilation *recomp) {}
+
+    void shutdown() {} // called at shutdown time; useful for stats
+
+    bool enableSwitchToProfiling() { return true; } // turn profiling on during optimizations
+};
+} // namespace OMR
 
 #endif

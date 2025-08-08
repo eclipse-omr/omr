@@ -27,10 +27,14 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
+
 namespace OMR {
-namespace Z { class RealRegister; }
-typedef OMR::Z::RealRegister RealRegisterConnector;
+namespace Z {
+class RealRegister;
 }
+
+typedef OMR::Z::RealRegister RealRegisterConnector;
+} // namespace OMR
 #else
 #error OMR::Z::RealRegister expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -44,64 +48,53 @@ typedef OMR::Z::RealRegister RealRegisterConnector;
 namespace TR {
 class CodeGenerator;
 class RealRegister;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace Z {
 
-namespace Z
-{
+class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister {
+protected:
+    RealRegister(TR::CodeGenerator *cg);
+    RealRegister(TR_RegisterKinds, uint16_t, RegState, RegNum, RegMask, TR::CodeGenerator *);
 
-class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister
-   {
-   protected:
+public:
+    bool setHasBeenAssignedInMethod(bool b); // derived from base class
 
-   RealRegister(TR::CodeGenerator *cg);
-   RealRegister(TR_RegisterKinds, uint16_t, RegState, RegNum, RegMask, TR::CodeGenerator *);
+    // member methods that call static methods which set register field
+    void setBaseRegisterField(uint32_t *instruction);
+    void setIndexRegisterField(uint32_t *instruction);
+    void setRegisterField(uint32_t *instruction);
+    void setRegisterField(uint32_t *instruction,
+        int32_t nibbleIndex); // nibbleIndex-> rightmost nibble=0, leftmost nibble=7
+    void setRegister1Field(uint32_t *instruction);
+    void setRegister2Field(uint32_t *instruction);
+    void setRegister3Field(uint32_t *instruction);
+    void setRegister4Field(uint32_t *instruction);
 
-   public:
-   
-   bool setHasBeenAssignedInMethod(bool b); // derived from base class
+    // static methods for setting register field
+    static void setRegisterRXBField(uint32_t *instruction, RegNum reg, int index);
 
+    static void setBaseRegisterField(uint32_t *instruction, RegNum reg);
+    static void setIndexRegisterField(uint32_t *instruction, RegNum reg);
+    static void setRegisterField(uint32_t *instruction, RegNum reg);
+    static void setRegisterField(uint32_t *instruction, int32_t nibbleIndex, RegNum reg);
 
+    static void setRegister1Field(uint32_t *instruction, RegNum reg);
+    static void setRegister2Field(uint32_t *instruction, RegNum reg);
+    static void setRegister3Field(uint32_t *instruction, RegNum reg);
+    static void setRegister4Field(uint32_t *instruction, RegNum reg);
 
-   // member methods that call static methods which set register field
-   void setBaseRegisterField(uint32_t *instruction);
-   void setIndexRegisterField(uint32_t *instruction);
-   void setRegisterField(uint32_t *instruction);
-   void setRegisterField(uint32_t *instruction, int32_t nibbleIndex); // nibbleIndex-> rightmost nibble=0, leftmost nibble=7
-   void setRegister1Field(uint32_t *instruction);
-   void setRegister2Field(uint32_t *instruction);
-   void setRegister3Field(uint32_t *instruction);
-   void setRegister4Field(uint32_t *instruction);
+    // static methods for checking register type
+    static bool isPseudoRealReg(RegNum reg);
+    static bool isRealReg(RegNum reg);
+    static bool isGPR(RegNum reg);
+    static bool isFPR(RegNum reg);
+    static bool isVRF(RegNum reg);
 
-   // static methods for setting register field
-   static void setRegisterRXBField(uint32_t *instruction, RegNum reg, int index);
+private:
+    static const uint8_t _fullRegBinaryEncodings[NumRegisters];
+};
 
-   static void setBaseRegisterField(uint32_t *instruction,RegNum reg);
-   static void setIndexRegisterField(uint32_t *instruction,RegNum reg);
-   static void setRegisterField(uint32_t *instruction,RegNum reg);
-   static void setRegisterField(uint32_t *instruction, int32_t nibbleIndex,RegNum reg);
-
-   static void setRegister1Field(uint32_t *instruction,RegNum reg);
-   static void setRegister2Field(uint32_t *instruction,RegNum reg);
-   static void setRegister3Field(uint32_t *instruction,RegNum reg);
-   static void setRegister4Field(uint32_t *instruction,RegNum reg);
-
-   // static methods for checking register type
-   static bool isPseudoRealReg(RegNum reg);
-   static bool isRealReg(RegNum reg);
-   static bool isGPR(RegNum reg);
-   static bool isFPR(RegNum reg);
-   static bool isVRF(RegNum reg);
-
-   private:
-
-   static const uint8_t _fullRegBinaryEncodings[NumRegisters];
-   };
-
-}
-
-}
+}} // namespace OMR::Z
 
 #endif

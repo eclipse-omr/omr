@@ -27,10 +27,11 @@
  */
 #ifndef OMR_STATICSYMBOL_CONNECTOR
 #define OMR_STATICSYMBOL_CONNECTOR
+
 namespace OMR {
 class StaticSymbol;
 typedef OMR::StaticSymbol StaticSymbolConnector;
-}
+} // namespace OMR
 #endif
 
 #include "il/Symbol.hpp"
@@ -43,87 +44,83 @@ typedef OMR::StaticSymbol StaticSymbolConnector;
 namespace TR {
 class LabelSymbol;
 class StaticSymbol;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * A symbol with an address
  */
-class OMR_EXTENSIBLE StaticSymbol : public TR::Symbol
-   {
+class OMR_EXTENSIBLE StaticSymbol : public TR::Symbol {
 protected:
-   TR::StaticSymbol* self();
+    TR::StaticSymbol *self();
 
 public:
+    template<typename AllocatorType> static TR::StaticSymbol *create(AllocatorType t, TR::DataType d);
 
-   template <typename AllocatorType>
-   static TR::StaticSymbol * create(AllocatorType t, TR::DataType d);
+    template<typename AllocatorType>
+    static TR::StaticSymbol *createWithAddress(AllocatorType t, TR::DataType d, void *address);
 
-   template <typename AllocatorType>
-   static TR::StaticSymbol * createWithAddress(AllocatorType t, TR::DataType d, void * address);
-
-   template <typename AllocatorType>
-   static TR::StaticSymbol * createWithSize(AllocatorType t, TR::DataType d, uint32_t s);
+    template<typename AllocatorType>
+    static TR::StaticSymbol *createWithSize(AllocatorType t, TR::DataType d, uint32_t s);
 
 protected:
+    StaticSymbol(TR::DataType d)
+        : TR::Symbol(d)
+        , _staticAddress(0)
+        , _assignedTOCIndex(0)
+    {
+        _flags.setValue(KindMask, IsStatic);
+    }
 
-   StaticSymbol(TR::DataType d) :
-      TR::Symbol(d),
-      _staticAddress(0),
-      _assignedTOCIndex(0)
-      {
-      _flags.setValue(KindMask, IsStatic);
-      }
+    StaticSymbol(TR::DataType d, void *address)
+        : TR::Symbol(d)
+        , _staticAddress(address)
+        , _assignedTOCIndex(0)
+    {
+        _flags.setValue(KindMask, IsStatic);
+    }
 
-   StaticSymbol(TR::DataType d, void * address) :
-      TR::Symbol(d),
-      _staticAddress(address),
-      _assignedTOCIndex(0)
-      {
-      _flags.setValue(KindMask, IsStatic);
-      }
-
-   StaticSymbol(TR::DataType d, uint32_t s) :
-      TR::Symbol(d, s),
-      _staticAddress(0),
-      _assignedTOCIndex(0)
-      {
-      _flags.setValue(KindMask, IsStatic);
-      }
+    StaticSymbol(TR::DataType d, uint32_t s)
+        : TR::Symbol(d, s)
+        , _staticAddress(0)
+        , _assignedTOCIndex(0)
+    {
+        _flags.setValue(KindMask, IsStatic);
+    }
 
 public:
+    void *getStaticAddress() { return _staticAddress; }
 
-   void * getStaticAddress()                  { return _staticAddress; }
-   void   setStaticAddress(void * a)          { _staticAddress = a; }
+    void setStaticAddress(void *a) { _staticAddress = a; }
 
-   uint32_t getTOCIndex()                     { return _assignedTOCIndex; }
-   void     setTOCIndex(uint32_t idx)         { _assignedTOCIndex = idx; }
+    uint32_t getTOCIndex() { return _assignedTOCIndex; }
+
+    void setTOCIndex(uint32_t idx) { _assignedTOCIndex = idx; }
 
 private:
+    void *_staticAddress;
 
-   void * _staticAddress;
+    uint32_t _assignedTOCIndex;
 
-   uint32_t _assignedTOCIndex;
-
-   /* ------ TR_NamedStaticSymbol --------------- */
+    /* ------ TR_NamedStaticSymbol --------------- */
 public:
+    template<typename AllocatorType>
+    static TR::StaticSymbol *createNamed(AllocatorType m, TR::DataType d, const char *name);
 
-   template <typename AllocatorType>
-   static TR::StaticSymbol * createNamed(AllocatorType m, TR::DataType d, const char * name);
+    template<typename AllocatorType>
+    static TR::StaticSymbol *createNamed(AllocatorType m, TR::DataType d, void *addr, const char *name);
 
-   template <typename AllocatorType>
-   static TR::StaticSymbol * createNamed(AllocatorType m, TR::DataType d, void * addr, const char * name);
-
-   const char *getName();
+    const char *getName();
 
 private:
+    void makeNamed(const char *name)
+    {
+        _name = name;
+        _flags.set(IsNamed);
+    }
+};
 
-   void makeNamed(const char * name) { _name = name;  _flags.set(IsNamed); }
-
-   };
-
-}
+} // namespace OMR
 
 #endif

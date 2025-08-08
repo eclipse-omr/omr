@@ -25,10 +25,11 @@
 #include <stdint.h>
 
 class TR_BitVector;
+
 namespace TR {
 class Block;
 class Compilation;
-}
+} // namespace TR
 
 typedef int32_t blocknum_t;
 
@@ -65,114 +66,115 @@ typedef int32_t blocknum_t;
  *   instead of virtual functions.
  */
 
-class TR_ReachabilityAnalysis
-   {
-   TR::Compilation *_comp;
-   TR::Block      **_blocks;
+class TR_ReachabilityAnalysis {
+    TR::Compilation *_comp;
+    TR::Block **_blocks;
 
-   protected:
+protected:
+    TR::Compilation *comp() { return _comp; }
 
-   TR::Compilation *comp(){ return _comp; }
+    TR::Block *getBlock(blocknum_t n) { return _blocks[n]; }
 
-   TR::Block *getBlock(blocknum_t n){ return _blocks[n]; }
+    virtual bool isOrigin(TR::Block *block) = 0;
 
-   virtual bool isOrigin(TR::Block *block) = 0;
+    void traverse(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure);
 
-   void traverse(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure);
+    virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map,
+        TR_BitVector *closure)
+        = 0;
 
-   virtual void propagateInputs(
-      blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure)=0;
+    void propagateOneInput(blocknum_t inputBlockNum, blocknum_t blockNum, int32_t depth, blocknum_t *stack,
+        blocknum_t *depth_map, TR_BitVector *closure);
 
-   void propagateOneInput(blocknum_t inputBlockNum,
-      blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure);
+public:
+    TR_ReachabilityAnalysis(TR::Compilation *comp);
 
-   public:
-
-   TR_ReachabilityAnalysis(TR::Compilation *comp);
-
-   void perform(TR_BitVector *result);
-
-   };
+    void perform(TR_BitVector *result);
+};
 
 // Forward Reachability answers "which blocks can be reached from an origin block"
 //
-class TR_ForwardReachability: public TR_ReachabilityAnalysis
-   {
-   protected:
-   virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure);
+class TR_ForwardReachability : public TR_ReachabilityAnalysis {
+protected:
+    virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map,
+        TR_BitVector *closure);
 
-   public:
+public:
+    TR_ForwardReachability(TR::Compilation *comp)
+        : TR_ReachabilityAnalysis(comp)
+    {}
+};
 
-   TR_ForwardReachability(TR::Compilation *comp):TR_ReachabilityAnalysis(comp){}
-   };
+class TR_ForwardReachabilityWithoutExceptionEdges : public TR_ReachabilityAnalysis {
+protected:
+    virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map,
+        TR_BitVector *closure);
 
-class TR_ForwardReachabilityWithoutExceptionEdges: public TR_ReachabilityAnalysis
-   {
-   protected:
-   virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure);
-
-   public:
-
-   TR_ForwardReachabilityWithoutExceptionEdges(TR::Compilation *comp):TR_ReachabilityAnalysis(comp){}
-   };
+public:
+    TR_ForwardReachabilityWithoutExceptionEdges(TR::Compilation *comp)
+        : TR_ReachabilityAnalysis(comp)
+    {}
+};
 
 // Backward Reachability answers "which blocks can reach an origin block"
 //
-class TR_BackwardReachability: public TR_ReachabilityAnalysis
-   {
-   protected:
-   virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map, TR_BitVector *closure);
+class TR_BackwardReachability : public TR_ReachabilityAnalysis {
+protected:
+    virtual void propagateInputs(blocknum_t blockNum, int32_t depth, blocknum_t *stack, blocknum_t *depth_map,
+        TR_BitVector *closure);
 
-   public:
-
-   TR_BackwardReachability(TR::Compilation *comp):TR_ReachabilityAnalysis(comp){}
-   };
+public:
+    TR_BackwardReachability(TR::Compilation *comp)
+        : TR_ReachabilityAnalysis(comp)
+    {}
+};
 
 /////////////////////////////
 //
 // Specific analyses
 //
 
-class TR_CanReachGivenBlocks: public TR_BackwardReachability
-   {
-   TR_BitVector *_originBlocks;
+class TR_CanReachGivenBlocks : public TR_BackwardReachability {
+    TR_BitVector *_originBlocks;
 
-   protected:
-   virtual bool isOrigin(TR::Block *block);
+protected:
+    virtual bool isOrigin(TR::Block *block);
 
-   public:
+public:
+    TR_CanReachGivenBlocks(TR::Compilation *comp, TR_BitVector *originBlocks)
+        : TR_BackwardReachability(comp)
+        , _originBlocks(originBlocks)
+    {}
+};
 
-   TR_CanReachGivenBlocks(TR::Compilation *comp, TR_BitVector *originBlocks):TR_BackwardReachability(comp),_originBlocks(originBlocks){}
-   };
+class TR_CanReachNonColdBlocks : public TR_BackwardReachability {
+protected:
+    virtual bool isOrigin(TR::Block *block);
 
-class TR_CanReachNonColdBlocks: public TR_BackwardReachability
-   {
-   protected:
-   virtual bool isOrigin(TR::Block *block);
+public:
+    TR_CanReachNonColdBlocks(TR::Compilation *comp)
+        : TR_BackwardReachability(comp)
+    {}
+};
 
-   public:
+class TR_CanBeReachedFromCatchBlock : public TR_ForwardReachability {
+protected:
+    virtual bool isOrigin(TR::Block *block);
 
-   TR_CanReachNonColdBlocks(TR::Compilation *comp):TR_BackwardReachability(comp){}
-   };
+public:
+    TR_CanBeReachedFromCatchBlock(TR::Compilation *comp)
+        : TR_ForwardReachability(comp)
+    {}
+};
 
-class TR_CanBeReachedFromCatchBlock: public TR_ForwardReachability
-   {
-   protected:
-   virtual bool isOrigin(TR::Block *block);
+class TR_CanBeReachedWithoutExceptionEdges : public TR_ForwardReachabilityWithoutExceptionEdges {
+protected:
+    virtual bool isOrigin(TR::Block *block);
 
-   public:
-
-   TR_CanBeReachedFromCatchBlock(TR::Compilation *comp):TR_ForwardReachability(comp){}
-   };
-
-class TR_CanBeReachedWithoutExceptionEdges: public TR_ForwardReachabilityWithoutExceptionEdges
-   {
-   protected:
-   virtual bool isOrigin(TR::Block *block);
-
-   public:
-
-   TR_CanBeReachedWithoutExceptionEdges(TR::Compilation *comp):TR_ForwardReachabilityWithoutExceptionEdges(comp){}
-   };
+public:
+    TR_CanBeReachedWithoutExceptionEdges(TR::Compilation *comp)
+        : TR_ForwardReachabilityWithoutExceptionEdges(comp)
+    {}
+};
 
 #endif

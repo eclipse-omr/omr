@@ -25,21 +25,23 @@
 #include "infra/vector.hpp"
 
 class TR_CallSite;
+
 namespace TR {
 class Block;
 class AbsValue;
-}
+} // namespace TR
 
 namespace TR {
 
 /*
  * AbsVisitor enables users to define customized callback methods for abstract interpretation.
  */
-class AbsVisitor
-   {
-   public:
-   virtual void visitCallSite(TR_CallSite* callSite, TR::Block* callBlock, TR::vector<TR::AbsValue*, TR::Region&>* arguments) = 0;
-   };
-}
+class AbsVisitor {
+public:
+    virtual void visitCallSite(TR_CallSite *callSite, TR::Block *callBlock,
+        TR::vector<TR::AbsValue *, TR::Region &> *arguments)
+        = 0;
+};
+} // namespace TR
 
 #endif

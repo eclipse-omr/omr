@@ -27,10 +27,14 @@
  */
 #ifndef OMR_INSTRUCTIONDELEGATE_CONNECTOR
 #define OMR_INSTRUCTIONDELEGATE_CONNECTOR
+
 namespace OMR {
-namespace ARM64 { class InstructionDelegate; }
-typedef OMR::ARM64::InstructionDelegate InstructionDelegateConnector;
+namespace ARM64 {
+class InstructionDelegate;
 }
+
+typedef OMR::ARM64::InstructionDelegate InstructionDelegateConnector;
+} // namespace OMR
 #else
 #error OMR::ARM64::InstructionDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -43,56 +47,47 @@ namespace TR {
 class ARM64ImmSymInstruction;
 class ARM64Trg1MemInstruction;
 class ARM64MemInstruction;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace ARM64 {
 
-namespace ARM64
-{
-
-class OMR_EXTENSIBLE InstructionDelegate : public OMR::InstructionDelegate
-   {
+class OMR_EXTENSIBLE InstructionDelegate : public OMR::InstructionDelegate {
 protected:
-
-   InstructionDelegate() {}
+    InstructionDelegate() {}
 
 public:
+    /**
+     * @brief Sets the return address to CallSnippet for Label target
+     * @param[in] cg : CodeGenerator
+     * @param[in] ins : instruction associated with CallSnippet
+     * @param[in] cursor : instruction cursor
+     */
+    static void encodeBranchToLabel(TR::CodeGenerator *cg, TR::ARM64ImmSymInstruction *ins, uint8_t *cursor)
+    {
+        // Do nothing in OMR
+    }
 
-   /**
-    * @brief Sets the return address to CallSnippet for Label target
-    * @param[in] cg : CodeGenerator
-    * @param[in] ins : instruction associated with CallSnippet
-    * @param[in] cursor : instruction cursor
-    */
-   static void encodeBranchToLabel(TR::CodeGenerator *cg, TR::ARM64ImmSymInstruction *ins, uint8_t *cursor)
-      {
-      // Do nothing in OMR
-      }
+    /**
+     * @brief Determines if this instruction will throw an implicit null pointer exception and sets appropriate flags
+     * @param[in] cg    : CodeGenerator
+     * @param[in] instr : instruction with memory reference
+     */
+    static void setupImplicitNullPointerException(TR::CodeGenerator *cg, TR::ARM64Trg1MemInstruction *instr)
+    {
+        // Do nothing in OMR
+    }
 
-   /**
-    * @brief Determines if this instruction will throw an implicit null pointer exception and sets appropriate flags
-    * @param[in] cg    : CodeGenerator
-    * @param[in] instr : instruction with memory reference
-    */
-   static void setupImplicitNullPointerException(TR::CodeGenerator *cg, TR::ARM64Trg1MemInstruction *instr)
-      {
-      // Do nothing in OMR
-      }
+    /**
+     * @brief Determines if this instruction will throw an implicit null pointer exception and sets appropriate flags
+     * @param[in] cg    : CodeGenerator
+     * @param[in] instr : instruction with memory reference
+     */
+    static void setupImplicitNullPointerException(TR::CodeGenerator *cg, TR::ARM64MemInstruction *instr)
+    {
+        // Do nothing in OMR
+    }
+};
 
-   /**
-    * @brief Determines if this instruction will throw an implicit null pointer exception and sets appropriate flags
-    * @param[in] cg    : CodeGenerator
-    * @param[in] instr : instruction with memory reference
-    */
-   static void setupImplicitNullPointerException(TR::CodeGenerator *cg, TR::ARM64MemInstruction *instr)
-      {
-      // Do nothing in OMR
-      }
-   };
-
-}
-
-}
+}} // namespace OMR::ARM64
 
 #endif

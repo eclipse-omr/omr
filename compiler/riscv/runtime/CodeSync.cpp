@@ -22,13 +22,13 @@
 #include <riscv/runtime/CodeSync.hpp>
 
 void riscvCodeSync(void *codeStart, size_t codeSize)
-   {
+{
 #if defined(TR_HOST_RISCV)
 #if defined(__GNUC__)
-   // GCC built-in function
-   __builtin___clear_cache(reinterpret_cast<char*>(codeStart), reinterpret_cast<char*>(codeStart)+codeSize);
+    // GCC built-in function
+    __builtin___clear_cache(reinterpret_cast<char *>(codeStart), reinterpret_cast<char *>(codeStart) + codeSize);
 #else
 #error Not supported yet
 #endif
 #endif
-   }
+}

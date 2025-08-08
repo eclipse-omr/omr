@@ -32,142 +32,160 @@
 #include "infra/CfgEdge.hpp"
 #include "infra/forward_list.hpp"
 class TR_StructureSubGraphNode;
+
 namespace TR {
 class Block;
 class Compilation;
-}
+} // namespace TR
 
-namespace TR
-{
-typedef TR::typed_allocator< CFGEdge*, TR::Region& > CFGEdgeListAllocator;
-typedef TR::forward_list< CFGEdge*, CFGEdgeListAllocator > CFGEdgeList;
+namespace TR {
+typedef TR::typed_allocator<CFGEdge *, TR::Region &> CFGEdgeListAllocator;
+typedef TR::forward_list<CFGEdge *, CFGEdgeListAllocator> CFGEdgeList;
 
-class CFGNode : public ::TR_Link1<CFGNode>
-   {
-   // NOTE: CFGNodes form a linked list with each other.  AllBlockIterator
-   // assumes nodes are always added to the front of the list.  If this becomes
-   // false, please double check that AllBlockIterator will still satisfy its
-   // guarantee that it will not be considered finished until there are no
-   // un-visited blocks in the CFG.
+class CFGNode : public ::TR_Link1<CFGNode> {
+    // NOTE: CFGNodes form a linked list with each other.  AllBlockIterator
+    // assumes nodes are always added to the front of the list.  If this becomes
+    // false, please double check that AllBlockIterator will still satisfy its
+    // guarantee that it will not be considered finished until there are no
+    // un-visited blocks in the CFG.
 
-   public:
-   TR_ALLOC(TR_Memory::CFGNode)
+public:
+    TR_ALLOC(TR_Memory::CFGNode)
 
-   CFGNode(TR_Memory * m);
-   CFGNode(int32_t n, TR_Memory * m);
+    CFGNode(TR_Memory *m);
+    CFGNode(int32_t n, TR_Memory *m);
 
-   protected:
-   CFGNode(TR::Region &region);
-   CFGNode(int32_t n, TR::Region &region);
+protected:
+    CFGNode(TR::Region &region);
+    CFGNode(int32_t n, TR::Region &region);
 
-   public:
-   TR::CFGEdgeList& getSuccessors()            {return _successors;}
-   TR::CFGEdgeList& getPredecessors()          {return _predecessors;}
-   TR::CFGEdgeList& getExceptionSuccessors()   {return _exceptionSuccessors;}
-   TR::CFGEdgeList& getExceptionPredecessors() {return _exceptionPredecessors;}
+public:
+    TR::CFGEdgeList &getSuccessors() { return _successors; }
 
-   //getEdge looks in both getSuccessors() and getExceptionSuccessors()
-   //use getSuccessorEdge or getExceptionEdge if a search in a particular list is required
-   CFGEdge *getEdge(CFGNode *succ);
+    TR::CFGEdgeList &getPredecessors() { return _predecessors; }
 
-   void addSuccessor(CFGEdge *p)                                         {_successors.push_front(p);}
-   void addSuccessor(CFGEdge *p, TR_AllocationKind allocKind)            {_successors.push_front(p);}
+    TR::CFGEdgeList &getExceptionSuccessors() { return _exceptionSuccessors; }
 
-   void addPredecessor(CFGEdge *p)                                       {_predecessors.push_front(p);}
-   void addPredecessor(CFGEdge *p, TR_AllocationKind allocKind)          {_predecessors.push_front(p);}
+    TR::CFGEdgeList &getExceptionPredecessors() { return _exceptionPredecessors; }
 
-   void addExceptionSuccessor(CFGEdge *p)                                {_exceptionSuccessors.push_front(p);}
-   void addExceptionSuccessor(CFGEdge *p, TR_AllocationKind allocKind)   {_exceptionSuccessors.push_front(p);}
+    // getEdge looks in both getSuccessors() and getExceptionSuccessors()
+    // use getSuccessorEdge or getExceptionEdge if a search in a particular list is required
+    CFGEdge *getEdge(CFGNode *succ);
 
-   void addExceptionPredecessor(CFGEdge *p)                              {_exceptionPredecessors.push_front(p);}
-   void addExceptionPredecessor(CFGEdge *p, TR_AllocationKind allocKind) {_exceptionPredecessors.push_front(p);}
+    void addSuccessor(CFGEdge *p) { _successors.push_front(p); }
 
-   void removeSuccessor(CFGEdge *p)  { _successors.remove(p);}
-   void removePredecessor(CFGEdge *p){ _predecessors.remove(p);}
-   void removeExceptionSuccessor(CFGEdge *p)  { _exceptionSuccessors.remove(p);}
-   void removeExceptionPredecessor(CFGEdge *p){ _exceptionPredecessors.remove(p);}
+    void addSuccessor(CFGEdge *p, TR_AllocationKind allocKind) { _successors.push_front(p); }
 
-   bool hasSuccessor(CFGNode * n);
-   bool hasExceptionSuccessor(CFGNode * n);
+    void addPredecessor(CFGEdge *p) { _predecessors.push_front(p); }
 
-   bool hasPredecessor(CFGNode * n);
-   bool hasExceptionPredecessor(CFGNode * n);
+    void addPredecessor(CFGEdge *p, TR_AllocationKind allocKind) { _predecessors.push_front(p); }
 
-   CFGEdge * getSuccessorEdge(CFGNode * n);
-   CFGEdge * getExceptionSuccessorEdge(CFGNode * n);
+    void addExceptionSuccessor(CFGEdge *p) { _exceptionSuccessors.push_front(p); }
 
-   CFGEdge * getPredecessorEdge(CFGNode * n);
-   CFGEdge * getExceptionPredecessorEdge(CFGNode * n);
+    void addExceptionSuccessor(CFGEdge *p, TR_AllocationKind allocKind) { _exceptionSuccessors.push_front(p); }
 
-   void moveSuccessors(CFGNode * to);
-   void movePredecessors(CFGNode * to);
+    void addExceptionPredecessor(CFGEdge *p) { _exceptionPredecessors.push_front(p); }
 
-   bool isUnreachable() { return _predecessors.empty() && _exceptionPredecessors.empty(); }
+    void addExceptionPredecessor(CFGEdge *p, TR_AllocationKind allocKind) { _exceptionPredecessors.push_front(p); }
 
-   int32_t getNumber()          {return _nodeNumber;}
-   void    setNumber(int32_t n) {_nodeNumber = n;}
+    void removeSuccessor(CFGEdge *p) { _successors.remove(p); }
 
-   void    removeNode()         {return setValid(false);}
-   bool    nodeIsRemoved()      {return (!isValid());}
+    void removePredecessor(CFGEdge *p) { _predecessors.remove(p); }
 
-   vcount_t    getVisitCount()            {return _visitCount;}
-   vcount_t    setVisitCount(vcount_t vc) {return (_visitCount = vc);}
-   vcount_t    incVisitCount()            {return ++_visitCount;}
+    void removeExceptionSuccessor(CFGEdge *p) { _exceptionSuccessors.remove(p); }
 
-   int32_t   getForwardTraversalIndex()              { return _forwardTraversalIndex; }
-   void      setForwardTraversalIndex(int32_t idx)   { _forwardTraversalIndex=idx; }
-   int32_t   getBackwardTraversalIndex()             { return _backwardTraversalIndex; }
-   void      setBackwardTraversalIndex(int32_t idx)  { _backwardTraversalIndex=idx; }
+    void removeExceptionPredecessor(CFGEdge *p) { _exceptionPredecessors.remove(p); }
 
+    bool hasSuccessor(CFGNode *n);
+    bool hasExceptionSuccessor(CFGNode *n);
 
-   int16_t    getFrequency()          { return _frequency; }
-   void       setFrequency(int32_t f)
-      {
-      if (f >= SHRT_MAX)
-        f = SHRT_MAX-1;
+    bool hasPredecessor(CFGNode *n);
+    bool hasExceptionPredecessor(CFGNode *n);
 
-      _frequency = f;
-      }
+    CFGEdge *getSuccessorEdge(CFGNode *n);
+    CFGEdge *getExceptionSuccessorEdge(CFGNode *n);
 
-   static int32_t normalizedFrequency  (int32_t rawFrequency,        int32_t maxFrequency);
-   static int32_t denormalizedFrequency(int32_t normalizedFrequency, int32_t maxFrequency);
+    CFGEdge *getPredecessorEdge(CFGNode *n);
+    CFGEdge *getExceptionPredecessorEdge(CFGNode *n);
 
-   void       normalizeFrequency(int32_t maxFrequency);
-   void       normalizeFrequency(int32_t frequency, int32_t maxFrequency);
-   int32_t    denormalizeFrequency(int32_t maxFrequency);
+    void moveSuccessors(CFGNode *to);
+    void movePredecessors(CFGNode *to);
 
-   // Perform node-specific processing when the node is being removed from the
-   // CFG.
-   //
-   virtual void removeFromCFG(TR::Compilation *);
+    bool isUnreachable() { return _predecessors.empty() && _exceptionPredecessors.empty(); }
 
-   // Downcasts
-   //
-   virtual TR::Block                 *asBlock()                 {return NULL;}
-   virtual TR_StructureSubGraphNode *asStructureSubGraphNode() {return NULL;}
+    int32_t getNumber() { return _nodeNumber; }
 
-   private:
-   template <typename FUNC>
-   CFGEdge * getEdgeMatchingNodeInAList (CFGNode * n, TR::CFGEdgeList& list, FUNC blockGetter);
-   static CFGNode * fromBlockGetter (CFGEdge * e) {return e->getFrom();};
-   static CFGNode * toBlockGetter (CFGEdge * e)   {return e->getTo();};
+    void setNumber(int32_t n) { _nodeNumber = n; }
 
-   protected:
-   TR::Region      &_region;
+    void removeNode() { return setValid(false); }
 
-   private:
-   TR::CFGEdgeList _successors;
-   TR::CFGEdgeList _predecessors;
-   TR::CFGEdgeList _exceptionSuccessors;
-   TR::CFGEdgeList _exceptionPredecessors;
+    bool nodeIsRemoved() { return (!isValid()); }
 
-   int32_t          _nodeNumber;
-   vcount_t         _visitCount;
-   int16_t          _frequency;
-   int32_t         _forwardTraversalIndex;
-   int32_t         _backwardTraversalIndex;
-   };
+    vcount_t getVisitCount() { return _visitCount; }
 
-}
+    vcount_t setVisitCount(vcount_t vc) { return (_visitCount = vc); }
+
+    vcount_t incVisitCount() { return ++_visitCount; }
+
+    int32_t getForwardTraversalIndex() { return _forwardTraversalIndex; }
+
+    void setForwardTraversalIndex(int32_t idx) { _forwardTraversalIndex = idx; }
+
+    int32_t getBackwardTraversalIndex() { return _backwardTraversalIndex; }
+
+    void setBackwardTraversalIndex(int32_t idx) { _backwardTraversalIndex = idx; }
+
+    int16_t getFrequency() { return _frequency; }
+
+    void setFrequency(int32_t f)
+    {
+        if (f >= SHRT_MAX)
+            f = SHRT_MAX - 1;
+
+        _frequency = f;
+    }
+
+    static int32_t normalizedFrequency(int32_t rawFrequency, int32_t maxFrequency);
+    static int32_t denormalizedFrequency(int32_t normalizedFrequency, int32_t maxFrequency);
+
+    void normalizeFrequency(int32_t maxFrequency);
+    void normalizeFrequency(int32_t frequency, int32_t maxFrequency);
+    int32_t denormalizeFrequency(int32_t maxFrequency);
+
+    // Perform node-specific processing when the node is being removed from the
+    // CFG.
+    //
+    virtual void removeFromCFG(TR::Compilation *);
+
+    // Downcasts
+    //
+    virtual TR::Block *asBlock() { return NULL; }
+
+    virtual TR_StructureSubGraphNode *asStructureSubGraphNode() { return NULL; }
+
+private:
+    template<typename FUNC> CFGEdge *getEdgeMatchingNodeInAList(CFGNode *n, TR::CFGEdgeList &list, FUNC blockGetter);
+
+    static CFGNode *fromBlockGetter(CFGEdge *e) { return e->getFrom(); };
+
+    static CFGNode *toBlockGetter(CFGEdge *e) { return e->getTo(); };
+
+protected:
+    TR::Region &_region;
+
+private:
+    TR::CFGEdgeList _successors;
+    TR::CFGEdgeList _predecessors;
+    TR::CFGEdgeList _exceptionSuccessors;
+    TR::CFGEdgeList _exceptionPredecessors;
+
+    int32_t _nodeNumber;
+    vcount_t _visitCount;
+    int16_t _frequency;
+    int32_t _forwardTraversalIndex;
+    int32_t _backwardTraversalIndex;
+};
+
+} // namespace TR
 
 #endif

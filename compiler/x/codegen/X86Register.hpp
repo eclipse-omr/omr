@@ -26,49 +26,45 @@
 #include "codegen/RegisterConstants.hpp"
 
 class TR_X86FPStackRegister;
+
 namespace TR {
 class CodeGenerator;
 class Register;
-}
+} // namespace TR
 
 // TODO:AMD64: Re-evaluate the safety of this function, because not
 // all Registers are FPStackRegisters.
-inline TR_X86FPStackRegister * toX86FPStackRegister(TR::Register *r)
-   {
-   return (TR_X86FPStackRegister *)r;
-   }
+inline TR_X86FPStackRegister *toX86FPStackRegister(TR::Register *r) { return (TR_X86FPStackRegister *)r; }
 
-class TR_X86FPStackRegister : public TR::RealRegister
-   {
-   public:
+class TR_X86FPStackRegister : public TR::RealRegister {
+public:
+    typedef enum {
+        fpStackEmpty = -1,
+        fp0 = 0,
+        fpFirstStackReg = fp0,
+        fp1 = 1,
+        fp2 = 2,
+        fp3 = 3,
+        fp4 = 4,
+        fp5 = 5,
+        fp6 = 6,
+        fp7 = 7,
+        fpLastStackReg = fp7,
+        fpStackFull = 8,
+        NumRegisters = fp7 + 1
+    } TR_X86FPStackRegisters;
 
-   typedef enum
-      {
-      fpStackEmpty      = -1,
-      fp0               = 0,
-      fpFirstStackReg   = fp0,
-      fp1               = 1,
-      fp2               = 2,
-      fp3               = 3,
-      fp4               = 4,
-      fp5               = 5,
-      fp6               = 6,
-      fp7               = 7,
-      fpLastStackReg    = fp7,
-      fpStackFull       = 8,
-      NumRegisters      = fp7 + 1
-      } TR_X86FPStackRegisters;
+    TR_X86FPStackRegister(RegState s, TR_X86FPStackRegisters rn, TR::RealRegister::RegNum ri, TR::CodeGenerator *cg)
+        : TR::RealRegister(TR_X87, 0, s, ri, TR::RealRegister::noRegMask, cg)
+        , _fpStackRegisterNumber(rn)
+    {}
 
-   TR_X86FPStackRegister(RegState s, TR_X86FPStackRegisters rn, TR::RealRegister::RegNum ri, TR::CodeGenerator *cg) :
-      TR::RealRegister(TR_X87, 0, s, ri, TR::RealRegister::noRegMask, cg), _fpStackRegisterNumber(rn) {}
+    TR_X86FPStackRegisters getFPStackRegisterNumber() { return _fpStackRegisterNumber; }
 
-   TR_X86FPStackRegisters getFPStackRegisterNumber() {return _fpStackRegisterNumber;}
-   TR_X86FPStackRegisters setFPStackRegisterNumber(TR_X86FPStackRegisters rn) {return (_fpStackRegisterNumber = rn);}
+    TR_X86FPStackRegisters setFPStackRegisterNumber(TR_X86FPStackRegisters rn) { return (_fpStackRegisterNumber = rn); }
 
-   private:
-
-   TR_X86FPStackRegisters  _fpStackRegisterNumber;
-
-   };
+private:
+    TR_X86FPStackRegisters _fpStackRegisterNumber;
+};
 
 #endif

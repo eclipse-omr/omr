@@ -35,130 +35,139 @@ class Compilation;
 
 typedef uint32_t IGNodeIndex;
 typedef uint32_t IGNodeDegree;
-typedef int32_t  IGNodeColour;
+typedef int32_t IGNodeColour;
 
 // Maximum number of neighbours of any node in the interference graph.
 // The formula assumes the degree can not be negative values.
 //
-#define MAX_DEGREE          UINT_MAX
+#define MAX_DEGREE UINT_MAX
 
-#define UNCOLOURED          -1
-#define CANNOTCOLOR         -1
+#define UNCOLOURED -1
+#define CANNOTCOLOR -1
 
-class TR_IGNode
-   {
-   void           *_pEntity;
+class TR_IGNode {
+    void *_pEntity;
 
-   IGNodeIndex     _index;
-   IGNodeDegree    _degree;
-   IGNodeDegree    _workingDegree;
-   IGNodeColour    _colour;
-   List<TR_IGNode> _adjList;
-   flags8_t        _flags;
+    IGNodeIndex _index;
+    IGNodeDegree _degree;
+    IGNodeDegree _workingDegree;
+    IGNodeColour _colour;
+    List<TR_IGNode> _adjList;
+    flags8_t _flags;
 
-   enum
-      {
-      MustBeSpilled   = 0x01,  // Node must be spilled
-      IsRemovedFromIG = 0x02,   // Node has been removed from interference graph
-      };
+    enum {
+        MustBeSpilled = 0x01, // Node must be spilled
+        IsRemovedFromIG = 0x02, // Node has been removed from interference graph
+    };
 
-   public:
+public:
+    TR_ALLOC(TR_Memory::IGNode)
 
-   TR_ALLOC(TR_Memory::IGNode)
+    TR_IGNode(TR_Memory *m)
+        : _pEntity(NULL)
+        , _index(0)
+        , _degree(0)
+        , _workingDegree(0)
+        , _colour(UNCOLOURED)
+        , _adjList(m)
+        , _flags(0)
+    {}
 
-   TR_IGNode(TR_Memory * m) :
-      _pEntity(NULL),
-      _index(0),
-      _degree(0),
-      _workingDegree(0),
-      _colour(UNCOLOURED),
-      _adjList(m),
-      _flags(0) {}
+    TR_IGNode(void *p, TR_Memory *m)
+        : _pEntity(p)
+        , _index(0)
+        , _degree(0)
+        , _workingDegree(0)
+        , _colour(UNCOLOURED)
+        , _adjList(m)
+        , _flags(0)
+    {}
 
-   TR_IGNode(void *p, TR_Memory * m) :
-      _pEntity(p),
-      _index(0),
-      _degree(0),
-      _workingDegree(0),
-      _colour(UNCOLOURED),
-      _adjList(m),
-      _flags(0) {}
+    IGNodeColour getColour() { return _colour; }
 
-   IGNodeColour getColour()       {return _colour;}
-   void setColour(IGNodeColour c) {_colour = c;}
-   bool isColoured()              {return (_colour == UNCOLOURED) ? false : true;}
+    void setColour(IGNodeColour c) { _colour = c; }
 
-   IGNodeIndex getIndex()       {return _index;}
-   void setIndex(IGNodeIndex i) {_index = i;}
+    bool isColoured() { return (_colour == UNCOLOURED) ? false : true; }
 
-   List<TR_IGNode> &getAdjList() {return _adjList;}
+    IGNodeIndex getIndex() { return _index; }
 
-   void *getEntity()       {return _pEntity;}
-   void setEntity(void *p) {_pEntity = p;}
+    void setIndex(IGNodeIndex i) { _index = i; }
 
-   IGNodeDegree getWorkingDegree()       {return _workingDegree;}
-   void setWorkingDegree(IGNodeDegree d) {_workingDegree = d;}
-   IGNodeDegree incWorkingDegree()
-      {
-      TR_ASSERT(_workingDegree < MAX_DEGREE, "incWorkingDegree: maximum node degree exceeded!");
-      return ++_workingDegree;
-      }
+    List<TR_IGNode> &getAdjList() { return _adjList; }
 
-   IGNodeDegree incWorkingDegreeBy(IGNodeDegree d)
-      {
-      TR_ASSERT((MAX_DEGREE-_workingDegree) >= d, "incWorkingDegreeBy: maximum node degree exceeded!");
-      return (_workingDegree += d);
-      }
+    void *getEntity() { return _pEntity; }
 
-   IGNodeDegree decWorkingDegree()
-      {
-      TR_ASSERT(_workingDegree >= 1, "decWorkingDegree: working degree is less than 0! (_workingDegree=%d nodeIndex=%d)",_workingDegree, getIndex());
-      return --_workingDegree;
-      }
+    void setEntity(void *p) { _pEntity = p; }
 
-   IGNodeDegree decWorkingDegreeBy(IGNodeDegree d)
-      {
-      TR_ASSERT(_workingDegree >= d, "decWorkingDegreeBy: degree is less than 0!");
-      return (_workingDegree -= d);
-      }
+    IGNodeDegree getWorkingDegree() { return _workingDegree; }
 
-   IGNodeDegree getDegree()       {return _degree;}
-   void setDegree(IGNodeDegree d) {_degree = d;}
+    void setWorkingDegree(IGNodeDegree d) { _workingDegree = d; }
 
-   IGNodeDegree incDegree()
-      {
-      TR_ASSERT(_degree < MAX_DEGREE, "incDegree: maximum node degree exceeded!");
-      return ++_degree;
-      }
+    IGNodeDegree incWorkingDegree()
+    {
+        TR_ASSERT(_workingDegree < MAX_DEGREE, "incWorkingDegree: maximum node degree exceeded!");
+        return ++_workingDegree;
+    }
 
-   IGNodeDegree incDegreeBy(IGNodeDegree d)
-      {
-      TR_ASSERT((MAX_DEGREE-_degree) >= d, "incDegreeBy: maximum node degree exceeded!");
-      return (_degree += d);
-      }
+    IGNodeDegree incWorkingDegreeBy(IGNodeDegree d)
+    {
+        TR_ASSERT((MAX_DEGREE - _workingDegree) >= d, "incWorkingDegreeBy: maximum node degree exceeded!");
+        return (_workingDegree += d);
+    }
 
-   IGNodeDegree decDegree()
-      {
-      TR_ASSERT(_degree >= 1, "decDegree: degree is less than 0!");
-      return --_degree;
-      }
+    IGNodeDegree decWorkingDegree()
+    {
+        TR_ASSERT(_workingDegree >= 1,
+            "decWorkingDegree: working degree is less than 0! (_workingDegree=%d nodeIndex=%d)", _workingDegree,
+            getIndex());
+        return --_workingDegree;
+    }
 
-   IGNodeDegree decDegreeBy(IGNodeDegree d)
-      {
-      TR_ASSERT(_degree >= d, "decDegreeBy: degree is less than 0!");
-      return (_degree -= d);
-      }
+    IGNodeDegree decWorkingDegreeBy(IGNodeDegree d)
+    {
+        TR_ASSERT(_workingDegree >= d, "decWorkingDegreeBy: degree is less than 0!");
+        return (_workingDegree -= d);
+    }
 
-   bool isRemovedFromIG()      {return _flags.testAny(IsRemovedFromIG);}
-   void setIsRemovedFromIG()   {_flags.set(IsRemovedFromIG);}
-   void resetIsRemovedFromIG() {_flags.reset(IsRemovedFromIG);}
+    IGNodeDegree getDegree() { return _degree; }
 
-   void decWorkingDegreeOfNeighbours();
+    void setDegree(IGNodeDegree d) { _degree = d; }
+
+    IGNodeDegree incDegree()
+    {
+        TR_ASSERT(_degree < MAX_DEGREE, "incDegree: maximum node degree exceeded!");
+        return ++_degree;
+    }
+
+    IGNodeDegree incDegreeBy(IGNodeDegree d)
+    {
+        TR_ASSERT((MAX_DEGREE - _degree) >= d, "incDegreeBy: maximum node degree exceeded!");
+        return (_degree += d);
+    }
+
+    IGNodeDegree decDegree()
+    {
+        TR_ASSERT(_degree >= 1, "decDegree: degree is less than 0!");
+        return --_degree;
+    }
+
+    IGNodeDegree decDegreeBy(IGNodeDegree d)
+    {
+        TR_ASSERT(_degree >= d, "decDegreeBy: degree is less than 0!");
+        return (_degree -= d);
+    }
+
+    bool isRemovedFromIG() { return _flags.testAny(IsRemovedFromIG); }
+
+    void setIsRemovedFromIG() { _flags.set(IsRemovedFromIG); }
+
+    void resetIsRemovedFromIG() { _flags.reset(IsRemovedFromIG); }
+
+    void decWorkingDegreeOfNeighbours();
 
 #ifdef DEBUG
-      void print(TR::Compilation *);
+    void print(TR::Compilation *);
 #endif
-
-   };
+};
 
 #endif

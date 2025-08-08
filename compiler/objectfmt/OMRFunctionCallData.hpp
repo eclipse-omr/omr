@@ -27,10 +27,11 @@
  */
 #ifndef OMR_FUNCTIONCALLDATA_CONNECTOR
 #define OMR_FUNCTIONCALLDATA_CONNECTOR
+
 namespace OMR {
 class FunctionCallData;
 typedef OMR::FunctionCallData FunctionCallDataConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -42,10 +43,9 @@ namespace TR {
 class CodeGenerator;
 class Node;
 class SymbolReference;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * @class FunctionCallData
@@ -60,70 +60,62 @@ namespace OMR
  *    The resulting \c TR::FunctionCallData class is accepted as a parameter to
  *    most \c TR::ObjectFormat APIs.
  */
-class OMR_EXTENSIBLE FunctionCallData
-   {
-
+class OMR_EXTENSIBLE FunctionCallData {
 public:
+    TR_ALLOC(TR_Memory::FunctionCallData)
 
-   TR_ALLOC(TR_Memory::FunctionCallData)
+    FunctionCallData(TR::CodeGenerator *cg, TR::SymbolReference *methodSymRef, TR::Node *callNode)
+        : methodSymRef(methodSymRef)
+        , callNode(callNode)
+        , bufferAddress(NULL)
+        , out_encodedMethodAddressLocation(NULL)
+        , cg(cg)
+    {}
 
-   FunctionCallData(
-         TR::CodeGenerator *cg,
-         TR::SymbolReference *methodSymRef,
-         TR::Node *callNode) :
-      methodSymRef(methodSymRef),
-      callNode(callNode),
-      bufferAddress(NULL),
-      out_encodedMethodAddressLocation(NULL),
-      cg(cg) {}
+    FunctionCallData(TR::CodeGenerator *cg, TR::SymbolReference *methodSymRef, TR::Node *callNode,
+        uint8_t *bufferAddress)
+        : methodSymRef(methodSymRef)
+        , callNode(callNode)
+        , bufferAddress(bufferAddress)
+        , out_encodedMethodAddressLocation(NULL)
+        , cg(cg)
+    {}
 
-   FunctionCallData(
-         TR::CodeGenerator *cg,
-         TR::SymbolReference *methodSymRef,
-         TR::Node *callNode,
-         uint8_t *bufferAddress) :
-      methodSymRef(methodSymRef),
-      callNode(callNode),
-      bufferAddress(bufferAddress),
-      out_encodedMethodAddressLocation(NULL),
-      cg(cg) {}
+    /**
+     * The \c TR::SymbolReference of the method to call
+     */
+    TR::SymbolReference *methodSymRef;
 
-   /**
-    * The \c TR::SymbolReference of the method to call
-    */
-   TR::SymbolReference *methodSymRef;
+    /**
+     * If applicable, the \c TR::Node of the IL opcode that requires this call
+     *
+     * If not applicable, the field is NULL.
+     */
+    TR::Node *callNode;
 
-   /**
-    * If applicable, the \c TR::Node of the IL opcode that requires this call
-    *
-    * If not applicable, the field is NULL.
-    */
-   TR::Node *callNode;
+    /**
+     * The \c TR::CodeGenerator object
+     */
+    TR::CodeGenerator *cg;
 
-   /**
-    * The \c TR::CodeGenerator object
-    */
-   TR::CodeGenerator *cg;
+    /**
+     * For a call created post-binary encoding, the address of a buffer
+     * where the function call is to be emitted.
+     *
+     * Otherwise, this field is NULL.
+     */
+    uint8_t *bufferAddress;
 
-   /**
-    * For a call created post-binary encoding, the address of a buffer
-    * where the function call is to be emitted.
-    *
-    * Otherwise, this field is NULL.
-    */
-   uint8_t *bufferAddress;
+    /**
+     * This field is populated during an ObjectFormat dispatch sequence.
+     *
+     * If the address of the target function is known and it is encoded
+     * somewhere as part of the function dispatch sequence then this field
+     * records the address where that function address is written.
+     */
+    uint8_t *out_encodedMethodAddressLocation;
+};
 
-   /**
-    * This field is populated during an ObjectFormat dispatch sequence.
-    *
-    * If the address of the target function is known and it is encoded
-    * somewhere as part of the function dispatch sequence then this field
-    * records the address where that function address is written.
-    */
-   uint8_t *out_encodedMethodAddressLocation;
-
-   };
-
-}
+} // namespace OMR
 
 #endif

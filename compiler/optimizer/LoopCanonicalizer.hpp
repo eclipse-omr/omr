@@ -42,6 +42,7 @@ class TR_LoopVersioner;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_StructureSubGraphNode;
+
 namespace TR {
 class Block;
 class CFG;
@@ -49,317 +50,340 @@ class NodeChecklist;
 class RegisterMappedSymbol;
 class SymbolReference;
 class TreeTop;
-}
+} // namespace TR
 
-class TR_NodeParentPair
-   {
-   public:
-   TR_ALLOC(TR_Memory::LoopTransformer)
+class TR_NodeParentPair {
+public:
+    TR_ALLOC(TR_Memory::LoopTransformer)
 
-   TR_NodeParentPair(TR::Node *node, TR::Node *parent)
-      : _node(node), _parent(parent)
-      {
-      }
+    TR_NodeParentPair(TR::Node *node, TR::Node *parent)
+        : _node(node)
+        , _parent(parent)
+    {}
 
-   TR::Node *_node;
-   TR::Node *_parent;
-   };
+    TR::Node *_node;
+    TR::Node *_parent;
+};
 
-class TR_LoopTransformer : public TR::Optimization
-   {
-   public:
-   TR_LoopTransformer(TR::OptimizationManager *manager)
-      : TR::Optimization(manager),
-        _invariantBlocks(trMemory()),
-        _blocksToBeCleansed(trMemory()),
-        _analysisStack(trMemory(), 8, false, stackAlloc),
-        _writtenAndNotJustForHeapification(NULL),
-        _writtenExactlyOnce(comp()->allocator("LoopTransformer")),
-        _readExactlyOnce(comp()->allocator("LoopTransformer")),
-        _allKilledSymRefs(comp()->allocator("LoopTransformer")),
-        _allSymRefs(comp()->allocator("LoopTransformer")),
-        _autosAccessed(NULL),
-        _loopBlocksChecklists(
-           std::less<TR_RegionStructure*>(), trMemory()->currentStackRegion()),
-        _alwaysExecMemo(
-           std::less<AlwaysExecMemoKey>(), trMemory()->currentStackRegion())
-      {
-      _doingVersioning = false;
-      _nodesInCycle = NULL;
-      _indirectInductionVariable = false;
-      }
+class TR_LoopTransformer : public TR::Optimization {
+public:
+    TR_LoopTransformer(TR::OptimizationManager *manager)
+        : TR::Optimization(manager)
+        , _invariantBlocks(trMemory())
+        , _blocksToBeCleansed(trMemory())
+        , _analysisStack(trMemory(), 8, false, stackAlloc)
+        , _writtenAndNotJustForHeapification(NULL)
+        , _writtenExactlyOnce(comp()->allocator("LoopTransformer"))
+        , _readExactlyOnce(comp()->allocator("LoopTransformer"))
+        , _allKilledSymRefs(comp()->allocator("LoopTransformer"))
+        , _allSymRefs(comp()->allocator("LoopTransformer"))
+        , _autosAccessed(NULL)
+        , _loopBlocksChecklists(std::less<TR_RegionStructure *>(), trMemory()->currentStackRegion())
+        , _alwaysExecMemo(std::less<AlwaysExecMemoKey>(), trMemory()->currentStackRegion())
+    {
+        _doingVersioning = false;
+        _nodesInCycle = NULL;
+        _indirectInductionVariable = false;
+    }
 
-   void initializeSymbolsWrittenAndReadExactlyOnce(int32_t symRefCount, TR_BitVectorGrowable growableOrNot)
-      {
-      _storeTrees = (TR::TreeTop **)trMemory()->allocateStackMemory(symRefCount*sizeof(TR::TreeTop *));
-      memset(_storeTrees, 0, symRefCount*sizeof(TR::TreeTop *));
+    void initializeSymbolsWrittenAndReadExactlyOnce(int32_t symRefCount, TR_BitVectorGrowable growableOrNot)
+    {
+        _storeTrees = (TR::TreeTop **)trMemory()->allocateStackMemory(symRefCount * sizeof(TR::TreeTop *));
+        memset(_storeTrees, 0, symRefCount * sizeof(TR::TreeTop *));
 
-      _cannotBeEliminated = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growableOrNot);
+        _cannotBeEliminated = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growableOrNot);
 
-      _neverRead = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growableOrNot);
-      _neverWritten = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growableOrNot);
+        _neverRead = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growableOrNot);
+        _neverWritten = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growableOrNot);
 
-      TR::BitVector tmp(comp()->allocator("LoopTransformer"));
-      comp()->getSymRefTab()->getAllSymRefs(tmp);
+        TR::BitVector tmp(comp()->allocator("LoopTransformer"));
+        comp()->getSymRefTab()->getAllSymRefs(tmp);
 
-      *_neverWritten = tmp;
-      *_neverRead = tmp;
+        *_neverWritten = tmp;
+        *_neverRead = tmp;
 
-      _writtenExactlyOnce.Clear();
-      _readExactlyOnce.Clear();
-      _allKilledSymRefs.Clear();
-      _allSymRefs.Clear();
-      }
+        _writtenExactlyOnce.Clear();
+        _readExactlyOnce.Clear();
+        _allKilledSymRefs.Clear();
+        _allSymRefs.Clear();
+    }
 
-   virtual int32_t perform(){return 0;}
-   virtual TR_LoopCanonicalizer *asLoopCanonicalizer() {return NULL;}
-   virtual TR_LoopReducer *asLoopReducer() { return NULL; }
-   virtual TR_LoopVersioner *asLoopVersioner() {return NULL;}
-   virtual TR_LoopPredictor *asLoopPredictor() {return NULL;}
-   virtual int32_t detectCanonicalizedPredictableLoops(TR_Structure *, TR_BitVector **, int32_t){return 0;}
-   virtual bool isStoreInRequiredForm(int32_t, TR_Structure *);
-   virtual int32_t checkLoopForPredictability(TR_Structure *, TR::Block *, TR::Node **, bool returnIfNotPredictable = true);
-   virtual int32_t getInductionSymbolReference(TR::Node *);
-   virtual void updateStoreInfo(int32_t i, TR::TreeTop *tree) { _storeTrees[i] = tree; }
-   virtual void checkIfIncrementInDifferentExtendedBlock(TR::Block *block, int32_t inductionVariable);
-   virtual TR::Node *updateLoadUsedInLoopIncrement(TR::Node *node, int32_t);
+    virtual int32_t perform() { return 0; }
 
+    virtual TR_LoopCanonicalizer *asLoopCanonicalizer() { return NULL; }
 
-   protected:
-   void createWhileLoopsList(TR_ScratchList<TR_Structure>* whileLoops);
+    virtual TR_LoopReducer *asLoopReducer() { return NULL; }
 
-   void detectWhileLoops(ListAppender<TR_Structure> &whileLoopsInnerFirst, List<TR_Structure> &whileLoops, ListAppender<TR_Structure> &doWhileLoopsInnerFirst, List<TR_Structure> &doWhileLoops, TR_Structure *root, bool innerFirst);
-   void detectWhileLoopsInSubnodesInOrder(ListAppender<TR_Structure> &whileLoopsInnerFirst, List<TR_Structure> &whileLoops, ListAppender<TR_Structure> &doWhileLoopsInnerFirst, List<TR_Structure> &doWhileLoops, TR_Structure *root, TR_StructureSubGraphNode *rootNode, TR_RegionStructure *region, vcount_t visitCount, TR_BitVector *pendingList, bool innerFirst);
-   void detectWhileLoopsInSubnodesInOrder(ListAppender<TR_Structure> &whileLoopsInnerFirst, List<TR_Structure> &whileLoops, ListAppender<TR_Structure> &doWhileLoopsInnerFirst, List<TR_Structure> &doWhileLoops, TR_RegionStructure *region, vcount_t visitCount, TR_BitVector *pendingList, bool innerFirst);
+    virtual TR_LoopVersioner *asLoopVersioner() { return NULL; }
 
-   const TR::BlockChecklist &getLoopBlocksChecklist(TR_RegionStructure *loop);
-   bool blockIsAlwaysExecutedInLoop(
-      TR::Block *queryBlock,
-      TR_RegionStructure *loopStructure,
-      const TR::BlockChecklist **priorBlocks = NULL);
+    virtual TR_LoopPredictor *asLoopPredictor() { return NULL; }
 
-   TR::Block * createNewEmptyBlock();
-   TR::Node* createNewGotoNode();
-   void printTrees();
-   void adjustTreesInBlock(TR::Block *);
-   TR::Node *duplicateExact(TR::Node *, List<TR::Node> *, List<TR::Node> *);
-   bool cleanseTrees(TR::Block *);
-   bool makeInvariantBlockFallThroughIfPossible(TR::Block *);
+    virtual int32_t detectCanonicalizedPredictableLoops(TR_Structure *, TR_BitVector **, int32_t) { return 0; }
 
-   void collectSymbolsWrittenAndReadExactlyOnce(TR_Structure *, vcount_t);
+    virtual bool isStoreInRequiredForm(int32_t, TR_Structure *);
+    virtual int32_t checkLoopForPredictability(TR_Structure *, TR::Block *, TR::Node **,
+        bool returnIfNotPredictable = true);
+    virtual int32_t getInductionSymbolReference(TR::Node *);
 
- private:
-   struct updateInfo_tables {
-     TR::BitVector seenLoads, seenMultipleLoads, seenStores, seenMultipleStores, currentlyWrittenOnce, currentlyReadOnce;
-     updateInfo_tables(TR::Allocator a) : seenLoads(a), seenMultipleLoads(a),
-                                               seenStores(a), seenMultipleStores(a),
-                                               currentlyWrittenOnce(a), currentlyReadOnce(a) {}
-   };
-   void updateInfo(TR::Node *, vcount_t, updateInfo_tables &);
-   void collectSymbolsWrittenAndReadExactlyOnce(TR_Structure *, vcount_t, updateInfo_tables &);
+    virtual void updateStoreInfo(int32_t i, TR::TreeTop *tree) { _storeTrees[i] = tree; }
 
- public:
-   TR::Node *getCorrectNumberOfIterations(TR::Node *, TR::Node *);
-   TR::Node *containsOnlyInductionVariableAndAdditiveConstant(TR::Node *, int32_t);
-   bool isSymbolReferenceWrittenNumberOfTimesInStructure(TR_Structure *, int32_t, int32_t *, int32_t);
-     //bool isSymbolReferenceReadNumberOfTimesInStructure(TR_Structure *, int32_t, int32_t *, int32_t);
-   bool detectEmptyLoop(TR_Structure *, int32_t *);
-   bool findMatchingIVInRegion(TR::TreeTop*, TR_RegionStructure*);
+    virtual void checkIfIncrementInDifferentExtendedBlock(TR::Block *block, int32_t inductionVariable);
+    virtual TR::Node *updateLoadUsedInLoopIncrement(TR::Node *node, int32_t);
 
-   virtual bool replaceAllInductionVariableComputations(TR::Block *loopInvariantBlock, TR_Structure *, TR::SymbolReference **, TR::SymbolReference *);
-   virtual bool examineTreeForInductionVariableUse(TR::Block *loopInvariantBlock, TR::Node *, int32_t, TR::Node *, vcount_t, TR::SymbolReference **)
-      {
-      TR_ASSERT(0, "Should be overridden in the subclass that makes use of this function\n");
-      return true;
-      }
+protected:
+    void createWhileLoopsList(TR_ScratchList<TR_Structure> *whileLoops);
 
-   typedef enum
-      {
-      transformerNoReadOrWrite,
-      transformerReadFirst,
-      transformerWrittenFirst
-      } TR_TransformerDefUseState;
+    void detectWhileLoops(ListAppender<TR_Structure> &whileLoopsInnerFirst, List<TR_Structure> &whileLoops,
+        ListAppender<TR_Structure> &doWhileLoopsInnerFirst, List<TR_Structure> &doWhileLoops, TR_Structure *root,
+        bool innerFirst);
+    void detectWhileLoopsInSubnodesInOrder(ListAppender<TR_Structure> &whileLoopsInnerFirst,
+        List<TR_Structure> &whileLoops, ListAppender<TR_Structure> &doWhileLoopsInnerFirst,
+        List<TR_Structure> &doWhileLoops, TR_Structure *root, TR_StructureSubGraphNode *rootNode,
+        TR_RegionStructure *region, vcount_t visitCount, TR_BitVector *pendingList, bool innerFirst);
+    void detectWhileLoopsInSubnodesInOrder(ListAppender<TR_Structure> &whileLoopsInnerFirst,
+        List<TR_Structure> &whileLoops, ListAppender<TR_Structure> &doWhileLoopsInnerFirst,
+        List<TR_Structure> &doWhileLoops, TR_RegionStructure *region, vcount_t visitCount, TR_BitVector *pendingList,
+        bool innerFirst);
 
-   TR_TransformerDefUseState getSymbolDefUseStateInSubTree(TR::Node *node, TR::RegisterMappedSymbol* indVarSym);
-   TR_TransformerDefUseState getSymbolDefUseStateInBlock(TR::Block *block, TR::RegisterMappedSymbol* indVarSym);
+    const TR::BlockChecklist &getLoopBlocksChecklist(TR_RegionStructure *loop);
+    bool blockIsAlwaysExecutedInLoop(TR::Block *queryBlock, TR_RegionStructure *loopStructure,
+        const TR::BlockChecklist **priorBlocks = NULL);
 
-   TR::Block *_loopTestBlock;
-   TR::TreeTop **_storeTrees;
-   TR::TreeTop *_currTree, *_insertionTreeTop, *_loopTestTree, *_asyncCheckTree;
-   TR_BitVector *_cannotBeEliminated, *_writtenAndNotJustForHeapification, *_autosAccessed;
-   TR_BitVector *_neverRead, *_neverWritten;
-   TR::SparseBitVector _writtenExactlyOnce;
-   TR::SparseBitVector _readExactlyOnce;
-   TR::SparseBitVector _allKilledSymRefs;
-   TR::SparseBitVector _allSymRefs;
+    TR::Block *createNewEmptyBlock();
+    TR::Node *createNewGotoNode();
+    void printTrees();
+    void adjustTreesInBlock(TR::Block *);
+    TR::Node *duplicateExact(TR::Node *, List<TR::Node> *, List<TR::Node> *);
+    bool cleanseTrees(TR::Block *);
+    bool makeInvariantBlockFallThroughIfPossible(TR::Block *);
 
-   TR::Node *_numberOfIterations, *_constNode, *_loadUsedInLoopIncrement;
+    void collectSymbolsWrittenAndReadExactlyOnce(TR_Structure *, vcount_t);
 
-   TR::TreeTop    *_startOfHeader;
-   TR::CFG        *_cfg;
-   TR_Structure  *_rootStructure;
+private:
+    struct updateInfo_tables {
+        TR::BitVector seenLoads, seenMultipleLoads, seenStores, seenMultipleStores, currentlyWrittenOnce,
+            currentlyReadOnce;
 
-   List<TR::Block> _invariantBlocks;
-   List<TR::Block> _blocksToBeCleansed;
-   TR_Stack<TR_StructureSubGraphNode*> _analysisStack;
-   TR_BitVector *_nodesInCycle;
-   TR_BitVector *_hasPredictableExits;
+        updateInfo_tables(TR::Allocator a)
+            : seenLoads(a)
+            , seenMultipleLoads(a)
+            , seenStores(a)
+            , seenMultipleStores(a)
+            , currentlyWrittenOnce(a)
+            , currentlyReadOnce(a)
+        {}
+    };
 
-   int32_t        _whileIndex;
-   vcount_t       _visitCount;
-   int32_t        _topDfNum;
-   int32_t        _counter;
-   int32_t _loopDrivingInductionVar, _nextExpression, _startExpressionForThisInductionVariable, _numberOfTreesInLoop;
+    void updateInfo(TR::Node *, vcount_t, updateInfo_tables &);
+    void collectSymbolsWrittenAndReadExactlyOnce(TR_Structure *, vcount_t, updateInfo_tables &);
 
-   bool _isAddition, _requiresAdditionalCheckForIncrement, _doingVersioning;
-   bool _incrementInDifferentExtendedBlock;
-   bool _indirectInductionVariable; // JIT Design 1347
+public:
+    TR::Node *getCorrectNumberOfIterations(TR::Node *, TR::Node *);
+    TR::Node *containsOnlyInductionVariableAndAdditiveConstant(TR::Node *, int32_t);
+    bool isSymbolReferenceWrittenNumberOfTimesInStructure(TR_Structure *, int32_t, int32_t *, int32_t);
+    // bool isSymbolReferenceReadNumberOfTimesInStructure(TR_Structure *, int32_t, int32_t *, int32_t);
+    bool detectEmptyLoop(TR_Structure *, int32_t *);
+    bool findMatchingIVInRegion(TR::TreeTop *, TR_RegionStructure *);
 
-   TR::SymbolReference        **_symRefUsedInLoopIncrement;
+    virtual bool replaceAllInductionVariableComputations(TR::Block *loopInvariantBlock, TR_Structure *,
+        TR::SymbolReference **, TR::SymbolReference *);
 
- private:
-   typedef TR::typed_allocator<
-      std::pair<TR_RegionStructure * const, TR::BlockChecklist>, TR::Region&>
-      LoopChecklistAlloc;
-   typedef std::less<TR_RegionStructure*> LoopChecklistCmp;
-   typedef std::map<
-      TR_RegionStructure*, TR::BlockChecklist, LoopChecklistCmp, LoopChecklistAlloc>
-      LoopChecklistMap;
+    virtual bool examineTreeForInductionVariableUse(TR::Block *loopInvariantBlock, TR::Node *, int32_t, TR::Node *,
+        vcount_t, TR::SymbolReference **)
+    {
+        TR_ASSERT(0, "Should be overridden in the subclass that makes use of this function\n");
+        return true;
+    }
 
-   LoopChecklistMap _loopBlocksChecklists;
+    typedef enum {
+        transformerNoReadOrWrite,
+        transformerReadFirst,
+        transformerWrittenFirst
+    } TR_TransformerDefUseState;
 
-   struct AlwaysExecMemoRecord
-      {
-      AlwaysExecMemoRecord(TR::Compilation *comp)
-         : _alwaysExecutes(false), _priorBlocks(comp) {}
+    TR_TransformerDefUseState getSymbolDefUseStateInSubTree(TR::Node *node, TR::RegisterMappedSymbol *indVarSym);
+    TR_TransformerDefUseState getSymbolDefUseStateInBlock(TR::Block *block, TR::RegisterMappedSymbol *indVarSym);
 
-      bool _alwaysExecutes;
-      TR::BlockChecklist _priorBlocks; // empty unless _alwaysExecutes
-      };
+    TR::Block *_loopTestBlock;
+    TR::TreeTop **_storeTrees;
+    TR::TreeTop *_currTree, *_insertionTreeTop, *_loopTestTree, *_asyncCheckTree;
+    TR_BitVector *_cannotBeEliminated, *_writtenAndNotJustForHeapification, *_autosAccessed;
+    TR_BitVector *_neverRead, *_neverWritten;
+    TR::SparseBitVector _writtenExactlyOnce;
+    TR::SparseBitVector _readExactlyOnce;
+    TR::SparseBitVector _allKilledSymRefs;
+    TR::SparseBitVector _allSymRefs;
 
-   typedef std::pair<TR_RegionStructure*, TR::Block*> AlwaysExecMemoKey;
-   typedef TR::typed_allocator<
-      std::pair<const AlwaysExecMemoKey, AlwaysExecMemoRecord>, TR::Region&>
-      AlwaysExecMemoAlloc;
-   typedef std::less<AlwaysExecMemoKey> AlwaysExecMemoCmp;
-   typedef std::map<
-      AlwaysExecMemoKey, AlwaysExecMemoRecord, AlwaysExecMemoCmp, AlwaysExecMemoAlloc>
-      AlwaysExecMemoMap;
+    TR::Node *_numberOfIterations, *_constNode, *_loadUsedInLoopIncrement;
 
-   AlwaysExecMemoMap _alwaysExecMemo;
-   };
+    TR::TreeTop *_startOfHeader;
+    TR::CFG *_cfg;
+    TR_Structure *_rootStructure;
 
+    List<TR::Block> _invariantBlocks;
+    List<TR::Block> _blocksToBeCleansed;
+    TR_Stack<TR_StructureSubGraphNode *> _analysisStack;
+    TR_BitVector *_nodesInCycle;
+    TR_BitVector *_hasPredictableExits;
+
+    int32_t _whileIndex;
+    vcount_t _visitCount;
+    int32_t _topDfNum;
+    int32_t _counter;
+    int32_t _loopDrivingInductionVar, _nextExpression, _startExpressionForThisInductionVariable, _numberOfTreesInLoop;
+
+    bool _isAddition, _requiresAdditionalCheckForIncrement, _doingVersioning;
+    bool _incrementInDifferentExtendedBlock;
+    bool _indirectInductionVariable; // JIT Design 1347
+
+    TR::SymbolReference **_symRefUsedInLoopIncrement;
+
+private:
+    typedef TR::typed_allocator<std::pair<TR_RegionStructure * const, TR::BlockChecklist>, TR::Region &>
+        LoopChecklistAlloc;
+    typedef std::less<TR_RegionStructure *> LoopChecklistCmp;
+    typedef std::map<TR_RegionStructure *, TR::BlockChecklist, LoopChecklistCmp, LoopChecklistAlloc> LoopChecklistMap;
+
+    LoopChecklistMap _loopBlocksChecklists;
+
+    struct AlwaysExecMemoRecord {
+        AlwaysExecMemoRecord(TR::Compilation *comp)
+            : _alwaysExecutes(false)
+            , _priorBlocks(comp)
+        {}
+
+        bool _alwaysExecutes;
+        TR::BlockChecklist _priorBlocks; // empty unless _alwaysExecutes
+    };
+
+    typedef std::pair<TR_RegionStructure *, TR::Block *> AlwaysExecMemoKey;
+    typedef TR::typed_allocator<std::pair<const AlwaysExecMemoKey, AlwaysExecMemoRecord>, TR::Region &>
+        AlwaysExecMemoAlloc;
+    typedef std::less<AlwaysExecMemoKey> AlwaysExecMemoCmp;
+    typedef std::map<AlwaysExecMemoKey, AlwaysExecMemoRecord, AlwaysExecMemoCmp, AlwaysExecMemoAlloc> AlwaysExecMemoMap;
+
+    AlwaysExecMemoMap _alwaysExecMemo;
+};
 
 /**
  * Class TR_LoopCanonicalizer
  * ==========================
  *
- * The loop canonicalizer optimization transforms a while loop into 
- * an if-guarded do-while loop with a loop invariant (pre-header) 
- * block. The loop test is placed at the end of the trees for the 
+ * The loop canonicalizer optimization transforms a while loop into
+ * an if-guarded do-while loop with a loop invariant (pre-header)
+ * block. The loop test is placed at the end of the trees for the
  * loop, so that the loop back-edge is almost always a backwards branch.
  */
 
-class TR_LoopCanonicalizer : public TR_LoopTransformer
-   {
-   public:
+class TR_LoopCanonicalizer : public TR_LoopTransformer {
+public:
+    TR_LoopCanonicalizer(TR::OptimizationManager *manager);
 
-   TR_LoopCanonicalizer(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_LoopCanonicalizer(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_LoopCanonicalizer(manager);
+    }
 
-   virtual int32_t perform();
-   virtual TR_LoopCanonicalizer *asLoopCanonicalizer() {return this;}
-   virtual const char * optDetailString() const throw();
+    virtual int32_t perform();
 
-   protected:
-   void eliminateRedundantInductionVariablesFromLoop(TR_RegionStructure *naturalLoop);
+    virtual TR_LoopCanonicalizer *asLoopCanonicalizer() { return this; }
 
-   private:
-   void canonicalizeNaturalLoop(TR_RegionStructure *whileLoop);
-   void canonicalizeDoWhileLoop(TR_RegionStructure *doWhileLoop);
+    virtual const char *optDetailString() const throw();
 
-   bool isLegalToSplitEdges(TR_RegionStructure *doWhileLoop, TR::Block *blockAtHeadOfLoop);
-   bool modifyBranchesForSplitEdges(TR_RegionStructure *doWhileLoop, TR::Block *blockAtHeadOfLoop, TR::Block *loopInvariantBlock,
-         TR::Block *targetBlock, bool addToEnd, int32_t *sumPredFreq, bool isCheckOnly = false);
+protected:
+    void eliminateRedundantInductionVariablesFromLoop(TR_RegionStructure *naturalLoop);
 
-   bool replaceInductionVariableComputationsInExits(TR_Structure *structure, TR::Node *node, TR::SymbolReference *newSymbolReference, TR::SymbolReference *primaryInductionVar, TR::SymbolReference *derivedInductionVar);
-   virtual bool examineTreeForInductionVariableUse(TR::Block *loopInvariantBlock, TR::Node *, int32_t, TR::Node *, vcount_t, TR::SymbolReference **);
-   void placeInitializationTreeInLoopPreHeader(TR::Block *b, TR::Node *node, TR::SymbolReference *newSymbolReference, TR::SymbolReference *primaryInductionVar, TR::SymbolReference *derivedInductionVar);
-   bool incrementedInLockStep(TR_Structure *, TR::SymbolReference *, TR::SymbolReference *, int64_t derivedInductionVarIncrement, int64_t primaryInductionVarIncrement, TR_ScratchList<TR::Block> *derivedInductionVarIncrementBlocks, TR_ScratchList<TR::Block> *primaryInductionVarIncrementBlocks);
-   void findIncrements(TR::Node * currentNode, vcount_t visitCount, TR::SymbolReference *derivedInductionVar, TR::SymbolReference *primaryInductionVar, int64_t &derivedInductionVarIncrement, int64_t &primaryInductionVarIncrement, bool &unknownIncrement);
-   bool checkIfOrderOfBlocksIsKnown(TR_RegionStructure *naturalLoop, TR::Block *entryBlock, TR::Block *loopTestBlock, TR_ScratchList<TR::Block> *derivedInductionVarIncrementBlocks, TR_ScratchList<TR::Block> *primaryInductionVarIncrementBlocks, uint8_t &primaryFirst);
-   bool checkComplexInductionVariableUse(TR_Structure *structure);
-   bool checkComplexInductionVariableUseNode(TR::Node *node, bool inAddr);
+private:
+    void canonicalizeNaturalLoop(TR_RegionStructure *whileLoop);
+    void canonicalizeDoWhileLoop(TR_RegionStructure *doWhileLoop);
 
-   void rewritePostToPreIncrementTestInRegion(TR_RegionStructure *region);
-   void rewritePostToPreIncrementTestInBlock(TR::Block *block);
+    bool isLegalToSplitEdges(TR_RegionStructure *doWhileLoop, TR::Block *blockAtHeadOfLoop);
+    bool modifyBranchesForSplitEdges(TR_RegionStructure *doWhileLoop, TR::Block *blockAtHeadOfLoop,
+        TR::Block *loopInvariantBlock, TR::Block *targetBlock, bool addToEnd, int32_t *sumPredFreq,
+        bool isCheckOnly = false);
 
-   TR::SymbolReference *_symRefBeingReplaced;
-   TR::SymbolReference *_primaryInductionVariable;
-   TR::Node *_primaryInductionVarStoreInBlock;
-   TR::Node *_derivedInductionVarStoreInBlock;
-   TR::Node *_primaryInductionVarStoreSomewhereInBlock;
-   uint8_t _primaryIncrementedFirst;
-   TR::Block *_entryBlock;
-   TR::Block *_loopTestBlock;
-   TR::Block *_currentBlock;
-   TR::Block *_primaryInductionIncrementBlock;
-   TR::Block *_derivedInductionIncrementBlock;
-   int64_t _primaryIncr;
-   int64_t _derivedIncr;
-   };
+    bool replaceInductionVariableComputationsInExits(TR_Structure *structure, TR::Node *node,
+        TR::SymbolReference *newSymbolReference, TR::SymbolReference *primaryInductionVar,
+        TR::SymbolReference *derivedInductionVar);
+    virtual bool examineTreeForInductionVariableUse(TR::Block *loopInvariantBlock, TR::Node *, int32_t, TR::Node *,
+        vcount_t, TR::SymbolReference **);
+    void placeInitializationTreeInLoopPreHeader(TR::Block *b, TR::Node *node, TR::SymbolReference *newSymbolReference,
+        TR::SymbolReference *primaryInductionVar, TR::SymbolReference *derivedInductionVar);
+    bool incrementedInLockStep(TR_Structure *, TR::SymbolReference *, TR::SymbolReference *,
+        int64_t derivedInductionVarIncrement, int64_t primaryInductionVarIncrement,
+        TR_ScratchList<TR::Block> *derivedInductionVarIncrementBlocks,
+        TR_ScratchList<TR::Block> *primaryInductionVarIncrementBlocks);
+    void findIncrements(TR::Node *currentNode, vcount_t visitCount, TR::SymbolReference *derivedInductionVar,
+        TR::SymbolReference *primaryInductionVar, int64_t &derivedInductionVarIncrement,
+        int64_t &primaryInductionVarIncrement, bool &unknownIncrement);
+    bool checkIfOrderOfBlocksIsKnown(TR_RegionStructure *naturalLoop, TR::Block *entryBlock, TR::Block *loopTestBlock,
+        TR_ScratchList<TR::Block> *derivedInductionVarIncrementBlocks,
+        TR_ScratchList<TR::Block> *primaryInductionVarIncrementBlocks, uint8_t &primaryFirst);
+    bool checkComplexInductionVariableUse(TR_Structure *structure);
+    bool checkComplexInductionVariableUseNode(TR::Node *node, bool inAddr);
 
+    void rewritePostToPreIncrementTestInRegion(TR_RegionStructure *region);
+    void rewritePostToPreIncrementTestInBlock(TR::Block *block);
+
+    TR::SymbolReference *_symRefBeingReplaced;
+    TR::SymbolReference *_primaryInductionVariable;
+    TR::Node *_primaryInductionVarStoreInBlock;
+    TR::Node *_derivedInductionVarStoreInBlock;
+    TR::Node *_primaryInductionVarStoreSomewhereInBlock;
+    uint8_t _primaryIncrementedFirst;
+    TR::Block *_entryBlock;
+    TR::Block *_loopTestBlock;
+    TR::Block *_currentBlock;
+    TR::Block *_primaryInductionIncrementBlock;
+    TR::Block *_derivedInductionIncrementBlock;
+    int64_t _primaryIncr;
+    int64_t _derivedIncr;
+};
 
 /**
  * Class TR_LoopInverter
  * =====================
  *
- * The loop inverter optimization converts a loop in which the induction 
- * variable counts up from zero into one in which the induction variable 
- * counts down to zero. Note that this is legal only if the inversion of 
- * the loop does not affect program semantics inside the loop (order of 
- * exceptions thrown, etc.). The benefit of inversion is that there are, 
- * in general, instructions that can perform compare/branch against zero 
- * in an efficient manner, and in some cases (e.g. PowerPC) special count 
+ * The loop inverter optimization converts a loop in which the induction
+ * variable counts up from zero into one in which the induction variable
+ * counts down to zero. Note that this is legal only if the inversion of
+ * the loop does not affect program semantics inside the loop (order of
+ * exceptions thrown, etc.). The benefit of inversion is that there are,
+ * in general, instructions that can perform compare/branch against zero
+ * in an efficient manner, and in some cases (e.g. PowerPC) special count
  * registers can be used for counting.
  */
 
-class TR_LoopInverter : public TR_LoopTransformer
-   {
-   public:
+class TR_LoopInverter : public TR_LoopTransformer {
+public:
+    TR_LoopInverter(TR::OptimizationManager *manager);
 
-   TR_LoopInverter(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_LoopInverter(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_LoopInverter(manager);
+    }
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   virtual int32_t detectCanonicalizedPredictableLoops(TR_Structure *, TR_BitVector **, int32_t);
-   bool isInvertibleLoop(int32_t, TR_Structure *);
-   bool checkIfSymbolIsReadInKnownTree(TR::Node *, int32_t, TR::TreeTop *, TR::NodeChecklist &);
-   };
+    virtual int32_t detectCanonicalizedPredictableLoops(TR_Structure *, TR_BitVector **, int32_t);
+    bool isInvertibleLoop(int32_t, TR_Structure *);
+    bool checkIfSymbolIsReadInKnownTree(TR::Node *, int32_t, TR::TreeTop *, TR::NodeChecklist &);
+};
 
-class TR_RedundantInductionVarElimination : public TR_LoopCanonicalizer
-   {
-   public:
+class TR_RedundantInductionVarElimination : public TR_LoopCanonicalizer {
+public:
+    TR_RedundantInductionVarElimination(TR::OptimizationManager *manager)
+        : TR_LoopCanonicalizer(manager)
+    {}
 
-   TR_RedundantInductionVarElimination(TR::OptimizationManager *manager)
-       : TR_LoopCanonicalizer(manager)
-       {}
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_RedundantInductionVarElimination(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_RedundantInductionVarElimination(manager);
+    }
 
-
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
-   };
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
+};
 
 #endif

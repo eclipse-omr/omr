@@ -25,24 +25,22 @@
 namespace TR {
 class IlBuilder;
 class VirtualMachineState;
-}
+} // namespace TR
 class TR_Memory;
 
-template <class T> class List;
-template <class T> class ListAppender;
+template<class T> class List;
+template<class T> class ListAppender;
 
-extern "C"
-{
+extern "C" {
 typedef void (*CommitCallback)(void *client, void *b);
 typedef void (*ReloadCallback)(void *client, void *b);
-typedef void * (*MakeCopyCallback)(void *client);
+typedef void *(*MakeCopyCallback)(void *client);
 typedef void (*MergeIntoCallback)(void *client, void *other, void *b_other);
-typedef void * (*ClientAllocator)(void *implObject);
-typedef void * (*ImplGetter)(void *client);
+typedef void *(*ClientAllocator)(void *implObject);
+typedef void *(*ImplGetter)(void *client);
 }
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * @brief Interface for expressing virtual machine state variables to JitBuilder
@@ -86,139 +84,115 @@ namespace OMR
  * MakeCopy(), and MergeInto() operations can be implemented.
  */
 
-class VirtualMachineState
-   {
-   protected:
-   VirtualMachineState()
-      : _client(0),
-        _clientCallbackCommit(0),
-        _clientCallbackReload(0),
-        _clientCallbackMakeCopy(0),
-        _clientCallbackMergeInto(0)
-   { }
+class VirtualMachineState {
+protected:
+    VirtualMachineState()
+        : _client(0)
+        , _clientCallbackCommit(0)
+        , _clientCallbackReload(0)
+        , _clientCallbackMakeCopy(0)
+        , _clientCallbackMergeInto(0)
+    {}
 
-   public:
+public:
+    /**
+     * @brief Cause all simulated aspects of the virtual machine state to become real.
+     * @param b builder object where the operations will be added to change the virtual machine state.
+     *
+     * The builder object b is assumed to be along a control flow path transitioning
+     * from compiled code to the interpreter. Base implementation does nothing.
+     */
+    virtual void Commit(TR::IlBuilder *b) {}
 
-   /**
-    * @brief Cause all simulated aspects of the virtual machine state to become real.
-    * @param b builder object where the operations will be added to change the virtual machine state.
-    *
-    * The builder object b is assumed to be along a control flow path transitioning
-    * from compiled code to the interpreter. Base implementation does nothing.
-    */
-   virtual void Commit(TR::IlBuilder *b) { }
+    void commit(TR::IlBuilder *b);
 
-   void commit(TR::IlBuilder *b);
+    /**
+     * @brief Load the current virtual machine state into the simulated variables used by compiled code.
+     * @param b builder object where the operations will be added to reload the virtual machine state.
+     *
+     * The builder object b is assumed to be along a control flow path transitioning
+     * from the interpreter to compiled code. Base implementation does nothing.
+     */
+    virtual void Reload(TR::IlBuilder *b) {}
 
-   /**
-    * @brief Load the current virtual machine state into the simulated variables used by compiled code.
-    * @param b builder object where the operations will be added to reload the virtual machine state.
-    *
-    * The builder object b is assumed to be along a control flow path transitioning
-    * from the interpreter to compiled code. Base implementation does nothing.
-    */
-   virtual void Reload(TR::IlBuilder *b) { }
+    void reload(TR::IlBuilder *b);
 
-   void reload(TR::IlBuilder *b);
+    /**
+     * @brief create an identical copy of the current object.
+     * @returns the copy of the current object
+     *
+     * Typically used when propagating the current state along a flow edge to another builder to
+     * capture the input state for that other builder.
+     */
+    virtual TR::VirtualMachineState *MakeCopy();
 
-   /**
-    * @brief create an identical copy of the current object.
-    * @returns the copy of the current object
-    *
-    * Typically used when propagating the current state along a flow edge to another builder to
-    * capture the input state for that other builder.
-    */
-   virtual TR::VirtualMachineState *MakeCopy();
+    TR::VirtualMachineState *makeCopy();
 
-   TR::VirtualMachineState *makeCopy();
+    /**
+     * @brief cause the current state variables to match those used by another vm state
+     * @param other current state for the builder object control is merging into
+     * @param b builder object where the operations will be added to merge this state into the other
+     *
+     * The builder object is assumed to be along the control flow edge from one builder object S to
+     * another builder object T. "this" vm state is assumed to be the vm state for S. "other"  is
+     * assumed to be the vm state for T. Control from S should be to "b", and "b" should eventually
+     * transfer to T. Base implementation does nothing.
+     */
+    virtual void MergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b) {}
 
-   /**
-    * @brief cause the current state variables to match those used by another vm state
-    * @param other current state for the builder object control is merging into
-    * @param b builder object where the operations will be added to merge this state into the other
-    *
-    * The builder object is assumed to be along the control flow edge from one builder object S to
-    * another builder object T. "this" vm state is assumed to be the vm state for S. "other"  is
-    * assumed to be the vm state for T. Control from S should be to "b", and "b" should eventually
-    * transfer to T. Base implementation does nothing.
-    */
-   virtual void MergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b) { }
+    void mergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b);
 
-   void mergeInto(TR::VirtualMachineState *other, TR::IlBuilder *b);
+    /**
+     * @brief associates this object with a particular client object
+     */
+    void setClient(void *client) { _client = client; }
 
-   /**
-    * @brief associates this object with a particular client object
-    */
-   void setClient(void *client)
-      {
-      _client = client;
-      }
+    /**
+     * @brief returns the client object associated with this object
+     */
+    virtual void *client();
 
-   /**
-    * @brief returns the client object associated with this object
-    */
-   virtual void *client();
+    void setClientCallback_Commit(void *callback) { _clientCallbackCommit = (CommitCallback)callback; }
 
-   void setClientCallback_Commit(void *callback)
-      {
-      _clientCallbackCommit = (CommitCallback)callback;
-      }
+    void setClientCallback_Reload(void *callback) { _clientCallbackReload = (ReloadCallback)callback; }
 
-   void setClientCallback_Reload(void *callback)
-      {
-      _clientCallbackReload = (ReloadCallback)callback;
-      }
+    void setClientCallback_MakeCopy(void *callback) { _clientCallbackMakeCopy = (MakeCopyCallback)callback; }
 
-   void setClientCallback_MakeCopy(void *callback)
-      {
-      _clientCallbackMakeCopy = (MakeCopyCallback)callback;
-      }
+    void setClientCallback_MergeInto(void *callback) { _clientCallbackMergeInto = (MergeIntoCallback)callback; }
 
-   void setClientCallback_MergeInto(void *callback)
-      {
-      _clientCallbackMergeInto = (MergeIntoCallback)callback;
-      }
+    /**
+     * @brief Set the Client Allocator function
+     */
+    static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
 
-   /**
-    * @brief Set the Client Allocator function
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
-
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
+    /**
+     * @brief Set the Get Impl function
+     *
+     * @param getter function pointer to the impl getter
+     */
+    static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
 
 protected:
+    /**
+     * @brief pointer to a client object that corresponds to this object
+     */
+    void *_client;
 
-   /**
-    * @brief pointer to a client object that corresponds to this object
-    */
-   void              * _client;
+    CommitCallback _clientCallbackCommit;
+    ReloadCallback _clientCallbackReload;
+    MakeCopyCallback _clientCallbackMakeCopy;
+    MergeIntoCallback _clientCallbackMergeInto;
 
-   CommitCallback      _clientCallbackCommit;
-   ReloadCallback      _clientCallbackReload;
-   MakeCopyCallback    _clientCallbackMakeCopy;
-   MergeIntoCallback   _clientCallbackMergeInto;
-
-   /**
-    * @brief pointer to impl getter function
-    */
-   static ImplGetter _getImpl;
+    /**
+     * @brief pointer to impl getter function
+     */
+    static ImplGetter _getImpl;
 
 private:
-  //  static void * allocateClientObject(TR::VirtualMachineState *);
-   static ClientAllocator _clientAllocator;
-   };
+    //  static void * allocateClientObject(TR::VirtualMachineState *);
+    static ClientAllocator _clientAllocator;
+};
 
-}
+} // namespace OMR
 
 #endif // !defined(OMR_VIRTUALMACHINESTATE_INCL)

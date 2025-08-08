@@ -24,15 +24,13 @@
 
 #include "ilgen/OMRIlValue.hpp"
 
-namespace TR
-{
-   class IlValue : public OMR::IlValue
-      {
-      public:
-         IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder)
-            : OMR::IlValue(node, treeTop, block, methodBuilder)
-            { }
-      };
+namespace TR {
+class IlValue : public OMR::IlValue {
+public:
+    IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder)
+        : OMR::IlValue(node, treeTop, block, methodBuilder)
+    {}
+};
 
 } // namespace TR
 

@@ -27,134 +27,114 @@ class MethodBuilder;
 }
 
 OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb, const char *fileName)
-: _mb(mb), _nextID(0), _idSize(8),  _file(fileName, std::fstream::out | std::fstream::trunc)
-   {
-   start(); // initializes IDs 0 and 1 (reserved)
-   }
+    : _mb(mb)
+    , _nextID(0)
+    , _idSize(8)
+    , _file(fileName, std::fstream::out | std::fstream::trunc)
+{
+    start(); // initializes IDs 0 and 1 (reserved)
+}
 
-OMR::JitBuilderRecorder::~JitBuilderRecorder()
-   {
-   }
+OMR::JitBuilderRecorder::~JitBuilderRecorder() {}
 
-void
-OMR::JitBuilderRecorder::start()
-   {
-   // special reserved value, must do it first !
-   StoreID(0);
+void OMR::JitBuilderRecorder::start()
+{
+    // special reserved value, must do it first !
+    StoreID(0);
 
-   // another special reserved value, so do it first
-   StoreID((const void *)1);
+    // another special reserved value, so do it first
+    StoreID((const void *)1);
 
-   String(StatementName::RECORDER_SIGNATURE);
-   Number(StatementName::VERSION_MAJOR);
-   Number(StatementName::VERSION_MINOR);
-   Number(StatementName::VERSION_PATCH);
-   EndStatement();
-   }
+    String(StatementName::RECORDER_SIGNATURE);
+    Number(StatementName::VERSION_MAJOR);
+    Number(StatementName::VERSION_MINOR);
+    Number(StatementName::VERSION_PATCH);
+    EndStatement();
+}
 
-void 
-OMR::JitBuilderRecorder::Close()                                       
-   { 
-   end();
-   EndStatement();
-   }
+void OMR::JitBuilderRecorder::Close()
+{
+    end();
+    EndStatement();
+}
 
-OMR::JitBuilderRecorder::TypeID
-OMR::JitBuilderRecorder::getNewID()
-   {
-   // support for variable sized ID encoding
-   //  to avoid any synchronization issues in how decoders/encoders count IDs, use a statement to signal change
-   // check if we're close to 8-bit / 16-bit boundary
-   // need to leave space for one ID because these statements will not have been defined yet
-   //  and defining the statement needs an ID!
-   if (_nextID == (1 << 8) - 2)
-      {
-      _idSize = 16;
-      Statement(StatementName::STATEMENT_ID16BIT);
-      }
-   else if (_nextID == (1 << 16) - 2)
-      {
-      _idSize = 32;
-      Statement(StatementName::STATEMENT_ID32BIT);
-      }
+OMR::JitBuilderRecorder::TypeID OMR::JitBuilderRecorder::getNewID()
+{
+    // support for variable sized ID encoding
+    //  to avoid any synchronization issues in how decoders/encoders count IDs, use a statement to signal change
+    // check if we're close to 8-bit / 16-bit boundary
+    // need to leave space for one ID because these statements will not have been defined yet
+    //  and defining the statement needs an ID!
+    if (_nextID == (1 << 8) - 2) {
+        _idSize = 16;
+        Statement(StatementName::STATEMENT_ID16BIT);
+    } else if (_nextID == (1 << 16) - 2) {
+        _idSize = 32;
+        Statement(StatementName::STATEMENT_ID32BIT);
+    }
 
-   return _nextID++;
-   }
+    return _nextID++;
+}
 
-OMR::JitBuilderRecorder::TypeID
-OMR::JitBuilderRecorder::myID()
-   {
-   return lookupID(_mb);
-   }
+OMR::JitBuilderRecorder::TypeID OMR::JitBuilderRecorder::myID() { return lookupID(_mb); }
 
-bool
-OMR::JitBuilderRecorder::knownID(const void *ptr)
-   {
-   TypeMapID::iterator it = _idMap.find(ptr);
-   return (it != _idMap.end());
-   }
+bool OMR::JitBuilderRecorder::knownID(const void *ptr)
+{
+    TypeMapID::iterator it = _idMap.find(ptr);
+    return (it != _idMap.end());
+}
 
-OMR::JitBuilderRecorder::TypeID
-OMR::JitBuilderRecorder::lookupID(const void *ptr)
-   {
-   TypeMapID::iterator it = _idMap.find(ptr);
-   if (it == _idMap.end())
-      TR_ASSERT_FATAL(0, "Attempt to lookup a builder object that has not yet been created");
+OMR::JitBuilderRecorder::TypeID OMR::JitBuilderRecorder::lookupID(const void *ptr)
+{
+    TypeMapID::iterator it = _idMap.find(ptr);
+    if (it == _idMap.end())
+        TR_ASSERT_FATAL(0, "Attempt to lookup a builder object that has not yet been created");
 
-   TypeID id = it->second;
-   return id;
-   }
+    TypeID id = it->second;
+    return id;
+}
 
-void
-OMR::JitBuilderRecorder::ensureStatementDefined(const char *s)
-   {
-   if (knownID(s))
-      return;
+void OMR::JitBuilderRecorder::ensureStatementDefined(const char *s)
+{
+    if (knownID(s))
+        return;
 
-   StoreID(s);
-   Builder(0);
-   Statement(s);
-   String(s);
-   EndStatement();
-   }
+    StoreID(s);
+    Builder(0);
+    Statement(s);
+    String(s);
+    EndStatement();
+}
 
-void
-OMR::JitBuilderRecorder::end()
-   {
-   ID(1); // reserved ID to indicate end of file
-   String(StatementName::JBIL_COMPLETE);
-   }
+void OMR::JitBuilderRecorder::end()
+{
+    ID(1); // reserved ID to indicate end of file
+    String(StatementName::JBIL_COMPLETE);
+}
 
-void
-OMR::JitBuilderRecorder::BeginStatement(const char *s)
-   {
-   BeginStatement(_mb, s);
-   }
+void OMR::JitBuilderRecorder::BeginStatement(const char *s) { BeginStatement(_mb, s); }
 
-void
-OMR::JitBuilderRecorder::BeginStatement(const TR::MethodBuilder *b, const char *s)
-   {
-   ensureStatementDefined(s);
-   Builder(b);
-   Statement(s);
-   }
+void OMR::JitBuilderRecorder::BeginStatement(const TR::MethodBuilder *b, const char *s)
+{
+    ensureStatementDefined(s);
+    Builder(b);
+    Statement(s);
+}
 
-void
-OMR::JitBuilderRecorder::StoreID(const void *ptr)
-   {
-   TypeMapID::iterator it = _idMap.find(ptr);
-   if (it != _idMap.end())
-      TR_ASSERT_FATAL(0, "Unexpected ID already defined for address %p", ptr);
+void OMR::JitBuilderRecorder::StoreID(const void *ptr)
+{
+    TypeMapID::iterator it = _idMap.find(ptr);
+    if (it != _idMap.end())
+        TR_ASSERT_FATAL(0, "Unexpected ID already defined for address %p", ptr);
 
-   _idMap.insert(std::make_pair(ptr, getNewID()));
-   }
+    _idMap.insert(std::make_pair(ptr, getNewID()));
+}
 
-bool
-OMR::JitBuilderRecorder::EnsureAvailableID(const void *ptr)
-   {
-   if (knownID(ptr)) // already available, so just return
-      return true;
+bool OMR::JitBuilderRecorder::EnsureAvailableID(const void *ptr)
+{
+    if (knownID(ptr)) // already available, so just return
+        return true;
 
-   StoreID(ptr);
-   return false; // ID was not available, but is now
-   }
+    StoreID(ptr);
+    return false; // ID was not available, but is now
+}

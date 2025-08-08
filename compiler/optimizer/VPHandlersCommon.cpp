@@ -65,96 +65,90 @@ TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node);
 // to see if they need processing
 //
 TR::Node *constrainChildren(OMR::ValuePropagation *vp, TR::Node *node)
-   {
-   TR::Node *myParent = vp->getCurrentParent();
-   for (int32_t i = node->getNumChildren()-1; i >= 0; i--)
-      {
-      vp->setCurrentParent(node);
-      vp->launchNode(node->getChild(i), node, i);
-      }
-   vp->setCurrentParent(myParent);
-   return node;
-   }
+{
+    TR::Node *myParent = vp->getCurrentParent();
+    for (int32_t i = node->getNumChildren() - 1; i >= 0; i--) {
+        vp->setCurrentParent(node);
+        vp->launchNode(node->getChild(i), node, i);
+    }
+    vp->setCurrentParent(myParent);
+    return node;
+}
 
 TR::Node *constrainChildrenFirstToLast(OMR::ValuePropagation *vp, TR::Node *node)
-   {
-   TR::Node *myParent = vp->getCurrentParent();
-   for (int32_t i = 0; i < node->getNumChildren(); i++)
-      {
-      vp->setCurrentParent(node);
-      vp->launchNode(node->getChild(i), node, i);
-      }
-   vp->setCurrentParent(myParent);
-   return node;
-   }
-
+{
+    TR::Node *myParent = vp->getCurrentParent();
+    for (int32_t i = 0; i < node->getNumChildren(); i++) {
+        vp->setCurrentParent(node);
+        vp->launchNode(node->getChild(i), node, i);
+    }
+    vp->setCurrentParent(myParent);
+    return node;
+}
 
 TR::Node *constrainVcall(OMR::ValuePropagation *vp, TR::Node *node)
-   {
-   constrainCall(vp, node);
+{
+    constrainCall(vp, node);
 
-   // Return if the node is not a call (xcall/xcalli) anymore
-   if (!node->getOpCode().isCall())
-      return node;
+    // Return if the node is not a call (xcall/xcalli) anymore
+    if (!node->getOpCode().isCall())
+        return node;
 
-   // Look for System.arraycopy call. If the node is transformed into an arraycopy
-   // re-process it.
-   //
-   vp->transformArrayCopyCall(node);
-   if (node->getOpCodeValue() == TR::arraycopy)
-      {
-      node->setVisitCount(0);
-      vp->launchNode(node, vp->getCurrentParent(), 0);
-      return node;
-      }
+    // Look for System.arraycopy call. If the node is transformed into an arraycopy
+    // re-process it.
+    //
+    vp->transformArrayCopyCall(node);
+    if (node->getOpCodeValue() == TR::arraycopy) {
+        node->setVisitCount(0);
+        vp->launchNode(node, vp->getCurrentParent(), 0);
+        return node;
+    }
 
-   if (vp->transformUnsafeCopyMemoryCall(node))
-      return node;
+    if (vp->transformUnsafeCopyMemoryCall(node))
+        return node;
 
 #ifdef J9_PROJECT_SPECIFIC
-   TR::SymbolReference *finalizeSymRef = vp->comp()->getSymRefTab()->findOrCreateRuntimeHelper(TR_jitCheckIfFinalizeObject, true, true, true);
-   if (node->getSymbolReference() == finalizeSymRef)
-      {
-      TR::Node *receiver = node->getFirstChild();
-      bool isGlobal;
-      TR::VPConstraint *type = vp->getConstraint(receiver, isGlobal);
-      bool canBeRemoved = false;
-      // ensure the type is really a fixedClass
-      // resolvedClass is not sufficient because java.lang.Object has an
-      // empty finalizer method (hasFinalizer returns false) and the call to
-      // vm helper is incorrectly optimized in this case
-      //
-      if (type && type->getClassType() &&
-         type->getClassType()->asFixedClass())
-         {
-         TR_OpaqueClassBlock *klass = type->getClassType()->getClass();
-         if (klass && !TR::Compiler->cls.hasFinalizer(vp->comp(), klass) && !vp->comp()->fej9()->isOwnableSyncClass(klass))
-            {
-            canBeRemoved = true;
+    TR::SymbolReference *finalizeSymRef
+        = vp->comp()->getSymRefTab()->findOrCreateRuntimeHelper(TR_jitCheckIfFinalizeObject, true, true, true);
+    if (node->getSymbolReference() == finalizeSymRef) {
+        TR::Node *receiver = node->getFirstChild();
+        bool isGlobal;
+        TR::VPConstraint *type = vp->getConstraint(receiver, isGlobal);
+        bool canBeRemoved = false;
+        // ensure the type is really a fixedClass
+        // resolvedClass is not sufficient because java.lang.Object has an
+        // empty finalizer method (hasFinalizer returns false) and the call to
+        // vm helper is incorrectly optimized in this case
+        //
+        if (type && type->getClassType() && type->getClassType()->asFixedClass()) {
+            TR_OpaqueClassBlock *klass = type->getClassType()->getClass();
+            if (klass && !TR::Compiler->cls.hasFinalizer(vp->comp(), klass)
+                && !vp->comp()->fej9()->isOwnableSyncClass(klass)) {
+                canBeRemoved = true;
             }
-         }
-      // If a class has a finalizer or is an ownableSync it won't be allocated on the stack. That's ensured
-      // by virtue of (indirectly) calling bool J9::ObjectModel::canAllocateInlineClass(TR_OpaqueClassBlock *block)
-      // Doesn't make sense to call jitCheckIfFinalizeObject for a stack
-      // allocated object, so optimize
-      else if (receiver->getOpCode().hasSymbolReference() && receiver->getSymbol()->isLocalObject())
-         {
-         canBeRemoved = true;
-         }
+        }
+        // If a class has a finalizer or is an ownableSync it won't be allocated on the stack. That's ensured
+        // by virtue of (indirectly) calling bool J9::ObjectModel::canAllocateInlineClass(TR_OpaqueClassBlock *block)
+        // Doesn't make sense to call jitCheckIfFinalizeObject for a stack
+        // allocated object, so optimize
+        else if (receiver->getOpCode().hasSymbolReference() && receiver->getSymbol()->isLocalObject()) {
+            canBeRemoved = true;
+        }
 
-      if (canBeRemoved &&
-           performTransformation(vp->comp(), "%s Removing redundant call to jitCheckIfFinalize [%p]\n", OPT_DETAILS, node))
-         {
-         ///printf("found opportunity in %s to remove call to checkfinalize\n", vp->comp()->signature());fflush(stdout);
-         ///traceMsg(vp->comp(), "found opportunity to remove call %p to checkfinalize\n", node);
-         TR::TransformUtil::transformCallNodeToPassThrough(vp, node, vp->_curTree, receiver);
-         return node;
-         }
-      }
+        if (canBeRemoved
+            && performTransformation(vp->comp(), "%s Removing redundant call to jitCheckIfFinalize [%p]\n", OPT_DETAILS,
+                node)) {
+            /// printf("found opportunity in %s to remove call to checkfinalize\n",
+            /// vp->comp()->signature());fflush(stdout); traceMsg(vp->comp(), "found opportunity to remove call %p to
+            /// checkfinalize\n", node);
+            TR::TransformUtil::transformCallNodeToPassThrough(vp, node, vp->_curTree, receiver);
+            return node;
+        }
+    }
 #endif
 
-   return node;
-   }
+    return node;
+}
 
 // NOTE: ValuePropagationTable.hpp is included at the end of this file, when
 //       all the functions referenced in the table have been seen.
@@ -162,8 +156,7 @@ TR::Node *constrainVcall(OMR::ValuePropagation *vp, TR::Node *node)
 #include "optimizer/ValuePropagationTable.hpp" // IWYU pragma: keep
 
 void ValuePropagationPointerTable::checkTableSize()
-   {
-   static_assert((TR::NumScalarIlOps + TR::NumVectorOperations) ==
-                 (sizeof(table) / sizeof(table[0])),
-                 "ValuePropagationPointerTable::table[] is not the correct size");
-   }
+{
+    static_assert((TR::NumScalarIlOps + TR::NumVectorOperations) == (sizeof(table) / sizeof(table[0])),
+        "ValuePropagationPointerTable::table[] is not the correct size");
+}

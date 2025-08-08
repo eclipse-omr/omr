@@ -27,10 +27,14 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
+
 namespace OMR {
-namespace ARM { class Instruction; }
-typedef OMR::ARM::Instruction InstructionConnector;
+namespace ARM {
+class Instruction;
 }
+
+typedef OMR::ARM::Instruction InstructionConnector;
+} // namespace OMR
 #else
 #error OMR::ARM::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -49,177 +53,172 @@ class ARMImmInstruction;
 class CodeGenerator;
 class MemoryReference;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 struct TR_RegisterPressureState;
 
-namespace OMR
-{
+namespace OMR { namespace ARM {
 
-namespace ARM
-{
+class OMR_EXTENSIBLE Instruction : public OMR::Instruction {
+public:
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::Node *node = 0);
 
-class OMR_EXTENSIBLE Instruction : public OMR::Instruction
-   {
+    Instruction(TR::Node *node, TR::CodeGenerator *cg);
 
-   public:
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg);
 
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
+    Instruction(TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node,
+        TR::CodeGenerator *cg);
 
-   Instruction(TR::Node *node, TR::CodeGenerator *cg);
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::RegisterDependencyConditions *cond,
+        TR::CodeGenerator *cg);
 
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg);
+    Instruction(TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node,
+        TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg);
 
-   Instruction(TR::Instruction   *precedingInstruction,
-               TR::InstOpCode::Mnemonic     op,
-               TR::Node          *node,
-               TR::CodeGenerator *cg);
+    virtual const char *description() { return "ARM"; }
 
-   Instruction(TR::InstOpCode::Mnemonic                       op,
-               TR::Node                            *node,
-               TR::RegisterDependencyConditions    *cond,
-               TR::CodeGenerator                   *cg);
+    virtual Kind getKind() { return IsNotExtended; }
 
-   Instruction(TR::Instruction                     *precedingInstruction,
-               TR::InstOpCode::Mnemonic                       op,
-               TR::Node                            *node,
-               TR::RegisterDependencyConditions    *cond,
-               TR::CodeGenerator                   *cg);
+    TR::InstOpCode::Mnemonic getRecordFormOpCode() { return _opcode.getRecordFormOpCodeValue(); }
 
-   virtual const char *description() { return "ARM"; }
+    void ARMNeedsGCMap(uint32_t mask);
 
-   virtual Kind getKind() { return IsNotExtended; }
+    TR_ARMConditionCode getConditionCode() { return _conditionCode; }
 
-   TR::InstOpCode::Mnemonic getRecordFormOpCode()             {return _opcode.getRecordFormOpCodeValue();}
+    TR_ARMConditionCode setConditionCode(TR_ARMConditionCode conds) { return (_conditionCode = conds); }
 
-   void ARMNeedsGCMap(uint32_t mask);
+    virtual TR::Snippet *getSnippetForGC() { return NULL; }
 
-   TR_ARMConditionCode getConditionCode()                          {return _conditionCode;}
-   TR_ARMConditionCode setConditionCode(TR_ARMConditionCode conds) {return (_conditionCode = conds);}
+    virtual TR::Register *getMemoryDataRegister();
 
-   virtual TR::Snippet *getSnippetForGC() {return NULL;}
+    virtual uint8_t *generateBinaryEncoding();
 
-   virtual TR::Register *getMemoryDataRegister();
+    void generateConditionBinaryEncoding(uint8_t *instructionStart);
 
-   virtual uint8_t *generateBinaryEncoding();
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate);
 
-   void generateConditionBinaryEncoding(uint8_t *instructionStart);
+    virtual bool setWriteBack() { return false; }
 
-   virtual int32_t estimateBinaryLength(int32_t currentEstimate);
+    virtual bool isWriteBack() { return false; }
 
-   virtual bool setWriteBack()   {return false;}
-   virtual bool isWriteBack()    {return false;}
+    virtual bool isLabel() { return _opcode.getOpCodeValue() == TR::InstOpCode::label; }
 
-   virtual bool isLabel()        {return _opcode.getOpCodeValue() == TR::InstOpCode::label;}
+    virtual TR::RegisterDependencyConditions *getDependencyConditions() { return _conditions; }
 
-   virtual TR::RegisterDependencyConditions *getDependencyConditions()
-      {
-      return _conditions;
-      }
-   TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
-      {
-      return (_conditions = cond);
-      }
+    TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
+    {
+        return (_conditions = cond);
+    }
 
-   virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
+    virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
 
-   virtual bool refsRegister(TR::Register *reg);
-   virtual bool defsRegister(TR::Register *reg);
-   virtual bool usesRegister(TR::Register *reg);
+    virtual bool refsRegister(TR::Register *reg);
+    virtual bool defsRegister(TR::Register *reg);
+    virtual bool usesRegister(TR::Register *reg);
 
-   virtual bool defsRealRegister(TR::Register *reg);
+    virtual bool defsRealRegister(TR::Register *reg);
 
-   virtual bool dependencyRefsRegister(TR::Register *reg);
+    virtual bool dependencyRefsRegister(TR::Register *reg);
 
-   virtual TR::ARMConditionalBranchInstruction *getARMConditionalBranchInstruction();
+    virtual TR::ARMConditionalBranchInstruction *getARMConditionalBranchInstruction();
 
-   virtual TR::Register *getPrimaryTargetRegister() {return NULL;}
+    virtual TR::Register *getPrimaryTargetRegister() { return NULL; }
 
 // The following safe virtual downcast method is used under debug only
 // for assertion checking
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-   virtual TR::ARMImmInstruction *getARMImmInstruction();
+    virtual TR::ARMImmInstruction *getARMImmInstruction();
 #endif
 
+    virtual TR::Register *getMemoryBase() { return NULL; }
 
-   virtual TR::Register *getMemoryBase()                     {return NULL;}
-   virtual TR::Register *getMemoryIndex()                    {return NULL;}
-   virtual int32_t      getOffset()                         {return 0;}
-   // @@ virtual bool  usesCountRegister()                        {return _opcode.usesCountRegister();}
-   /* @@
-   virtual bool  setsCountRegister()
-           {
-           if (_opcode.getOpCodeValue() == TR::InstOpCode::beql)
-              return true;
-           return isCall()|_opcode.setsCountRegister();
-           }
-   */
-   bool     isRecordForm()          {return _opcode.isRecordForm();}
-   bool     hasRecordForm()         {return _opcode.hasRecordForm();}
-   bool     singleFPOp()            {return _opcode.singleFPOp();}
-   bool     doubleFPOp()            {return _opcode.doubleFPOp();}
-   bool     gprOp()                 {return _opcode.gprOp();}
-   bool     fprOp()                 {return _opcode.fprOp();}
-   // @@ bool     useAlternateFormat()    {return _opcode.useAlternateFormat();}
-   // @@ bool     useAlternateFormatx()   {return _opcode.useAlternateFormatx();}
-   bool     readsCarryFlag()        {return _opcode.readsCarryFlag();}
-   bool     setsCarryFlag()         {return _opcode.setsCarryFlag();}
-   bool     setsOverflowFlag()      {return _opcode.setsOverflowFlag();}
-   // @@ bool     isUpdate()              {return _opcode.isUpdate();}
-   // @@ bool     isTrap()                {return _opcode.isTrap();}
-   // @@ bool     isTMAbort()             {return _opcode.isTMAbort();}
-   // @@ bool     isRegCopy()             {return _opcode.isRegCopy();}
-   // @@ bool     isDoubleWord()          {return _opcode.isDoubleWord();}
-   // @@ bool     isRotateOrShift()       {return _opcode.isRotateOrShift();}
-   // @@ bool     isCompare()             {return _opcode.isCompare();}
-   // @@ bool     isLongRunningFPOp()     {return _opcode.isLongRunningFPOp();}
-   // @@ bool     isFXMult()              {return _opcode.isFXMult();}
+    virtual TR::Register *getMemoryIndex() { return NULL; }
 
-   // @@ virtual bool     isLoad()           {return _opcode.isLoad();}
-   // @@ virtual bool     isStore()          {return _opcode.isStore();}
-   virtual bool     isBranchOp()       {return _opcode.isBranchOp();}
-   virtual bool     isExceptBranchOp() {return false; }
-   // @@ virtual bool     isSync()           {return _opcode.isSync();}
-   // @@ virtual bool     isAdmin()          {return _opcode.isAdmin();}
-   // @@ virtual bool     is4ByteLoad()      {return (getOpCodeValue() == TR::InstOpCode::lwz);}
-   virtual int32_t  getMachineOpCode();
-   // @@ virtual bool     isBeginBlock();
-   // @@ virtual bool     isFloat()          {return _opcode.isFloat();}
-   // @@ virtual bool     isVMX()            {return _opcode.isVMX();}
-   // @@ virtual bool     isVSX()            {return _opcode.isVSX();}
-   // @@ virtual bool     isSyncSideEffectFree()  {return _opcode.isSyncSideEffectFree();}
-   // @@ virtual bool     isCall();
+    virtual int32_t getOffset() { return 0; }
 
-   /*
-    * Maps to TIndex in Instruction. Here we set values specific to PPC CodeGen.
-    *
-    * A 32-bit field where the lower 24-bits contain an integer that represents an
-    * approximate ordering of instructions.
-    *
-    * The upper 8 bits are used for flags.
-    * Instruction flags encoded by their bit position.  Subclasses may use any
-    * available bits between LastBaseFlag and MaxBaseFlag inclusive.
+    // @@ virtual bool  usesCountRegister()                        {return _opcode.usesCountRegister();}
+    /* @@
+    virtual bool  setsCountRegister()
+            {
+            if (_opcode.getOpCodeValue() == TR::InstOpCode::beql)
+               return true;
+            return isCall()|_opcode.setsCountRegister();
+            }
     */
-   enum
-      {
-      WillBePatched        = 0x08000000
-      };
+    bool isRecordForm() { return _opcode.isRecordForm(); }
 
-   bool      willBePatched() {return (_index & WillBePatched) != 0; }
-   void      setWillBePatched(bool v = true) { v? _index |= WillBePatched : _index &= ~WillBePatched; }
+    bool hasRecordForm() { return _opcode.hasRecordForm(); }
 
+    bool singleFPOp() { return _opcode.singleFPOp(); }
 
+    bool doubleFPOp() { return _opcode.doubleFPOp(); }
 
-   private:
-      TR_ARMConditionCode                  _conditionCode;
-      TR::RegisterDependencyConditions *_conditions;
-      bool        _asyncBranch;
+    bool gprOp() { return _opcode.gprOp(); }
 
+    bool fprOp() { return _opcode.fprOp(); }
 
-   };
+    // @@ bool     useAlternateFormat()    {return _opcode.useAlternateFormat();}
+    // @@ bool     useAlternateFormatx()   {return _opcode.useAlternateFormatx();}
+    bool readsCarryFlag() { return _opcode.readsCarryFlag(); }
 
-}
+    bool setsCarryFlag() { return _opcode.setsCarryFlag(); }
 
-}
+    bool setsOverflowFlag() { return _opcode.setsOverflowFlag(); }
+
+    // @@ bool     isUpdate()              {return _opcode.isUpdate();}
+    // @@ bool     isTrap()                {return _opcode.isTrap();}
+    // @@ bool     isTMAbort()             {return _opcode.isTMAbort();}
+    // @@ bool     isRegCopy()             {return _opcode.isRegCopy();}
+    // @@ bool     isDoubleWord()          {return _opcode.isDoubleWord();}
+    // @@ bool     isRotateOrShift()       {return _opcode.isRotateOrShift();}
+    // @@ bool     isCompare()             {return _opcode.isCompare();}
+    // @@ bool     isLongRunningFPOp()     {return _opcode.isLongRunningFPOp();}
+    // @@ bool     isFXMult()              {return _opcode.isFXMult();}
+
+    // @@ virtual bool     isLoad()           {return _opcode.isLoad();}
+    // @@ virtual bool     isStore()          {return _opcode.isStore();}
+    virtual bool isBranchOp() { return _opcode.isBranchOp(); }
+
+    virtual bool isExceptBranchOp() { return false; }
+
+    // @@ virtual bool     isSync()           {return _opcode.isSync();}
+    // @@ virtual bool     isAdmin()          {return _opcode.isAdmin();}
+    // @@ virtual bool     is4ByteLoad()      {return (getOpCodeValue() == TR::InstOpCode::lwz);}
+    virtual int32_t getMachineOpCode();
+
+    // @@ virtual bool     isBeginBlock();
+    // @@ virtual bool     isFloat()          {return _opcode.isFloat();}
+    // @@ virtual bool     isVMX()            {return _opcode.isVMX();}
+    // @@ virtual bool     isVSX()            {return _opcode.isVSX();}
+    // @@ virtual bool     isSyncSideEffectFree()  {return _opcode.isSyncSideEffectFree();}
+    // @@ virtual bool     isCall();
+
+    /*
+     * Maps to TIndex in Instruction. Here we set values specific to PPC CodeGen.
+     *
+     * A 32-bit field where the lower 24-bits contain an integer that represents an
+     * approximate ordering of instructions.
+     *
+     * The upper 8 bits are used for flags.
+     * Instruction flags encoded by their bit position.  Subclasses may use any
+     * available bits between LastBaseFlag and MaxBaseFlag inclusive.
+     */
+    enum {
+        WillBePatched = 0x08000000
+    };
+
+    bool willBePatched() { return (_index & WillBePatched) != 0; }
+
+    void setWillBePatched(bool v = true) { v ? _index |= WillBePatched : _index &= ~WillBePatched; }
+
+private:
+    TR_ARMConditionCode _conditionCode;
+    TR::RegisterDependencyConditions *_conditions;
+    bool _asyncBranch;
+};
+
+}} // namespace OMR::ARM
 
 #endif

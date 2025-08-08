@@ -27,54 +27,54 @@
 namespace TR {
 class Compilation;
 class Optimization;
-}
+} // namespace TR
 
-#define heuristicTrace(r, ...) \
-      do { \
-         if ((r)->heuristicLevel()) { (r)->alwaysTraceM(__VA_ARGS__); } \
-      } while (0)
+#define heuristicTrace(r, ...)              \
+    do {                                    \
+        if ((r)->heuristicLevel()) {        \
+            (r)->alwaysTraceM(__VA_ARGS__); \
+        }                                   \
+    } while (0)
 
+#define debugTrace(r, ...)                  \
+    do {                                    \
+        if ((r)->debugLevel()) {            \
+            (r)->alwaysTraceM(__VA_ARGS__); \
+        }                                   \
+    } while (0)
 
-#define debugTrace(r, ...) \
-      do { \
-         if ((r)->debugLevel())\
-            {\
-            (r)->alwaysTraceM(__VA_ARGS__);\
-            }\
-      } while (0)
+#define alwaysTrace(r, ...) (r)->alwaysTraceM(__VA_ARGS__);
 
-#define alwaysTrace(r, ...) \
-      (r)->alwaysTraceM(__VA_ARGS__);
-
-class TR_LogTracer
-   {
+class TR_LogTracer {
 public:
-   TR_LogTracer(TR::Compilation *comp, TR::Optimization *opt);
+    TR_LogTracer(TR::Compilation *comp, TR::Optimization *opt);
 
-   TR::Compilation * comp()                   { return _comp; }
+    TR::Compilation *comp() { return _comp; }
 
-   // determine the tracing level
+    // determine the tracing level
 
-   void setTraceLevelToDebug()                     { _traceLevel = trace_debug;  }
-   bool debugLevel()                              { return _traceLevel == trace_debug; }
-   bool heuristicLevel()                          { return _traceLevel >= trace_heuristic; }      // the > ensures heuristic tracing gets turned on for debug as well
+    void setTraceLevelToDebug() { _traceLevel = trace_debug; }
 
-   // trace statements for specific tracing levels
-   void alwaysTraceM (const char *fmt, ...);                      // NEVER call this method directly. Use macros defined above.
+    bool debugLevel() { return _traceLevel == trace_debug; }
+
+    bool heuristicLevel()
+    {
+        return _traceLevel >= trace_heuristic;
+    } // the > ensures heuristic tracing gets turned on for debug as well
+
+    // trace statements for specific tracing levels
+    void alwaysTraceM(const char *fmt, ...); // NEVER call this method directly. Use macros defined above.
 
 protected:
+    enum traceLevel {
+        trace_notrace,
+        trace_full, // traceFull option used in commandline
+        trace_heuristic, // traceInlining option used in commandline
+        trace_debug // debugInlining option used in commandline
+    };
 
-   enum traceLevel
-       {
-       trace_notrace,
-       trace_full,            //traceFull option used in commandline
-       trace_heuristic,       //traceInlining option used in commandline
-       trace_debug            //debugInlining option used in commandline
-       };
-
-   TR::Compilation *        _comp;
-   uint8_t                 _traceLevel;
-
-   };
+    TR::Compilation *_comp;
+    uint8_t _traceLevel;
+};
 
 #endif

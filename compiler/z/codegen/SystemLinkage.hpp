@@ -48,161 +48,198 @@ class ParameterSymbol;
 class RegisterDependencyConditions;
 class ResolvedMethodSymbol;
 class SystemLinkage;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
-namespace TR
-{
+namespace TR {
 
-class SystemLinkage : public TR::Linkage
-   {
-   public:
+class SystemLinkage : public TR::Linkage {
+public:
+    SystemLinkage(TR::CodeGenerator *cg, TR_LinkageConventions elc = TR_None);
 
-   SystemLinkage(TR::CodeGenerator * cg, TR_LinkageConventions elc = TR_None);
+    TR::SystemLinkage *self();
 
-   TR::SystemLinkage * self();
+    virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum) = 0;
 
-   virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum) = 0;
+    int32_t setStackFrameSize(int32_t StackFrameSize) { return _StackFrameSize = StackFrameSize; }
 
-   int32_t setStackFrameSize(int32_t StackFrameSize)  { return _StackFrameSize = StackFrameSize; }
-   virtual int32_t getStackFrameSize()                { return _StackFrameSize; }
+    virtual int32_t getStackFrameSize() { return _StackFrameSize; }
 
-   int16_t setGPRSaveMask(int16_t GPRSaveMask)  { return _GPRSaveMask = GPRSaveMask; }
-   int16_t getGPRSaveMask()                     { return _GPRSaveMask; }
+    int16_t setGPRSaveMask(int16_t GPRSaveMask) { return _GPRSaveMask = GPRSaveMask; }
 
-   int16_t setFPRSaveMask(int16_t FPRSaveMask)  { return _FPRSaveMask = FPRSaveMask; }
-   int16_t getFPRSaveMask()                     { return _FPRSaveMask; }
+    int16_t getGPRSaveMask() { return _GPRSaveMask; }
 
-   static uint16_t flipBitsRegisterSaveMask(uint16_t mask);
+    int16_t setFPRSaveMask(int16_t FPRSaveMask) { return _FPRSaveMask = FPRSaveMask; }
 
-   int32_t setGPRSaveAreaBeginOffset(int32_t GPRSaveAreaBeginOffset)  { return _GPRSaveAreaBeginOffset = GPRSaveAreaBeginOffset; }
-   int32_t getGPRSaveAreaBeginOffset()                                { return _GPRSaveAreaBeginOffset; }
-   int32_t setGPRSaveAreaEndOffset(int32_t GPRSaveAreaEndOffset)  { return _GPRSaveAreaEndOffset = GPRSaveAreaEndOffset; }
-   int32_t getGPRSaveAreaEndOffset()                              { return _GPRSaveAreaEndOffset; }
+    int16_t getFPRSaveMask() { return _FPRSaveMask; }
 
-   int32_t setFPRSaveAreaBeginOffset(int32_t FPRSaveAreaBeginOffset)  { return _FPRSaveAreaBeginOffset = FPRSaveAreaBeginOffset; }
-   int32_t getFPRSaveAreaBeginOffset()                                { return _FPRSaveAreaBeginOffset; }
-   int32_t setFPRSaveAreaEndOffset(int32_t FPRSaveAreaEndOffset)  { return _FPRSaveAreaEndOffset = FPRSaveAreaEndOffset; }
-   int32_t getFPRSaveAreaEndOffset()                              { return _FPRSaveAreaEndOffset; }
+    static uint16_t flipBitsRegisterSaveMask(uint16_t mask);
 
-   int32_t setOutgoingParmAreaBeginOffset(int32_t OutgoingParmAreaBeginOffset)    { return _OutgoingParmAreaBeginOffset = OutgoingParmAreaBeginOffset; }
-   int32_t getOutgoingParmAreaBeginOffset()                                 { return _OutgoingParmAreaBeginOffset; }
-   int32_t setOutgoingParmAreaEndOffset(int32_t OutgoingParmAreaEndOffset) { return _OutgoingParmAreaEndOffset = OutgoingParmAreaEndOffset; }
-   int32_t getOutgoingParmAreaEndOffset()                                  { return _OutgoingParmAreaEndOffset; }
+    int32_t setGPRSaveAreaBeginOffset(int32_t GPRSaveAreaBeginOffset)
+    {
+        return _GPRSaveAreaBeginOffset = GPRSaveAreaBeginOffset;
+    }
 
-   int32_t setNumUsedArgumentGPRs(int32_t numUsedArgumentGPRs)    { return _numUsedArgumentGPRs = numUsedArgumentGPRs; }
-   int32_t getNumUsedArgumentGPRs()  { return _numUsedArgumentGPRs; }
+    int32_t getGPRSaveAreaBeginOffset() { return _GPRSaveAreaBeginOffset; }
 
-   int32_t setNumUsedArgumentFPRs(int32_t numUsedArgumentFPRs)    { return _numUsedArgumentFPRs = numUsedArgumentFPRs; }
-   int32_t getNumUsedArgumentFPRs()  { return _numUsedArgumentFPRs; }
+    int32_t setGPRSaveAreaEndOffset(int32_t GPRSaveAreaEndOffset)
+    {
+        return _GPRSaveAreaEndOffset = GPRSaveAreaEndOffset;
+    }
 
-   int32_t setNumUsedArgumentVFRs(int32_t numUsedArgumentVFRs)    { return _numUsedArgumentVFRs = numUsedArgumentVFRs; }
-   int32_t getNumUsedArgumentVFRs()  { return _numUsedArgumentVFRs; }
+    int32_t getGPRSaveAreaEndOffset() { return _GPRSaveAreaEndOffset; }
 
-   void setIncomingParmAreaBeginOffset(int32_t offset) { _incomingParmAreaBeginOffset = offset; }
-   int32_t getIncomingParmAreaBeginOffset() { return _incomingParmAreaBeginOffset; }
-   void setIncomingParmAreaEndOffset(int32_t offset) { _incomingParmAreaEndOffset = offset; }
-   int32_t getIncomingParmAreaEndOffset() { return _incomingParmAreaEndOffset; }
-   virtual int32_t getIncomingParameterBlockSize() { return _incomingParmAreaEndOffset - _incomingParmAreaBeginOffset; }
+    int32_t setFPRSaveAreaBeginOffset(int32_t FPRSaveAreaBeginOffset)
+    {
+        return _FPRSaveAreaBeginOffset = FPRSaveAreaBeginOffset;
+    }
 
-   virtual uint32_t
-   getIntArgOffset(int32_t index)
-      {
-      return 0;
-      }
+    int32_t getFPRSaveAreaBeginOffset() { return _FPRSaveAreaBeginOffset; }
 
-   virtual void generateInstructionsForCall(TR::Node * callNode, TR::RegisterDependencyConditions * dependencies,
-         intptr_t targetAddress, TR::Register * methodAddressReg, TR::Register * javaLitOffsetReg, TR::LabelSymbol * returnFromJNICallLabel,
-         TR::Snippet * callDataSnippet, bool isJNIGCPoint = true);
+    int32_t setFPRSaveAreaEndOffset(int32_t FPRSaveAreaEndOffset)
+    {
+        return _FPRSaveAreaEndOffset = FPRSaveAreaEndOffset;
+    }
 
-   virtual TR::Register * callNativeFunction(TR::Node * callNode, TR::RegisterDependencyConditions * dependencies,
-      intptr_t targetAddress, TR::Register * methodAddressReg, TR::Register * javaLitOffsetReg, TR::LabelSymbol * returnFromJNICallLabel, TR::Snippet * callDataSnippet,
-      bool isJNIGCPoint = true);
+    int32_t getFPRSaveAreaEndOffset() { return _FPRSaveAreaEndOffset; }
 
-   virtual TR::Register *
-   buildDirectDispatch(TR::Node * callNode)
-      {
-      return buildSystemLinkageDispatch(callNode);
-      }
+    int32_t setOutgoingParmAreaBeginOffset(int32_t OutgoingParmAreaBeginOffset)
+    {
+        return _OutgoingParmAreaBeginOffset = OutgoingParmAreaBeginOffset;
+    }
 
-   virtual TR::Register *
-   buildIndirectDispatch(TR::Node * callNode)
-      {
-      return buildSystemLinkageDispatch(callNode);
-      }
+    int32_t getOutgoingParmAreaBeginOffset() { return _OutgoingParmAreaBeginOffset; }
 
-   virtual void mapStack(TR::ResolvedMethodSymbol * symbol);
-   virtual void mapStack(TR::ResolvedMethodSymbol * method, uint32_t stackIndex);
-   virtual void mapSingleAutomatic(TR::AutomaticSymbol * p, uint32_t & stackIndex);
-   virtual bool hasToBeOnStack(TR::ParameterSymbol * parm);
+    int32_t setOutgoingParmAreaEndOffset(int32_t OutgoingParmAreaEndOffset)
+    {
+        return _OutgoingParmAreaEndOffset = OutgoingParmAreaEndOffset;
+    }
 
-   virtual void initS390RealRegisterLinkage();
+    int32_t getOutgoingParmAreaEndOffset() { return _OutgoingParmAreaEndOffset; }
 
-   virtual TR::RealRegister::RegNum setNormalStackPointerRegister  (TR::RealRegister::RegNum r) { return _normalStackPointerRegister = r; }
-   virtual TR::RealRegister::RegNum getNormalStackPointerRegister()   { return _normalStackPointerRegister; }
-   virtual TR::RealRegister *getNormalStackPointerRealRegister() {return getRealRegister(_normalStackPointerRegister);}
+    int32_t setNumUsedArgumentGPRs(int32_t numUsedArgumentGPRs) { return _numUsedArgumentGPRs = numUsedArgumentGPRs; }
 
-   virtual TR::RealRegister::RegNum setAlternateStackPointerRegister  (TR::RealRegister::RegNum r) { return _alternateStackPointerRegister = r; }
-   virtual TR::RealRegister::RegNum getAlternateStackPointerRegister()   { return _alternateStackPointerRegister; }
-   virtual TR::RealRegister *getAlternateStackPointerRealRegister() {return getRealRegister(_alternateStackPointerRegister);}
-   virtual void initParamOffset(TR::ResolvedMethodSymbol * method, int32_t stackIndex, List<TR::ParameterSymbol> *parameterList=0);
+    int32_t getNumUsedArgumentGPRs() { return _numUsedArgumentGPRs; }
 
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from a method compiled with the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for compiled methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromCompiledMethod();
+    int32_t setNumUsedArgumentFPRs(int32_t numUsedArgumentFPRs) { return _numUsedArgumentFPRs = numUsedArgumentFPRs; }
 
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from an interpreter using the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromInterpretedMethod();
+    int32_t getNumUsedArgumentFPRs() { return _numUsedArgumentFPRs; }
 
-   protected:
+    int32_t setNumUsedArgumentVFRs(int32_t numUsedArgumentVFRs) { return _numUsedArgumentVFRs = numUsedArgumentVFRs; }
 
-   int32_t _StackFrameSize;
+    int32_t getNumUsedArgumentVFRs() { return _numUsedArgumentVFRs; }
 
-   private:
+    void setIncomingParmAreaBeginOffset(int32_t offset) { _incomingParmAreaBeginOffset = offset; }
 
-   TR::RealRegister::RegNum _normalStackPointerRegister;
-   TR::RealRegister::RegNum _alternateStackPointerRegister;
-   int16_t _GPRSaveMask;
-   int16_t _FPRSaveMask;
-   int32_t _incomingParmAreaBeginOffset;
-   int32_t _incomingParmAreaEndOffset;
-   int32_t _FPRSaveAreaBeginOffset;
-   int32_t _FPRSaveAreaEndOffset;
-   int32_t _OutgoingParmAreaBeginOffset;
-   int32_t _OutgoingParmAreaEndOffset;
-   int32_t _GPRSaveAreaBeginOffset;
-   int32_t _GPRSaveAreaEndOffset;
-   int32_t _numUsedArgumentGPRs;
-   int32_t _numUsedArgumentFPRs;
-   int32_t _numUsedArgumentVFRs;
-   };
-}
+    int32_t getIncomingParmAreaBeginOffset() { return _incomingParmAreaBeginOffset; }
 
-inline TR::SystemLinkage *
-toSystemLinkage(TR::Linkage * l)
-   {
-   return (TR::SystemLinkage *) l;
-   }
+    void setIncomingParmAreaEndOffset(int32_t offset) { _incomingParmAreaEndOffset = offset; }
+
+    int32_t getIncomingParmAreaEndOffset() { return _incomingParmAreaEndOffset; }
+
+    virtual int32_t getIncomingParameterBlockSize()
+    {
+        return _incomingParmAreaEndOffset - _incomingParmAreaBeginOffset;
+    }
+
+    virtual uint32_t getIntArgOffset(int32_t index) { return 0; }
+
+    virtual void generateInstructionsForCall(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
+        intptr_t targetAddress, TR::Register *methodAddressReg, TR::Register *javaLitOffsetReg,
+        TR::LabelSymbol *returnFromJNICallLabel, TR::Snippet *callDataSnippet, bool isJNIGCPoint = true);
+
+    virtual TR::Register *callNativeFunction(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
+        intptr_t targetAddress, TR::Register *methodAddressReg, TR::Register *javaLitOffsetReg,
+        TR::LabelSymbol *returnFromJNICallLabel, TR::Snippet *callDataSnippet, bool isJNIGCPoint = true);
+
+    virtual TR::Register *buildDirectDispatch(TR::Node *callNode) { return buildSystemLinkageDispatch(callNode); }
+
+    virtual TR::Register *buildIndirectDispatch(TR::Node *callNode) { return buildSystemLinkageDispatch(callNode); }
+
+    virtual void mapStack(TR::ResolvedMethodSymbol *symbol);
+    virtual void mapStack(TR::ResolvedMethodSymbol *method, uint32_t stackIndex);
+    virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
+    virtual bool hasToBeOnStack(TR::ParameterSymbol *parm);
+
+    virtual void initS390RealRegisterLinkage();
+
+    virtual TR::RealRegister::RegNum setNormalStackPointerRegister(TR::RealRegister::RegNum r)
+    {
+        return _normalStackPointerRegister = r;
+    }
+
+    virtual TR::RealRegister::RegNum getNormalStackPointerRegister() { return _normalStackPointerRegister; }
+
+    virtual TR::RealRegister *getNormalStackPointerRealRegister()
+    {
+        return getRealRegister(_normalStackPointerRegister);
+    }
+
+    virtual TR::RealRegister::RegNum setAlternateStackPointerRegister(TR::RealRegister::RegNum r)
+    {
+        return _alternateStackPointerRegister = r;
+    }
+
+    virtual TR::RealRegister::RegNum getAlternateStackPointerRegister() { return _alternateStackPointerRegister; }
+
+    virtual TR::RealRegister *getAlternateStackPointerRealRegister()
+    {
+        return getRealRegister(_alternateStackPointerRegister);
+    }
+
+    virtual void initParamOffset(TR::ResolvedMethodSymbol *method, int32_t stackIndex,
+        List<TR::ParameterSymbol> *parameterList = 0);
+
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from a method compiled with the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for compiled methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromCompiledMethod();
+
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from an interpreter using the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromInterpretedMethod();
+
+protected:
+    int32_t _StackFrameSize;
+
+private:
+    TR::RealRegister::RegNum _normalStackPointerRegister;
+    TR::RealRegister::RegNum _alternateStackPointerRegister;
+    int16_t _GPRSaveMask;
+    int16_t _FPRSaveMask;
+    int32_t _incomingParmAreaBeginOffset;
+    int32_t _incomingParmAreaEndOffset;
+    int32_t _FPRSaveAreaBeginOffset;
+    int32_t _FPRSaveAreaEndOffset;
+    int32_t _OutgoingParmAreaBeginOffset;
+    int32_t _OutgoingParmAreaEndOffset;
+    int32_t _GPRSaveAreaBeginOffset;
+    int32_t _GPRSaveAreaEndOffset;
+    int32_t _numUsedArgumentGPRs;
+    int32_t _numUsedArgumentFPRs;
+    int32_t _numUsedArgumentVFRs;
+};
+} // namespace TR
+
+inline TR::SystemLinkage *toSystemLinkage(TR::Linkage *l) { return (TR::SystemLinkage *)l; }
 
 #endif

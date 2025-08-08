@@ -27,27 +27,23 @@
 #include "il/DataTypes.hpp"
 #include "il/OMRParameterSymbol.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE ParameterSymbol : public OMR::ParameterSymbolConnector
-   {
-
+class OMR_EXTENSIBLE ParameterSymbol : public OMR::ParameterSymbolConnector {
 protected:
+    ParameterSymbol(TR::DataType d, int32_t slot)
+        : OMR::ParameterSymbolConnector(d, slot)
+    {}
 
-   ParameterSymbol(TR::DataType d, int32_t slot) :
-      OMR::ParameterSymbolConnector(d, slot) { }
-
-   ParameterSymbol(TR::DataType d, int32_t slot, size_t size) :
-      OMR::ParameterSymbolConnector(d, slot, size) { }
+    ParameterSymbol(TR::DataType d, int32_t slot, size_t size)
+        : OMR::ParameterSymbolConnector(d, slot, size)
+    {}
 
 private:
+    // When adding another class to the heirarchy, add it as a friend here
+    friend class OMR::ParameterSymbol;
+};
 
-   // When adding another class to the heirarchy, add it as a friend here
-   friend class OMR::ParameterSymbol;
-
-   };
-
-}
+} // namespace TR
 
 #endif

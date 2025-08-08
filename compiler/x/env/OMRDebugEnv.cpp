@@ -21,18 +21,16 @@
 
 #include "env/DebugEnv.hpp"
 
-OMR::X86::DebugEnv::DebugEnv() :
-      OMR::DebugEnv()
-   {
-
+OMR::X86::DebugEnv::DebugEnv()
+    : OMR::DebugEnv()
+{
 #ifdef TR_TARGET_64BIT
-   _hexAddressWidthInChars = 16;
-   _hexAddressFieldWidthInChars = 18;
-   _codeByteColumnWidth = 28;
+    _hexAddressWidthInChars = 16;
+    _hexAddressFieldWidthInChars = 18;
+    _codeByteColumnWidth = 28;
 #else
-   _hexAddressWidthInChars = 8;
-   _hexAddressFieldWidthInChars = 10;
-   _codeByteColumnWidth = 28;
+    _hexAddressWidthInChars = 8;
+    _hexAddressFieldWidthInChars = 10;
+    _codeByteColumnWidth = 28;
 #endif
-
-   }
+}

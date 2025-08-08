@@ -24,66 +24,68 @@
 
 #include "codegen/OMRInstruction.hpp"
 
-namespace TR
-{
+namespace TR {
 class Instruction;
 
-class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector
-   {
-   public:
+class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector {
+public:
+    // TODO: need to fix the TR::InstOpCode initialization once TR::InstOpCode class is done
 
-   // TODO: need to fix the TR::InstOpCode initialization once TR::InstOpCode class is done
+    /*
+     * Generic constructors
+     */
+    inline Instruction(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg,
+        OMR::X86::Encoding encoding = OMR::X86::Default);
 
-   /*
-    * Generic constructors
-    */
-   inline Instruction(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
+    inline Instruction(TR::InstOpCode::Mnemonic op, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg,
+        OMR::X86::Encoding encoding = OMR::X86::Default);
 
-   inline Instruction(TR::InstOpCode::Mnemonic op, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
+    /*
+     * X86 specific constructors, need to call initializer to perform proper construction
+     */
+    inline Instruction(TR::RegisterDependencyConditions *cond, TR::Node *node, TR::InstOpCode::Mnemonic op,
+        TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
 
+    inline Instruction(TR::RegisterDependencyConditions *cond, TR::InstOpCode::Mnemonic op,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
+};
 
-   /*
-    * X86 specific constructors, need to call initializer to perform proper construction
-    */
-   inline Instruction(TR::RegisterDependencyConditions *cond, TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
-
-   inline Instruction(TR::RegisterDependencyConditions *cond, TR::InstOpCode::Mnemonic op, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
-
-   };
-
-}
+} // namespace TR
 
 #include "codegen/OMRInstruction_inlines.hpp"
 
-TR::Instruction::Instruction(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg, OMR::X86::Encoding encoding) :
-   OMR::InstructionConnector(cg, op, node)
-   {
-   self()->setEncodingMethod(encoding);
-   self()->initialize();
-   }
+TR::Instruction::Instruction(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg,
+    OMR::X86::Encoding encoding)
+    : OMR::InstructionConnector(cg, op, node)
+{
+    self()->setEncodingMethod(encoding);
+    self()->initialize();
+}
 
-TR::Instruction::Instruction(TR::InstOpCode::Mnemonic op, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg, OMR::X86::Encoding encoding) :
-   OMR::InstructionConnector(cg, precedingInstruction, op)
-   {
-   self()->setEncodingMethod(encoding);
-   self()->initialize();
-   }
+TR::Instruction::Instruction(TR::InstOpCode::Mnemonic op, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg,
+    OMR::X86::Encoding encoding)
+    : OMR::InstructionConnector(cg, precedingInstruction, op)
+{
+    self()->setEncodingMethod(encoding);
+    self()->initialize();
+}
 
-TR::Instruction::Instruction(TR::RegisterDependencyConditions *cond, TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg, OMR::X86::Encoding encoding) :
-   OMR::InstructionConnector(cg, op, node)
-   {
-   self()->setDependencyConditions(cond);
-   self()->setEncodingMethod(encoding);
-   self()->initialize(cg, cond, op, true);
-   }
+TR::Instruction::Instruction(TR::RegisterDependencyConditions *cond, TR::Node *node, TR::InstOpCode::Mnemonic op,
+    TR::CodeGenerator *cg, OMR::X86::Encoding encoding)
+    : OMR::InstructionConnector(cg, op, node)
+{
+    self()->setDependencyConditions(cond);
+    self()->setEncodingMethod(encoding);
+    self()->initialize(cg, cond, op, true);
+}
 
-TR::Instruction::Instruction(TR::RegisterDependencyConditions *cond, TR::InstOpCode::Mnemonic op, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg, OMR::X86::Encoding encoding) :
-   OMR::InstructionConnector(cg, precedingInstruction, op)
-   {
-   self()->setDependencyConditions(cond);
-   self()->setEncodingMethod(encoding);
-   self()->initialize(cg, cond, op);
-   }
-
+TR::Instruction::Instruction(TR::RegisterDependencyConditions *cond, TR::InstOpCode::Mnemonic op,
+    TR::Instruction *precedingInstruction, TR::CodeGenerator *cg, OMR::X86::Encoding encoding)
+    : OMR::InstructionConnector(cg, precedingInstruction, op)
+{
+    self()->setDependencyConditions(cond);
+    self()->setEncodingMethod(encoding);
+    self()->initialize(cg, cond, op);
+}
 
 #endif

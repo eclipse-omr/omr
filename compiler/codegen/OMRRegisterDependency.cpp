@@ -21,8 +21,7 @@
 
 #include "codegen/RegisterDependency.hpp"
 
-TR::RegisterDependencyGroup *
-OMR::RegisterDependencyGroup::self()
-    {
+TR::RegisterDependencyGroup *OMR::RegisterDependencyGroup::self()
+{
     return static_cast<TR::RegisterDependencyGroup *>(this);
-    }
+}

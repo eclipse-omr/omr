@@ -26,57 +26,32 @@ namespace TR {
 class Block;
 class Node;
 class Simplifier;
-}
+} // namespace TR
 
 #include "optimizer/SimplifierHandlers.hpp"
 
 const SimplifierPointerTable simplifierOpts;
 
-const SimplifierPtr SimplifierPointerTable::table[] =
-   {
-   #include "optimizer/SimplifierTable.enum"
-#define OPCODE_MACRO(\
-   opcode, \
-   name, \
-   prop1, \
-   prop2, \
-   prop3, \
-   prop4, \
-   dataType, \
-   typeProps, \
-   childProps, \
-   swapChildrenOpcode, \
-   reverseBranchOpcode, \
-   boolCompareOpcode, \
-   ifCompareOpcode, \
-   ...) opcode ## SimplifierHandler,
+const SimplifierPtr SimplifierPointerTable::table[] = {
+#include "optimizer/SimplifierTable.enum"
+#define OPCODE_MACRO(opcode, name, prop1, prop2, prop3, prop4, dataType, typeProps, childProps, swapChildrenOpcode, \
+    reverseBranchOpcode, boolCompareOpcode, ifCompareOpcode, ...)                                                   \
+    opcode##SimplifierHandler,
 
-   BadILOpSimplifierHandler,
+    BadILOpSimplifierHandler,
 
-   #include "il/Opcodes.enum"
+#include "il/Opcodes.enum"
 
-#define VECTOR_OPERATION_MACRO(\
-   operation, \
-   name, \
-   prop1, \
-   prop2, \
-   prop3, \
-   prop4, \
-   dataType, \
-   typeProps, \
-   childProps, \
-   swapChildrenOpcode, \
-   reverseBranchOpcode, \
-   boolCompareOpcode, \
-   ifCompareOpcode, \
-   ...) operation ## SimplifierHandler,
+#define VECTOR_OPERATION_MACRO(operation, name, prop1, prop2, prop3, prop4, dataType, typeProps, childProps, \
+    swapChildrenOpcode, reverseBranchOpcode, boolCompareOpcode, ifCompareOpcode, ...)                        \
+    operation##SimplifierHandler,
 
-   BadILOpSimplifierHandler,
+    BadILOpSimplifierHandler,
 
-   #include "il/VectorOperations.enum"
+#include "il/VectorOperations.enum"
 
 #undef OPCODE_MACRO
 #undef VECTOR_OPERATION_MACRO
-   };
+};
 
 #endif

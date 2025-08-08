@@ -25,28 +25,24 @@
 #include "il/OMRResolvedMethodSymbol.hpp"
 
 class TR_ResolvedMethod;
+
 namespace TR {
 class Compilation;
 }
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE ResolvedMethodSymbol : public OMR::ResolvedMethodSymbolConnector
-   {
-
+class OMR_EXTENSIBLE ResolvedMethodSymbol : public OMR::ResolvedMethodSymbolConnector {
 protected:
-
-   ResolvedMethodSymbol(TR_ResolvedMethod * m, TR::Compilation * c) :
-      OMR::ResolvedMethodSymbolConnector(m, c) {}
+    ResolvedMethodSymbol(TR_ResolvedMethod *m, TR::Compilation *c)
+        : OMR::ResolvedMethodSymbolConnector(m, c)
+    {}
 
 private:
+    // When adding another class to the heirarchy, add it as a friend here
+    friend class OMR::ResolvedMethodSymbol;
+};
 
-   // When adding another class to the heirarchy, add it as a friend here
-   friend class OMR::ResolvedMethodSymbol;
-
-   };
-
-}
+} // namespace TR
 
 #endif

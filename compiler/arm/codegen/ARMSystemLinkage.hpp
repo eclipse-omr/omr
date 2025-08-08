@@ -35,72 +35,64 @@ class Node;
 class Register;
 class RegisterDependencyConditions;
 class ResolvedMethodSymbol;
-}
+} // namespace TR
 
 namespace TR {
 
-class ARMSystemLinkage : public TR::Linkage
-   {
-   static TR::ARMLinkageProperties properties;
+class ARMSystemLinkage : public TR::Linkage {
+    static TR::ARMLinkageProperties properties;
 
-   public:
+public:
+    ARMSystemLinkage(TR::CodeGenerator *cg);
 
-   ARMSystemLinkage(TR::CodeGenerator *cg);
+    virtual uint32_t getRightToLeft();
+    virtual void mapStack(TR::ResolvedMethodSymbol *method);
+    virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
+    virtual void initARMRealRegisterLinkage();
 
-   virtual uint32_t getRightToLeft();
-   virtual void mapStack(TR::ResolvedMethodSymbol *method);
-   virtual void mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &stackIndex);
-   virtual void initARMRealRegisterLinkage();
+    virtual TR::MemoryReference *getOutgoingArgumentMemRef(int32_t totalParmAreaSize, int32_t argOffset,
+        TR::Register *argReg, TR::InstOpCode::Mnemonic opCode, TR::ARMMemoryArgument &memArg);
 
-   virtual TR::MemoryReference *getOutgoingArgumentMemRef(int32_t               totalParmAreaSize,
-                                                            int32_t               argOffset,
-                                                            TR::Register          *argReg,
-                                                            TR::InstOpCode::Mnemonic         opCode,
-                                                            TR::ARMMemoryArgument &memArg);
+    virtual TR::ARMLinkageProperties &getProperties();
 
-   virtual TR::ARMLinkageProperties& getProperties();
+    virtual void createPrologue(TR::Instruction *cursor);
+    virtual void createEpilogue(TR::Instruction *cursor);
 
-   virtual void createPrologue(TR::Instruction *cursor);
-   virtual void createEpilogue(TR::Instruction *cursor);
+    virtual int32_t buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies, TR::Register *&vftReg,
+        bool isJNI);
 
-   virtual int32_t buildArgs(TR::Node                            *callNode,
-                             TR::RegisterDependencyConditions *dependencies,
-                             TR::Register*                       &vftReg,
-                             bool                                isJNI);
+    virtual TR::Register *buildDirectDispatch(TR::Node *callNode);
+    virtual TR::Register *buildIndirectDispatch(TR::Node *callNode);
 
-   virtual TR::Register *buildDirectDispatch(TR::Node *callNode);
-   virtual TR::Register *buildIndirectDispatch(TR::Node *callNode);
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from a method compiled with the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for compiled methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromCompiledMethod();
 
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from a method compiled with the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for compiled methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromCompiledMethod();
+    /**
+     * @brief Provides the entry point in a method to use when that method is invoked
+     *        from an interpreter using the same linkage.
+     *
+     * @details
+     *    When asked on the method currently being compiled, this API will return 0 if
+     *    asked before code memory has been allocated.
+     *
+     *    The compiled method entry point may be the same as the interpreter entry point.
+     *
+     * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
+     */
+    virtual intptr_t entryPointFromInterpretedMethod();
+};
 
-   /**
-    * @brief Provides the entry point in a method to use when that method is invoked
-    *        from an interpreter using the same linkage.
-    *
-    * @details
-    *    When asked on the method currently being compiled, this API will return 0 if
-    *    asked before code memory has been allocated.
-    *
-    *    The compiled method entry point may be the same as the interpreter entry point.
-    *
-    * @return The entry point for interpreted methods to use; 0 if the entry point is unknown
-    */
-   virtual intptr_t entryPointFromInterpretedMethod();
-
-   };
-
-}
+} // namespace TR
 
 #endif

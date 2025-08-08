@@ -27,10 +27,11 @@
  */
 #ifndef OMR_ARITHENV_CONNECTOR
 #define OMR_ARITHENV_CONNECTOR
+
 namespace OMR {
 class ArithEnv;
 typedef OMR::ArithEnv ArithEnvConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stdint.h>
@@ -43,40 +44,38 @@ class ArithEnv;
 }
 
 struct OMR_VMThread;
+
 namespace TR {
 class Compilation;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE ArithEnv
-   {
+class OMR_EXTENSIBLE ArithEnv {
 public:
+    TR::ArithEnv *self();
 
-   TR::ArithEnv * self();
+    template<typename T> inline T fpSquareRoot(T a) { return std::sqrt(a); }
 
-   template <typename T> inline T fpSquareRoot(T a) { return std::sqrt(a); }
+    float floatAddFloat(float a, float b);
+    float floatSubtractFloat(float a, float b);
+    float floatMultiplyFloat(float a, float b);
+    float floatDivideFloat(float a, float b);
+    float floatRemainderFloat(float a, float b);
+    float floatNegate(float a);
+    double doubleAddDouble(double a, double b);
+    double doubleSubtractDouble(double a, double b);
+    double doubleMultiplyDouble(double a, double b);
+    double doubleDivideDouble(double a, double b);
+    double doubleRemainderDouble(double a, double b);
+    double doubleNegate(double a);
+    double floatToDouble(float a);
+    float doubleToFloat(double a);
+    int64_t longRemainderLong(int64_t a, int64_t b);
+    int64_t longDivideLong(int64_t a, int64_t b);
+    int64_t longMultiplyLong(int64_t a, int64_t b);
+};
 
-   float floatAddFloat(float a, float b);
-   float floatSubtractFloat(float a, float b);
-   float floatMultiplyFloat(float a, float b);
-   float floatDivideFloat(float a, float b);
-   float floatRemainderFloat(float a, float b);
-   float floatNegate(float a);
-   double doubleAddDouble(double a, double b);
-   double doubleSubtractDouble(double a, double b);
-   double doubleMultiplyDouble(double a, double b);
-   double doubleDivideDouble(double a, double b);
-   double doubleRemainderDouble(double a, double b);
-   double doubleNegate(double a);
-   double floatToDouble(float a);
-   float doubleToFloat(double a);
-   int64_t longRemainderLong(int64_t a, int64_t b);
-   int64_t longDivideLong(int64_t a, int64_t b);
-   int64_t longMultiplyLong(int64_t a, int64_t b);
-   };
-
-}
+} // namespace OMR
 
 #endif

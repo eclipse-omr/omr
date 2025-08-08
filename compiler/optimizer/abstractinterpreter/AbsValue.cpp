@@ -21,55 +21,51 @@
 
 #include "optimizer/abstractinterpreter/AbsValue.hpp"
 
-TR::AbsValue* TR::AbsVPValue::clone(TR::Region& region) const
-   {
-   TR::AbsVPValue* copy = new (region) TR::AbsVPValue(_vp, _constraint, _dataType, _paramPos);
-   return copy;
-   }
+TR::AbsValue *TR::AbsVPValue::clone(TR::Region &region) const
+{
+    TR::AbsVPValue *copy = new (region) TR::AbsVPValue(_vp, _constraint, _dataType, _paramPos);
+    return copy;
+}
 
-TR::AbsValue* TR::AbsVPValue::merge(const TR::AbsValue *other)
-   {
-   if (other == NULL)
-      return this;
+TR::AbsValue *TR::AbsVPValue::merge(const TR::AbsValue *other)
+{
+    if (other == NULL)
+        return this;
 
-   if (_paramPos != other->getParameterPosition())
-      _paramPos = -1;
+    if (_paramPos != other->getParameterPosition())
+        _paramPos = -1;
 
-   if (other->getDataType() != _dataType)
-      {
-      _dataType = TR::NoType;
-      setToTop();
-      return this;
-      }
+    if (other->getDataType() != _dataType) {
+        _dataType = TR::NoType;
+        setToTop();
+        return this;
+    }
 
-   if (isTop())
-      return this;
+    if (isTop())
+        return this;
 
-   if (other->isTop())
-      {
-      setToTop();
-      return this;
-      }
+    if (other->isTop()) {
+        setToTop();
+        return this;
+    }
 
-   TR::VPConstraint *mergedConstraint = _constraint->merge(static_cast<const TR::AbsVPValue*>(other)->getConstraint(), _vp);
+    TR::VPConstraint *mergedConstraint
+        = _constraint->merge(static_cast<const TR::AbsVPValue *>(other)->getConstraint(), _vp);
 
-   _constraint = mergedConstraint;
-   return this;
-   }
+    _constraint = mergedConstraint;
+    return this;
+}
 
-void TR::AbsVPValue::print(TR::Compilation* comp) const
-   {
-   traceMsg(comp, "AbsValue: Type: %s ", TR::DataType::getName(_dataType));
+void TR::AbsVPValue::print(TR::Compilation *comp) const
+{
+    traceMsg(comp, "AbsValue: Type: %s ", TR::DataType::getName(_dataType));
 
-   if (_constraint)
-      {
-      traceMsg(comp, "Constraint: ");
-      _constraint->print(_vp);
-      }
-   else
-      {
-      traceMsg(comp, "TOP (unknown) ");
-      }
+    if (_constraint) {
+        traceMsg(comp, "Constraint: ");
+        _constraint->print(_vp);
+    } else {
+        traceMsg(comp, "TOP (unknown) ");
+    }
 
-   traceMsg(comp, " param position: %d", _paramPos);
-   }
+    traceMsg(comp, " param position: %d", _paramPos);
+}

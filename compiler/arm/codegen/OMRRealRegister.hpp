@@ -27,97 +27,94 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
+
 namespace OMR {
-   namespace ARM { class RealRegister; }
-   typedef OMR::ARM::RealRegister RealRegisterConnector;
+namespace ARM {
+class RealRegister;
 }
+
+typedef OMR::ARM::RealRegister RealRegisterConnector;
+} // namespace OMR
 #else
-   #error OMR::ARM::RealRegister expected to be a primary connector, but a OMR connector is already defined
+#error OMR::ARM::RealRegister expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 // currently TR doesn't have a generic component for real register, so derive from OMR directly
 #include "compiler/codegen/OMRRealRegister.hpp"
 
+namespace OMR { namespace ARM {
 
-namespace OMR
-{
+class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister {
+protected:
+    RealRegister(TR::CodeGenerator *cg)
+        : OMR::RealRegister(cg, NoReg)
+    {}
 
-namespace ARM
-{
+    RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, RegNum rn, RegMask m, TR::CodeGenerator *cg)
+        : OMR::RealRegister(rk, w, s, (uint16_t)0, rn, m, cg) /* , _useVSR(false) */
+    {}
 
-class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister
-   {
-   protected:
+public:
+    typedef enum {
+        pos_RD = 12, // ARM
+        pos_RN = 16, // ARM
+        pos_RM = 0, // ARM
+        pos_RS = 8, // ARM
+        pos_RT = 21, // ARM
+        pos_D = 22, // ARM
+        pos_N = 7, // ARM
+        pos_M = 5 // ARM
+    } ARMOperandPosition;
 
-   RealRegister(TR::CodeGenerator *cg) : OMR::RealRegister(cg, NoReg) {}
+    void setRegisterFieldRS(uint32_t *instruction)
+    {
+        *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RS;
+    }
 
-   RealRegister(TR_RegisterKinds rk, uint16_t  w, RegState s, RegNum rn, RegMask m, TR::CodeGenerator * cg) :
-          OMR::RealRegister(rk, w, s, (uint16_t)0, rn, m, cg) /* , _useVSR(false) */ {}
+    void setRegisterFieldRT(uint32_t *instruction)
+    {
+        *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RT;
+    }
 
-   public:
+    void setRegisterFieldRD(uint32_t *instruction)
+    {
+        *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RD;
+    }
 
-   typedef enum  {
-      pos_RD     = 12,  // ARM
-      pos_RN     = 16,  // ARM
-      pos_RM     = 0,   // ARM
-      pos_RS     = 8,   // ARM
-      pos_RT     = 21,  // ARM
-      pos_D      = 22,  // ARM
-      pos_N      = 7,   // ARM
-      pos_M      = 5    // ARM
-   } ARMOperandPosition;
+    void setRegisterFieldRN(uint32_t *instruction)
+    {
+        *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RN;
+    }
 
-   void setRegisterFieldRS(uint32_t *instruction)
-      {
-      *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RS;
-      }
-
-   void setRegisterFieldRT(uint32_t *instruction)
-      {
-      *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RT;
-      }
-
-   void setRegisterFieldRD(uint32_t *instruction)
-      {
-      *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RD;
-      }
-
-   void setRegisterFieldRN(uint32_t *instruction)
-      {
-      *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RN;
-      }
-
-   void setRegisterFieldRM(uint32_t *instruction)
-      {
-           *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RM;
-      }
+    void setRegisterFieldRM(uint32_t *instruction)
+    {
+        *instruction |= fullRegBinaryEncodings[_registerNumber] << pos_RM;
+    }
 
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
-   void setRegisterFieldSD(uint32_t *instruction)
-      {
-           *instruction |= (((fullRegBinaryEncodings[_registerNumber] >> 1) << pos_RD) |
-                            ((fullRegBinaryEncodings[_registerNumber] & 1) << pos_D)) ;
-      }
-   void setRegisterFieldSM(uint32_t *instruction)
-      {
-           *instruction |= (((fullRegBinaryEncodings[_registerNumber] >> 1) << pos_RM) |
-                            ((fullRegBinaryEncodings[_registerNumber] & 1) << pos_M)) ;
-      }
-   void setRegisterFieldSN(uint32_t *instruction)
-      {
-           *instruction |= (((fullRegBinaryEncodings[_registerNumber] >> 1) << pos_RN) |
-                            ((fullRegBinaryEncodings[_registerNumber] & 1) << pos_N)) ;
-      }
+    void setRegisterFieldSD(uint32_t *instruction)
+    {
+        *instruction |= (((fullRegBinaryEncodings[_registerNumber] >> 1) << pos_RD)
+            | ((fullRegBinaryEncodings[_registerNumber] & 1) << pos_D));
+    }
+
+    void setRegisterFieldSM(uint32_t *instruction)
+    {
+        *instruction |= (((fullRegBinaryEncodings[_registerNumber] >> 1) << pos_RM)
+            | ((fullRegBinaryEncodings[_registerNumber] & 1) << pos_M));
+    }
+
+    void setRegisterFieldSN(uint32_t *instruction)
+    {
+        *instruction |= (((fullRegBinaryEncodings[_registerNumber] >> 1) << pos_RN)
+            | ((fullRegBinaryEncodings[_registerNumber] & 1) << pos_N));
+    }
 #endif
 
-   private:
+private:
+    static const uint8_t fullRegBinaryEncodings[NumRegisters];
+};
 
-   static const uint8_t fullRegBinaryEncodings[NumRegisters];
-
-   };
-
-}
-
-}
+}} // namespace OMR::ARM
 
 #endif

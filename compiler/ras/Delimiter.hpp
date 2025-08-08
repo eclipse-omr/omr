@@ -29,67 +29,55 @@ namespace TR {
 class Compilation;
 }
 
-namespace TR
-{
+namespace TR {
 
-class Delimiter
-   {
-   public:
+class Delimiter {
+public:
+    Delimiter(TR::Compilation *comp, bool trace, const char *tag, const char *comment0 = NULL,
+        const char *comment1 = NULL, const char *comment2 = NULL)
+        : _tag(tag)
+        , _comp(comp)
+        , _trace(trace)
+    {
+        TR_ASSERT(strlen(tag) < tagsize - 1, "tag is too long");
 
-   Delimiter(
-         TR::Compilation * comp,
-         bool trace,
-         const char * tag,
-         const char * comment0 = NULL,
-         const char * comment1 = NULL,
-         const char * comment2 = NULL) :
-      _tag(tag),
-      _comp(comp),
-      _trace(trace)
-      {
-      TR_ASSERT(strlen(tag) < tagsize-1, "tag is too long");
-
-      if (_trace)
-         {
-         if (!comment0)
-            traceMsg(_comp,"<%s>\n",_tag);
-         else
-            {
-            if (!comment1)
-               traceMsg(_comp, "<%s %s>\n", _tag, comment0);
-            else
-               {
-               traceMsg(_comp, "<%s\n", _tag);
-               traceMsg(_comp, "\t%s\n", comment0);
-               traceMsg(_comp, "\t%s", comment1);
-               if (comment2)
-                  traceMsg(_comp, "\n\t%s>\n", comment2);
-               else
-                  traceMsg(_comp, ">\n");
-               }
+        if (_trace) {
+            if (!comment0)
+                traceMsg(_comp, "<%s>\n", _tag);
+            else {
+                if (!comment1)
+                    traceMsg(_comp, "<%s %s>\n", _tag, comment0);
+                else {
+                    traceMsg(_comp, "<%s\n", _tag);
+                    traceMsg(_comp, "\t%s\n", comment0);
+                    traceMsg(_comp, "\t%s", comment1);
+                    if (comment2)
+                        traceMsg(_comp, "\n\t%s>\n", comment2);
+                    else
+                        traceMsg(_comp, ">\n");
+                }
             }
-         }
-      }
+        }
+    }
 
-   ~Delimiter()
-      {
-      if (_trace)
-         traceMsg(_comp,"</%s>\n",_tag);
-      }
+    ~Delimiter()
+    {
+        if (_trace)
+            traceMsg(_comp, "</%s>\n", _tag);
+    }
 
-   protected:
+protected:
+    static const int tagsize = 32;
 
-   static const int tagsize = 32;
+    // pin an address is good enough
+    // char _buffer[tagsize];
+    const char *_tag;
 
-   // pin an address is good enough
-   // char _buffer[tagsize];
-   const char * _tag;
+    TR::Compilation *_comp;
 
-   TR::Compilation *_comp;
+    bool _trace;
+};
 
-   bool _trace;
-   };
-
-}
+} // namespace TR
 
 #endif

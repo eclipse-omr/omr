@@ -21,7 +21,4 @@
 
 #include "infra/MonitorTable.hpp"
 
-TR::MonitorTable *OMR::MonitorTable::self()
-   {
-   return static_cast<TR::MonitorTable *>(this);
-   }
+TR::MonitorTable *OMR::MonitorTable::self() { return static_cast<TR::MonitorTable *>(this); }

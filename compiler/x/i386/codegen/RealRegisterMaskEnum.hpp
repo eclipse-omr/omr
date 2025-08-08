@@ -19,52 +19,24 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-   noRegMask         = 0x00000000,
+noRegMask = 0x00000000,
 
-   // GPR
-   //
-   eaxMask           = 0x00000001,
-   ebxMask           = 0x00000002,
-   ecxMask           = 0x00000004,
-   edxMask           = 0x00000008,
-   ediMask           = 0x00000010,
-   esiMask           = 0x00000020,
-   ebpMask           = 0x00000040,
-   espMask           = 0x00000080,
-   AvailableGPRMask  = 0x000000FF,
+    // GPR
+    //
+    eaxMask = 0x00000001, ebxMask = 0x00000002, ecxMask = 0x00000004, edxMask = 0x00000008, ediMask = 0x00000010,
+    esiMask = 0x00000020, ebpMask = 0x00000040, espMask = 0x00000080, AvailableGPRMask = 0x000000FF,
 
-   // FPR
-   //
-   st0Mask           = 0x00000001,
-   st1Mask           = 0x00000002,
-   st2Mask           = 0x00000004,
-   st3Mask           = 0x00000008,
-   st4Mask           = 0x00000010,
-   st5Mask           = 0x00000020,
-   st6Mask           = 0x00000040,
-   st7Mask           = 0x00000080,
-   AvailableFPRMask  = 0x000000FF,
+    // FPR
+    //
+    st0Mask = 0x00000001, st1Mask = 0x00000002, st2Mask = 0x00000004, st3Mask = 0x00000008, st4Mask = 0x00000010,
+    st5Mask = 0x00000020, st6Mask = 0x00000040, st7Mask = 0x00000080, AvailableFPRMask = 0x000000FF,
 
-   // XMMR
-   //
-   xmm0Mask          = 0x00000001,
-   xmm1Mask          = 0x00000002,
-   xmm2Mask          = 0x00000004,
-   xmm3Mask          = 0x00000008,
-   xmm4Mask          = 0x00000010,
-   xmm5Mask          = 0x00000020,
-   xmm6Mask          = 0x00000040,
-   xmm7Mask          = 0x00000080,
-   AvailableXMMRMask = 0x000000FF,
+    // XMMR
+    //
+    xmm0Mask = 0x00000001, xmm1Mask = 0x00000002, xmm2Mask = 0x00000004, xmm3Mask = 0x00000008, xmm4Mask = 0x00000010,
+    xmm5Mask = 0x00000020, xmm6Mask = 0x00000040, xmm7Mask = 0x00000080, AvailableXMMRMask = 0x000000FF,
 
-   // Vector Mask Registers
-   //
-   k0Mask            = 0x00000001,
-   k1Mask            = 0x00000002,
-   k2Mask            = 0x00000004,
-   k3Mask            = 0x00000008,
-   k4Mask            = 0x00000010,
-   k5Mask            = 0x00000020,
-   k6Mask            = 0x00000040,
-   k7Mask            = 0x00000080,
-   AvailableKMask    = 0x000000FF,
+    // Vector Mask Registers
+    //
+    k0Mask = 0x00000001, k1Mask = 0x00000002, k2Mask = 0x00000004, k3Mask = 0x00000008, k4Mask = 0x00000010,
+    k5Mask = 0x00000020, k6Mask = 0x00000040, k7Mask = 0x00000080, AvailableKMask = 0x000000FF,

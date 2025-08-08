@@ -29,14 +29,13 @@
 namespace TR {
 class IlBuilder;
 class VirtualMachineRegister;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * @brief simulate virtual machine state variable via an address
- * 
+ *
  * VirtualMachineRegister can be used to represent values in the virtual machine
  * at any address. The value does not need to be a virtual machine register, but
  * often it is the registers of the virtual machine that are candidates for
@@ -61,162 +60,137 @@ namespace OMR
  * appending to the builder "b"
  */
 
-class VirtualMachineRegister : public TR::VirtualMachineState
-   {
-   protected:
-   /**
-    * @brief constructor can be used by subclasses to initialize just the const pointer
-    * @param localName the name of the local variable where the simulated value is to be stored
-    */
-   VirtualMachineRegister(const char * const localName)
-      : TR::VirtualMachineState(),
-      _localName(localName)
-      { }
+class VirtualMachineRegister : public TR::VirtualMachineState {
+protected:
+    /**
+     * @brief constructor can be used by subclasses to initialize just the const pointer
+     * @param localName the name of the local variable where the simulated value is to be stored
+     */
+    VirtualMachineRegister(const char * const localName)
+        : TR::VirtualMachineState()
+        , _localName(localName)
+    {}
 
-   public:
-   /**
-    * @brief public constructor used to create a virtual machine state variable
-    * @param b a builder object where the first Reload operations will be inserted
-    * @param localName the name of the local variable where the simulated value is to be stored
-    * @param pointerToRegisterType must be pointer to the type of the register
-    * @param adjustByStep is a multiplier for the value passed to Adjust()
-    * @param addressOfRegister is the address of the actual register
-    */
-   VirtualMachineRegister(TR::IlBuilder *b,
-                          const char * const localName,
-                          TR::IlType * pointerToRegisterType,
-                          uint32_t adjustByStep,
-                          TR::IlValue * addressOfRegister);
-   /**
-    * @brief public constructor used to create a virtual machine state variable
-    * @param localName the name of the local variable where the simulated value is to be stored
-    * @param pointerToRegisterType must be pointer to the type of the register
-    * @param adjustByStep is a multiplier for the value passed to Adjust()
-    * @param addressOfRegister is the address of the actual register
-    */
-   VirtualMachineRegister(const char * const localName,
-                          TR::IlType * pointerToRegisterType,
-                          uint32_t adjustByStep,
-                          TR::IlValue * addressOfRegister)
-      : TR::VirtualMachineState(),
-      _localName(localName),
-      _addressOfRegister(addressOfRegister),
-      _pointerToRegisterType(pointerToRegisterType),
-      _adjustByStep(adjustByStep)
-      {
-      }
+public:
+    /**
+     * @brief public constructor used to create a virtual machine state variable
+     * @param b a builder object where the first Reload operations will be inserted
+     * @param localName the name of the local variable where the simulated value is to be stored
+     * @param pointerToRegisterType must be pointer to the type of the register
+     * @param adjustByStep is a multiplier for the value passed to Adjust()
+     * @param addressOfRegister is the address of the actual register
+     */
+    VirtualMachineRegister(TR::IlBuilder *b, const char * const localName, TR::IlType *pointerToRegisterType,
+        uint32_t adjustByStep, TR::IlValue *addressOfRegister);
 
-   /**
-    * @brief write the simulated register value to the virtual machine
-    * @param b the builder where the operation will be placed to store the virtual machine value
-    */
-   virtual void Commit(TR::IlBuilder *b)
-      {
-      b->StoreAt(
-            _addressOfRegister,
-      b->   Load(_localName));
-      }
+    /**
+     * @brief public constructor used to create a virtual machine state variable
+     * @param localName the name of the local variable where the simulated value is to be stored
+     * @param pointerToRegisterType must be pointer to the type of the register
+     * @param adjustByStep is a multiplier for the value passed to Adjust()
+     * @param addressOfRegister is the address of the actual register
+     */
+    VirtualMachineRegister(const char * const localName, TR::IlType *pointerToRegisterType, uint32_t adjustByStep,
+        TR::IlValue *addressOfRegister)
+        : TR::VirtualMachineState()
+        , _localName(localName)
+        , _addressOfRegister(addressOfRegister)
+        , _pointerToRegisterType(pointerToRegisterType)
+        , _adjustByStep(adjustByStep)
+    {}
 
-   /**
-    * @brief transfer the current virtual machine register value to the simulated local variable
-    * @param b the builder where the operation will be placed to load the virtual machine value
-    */
-   virtual void Reload(TR::IlBuilder *b)
-      {
-      b->Store(_localName,
-      b->   LoadAt((TR::IlType *)_pointerToRegisterType,
-               _addressOfRegister));
-      }
+    /**
+     * @brief write the simulated register value to the virtual machine
+     * @param b the builder where the operation will be placed to store the virtual machine value
+     */
+    virtual void Commit(TR::IlBuilder *b) { b->StoreAt(_addressOfRegister, b->Load(_localName)); }
 
-   /**
-    * @brief create an identical copy of the current object.
-    * @returns the copy of the current object
-    */
-   virtual TR::VirtualMachineState *MakeCopy();
+    /**
+     * @brief transfer the current virtual machine register value to the simulated local variable
+     * @param b the builder where the operation will be placed to load the virtual machine value
+     */
+    virtual void Reload(TR::IlBuilder *b)
+    {
+        b->Store(_localName, b->LoadAt((TR::IlType *)_pointerToRegisterType, _addressOfRegister));
+    }
 
-   /**
-    * @brief used in the compiled method to load the (simulated) register's value
-    * @param b the builder where the operation will be placed to load the simulated value
-    * @returns TR:IlValue * for the loaded simulated register value
-    */
-   TR::IlValue *Load(TR::IlBuilder *b)
-      {
-      return b->Load(_localName);
-      }
+    /**
+     * @brief create an identical copy of the current object.
+     * @returns the copy of the current object
+     */
+    virtual TR::VirtualMachineState *MakeCopy();
 
-   /**
-    * @brief used in the compiled method to store to the (simulated) register's value
-    * @param b the builder where the operation will be placed to store to the simulated value
-    */
-   void Store(TR::IlBuilder *b, TR::IlValue *value)
-      {
-      b->Store(_localName, value);
-      }
+    /**
+     * @brief used in the compiled method to load the (simulated) register's value
+     * @param b the builder where the operation will be placed to load the simulated value
+     * @returns TR:IlValue * for the loaded simulated register value
+     */
+    TR::IlValue *Load(TR::IlBuilder *b) { return b->Load(_localName); }
 
-   /**
-    * @brief used in the compiled method to add to the (simulated) register's value
-    * @param b the builder where the operation will be placed to add to the simulated value
-    * @param amount the TR::IlValue that should be added to the simulated value, after multiplication by _adjustByStep
-    * Adjust() is really a convenience function for the common operation of adding a value to the register. More
-    * complicated operations (e.g. multiplying the value) can be built using Load() and Store() if needed.
-    */
-   virtual void Adjust(TR::IlBuilder *b, TR::IlValue *amount)
-      {
-      TR::IlValue *off=b->Mul(
-                       b->    ConvertTo(_integerTypeForAdjustments, amount),
-                       b->    ConstInteger(_integerTypeForAdjustments, _adjustByStep));
-      adjust(b, off);
-      }
+    /**
+     * @brief used in the compiled method to store to the (simulated) register's value
+     * @param b the builder where the operation will be placed to store to the simulated value
+     */
+    void Store(TR::IlBuilder *b, TR::IlValue *value) { b->Store(_localName, value); }
 
-   /**
-    * @brief used in the compiled method to add to the (simulated) register's value
-    * @param b the builder where the operation will be placed to add to the simulated value
-    * @param amount the constant value that should be added to the simulated value, after multiplication by _adjustByStep
-    * Adjust() is really a convenience function for the common operation of adding a value to the register. More
-    * complicated operations (e.g. multiplying the value) can be built using Load() and Store() if needed.
-    */
-   virtual void Adjust(TR::IlBuilder *b, size_t amount)
-      {
-      adjust(b, b->ConstInteger(_integerTypeForAdjustments, amount * _adjustByStep));
-      }
+    /**
+     * @brief used in the compiled method to add to the (simulated) register's value
+     * @param b the builder where the operation will be placed to add to the simulated value
+     * @param amount the TR::IlValue that should be added to the simulated value, after multiplication by _adjustByStep
+     * Adjust() is really a convenience function for the common operation of adding a value to the register. More
+     * complicated operations (e.g. multiplying the value) can be built using Load() and Store() if needed.
+     */
+    virtual void Adjust(TR::IlBuilder *b, TR::IlValue *amount)
+    {
+        TR::IlValue *off = b->Mul(b->ConvertTo(_integerTypeForAdjustments, amount),
+            b->ConstInteger(_integerTypeForAdjustments, _adjustByStep));
+        adjust(b, off);
+    }
 
-   /**
-    * @brief returns the client object associated with this object
-    */
-   virtual void *client();
+    /**
+     * @brief used in the compiled method to add to the (simulated) register's value
+     * @param b the builder where the operation will be placed to add to the simulated value
+     * @param amount the constant value that should be added to the simulated value, after multiplication by
+     * _adjustByStep Adjust() is really a convenience function for the common operation of adding a value to the
+     * register. More complicated operations (e.g. multiplying the value) can be built using Load() and Store() if
+     * needed.
+     */
+    virtual void Adjust(TR::IlBuilder *b, size_t amount)
+    {
+        adjust(b, b->ConstInteger(_integerTypeForAdjustments, amount * _adjustByStep));
+    }
 
-   /**
-    * @brief Set the Client Allocator function
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
+    /**
+     * @brief returns the client object associated with this object
+     */
+    virtual void *client();
 
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
+    /**
+     * @brief Set the Client Allocator function
+     */
+    static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
 
-   protected:
-   void adjust(TR::IlBuilder *b, TR::IlValue *rawAmount);
+    /**
+     * @brief Set the Get Impl function
+     *
+     * @param getter function pointer to the impl getter
+     */
+    static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
 
-   const char  * const _localName;
-   TR::IlValue * _addressOfRegister;
-   TR::IlType  * _pointerToRegisterType;
-   TR::IlType  * _integerTypeForAdjustments;
-   uint32_t      _adjustByStep;
-   bool          _isAdjustable;
+protected:
+    void adjust(TR::IlBuilder *b, TR::IlValue *rawAmount);
+
+    const char * const _localName;
+    TR::IlValue *_addressOfRegister;
+    TR::IlType *_pointerToRegisterType;
+    TR::IlType *_integerTypeForAdjustments;
+    uint32_t _adjustByStep;
+    bool _isAdjustable;
 
 private:
-   static ClientAllocator _clientAllocator;
-   static ImplGetter _getImpl;
-   };
-}
+    static ClientAllocator _clientAllocator;
+    static ImplGetter _getImpl;
+};
+} // namespace OMR
 
 #endif // !defined(OMR_VIRTUALMACHINEREGISTER_INCL)

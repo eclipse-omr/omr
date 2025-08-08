@@ -24,10 +24,14 @@
 
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
+
 namespace OMR {
-namespace X86 { class RealRegister; }
-typedef OMR::X86::RealRegister RealRegisterConnector;
+namespace X86 {
+class RealRegister;
 }
+
+typedef OMR::X86::RealRegister RealRegisterConnector;
+} // namespace OMR
 #endif
 
 #include "compiler/codegen/OMRRealRegister.hpp"
@@ -39,55 +43,48 @@ typedef OMR::X86::RealRegister RealRegisterConnector;
 namespace TR {
 class CodeGenerator;
 class RealRegister;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace X86 {
 
-namespace X86
-{
+class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister {
+protected:
+    RealRegister(TR::CodeGenerator *cg)
+        : OMR::RealRegister(cg, NoReg)
+    {}
 
-class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister
-   {
-   protected:
+    RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, RegNum ri, RegMask m, TR::CodeGenerator *cg)
+        : OMR::RealRegister(rk, w, s, (uint16_t)ri, ri, m, cg)
+    {}
 
-   RealRegister(TR::CodeGenerator *cg) : OMR::RealRegister(cg, NoReg) {}
+public:
+    // Constants for AMD64 Rex prefix calculations
+    // TODO:AMD64: Consider putting this in an AMD64Register subclass
+    //
+    enum {
+        REX = 0x40,
+        REX_W = 0x08,
+        REX_R = 0x04,
+        REX_X = 0x02,
+        REX_B = 0x01
+    };
 
-   RealRegister(TR_RegisterKinds   rk,
-                uint16_t           w,
-                RegState           s,
-                RegNum             ri,
-                RegMask            m,
-                TR::CodeGenerator *cg) :
-      OMR::RealRegister(rk, w, s, (uint16_t)ri, ri, m, cg) {}
+    static TR::RealRegister *regMaskToRealRegister(TR_RegisterMask mask, TR_RegisterKinds rk, TR::CodeGenerator *cg);
+    static TR_RegisterMask getAvailableRegistersMask(TR_RegisterKinds rk);
+    static RegMask getRealRegisterMask(TR_RegisterKinds rk, RegNum idx);
+    using OMR::RealRegister::getRealRegisterMask; // for getting the _registerMask member
 
-   public:
+protected:
+    // TODO:AMD64: Consider making this back into a plain old byte for consistency with other platforms.
+    struct TR_RegisterBinaryEncoding {
+        unsigned char id: 3; // 3-bit register identifier used in ModRM and SIB bytes
+        unsigned char needsRexPlusRXB: 1; // Always need a Rex prefix with the R, X, or B bit set
+        unsigned char needsRexForByte: 1; // Needs a Rex prefix when used as a byte register
+        unsigned char needsDisp: 1; // Needs a displacement field (even if zero) when used as a base reg (ie. ebp/r13)
+        unsigned char needsSIB: 1; // Needs a SIB byte when used as a base reg (ie. esp/r12)
+    };
+};
 
-   // Constants for AMD64 Rex prefix calculations
-   // TODO:AMD64: Consider putting this in an AMD64Register subclass
-   //
-   enum { REX=0x40, REX_W=0x08, REX_R=0x04, REX_X=0x02, REX_B=0x01 };
-
-   static TR::RealRegister *regMaskToRealRegister(TR_RegisterMask mask, TR_RegisterKinds rk, TR::CodeGenerator *cg);
-   static TR_RegisterMask getAvailableRegistersMask(TR_RegisterKinds rk);
-   static RegMask getRealRegisterMask(TR_RegisterKinds rk, RegNum idx);
-   using OMR::RealRegister::getRealRegisterMask;  // for getting the _registerMask member
-
-   protected:
-
-   // TODO:AMD64: Consider making this back into a plain old byte for consistency with other platforms.
-   struct TR_RegisterBinaryEncoding
-      {
-      unsigned char id:3;              // 3-bit register identifier used in ModRM and SIB bytes
-      unsigned char needsRexPlusRXB:1; // Always need a Rex prefix with the R, X, or B bit set
-      unsigned char needsRexForByte:1; // Needs a Rex prefix when used as a byte register
-      unsigned char needsDisp:1;       // Needs a displacement field (even if zero) when used as a base reg (ie. ebp/r13)
-      unsigned char needsSIB:1;        // Needs a SIB byte when used as a base reg (ie. esp/r12)
-      };
-   };
-
-}
-
-}
+}} // namespace OMR::X86
 
 #endif

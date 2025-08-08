@@ -26,24 +26,20 @@
 
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE TreeTop : public OMR::TreeTopConnector
-   {
-
+class OMR_EXTENSIBLE TreeTop : public OMR::TreeTopConnector {
 public:
+    TreeTop()
+        : OMR::TreeTop() {};
 
-   TreeTop() :
-      OMR::TreeTop() {} ;
+    TreeTop(TR::Node *node, TR::TreeTop *next, TR::TreeTop *prev)
+        : OMR::TreeTop(node, next, prev) {};
 
-   TreeTop(TR::Node *node, TR::TreeTop *next, TR::TreeTop *prev) :
-      OMR::TreeTop(node, next, prev) {} ;
+    TreeTop(TR::TreeTop *precedingTreeTop, TR::Node *node, TR::Compilation *c)
+        : OMR::TreeTop(precedingTreeTop, node, c) {};
+};
 
-   TreeTop(TR::TreeTop *precedingTreeTop, TR::Node *node, TR::Compilation *c) :
-      OMR::TreeTop(precedingTreeTop, node, c) {} ;
-   };
-
-}
+} // namespace TR
 
 #endif

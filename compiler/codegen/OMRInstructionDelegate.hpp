@@ -27,25 +27,22 @@
  */
 #ifndef OMR_INSTRUCTIONDELEGATE_CONNECTOR
 #define OMR_INSTRUCTIONDELEGATE_CONNECTOR
+
 namespace OMR {
 class InstructionDelegate;
 typedef OMR::InstructionDelegate InstructionDelegateConnector;
-}
+} // namespace OMR
 #endif
 
 #include "infra/Annotations.hpp"
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE InstructionDelegate
-   {
+class OMR_EXTENSIBLE InstructionDelegate {
 protected:
+    InstructionDelegate() {}
+};
 
-   InstructionDelegate() {}
-
-   };
-
-}
+} // namespace OMR
 
 #endif

@@ -24,15 +24,13 @@
 
 #include "optimizer/OMRGlobalRegister.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE GlobalRegister : public OMR::GlobalRegisterConnector
-    {
+class OMR_EXTENSIBLE GlobalRegister : public OMR::GlobalRegisterConnector {
 public:
     // no ctor so that it can be zero initialized by the TR_Array template
-    };
+};
 
-}
+} // namespace TR
 
 #endif

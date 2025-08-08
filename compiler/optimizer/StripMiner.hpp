@@ -32,102 +32,101 @@ class TR_ParentOfChildNode;
 class TR_PrimaryInductionVariable;
 class TR_RegionStructure;
 class TR_Structure;
+
 namespace TR {
 class Block;
 class CFGEdge;
 class Optimization;
 class SymbolReference;
 class TreeTop;
-}
+} // namespace TR
 
 #define DEFAULT_STRIP_LENGTH 1024
 
-class TR_StripMiner : public TR_LoopTransformer
-   {
-   public:
-   TR_StripMiner(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_StripMiner(manager);
-      }
+class TR_StripMiner : public TR_LoopTransformer {
+public:
+    TR_StripMiner(TR::OptimizationManager *manager);
 
-   virtual bool    shouldPerform();
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_StripMiner(manager);
+    }
 
-   private:
-   /* types */
-   typedef enum
-      {
-      unknownLoop,
-      preLoop,
-      mainLoop,
-      postLoop,
-      residualLoop,
-      offsetLoop
-      } TR_ClonedLoopType;
+    virtual bool shouldPerform();
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   /* data */
-   struct LoopInfo
-      {
-      TR_RegionStructure *_region;
-      intptr_t _regionNum;
-      intptr_t _arrayDataSize;
-      bool _increasing;
-      bool _branchToExit;
-      bool _canMoveAsyncCheck;
-      bool _needOffsetLoop;
-      intptr_t _preOffset;
-      intptr_t _postOffset;
-      intptr_t _offset;
-      intptr_t _stripLen;
+private:
+    /* types */
+    typedef enum {
+        unknownLoop,
+        preLoop,
+        mainLoop,
+        postLoop,
+        residualLoop,
+        offsetLoop
+    } TR_ClonedLoopType;
 
-      TR::Block *_preHeader;
-      TR::Block *_loopTest;
-      TR_PrimaryInductionVariable *_piv;
-      TR::TreeTop *_asyncTree;
+    /* data */
+    struct LoopInfo {
+        TR_RegionStructure *_region;
+        intptr_t _regionNum;
+        intptr_t _arrayDataSize;
+        bool _increasing;
+        bool _branchToExit;
+        bool _canMoveAsyncCheck;
+        bool _needOffsetLoop;
+        intptr_t _preOffset;
+        intptr_t _postOffset;
+        intptr_t _offset;
+        intptr_t _stripLen;
 
-      TR_ScratchList<TR_ParentOfChildNode> _mainParentsOfLoads;
-      TR_ScratchList<TR_ParentOfChildNode> _mainParentsOfStores;
-      TR_ScratchList<TR_ParentOfChildNode> _residualParentsOfLoads;
-      TR_ScratchList<TR_ParentOfChildNode> _residualParentsOfStores;
+        TR::Block *_preHeader;
+        TR::Block *_loopTest;
+        TR_PrimaryInductionVariable *_piv;
+        TR::TreeTop *_asyncTree;
 
-      TR_ScratchList<TR::CFGEdge> _edgesToRemove;
-      };
+        TR_ScratchList<TR_ParentOfChildNode> _mainParentsOfLoads;
+        TR_ScratchList<TR_ParentOfChildNode> _mainParentsOfStores;
+        TR_ScratchList<TR_ParentOfChildNode> _residualParentsOfLoads;
+        TR_ScratchList<TR_ParentOfChildNode> _residualParentsOfStores;
 
-   intptr_t _nodesInCFG;
-   TR::TreeTop *_endTree;
+        TR_ScratchList<TR::CFGEdge> _edgesToRemove;
+    };
 
-   TR_ScratchList<LoopInfo> _loopInfos;
-   TR::Block **_origBlockMapper;
-   TR::Block **_mainBlockMapper;
-   TR::Block **_preBlockMapper;
-   TR::Block **_postBlockMapper;
-   TR::Block **_residualBlockMapper;
-   TR::Block **_offsetBlockMapper;
+    intptr_t _nodesInCFG;
+    TR::TreeTop *_endTree;
 
-   /* methods */
-   void collectLoops(TR_Structure *str);
-   void transformLoops();
+    TR_ScratchList<LoopInfo> _loopInfos;
+    TR::Block **_origBlockMapper;
+    TR::Block **_mainBlockMapper;
+    TR::Block **_preBlockMapper;
+    TR::Block **_postBlockMapper;
+    TR::Block **_residualBlockMapper;
+    TR::Block **_offsetBlockMapper;
 
-   void duplicateLoop(LoopInfo *li, TR_ClonedLoopType type);
-   void transformLoop(LoopInfo *li);
-   TR::Block *stripMineLoop(LoopInfo *li, TR::Block *outerHeader);
+    /* methods */
+    void collectLoops(TR_Structure *str);
+    void transformLoops();
 
-   TR::Block *createGotoBlock(TR::Block *source, TR::Block *dest);
-   void redirect(TR::Block *source, TR::Block *oldDest, TR::Block *newDest);
-   TR::Block *createLoopTest(LoopInfo *li, TR_ClonedLoopType type);
-   TR::Block *createStartOffsetLoop(LoopInfo *li, TR::Block *outerHeader);
+    void duplicateLoop(LoopInfo *li, TR_ClonedLoopType type);
+    void transformLoop(LoopInfo *li);
+    TR::Block *stripMineLoop(LoopInfo *li, TR::Block *outerHeader);
 
-   void examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool checkClone = true);
-   void examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, TR::SymbolReference *oldSymRef,
-                    vcount_t visitCount, TR_ClonedLoopType type, bool checkClone, int32_t childNum);
-   void replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::Node *newConst,
-                        TR::SymbolReference *newSymRef, TR_ClonedLoopType type);
+    TR::Block *createGotoBlock(TR::Block *source, TR::Block *dest);
+    void redirect(TR::Block *source, TR::Block *oldDest, TR::Block *newDest);
+    TR::Block *createLoopTest(LoopInfo *li, TR_ClonedLoopType type);
+    TR::Block *createStartOffsetLoop(LoopInfo *li, TR::Block *outerHeader);
 
-   TR::Block *getLoopPreHeader(TR_Structure *str);
-   TR::Block *getLoopTest(TR_Structure *str, TR::Block *preHeader);
-   bool checkIfIncrementalIncreasesOfPIV(LoopInfo *li);
-   void findLeavesInList();
-   bool findPivInSimpleForm(TR::Node *node,  TR::SymbolReference *pivSym);
-   };
+    void examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool checkClone = true);
+    void examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, TR::SymbolReference *oldSymRef,
+        vcount_t visitCount, TR_ClonedLoopType type, bool checkClone, int32_t childNum);
+    void replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::Node *newConst, TR::SymbolReference *newSymRef,
+        TR_ClonedLoopType type);
+
+    TR::Block *getLoopPreHeader(TR_Structure *str);
+    TR::Block *getLoopTest(TR_Structure *str, TR::Block *preHeader);
+    bool checkIfIncrementalIncreasesOfPIV(LoopInfo *li);
+    void findLeavesInList();
+    bool findPivInSimpleForm(TR::Node *node, TR::SymbolReference *pivSym);
+};

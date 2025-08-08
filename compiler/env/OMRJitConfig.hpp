@@ -27,10 +27,11 @@
  */
 #ifndef OMR_JITCONFIG_CONNECTOR
 #define OMR_JITCONFIG_CONNECTOR
+
 namespace OMR {
 class JitConfig;
 typedef OMR::JitConfig JitConfigConnector;
-}
+} // namespace OMR
 #endif
 
 namespace TR {
@@ -42,47 +43,43 @@ class JitConfig;
 #include "infra/Annotations.hpp"
 #include "env/IO.hpp"
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE JitConfig
-   {
+class OMR_EXTENSIBLE JitConfig {
 protected:
-
-   JitConfig();
+    JitConfig();
 
 public:
+    static TR::JitConfig *instance();
 
-   static TR::JitConfig *instance();
+    TR::JitConfig *self();
 
-   TR::JitConfig *self();
+    // possibly temporary place for options to be stored?
+    struct {
+        int32_t codeCacheKB;
+        char *vLogFileName;
+        TR::FILE *vLogFile;
+        uint64_t verboseFlags;
+    } options;
 
-   // possibly temporary place for options to be stored?
-   struct
-      {
-      int32_t codeCacheKB;
-      char *vLogFileName;
-      TR::FILE *vLogFile;
-      uint64_t verboseFlags;
-      } options;
+    void setInterpreterTOC(size_t interpreterTOC) { _interpreterTOC = interpreterTOC; }
 
-   void setInterpreterTOC(size_t interpreterTOC) { _interpreterTOC = interpreterTOC; }
-   size_t getInterpreterTOC()                    { return _interpreterTOC; }
+    size_t getInterpreterTOC() { return _interpreterTOC; }
 
-   void *getPseudoTOC()               { return _pseudoTOC; }
-   void setPseudoTOC(void *pseudoTOC) { _pseudoTOC = pseudoTOC; }
+    void *getPseudoTOC() { return _pseudoTOC; }
+
+    void setPseudoTOC(void *pseudoTOC) { _pseudoTOC = pseudoTOC; }
 
 private:
+    char _eyecatcher[8];
 
-   char _eyecatcher[8];
+    void *_processorInfo;
 
-   void *_processorInfo;
+    size_t _interpreterTOC;
 
-   size_t _interpreterTOC;
+    void *_pseudoTOC; // only used on POWER, otherwise should be NULL
+};
 
-   void *_pseudoTOC; // only used on POWER, otherwise should be NULL
-   };
-
-}
+} // namespace OMR
 
 #endif

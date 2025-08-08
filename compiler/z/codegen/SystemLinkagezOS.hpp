@@ -39,6 +39,7 @@
 
 class TR_EntryPoint;
 class TR_zOSGlobalCompilationInfo;
+
 namespace TR {
 class S390ConstantDataSnippet;
 class AutomaticSymbol;
@@ -50,155 +51,152 @@ class ParameterSymbol;
 class RegisterDependencyConditions;
 class ResolvedMethodSymbol;
 class Symbol;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
-enum TR_XPLinkFrameType
-   {
-   TR_XPLinkUnknownFrame,
-   TR_XPLinkSmallFrame,
-   TR_XPLinkIntermediateFrame,
-   TR_XPLinkStackCheckFrame
-   };
+enum TR_XPLinkFrameType {
+    TR_XPLinkUnknownFrame,
+    TR_XPLinkSmallFrame,
+    TR_XPLinkIntermediateFrame,
+    TR_XPLinkStackCheckFrame
+};
 
 /**
  * XPLink call types whose value is encoded in NOP following call.
  * These values are encoded - so don't change
  */
 enum TR_XPLinkCallTypes {
-   TR_XPLinkCallType_BASR      =0,     ///< generic BASR
-   TR_XPLinkCallType_BRASL7    =3,     ///< BRASL r7,ep
-   TR_XPLinkCallType_BASR33    =7      ///< BASR  r3,r3
-   };
+    TR_XPLinkCallType_BASR = 0, ///< generic BASR
+    TR_XPLinkCallType_BRASL7 = 3, ///< BRASL r7,ep
+    TR_XPLinkCallType_BASR33 = 7 ///< BASR  r3,r3
+};
 
 namespace TR {
 
-class S390zOSSystemLinkage : public TR::SystemLinkage
-   {
-   private:
+class S390zOSSystemLinkage : public TR::SystemLinkage {
+private:
+    /** \brief
+     *
+     *  Represents the XPLINK 31-bit call descriptor relocation which is a (positive) signed offset in doublewords from
+     *  the doubleword at or preceding the return point (NOP) to the XPLINK call descriptor for this signature.
+     *
+     *  [1] https://www-01.ibm.com/servers/resourcelink/svc00100.nsf/pages/zOSV2R3SA380688/$file/ceev100_v2r3.pdf (page
+     * 137)
+     */
+    class XPLINKCallDescriptorRelocation : public TR::LabelRelocation {
+    public:
+        /** \brief
+         *     Initializes the XPLINKCallDescriptorRelocation relocation using a \c NULL base target pointer
+         *
+         *  \param nop
+         *     The 4-byte NOP descriptor instruction whose binary encoding location (+2) will be used for the relocation
+         *
+         *  \param callDescriptor
+         *     The label marking the call descriptor for this signature
+         */
+        XPLINKCallDescriptorRelocation(TR::Instruction *nop, TR::LabelSymbol *callDescriptor);
 
-   /** \brief
-    *
-    *  Represents the XPLINK 31-bit call descriptor relocation which is a (positive) signed offset in doublewords from 
-    *  the doubleword at or preceding the return point (NOP) to the XPLINK call descriptor for this signature.
-    *
-    *  [1] https://www-01.ibm.com/servers/resourcelink/svc00100.nsf/pages/zOSV2R3SA380688/$file/ceev100_v2r3.pdf (page 137)
-    */
-   class XPLINKCallDescriptorRelocation : public TR::LabelRelocation
-      {
-      public:
+        virtual uint8_t *getUpdateLocation();
+        virtual void apply(TR::CodeGenerator *cg);
 
-      /** \brief
-       *     Initializes the XPLINKCallDescriptorRelocation relocation using a \c NULL base target pointer
-       *
-       *  \param nop
-       *     The 4-byte NOP descriptor instruction whose binary encoding location (+2) will be used for the relocation
-       *
-       *  \param callDescriptor
-       *     The label marking the call descriptor for this signature
-       */
-      XPLINKCallDescriptorRelocation(TR::Instruction* nop, TR::LabelSymbol* callDescriptor);
-      
-      virtual uint8_t* getUpdateLocation();
-      virtual void apply(TR::CodeGenerator* cg);
+    private:
+        TR::Instruction *_nop;
+    };
 
-      private:
+    /** \brief
+     *
+     *  Represents the XPLINK function descriptor which is a data structure that represents the address of a function
+     *  retrieved via the C '&' operator. The data structure holds the actual value of the execution entry point of the
+     *  function it describes.
+     *
+     *  [1] https://www-01.ibm.com/servers/resourcelink/svc00100.nsf/pages/zOSV2R3SA380688/$file/ceev100_v2r3.pdf (page
+     * 140)
+     */
+    class XPLINKFunctionDescriptorSnippet : public TR::S390ConstantDataSnippet {
+    public:
+        XPLINKFunctionDescriptorSnippet(TR::CodeGenerator *cg);
 
-      TR::Instruction* _nop;
-      };
+        virtual uint8_t *emitSnippetBody();
+    };
 
-   /** \brief
-    *
-    *  Represents the XPLINK function descriptor which is a data structure that represents the address of a function
-    *  retrieved via the C '&' operator. The data structure holds the actual value of the execution entry point of the
-    *  function it describes.
-    *
-    *  [1] https://www-01.ibm.com/servers/resourcelink/svc00100.nsf/pages/zOSV2R3SA380688/$file/ceev100_v2r3.pdf (page 140)
-    */
-   class XPLINKFunctionDescriptorSnippet : public TR::S390ConstantDataSnippet
-      {
-      public:
+public:
+    /** \brief
+     *     Size (in bytes) of the XPLINK stack frame bias as defined by the system linkage.
+     */
+    static const size_t XPLINK_STACK_FRAME_BIAS = 2048;
 
-         XPLINKFunctionDescriptorSnippet(TR::CodeGenerator* cg);
+public:
+    S390zOSSystemLinkage(TR::CodeGenerator *cg);
 
-         virtual uint8_t* emitSnippetBody();
-      };
+    virtual void createEpilogue(TR::Instruction *cursor);
+    virtual void createPrologue(TR::Instruction *cursor);
+    virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method);
+    virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method,
+        List<TR::ParameterSymbol> &parmList);
 
-   public:
+    virtual void generateInstructionsForCall(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
+        intptr_t targetAddress, TR::Register *methodAddressReg, TR::Register *javaLitOffsetReg,
+        TR::LabelSymbol *returnFromJNICallLabel, TR::Snippet *callDataSnippet, bool isJNIGCPoint = true);
 
-   /** \brief
-    *     Size (in bytes) of the XPLINK stack frame bias as defined by the system linkage.
-    */
-   static const size_t XPLINK_STACK_FRAME_BIAS = 2048;
+    virtual TR::Register *callNativeFunction(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
+        intptr_t targetAddress, TR::Register *methodAddressReg, TR::Register *javaLitOffsetReg,
+        TR::LabelSymbol *returnFromJNICallLabel, TR::Snippet *callDataSnippet, bool isJNIGCPoint = true);
 
-   public:
+    virtual TR::RealRegister::RegNum getENVPointerRegister();
+    virtual TR::RealRegister::RegNum getCAAPointerRegister();
 
-   S390zOSSystemLinkage(TR::CodeGenerator* cg);
+    virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum);
+    virtual int32_t getOutgoingParameterBlockSize();
 
-   virtual void createEpilogue(TR::Instruction * cursor);
-   virtual void createPrologue(TR::Instruction * cursor);
-   virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol * method);
-   virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method, List<TR::ParameterSymbol>&parmList);
+    TR::Instruction *genCallNOPAndDescriptor(TR::Instruction *cursor, TR::Node *node, TR::Node *callNode,
+        TR_XPLinkCallTypes callType);
 
-   virtual void generateInstructionsForCall(TR::Node * callNode, TR::RegisterDependencyConditions * dependencies, intptr_t targetAddress, TR::Register * methodAddressReg, TR::Register * javaLitOffsetReg, TR::LabelSymbol * returnFromJNICallLabel, TR::Snippet * callDataSnippet, bool isJNIGCPoint = true);
+    /** \brief
+     *     Gets the label symbol representing the start of the Entry Point Marker in the prologue.
+     *
+     *  \return
+     *     The Entry Point Marker label symbol if it exists; \c NULL otherwise.
+     */
+    TR::LabelSymbol *getEntryPointMarkerLabel() const;
 
-   virtual TR::Register* callNativeFunction(TR::Node * callNode, TR::RegisterDependencyConditions * dependencies, intptr_t targetAddress, TR::Register * methodAddressReg, TR::Register * javaLitOffsetReg, TR::LabelSymbol * returnFromJNICallLabel, TR::Snippet * callDataSnippet, bool isJNIGCPoint = true);
+    /** \brief
+     *     Gets the label symbol representing the stack pointer update instruction following it.
+     *
+     *  \return
+     *     The stack pointer update label symbol if it exists; \c NULL otherwise.
+     */
+    TR::LabelSymbol *getStackPointerUpdateLabel() const;
 
-   virtual TR::RealRegister::RegNum getENVPointerRegister();
-   virtual TR::RealRegister::RegNum getCAAPointerRegister();
+    /** \brief
+     *     Gets the PPA1 (Program Prologue Area 1) snippet for this method body.
+     */
+    TR::PPA1Snippet *getPPA1Snippet() const;
 
-   virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum);
-   virtual int32_t getOutgoingParameterBlockSize();
+    /** \brief
+     *     Gets the PPA2 (Program Prologue Area 2) snippet for this method body.
+     */
+    TR::PPA2Snippet *getPPA2Snippet() const;
 
-   TR::Instruction * genCallNOPAndDescriptor(TR::Instruction * cursor, TR::Node *node, TR::Node *callNode, TR_XPLinkCallTypes callType);
+private:
+    uint32_t generateCallDescriptorValue(TR::Node *callNode);
 
-   /** \brief
-    *     Gets the label symbol representing the start of the Entry Point Marker in the prologue.
-    *
-    *  \return
-    *     The Entry Point Marker label symbol if it exists; \c NULL otherwise.
-    */
-   TR::LabelSymbol* getEntryPointMarkerLabel() const;
+    virtual TR::Instruction *addImmediateToRealRegister(TR::RealRegister *targetReg, int32_t immediate,
+        TR::RealRegister *tempReg, TR::Node *node, TR::Instruction *cursor, bool *checkTempNeeded = NULL);
 
-   /** \brief
-    *     Gets the label symbol representing the stack pointer update instruction following it.
-    *
-    *  \return
-    *     The stack pointer update label symbol if it exists; \c NULL otherwise.
-    */
-   TR::LabelSymbol* getStackPointerUpdateLabel() const;
+    TR::Instruction *fillGPRsInEpilogue(TR::Node *node, TR::Instruction *cursor);
+    TR::Instruction *fillFPRsInEpilogue(TR::Node *node, TR::Instruction *cursor);
 
-   /** \brief
-    *     Gets the PPA1 (Program Prologue Area 1) snippet for this method body.
-    */
-   TR::PPA1Snippet* getPPA1Snippet() const;
+    TR::Instruction *spillGPRsInPrologue(TR::Node *node, TR::Instruction *cursor);
+    TR::Instruction *spillFPRsInPrologue(TR::Node *node, TR::Instruction *cursor);
 
-   /** \brief
-    *     Gets the PPA2 (Program Prologue Area 2) snippet for this method body.
-    */
-   TR::PPA2Snippet* getPPA2Snippet() const;
+private:
+    TR::LabelSymbol *_entryPointMarkerLabel;
+    TR::LabelSymbol *_stackPointerUpdateLabel;
 
-   private:
-
-   uint32_t generateCallDescriptorValue(TR::Node* callNode);
-
-   virtual TR::Instruction* addImmediateToRealRegister(TR::RealRegister * targetReg, int32_t immediate, TR::RealRegister *tempReg, TR::Node *node, TR::Instruction *cursor, bool *checkTempNeeded=NULL);
-
-   TR::Instruction* fillGPRsInEpilogue(TR::Node* node, TR::Instruction* cursor);
-   TR::Instruction* fillFPRsInEpilogue(TR::Node* node, TR::Instruction* cursor);
-
-   TR::Instruction* spillGPRsInPrologue(TR::Node* node, TR::Instruction* cursor);
-   TR::Instruction* spillFPRsInPrologue(TR::Node* node, TR::Instruction* cursor);
-
-   private:
-
-   TR::LabelSymbol* _entryPointMarkerLabel;
-   TR::LabelSymbol* _stackPointerUpdateLabel;
-
-   XPLINKFunctionDescriptorSnippet* _xplinkFunctionDescriptorSnippet;
-   TR::PPA1Snippet* _ppa1Snippet;
-   TR::PPA2Snippet* _ppa2Snippet;
-   };
-}
+    XPLINKFunctionDescriptorSnippet *_xplinkFunctionDescriptorSnippet;
+    TR::PPA1Snippet *_ppa1Snippet;
+    TR::PPA2Snippet *_ppa2Snippet;
+};
+} // namespace TR
 
 #endif
