@@ -331,7 +331,7 @@ MM_SegregatedGC::reportGCCycleStart(MM_EnvironmentBase *env)
 
 	/* Clear STW pause stats for this cycle. */
 	stats->clearPauseStats();
-
+	env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 	MM_CommonGCData commonData;
 
 	TRIGGER_J9HOOK_MM_OMR_GC_CYCLE_START(
