@@ -6848,8 +6848,9 @@ int32_t TR_InvariantArgumentPreexistence::perform()
            && !comp()->isOutOfProcessCompilation()
           )
           {
-          TR::VMAccessCriticalSection setClass(comp());
-          TR_OpaqueClassBlock *fixedClazz = TR::Compiler->cls.objectClass(comp(), knot->getPointer(koi));
+          TR_OpaqueClassBlock *fixedClazz =
+             comp()->fe()->getObjectClassFromKnownObjectIndex(comp(), koi);
+
           parmInfo.setClassIsFixed();
           parmInfo.setClass(fixedClazz);
           if (enableTrace)
@@ -6995,8 +6996,10 @@ int32_t TR_InvariantArgumentPreexistence::perform()
 
                if (!(arg->getClass() && arg->classIsFixed()))
                   {
-                  TR::VMAccessCriticalSection setClass(comp());
-                  TR_OpaqueClassBlock *fixedClazz = TR::Compiler->cls.objectClass(comp(), knot->getPointer(arg->getKnownObjectIndex()));
+                  TR::KnownObjectTable::Index koi = arg->getKnownObjectIndex();
+                  TR_OpaqueClassBlock *fixedClazz =
+                     comp()->fe()->getObjectClassFromKnownObjectIndex(comp(), koi);
+
                   arg->setClassIsFixed(fixedClazz);
                   }
                }

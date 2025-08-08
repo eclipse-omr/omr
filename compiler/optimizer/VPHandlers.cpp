@@ -767,20 +767,8 @@ static bool refineUnsafeAccess(OMR::ValuePropagation *vp, TR::Node *node)
       TR::VPKnownObject *knownObj = objConstraint->getKnownObject();
       if (knownObj != NULL)
          {
-         TR::VMAccessCriticalSection getClassCriticalSection(
-            comp,
-            TR::VMAccessCriticalSection::tryToAcquireVMAccess);
-
-         if (getClassCriticalSection.hasVMAccess())
-            {
-            TR::KnownObjectTable *knot = comp->getKnownObjectTable();
-            TR::KnownObjectTable::Index koi = knownObj->getIndex();
-            objClass = TR::Compiler->cls.objectClass(comp, knot->getPointer(koi));
-            }
-         else if (vp->trace())
-            {
-            traceMsg(comp, "Failed to get VM access\n");
-            }
+         TR::KnownObjectTable::Index koi = knownObj->getIndex();
+         objClass = comp->fe()->getObjectClassFromKnownObjectIndex(comp, koi);
          }
       }
 

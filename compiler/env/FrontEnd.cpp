@@ -201,6 +201,14 @@ TR_FrontEnd::getLeafComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass
    return 0;
    }
 
+TR_OpaqueClassBlock *
+TR_FrontEnd::getObjectClassFromKnownObjectIndex(
+   TR::Compilation *comp, TR::KnownObjectTable::Index koi)
+   {
+   TR_UNIMPLEMENTED();
+   return NULL;
+   }
+
 int32_t
 TR_FrontEnd::getNewArrayTypeFromClass(TR_OpaqueClassBlock *clazz)
    {

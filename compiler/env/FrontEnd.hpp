@@ -42,6 +42,7 @@
 #include <string.h>
 #include "env/ProcessorInfo.hpp"
 #include "env/jittypes.h"
+#include "env/KnownObjectTable.hpp"
 #include "il/DataTypes.hpp"
 #include "il/ILOpCodes.hpp"
 #include "il/ILOps.hpp"
@@ -199,6 +200,16 @@ public:
    virtual TR_OpaqueClassBlock * getClassOfMethod(TR_OpaqueMethodBlock *method);
    virtual TR_OpaqueClassBlock * getComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
    virtual TR_OpaqueClassBlock * getLeafComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
+
+   /**
+    * \brief Get the class of the known object with index \p koi.
+    *
+    * \param comp the compilation object
+    * \param koi the known object index
+    * \return the class of the object
+    */
+   virtual TR_OpaqueClassBlock *getObjectClassFromKnownObjectIndex(
+      TR::Compilation *comp, TR::KnownObjectTable::Index koi);
 
    // Null-terminated.  bufferSize >= 1+getStringUTF8Length(objectPointer).  Returns buffer just for convenience.
    virtual char *getStringUTF8(uintptr_t objectPointer, char *buffer, uintptr_t bufferSize);
