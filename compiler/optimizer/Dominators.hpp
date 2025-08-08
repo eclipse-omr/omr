@@ -32,8 +32,10 @@
 #include "infra/deque.hpp"
 
 class TR_FrontEnd;
-namespace TR { class CFGEdge; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class CFGEdge;
+class ResolvedMethodSymbol;
+}
 template <class T> class ListElement;
 
 // Calculate the dominator tree. This uses the Lengauer and Tarjan algorithm

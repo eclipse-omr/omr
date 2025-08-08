@@ -39,16 +39,18 @@
 
 class TR_EntryPoint;
 class TR_zOSGlobalCompilationInfo;
-namespace TR { class S390ConstantDataSnippet; }
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class Symbol; }
+namespace TR {
+class S390ConstantDataSnippet;
+class AutomaticSymbol;
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+class Symbol;
+}
 template <class T> class List;
 
 enum TR_XPLinkFrameType

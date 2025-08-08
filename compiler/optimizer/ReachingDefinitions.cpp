@@ -42,7 +42,9 @@
 
 class TR_BlockStructure;
 class TR_Structure;
-namespace TR { class Optimizer; }
+namespace TR {
+class Optimizer;
+}
 
 TR_DataFlowAnalysis::Kind TR_ReachingDefinitions::getKind()
    {

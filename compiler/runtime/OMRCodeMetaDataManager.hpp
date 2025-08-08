@@ -27,14 +27,18 @@
  */
 #ifndef OMR_CODE_METADATA_MANAGER_CONNECTOR
 #define OMR_CODE_METADATA_MANAGER_CONNECTOR
-namespace OMR { class CodeMetaDataManager; }
-namespace OMR { typedef OMR::CodeMetaDataManager CodeMetaDataManagerConnector; }
+namespace OMR {
+class CodeMetaDataManager;
+typedef OMR::CodeMetaDataManager CodeMetaDataManagerConnector;
+}
 #endif
 
 #ifndef OMR_METADATA_HASHTABLE_CONNECTOR
 #define OMR_METADATA_HASHTABLE_CONNECTOR
-namespace OMR { class MetaDataHashTable; }
-namespace OMR { typedef OMR::MetaDataHashTable MetaDataHashTableConnector; }
+namespace OMR {
+class MetaDataHashTable;
+typedef OMR::MetaDataHashTable MetaDataHashTableConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -42,10 +46,12 @@ namespace OMR { typedef OMR::MetaDataHashTable MetaDataHashTableConnector; }
 #include "infra/Annotations.hpp"
 #include "j9nongenerated.h"
 
-namespace TR { class CodeCache; }
-namespace TR { class CodeMetaDataManager; }
-namespace TR { class MetaDataHashTable; }
-namespace TR { struct MethodMetaDataPOD; }
+namespace TR {
+class CodeCache;
+class CodeMetaDataManager;
+class MetaDataHashTable;
+struct MethodMetaDataPOD;
+}
 
 namespace OMR
 {

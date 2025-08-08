@@ -27,9 +27,11 @@
 #include "env/TRMemory.hpp"
 #include "infra/List.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Register;
+class RegisterDependencyConditions;
+}
 
 enum TR_ManagedScratchRegisterStates
    {

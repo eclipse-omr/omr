@@ -28,10 +28,12 @@
 #include "env/TRMemory.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Instruction;
+class Node;
+class Register;
+class SymbolReference;
+}
 
 class TR_RematerializationInfo
    {

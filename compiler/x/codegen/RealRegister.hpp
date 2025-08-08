@@ -27,8 +27,10 @@
 #include <stdint.h>
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Register;
+}
 
 namespace TR
 {

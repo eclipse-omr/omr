@@ -36,7 +36,9 @@
 #include <sys/time.h>
 #endif
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 TR::VMEnv *
 OMR::VMEnv::self()

@@ -26,8 +26,10 @@
 #include <stdint.h>
 #include "env/TRMemory.hpp"
 
-namespace TR { class SymbolReference; }
-namespace TR { class Compilation; }
+namespace TR {
+class SymbolReference;
+class Compilation;
+}
 
 class TR_TranslateTable
    {

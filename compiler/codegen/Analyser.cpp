@@ -28,7 +28,9 @@
 #include "il/Node_inlines.hpp"
 #include "il/Symbol.hpp"
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 void TR_Analyser::setInputs(TR::Node     *firstChild,
                             TR::Register *firstRegister,

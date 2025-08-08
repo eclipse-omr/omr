@@ -28,12 +28,14 @@
 #include "codegen/RegisterConstants.hpp"
 #include "il/DataTypes.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+}
 
 namespace TR {
 

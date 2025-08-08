@@ -24,7 +24,9 @@
 
 #include "optimizer/OMROptimization.hpp"
 
-namespace TR { class OptimizationManager; }
+namespace TR {
+class OptimizationManager;
+}
 
 namespace TR
 {

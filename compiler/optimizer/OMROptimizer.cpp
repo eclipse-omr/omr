@@ -113,7 +113,9 @@
 #include "optimizer/SwitchAnalyzer.hpp"
 #include "env/RegionProfiler.hpp"
 
-namespace TR { class AutomaticSymbol; }
+namespace TR {
+class AutomaticSymbol;
+}
 
 using namespace OMR;  // Note: used here only to avoid having to prepend all opts in strategies with OMR::
 

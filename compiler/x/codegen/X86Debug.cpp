@@ -62,7 +62,9 @@
 #include "x/codegen/CallSnippet.hpp"
 #endif
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 void
 TR_Debug::printx(TR::FILE *pOutFile, TR::Instruction  * instr)

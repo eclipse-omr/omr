@@ -22,7 +22,9 @@
 #ifndef DEFERRED_OSR_ASSUMPTION_INCL
 #define DEFERRED_OSR_ASSUMPTION_INCL
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR {
 

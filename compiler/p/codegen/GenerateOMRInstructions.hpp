@@ -28,13 +28,15 @@
 #include "runtime/Runtime.hpp"
 
 class TR_VirtualGuardSite;
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class SymbolReference;
+}
 
 //Flags to be passed into generateMvFprGprInstructions to select the type of move.
 enum MvFprGprMode

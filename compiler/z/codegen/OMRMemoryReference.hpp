@@ -27,8 +27,10 @@
 */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
-namespace OMR {namespace Z { class MemoryReference; } }
-namespace OMR { typedef OMR::Z::MemoryReference MemoryReferenceConnector; }
+namespace OMR {
+namespace Z { class MemoryReference; }
+typedef OMR::Z::MemoryReference MemoryReferenceConnector;
+}
 #else
 #error OMR::Z::MemoryReference expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -53,11 +55,13 @@ namespace OMR { typedef OMR::Z::MemoryReference MemoryReferenceConnector; }
 #include "infra/List.hpp"
 
 class TR_StorageReference;
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class UnresolvedDataSnippet; }
+namespace TR {
+class Instruction;
+class MemoryReference;
+class Node;
+class ParameterSymbol;
+class UnresolvedDataSnippet;
+}
 
 #define S390MemRef_UnresolvedDataSnippet         0x01
 #define MemRef_ConstantDataSnippet               0x04

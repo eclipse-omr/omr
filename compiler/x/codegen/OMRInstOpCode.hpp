@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
-namespace OMR { namespace X86 { class InstOpCode; } }
-namespace OMR { typedef OMR::X86::InstOpCode InstOpCodeConnector; }
+namespace OMR {
+namespace X86 { class InstOpCode; }
+typedef OMR::X86::InstOpCode InstOpCodeConnector;
+}
 #else
 #error OMR::X86::InstOpCode expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -37,8 +39,10 @@ namespace OMR { typedef OMR::X86::InstOpCode InstOpCodeConnector; }
 #include "env/CPU.hpp"
 #include "il/OMRDataTypes.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Register;
+}
 
 #define IA32LongToShortBranchConversionOffset ((int)OMR::InstOpCode::JMP4 - (int)OMR::InstOpCode::JMP1)
 #define IA32LengthOfShortBranch               2

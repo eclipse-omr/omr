@@ -25,7 +25,9 @@
 #include "env/OMRKnownObjectTable.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
 {

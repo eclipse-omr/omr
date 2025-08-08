@@ -27,8 +27,10 @@
  */
 #ifndef OMR_METHODSYMBOL_CONNECTOR
 #define OMR_METHODSYMBOL_CONNECTOR
-namespace OMR { class MethodSymbol; }
-namespace OMR { typedef OMR::MethodSymbol MethodSymbolConnector; }
+namespace OMR {
+class MethodSymbol;
+typedef OMR::MethodSymbol MethodSymbolConnector;
+}
 #endif
 
 #include "il/Symbol.hpp"
@@ -40,7 +42,9 @@ namespace OMR { typedef OMR::MethodSymbol MethodSymbolConnector; }
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class MethodSymbol; }
+namespace TR {
+class MethodSymbol;
+}
 
 namespace OMR
 {

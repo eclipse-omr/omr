@@ -31,7 +31,9 @@
 #include "codegen/S390GenerateInstructions.hpp"
 #include "codegen/S390Instruction.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 static bool
 isBarrierToPeepHoleLookback(TR::Instruction* cursor)

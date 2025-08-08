@@ -32,11 +32,13 @@ class TR_ParentOfChildNode;
 class TR_PrimaryInductionVariable;
 class TR_RegionStructure;
 class TR_Structure;
-namespace TR { class Block; }
-namespace TR { class CFGEdge; }
-namespace TR { class Optimization; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFGEdge;
+class Optimization;
+class SymbolReference;
+class TreeTop;
+}
 
 #define DEFAULT_STRIP_LENGTH 1024
 

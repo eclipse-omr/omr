@@ -24,8 +24,10 @@
 
 #include <stdint.h>
 
-namespace TR { class Block; }
-namespace TR { class ResolvedMethodSymbol;  }
+namespace TR {
+class Block;
+class ResolvedMethodSymbol;
+}
 
 class TR_IlGenerator
    {

@@ -80,7 +80,9 @@
 
 #define NUM_REGS_USED_BY_COMPLEX_OPCODES 3
 
-namespace TR { class RealRegister; }
+namespace TR {
+class RealRegister;
+}
 
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
 void

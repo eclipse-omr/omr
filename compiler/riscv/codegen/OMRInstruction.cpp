@@ -29,7 +29,9 @@
 
 #define RISCV_INSTRUCTION_LENGTH 4
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 OMR::RV::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node)
    : OMR::Instruction(cg, op, node),

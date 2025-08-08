@@ -27,8 +27,10 @@
  */
 #ifndef OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
-namespace OMR { namespace X86 { class JitCodeRXObjectFormat; } }
-namespace OMR { typedef OMR::X86::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector; }
+namespace OMR {
+namespace X86 { class JitCodeRXObjectFormat; }
+typedef OMR::X86::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
+}
 #endif
 
 #include "compiler/objectfmt/OMRJitCodeRXObjectFormat.hpp"

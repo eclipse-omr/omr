@@ -29,7 +29,9 @@
 
 class TR_PrimaryInductionVariable;
 class TR_Structure;
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 class TR_IndexExprManipulator: public TR::Optimization
    {

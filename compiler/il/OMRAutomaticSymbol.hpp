@@ -27,8 +27,10 @@
  */
 #ifndef OMR_AUTOMATICSYMBOL_CONNECTOR
 #define OMR_AUTOMATICSYMBOL_CONNECTOR
-namespace OMR { class AutomaticSymbol; }
-namespace OMR { typedef OMR::AutomaticSymbol AutomaticSymbolConnector; }
+namespace OMR {
+class AutomaticSymbol;
+typedef OMR::AutomaticSymbol AutomaticSymbolConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -42,8 +44,10 @@ namespace OMR { typedef OMR::AutomaticSymbol AutomaticSymbolConnector; }
 #include "infra/Flags.hpp"
 
 class TR_FrontEnd;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class AutomaticSymbol;
+class SymbolReference;
+}
 
 namespace OMR
 {

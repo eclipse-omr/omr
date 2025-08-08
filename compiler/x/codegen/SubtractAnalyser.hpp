@@ -26,8 +26,10 @@
 #include "codegen/Analyser.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class Node;
+}
 
 #define EvalChild1   0x01
 #define EvalChild2   0x02

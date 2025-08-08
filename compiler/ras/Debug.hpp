@@ -58,7 +58,9 @@
 class TR_Debug;
 class TR_BlockStructure;
 class TR_CHTable;
-namespace TR { class CompilationFilters; }
+namespace TR {
+class CompilationFilters;
+}
 class TR_FilterBST;
 class TR_FrontEnd;
 class TR_GCStackMap;
@@ -71,39 +73,41 @@ class TR_RematerializationInfo;
 class TR_ResolvedMethod;
 class TR_Structure;
 class TR_StructureSubGraphNode;
-namespace TR { class VPConstraint; }
-namespace TR { class GCStackAtlas; }
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class CFGEdge; }
-namespace TR { class CFGNode; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class DebugCounterGroup; }
-namespace TR { class GCRegisterMap; }
-namespace TR { class InstOpCode; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Machine; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class OptionSet; }
-namespace TR { class Options; }
-namespace TR { class RealRegister; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyGroup; }
-namespace TR { class RegisterDependency; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class RegisterMappedSymbol; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SimpleRegex; }
-namespace TR { class Snippet; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
-namespace TR { struct OptionTable; }
+namespace TR {
+class VPConstraint;
+class GCStackAtlas;
+class AutomaticSymbol;
+class Block;
+class CFG;
+class CFGEdge;
+class CFGNode;
+class CodeGenerator;
+class Compilation;
+class DebugCounterGroup;
+class GCRegisterMap;
+class InstOpCode;
+class Instruction;
+class LabelSymbol;
+class Machine;
+class MemoryReference;
+class Node;
+class OptionSet;
+class Options;
+class RealRegister;
+class Register;
+class RegisterDependencyGroup;
+class RegisterDependency;
+class RegisterDependencyConditions;
+class RegisterMappedSymbol;
+class ResolvedMethodSymbol;
+class SimpleRegex;
+class Snippet;
+class Symbol;
+class SymbolReference;
+class SymbolReferenceTable;
+class TreeTop;
+struct OptionTable;
+}
 template <class T> class List;
 template <class T> class ListIterator;
 
@@ -112,294 +116,328 @@ struct J9AnnotationInfo;
 struct J9AnnotationInfoEntry;
 struct J9PortLibrary;
 
-namespace TR { class X86LabelInstruction;                  }
-namespace TR { class X86PaddingInstruction;                }
-namespace TR { class X86AlignmentInstruction;              }
-namespace TR { class X86BoundaryAvoidanceInstruction;      }
-namespace TR { class X86PatchableCodeAlignmentInstruction; }
-namespace TR { class X86FenceInstruction;                  }
-namespace TR { class X86VirtualGuardNOPInstruction;        }
-namespace TR { class X86ImmInstruction;                    }
-namespace TR { class X86ImmSnippetInstruction;             }
-namespace TR { class X86ImmSymInstruction;                 }
-namespace TR { class X86RegInstruction;                    }
-namespace TR { class X86RegRegInstruction;                 }
-namespace TR { class X86RegImmInstruction;                 }
-namespace TR { class X86RegRegImmInstruction;              }
-namespace TR { class X86RegRegRegInstruction;              }
-namespace TR { class X86RegMaskRegRegInstruction;          }
-namespace TR { class X86RegMaskRegRegImmInstruction;       }
-namespace TR { class X86RegMaskRegInstruction;             }
-namespace TR { class X86RegMaskMemInstruction;             }
-namespace TR { class X86MemInstruction;                    }
-namespace TR { class X86MemImmInstruction;                 }
-namespace TR { class X86MemRegInstruction;                 }
-namespace TR { class X86MemMaskRegInstruction;             }
-namespace TR { class X86MemRegImmInstruction;              }
-namespace TR { class X86RegMemInstruction;                 }
-namespace TR { class X86RegMemImmInstruction;              }
-namespace TR { class X86RegRegMemInstruction;              }
-namespace TR { class X86FPRegInstruction;                  }
-namespace TR { class X86FPRegRegInstruction;               }
-namespace TR { class X86FPMemRegInstruction;               }
-namespace TR { class X86FPRegMemInstruction;               }
-namespace TR { class X86RestartSnippet; }
-namespace TR { class X86PicDataSnippet; }
-namespace TR { class X86DivideCheckSnippet; }
-namespace TR { class X86FPConvertToIntSnippet; }
-namespace TR { class X86FPConvertToLongSnippet; }
-namespace TR { class X86GuardedDevirtualSnippet; }
-namespace TR { class X86HelperCallSnippet; }
-namespace TR { class UnresolvedDataSnippet; }
-namespace TR { class AMD64Imm64Instruction;    }
-namespace TR { class AMD64Imm64SymInstruction; }
-namespace TR { class AMD64RegImm64Instruction; }
+namespace TR {
+class X86LabelInstruction;
+class X86PaddingInstruction;
+class X86AlignmentInstruction;
+class X86BoundaryAvoidanceInstruction;
+class X86PatchableCodeAlignmentInstruction;
+class X86FenceInstruction;
+class X86VirtualGuardNOPInstruction;
+class X86ImmInstruction;
+class X86ImmSnippetInstruction;
+class X86ImmSymInstruction;
+class X86RegInstruction;
+class X86RegRegInstruction;
+class X86RegImmInstruction;
+class X86RegRegImmInstruction;
+class X86RegRegRegInstruction;
+class X86RegMaskRegRegInstruction;
+class X86RegMaskRegRegImmInstruction;
+class X86RegMaskRegInstruction;
+class X86RegMaskMemInstruction;
+class X86MemInstruction;
+class X86MemImmInstruction;
+class X86MemRegInstruction;
+class X86MemMaskRegInstruction;
+class X86MemRegImmInstruction;
+class X86RegMemInstruction;
+class X86RegMemImmInstruction;
+class X86RegRegMemInstruction;
+class X86FPRegInstruction;
+class X86FPRegRegInstruction;
+class X86FPMemRegInstruction;
+class X86FPRegMemInstruction;
+class X86RestartSnippet;
+class X86PicDataSnippet;
+class X86DivideCheckSnippet;
+class X86FPConvertToIntSnippet;
+class X86FPConvertToLongSnippet;
+class X86GuardedDevirtualSnippet;
+class X86HelperCallSnippet;
+class UnresolvedDataSnippet;
+class AMD64Imm64Instruction;
+class AMD64Imm64SymInstruction;
+class AMD64RegImm64Instruction;
+}
 
 struct TR_VFPState;
-namespace TR { class X86VFPSaveInstruction;        }
-namespace TR { class X86VFPRestoreInstruction;     }
-namespace TR { class X86VFPDedicateInstruction;    }
-namespace TR { class X86VFPReleaseInstruction;     }
-namespace TR { class X86VFPCallCleanupInstruction; }
+namespace TR {
+class X86VFPSaveInstruction;
+class X86VFPRestoreInstruction;
+class X86VFPDedicateInstruction;
+class X86VFPReleaseInstruction;
+class X86VFPCallCleanupInstruction;
+}
 
 #ifdef J9_PROJECT_SPECIFIC
-namespace TR { class X86CallSnippet; }
-namespace TR { class X86CheckFailureSnippet; }
-namespace TR { class X86CheckFailureSnippetWithResolve; }
-namespace TR { class X86BoundCheckWithSpineCheckSnippet; }
-namespace TR { class X86SpineCheckSnippet; }
-namespace TR { class X86ForceRecompilationSnippet; }
-namespace TR { class X86RecompilationSnippet; }
+namespace TR {
+class X86CallSnippet;
+class X86CheckFailureSnippet;
+class X86CheckFailureSnippetWithResolve;
+class X86BoundCheckWithSpineCheckSnippet;
+class X86SpineCheckSnippet;
+class X86ForceRecompilationSnippet;
+class X86RecompilationSnippet;
+}
 #endif
 
-namespace TR { class PPCAlignmentNopInstruction;         }
-namespace TR { class PPCDepInstruction;                  }
-namespace TR { class PPCLabelInstruction;                }
-namespace TR { class PPCDepLabelInstruction;             }
-namespace TR { class PPCConditionalBranchInstruction;    }
-namespace TR { class PPCDepConditionalBranchInstruction; }
-namespace TR { class PPCAdminInstruction;                }
-namespace TR { class PPCImmInstruction;                  }
-namespace TR { class PPCSrc1Instruction;                 }
-namespace TR { class PPCDepImmSymInstruction;            }
-namespace TR { class PPCTrg1Instruction;                 }
-namespace TR { class PPCTrg1Src1Instruction;             }
-namespace TR { class PPCTrg1ImmInstruction;              }
-namespace TR { class PPCTrg1Src1ImmInstruction;          }
-namespace TR { class PPCTrg1Src1Imm2Instruction;         }
-namespace TR { class PPCSrc2Instruction;                 }
-namespace TR { class PPCSrc3Instruction;                 }
-namespace TR { class PPCTrg1Src2Instruction;             }
-namespace TR { class PPCTrg1Src2ImmInstruction;          }
-namespace TR { class PPCTrg1Src3Instruction;             }
-namespace TR { class PPCMemSrc1Instruction;              }
-namespace TR { class PPCMemInstruction;                  }
-namespace TR { class PPCTrg1MemInstruction;              }
-namespace TR { class PPCControlFlowInstruction;          }
-namespace TR { class PPCVirtualGuardNOPInstruction;      }
-namespace TR { class PPCUnresolvedCallSnippet; }
-namespace TR { class PPCVirtualSnippet; }
-namespace TR { class PPCVirtualUnresolvedSnippet; }
-namespace TR { class PPCInterfaceCallSnippet; }
-namespace TR { class PPCHelperCallSnippet; }
-namespace TR { class PPCMonitorEnterSnippet; }
-namespace TR { class PPCMonitorExitSnippet; }
-namespace TR { class PPCReadMonitorSnippet; }
+namespace TR {
+class PPCAlignmentNopInstruction;
+class PPCDepInstruction;
+class PPCLabelInstruction;
+class PPCDepLabelInstruction;
+class PPCConditionalBranchInstruction;
+class PPCDepConditionalBranchInstruction;
+class PPCAdminInstruction;
+class PPCImmInstruction;
+class PPCSrc1Instruction;
+class PPCDepImmSymInstruction;
+class PPCTrg1Instruction;
+class PPCTrg1Src1Instruction;
+class PPCTrg1ImmInstruction;
+class PPCTrg1Src1ImmInstruction;
+class PPCTrg1Src1Imm2Instruction;
+class PPCSrc2Instruction;
+class PPCSrc3Instruction;
+class PPCTrg1Src2Instruction;
+class PPCTrg1Src2ImmInstruction;
+class PPCTrg1Src3Instruction;
+class PPCMemSrc1Instruction;
+class PPCMemInstruction;
+class PPCTrg1MemInstruction;
+class PPCControlFlowInstruction;
+class PPCVirtualGuardNOPInstruction;
+class PPCUnresolvedCallSnippet;
+class PPCVirtualSnippet;
+class PPCVirtualUnresolvedSnippet;
+class PPCInterfaceCallSnippet;
+class PPCHelperCallSnippet;
+class PPCMonitorEnterSnippet;
+class PPCMonitorExitSnippet;
+class PPCReadMonitorSnippet;
+}
 
-namespace TR { class PPCAllocPrefetchSnippet; }
+namespace TR {
+class PPCAllocPrefetchSnippet;
+}
 
-namespace TR { class PPCLockReservationEnterSnippet; }
-namespace TR { class PPCLockReservationExitSnippet; }
-namespace TR { class PPCArrayCopyCallSnippet; }
+namespace TR {
+class PPCLockReservationEnterSnippet;
+class PPCLockReservationExitSnippet;
+class PPCArrayCopyCallSnippet;
+}
 
 #ifdef J9_PROJECT_SPECIFIC
-namespace TR { class PPCInterfaceCastSnippet; }
-namespace TR { class PPCStackCheckFailureSnippet; }
-namespace TR { class PPCForceRecompilationSnippet; }
-namespace TR { class PPCRecompilationSnippet; }
-namespace TR { class PPCCallSnippet; }
+namespace TR {
+class PPCInterfaceCastSnippet;
+class PPCStackCheckFailureSnippet;
+class PPCForceRecompilationSnippet;
+class PPCRecompilationSnippet;
+class PPCCallSnippet;
+}
 #endif
 
 
-namespace TR { class ARMLabelInstruction; }
-namespace TR { class ARMConditionalBranchInstruction; }
-namespace TR { class ARMVirtualGuardNOPInstruction; }
-namespace TR { class ARMAdminInstruction; }
-namespace TR { class ARMImmInstruction; }
-namespace TR { class ARMImmSymInstruction; }
-namespace TR { class ARMTrg1Src2Instruction; }
-namespace TR { class ARMTrg2Src1Instruction; }
-namespace TR { class ARMMulInstruction; }
-namespace TR { class ARMMemSrc1Instruction; }
-namespace TR { class ARMTrg1Instruction; }
-namespace TR { class ARMMemInstruction; }
-namespace TR { class ARMTrg1MemInstruction; }
-namespace TR { class ARMTrg1MemSrc1Instruction; }
-namespace TR { class ARMControlFlowInstruction; }
-namespace TR { class ARMMultipleMoveInstruction; }
+namespace TR {
+class ARMLabelInstruction;
+class ARMConditionalBranchInstruction;
+class ARMVirtualGuardNOPInstruction;
+class ARMAdminInstruction;
+class ARMImmInstruction;
+class ARMImmSymInstruction;
+class ARMTrg1Src2Instruction;
+class ARMTrg2Src1Instruction;
+class ARMMulInstruction;
+class ARMMemSrc1Instruction;
+class ARMTrg1Instruction;
+class ARMMemInstruction;
+class ARMTrg1MemInstruction;
+class ARMTrg1MemSrc1Instruction;
+class ARMControlFlowInstruction;
+class ARMMultipleMoveInstruction;
+}
 class TR_ARMMemoryReference;
 class TR_ARMOperand2;
 class TR_ARMRealRegister;
-namespace TR { class ARMCallSnippet; }
-namespace TR { class ARMUnresolvedCallSnippet; }
-namespace TR { class ARMVirtualSnippet; }
-namespace TR { class ARMVirtualUnresolvedSnippet; }
-namespace TR { class ARMInterfaceCallSnippet; }
-namespace TR { class ARMHelperCallSnippet; }
-namespace TR { class ARMMonitorEnterSnippet; }
-namespace TR { class ARMMonitorExitSnippet; }
-namespace TR { class ARMStackCheckFailureSnippet; }
-namespace TR { class ARMRecompilationSnippet; }
+namespace TR {
+class ARMCallSnippet;
+class ARMUnresolvedCallSnippet;
+class ARMVirtualSnippet;
+class ARMVirtualUnresolvedSnippet;
+class ARMInterfaceCallSnippet;
+class ARMHelperCallSnippet;
+class ARMMonitorEnterSnippet;
+class ARMMonitorExitSnippet;
+class ARMStackCheckFailureSnippet;
+class ARMRecompilationSnippet;
+}
 
-namespace TR { class S390LabelInstruction; }
-namespace TR { class S390BranchInstruction; }
-namespace TR { class S390BranchOnCountInstruction; }
-namespace TR { class S390VirtualGuardNOPInstruction; }
-namespace TR { class S390BranchOnIndexInstruction; }
-namespace TR { class S390AnnotationInstruction; }
-namespace TR { class S390PseudoInstruction; }
-namespace TR { class S390ImmInstruction; }
-namespace TR { class S390ImmSnippetInstruction; }
-namespace TR { class S390ImmSymInstruction; }
-namespace TR { class S390Imm2Instruction; }
-namespace TR { class S390RegInstruction; }
-namespace TR { class S390RRInstruction; }
-namespace TR { class S390TranslateInstruction; }
-namespace TR { class S390RRFInstruction; }
-namespace TR { class S390RRRInstruction; }
-namespace TR { class S390RXFInstruction; }
-namespace TR { class S390RIInstruction; }
-namespace TR { class S390RILInstruction; }
-namespace TR { class S390RSInstruction; }
-namespace TR { class S390RSLInstruction; }
-namespace TR { class S390RSLbInstruction; }
-namespace TR { class S390RXEInstruction; }
-namespace TR { class S390RXInstruction; }
-namespace TR { class S390MemInstruction; }
-namespace TR { class S390SS1Instruction; }
-namespace TR { class S390MIIInstruction; }
-namespace TR { class S390SMIInstruction; }
-namespace TR { class S390SS2Instruction; }
-namespace TR { class S390SS4Instruction; }
-namespace TR { class S390SSEInstruction; }
-namespace TR { class S390SSFInstruction; }
-namespace TR { class S390VRIInstruction; }
-namespace TR { class S390VRIaInstruction; }
-namespace TR { class S390VRIbInstruction; }
-namespace TR { class S390VRIcInstruction; }
-namespace TR { class S390VRIdInstruction; }
-namespace TR { class S390VRIeInstruction; }
-namespace TR { class S390VRRInstruction; }
-namespace TR { class S390VRRaInstruction; }
-namespace TR { class S390VRRbInstruction; }
-namespace TR { class S390VRRcInstruction; }
-namespace TR { class S390VRRdInstruction; }
-namespace TR { class S390VRReInstruction; }
-namespace TR { class S390VRRfInstruction; }
-namespace TR { class S390VRSaInstruction; }
-namespace TR { class S390VRSbInstruction; }
-namespace TR { class S390VRScInstruction; }
-namespace TR { class S390VRVInstruction; }
-namespace TR { class S390VRXInstruction; }
-namespace TR { class S390VStorageInstruction; }
-namespace TR { class S390OpCodeOnlyInstruction; }
-namespace TR { class S390IInstruction; }
-namespace TR { class S390SInstruction; }
-namespace TR { class S390SIInstruction; }
-namespace TR { class S390SILInstruction; }
-namespace TR { class S390NOPInstruction; }
-namespace TR { class S390AlignmentNopInstruction; }
-namespace TR { class S390RestoreGPR7Snippet; }
-namespace TR { class S390CallSnippet; }
-namespace TR { class S390ConstantDataSnippet; }
-namespace TR { class S390WritableDataSnippet; }
-namespace TR { class S390HelperCallSnippet; }
-namespace TR { class S390JNICallDataSnippet; }
+namespace TR {
+class S390LabelInstruction;
+class S390BranchInstruction;
+class S390BranchOnCountInstruction;
+class S390VirtualGuardNOPInstruction;
+class S390BranchOnIndexInstruction;
+class S390AnnotationInstruction;
+class S390PseudoInstruction;
+class S390ImmInstruction;
+class S390ImmSnippetInstruction;
+class S390ImmSymInstruction;
+class S390Imm2Instruction;
+class S390RegInstruction;
+class S390RRInstruction;
+class S390TranslateInstruction;
+class S390RRFInstruction;
+class S390RRRInstruction;
+class S390RXFInstruction;
+class S390RIInstruction;
+class S390RILInstruction;
+class S390RSInstruction;
+class S390RSLInstruction;
+class S390RSLbInstruction;
+class S390RXEInstruction;
+class S390RXInstruction;
+class S390MemInstruction;
+class S390SS1Instruction;
+class S390MIIInstruction;
+class S390SMIInstruction;
+class S390SS2Instruction;
+class S390SS4Instruction;
+class S390SSEInstruction;
+class S390SSFInstruction;
+class S390VRIInstruction;
+class S390VRIaInstruction;
+class S390VRIbInstruction;
+class S390VRIcInstruction;
+class S390VRIdInstruction;
+class S390VRIeInstruction;
+class S390VRRInstruction;
+class S390VRRaInstruction;
+class S390VRRbInstruction;
+class S390VRRcInstruction;
+class S390VRRdInstruction;
+class S390VRReInstruction;
+class S390VRRfInstruction;
+class S390VRSaInstruction;
+class S390VRSbInstruction;
+class S390VRScInstruction;
+class S390VRVInstruction;
+class S390VRXInstruction;
+class S390VStorageInstruction;
+class S390OpCodeOnlyInstruction;
+class S390IInstruction;
+class S390SInstruction;
+class S390SIInstruction;
+class S390SILInstruction;
+class S390NOPInstruction;
+class S390AlignmentNopInstruction;
+class S390RestoreGPR7Snippet;
+class S390CallSnippet;
+class S390ConstantDataSnippet;
+class S390WritableDataSnippet;
+class S390HelperCallSnippet;
+class S390JNICallDataSnippet;
+}
 
-namespace TR { class S390StackCheckFailureSnippet; }
-namespace TR { class S390HeapAllocSnippet; }
-namespace TR { class S390RRSInstruction; }
-namespace TR { class S390RIEInstruction; }
-namespace TR { class S390RISInstruction; }
-namespace TR { class S390IEInstruction; }
+namespace TR {
+class S390StackCheckFailureSnippet;
+class S390HeapAllocSnippet;
+class S390RRSInstruction;
+class S390RIEInstruction;
+class S390RISInstruction;
+class S390IEInstruction;
+}
 
 #ifdef J9_PROJECT_SPECIFIC
-namespace TR { class S390ForceRecompilationSnippet; }
-namespace TR { class S390ForceRecompilationDataSnippet; }
-namespace TR { class S390J9CallSnippet; }
-namespace TR { class S390UnresolvedCallSnippet; }
-namespace TR { class S390VirtualSnippet; }
-namespace TR { class S390VirtualUnresolvedSnippet; }
-namespace TR { class S390InterfaceCallSnippet; }
-namespace TR { class J9S390InterfaceCallDataSnippet; }
+namespace TR {
+class S390ForceRecompilationSnippet;
+class S390ForceRecompilationDataSnippet;
+class S390J9CallSnippet;
+class S390UnresolvedCallSnippet;
+class S390VirtualSnippet;
+class S390VirtualUnresolvedSnippet;
+class S390InterfaceCallSnippet;
+class J9S390InterfaceCallDataSnippet;
+}
 #endif
 
-namespace TR { class ARM64ImmInstruction; }
-namespace TR { class ARM64RelocatableImmInstruction; }
-namespace TR { class ARM64ImmSymInstruction; }
-namespace TR { class ARM64LabelInstruction; }
-namespace TR { class ARM64ConditionalBranchInstruction; }
-namespace TR { class ARM64CompareBranchInstruction; }
-namespace TR { class ARM64TestBitBranchInstruction; }
-namespace TR { class ARM64RegBranchInstruction; }
-namespace TR { class ARM64AdminInstruction; }
-namespace TR { class ARM64Trg1Instruction; }
-namespace TR { class ARM64Trg1CondInstruction; }
-namespace TR { class ARM64Trg1ImmInstruction; }
-namespace TR { class ARM64Trg1ImmShiftedInstruction; }
-namespace TR { class ARM64Trg1ImmSymInstruction; }
-namespace TR { class ARM64Trg1Src1Instruction; }
-namespace TR { class ARM64Trg1ZeroSrc1Instruction; }
-namespace TR { class ARM64Trg1ZeroImmInstruction; }
-namespace TR { class ARM64Trg1Src1ImmInstruction; }
-namespace TR { class ARM64Trg1Src2Instruction; }
-namespace TR { class ARM64CondTrg1Src2Instruction; }
-namespace TR { class ARM64Trg1Src2ImmInstruction; }
-namespace TR { class ARM64Trg1Src2ShiftedInstruction; }
-namespace TR { class ARM64Trg1Src2ExtendedInstruction; }
-namespace TR { class ARM64Trg1Src2IndexedElementInstruction; }
-namespace TR { class ARM64Trg1Src2ZeroInstruction; }
-namespace TR { class ARM64Trg1Src3Instruction; }
-namespace TR { class ARM64Trg1MemInstruction; }
-namespace TR { class ARM64Trg2MemInstruction; }
-namespace TR { class ARM64MemInstruction; }
-namespace TR { class ARM64MemImmInstruction; }
-namespace TR { class ARM64MemSrc1Instruction; }
-namespace TR { class ARM64MemSrc2Instruction; }
-namespace TR { class ARM64Trg1MemSrc1Instruction; }
-namespace TR { class ARM64Src1Instruction; }
-namespace TR { class ARM64ZeroSrc1ImmInstruction; }
-namespace TR { class ARM64Src2Instruction; }
-namespace TR { class ARM64ZeroSrc2Instruction; }
-namespace TR { class ARM64Src1ImmCondInstruction; }
-namespace TR { class ARM64Src2CondInstruction; }
-namespace TR { class ARM64SynchronizationInstruction; }
-namespace TR { class ARM64HelperCallSnippet; }
+namespace TR {
+class ARM64ImmInstruction;
+class ARM64RelocatableImmInstruction;
+class ARM64ImmSymInstruction;
+class ARM64LabelInstruction;
+class ARM64ConditionalBranchInstruction;
+class ARM64CompareBranchInstruction;
+class ARM64TestBitBranchInstruction;
+class ARM64RegBranchInstruction;
+class ARM64AdminInstruction;
+class ARM64Trg1Instruction;
+class ARM64Trg1CondInstruction;
+class ARM64Trg1ImmInstruction;
+class ARM64Trg1ImmShiftedInstruction;
+class ARM64Trg1ImmSymInstruction;
+class ARM64Trg1Src1Instruction;
+class ARM64Trg1ZeroSrc1Instruction;
+class ARM64Trg1ZeroImmInstruction;
+class ARM64Trg1Src1ImmInstruction;
+class ARM64Trg1Src2Instruction;
+class ARM64CondTrg1Src2Instruction;
+class ARM64Trg1Src2ImmInstruction;
+class ARM64Trg1Src2ShiftedInstruction;
+class ARM64Trg1Src2ExtendedInstruction;
+class ARM64Trg1Src2IndexedElementInstruction;
+class ARM64Trg1Src2ZeroInstruction;
+class ARM64Trg1Src3Instruction;
+class ARM64Trg1MemInstruction;
+class ARM64Trg2MemInstruction;
+class ARM64MemInstruction;
+class ARM64MemImmInstruction;
+class ARM64MemSrc1Instruction;
+class ARM64MemSrc2Instruction;
+class ARM64Trg1MemSrc1Instruction;
+class ARM64Src1Instruction;
+class ARM64ZeroSrc1ImmInstruction;
+class ARM64Src2Instruction;
+class ARM64ZeroSrc2Instruction;
+class ARM64Src1ImmCondInstruction;
+class ARM64Src2CondInstruction;
+class ARM64SynchronizationInstruction;
+class ARM64HelperCallSnippet;
+}
 
-namespace TR { class LabelInstruction; }
-namespace TR { class AdminInstruction; }
+namespace TR {
+class LabelInstruction;
+class AdminInstruction;
+}
 #ifdef J9_PROJECT_SPECIFIC
-namespace TR { class ARM64VirtualGuardNOPInstruction; }
+namespace TR {
+class ARM64VirtualGuardNOPInstruction;
+}
 
-namespace TR { class ARM64InterfaceCallSnippet; }
-namespace TR { class ARM64StackCheckFailureSnippet; }
-namespace TR { class ARM64ForceRecompilationSnippet; }
-namespace TR { class ARM64RecompilationSnippet; }
-namespace TR { class ARM64CallSnippet; }
-namespace TR { class ARM64UnresolvedCallSnippet; }
-namespace TR { class ARM64VirtualUnresolvedSnippet; }
+namespace TR {
+class ARM64InterfaceCallSnippet;
+class ARM64StackCheckFailureSnippet;
+class ARM64ForceRecompilationSnippet;
+class ARM64RecompilationSnippet;
+class ARM64CallSnippet;
+class ARM64UnresolvedCallSnippet;
+class ARM64VirtualUnresolvedSnippet;
+}
 #endif
 
-namespace TR { class DataInstruction; }
-namespace TR { class RtypeInstruction; }
-namespace TR { class ItypeInstruction; }
-namespace TR { class StypeInstruction; }
-namespace TR { class BtypeInstruction; }
-namespace TR { class UtypeInstruction; }
-namespace TR { class JtypeInstruction; }
-namespace TR { class LoadInstruction;  }
-namespace TR { class StoreInstruction; }
-namespace TR { class RVHelperCallSnippet; }
+namespace TR {
+class DataInstruction;
+class RtypeInstruction;
+class ItypeInstruction;
+class StypeInstruction;
+class BtypeInstruction;
+class UtypeInstruction;
+class JtypeInstruction;
+class LoadInstruction;
+class StoreInstruction;
+class RVHelperCallSnippet;
+}
 
 TR_Debug *createDebugObject(TR::Compilation *);
 

@@ -27,14 +27,16 @@
 #include <stdint.h>
 #include "codegen/Register.hpp"
 
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class AutomaticSymbol;
+class CodeGenerator;
+class Instruction;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+class SymbolReference;
+}
 template <class T> class List;
 
 namespace TR {

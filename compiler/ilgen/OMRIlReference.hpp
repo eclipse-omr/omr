@@ -22,7 +22,9 @@
 #ifndef OMR_ILREFERENCE_INCL
 #define OMR_ILREFERENCE_INCL
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 namespace OMR
 {

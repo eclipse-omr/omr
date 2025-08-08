@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ENVIRONMENT_CONNECTOR
 #define OMR_ENVIRONMENT_CONNECTOR
-namespace OMR { namespace RV { class Environment; } }
-namespace OMR { typedef OMR::RV::Environment EnvironmentConnector; }
+namespace OMR {
+namespace RV { class Environment; }
+typedef OMR::RV::Environment EnvironmentConnector;
+}
 #else
 #error OMR::RV::Environment expected to be a primary connector, but an OMR connector is already defined
 #endif

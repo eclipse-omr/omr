@@ -27,8 +27,10 @@
  */
 #ifndef OMR_VMMETHODENV_CONNECTOR
 #define OMR_VMMETHODENV_CONNECTOR
-namespace OMR { class VMMethodEnv; }
-namespace OMR { typedef OMR::VMMethodEnv VMMethodEnvConnector; }
+namespace OMR {
+class VMMethodEnv;
+typedef OMR::VMMethodEnv VMMethodEnvConnector;
+}
 #endif
 
 #include <stdint.h>

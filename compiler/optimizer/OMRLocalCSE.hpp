@@ -35,10 +35,12 @@
 #include "optimizer/Optimization.hpp"
 
 class TR_UseDefAliasSetInterface;
-namespace TR { class Block; }
-namespace TR { class LocalCSE; }
-namespace TR { class OptimizationManager; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class LocalCSE;
+class OptimizationManager;
+class TreeTop;
+}
 
 namespace OMR
 {

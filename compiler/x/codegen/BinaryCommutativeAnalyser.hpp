@@ -27,8 +27,10 @@
 #include "codegen/CodeGenerator.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class Machine; }
-namespace TR { class Node; }
+namespace TR {
+class Machine;
+class Node;
+}
 
 #define EvalChild1  0x01
 #define EvalChild2  0x02

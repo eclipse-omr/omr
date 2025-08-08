@@ -33,7 +33,9 @@
 #include "ras/Debug.hpp"
 #include "codegen/Relocation.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 TR::X86DataSnippet::X86DataSnippet(TR::CodeGenerator *cg, TR::Node * n, void *c, size_t size)
    : TR::Snippet(cg, n, TR::LabelSymbol::create(cg->trHeapMemory(),cg), false),

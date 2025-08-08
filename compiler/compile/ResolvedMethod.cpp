@@ -37,8 +37,10 @@
 class TR_FrontEnd;
 class TR_OpaqueMethodBlock;
 class TR_PrexArgInfo;
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class LabelSymbol; }
+namespace TR {
+class IlGeneratorMethodDetails;
+class LabelSymbol;
+}
 
 TR::Method *TR_ResolvedMethod::convertToMethod()                           { TR_UNIMPLEMENTED(); return 0; }
 uint32_t     TR_ResolvedMethod::numberOfParameters()                       { TR_UNIMPLEMENTED(); return 0; }

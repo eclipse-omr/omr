@@ -61,7 +61,9 @@
 #include "ras/Debug.hpp"
 #include "env/IO.hpp"
 
-namespace TR { class AutomaticSymbol; }
+namespace TR {
+class AutomaticSymbol;
+}
 
 static void registerExchange(TR::Instruction *precedingI,
                                             TR_RegisterKinds    rk,

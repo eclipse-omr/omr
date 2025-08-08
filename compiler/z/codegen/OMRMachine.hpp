@@ -26,8 +26,10 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR {namespace Z { class Machine; } }
-namespace OMR { typedef OMR::Z::Machine MachineConnector; }
+namespace OMR {
+namespace Z { class Machine; }
+typedef OMR::Z::Machine MachineConnector;
+}
 #else
 #error OMR::Z::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -41,10 +43,12 @@ namespace OMR { typedef OMR::Z::Machine MachineConnector; }
 #include "infra/TRlist.hpp"
 
 class TR_Debug;
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Register;
+class RegisterDependencyConditions;
+}
 template <class T> class TR_Stack;
 template <typename ListKind> class List;
 

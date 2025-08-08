@@ -27,8 +27,10 @@
  */
 #ifndef OMR_OPTIMIZER_CONNECTOR
 #define OMR_OPTIMIZER_CONNECTOR
-namespace OMR { class Optimizer; }
-namespace OMR { typedef OMR::Optimizer OptimizerConnector; }
+namespace OMR {
+class Optimizer;
+typedef OMR::Optimizer OptimizerConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -48,12 +50,14 @@ class TR_Debug;
 class TR_Structure;
 class TR_UseDefInfo;
 class TR_ValueNumberInfo;
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class OptimizationManager; }
-namespace TR { class Optimizer; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class Block;
+class CodeGenerator;
+class Compilation;
+class OptimizationManager;
+class Optimizer;
+class ResolvedMethodSymbol;
+}
 struct OptimizationStrategy;
 class OMR_InlinerPolicy;
 class OMR_InlinerUtil;

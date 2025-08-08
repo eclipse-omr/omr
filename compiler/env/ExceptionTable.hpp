@@ -30,8 +30,10 @@
 #include "infra/List.hpp"
 
 class TR_ResolvedMethod;
-namespace TR { class Block; }
-namespace TR { class Compilation; }
+namespace TR {
+class Block;
+class Compilation;
+}
 template <class T> class TR_Array;
 
 struct TR_PCMapEntry

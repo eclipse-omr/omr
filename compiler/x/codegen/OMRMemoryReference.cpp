@@ -57,8 +57,10 @@
 
 class TR_OpaqueClassBlock;
 class TR_ScratchRegisterManager;
-namespace TR { class LabelSymbol; }
-namespace TR { class MethodSymbol; }
+namespace TR {
+class LabelSymbol;
+class MethodSymbol;
+}
 
 static void rematerializeAddressAdds(TR::Node *rootLoadOrStore, TR::CodeGenerator *cg);
 

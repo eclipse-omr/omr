@@ -27,9 +27,11 @@
 #include <stdint.h>
 #include "codegen/TreeEvaluator.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class Register;
+}
 
 
 

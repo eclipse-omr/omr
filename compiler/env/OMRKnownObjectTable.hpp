@@ -27,8 +27,10 @@
  */
 #ifndef OMR_KNOWN_OBJECT_TABLE_CONNECTOR
 #define OMR_KNOWN_OBJECT_TABLE_CONNECTOR
-namespace OMR { class KnownObjectTable; }
-namespace OMR { typedef OMR::KnownObjectTable KnownObjectTableConnector; }
+namespace OMR {
+class KnownObjectTable;
+typedef OMR::KnownObjectTable KnownObjectTableConnector;
+}
 #endif
 
 
@@ -39,8 +41,10 @@ namespace OMR { typedef OMR::KnownObjectTable KnownObjectTableConnector; }
 #include "infra/BitVector.hpp"
 
 class TR_FrontEnd;
-namespace TR { class Compilation; }
-namespace TR { class KnownObjectTable; }
+namespace TR {
+class Compilation;
+class KnownObjectTable;
+}
 
 namespace OMR
 {

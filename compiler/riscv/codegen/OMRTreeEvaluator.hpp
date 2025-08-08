@@ -26,8 +26,10 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { namespace RV { class TreeEvaluator; } }
-namespace OMR { typedef OMR::RV::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+namespace RV { class TreeEvaluator; }
+typedef OMR::RV::TreeEvaluator TreeEvaluatorConnector;
+}
 #else
 #error OMR::RV::TreeEvaluator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -37,7 +39,9 @@ namespace OMR { typedef OMR::RV::TreeEvaluator TreeEvaluatorConnector; }
 #include "codegen/RealRegister.hpp"
 #include "compile/CompilationTypes.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 /**
  * @brief Helper function for xReturnEvaluators

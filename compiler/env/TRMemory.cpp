@@ -37,7 +37,9 @@
 #include "env/VMJ9.h"
 #endif
 
-namespace TR { class Monitor; }
+namespace TR {
+class Monitor;
+}
 
 extern size_t mem_round(size_t);
 

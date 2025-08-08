@@ -42,12 +42,14 @@ class TR_LoopVersioner;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_StructureSubGraphNode;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class NodeChecklist; }
-namespace TR { class RegisterMappedSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFG;
+class NodeChecklist;
+class RegisterMappedSymbol;
+class SymbolReference;
+class TreeTop;
+}
 
 class TR_NodeParentPair
    {

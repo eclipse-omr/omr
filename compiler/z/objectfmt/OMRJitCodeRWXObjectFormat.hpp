@@ -28,16 +28,20 @@
 #include "objectfmt/OMRObjectFormat.hpp"
 #ifndef OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
-namespace OMR { namespace Z { class JitCodeRWXObjectFormat; } }
-namespace OMR { typedef OMR::Z::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector; }
+namespace OMR {
+namespace Z { class JitCodeRWXObjectFormat; }
+typedef OMR::Z::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector;
+}
 #else
 #error OMR::Z::JitCodeObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #include "compiler/objectfmt/OMRJitCodeRWXObjectFormat.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class FunctionCallData; }
+namespace TR {
+class Instruction;
+class FunctionCallData;
+}
 namespace OMR
 {
 

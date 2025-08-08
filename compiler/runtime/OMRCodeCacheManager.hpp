@@ -39,21 +39,31 @@ class TR_FrontEnd;
 class TR_OpaqueMethodBlock;
 class TR_Memory;
 
-namespace TR { class CodeCache; }
-namespace TR { class CodeCacheManager; }
-namespace TR { class CodeCacheMemorySegment; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Monitor; }
-namespace OMR { class CodeCacheHashEntrySlab; }
-namespace OMR { typedef void CodeCacheTrampolineCode; }
-namespace OMR { class CodeCacheManager; }
-namespace TR { class StaticRelocation; }
-namespace OMR { typedef CodeCacheManager CodeCacheManagerConnector; }
+namespace TR {
+class CodeCache;
+class CodeCacheManager;
+class CodeCacheMemorySegment;
+class CodeGenerator;
+class Monitor;
+}
+namespace OMR {
+class CodeCacheHashEntrySlab;
+typedef void CodeCacheTrampolineCode;
+class CodeCacheManager;
+}
+namespace TR {
+class StaticRelocation;
+}
+namespace OMR {
+typedef CodeCacheManager CodeCacheManagerConnector;
+}
 
 #if (HOST_OS == OMR_LINUX)
 
-namespace TR { class ELFRelocatableGenerator; }
-namespace TR { class ELFExecutableGenerator; }
+namespace TR {
+class ELFRelocatableGenerator;
+class ELFExecutableGenerator;
+}
 
 namespace TR {
 

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { namespace Z { class TreeEvaluator; } }
-namespace OMR { typedef OMR::Z::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+namespace Z { class TreeEvaluator; }
+typedef OMR::Z::TreeEvaluator TreeEvaluatorConnector;
+}
 #else
 #error OMR::Z::TreeEvaluator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -43,11 +45,13 @@ class TR_OpaquePseudoRegister;
 class TR_PseudoRegister;
 class TR_StorageReference;
 class TR_S390ScratchRegisterManager;
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MemoryReference;
+class RegisterDependencyConditions;
+}
 
 enum tableKind          // for tableEvaluator
    {

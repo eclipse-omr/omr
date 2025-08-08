@@ -91,8 +91,10 @@
 #include "optimizer/IdiomRecognitionUtils.hpp"
 #endif
 
-namespace TR { class CFGNode; }
-namespace TR { class OptimizationManager; }
+namespace TR {
+class CFGNode;
+class OptimizationManager;
+}
 
 #define OPT_DETAILS "O^O VALUE PROPAGATION: "
 #define NEED_WRITE_BARRIER 1

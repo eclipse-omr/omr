@@ -31,9 +31,11 @@
 class TR_BitVector;
 class TR_OpaqueClassBlock;
 class TR_ResolvedMethod;
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Compilation;
+class Node;
+class TreeTop;
+}
 
 enum TR_Hotness
 #if !defined(LINUXPPC) || defined(__LITTLE_ENDIAN__)

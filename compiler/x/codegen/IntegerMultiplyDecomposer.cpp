@@ -38,7 +38,9 @@
 #include "codegen/InstOpCode.hpp"
 #include "env/CompilerEnv.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 // This is duplicated from TR::TreeEvaluator
 inline bool getNodeIs64Bit(TR::Node *node, TR::CodeGenerator *cg)

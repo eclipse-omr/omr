@@ -25,8 +25,10 @@
 #include "codegen/InstOpCode.hpp"
 #include "codegen/OutOfLineCodeSection.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+}
 
 class TR_RVOutOfLineCodeSection : public TR_OutOfLineCodeSection
    {

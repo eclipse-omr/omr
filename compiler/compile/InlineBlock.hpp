@@ -28,9 +28,11 @@
 #include "env/TRMemory.hpp"
 
 class TR_FrontEnd;
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Compilation;
+class TreeTop;
+}
 template <class T> class List;
 
 class TR_InlineBlock

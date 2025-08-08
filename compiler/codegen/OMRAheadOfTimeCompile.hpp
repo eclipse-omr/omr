@@ -24,8 +24,10 @@
 
 #ifndef OMR_AHEADOFTIMECOMPILE_CONNECTOR
 #define OMR_AHEADOFTIMECOMPILE_CONNECTOR
-namespace OMR { class AheadOfTimeCompile; }
-namespace OMR { typedef OMR::AheadOfTimeCompile AheadOfTimeCompileConnector; }
+namespace OMR {
+class AheadOfTimeCompile;
+typedef OMR::AheadOfTimeCompile AheadOfTimeCompileConnector;
+}
 #endif // OMR_AHEADOFTIMECOMPILE_CONNECTOR
 
 #include <stddef.h>
@@ -37,9 +39,11 @@ namespace OMR { typedef OMR::AheadOfTimeCompile AheadOfTimeCompileConnector; }
 #include "runtime/Runtime.hpp"
 
 class TR_Debug;
-namespace TR { class ExternalRelocation; }
-namespace TR { class IteratedExternalRelocation; }
-namespace TR { class AheadOfTimeCompile; }
+namespace TR {
+class ExternalRelocation;
+class IteratedExternalRelocation;
+class AheadOfTimeCompile;
+}
 
 namespace OMR
 {

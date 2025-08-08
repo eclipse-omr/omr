@@ -27,15 +27,19 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class TreeEvaluator; } } }
-namespace OMR { typedef OMR::X86::AMD64::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class TreeEvaluator; } }
+typedef OMR::X86::AMD64::TreeEvaluator TreeEvaluatorConnector;
+}
 #else
 #error OMR::X86::AMD64::TreeEvaluator expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #include "compiler/x/codegen/OMRTreeEvaluator.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 
 namespace OMR

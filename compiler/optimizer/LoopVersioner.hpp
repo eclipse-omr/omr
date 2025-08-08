@@ -43,8 +43,10 @@
 class TR_PostDominators;
 class TR_RegionStructure;
 class TR_Structure;
-namespace TR { class Block; }
-namespace TR { class Optimization; }
+namespace TR {
+class Block;
+class Optimization;
+}
 
 class TR_NodeParentSymRef
    {

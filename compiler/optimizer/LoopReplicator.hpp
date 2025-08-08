@@ -30,10 +30,12 @@ class TR_BitVector;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_StructureSubGraphNode;
-namespace TR { class Block; }
-namespace TR { class CFGEdge; }
-namespace TR { class Optimization; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFGEdge;
+class Optimization;
+class TreeTop;
+}
 template <class T> class TR_Stack;
 
 #define MAX_NODE_THRESHOLD_FOR_REPLICATION 200

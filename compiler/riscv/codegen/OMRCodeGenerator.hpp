@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace RV { class CodeGenerator; } }
-namespace OMR { typedef OMR::RV::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace RV { class CodeGenerator; }
+typedef OMR::RV::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::RV::CodeGenerator expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,8 +41,10 @@ namespace OMR { typedef OMR::RV::CodeGenerator CodeGeneratorConnector; }
 #include "infra/Annotations.hpp"
 
 class TR_RVOutOfLineCodeSection;
-namespace TR { class RVLinkageProperties; }
-namespace TR { class ConstantDataSnippet; }
+namespace TR {
+class RVLinkageProperties;
+class ConstantDataSnippet;
+}
 
 /**
  * @brief Generates instructions for loading 32-bit integer value to a register

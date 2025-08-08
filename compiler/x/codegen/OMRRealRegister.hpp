@@ -24,8 +24,10 @@
 
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
-namespace OMR { namespace X86 { class RealRegister; } }
-namespace OMR { typedef OMR::X86::RealRegister RealRegisterConnector; }
+namespace OMR {
+namespace X86 { class RealRegister; }
+typedef OMR::X86::RealRegister RealRegisterConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRRealRegister.hpp"
@@ -34,8 +36,10 @@ namespace OMR { typedef OMR::X86::RealRegister RealRegisterConnector; }
 #include "codegen/RegisterConstants.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class RealRegister; }
+namespace TR {
+class CodeGenerator;
+class RealRegister;
+}
 
 namespace OMR
 {

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { namespace ARM64 { class Instruction; } }
-namespace OMR { typedef OMR::ARM64::Instruction InstructionConnector; }
+namespace OMR {
+namespace ARM64 { class Instruction; }
+typedef OMR::ARM64::Instruction InstructionConnector;
+}
 #else
 #error OMR::ARM64::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,11 +41,13 @@ namespace OMR { typedef OMR::ARM64::Instruction InstructionConnector; }
 #include <stdint.h>
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 
 namespace OMR
 {

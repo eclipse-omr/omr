@@ -38,7 +38,9 @@
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class TreeTop; }
+namespace TR {
+class TreeTop;
+}
 
 /*
  * Performance sensitive implementations are included here to support inlining.

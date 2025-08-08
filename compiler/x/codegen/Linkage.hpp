@@ -26,7 +26,9 @@
 
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace TR
 {

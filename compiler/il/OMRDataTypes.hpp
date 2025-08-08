@@ -27,8 +27,10 @@
  */
 #ifndef OMR_DATATYPE_CONNECTOR
 #define OMR_DATATYPE_CONNECTOR
-namespace OMR { class DataType; }
-namespace OMR { typedef OMR::DataType DataTypeConnector; }
+namespace OMR {
+class DataType;
+typedef OMR::DataType DataTypeConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -39,7 +41,9 @@ namespace OMR { typedef OMR::DataType DataTypeConnector; }
 #include "env/CompilerEnv.hpp"
 #endif
 
-namespace TR { class DataType; }
+namespace TR {
+class DataType;
+}
 
 typedef int32_t CASECONST_TYPE;
 

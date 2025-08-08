@@ -55,7 +55,9 @@
 #include "runtime/Runtime.hpp"
 
 class TR_OpaqueMethodBlock;
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 static bool reversedConditionalBranchOpCode(TR::InstOpCode::Mnemonic op, TR::InstOpCode::Mnemonic *rop);
 

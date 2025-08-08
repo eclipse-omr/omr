@@ -43,7 +43,9 @@
 #include "ras/Debug.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 
-namespace TR { class LabelSymbol; }
+namespace TR {
+class LabelSymbol;
+}
 
 TR_S390OutOfLineCodeSection::TR_S390OutOfLineCodeSection(TR::Node  *callNode,
                                                  TR::ILOpCodes      callOp,

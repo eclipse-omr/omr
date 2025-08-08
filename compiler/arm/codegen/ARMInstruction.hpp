@@ -37,9 +37,11 @@
 
 class TR_VirtualGuardSite;
 
-namespace TR { class ARMDepImmInstruction; }
-namespace TR { class ARMImmInstruction; }
-namespace TR { class ARMConditionalBranchInstruction; }
+namespace TR {
+class ARMDepImmInstruction;
+class ARMImmInstruction;
+class ARMConditionalBranchInstruction;
+}
 
 #define ARM_INSTRUCTION_LENGTH 4
 

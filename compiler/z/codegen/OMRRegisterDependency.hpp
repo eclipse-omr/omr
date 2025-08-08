@@ -27,16 +27,20 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_CONNECTOR
-namespace OMR { namespace Z { class RegisterDependencyConditions; } }
-namespace OMR { typedef OMR::Z::RegisterDependencyConditions RegisterDependencyConditionsConnector; }
+namespace OMR {
+namespace Z { class RegisterDependencyConditions; }
+typedef OMR::Z::RegisterDependencyConditions RegisterDependencyConditionsConnector;
+}
 #else
 #error OMR::Z::RegisterDependencyConditions expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #ifndef OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
-namespace OMR { namespace Z { class RegisterDependencyGroup; } }
-namespace OMR { typedef OMR::Z::RegisterDependencyGroup RegisterDependencyGroupConnector; }
+namespace OMR {
+namespace Z { class RegisterDependencyGroup; }
+typedef OMR::Z::RegisterDependencyGroup RegisterDependencyGroupConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRRegisterDependency.hpp"
@@ -56,10 +60,12 @@ namespace OMR { typedef OMR::Z::RegisterDependencyGroup RegisterDependencyGroupC
 
 #define RefsAndDefsDependentRegister  (ReferencesDependentRegister | DefinesDependentRegister)
 
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class RegisterPair; }
+namespace TR {
+class Instruction;
+class Node;
+class RegisterDependencyConditions;
+class RegisterPair;
+}
 template <typename ListKind> class List;
 
 #define RefsAndDefsDependentRegister  (ReferencesDependentRegister | DefinesDependentRegister)

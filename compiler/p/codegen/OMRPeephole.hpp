@@ -27,16 +27,20 @@
  */
 #ifndef OMR_PEEPHOLE_CONNECTOR
 #define OMR_PEEPHOLE_CONNECTOR
-namespace OMR { namespace Power { class Peephole; } }
-namespace OMR { typedef OMR::Power::Peephole PeepholeConnector; }
+namespace OMR {
+namespace Power { class Peephole; }
+typedef OMR::Power::Peephole PeepholeConnector;
+}
 #else
 #error OMR::Power::Peephole expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRPeephole.hpp"
 
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
+namespace TR {
+class Compilation;
+class Instruction;
+}
 
 namespace OMR
 {

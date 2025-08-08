@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
-namespace OMR { class Register; }
-namespace OMR { typedef OMR::Register RegisterConnector; }
+namespace OMR {
+class Register;
+typedef OMR::Register RegisterConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -41,12 +43,14 @@ namespace OMR { typedef OMR::Register RegisterConnector; }
 #include "infra/Annotations.hpp"
 
 class TR_BackingStore;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class RealRegister; }
-namespace TR { class Register; }
-namespace TR { class RegisterPair; }
+namespace TR {
+class AutomaticSymbol;
+class Compilation;
+class Instruction;
+class RealRegister;
+class Register;
+class RegisterPair;
+}
 
 #define TR_SSR_ASSERT() TR_ASSERT(self()->getKind() != TR_SSR,"only non-TR_SSR registers use _totalUseCount : an aggregate or BCD type node has been evaluated as a non-aggregate or BCD node (missing o2x cast?)\n")
 #define TR_MAX_USECOUNT_ASSERT(a) TR_ASSERT(_totalUseCount <= MAX_NODE_COUNT-a, "TR::Register::_totalUseCount == MAX_NODE_COUNT")
