@@ -68,6 +68,7 @@ public:
 	} _pgcData;
 
 	uintptr_t _currentIncrement; /**< The index of the current increment within the cycle, starting at 0 (used for event reporting) */
+	uint64_t _currentCycleID; /**< The index of the current cycle (used for event reporting [JFR]) */
 
 	bool _shouldRunCopyForward; /**< True if this cycle is to run a copy-forward-based attempt at reclaiming memory, false if mark-compact is to be used */
 
@@ -106,6 +107,7 @@ public:
 		, _collectionType(CT_GLOBAL_GARBAGE_COLLECTION)
 		, _markDelegateState(state_mark_idle)
 		, _currentIncrement(0)
+		, _currentCycleID(0)
 		, _shouldRunCopyForward(false)
 		, _reasonForMarkCompactPGC(reason_not_exceptional)
 		, _externalCycleState(NULL)
