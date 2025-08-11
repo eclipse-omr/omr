@@ -27,7 +27,9 @@
 #include "il/TreeTop.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class Block; }
+namespace TR {
+class Block;
+}
 
 /*
  * Performance sensitive implementations are included here to

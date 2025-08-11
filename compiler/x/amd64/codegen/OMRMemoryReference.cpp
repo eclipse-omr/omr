@@ -48,7 +48,9 @@
 #include "codegen/InstOpCode.hpp"
 
 class TR_OpaqueClassBlock;
-namespace TR { class Machine; }
+namespace TR {
+class Machine;
+}
 
 #define IMM64_LOAD_SIZE (10)
 #define MAX_MEMREF_SIZE (6) // ModRM + SIB + disp32

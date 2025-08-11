@@ -27,7 +27,9 @@
 #include "il/Node.hpp"
 #include "infra/SideTable.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR {
 

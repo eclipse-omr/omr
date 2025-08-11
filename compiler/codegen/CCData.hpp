@@ -27,7 +27,9 @@
 #include <cstddef>
 #include <OMR/TypeTraits.hpp>
 
-namespace TR { class Monitor; }
+namespace TR {
+class Monitor;
+}
 
 namespace TR
 {

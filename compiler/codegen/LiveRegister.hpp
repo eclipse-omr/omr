@@ -33,11 +33,13 @@
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class RealRegister; }
-namespace TR { class Register; }
-namespace TR { class RegisterPair; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class RealRegister;
+class Register;
+class RegisterPair;
+}
 
 // Live register information, used to determine live range information for
 // virtual registers

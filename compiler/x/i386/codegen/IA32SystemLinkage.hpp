@@ -29,10 +29,12 @@
 #include "codegen/Register.hpp"
 #include "il/DataTypes.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class ParameterSymbol;
+class RegisterDependencyConditions;
+}
 
 namespace TR {
 

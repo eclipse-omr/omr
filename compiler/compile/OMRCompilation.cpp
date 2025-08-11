@@ -138,10 +138,12 @@ class TR_OptimizationPlan;
 class TR_PrexArgInfo;
 class TR_PseudoRandomNumbersListElement;
 class TR_ResolvedMethod;
-namespace TR { class IlGenRequest; }
-namespace TR { class Options; }
-namespace TR { class CodeCache; }
-namespace TR { class RegisterMappedSymbol; }
+namespace TR {
+class IlGenRequest;
+class Options;
+class CodeCache;
+class RegisterMappedSymbol;
+}
 
 
 namespace OMR

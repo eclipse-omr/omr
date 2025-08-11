@@ -48,7 +48,9 @@
 #include "p/codegen/PPCOpsDefines.hpp"
 #include "p/codegen/PPCOutOfLineCodeSection.hpp"
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 
 // TR::LabelInstruction function

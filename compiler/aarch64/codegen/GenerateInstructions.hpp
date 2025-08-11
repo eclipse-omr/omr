@@ -32,14 +32,16 @@
 #include "env/jittypes.h"
 #include "runtime/Runtime.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class Snippet; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class Snippet;
+class SymbolReference;
+}
 
 
 /*

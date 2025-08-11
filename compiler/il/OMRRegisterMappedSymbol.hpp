@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTERMAPPEDSYMBOL_CONNECTOR
 #define OMR_REGISTERMAPPEDSYMBOL_CONNECTOR
-namespace OMR { class RegisterMappedSymbol; }
-namespace OMR { typedef OMR::RegisterMappedSymbol RegisterMappedSymbolConnector; }
+namespace OMR {
+class RegisterMappedSymbol;
+typedef OMR::RegisterMappedSymbol RegisterMappedSymbolConnector;
+}
 #endif
 
 #include "il/Symbol.hpp"
@@ -38,8 +40,10 @@ namespace OMR { typedef OMR::RegisterMappedSymbol RegisterMappedSymbolConnector;
 #include "infra/Assert.hpp"
 
 class TR_FrontEnd;
-namespace TR { class RegisterMappedSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class RegisterMappedSymbol;
+class SymbolReference;
+}
 
 /**
  * Selects a register to be used

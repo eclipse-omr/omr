@@ -27,8 +27,10 @@
  */
 #ifndef OMR_COMPILER_ENV_CONNECTOR
 #define OMR_COMPILER_ENV_CONNECTOR
-namespace OMR { namespace ARM { class CompilerEnv; } }
-namespace OMR { typedef OMR::ARM::CompilerEnv CompilerEnvConnector; }
+namespace OMR {
+namespace ARM { class CompilerEnv; }
+typedef OMR::ARM::CompilerEnv CompilerEnvConnector;
+}
 #else
 #error OMR::ARM::CompilerEnv expected to be a primary connector, but an OMR connector is already defined
 #endif

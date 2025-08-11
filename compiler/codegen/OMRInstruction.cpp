@@ -29,7 +29,9 @@
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 namespace OMR
 {

@@ -37,7 +37,9 @@
 #include "env/VerboseLog.hpp"
 #include "ras/DebugCounter.hpp"
 
-namespace TR { class Monitor; }
+namespace TR {
+class Monitor;
+}
 
 namespace OMR
 {

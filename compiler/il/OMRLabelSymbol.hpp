@@ -27,8 +27,10 @@
  */
 #ifndef OMR_LABELSYMBOL_CONNECTOR
 #define OMR_LABELSYMBOL_CONNECTOR
-namespace OMR { class LabelSymbol; }
-namespace OMR { typedef OMR::LabelSymbol LabelSymbolConnector; }
+namespace OMR {
+class LabelSymbol;
+typedef OMR::LabelSymbol LabelSymbolConnector;
+}
 #endif
 
 #include "il/Symbol.hpp"
@@ -39,15 +41,17 @@ namespace OMR { typedef OMR::LabelSymbol LabelSymbolConnector; }
 #include "infra/Assert.hpp"
 
 class TR_Debug;
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class Snippet; }
-namespace TR { class StaticSymbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Block;
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class LabelSymbol;
+class ParameterSymbol;
+class Snippet;
+class StaticSymbol;
+class SymbolReference;
+}
 template <class T> class List;
 
 

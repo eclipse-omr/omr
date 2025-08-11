@@ -22,6 +22,8 @@
 #ifndef OMR_METHODEXCEPTIONDATA_INCL
 #define OMR_METHODEXCEPTIONDATA_INCL
 
-namespace OMR { typedef void * MethodExceptionData; }
+namespace OMR {
+typedef void * MethodExceptionData;
+}
 
 #endif

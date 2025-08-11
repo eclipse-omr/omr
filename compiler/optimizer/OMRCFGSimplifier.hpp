@@ -26,11 +26,13 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class CFGEdge; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFG;
+class CFGEdge;
+class Node;
+class TreeTop;
+}
 template <class T> class ListElement;
 
 namespace OMR

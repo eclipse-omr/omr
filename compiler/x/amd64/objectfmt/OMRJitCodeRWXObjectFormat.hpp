@@ -27,8 +27,10 @@
  */
 #ifndef OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class JitCodeRWXObjectFormat; } } }
-namespace OMR { typedef OMR::X86::AMD64::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class JitCodeRWXObjectFormat; } }
+typedef OMR::X86::AMD64::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector;
+}
 #else
 #error OMR::X86::AMD64::JitCodeRWXObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -36,8 +38,10 @@ namespace OMR { typedef OMR::X86::AMD64::JitCodeRWXObjectFormat JitCodeRWXObject
 #include "compiler/x/objectfmt/OMRJitCodeRWXObjectFormat.hpp"
 #include "env/FilePointerDecl.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class FunctionCallData; }
+namespace TR {
+class Instruction;
+class FunctionCallData;
+}
 
 namespace OMR
 {

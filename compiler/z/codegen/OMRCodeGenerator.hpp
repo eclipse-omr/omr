@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace Z { class CodeGenerator; } }
-namespace OMR { typedef OMR::Z::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace Z { class CodeGenerator; }
+typedef OMR::Z::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::Z::CodeGenerator expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -89,29 +91,37 @@ class TR_BackingStore;
 class TR_GCStackMap;
 class TR_OpaquePseudoRegister;
 class TR_PseudoRegister;
-namespace TR { class RegisterCandidate; }
-namespace TR { class S390ConstantDataSnippet; }
-namespace TR { class S390ConstantInstructionSnippet; }
-namespace TR { class S390EyeCatcherDataSnippet; }
-namespace TR { class S390ImmInstruction; }
+namespace TR {
+class RegisterCandidate;
+class S390ConstantDataSnippet;
+class S390ConstantInstructionSnippet;
+class S390EyeCatcherDataSnippet;
+class S390ImmInstruction;
+}
 class TR_S390OutOfLineCodeSection;
 class TR_S390ScratchRegisterManager;
-namespace TR { class S390WritableDataSnippet; }
+namespace TR {
+class S390WritableDataSnippet;
+}
 class TR_StorageReference;
-namespace OMR { class Linkage; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Optimizer; }
-namespace TR { class RegStarRef; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class RegisterIterator; }
-namespace TR { class RegisterPair; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SystemLinkage; }
+namespace OMR {
+class Linkage;
+}
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MemoryReference;
+class Optimizer;
+class RegStarRef;
+class Register;
+class RegisterDependencyConditions;
+class RegisterIterator;
+class RegisterPair;
+class Symbol;
+class SymbolReference;
+class SystemLinkage;
+}
 
 extern int64_t getIntegralValue(TR::Node* node);
 

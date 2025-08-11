@@ -27,16 +27,20 @@
  */
 #ifndef OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class JitCodeRXObjectFormat; } } }
-namespace OMR { typedef OMR::X86::AMD64::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class JitCodeRXObjectFormat; } }
+typedef OMR::X86::AMD64::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
+}
 #else
 #error OMR::X86::AMD64::JitCodeRXObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #include "compiler/x/objectfmt/OMRJitCodeRXObjectFormat.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class FunctionCallData; }
+namespace TR {
+class Instruction;
+class FunctionCallData;
+}
 
 namespace OMR
 {

@@ -26,7 +26,9 @@
 #include "codegen/LinkageConventionsEnum.hpp"
 #include "il/OMRMethodSymbol.hpp"
 
-namespace TR { class Method; }
+namespace TR {
+class Method;
+}
 
 namespace TR
 {

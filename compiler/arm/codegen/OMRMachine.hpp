@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { namespace ARM { class Machine; } }
-namespace OMR { typedef OMR::ARM::Machine MachineConnector; }
+namespace OMR {
+namespace ARM { class Machine; }
+typedef OMR::ARM::Machine MachineConnector;
+}
 #else
 #error OMR::ARM::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -38,9 +40,11 @@ namespace OMR { typedef OMR::ARM::Machine MachineConnector; }
 #include "codegen/RealRegister.hpp"
 #include "infra/TRlist.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Register;
+class RegisterDependencyConditions;
+}
 
 #define NUM_ARM_GPR  16
 #define NUM_ARM_MAXR 16

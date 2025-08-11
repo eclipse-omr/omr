@@ -32,7 +32,9 @@
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
 
-namespace TR { class AutomaticSymbol; }
+namespace TR {
+class AutomaticSymbol;
+}
 
 TR::GCStackAtlas *
 OMR::GCStackAtlas::self()

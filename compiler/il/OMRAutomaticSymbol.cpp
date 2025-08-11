@@ -32,8 +32,10 @@
 #include "infra/InterferenceGraph.hpp"
 
 class TR_FrontEnd;
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Node;
+class SymbolReference;
+}
 
 OMR::AutomaticSymbol::AutomaticSymbol() :
    TR::RegisterMappedSymbol()

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
-namespace OMR { namespace X86 { class Snippet; } }
-namespace OMR { typedef OMR::X86::Snippet SnippetConnector; }
+namespace OMR {
+namespace X86 { class Snippet; }
+typedef OMR::X86::Snippet SnippetConnector;
+}
 #else
 #error OMR::X86::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -37,10 +39,12 @@ namespace OMR { typedef OMR::X86::Snippet SnippetConnector; }
 #include "compiler/codegen/OMRSnippet.hpp"
 #include "env/CompilerEnv.hpp"
 
-namespace TR { class X86GuardedDevirtualSnippet; }
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
+namespace TR {
+class X86GuardedDevirtualSnippet;
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+}
 
 namespace OMR
 {

@@ -24,7 +24,9 @@
 
 #include "codegen/OMRLinkage.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace TR
 {

@@ -37,8 +37,10 @@
 #include "infra/MonitorTable.hpp"
 #include "env/CompilerEnv.hpp"
 
-namespace TR { class Compilation; }
-namespace TR { class PersistentInfo; }
+namespace TR {
+class Compilation;
+class PersistentInfo;
+}
 
 extern const char * objectName[];
 

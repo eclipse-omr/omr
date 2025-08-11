@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTIONDELEGATE_CONNECTOR
 #define OMR_INSTRUCTIONDELEGATE_CONNECTOR
-namespace OMR { namespace Power { class InstructionDelegate; } }
-namespace OMR { typedef OMR::Power::InstructionDelegate InstructionDelegateConnector; }
+namespace OMR {
+namespace Power { class InstructionDelegate; }
+typedef OMR::Power::InstructionDelegate InstructionDelegateConnector;
+}
 #else
 #error OMR::Power::InstructionDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif

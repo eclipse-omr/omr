@@ -25,7 +25,9 @@
 #include "optimizer/OptimizationManager.hpp"
 #include "optimizer/IsolatedStoreElimination.hpp"
 
-namespace TR { class Optimization; }
+namespace TR {
+class Optimization;
+}
 
 // Dead Store Elimination
 //

@@ -29,8 +29,10 @@
 
 
 
-namespace TR { class Block; }
-namespace TR { class Compilation; }
+namespace TR {
+class Block;
+class Compilation;
+}
 
 
 class TR_AsyncCheckInsertion : public TR::Optimization

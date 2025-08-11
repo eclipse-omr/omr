@@ -33,7 +33,9 @@
 #include "compile/CompilationException.hpp"
 #include "ras/IlVerifier.hpp"
 
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class ResolvedMethodSymbol;
+}
 
 namespace TR {
 

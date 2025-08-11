@@ -69,7 +69,9 @@
 #include "codegen/InstOpCode.hpp"
 #include "x/codegen/X86Register.hpp"
 
-namespace TR { class Instruction; }
+namespace TR {
+class Instruction;
+}
 
 // Only nodes that are referenced more than this number of times
 // will be rematerializable.

@@ -27,20 +27,24 @@
  */
 #ifndef OMR_TREETOP_CONNECTOR
 #define OMR_TREETOP_CONNECTOR
-namespace OMR { class TreeTop; }
-namespace OMR { typedef OMR::TreeTop TreeTopConnector; }
+namespace OMR {
+class TreeTop;
+typedef OMR::TreeTop TreeTopConnector;
+}
 #endif
 
 #include <stddef.h>
 #include "env/TRMemory.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Compilation;
+class Instruction;
+class Node;
+class SymbolReference;
+class TreeTop;
+}
 
 namespace OMR
 {

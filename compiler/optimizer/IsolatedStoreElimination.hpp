@@ -31,9 +31,11 @@ class TR_BitVector;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_UseDefInfo;
-namespace TR { class SymbolReference; }
-namespace TR { class Block; }
-namespace TR { class TreeTop; }
+namespace TR {
+class SymbolReference;
+class Block;
+class TreeTop;
+}
 template <class T> class TR_Array;
 
 // Isolated Store Elimination

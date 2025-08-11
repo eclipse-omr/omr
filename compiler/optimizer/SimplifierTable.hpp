@@ -22,9 +22,11 @@
 #ifndef SIMPLIFIERTABLE_INCL
 #define SIMPLIFIERTABLE_INCL
 
-namespace TR { class Block; }
-namespace TR { class Node; }
-namespace TR { class Simplifier; }
+namespace TR {
+class Block;
+class Node;
+class Simplifier;
+}
 
 #include "optimizer/SimplifierHandlers.hpp"
 

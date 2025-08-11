@@ -34,9 +34,11 @@
 #define Mem1  0x10
 #define Reg1  0x20
 
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class Compilation;
+class Node;
+class Register;
+}
 
 class TR_Analyser
    {

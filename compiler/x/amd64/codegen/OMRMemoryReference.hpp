@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
-namespace OMR { namespace X86 { namespace AMD64 { class MemoryReference; } } }
-namespace OMR { typedef OMR::X86::AMD64::MemoryReference MemoryReferenceConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class MemoryReference; } }
+typedef OMR::X86::AMD64::MemoryReference MemoryReferenceConnector;
+}
 #else
 #error OMR::X86::AMD64::MemoryReference expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -39,8 +41,10 @@ namespace OMR { typedef OMR::X86::AMD64::MemoryReference MemoryReferenceConnecto
 #include "env/jittypes.h"
 
 class TR_ScratchRegisterManager;
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
+namespace TR {
+class LabelSymbol;
+class MemoryReference;
+}
 
 namespace OMR
 {

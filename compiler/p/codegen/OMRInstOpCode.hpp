@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
-namespace OMR { namespace Power { class InstOpCode; } }
-namespace OMR { typedef OMR::Power::InstOpCode InstOpCodeConnector; }
+namespace OMR {
+namespace Power { class InstOpCode; }
+typedef OMR::Power::InstOpCode InstOpCodeConnector;
+}
 #else
 #error OMR::Power::InstOpCode expected to be a primary connector, but a OMR connector is already defined
 #endif

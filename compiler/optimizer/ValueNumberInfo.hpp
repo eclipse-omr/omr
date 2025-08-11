@@ -32,8 +32,10 @@
 #include "infra/Array.hpp"
 
 class TR_UseDefInfo;
-namespace TR { class Optimizer; }
-namespace TR { class ParameterSymbol; }
+namespace TR {
+class Optimizer;
+class ParameterSymbol;
+}
 
 class TR_ValueNumberInfo
    {

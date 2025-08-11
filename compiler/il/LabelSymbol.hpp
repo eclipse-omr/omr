@@ -24,8 +24,10 @@
 
 #include "il/OMRLabelSymbol.hpp"
 
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class Block;
+class CodeGenerator;
+}
 
 namespace TR {
 

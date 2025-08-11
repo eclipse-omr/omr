@@ -25,7 +25,9 @@
 #include <string.h>
 #include "infra/Assert.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
 {

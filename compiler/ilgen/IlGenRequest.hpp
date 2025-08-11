@@ -29,10 +29,12 @@
 class TR_FrontEnd;
 class TR_IlGenerator;
 class TR_InlineBlocks;
-namespace TR { class Compilation; }
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class Compilation;
+class IlGeneratorMethodDetails;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
+}
 
 namespace TR
 {

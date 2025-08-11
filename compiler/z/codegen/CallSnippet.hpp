@@ -31,13 +31,15 @@
 
 #include "z/codegen/S390Instruction.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MethodSymbol; }
-namespace TR { class Node; }
-namespace TR { class RealRegister; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MethodSymbol;
+class Node;
+class RealRegister;
+class SymbolReference;
+}
 
 namespace TR {
 

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
-namespace OMR { class Snippet; }
-namespace OMR { typedef OMR::Snippet SnippetConnector; }
+namespace OMR {
+class Snippet;
+typedef OMR::Snippet SnippetConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -39,11 +41,13 @@ namespace OMR { typedef OMR::Snippet SnippetConnector; }
 #include "codegen/SnippetGCMap.hpp"
 
 class TR_Debug;
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Snippet; }
+namespace TR {
+class Block;
+class CodeGenerator;
+class Node;
+class LabelSymbol;
+class Snippet;
+}
 
 namespace OMR
 {

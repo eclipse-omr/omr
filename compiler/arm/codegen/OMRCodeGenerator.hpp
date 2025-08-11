@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace ARM { class CodeGenerator; } }
-namespace OMR { typedef OMR::ARM::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace ARM { class CodeGenerator; }
+typedef OMR::ARM::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::ARM::CodeGenerator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -42,7 +44,9 @@ namespace OMR { typedef OMR::ARM::CodeGenerator CodeGeneratorConnector; }
 #include "env/jittypes.h"
 #include "optimizer/DataFlowAnalysis.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 extern TR::Instruction *armLoadConstant(TR::Node     *node,
                                     int32_t         value,
@@ -84,11 +88,13 @@ uint32_t encodeHelperBranchAndLink(TR::SymbolReference *symRef, uint8_t *cursor,
 uint32_t encodeHelperBranch(bool isBranchAndLink, TR::SymbolReference *symRef, uint8_t *cursor, TR_ARMConditionCode cc, TR::Node *node, TR::CodeGenerator *cg);
 
 class TR_BackingStore;
-namespace TR { class Machine; }
-namespace TR { class CodeGenerator; }
-namespace TR { struct ARMLinkageProperties; }
-namespace TR { class ARMImmInstruction; }
-namespace TR { class ARMConstantDataSnippet; }
+namespace TR {
+class Machine;
+class CodeGenerator;
+struct ARMLinkageProperties;
+class ARMImmInstruction;
+class ARMConstantDataSnippet;
+}
 class TR_ARMLoadLabelItem;
 class TR_BitVector;
 class TR_ARMScratchRegisterManager;

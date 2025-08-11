@@ -48,7 +48,9 @@
 #include "aarch64/codegen/CallSnippet.hpp"
 #include "aarch64/codegen/StackCheckFailureSnippet.hpp"
 
-namespace TR { class ARM64ForceRecompilationSnippet; }
+namespace TR {
+class ARM64ForceRecompilationSnippet;
+}
 #endif
 
 static const char *ARM64ConditionNames[] =

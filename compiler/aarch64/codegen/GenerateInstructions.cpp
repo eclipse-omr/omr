@@ -32,10 +32,12 @@
 #include "il/DataTypes_inlines.hpp"
 #include "il/Node_inlines.hpp"
 
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class LabelSymbol;
+class Node;
+class RegisterDependencyConditions;
+class SymbolReference;
+}
 
 TR::Instruction *generateInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Instruction *preced)
    {

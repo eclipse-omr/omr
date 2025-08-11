@@ -36,10 +36,12 @@ class TR_BlockStructure;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_StructureSubGraphNode;
-namespace TR { class SymbolReference; }
-namespace TR { class Block; }
-namespace TR { class CFGEdge; }
-namespace TR { class Node; }
+namespace TR {
+class SymbolReference;
+class Block;
+class CFGEdge;
+class Node;
+}
 
 
 class TR_LoopEstimator

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_VMACCESSCRITICALSECTION_CONNECTOR
 #define OMR_VMACCESSCRITICALSECTION_CONNECTOR
-namespace OMR { class VMAccessCriticalSection; }
-namespace OMR { typedef OMR::VMAccessCriticalSection VMAccessCriticalSectionConnector; }
+namespace OMR {
+class VMAccessCriticalSection;
+typedef OMR::VMAccessCriticalSection VMAccessCriticalSectionConnector;
+}
 #endif
 
 

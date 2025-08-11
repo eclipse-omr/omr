@@ -25,8 +25,10 @@
 #include <stdint.h>
 
 class TR_BitVector;
-namespace TR { class Block; }
-namespace TR { class Compilation; }
+namespace TR {
+class Block;
+class Compilation;
+}
 
 typedef int32_t blocknum_t;
 

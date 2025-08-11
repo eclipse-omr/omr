@@ -27,8 +27,10 @@
  */
 #ifndef OMR_BLOCK_CONNECTOR
 #define OMR_BLOCK_CONNECTOR
-namespace OMR { class Block; }
-namespace OMR { typedef OMR::Block BlockConnector; }
+namespace OMR {
+class Block;
+typedef OMR::Block BlockConnector;
+}
 #endif
 
 #define MIN_PROFILED_FREQUENCY (.75f)
@@ -53,20 +55,26 @@ namespace OMR { typedef OMR::Block BlockConnector; }
 class TR_BitVector;
 class TR_BlockStructure;
 class TR_Debug;
-namespace TR { class GlobalRegister; }
+namespace TR {
+class GlobalRegister;
+}
 class TR_GlobalRegisterAllocator;
 class TR_Memory;
 class TR_RegionStructure;
-namespace TR { class RegisterCandidate; }
-namespace TR { class RegisterCandidates; }
+namespace TR {
+class RegisterCandidate;
+class RegisterCandidates;
+}
 class TR_ResolvedMethod;
-namespace TR { class Block; }
-namespace TR { class CFGEdge; }
-namespace TR { class CFGNode; }
-namespace TR { class DebugCounterAggregation; }
-namespace TR { class Instruction; }
-namespace TR { class Symbol; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFGEdge;
+class CFGNode;
+class DebugCounterAggregation;
+class Instruction;
+class Symbol;
+class TreeTop;
+}
 template <class T> class TR_Array;
 
 // Pseudo-safe downcast from a CFG node to a TR::Block

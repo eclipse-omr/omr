@@ -27,7 +27,9 @@
 #include "optimizer/CallInfo.hpp"
 #include "optimizer/abstractinterpreter/InliningMethodSummary.hpp"
 
-namespace TR { class IDTNode; }
+namespace TR {
+class IDTNode;
+}
 
 namespace TR {
 

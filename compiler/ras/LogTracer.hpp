@@ -24,8 +24,10 @@
 
 #include <stdint.h>
 
-namespace TR { class Compilation; }
-namespace TR { class Optimization; }
+namespace TR {
+class Compilation;
+class Optimization;
+}
 
 #define heuristicTrace(r, ...) \
       do { \

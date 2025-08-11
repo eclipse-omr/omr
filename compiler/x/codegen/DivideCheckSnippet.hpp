@@ -28,9 +28,11 @@
 #include "x/codegen/RestartSnippet.hpp"
 #include "x/codegen/X86Instruction.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class ILOpCode; }
-namespace TR { class LabelSymbol; }
+namespace TR {
+class CodeGenerator;
+class ILOpCode;
+class LabelSymbol;
+}
 
 namespace TR {
 

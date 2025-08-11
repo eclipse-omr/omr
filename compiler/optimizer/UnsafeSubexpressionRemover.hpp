@@ -29,7 +29,9 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 
-namespace TR { class TreeTop; }
+namespace TR {
+class TreeTop;
+}
 
 namespace OMR
    {

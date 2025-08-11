@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
-namespace OMR { namespace Power { class RealRegister; } }
-namespace OMR { typedef OMR::Power::RealRegister RealRegisterConnector; }
+namespace OMR {
+namespace Power { class RealRegister; }
+typedef OMR::Power::RealRegister RealRegisterConnector;
+}
 #else
 #error OMR::Power::RealRegister expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -38,8 +40,10 @@ namespace OMR { typedef OMR::Power::RealRegister RealRegisterConnector; }
 #include <stdint.h>
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class RealRegister; }
+namespace TR {
+class CodeGenerator;
+class RealRegister;
+}
 
 namespace OMR
 {

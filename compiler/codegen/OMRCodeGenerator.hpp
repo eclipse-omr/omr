@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { class CodeGenerator; }
-namespace OMR { typedef OMR::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+class CodeGenerator;
+typedef OMR::CodeGenerator CodeGeneratorConnector;
+}
 #endif
 
 #include <limits.h>
@@ -81,35 +83,43 @@ class TR_LiveReference;
 class TR_LiveRegisters;
 class TR_OSRMethodData;
 class TR_PseudoRegister;
-namespace TR { class RegisterCandidate; }
-namespace TR { class RegisterCandidates; }
-namespace TR { class Relocation; }
-namespace TR { class RelocationDebugInfo; }
+namespace TR {
+class RegisterCandidate;
+class RegisterCandidates;
+class Relocation;
+class RelocationDebugInfo;
+}
 class TR_ResolvedMethod;
 class TR_ScratchRegisterManager;
-namespace TR { class GCStackAtlas; }
-namespace OMR { class RegisterUsage; }
-namespace TR { class AheadOfTimeCompile; }
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Block; }
-namespace TR { class CodeCache; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Linkage; }
-namespace TR { class MemoryReference; }
-namespace TR { class ObjectFormat; }
-namespace TR { class RealRegister; }
-namespace TR { class Recompilation; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class RegisterIterator; }
-namespace TR { class RegisterPair; }
-namespace TR { class Snippet; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
+namespace TR {
+class GCStackAtlas;
+}
+namespace OMR {
+class RegisterUsage;
+}
+namespace TR {
+class AheadOfTimeCompile;
+class AutomaticSymbol;
+class Block;
+class CodeCache;
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class Linkage;
+class MemoryReference;
+class ObjectFormat;
+class RealRegister;
+class Recompilation;
+class Register;
+class RegisterDependencyConditions;
+class RegisterIterator;
+class RegisterPair;
+class Snippet;
+class Symbol;
+class SymbolReference;
+class SymbolReferenceTable;
+class TreeTop;
+}
 
 typedef TR::SparseBitVector SharedSparseBitVector;
 

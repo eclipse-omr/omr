@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { namespace Power { class Machine; } }
-namespace OMR { typedef OMR::Power::Machine MachineConnector; }
+namespace OMR {
+namespace Power { class Machine; }
+typedef OMR::Power::Machine MachineConnector;
+}
 #else
 #error OMR::Power::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,11 +41,13 @@ namespace OMR { typedef OMR::Power::Machine MachineConnector; }
 #include "env/TRMemory.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 template <typename ListKind> class List;
 
 #define NUM_PPC_GPR 32

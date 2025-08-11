@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
-namespace OMR { class InstOpCode; }
-namespace OMR { typedef OMR::InstOpCode InstOpCodeConnector; }
+namespace OMR {
+class InstOpCode;
+typedef OMR::InstOpCode InstOpCodeConnector;
+}
 #endif
 
 #include <stdint.h>

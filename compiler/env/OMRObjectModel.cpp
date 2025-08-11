@@ -30,7 +30,9 @@
 #include "env/jittypes.h"
 #include "infra/Assert.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 OMR::ObjectModel::ObjectModel()
    {

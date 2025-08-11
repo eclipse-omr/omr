@@ -28,8 +28,10 @@
 
 #ifndef OMR_CODECACHE_CONNECTOR
 #define OMR_CODECACHE_CONNECTOR
-namespace OMR { class CodeCache; }
-namespace OMR { typedef CodeCache CodeCacheConnector; }
+namespace OMR {
+class CodeCache;
+typedef CodeCache CodeCacheConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -45,11 +47,13 @@ namespace OMR { typedef CodeCache CodeCacheConnector; }
 #include "OMR/Bytes.hpp"
 
 class TR_OpaqueMethodBlock;
-namespace TR { class CodeCache; }
-namespace TR { class CodeCacheManager; }
-namespace TR { class CodeCacheMemorySegment; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Monitor; }
+namespace TR {
+class CodeCache;
+class CodeCacheManager;
+class CodeCacheMemorySegment;
+class CodeGenerator;
+class Monitor;
+}
 
 namespace OMR
 {

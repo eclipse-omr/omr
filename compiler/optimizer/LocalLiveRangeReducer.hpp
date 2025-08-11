@@ -33,7 +33,9 @@
 
 class DepPair;
 class TR_TreeRefInfo;
-namespace TR { class TreeTop; }
+namespace TR {
+class TreeTop;
+}
 
 // Local Live Range Reduction
 //

@@ -24,7 +24,9 @@
 
 #include "codegen/OMRConstantDataSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace TR
    {

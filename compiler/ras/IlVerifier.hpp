@@ -22,7 +22,9 @@
 #ifndef IlVerifier_hpp
 #define IlVerifier_hpp
 
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class ResolvedMethodSymbol;
+}
 
 namespace TR {
 

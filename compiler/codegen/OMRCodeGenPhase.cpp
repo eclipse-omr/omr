@@ -81,7 +81,9 @@
 #include <utility>
 
 class TR_BackingStore;
-namespace TR { class RegisterCandidate; }
+namespace TR {
+class RegisterCandidate;
+}
 class TR_Structure;
 
 /*

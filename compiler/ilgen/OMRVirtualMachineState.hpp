@@ -22,8 +22,10 @@
 #ifndef OMR_VIRTUALMACHINESTATE_INCL
 #define OMR_VIRTUALMACHINESTATE_INCL
 
-namespace TR { class IlBuilder; }
-namespace TR { class VirtualMachineState; }
+namespace TR {
+class IlBuilder;
+class VirtualMachineState;
+}
 class TR_Memory;
 
 template <class T> class List;

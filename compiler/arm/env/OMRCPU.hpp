@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CPU_CONNECTOR
 #define OMR_CPU_CONNECTOR
-namespace OMR { namespace ARM { class CPU; } }
-namespace OMR { typedef OMR::ARM::CPU CPUConnector; }
+namespace OMR {
+namespace ARM { class CPU; }
+typedef OMR::ARM::CPU CPUConnector;
+}
 #else
 #error OMR::ARM::CPU expected to be a primary connector, but an OMR connector is already defined
 #endif

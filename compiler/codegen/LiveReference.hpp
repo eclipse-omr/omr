@@ -27,7 +27,9 @@
 #include "env/TRMemory.hpp"
 #include "infra/List.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 class TR_LiveReference
    {

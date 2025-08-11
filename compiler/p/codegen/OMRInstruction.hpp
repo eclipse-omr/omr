@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { namespace Power { class Instruction; } }
-namespace OMR { typedef OMR::Power::Instruction InstructionConnector; }
+namespace OMR {
+namespace Power { class Instruction; }
+typedef OMR::Power::Instruction InstructionConnector;
+}
 #else
 #error OMR::Power::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -41,14 +43,16 @@ namespace OMR { typedef OMR::Power::Instruction InstructionConnector; }
 #include "codegen/RegisterConstants.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class PPCConditionalBranchInstruction; }
-namespace TR { class PPCImmInstruction;               }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class PPCConditionalBranchInstruction;
+class PPCImmInstruction;
+class CodeGenerator;
+class Instruction;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 struct TR_RegisterPressureState;
 
 namespace OMR

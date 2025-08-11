@@ -27,8 +27,10 @@
  */
 #ifndef OMR_RECOMPILATION_CONNECTOR
 #define OMR_RECOMPILATION_CONNECTOR
-namespace OMR { class Recompilation; }
-namespace OMR { typedef OMR::Recompilation RecompilationConnector; }
+namespace OMR {
+class Recompilation;
+typedef OMR::Recompilation RecompilationConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -36,8 +38,10 @@ namespace OMR { typedef OMR::Recompilation RecompilationConnector; }
 #include "compile/Compilation.hpp"
 #include "env/TRMemory.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class Recompilation; }
+namespace TR {
+class Instruction;
+class Recompilation;
+}
 
 namespace OMR
 {

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_DEBUG_ENV_CONNECTOR
 #define OMR_DEBUG_ENV_CONNECTOR
-namespace OMR { namespace ARM64 { class DebugEnv; } }
-namespace OMR { typedef OMR::ARM64::DebugEnv DebugEnvConnector; }
+namespace OMR {
+namespace ARM64 { class DebugEnv; }
+typedef OMR::ARM64::DebugEnv DebugEnvConnector;
+}
 #else
 #error OMR::ARM64::DebugEnv expected to be a primary connector, but an OMR connector is already defined
 #endif

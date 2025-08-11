@@ -26,11 +26,13 @@
 #include "il/ILOps.hpp"
 #include "optimizer/Simplifier.hpp"
 
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class Optimization; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Compilation;
+class Node;
+class Optimization;
+class TreeTop;
+}
 class TR_RegionStructure;
 class TR_FrontEnd;
 

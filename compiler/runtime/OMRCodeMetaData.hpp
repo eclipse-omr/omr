@@ -27,15 +27,19 @@
  */
 #ifndef OMR_CODE_METADATA_CONNECTOR
 #define OMR_CODE_METADATA_CONNECTOR
-namespace OMR { struct CodeMetaData; }
-namespace OMR { typedef OMR::CodeMetaData CodeMetaDataConnector; }
+namespace OMR {
+struct CodeMetaData;
+typedef OMR::CodeMetaData CodeMetaDataConnector;
+}
 #endif
 
 #include "env/jittypes.h"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeMetaData; }
-namespace TR { class Compilation; }
+namespace TR {
+class CodeMetaData;
+class Compilation;
+}
 
 /**
  * CodeMetaData contains metadata information about a single method.

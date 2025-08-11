@@ -27,8 +27,10 @@
  */
 #ifndef OMR_TRANSFORMUTIL_CONNECTOR
 #define OMR_TRANSFORMUTIL_CONNECTOR
-namespace OMR { class TransformUtil; }
-namespace OMR { typedef OMR::TransformUtil TransformUtilConnector; }
+namespace OMR {
+class TransformUtil;
+typedef OMR::TransformUtil TransformUtilConnector;
+}
 #endif
 
 #include <stdint.h>
@@ -38,11 +40,13 @@ namespace OMR { typedef OMR::TransformUtil TransformUtilConnector; }
 #include "env/KnownObjectTable.hpp"
 #include "optimizer/Optimization.hpp"
 
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
-namespace TR { class SymbolReference; }
-namespace TR { class TransformUtil; }
+namespace TR {
+class Compilation;
+class Node;
+class TreeTop;
+class SymbolReference;
+class TransformUtil;
+}
 
 namespace OMR
 {

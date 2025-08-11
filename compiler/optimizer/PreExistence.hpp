@@ -32,10 +32,12 @@ class TR_CallSite;
 class TR_InlinerTracer;
 class TR_OpaqueClassBlock;
 class TR_VirtualGuard;
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class Compilation;
+class Node;
+class TreeTop;
+class ResolvedMethodSymbol;
+}
 
 enum PrexKnowledgeLevel { NONE, PREEXISTENT, FIXED_CLASS, KNOWN_OBJECT };
 

@@ -27,10 +27,12 @@
 #include "optimizer/OptimizationManager.hpp"
 #include <vector>
 
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
-namespace TR { class NodeChecklist; }
+namespace TR {
+class Compilation;
+class Node;
+class TreeTop;
+class NodeChecklist;
+}
 template <typename T> class TR_Array;
 
 namespace TR

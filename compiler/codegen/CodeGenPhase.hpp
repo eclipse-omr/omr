@@ -25,7 +25,9 @@
 #include "infra/Annotations.hpp"
 #include "codegen/OMRCodeGenPhase.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 namespace TR
 {

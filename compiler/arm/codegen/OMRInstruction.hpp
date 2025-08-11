@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { namespace ARM { class Instruction; } }
-namespace OMR { typedef OMR::ARM::Instruction InstructionConnector; }
+namespace OMR {
+namespace ARM { class Instruction; }
+typedef OMR::ARM::Instruction InstructionConnector;
+}
 #else
 #error OMR::ARM::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -40,12 +42,14 @@ namespace OMR { typedef OMR::ARM::Instruction InstructionConnector; }
 #include "codegen/GCStackMap.hpp"
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class ARMConditionalBranchInstruction; }
-namespace TR { class ARMDepImmInstruction; }
-namespace TR { class ARMImmInstruction; }
-namespace TR { class CodeGenerator; }
-namespace TR { class MemoryReference; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class ARMConditionalBranchInstruction;
+class ARMDepImmInstruction;
+class ARMImmInstruction;
+class CodeGenerator;
+class MemoryReference;
+class RegisterDependencyConditions;
+}
 struct TR_RegisterPressureState;
 
 namespace OMR

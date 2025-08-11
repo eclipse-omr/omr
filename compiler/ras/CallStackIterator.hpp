@@ -25,7 +25,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 class TR_CallStackIterator
    {

@@ -25,9 +25,11 @@
 #include <stdint.h>
 #include "env/TRMemory.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class Register;
+}
 
 class TR_X86IntegerMultiplyDecomposer
    {

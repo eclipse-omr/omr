@@ -46,7 +46,9 @@
 #endif
 
 class TR_OpaqueMethodBlock;
-namespace TR { class CodeCacheManager; }
+namespace TR {
+class CodeCacheManager;
+}
 
 namespace OMR
 {

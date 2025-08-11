@@ -26,14 +26,16 @@
 
 #include "infra/Assert.hpp"
 
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class AutomaticSymbol;
+class CodeGenerator;
+class Instruction;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+}
 
 namespace TR {
 

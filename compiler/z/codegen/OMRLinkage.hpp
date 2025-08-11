@@ -27,8 +27,10 @@
  */
 #ifndef OMR_LINKAGE_CONNECTOR
 #define OMR_LINKAGE_CONNECTOR
-namespace OMR { namespace Z { class Linkage; } }
-namespace OMR { typedef OMR::Z::Linkage LinkageConnector; }
+namespace OMR {
+namespace Z { class Linkage; }
+typedef OMR::Z::Linkage LinkageConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRLinkage.hpp"
@@ -43,20 +45,22 @@ namespace OMR { typedef OMR::Z::Linkage LinkageConnector; }
 #include "il/DataTypes.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Instruction; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class Snippet; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SystemLinkage; }
+namespace TR {
+class AutomaticSymbol;
+class CodeGenerator;
+class Compilation;
+class Instruction;
+class MemoryReference;
+class Node;
+class ParameterSymbol;
+class Register;
+class RegisterDependencyConditions;
+class ResolvedMethodSymbol;
+class Snippet;
+class Symbol;
+class SymbolReference;
+class SystemLinkage;
+}
 template <class T> class List;
 
 /**

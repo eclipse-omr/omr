@@ -36,16 +36,20 @@
 class TR_BlockStructure;
 class TR_ExceptionCheckMotion;
 class TR_RegionStructure;
-namespace TR { class RegisterCandidate; }
+namespace TR {
+class RegisterCandidate;
+}
 class TR_Structure;
-namespace TR { class Block; }
-namespace TR { class CFGNode; }
-namespace TR { class Compilation; }
-namespace TR { class ILOpCode; }
-namespace TR { class Optimizer; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFGNode;
+class Compilation;
+class ILOpCode;
+class Optimizer;
+class Symbol;
+class SymbolReference;
+class TreeTop;
+}
 
 
 /**

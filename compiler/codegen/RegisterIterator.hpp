@@ -24,8 +24,10 @@
 
 #include "env/TRMemory.hpp"
 
-namespace TR { class Machine; }
-namespace TR { class Register; }
+namespace TR {
+class Machine;
+class Register;
+}
 
 namespace TR
 {

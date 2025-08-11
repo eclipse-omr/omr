@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { namespace RV { class Machine; } }
-namespace OMR { typedef OMR::RV::Machine MachineConnector; }
+namespace OMR {
+namespace RV { class Machine; }
+typedef OMR::RV::Machine MachineConnector;
+}
 #else
 #error OMR::RV::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -38,10 +40,12 @@ namespace OMR { typedef OMR::RV::Machine MachineConnector; }
 #include "codegen/RealRegister.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Register;
+class RegisterDependencyConditions;
+}
 
 #define NUM_RV_GPR 32
 #define MAX_RV_GLOBAL_GPRS 27 // excluding IP0, IP1, FP, LR, and SP

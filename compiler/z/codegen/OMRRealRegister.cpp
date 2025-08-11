@@ -35,7 +35,9 @@
 #include "infra/Assert.hpp"
 #include "z/codegen/EndianConversion.hpp"
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 OMR::Z::RealRegister::RealRegister(TR::CodeGenerator *cg):
       OMR::RealRegister(cg, NoReg)

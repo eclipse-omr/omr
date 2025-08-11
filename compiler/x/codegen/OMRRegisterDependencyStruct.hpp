@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
-namespace OMR { namespace X86 { struct RegisterDependency; } }
-namespace OMR { typedef OMR::X86::RegisterDependency RegisterDependencyConnector; }
+namespace OMR {
+namespace X86 { struct RegisterDependency; }
+typedef OMR::X86::RegisterDependency RegisterDependencyConnector;
+}
 #else
 #error OMR::X86::RegisterDependency expected to be a primary connector, but an OMR connector is already defined
 #endif

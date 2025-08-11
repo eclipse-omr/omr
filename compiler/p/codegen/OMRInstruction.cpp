@@ -37,9 +37,11 @@
 #include "il/Node.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
-namespace TR { class PPCConditionalBranchInstruction; }
-namespace TR { class PPCImmInstruction;               }
-namespace TR { class Register; }
+namespace TR {
+class PPCConditionalBranchInstruction;
+class PPCImmInstruction;
+class Register;
+}
 
 OMR::Power::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node)
    : OMR::Instruction(cg, precedingInstruction, op, node),

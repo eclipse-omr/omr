@@ -37,20 +37,22 @@
 #define TOSTR(x)     #x
 #define LINETOSTR(x) TOSTR(x)
 
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class Compilation; }
-namespace TR { class FrontEnd; }
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class IlInjector; }
-namespace TR { class MethodBuilder; }
-namespace TR { class Node; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
-namespace TR { class IlType; }
-namespace TR { class TypeDictionary; }
+namespace TR {
+class Block;
+class CFG;
+class Compilation;
+class FrontEnd;
+class IlGeneratorMethodDetails;
+class IlInjector;
+class MethodBuilder;
+class Node;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class SymbolReferenceTable;
+class TreeTop;
+class IlType;
+class TypeDictionary;
+}
 
 namespace OMR
 {

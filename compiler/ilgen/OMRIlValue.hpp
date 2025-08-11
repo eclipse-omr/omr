@@ -25,13 +25,15 @@
 #include "env/TRMemory.hpp"
 #include "il/DataTypes.hpp"
 
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
-namespace TR { class Block; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class MethodBuilder; }
-namespace TR { class IlValue; }
+namespace TR {
+class Node;
+class TreeTop;
+class Block;
+class Symbol;
+class SymbolReference;
+class MethodBuilder;
+class IlValue;
+}
 
 extern "C" {
 typedef void * (*ClientAllocator)(void * impl);

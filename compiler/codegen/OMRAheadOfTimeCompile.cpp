@@ -39,7 +39,9 @@
 #include "ras/Debug.hpp"
 #include "env/CompilerEnv.hpp"
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 extern bool isOrderedPair(uint8_t reloType);
 

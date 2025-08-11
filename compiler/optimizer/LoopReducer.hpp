@@ -34,13 +34,15 @@ class TR_ArrayLoop;
 class TR_InductionVariable;
 class TR_ParentOfChildNode;
 class TR_RegionStructure;
-namespace TR { class Block; }
-namespace TR { class CFGEdge; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class Optimization; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Block;
+class CFGEdge;
+class CodeGenerator;
+class Compilation;
+class Optimization;
+class Symbol;
+class SymbolReference;
+}
 
 //
 // The intent of the loop reduction phase will be to transform simple loops

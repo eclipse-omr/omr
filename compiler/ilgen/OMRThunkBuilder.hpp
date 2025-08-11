@@ -25,7 +25,9 @@
 
 #include "ilgen/MethodBuilder.hpp"
 
-namespace TR { class ThunkBuilder; }
+namespace TR {
+class ThunkBuilder;
+}
 
 namespace OMR
 {

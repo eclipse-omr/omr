@@ -29,15 +29,21 @@
 #include "codegen/InstOpCode.hpp"
 
 class TR_RegisterAssignerState;
-namespace TR { class X86VFPSaveInstruction; }
-namespace OMR { class RegisterUsage; }
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class X86VFPSaveInstruction;
+}
+namespace OMR {
+class RegisterUsage;
+}
+namespace TR {
+class Block;
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 template <typename ListKind> class List;
 
 class TR_OutlinedInstructions

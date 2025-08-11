@@ -27,8 +27,10 @@
  */
 #ifndef OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
-namespace OMR { class JitCodeRXObjectFormat; }
-namespace OMR { typedef OMR::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector; }
+namespace OMR {
+class JitCodeRXObjectFormat;
+typedef OMR::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
+}
 #endif
 
 #include <stddef.h>

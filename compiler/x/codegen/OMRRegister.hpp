@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
-namespace OMR { namespace X86 { class Register; } }
-namespace OMR { typedef OMR::X86::Register RegisterConnector; }
+namespace OMR {
+namespace X86 { class Register; }
+typedef OMR::X86::Register RegisterConnector;
+}
 #else
 #error OMR::X86::Register expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -40,7 +42,9 @@ namespace OMR { typedef OMR::X86::Register RegisterConnector; }
 
 class TR_LiveRegisterInfo;
 class TR_RematerializationInfo;
-namespace TR { class MemoryReference; }
+namespace TR {
+class MemoryReference;
+}
 
 namespace OMR
 {

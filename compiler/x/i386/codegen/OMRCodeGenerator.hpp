@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace X86 { namespace I386 { class CodeGenerator; } } }
-namespace OMR { typedef OMR::X86::I386::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace X86 { namespace I386 { class CodeGenerator; } }
+typedef OMR::X86::I386::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::X86::I386::CodeGenerator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -37,9 +39,11 @@ namespace OMR { typedef OMR::X86::I386::CodeGenerator CodeGeneratorConnector; }
 
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR { class RegisterCandidate; }
-namespace TR { class Block; }
-namespace TR { class Node; }
+namespace TR {
+class RegisterCandidate;
+class Block;
+class Node;
+}
 template <class T> class TR_LinkHead;
 
 namespace OMR

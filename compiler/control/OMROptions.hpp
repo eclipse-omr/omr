@@ -27,8 +27,10 @@
  */
 #ifndef OMR_OPTIONS_CONNECTOR
 #define OMR_OPTIONS_CONNECTOR
-namespace OMR { class Options; }
-namespace OMR { typedef OMR::Options OptionsConnector; }
+namespace OMR {
+class Options;
+typedef OMR::Options OptionsConnector;
+}
 #endif
 
 
@@ -48,16 +50,24 @@ namespace OMR { typedef OMR::Options OptionsConnector; }
 #include "optimizer/Optimizations.hpp"
 #include "ras/DebugCounter.hpp"
 
-namespace TR { class CFGNode; }
+namespace TR {
+class CFGNode;
+}
 
-namespace TR { class CompilationFilters; }
+namespace TR {
+class CompilationFilters;
+}
 class TR_Debug;
 class TR_Debug;
 class TR_MCTLogs;
 class TR_OptimizationPlan;
 class TR_ResolvedMethod;
-namespace TR { class SimpleRegex; }
-namespace OMR { class Compilation; }
+namespace TR {
+class SimpleRegex;
+}
+namespace OMR {
+class Compilation;
+}
 namespace TR  { class Options;     }
 struct J9JITConfig;
 

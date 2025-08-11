@@ -39,9 +39,11 @@
 #define MALFORMED_GUARD MAX_SCOUNT
 
 class TR_ValueNumberInfo;
-namespace TR { class CFG; }
-namespace TR { class Compilation; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CFG;
+class Compilation;
+class SymbolReference;
+}
 
 struct TR_SymNodePair {
    TR::SymbolReference *_symRef;

@@ -35,8 +35,10 @@
 #include "optimizer/Optimizations.hpp"
 #include "env/IO.hpp"
 
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class TreeTop; }
+namespace TR {
+class ResolvedMethodSymbol;
+class TreeTop;
+}
 
 template<typename ByteCode,
          ByteCode BCunknown,

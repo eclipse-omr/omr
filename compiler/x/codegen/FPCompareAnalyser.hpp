@@ -28,9 +28,11 @@
 #include "infra/Assert.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class Machine; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class Machine;
+class Node;
+class Register;
+}
 
 #define NUM_FPCOMPARE_ACTION_SETS  128
 

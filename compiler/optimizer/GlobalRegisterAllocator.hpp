@@ -35,15 +35,21 @@
 #include "optimizer/OptimizationManager.hpp"
 #include "optimizer/UseDefInfo.hpp"
 
-namespace TR { class GlobalRegister; }
+namespace TR {
+class GlobalRegister;
+}
 class TR_NodeMappings;
-namespace TR { class RegisterCandidate; }
-namespace TR { class RegisterCandidates; }
+namespace TR {
+class RegisterCandidate;
+class RegisterCandidates;
+}
 class TR_StructureSubGraphNode;
-namespace TR { class Block; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Symbol;
+class SymbolReference;
+class TreeTop;
+}
 template <class T> class TR_Array;
 
 struct StoresInBlockInfo : public TR_Link<StoresInBlockInfo>

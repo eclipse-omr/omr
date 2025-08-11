@@ -27,14 +27,18 @@
  */
 #ifndef OMR_GCREGISTERMAP_CONNECTOR
 #define OMR_GCREGISTERMAP_CONNECTOR
-namespace OMR { class GCRegisterMap; }
-namespace OMR { typedef OMR::GCRegisterMap GCRegisterMapConnector; }
+namespace OMR {
+class GCRegisterMap;
+typedef OMR::GCRegisterMap GCRegisterMapConnector;
+}
 #endif
 
 #include <stdint.h>
 #include "env/TRMemory.hpp"
 
-namespace TR { class GCRegisterMap; }
+namespace TR {
+class GCRegisterMap;
+}
 
 namespace OMR
 {

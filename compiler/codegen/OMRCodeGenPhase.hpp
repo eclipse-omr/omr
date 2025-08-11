@@ -29,12 +29,16 @@
  */
 #ifndef OMR_CODEGEN_PHASE_CONNECTOR
 #define OMR_CODEGEN_PHASE_CONNECTOR
-namespace OMR { class CodeGenPhase; }
-namespace OMR { typedef OMR::CodeGenPhase CodeGenPhaseConnector; }
+namespace OMR {
+class CodeGenPhase;
+typedef OMR::CodeGenPhase CodeGenPhaseConnector;
+}
 #endif
 
-namespace TR { class CodeGenPhase; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenPhase;
+class CodeGenerator;
+}
 
 typedef void (* CodeGenPhaseFunctionPointer)(TR::CodeGenerator *, TR::CodeGenPhase *);
 

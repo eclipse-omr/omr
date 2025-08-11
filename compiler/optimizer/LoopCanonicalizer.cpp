@@ -64,7 +64,9 @@
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
 
-namespace TR { class RegisterMappedSymbol; }
+namespace TR {
+class RegisterMappedSymbol;
+}
 
 #define OPT_DETAILS "O^O LOOP TRANSFORMATION: "
 

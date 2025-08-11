@@ -27,8 +27,10 @@
  */
 #ifndef OMR_PEEPHOLE_CONNECTOR
 #define OMR_PEEPHOLE_CONNECTOR
-namespace OMR { namespace Z { class Peephole; } }
-namespace OMR { typedef OMR::Z::Peephole PeepholeConnector; }
+namespace OMR {
+namespace Z { class Peephole; }
+typedef OMR::Z::Peephole PeepholeConnector;
+}
 #else
 #error OMR::Z::Peephole expected to be a primary connector, but an OMR connector is already defined
 #endif

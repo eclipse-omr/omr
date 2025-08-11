@@ -24,8 +24,10 @@
 
 #ifndef OMR_PERSISTENTINFO_CONNECTOR
 #define OMR_PERSISTENTINFO_CONNECTOR
-namespace OMR { class PersistentInfo; }
-namespace OMR { typedef PersistentInfo PersistentInfoConnector; }
+namespace OMR {
+class PersistentInfo;
+typedef PersistentInfo PersistentInfoConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -37,10 +39,14 @@ class TR_FrontEnd;
 class TR_PersistentMemory;
 class TR_PseudoRandomNumbersListElement;
 
-namespace OMR { class Options; }
-namespace TR { class PersistentInfo; }
-namespace TR { class DebugCounterGroup; }
-namespace TR { class Monitor; }
+namespace OMR {
+class Options;
+}
+namespace TR {
+class PersistentInfo;
+class DebugCounterGroup;
+class Monitor;
+}
 
 
 #define PSEUDO_RANDOM_NUMBERS_SIZE 1000

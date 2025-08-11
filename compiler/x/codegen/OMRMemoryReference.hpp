@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
-namespace OMR { namespace X86 { class MemoryReference; } }
-namespace OMR { typedef OMR::X86::MemoryReference MemoryReferenceConnector; }
+namespace OMR {
+namespace X86 { class MemoryReference; }
+typedef OMR::X86::MemoryReference MemoryReferenceConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRMemoryReference.hpp"
@@ -72,8 +74,10 @@ namespace OMR { typedef OMR::X86::MemoryReference MemoryReferenceConnector; }
 
 class TR_OpaqueClassBlock;
 class TR_ScratchRegisterManager;
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
+namespace TR {
+class LabelSymbol;
+class MemoryReference;
+}
 
 namespace OMR
 {

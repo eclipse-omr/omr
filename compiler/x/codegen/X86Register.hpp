@@ -26,8 +26,10 @@
 #include "codegen/RegisterConstants.hpp"
 
 class TR_X86FPStackRegister;
-namespace TR { class CodeGenerator; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Register;
+}
 
 // TODO:AMD64: Re-evaluate the safety of this function, because not
 // all Registers are FPStackRegisters.

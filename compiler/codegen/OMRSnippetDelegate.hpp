@@ -27,8 +27,10 @@
  */
 #ifndef OMR_SNIPPETDELEGATE_CONNECTOR
 #define OMR_SNIPPETDELEGATE_CONNECTOR
-namespace OMR { class SnippetDelegate; }
-namespace OMR { typedef OMR::SnippetDelegate SnippetDelegateConnector; }
+namespace OMR {
+class SnippetDelegate;
+typedef OMR::SnippetDelegate SnippetDelegateConnector;
+}
 #endif
 
 #include "infra/Annotations.hpp"

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { namespace X86 { class TreeEvaluator; } }
-namespace OMR { typedef OMR::X86::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+namespace X86 { class TreeEvaluator; }
+typedef OMR::X86::TreeEvaluator TreeEvaluatorConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRTreeEvaluator.hpp"
@@ -41,17 +43,21 @@ namespace OMR { typedef OMR::X86::TreeEvaluator TreeEvaluatorConnector; }
 #include "runtime/Runtime.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class X86MemInstruction;         }
-namespace TR { class X86RegImmInstruction;      }
-namespace TR { class X86RegInstruction;         }
+namespace TR {
+class X86MemInstruction;
+class X86RegImmInstruction;
+class X86RegInstruction;
+}
 class TR_X86ScratchRegisterManager;
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MemoryReference;
+class Node;
+class Register;
+class SymbolReference;
+}
 
 namespace OMR
 {

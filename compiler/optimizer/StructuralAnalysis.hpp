@@ -33,7 +33,9 @@ class TR_Dominators;
 class TR_RegionStructure;
 class TR_Structure;
 class TR_StructureSubGraphNode;
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class ResolvedMethodSymbol;
+}
 template <class T> class TR_Stack;
 
 /**

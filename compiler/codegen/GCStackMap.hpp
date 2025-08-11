@@ -37,8 +37,10 @@
 #define DEFAULT_BYTES_OF_MAP_BITS       4
 #define DEFAULT_NUMBER_OF_SLOTS_MAPPED 32
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+}
 
 class TR_InternalPointerPair
    {

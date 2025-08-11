@@ -27,8 +27,10 @@
  */
 #ifndef OMR_RESOLVEDMETHODSYMBOL_CONNECTOR
 #define OMR_RESOLVEDMETHODSYMBOL_CONNECTOR
-namespace OMR { class ResolvedMethodSymbol; }
-namespace OMR { typedef OMR::ResolvedMethodSymbol ResolvedMethodSymbolConnector; }
+namespace OMR {
+class ResolvedMethodSymbol;
+typedef OMR::ResolvedMethodSymbol ResolvedMethodSymbolConnector;
+}
 #endif
 
 
@@ -53,18 +55,20 @@ class TR_InlineBlocks;
 class TR_Memory;
 class TR_OSRMethodData;
 class TR_OSRPoint;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class Compilation; }
-namespace TR { class IlGenRequest; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class RegisterMappedSymbol; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
+namespace TR {
+class AutomaticSymbol;
+class Block;
+class CFG;
+class Compilation;
+class IlGenRequest;
+class Node;
+class ParameterSymbol;
+class RegisterMappedSymbol;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class SymbolReferenceTable;
+class TreeTop;
+}
 
 namespace OMR
 {

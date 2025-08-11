@@ -37,7 +37,9 @@
 #include "il/SymbolReference.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class Instruction; }
+namespace TR {
+class Instruction;
+}
 
 // Only nodes that are referenced more than this number of times
 // will be rematerializable.

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ENVIRONMENT_CONNECTOR
 #define OMR_ENVIRONMENT_CONNECTOR
-namespace OMR { namespace ARM64 { class Environment; } }
-namespace OMR { typedef OMR::ARM64::Environment EnvironmentConnector; }
+namespace OMR {
+namespace ARM64 { class Environment; }
+typedef OMR::ARM64::Environment EnvironmentConnector;
+}
 #else
 #error OMR::ARM64::Environment expected to be a primary connector, but an OMR connector is already defined
 #endif

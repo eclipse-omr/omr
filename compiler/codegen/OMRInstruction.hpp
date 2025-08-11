@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
-namespace OMR { class Instruction; }
-namespace OMR { typedef OMR::Instruction InstructionConnector; }
+namespace OMR {
+class Instruction;
+typedef OMR::Instruction InstructionConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -41,13 +43,15 @@ namespace OMR { typedef OMR::Instruction InstructionConnector; }
 
 class TR_BitVector;
 class TR_GCStackMap;
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class LabelSymbol; }
-namespace TR { class RealRegister; }
-namespace TR { class Snippet; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Node;
+class Register;
+class LabelSymbol;
+class RealRegister;
+class Snippet;
+}
 
 #ifndef TO_MASK
 #define TO_MASK(b) (1<<(uint16_t)b)

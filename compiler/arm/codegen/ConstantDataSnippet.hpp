@@ -32,7 +32,9 @@
 #include "infra/Array.hpp"
 #include "infra/List.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 namespace TR {
 

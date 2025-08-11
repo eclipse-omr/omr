@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
-namespace OMR { namespace ARM64 { class CodeGenerator; } }
-namespace OMR { typedef OMR::ARM64::CodeGenerator CodeGeneratorConnector; }
+namespace OMR {
+namespace ARM64 { class CodeGenerator; }
+typedef OMR::ARM64::CodeGenerator CodeGeneratorConnector;
+}
 #else
 #error OMR::ARM64::CodeGenerator expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -41,10 +43,12 @@ namespace OMR { typedef OMR::ARM64::CodeGenerator CodeGeneratorConnector; }
 #include "runtime/Runtime.hpp"
 
 class TR_ARM64OutOfLineCodeSection;
-namespace TR { class ARM64LinkageProperties; }
-namespace TR { class ARM64ConstantDataSnippet; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class DebugCounterBase; }
+namespace TR {
+class ARM64LinkageProperties;
+class ARM64ConstantDataSnippet;
+class RegisterDependencyConditions;
+class DebugCounterBase;
+}
 
 /**
  * @brief Answers if loading negated value is more concise

@@ -27,11 +27,15 @@
  */
 #ifndef OMR_JITCONFIG_CONNECTOR
 #define OMR_JITCONFIG_CONNECTOR
-namespace OMR { class JitConfig; }
-namespace OMR { typedef OMR::JitConfig JitConfigConnector; }
+namespace OMR {
+class JitConfig;
+typedef OMR::JitConfig JitConfigConnector;
+}
 #endif
 
-namespace TR { class JitConfig; }
+namespace TR {
+class JitConfig;
+}
 
 #include <stddef.h>
 #include <stdint.h>

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_PPCCONSTANTDATASNIPPET_CONNECTOR
 #define OMR_PPCCONSTANTDATASNIPPET_CONNECTOR
-namespace OMR { class ConstantDataSnippet; }
-namespace OMR { typedef OMR::ConstantDataSnippet ConstantDataSnippetConnector; }
+namespace OMR {
+class ConstantDataSnippet;
+typedef OMR::ConstantDataSnippet ConstantDataSnippetConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -42,7 +44,9 @@ namespace OMR { typedef OMR::ConstantDataSnippet ConstantDataSnippetConnector; }
 #include "infra/Array.hpp"
 #include "infra/List.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 namespace OMR
 {

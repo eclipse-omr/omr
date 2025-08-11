@@ -27,10 +27,12 @@
 #include "codegen/RegisterConstants.hpp"
 #include "il/ILOpCodes.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+class Register;
+}
 
 class TR_PPCOutOfLineCodeSection : public TR_OutOfLineCodeSection
    {

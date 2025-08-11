@@ -30,7 +30,9 @@
 
 #include "codegen/LinkageConventionsEnum.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 
 void ia32CodeCacheParameters(int32_t *, void **, int32_t *, int32_t*);

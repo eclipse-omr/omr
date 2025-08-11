@@ -32,7 +32,9 @@
 #include "il/Node_inlines.hpp"
 
 // Replace this by #include "codegen/Instruction.hpp" when available for aarch64
-namespace TR { class Instruction; }
+namespace TR {
+class Instruction;
+}
 
 OMR::ARM64::RegisterDependencyConditions::RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds, TR_Memory * m)
    : _preConditions(new (numPreConds, m) TR::RegisterDependencyGroup),

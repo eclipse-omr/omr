@@ -31,7 +31,9 @@
 #include "infra/Assert.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 namespace TR {
 

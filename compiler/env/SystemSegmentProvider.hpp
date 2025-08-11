@@ -26,8 +26,12 @@
 
 #ifndef TR_SYSTEM_SEGMENT_PROVIDER
 #define TR_SYSTEM_SEGMENT_PROVIDER
-namespace OMR { class SystemSegmentProvider; }
-namespace TR { using OMR::SystemSegmentProvider; }
+namespace OMR {
+class SystemSegmentProvider;
+}
+namespace TR {
+using OMR::SystemSegmentProvider;
+}
 #endif
 
 #include <stddef.h>

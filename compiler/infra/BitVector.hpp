@@ -31,7 +31,9 @@
 
 class TR_BitVector;
 class TR_BitVectorCursor;
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 #if defined(BITVECTOR_64BIT)
 typedef uint64_t chunk_t;

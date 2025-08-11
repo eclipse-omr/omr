@@ -27,8 +27,10 @@
 #include "infra/Link.hpp"
 
 class TR_Memory;
-namespace TR { class Block; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class Block;
+class ResolvedMethodSymbol;
+}
 
 
 template <typename ByteCode, typename ResolvedMethod> class TR_ByteCodeIterator

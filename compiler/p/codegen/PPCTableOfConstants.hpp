@@ -32,10 +32,12 @@
 #include "infra/Monitor.hpp"
 
 class TR_FrontEnd;
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class PersistentInfo; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class PersistentInfo;
+class SymbolReference;
+}
 
 struct TR_tocHashEntry
    {

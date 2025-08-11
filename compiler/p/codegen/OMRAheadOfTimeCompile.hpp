@@ -24,8 +24,10 @@
 
 #ifndef OMR_AHEADOFTIMECOMPILE_CONNECTOR
 #define OMR_AHEADOFTIMECOMPILE_CONNECTOR
-namespace OMR { namespace Power { class AheadOfTimeCompile; } }
-namespace OMR { typedef OMR::Power::AheadOfTimeCompile AheadOfTimeCompileConnector; }
+namespace OMR {
+namespace Power { class AheadOfTimeCompile; }
+typedef OMR::Power::AheadOfTimeCompile AheadOfTimeCompileConnector;
+}
 #endif // OMR_AHEADOFTIMECOMPILE_CONNECTOR
 
 #include "compiler/codegen/OMRAheadOfTimeCompile.hpp"

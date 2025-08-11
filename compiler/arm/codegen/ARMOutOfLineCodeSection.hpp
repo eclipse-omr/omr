@@ -26,8 +26,10 @@
 #include "codegen/OutOfLineCodeSection.hpp"
 #include "env/TRMemory.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+}
 class TR_ARMRegisterDependencyConditions;
 
 class TR_ARMOutOfLineCodeSection : public TR_OutOfLineCodeSection

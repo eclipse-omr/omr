@@ -27,8 +27,10 @@
  */
 #ifndef OMR_IDT_BUILDER_CONNECTOR
 #define OMR_IDT_BUILDER_CONNECTOR
-namespace OMR { class IDTBuilder; }
-namespace OMR { typedef OMR::IDTBuilder IDTBuilderConnector; }
+namespace OMR {
+class IDTBuilder;
+typedef OMR::IDTBuilder IDTBuilderConnector;
+}
 #endif
 
 #include "optimizer/Inliner.hpp"
@@ -37,9 +39,11 @@ namespace OMR { typedef OMR::IDTBuilder IDTBuilderConnector; }
 #include "infra/vector.hpp"
 #include <map>
 
-namespace TR { class Compilation; }
-namespace TR { class IDT; }
-namespace TR { class IDTBuilder; }
+namespace TR {
+class Compilation;
+class IDT;
+class IDTBuilder;
+}
 
 namespace OMR
 {

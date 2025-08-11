@@ -33,10 +33,12 @@
 #define CmpReg1Mem2  0x08
 #define CmpMem1Reg2  0x10
 
-namespace TR { class LabelSymbol; }
-namespace TR { class Machine; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class LabelSymbol;
+class Machine;
+class Node;
+class Register;
+}
 
 class TR_X86CompareAnalyser  : public TR_Analyser
    {

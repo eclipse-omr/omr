@@ -26,8 +26,10 @@
 #include "ilgen/IlBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 
-namespace TR { class IlBuilder; }
-namespace TR { class VirtualMachineRegister; }
+namespace TR {
+class IlBuilder;
+class VirtualMachineRegister;
+}
 
 namespace OMR
 {

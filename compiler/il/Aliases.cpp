@@ -66,7 +66,9 @@
 #endif
 
 class TR_OpaqueClassBlock;
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 #define PEEK_THRESHOLD 50
 

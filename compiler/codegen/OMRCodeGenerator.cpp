@@ -112,8 +112,10 @@
 #include "stdarg.h"
 #include "OMR/Bytes.hpp"
 
-namespace TR { class Optimizer; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class Optimizer;
+class RegisterDependencyConditions;
+}
 
 OMR::TreeEvaluatorFunctionPointerTable OMR::CodeGenerator::_nodeToInstrEvaluators;
 

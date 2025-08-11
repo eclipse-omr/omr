@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
-namespace OMR { struct RegisterDependency; }
-namespace OMR { typedef OMR::RegisterDependency RegisterDependencyConnector; }
+namespace OMR {
+struct RegisterDependency;
+typedef OMR::RegisterDependency RegisterDependencyConnector;
+}
 #endif
 
 #include <stdint.h>

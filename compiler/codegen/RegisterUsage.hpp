@@ -25,7 +25,9 @@
 #include "env/TRMemory.hpp"
 #include "il/Node.hpp"
 
-namespace TR { class Register; }
+namespace TR {
+class Register;
+}
 
 namespace OMR
 {

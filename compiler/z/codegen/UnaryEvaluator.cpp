@@ -57,7 +57,9 @@
 #include "z/codegen/S390Register.hpp"
 #endif
 
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 /**
  * 64bit version lconstHelper: load long integer constant (64-bit signed 2's complement)

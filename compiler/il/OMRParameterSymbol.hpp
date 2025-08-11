@@ -27,8 +27,10 @@
  */
 #ifndef OMR_PARAMETERSYMBOL_CONNECTOR
 #define OMR_PARAMETERSYMBOL_CONNECTOR
-namespace OMR { class ParameterSymbol; }
-namespace OMR { typedef OMR::ParameterSymbol ParameterSymbolConnector; }
+namespace OMR {
+class ParameterSymbol;
+typedef OMR::ParameterSymbol ParameterSymbolConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -37,7 +39,9 @@ namespace OMR { typedef OMR::ParameterSymbol ParameterSymbolConnector; }
 #include "il/DataTypes.hpp"
 #include "il/RegisterMappedSymbol.hpp"
 
-namespace TR { class ParameterSymbol; }
+namespace TR {
+class ParameterSymbol;
+}
 
 namespace OMR
 {

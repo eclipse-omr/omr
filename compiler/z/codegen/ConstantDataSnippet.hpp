@@ -32,14 +32,16 @@
 #include "codegen/CodeGenerator.hpp"
 
 class TR_Debug;
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class UnresolvedDataSnippet; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class Node;
+class Register;
+class Symbol;
+class SymbolReference;
+class UnresolvedDataSnippet;
+}
 
 namespace TR {
 

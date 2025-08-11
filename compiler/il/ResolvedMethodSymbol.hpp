@@ -25,7 +25,9 @@
 #include "il/OMRResolvedMethodSymbol.hpp"
 
 class TR_ResolvedMethod;
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
 {

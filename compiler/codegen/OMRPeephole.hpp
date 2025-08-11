@@ -27,17 +27,21 @@
  */
 #ifndef OMR_PEEPHOLE_CONNECTOR
 #define OMR_PEEPHOLE_CONNECTOR
-namespace OMR { class Peephole; }
-namespace OMR { typedef OMR::Peephole PeepholeConnector; }
+namespace OMR {
+class Peephole;
+typedef OMR::Peephole PeepholeConnector;
+}
 #endif
 
 #include "env/TRMemory.hpp"
 #include "infra/Flags.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Peephole; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class Peephole;
+}
 
 namespace OMR
 {

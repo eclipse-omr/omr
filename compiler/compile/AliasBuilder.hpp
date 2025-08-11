@@ -24,8 +24,10 @@
 
 #include "compile/OMRAliasBuilder.hpp"
 
-namespace TR { class Compilation; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class Compilation;
+class SymbolReferenceTable;
+}
 
 namespace TR
    {

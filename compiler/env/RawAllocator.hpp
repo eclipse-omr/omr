@@ -26,8 +26,12 @@
 
 #ifndef TR_RAW_ALLOCATOR
 #define TR_RAW_ALLOCATOR
-namespace OMR { class RawAllocator; }
-namespace TR { typedef OMR::RawAllocator RawAllocator; }
+namespace OMR {
+class RawAllocator;
+}
+namespace TR {
+typedef OMR::RawAllocator RawAllocator;
+}
 #endif
 
 #include <stddef.h>

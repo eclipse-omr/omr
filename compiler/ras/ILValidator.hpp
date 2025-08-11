@@ -27,10 +27,12 @@
 #include "ras/ILValidationStrategies.hpp"
 
 
-namespace TR { class BlockValidationRule; }
-namespace TR { class Compilation; }
-namespace TR { class MethodValidationRule; }
-namespace TR { class NodeValidationRule; }
+namespace TR {
+class BlockValidationRule;
+class Compilation;
+class MethodValidationRule;
+class NodeValidationRule;
+}
 
 namespace TR {
 

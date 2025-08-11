@@ -27,8 +27,10 @@
  */
 #ifndef OMR_OPTIMIZATIONMANAGER_CONNECTOR
 #define OMR_OPTIMIZATIONMANAGER_CONNECTOR
-namespace OMR { class OptimizationManager; }
-namespace OMR { typedef OMR::OptimizationManager OptimizationManagerConnector; }
+namespace OMR {
+class OptimizationManager;
+typedef OMR::OptimizationManager OptimizationManagerConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -46,11 +48,13 @@ namespace OMR { typedef OMR::OptimizationManager OptimizationManagerConnector; }
 
 class TR_Debug;
 class TR_FrontEnd;
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Optimization; }
-namespace TR { class OptimizationManager; }
+namespace TR {
+class SymbolReferenceTable;
+class Block;
+class CodeGenerator;
+class Optimization;
+class OptimizationManager;
+}
 struct OptimizationStrategy;
 
 typedef TR::Optimization *(*OptimizationFactory)(TR::OptimizationManager *m);

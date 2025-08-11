@@ -51,7 +51,9 @@
 #include <unistd.h>
 #endif
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 /*****************************************************************************
  *   Multi Code Cache page management

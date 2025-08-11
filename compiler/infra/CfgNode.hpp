@@ -32,8 +32,10 @@
 #include "infra/CfgEdge.hpp"
 #include "infra/forward_list.hpp"
 class TR_StructureSubGraphNode;
-namespace TR { class Block; }
-namespace TR { class Compilation; }
+namespace TR {
+class Block;
+class Compilation;
+}
 
 namespace TR
 {

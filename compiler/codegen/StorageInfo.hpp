@@ -28,9 +28,11 @@
 #include "il/DataTypes.hpp"
 #include "infra/Flags.hpp"
 
-namespace TR { class SymbolReference; }
-namespace TR { class Compilation; }
-namespace TR { class Node; }
+namespace TR {
+class SymbolReference;
+class Compilation;
+class Node;
+}
 
 enum TR_StorageDestructiveOverlapInfo
    {

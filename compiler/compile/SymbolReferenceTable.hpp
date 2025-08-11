@@ -24,7 +24,9 @@
 
 #include "compile/OMRSymbolReferenceTable.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace TR
    {

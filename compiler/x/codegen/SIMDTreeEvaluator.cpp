@@ -31,7 +31,9 @@
 #include "x/codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class Instruction; }
+namespace TR {
+class Instruction;
+}
 
 static TR::MemoryReference* ConvertToPatchableMemoryReference(TR::MemoryReference* mr, TR::Node* node, TR::CodeGenerator* cg)
    {

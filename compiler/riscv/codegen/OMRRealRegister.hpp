@@ -27,8 +27,10 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
-   namespace OMR { namespace RV { class RealRegister; } }
-   namespace OMR { typedef OMR::RV::RealRegister RealRegisterConnector; }
+namespace OMR {
+   namespace RV { class RealRegister; }
+   typedef OMR::RV::RealRegister RealRegisterConnector;
+}
 #else
    #error OMR::RV::RealRegister expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -38,7 +40,9 @@
 #include "infra/Assert.hpp"
 
 
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeGenerator;
+}
 
 
 namespace OMR

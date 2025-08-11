@@ -28,11 +28,13 @@
 #include "codegen/RegisterConstants.hpp"
 #include "il/ILOpCodes.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 
 class TR_S390OutOfLineCodeSection : public TR_OutOfLineCodeSection
    {

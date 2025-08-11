@@ -27,8 +27,10 @@
  */
 #ifndef OMR_UNRESOLVEDDATASNIPPET_CONNECTOR
 #define OMR_UNRESOLVEDDATASNIPPET_CONNECTOR
-namespace OMR { class UnresolvedDataSnippet; }
-namespace OMR { typedef OMR::UnresolvedDataSnippet UnresolvedDataSnippetConnector; }
+namespace OMR {
+class UnresolvedDataSnippet;
+typedef OMR::UnresolvedDataSnippet UnresolvedDataSnippetConnector;
+}
 #endif
 
 #include "codegen/Snippet.hpp"
@@ -37,11 +39,13 @@ namespace OMR { typedef OMR::UnresolvedDataSnippet UnresolvedDataSnippetConnecto
 #include <stdint.h>
 #include "infra/Flags.hpp"
 
-namespace TR { class SymbolReference; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class UnresolvedDataSnippet; }
+namespace TR {
+class SymbolReference;
+class CodeGenerator;
+class Instruction;
+class Node;
+class UnresolvedDataSnippet;
+}
 
 namespace OMR
 {

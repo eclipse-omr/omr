@@ -35,12 +35,16 @@
 class TR_BitVector;
 class TR_OpaqueClassBlock;
 class TR_PostDominators;
-namespace TR { class RegisterCandidate; }
+namespace TR {
+class RegisterCandidate;
+}
 class TR_Structure;
 class TR_ValueNumberInfo;
-namespace TR { class Block; }
-namespace TR { class Optimization; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class Optimization;
+class TreeTop;
+}
 
 /*
  * Class TR_FieldPrivatizer

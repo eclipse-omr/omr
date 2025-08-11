@@ -27,8 +27,10 @@
  */
 #ifndef OMR_METHOD_CONNECTOR
 #define OMR_METHOD_CONNECTOR
-namespace OMR { class Method; }
-namespace OMR { typedef OMR::Method MethodConnector; }
+namespace OMR {
+class Method;
+typedef OMR::Method MethodConnector;
+}
 #endif
 
 
@@ -44,9 +46,11 @@ namespace OMR { typedef OMR::Method MethodConnector; }
 
 class TR_OpaqueClassBlock;
 class TR_ResolvedMethod;
-namespace TR { class Compilation; }
-namespace TR { class Method; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Compilation;
+class Method;
+class SymbolReference;
+}
 
 // Method indexes
 //

@@ -35,9 +35,11 @@
 #include "infra/List.hpp"
 #include "infra/Monitor.hpp"
 
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Compilation;
+class Node;
+class SymbolReference;
+}
 
 namespace TR
 {

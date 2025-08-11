@@ -27,8 +27,10 @@
  */
 #ifndef OMR_DEBUG_ENV_CONNECTOR
 #define OMR_DEBUG_ENV_CONNECTOR
-namespace OMR { namespace Power { class DebugEnv; } }
-namespace OMR { typedef OMR::Power::DebugEnv DebugEnvConnector; }
+namespace OMR {
+namespace Power { class DebugEnv; }
+typedef OMR::Power::DebugEnv DebugEnvConnector;
+}
 #else
 #error OMR::Power::DebugEnv expected to be a primary connector, but an OMR connector is already defined
 #endif

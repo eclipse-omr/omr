@@ -46,7 +46,9 @@
 #include "optimizer/DeferredOSRAssumption.hpp"
 #include "optimizer/InlinerFailureReason.hpp"
 
-namespace TR { class CompilationFilters;}
+namespace TR {
+class CompilationFilters;
+}
 class TR_FrontEnd;
 class TR_InlineBlocks;
 class TR_InlinerBase;
@@ -54,17 +56,21 @@ class TR_InlinerTracer;
 class TR_InnerPreexistenceInfo;
 class TR_PrexArgInfo;
 class TR_ResolvedMethod;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class Method; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class AutomaticSymbol;
+class Block;
+class CFG;
+class Method;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class TreeTop;
+}
 class TR_CallSite;
 struct TR_VirtualGuardSelection;
 
-namespace TR { struct RequiredConst; }
+namespace TR {
+struct RequiredConst;
+}
 
 class TR_CallStack : public TR_Link<TR_CallStack>
    {

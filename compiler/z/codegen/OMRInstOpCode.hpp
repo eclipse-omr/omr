@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
-namespace OMR { namespace Z { class InstOpCode; } }
-namespace OMR { typedef OMR::Z::InstOpCode InstOpCodeConnector; }
+namespace OMR {
+namespace Z { class InstOpCode; }
+typedef OMR::Z::InstOpCode InstOpCodeConnector;
+}
 #else
 #error OMR::Z::InstOpCode expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -41,8 +43,10 @@ namespace OMR { typedef OMR::Z::InstOpCode InstOpCodeConnector; }
 #include "infra/Assert.hpp"
 #include "omrport.h"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class Node;
+}
 
 namespace OMR
 {

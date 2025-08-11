@@ -27,9 +27,11 @@
 #include "ilgen/IlGeneratorMethodDetails.hpp"
 #include "env/IO.hpp"
 
-namespace TR { class Compilation; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class Compilation;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
+}
 
 namespace TR
 {

@@ -33,13 +33,17 @@
 #define MAX_LINE_NUM_LEN 7
 
 class TR_BitVector;
-namespace TR { class BytecodeBuilder; }
-namespace TR { class ResolvedMethod; }
-namespace TR { class SymbolReference; }
-namespace TR { class VirtualMachineState; }
+namespace TR {
+class BytecodeBuilder;
+class ResolvedMethod;
+class SymbolReference;
+class VirtualMachineState;
+}
 
-namespace TR { class SegmentProvider; }
-namespace TR { class Region; }
+namespace TR {
+class SegmentProvider;
+class Region;
+}
 
 extern "C"
 {

@@ -26,8 +26,10 @@
 #include "il/Node.hpp"
 #include "il/NodeUtils.hpp"
 
-namespace TR { class SymbolReference; }
-namespace TR { class Compilation; }
+namespace TR {
+class SymbolReference;
+class Compilation;
+}
 template <class T> class TR_Array;
 
 namespace TR {

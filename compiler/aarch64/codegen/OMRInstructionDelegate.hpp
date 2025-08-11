@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTRUCTIONDELEGATE_CONNECTOR
 #define OMR_INSTRUCTIONDELEGATE_CONNECTOR
-namespace OMR { namespace ARM64 { class InstructionDelegate; } }
-namespace OMR { typedef OMR::ARM64::InstructionDelegate InstructionDelegateConnector; }
+namespace OMR {
+namespace ARM64 { class InstructionDelegate; }
+typedef OMR::ARM64::InstructionDelegate InstructionDelegateConnector;
+}
 #else
 #error OMR::ARM64::InstructionDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -37,9 +39,11 @@ namespace OMR { typedef OMR::ARM64::InstructionDelegate InstructionDelegateConne
 #include "compiler/codegen/OMRInstructionDelegate.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class ARM64ImmSymInstruction; }
-namespace TR { class ARM64Trg1MemInstruction; }
-namespace TR { class ARM64MemInstruction; }
+namespace TR {
+class ARM64ImmSymInstruction;
+class ARM64Trg1MemInstruction;
+class ARM64MemInstruction;
+}
 
 namespace OMR
 {

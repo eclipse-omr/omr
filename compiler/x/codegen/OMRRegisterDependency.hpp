@@ -27,16 +27,20 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_CONNECTOR
-   namespace OMR { namespace X86 { class RegisterDependencyConditions; } }
-   namespace OMR { typedef OMR::X86::RegisterDependencyConditions RegisterDependencyConditionsConnector; }
+namespace OMR {
+   namespace X86 { class RegisterDependencyConditions; }
+   typedef OMR::X86::RegisterDependencyConditions RegisterDependencyConditionsConnector;
+}
 #else
    #error OMR::X86::RegisterDependencyConditions expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #ifndef OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
-   namespace OMR { namespace X86 { class RegisterDependencyGroup; } }
-   namespace OMR { typedef OMR::X86::RegisterDependencyGroup RegisterDependencyGroupConnector; }
+namespace OMR {
+   namespace X86 { class RegisterDependencyGroup; }
+   typedef OMR::X86::RegisterDependencyGroup RegisterDependencyGroupConnector;
+}
 #endif
 
 #include "compiler/codegen/OMRRegisterDependency.hpp"
@@ -52,9 +56,11 @@
 #include "env/TRMemory.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class Instruction;
+class Node;
+class RegisterDependencyConditions;
+}
 template <typename ListKind> class List;
 
 namespace OMR

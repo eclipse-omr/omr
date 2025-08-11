@@ -45,7 +45,9 @@
 #include "optimizer/LocalAnalysis.hpp"
 
 class TR_OpaqueClassBlock;
-namespace TR { class Optimizer; }
+namespace TR {
+class Optimizer;
+}
 
 // #define MAX_BLOCKS_FOR_STACK_ALLOCATION 16
 

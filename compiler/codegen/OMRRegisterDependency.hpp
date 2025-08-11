@@ -27,14 +27,18 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_CONNECTOR
-   namespace OMR { class RegisterDependencyConditions; }
-   namespace OMR { typedef OMR::RegisterDependencyConditions RegisterDependencyConditionsConnector; }
+namespace OMR {
+   class RegisterDependencyConditions;
+   typedef OMR::RegisterDependencyConditions RegisterDependencyConditionsConnector;
+}
 #endif
 
 #ifndef OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_GROUP_CONNECTOR
-   namespace OMR { class RegisterDependencyGroup; }
-   namespace OMR { typedef OMR::RegisterDependencyGroup RegisterDependencyGroupConnector; }
+namespace OMR {
+   class RegisterDependencyGroup;
+   typedef OMR::RegisterDependencyGroup RegisterDependencyGroupConnector;
+}
 #endif
 
 #include "env/TRMemory.hpp"

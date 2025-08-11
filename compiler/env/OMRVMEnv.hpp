@@ -27,18 +27,24 @@
  */
 #ifndef OMR_VMENV_CONNECTOR
 #define OMR_VMENV_CONNECTOR
-namespace OMR { class VMEnv; }
-namespace OMR { typedef OMR::VMEnv VMEnvConnector; }
+namespace OMR {
+class VMEnv;
+typedef OMR::VMEnv VMEnvConnector;
+}
 #endif
 
 #include <stdint.h>
 #include "infra/Annotations.hpp"
 #include "env/jittypes.h"
 
-namespace TR { class VMEnv; }
+namespace TR {
+class VMEnv;
+}
 
 struct OMR_VMThread;
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 namespace OMR
 {

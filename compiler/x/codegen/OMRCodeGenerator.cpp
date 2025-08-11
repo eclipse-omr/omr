@@ -106,8 +106,12 @@
 
 static_assert(MIN_DISTANCE_BETWEEN_WARM_AND_COLD_CODE % 8 == 0, "MIN_DISTANCE_BETWEEN_WARM_AND_COLD_CODE should be multiple of 8");
 
-namespace OMR { class RegisterUsage; }
-namespace TR { class RegisterDependencyConditions; }
+namespace OMR {
+class RegisterUsage;
+}
+namespace TR {
+class RegisterDependencyConditions;
+}
 
 // Hack markers
 #define CANT_REMATERIALIZE_ADDRESSES(cg) (cg->comp()->target().is64Bit()) // AMD64 produces a memref with an unassigned addressRegister

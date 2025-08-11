@@ -40,11 +40,13 @@
 class TR_RegionStructure;
 class TR_UseDefInfo;
 class TR_ValueNumberInfo;
-namespace TR { class Block; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CodeGenerator;
+class Compilation;
+class SymbolReference;
+class TreeTop;
+}
 
 namespace OMR
 {

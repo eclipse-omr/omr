@@ -29,7 +29,9 @@
 #include "infra/Flags.hpp"
 #include "infra/List.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 typedef uint32_t IGNodeIndex;
 typedef uint32_t IGNodeDegree;

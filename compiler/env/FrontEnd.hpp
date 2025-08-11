@@ -52,12 +52,16 @@ class TR_Debug;
 class TR_FrontEnd;
 class TR_Memory;
 class TR_ResolvedMethod;
-namespace OMR { struct MethodMetaDataPOD; }
-namespace TR { class Compilation; }
-namespace TR { class Options; }
-namespace TR { class PersistentInfo; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
+namespace OMR {
+struct MethodMetaDataPOD;
+}
+namespace TR {
+class Compilation;
+class Options;
+class PersistentInfo;
+class ResolvedMethodSymbol;
+class SymbolReference;
+}
 struct TR_InlinedCallSite;
 
 char * feGetEnv(const char *);

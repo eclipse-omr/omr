@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ENVIRONMENT_CONNECTOR
 #define OMR_ENVIRONMENT_CONNECTOR
-namespace OMR { class Environment; }
-namespace OMR { typedef OMR::Environment EnvironmentConnector; }
+namespace OMR {
+class Environment;
+typedef OMR::Environment EnvironmentConnector;
+}
 #endif
 
 #include "env/CPU.hpp"

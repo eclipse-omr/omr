@@ -28,8 +28,10 @@
 #include "infra/vector.hpp"
 #include "runtime/Runtime.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
+namespace TR {
+class CodeGenerator;
+class Node;
+}
 
 namespace TR {
 

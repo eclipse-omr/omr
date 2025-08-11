@@ -48,10 +48,12 @@
 
 class TR_AsmData;
 class TR_VirtualGuardSite;
-namespace TR { class Node; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class Node;
+class RegisterDependencyConditions;
+class Symbol;
+class SymbolReference;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // TR::S390Instruction Class Definition

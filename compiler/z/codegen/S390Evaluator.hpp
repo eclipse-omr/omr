@@ -30,15 +30,17 @@
 #include "il/ILOpCodes.hpp"
 #include "codegen/TreeEvaluator.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class RegisterPair; }
-namespace TR { class TreeEvaluator; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class RegisterPair;
+class TreeEvaluator;
+}
 
 
 TR::Register *inlineShortReverseBytes(TR::Node *node, TR::CodeGenerator *cg);

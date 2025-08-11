@@ -22,8 +22,10 @@
 #ifndef TRIVIALDEADBLOCKREMOVER_INCL
 #define TRIVIALDEADBLOCKREMOVER_INCL
 
-namespace TR { class TreeTop; }
-namespace TR { class Block; }
+namespace TR {
+class TreeTop;
+class Block;
+}
 
 #include "optimizer/Optimization.hpp"
 

@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CODECACHECONFIG_CONNECTOR
 #define OMR_CODECACHECONFIG_CONNECTOR
-namespace OMR { namespace Power { class CodeCacheConfig; } }
-namespace OMR { typedef Power::CodeCacheConfig CodeCacheConfigConnector; }
+namespace OMR {
+namespace Power { class CodeCacheConfig; }
+typedef Power::CodeCacheConfig CodeCacheConfigConnector;
+}
 #else
 #error OMR::Power::CodeCacheConfig expected to be a primary connector, but an OMR connector is already defined
 #endif

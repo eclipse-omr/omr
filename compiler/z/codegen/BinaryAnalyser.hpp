@@ -30,8 +30,10 @@
 #include "control/Options.hpp"
 #include "control/Options_inlines.hpp"
 
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class Node;
+class Register;
+}
 
 #define EvalChild1   0x01
 #define EvalChild2   0x02

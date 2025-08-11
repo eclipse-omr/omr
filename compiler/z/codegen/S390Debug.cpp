@@ -74,7 +74,9 @@
 #include "z/codegen/S390OutOfLineCodeSection.hpp"
 
 
-namespace TR { class Block; }
+namespace TR {
+class Block;
+}
 
 #define OPCODE_SPACING           8
 

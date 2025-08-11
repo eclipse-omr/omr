@@ -24,15 +24,19 @@
 
 #ifndef OMR_MONITOR_CONNECTOR
 #define OMR_MONITOR_CONNECTOR
-namespace OMR { class Monitor; }
-namespace OMR { typedef OMR::Monitor MonitorConnector; }
+namespace OMR {
+class Monitor;
+typedef OMR::Monitor MonitorConnector;
+}
 #endif
 
 #include <stdint.h>
 #include "infra/Assert.hpp"
 #include "omrmutex.h"
 
-namespace TR { class Monitor; }
+namespace TR {
+class Monitor;
+}
 
 namespace OMR
 {

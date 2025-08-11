@@ -74,8 +74,10 @@
 #include "ras/Debug.hpp"
 
 class TR_Memory;
-namespace TR { class DebugCounterAggregation; }
-namespace TR { class Instruction; }
+namespace TR {
+class DebugCounterAggregation;
+class Instruction;
+}
 
 TR::Block *
 OMR::Block::createEmptyBlock(TR::Compilation *comp, int32_t frequency, TR::Block *block)

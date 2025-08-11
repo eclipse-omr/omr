@@ -46,8 +46,10 @@
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class SymbolReference; }
-namespace TR { class MemoryReference; }
+namespace TR {
+class SymbolReference;
+class MemoryReference;
+}
 
 ////////////////////////////////////////////////
 //

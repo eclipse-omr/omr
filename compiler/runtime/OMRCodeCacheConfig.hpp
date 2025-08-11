@@ -28,8 +28,10 @@
 
 #ifndef OMR_CODECACHECONFIG_CONNECTOR
 #define OMR_CODECACHECONFIG_CONNECTOR
-namespace OMR { class CodeCacheConfig; }
-namespace OMR { typedef CodeCacheConfig CodeCacheConfigConnector; }
+namespace OMR {
+class CodeCacheConfig;
+typedef CodeCacheConfig CodeCacheConfigConnector;
+}
 #endif
 
 #include "infra/Annotations.hpp"
@@ -38,8 +40,10 @@ namespace OMR { typedef CodeCacheConfig CodeCacheConfigConnector; }
 #include <stdint.h>
 
 class TR_OpaqueMethodBlock;
-namespace TR { class CodeCacheConfig; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class CodeCacheConfig;
+class CodeGenerator;
+}
 
 namespace OMR
 {

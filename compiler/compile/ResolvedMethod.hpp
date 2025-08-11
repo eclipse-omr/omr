@@ -39,14 +39,16 @@ class TR_OpaqueMethodBlock;
 class TR_PrexArgInfo;
 class TR_ResolvedWCodeMethod;
 class TR_TraceFragment;
-namespace TR { class CodeGenerator; }
-namespace TR { class Compilation; }
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Method; }
-namespace TR { class Node; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class CodeGenerator;
+class Compilation;
+class IlGeneratorMethodDetails;
+class LabelSymbol;
+class Method;
+class Node;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
+}
 
 class TR_ResolvedMethod
    {

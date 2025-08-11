@@ -32,16 +32,18 @@
 #include "z/codegen/S390Instruction.hpp"
 
 class TR_VirtualGuardSite;
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class RegisterPair; }
-namespace TR { class SymbolReference; }
-namespace TR { class UnresolvedDataSnippet; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class RegisterPair;
+class SymbolReference;
+class UnresolvedDataSnippet;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Generate Routines

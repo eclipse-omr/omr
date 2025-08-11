@@ -29,7 +29,9 @@
 #include "codegen/Relocation.hpp"
 #include "codegen/Snippet.hpp"
 
-namespace TR { class S390zOSSystemLinkage; }
+namespace TR {
+class S390zOSSystemLinkage;
+}
 
 namespace TR {
 

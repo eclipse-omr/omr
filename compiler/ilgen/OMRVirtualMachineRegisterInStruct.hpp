@@ -26,7 +26,9 @@
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 #include "ilgen/IlBuilder.hpp"
 
-namespace TR { class VirtualMachineRegisterInStruct; }
+namespace TR {
+class VirtualMachineRegisterInStruct;
+}
 
 namespace OMR
 {

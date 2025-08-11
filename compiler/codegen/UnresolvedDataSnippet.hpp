@@ -24,9 +24,11 @@
 
 #include "codegen/OMRUnresolvedDataSnippet.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class SymbolReference; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class SymbolReference;
+}
 
 namespace TR
 {

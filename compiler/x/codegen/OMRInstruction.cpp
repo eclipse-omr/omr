@@ -40,7 +40,9 @@
 #include "codegen/InstOpCode.hpp"
 #include "env/CompilerEnv.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // OMR::X86::Instruction:: member functions

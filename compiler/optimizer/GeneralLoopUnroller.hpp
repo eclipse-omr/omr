@@ -54,12 +54,14 @@ class TR_RegionStructure;
 class TR_Structure;
 class TR_StructureSubGraphNode;
 class TR_UseDefInfo;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class CFG; }
-namespace TR { class CFGEdge; }
-namespace TR { class Optimization; }
-namespace TR { class Optimizer; }
-namespace TR { class ParameterSymbol; }
+namespace TR {
+class AutomaticSymbol;
+class CFG;
+class CFGEdge;
+class Optimization;
+class Optimizer;
+class ParameterSymbol;
+}
 
 class TR_LoopUnroller
    {

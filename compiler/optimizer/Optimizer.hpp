@@ -27,8 +27,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace TR { class Compilation; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class Compilation;
+class ResolvedMethodSymbol;
+}
 struct OptimizationStrategy;
 
 namespace TR

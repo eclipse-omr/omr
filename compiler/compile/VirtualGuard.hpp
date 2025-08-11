@@ -33,11 +33,13 @@
 class TR_InnerAssumption;
 class TR_OpaqueClassBlock;
 class TR_VirtualGuardSite;
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Compilation;
+class Node;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class TreeTop;
+}
 
 enum TR_VirtualGuardKind
    {

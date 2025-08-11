@@ -29,7 +29,9 @@
 
 #include "infra/HashTab.hpp"
 
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 class TR_SingleTimer
    {

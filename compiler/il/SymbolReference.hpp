@@ -31,7 +31,9 @@
 #include "infra/Annotations.hpp"
 
 class mcount_t;
-namespace TR { class Symbol; }
+namespace TR {
+class Symbol;
+}
 
 namespace TR
 {

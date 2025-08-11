@@ -27,8 +27,10 @@
  */
 #ifndef OMR_CPU_CONNECTOR
 #define OMR_CPU_CONNECTOR
-namespace OMR { namespace X86 { class CPU; } }
-namespace OMR { typedef OMR::X86::CPU CPUConnector; }
+namespace OMR {
+namespace X86 { class CPU; }
+typedef OMR::X86::CPU CPUConnector;
+}
 #else
 #error OMR::X86::CPU expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,7 +41,9 @@ namespace OMR { typedef OMR::X86::CPU CPUConnector; }
 #include "omrport.h"
 
 struct TR_X86CPUIDBuffer;
-namespace TR { class Compilation; }
+namespace TR {
+class Compilation;
+}
 
 
 namespace OMR

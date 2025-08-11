@@ -32,8 +32,10 @@ class TR_BitVector;
 class TR_Liveness;
 class TR_OSRMethodData;
 class TR_OSRPoint;
-namespace TR { class Block; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class Block;
+class ResolvedMethodSymbol;
+}
 
 class TR_OSRDefInfo : public TR_UseDefInfo
    {

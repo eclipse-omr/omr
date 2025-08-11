@@ -27,16 +27,20 @@
  */
 #ifndef OMR_COMPILATIONSTRATEGY_CONNECTOR
 #define OMR_COMPILATIONSTRATEGY_CONNECTOR
-namespace OMR { class CompilationStrategy; }
-namespace OMR { typedef OMR::CompilationStrategy CompilationStrategyConnector; }
+namespace OMR {
+class CompilationStrategy;
+typedef OMR::CompilationStrategy CompilationStrategyConnector;
+}
 #endif
 
 #include "env/TRMemory.hpp"
 
 class TR_OptimizationPlan;
 struct TR_MethodToBeCompiled;
-namespace TR { class Recompilation; }
-namespace TR { class CompilationStrategy; }
+namespace TR {
+class Recompilation;
+class CompilationStrategy;
+}
 class TR_MethodEvent; // defined in downstream project
 
 namespace OMR

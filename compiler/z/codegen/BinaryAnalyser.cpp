@@ -47,7 +47,9 @@
 #include "infra/Assert.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 
-namespace TR { class Instruction; }
+namespace TR {
+class Instruction;
+}
 
 void
 TR_S390BinaryAnalyser::remapInputs(TR::Node * firstChild, TR::Register * firstRegister,

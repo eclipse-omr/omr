@@ -76,15 +76,17 @@ class TR_InnerAssumption;
 class TR_PrexArgInfo;
 class TR_ResolvedMethod;
 class TR_TransformInlinedFunction;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class Method; }
-namespace TR { class Node; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class Symbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFG;
+class Method;
+class Node;
+class ParameterSymbol;
+class ResolvedMethodSymbol;
+class Symbol;
+class SymbolReference;
+class TreeTop;
+}
 class TR_CallSite;
 struct TR_CallTarget;
 struct TR_ParameterMapping;

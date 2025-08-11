@@ -56,15 +56,17 @@ class TR_Latestness;
 class TR_LiveOnAllPaths;
 class TR_Liveness;
 class TR_RedundantExpressionAdjustment;
-namespace TR { class Block; }
-namespace TR { class CFG; }
-namespace TR { class CFGEdge; }
-namespace TR { class CFGNode; }
-namespace TR { class CodeGenerator; }
-namespace TR { class Optimizer; }
-namespace TR { class Register; }
-namespace TR { class SymbolReference; }
-namespace TR { class TreeTop; }
+namespace TR {
+class Block;
+class CFG;
+class CFGEdge;
+class CFGNode;
+class CodeGenerator;
+class Optimizer;
+class Register;
+class SymbolReference;
+class TreeTop;
+}
 
 #define INVALID_LIVENESS_INDEX 65535
 

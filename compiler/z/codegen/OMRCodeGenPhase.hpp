@@ -28,8 +28,10 @@
 
 #ifndef OMR_CODEGEN_PHASE_CONNECTOR
 #define OMR_CODEGEN_PHASE_CONNECTOR
-namespace OMR { namespace Z { class CodeGenPhase; } }
-namespace OMR { typedef OMR::Z::CodeGenPhase CodeGenPhaseConnector; }
+namespace OMR {
+namespace Z { class CodeGenPhase; }
+typedef OMR::Z::CodeGenPhase CodeGenPhaseConnector;
+}
 #else
 #error OMR::Z::CodeGenPhase expected to be a primary connector, but a OMR connector is already defined
 #endif

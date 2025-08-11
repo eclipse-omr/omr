@@ -27,8 +27,10 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
-namespace OMR { namespace ARM { class InstOpCode; } }
-namespace OMR { typedef OMR::ARM::InstOpCode InstOpCodeConnector; }
+namespace OMR {
+namespace ARM { class InstOpCode; }
+typedef OMR::ARM::InstOpCode InstOpCodeConnector;
+}
 #else
 #error OMR::ARM::InstOpCode expected to be a primary connector, but a OMR connector is already defined
 #endif

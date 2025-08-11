@@ -43,13 +43,15 @@ class TR_RegionStructure;
 class TR_RematAdjustments;
 class TR_RematState;
 class TR_Structure;
-namespace TR { class CFGEdge; }
-namespace TR { class Optimizer; }
-namespace TR { class ParameterSymbol; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
-namespace TR { class TreeTop; }
+namespace TR {
+class CFGEdge;
+class Optimizer;
+class ParameterSymbol;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class SymbolReferenceTable;
+class TreeTop;
+}
 struct TR_BDChain;
 template <class T> class TR_LinkHeadAndTail;
 

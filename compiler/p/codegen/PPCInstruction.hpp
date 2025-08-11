@@ -50,7 +50,9 @@
 #include "codegen/GCStackMap.hpp"
 
 class TR_VirtualGuardSite;
-namespace TR { class SymbolReference; }
+namespace TR {
+class SymbolReference;
+}
 
 #define PPC_INSTRUCTION_LENGTH 4
 

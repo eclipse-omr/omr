@@ -33,9 +33,11 @@ class TR_BitVector;
 class TR_HashTabInt;
 class TR_InterferenceGraph;
 class TR_Liveness;
-namespace TR { class AutomaticSymbol; }
-namespace TR { class Block; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR {
+class AutomaticSymbol;
+class Block;
+class ResolvedMethodSymbol;
+}
 template <class T> class TR_Array;
 
 /*

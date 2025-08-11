@@ -27,8 +27,10 @@
  */
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
-namespace OMR { namespace Power { class TreeEvaluator; } }
-namespace OMR { typedef OMR::Power::TreeEvaluator TreeEvaluatorConnector; }
+namespace OMR {
+namespace Power { class TreeEvaluator; }
+typedef OMR::Power::TreeEvaluator TreeEvaluatorConnector;
+}
 #else
 #error OMR::Power::TreeEvaluator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -39,13 +41,15 @@ namespace OMR { typedef OMR::Power::TreeEvaluator TreeEvaluatorConnector; }
 #include "codegen/InstOpCode.hpp"
 #include "runtime/Runtime.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Instruction; }
-namespace TR { class LabelSymbol; }
-namespace TR { class MemoryReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
+namespace TR {
+class CodeGenerator;
+class Instruction;
+class LabelSymbol;
+class MemoryReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+}
 
 namespace OMR
 {

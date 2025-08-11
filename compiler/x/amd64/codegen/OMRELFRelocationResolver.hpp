@@ -29,8 +29,10 @@
 #ifndef OMR_ELF_RELOCATION_RESOLVER_CONNECTOR
 #define OMR_ELF_RELOCATION_RESOLVER_CONNECTOR
 
-namespace OMR { namespace X86 { namespace AMD64 { class ELFRelocationResolver; } } }
-namespace OMR { typedef ::OMR::X86::AMD64::ELFRelocationResolver ELFRelocationResolverConnector; }
+namespace OMR {
+namespace X86 { namespace AMD64 { class ELFRelocationResolver; } }
+typedef ::OMR::X86::AMD64::ELFRelocationResolver ELFRelocationResolverConnector;
+}
 
 #endif /* OMR_ELF_RELOCATION_RESOLVER_CONNECTOR */
 

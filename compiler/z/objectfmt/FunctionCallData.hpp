@@ -26,12 +26,14 @@
 #include "objectfmt/OMRFunctionCallData.hpp"
 #include "runtime/Runtime.hpp"
 
-namespace TR { class Instruction; }
-namespace TR { class SymbolReference; }
-namespace TR { class Node; }
-namespace TR { class Register; }
-namespace TR { class RegisterDependencyConditions; }
-namespace TR { class CodeGenerator; }
+namespace TR {
+class Instruction;
+class SymbolReference;
+class Node;
+class Register;
+class RegisterDependencyConditions;
+class CodeGenerator;
+}
 
 namespace TR
 {

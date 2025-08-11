@@ -22,9 +22,11 @@
 #ifndef IA32_LINKAGEUTILS_INCL
 #define IA32_LINKAGEUTILS_INCL
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class Node;
+class Register;
+}
 
 namespace TR
 {

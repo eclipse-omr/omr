@@ -31,10 +31,12 @@
 #include "infra/Checklist.hpp"
 
 class TR_BitVector;
-namespace TR { class SymbolReference; }
-namespace TR { class Block; }
-namespace TR { class Node; }
-namespace TR { class TreeTop; }
+namespace TR {
+class SymbolReference;
+class Block;
+class Node;
+class TreeTop;
+}
 
 // Copy Propagation
 //

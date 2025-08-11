@@ -30,8 +30,10 @@
 
 class TR_Memory;
 
-namespace OMR { class StructType; }
-namespace OMR { class UnionType; }
+namespace OMR {
+class StructType;
+class UnionType;
+}
 namespace TR  { class IlReference; }
 namespace TR  { class SegmentProvider; }
 namespace TR  { class Region; }

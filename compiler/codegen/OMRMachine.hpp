@@ -27,8 +27,10 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
-namespace OMR { class Machine; }
-namespace OMR { typedef OMR::Machine MachineConnector; }
+namespace OMR {
+class Machine;
+typedef OMR::Machine MachineConnector;
+}
 #endif
 
 #include <stddef.h>
@@ -38,8 +40,10 @@ namespace OMR { typedef OMR::Machine MachineConnector; }
 #include "env/TRMemory.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class Machine; }
+namespace TR {
+class CodeGenerator;
+class Machine;
+}
 
 namespace OMR
 {

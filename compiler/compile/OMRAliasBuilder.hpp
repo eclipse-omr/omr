@@ -27,8 +27,10 @@
  */
 #ifndef OMR_ALIASBUILDER_CONNECTOR
 #define OMR_ALIASBUILDER_CONNECTOR
-namespace OMR { class AliasBuilder; }
-namespace OMR { typedef OMR::AliasBuilder AliasBuilderConnector; }
+namespace OMR {
+class AliasBuilder;
+typedef OMR::AliasBuilder AliasBuilderConnector;
+}
 #endif
 
 #include "compile/Method.hpp"
@@ -42,13 +44,15 @@ namespace OMR { typedef OMR::AliasBuilder AliasBuilderConnector; }
 class TR_Memory;
 class TR_StackMemory;
 class TR_HeapMemory;
-namespace TR { class AliasBuilder; }
-namespace TR { class Block; }
-namespace TR { class Compilation; }
-namespace TR { class Node; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReference; }
-namespace TR { class SymbolReferenceTable; }
+namespace TR {
+class AliasBuilder;
+class Block;
+class Compilation;
+class Node;
+class ResolvedMethodSymbol;
+class SymbolReference;
+class SymbolReferenceTable;
+}
 
 namespace OMR
 {

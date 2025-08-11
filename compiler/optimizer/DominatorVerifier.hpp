@@ -32,7 +32,9 @@
 
 class TR_BitVector;
 class TR_Dominators;
-namespace TR { class Block; }
+namespace TR {
+class Block;
+}
 
 // This class can be used to verify :
 // 1. If the Dominators info computed by the simple O(n^2) algorithm

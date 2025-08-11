@@ -27,10 +27,12 @@
 #include "codegen/Analyser.hpp"
 #include "codegen/InstOpCode.hpp"
 
-namespace TR { class CodeGenerator; }
-namespace TR { class LabelSymbol; }
-namespace TR { class Node; }
-namespace TR { class Register; }
+namespace TR {
+class CodeGenerator;
+class LabelSymbol;
+class Node;
+class Register;
+}
 
 #define EvalChild1  0x01
 #define EvalChild2  0x02

@@ -34,7 +34,9 @@
 #include "ras/Debug.hpp"
 #include "codegen/Relocation.hpp"
 
-namespace TR { class Node; }
+namespace TR {
+class Node;
+}
 
 TR::ARM64ConstantDataSnippet::ARM64ConstantDataSnippet(TR::CodeGenerator *cg, TR::Node * n, void *c, size_t size, TR_ExternalRelocationTargetKind reloType)
    : TR::Snippet(cg, n, TR::LabelSymbol::create(cg->trHeapMemory(),cg), false),
