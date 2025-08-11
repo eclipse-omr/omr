@@ -46,42 +46,40 @@ namespace TR {
  *
  *  \verbatim
  *                                         0x01                               0x02                               0x03
- *  0x00 +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
- *       | Member identifer                 | Member subid                     | Member defined                   | Control level                    |
- *  0x04 +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
- *       | Signed offset from PPA2 to CELQSTRT for load module                                                                                       |
- *  0x08 +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
- *       | Signed offset from PPA2 to PPA4 (zero if not present)                                                                                     |
- *  0x0C +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
- *       | Signed offset from PPA2 to timestamp/version information (zero if not present)                                                            |
- *  0x10 +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
- *       | Signed offset from PPA2 to compilation unit's primary Entry Point (at the lowest address)                                                 |
- *  0x14 +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
- *       | Compilation flags                                                   | Reserved                                                            |
+ *  0x00
+ * +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
+ *       | Member identifer                 | Member subid                     | Member defined                   |
+ * Control level                    | 0x04
+ * +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
+ *       | Signed offset from PPA2 to CELQSTRT for load module | 0x08
+ * +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
+ *       | Signed offset from PPA2 to PPA4 (zero if not present) | 0x0C
+ * +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
+ *       | Signed offset from PPA2 to timestamp/version information (zero if not present) | 0x10
+ * +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
+ *       | Signed offset from PPA2 to compilation unit's primary Entry Point (at the lowest address) | 0x14
+ * +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
+ *       | Compilation flags                                                   | Reserved |
  *       +----------------------------------+----------------------------------+----------------------------------+----------------------------------+
  *  \endverbatim
  */
-class PPA2Snippet : public TR::Snippet
-   {
-   public:
+class PPA2Snippet : public TR::Snippet {
+public:
+    /** \brief
+     *     Size (in bytes) of the fixed area of the PPA1 data structure which is always present.
+     */
+    static const size_t FIXED_AREA_SIZE = 24;
 
-   /** \brief
-    *     Size (in bytes) of the fixed area of the PPA1 data structure which is always present.
-    */
-   static const size_t FIXED_AREA_SIZE = 24;
+public:
+    PPA2Snippet(TR::CodeGenerator *cg, TR::S390zOSSystemLinkage *linkage);
 
-   public:
+    virtual uint8_t *emitSnippetBody();
 
-   PPA2Snippet(TR::CodeGenerator* cg, TR::S390zOSSystemLinkage* linkage);
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
 
-   virtual uint8_t* emitSnippetBody();
-
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
-
-   private:
-
-   TR::S390zOSSystemLinkage* _linkage;
-   };
-}
+private:
+    TR::S390zOSSystemLinkage *_linkage;
+};
+} // namespace TR
 
 #endif

@@ -43,28 +43,28 @@ namespace TR {
  * copy constructors or copy assignment operators explicitly, though to do so
  * would be confusing.
  */
-class Uncopyable
-   {
-   protected:
-   Uncopyable() {}
-   ~Uncopyable() {}
+class Uncopyable {
+protected:
+    Uncopyable() {}
 
-   // The default copy constructor and copy assignment operator implementations
-   // for any subtype require access to the corresponding two methods below.
-   // Because they're private, those default definitions are disallowed, so the
-   // methods are deleted in the subtype instead.
-   //
-   // Because explicitly deleted methods are not supported on all build
-   // compilers, these methods are deliberately left undefined to ensure that
-   // there are no uses of them. If somehow such a use is accidentally
-   // introduced (within this class), it will result in an undefined symbol
-   // error at link time.
-   //
-   private:
-   Uncopyable(const Uncopyable &);            // = delete;
-   Uncopyable& operator=(const Uncopyable &); // = delete;
-   };
+    ~Uncopyable() {}
 
-}
+    // The default copy constructor and copy assignment operator implementations
+    // for any subtype require access to the corresponding two methods below.
+    // Because they're private, those default definitions are disallowed, so the
+    // methods are deleted in the subtype instead.
+    //
+    // Because explicitly deleted methods are not supported on all build
+    // compilers, these methods are deliberately left undefined to ensure that
+    // there are no uses of them. If somehow such a use is accidentally
+    // introduced (within this class), it will result in an undefined symbol
+    // error at link time.
+    //
+private:
+    Uncopyable(const Uncopyable &); // = delete;
+    Uncopyable &operator=(const Uncopyable &); // = delete;
+};
+
+} // namespace TR
 
 #endif

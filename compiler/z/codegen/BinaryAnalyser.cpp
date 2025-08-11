@@ -51,550 +51,447 @@ namespace TR {
 class Instruction;
 }
 
-void
-TR_S390BinaryAnalyser::remapInputs(TR::Node * firstChild, TR::Register * firstRegister,
-                                    TR::Node * secondChild, TR::Register * secondRegister)
-   {
-   if (!cg()->useClobberEvaluate())
-      {
-      if (firstRegister)
-         {
-         setReg1();
-         }
-      if (secondRegister)
-         {
-         setReg2();
-         }
+void TR_S390BinaryAnalyser::remapInputs(TR::Node *firstChild, TR::Register *firstRegister, TR::Node *secondChild,
+    TR::Register *secondRegister)
+{
+    if (!cg()->useClobberEvaluate()) {
+        if (firstRegister) {
+            setReg1();
+        }
+        if (secondRegister) {
+            setReg2();
+        }
 
-      // firstRegister is always assumed
-      if (cg()->canClobberNodesRegister(firstChild))
-         {
-         setClob1();
-         }
-      else
-         {
-         resetClob1();
-         }
+        // firstRegister is always assumed
+        if (cg()->canClobberNodesRegister(firstChild)) {
+            setClob1();
+        } else {
+            resetClob1();
+        }
 
-      // don't touch secondChild memory refs
-      if (!getMem2())
-         {
-         if (cg()->canClobberNodesRegister(secondChild))
-            {
-            setClob2();
+        // don't touch secondChild memory refs
+        if (!getMem2()) {
+            if (cg()->canClobberNodesRegister(secondChild)) {
+                setClob2();
+            } else {
+                resetClob2();
             }
-         else
-            {
-            resetClob2();
-            }
-         }
-      }
-   }
+        }
+    }
+}
 
-void
-TR_S390BinaryAnalyser::genericAnalyser(TR::Node * root,
-                                       TR::InstOpCode::Mnemonic regToRegOpCode,
-                                       TR::InstOpCode::Mnemonic memToRegOpCode,
-                                       TR::InstOpCode::Mnemonic copyOpCode)
-   {
-   TR::Node * firstChild;
-   TR::Node * secondChild;
-   firstChild = root->getFirstChild();
-   secondChild = root->getSecondChild();
-   TR::Register * firstRegister = firstChild->getRegister();
-   TR::Register * secondRegister = secondChild->getRegister();
-   TR::Compilation *comp = cg()->comp();
+void TR_S390BinaryAnalyser::genericAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+    TR::InstOpCode::Mnemonic memToRegOpCode, TR::InstOpCode::Mnemonic copyOpCode)
+{
+    TR::Node *firstChild;
+    TR::Node *secondChild;
+    firstChild = root->getFirstChild();
+    secondChild = root->getSecondChild();
+    TR::Register *firstRegister = firstChild->getRegister();
+    TR::Register *secondRegister = secondChild->getRegister();
+    TR::Compilation *comp = cg()->comp();
 
-   setInputs(firstChild, firstRegister, secondChild, secondRegister, false, false, comp, false, false);
+    setInputs(firstChild, firstRegister, secondChild, secondRegister, false, false, comp, false, false);
 
-   /*
-    * Check if SH or CH can be used to evaluate this integer subtract/compare node.
-    * The second operand of SH/CH is a 16-bit number from memory. And using
-    * these directly can save a load instruction.
-    */
-   bool is16BitMemory2Operand = false;
-   if (secondChild->getOpCodeValue() == TR::s2i &&
-       secondChild->getFirstChild()->getOpCodeValue() == TR::sloadi &&
-       secondChild->getReferenceCount() == 1 &&
-       secondChild->getRegister() == NULL &&
-       secondChild->getFirstChild()->getReferenceCount() == 1 &&
-       secondChild->getFirstChild()->getRegister() == NULL)
-      {
-      bool supported = true;
+    /*
+     * Check if SH or CH can be used to evaluate this integer subtract/compare node.
+     * The second operand of SH/CH is a 16-bit number from memory. And using
+     * these directly can save a load instruction.
+     */
+    bool is16BitMemory2Operand = false;
+    if (secondChild->getOpCodeValue() == TR::s2i && secondChild->getFirstChild()->getOpCodeValue() == TR::sloadi
+        && secondChild->getReferenceCount() == 1 && secondChild->getRegister() == NULL
+        && secondChild->getFirstChild()->getReferenceCount() == 1
+        && secondChild->getFirstChild()->getRegister() == NULL) {
+        bool supported = true;
 
-      if (memToRegOpCode == TR::InstOpCode::S)
-         {
-         memToRegOpCode = TR::InstOpCode::SH;
-         }
-      else if (memToRegOpCode == TR::InstOpCode::C)
-         {
-         memToRegOpCode = TR::InstOpCode::CH;
-         }
-      else
-         {
-         supported = false;
-         }
+        if (memToRegOpCode == TR::InstOpCode::S) {
+            memToRegOpCode = TR::InstOpCode::SH;
+        } else if (memToRegOpCode == TR::InstOpCode::C) {
+            memToRegOpCode = TR::InstOpCode::CH;
+        } else {
+            supported = false;
+        }
 
-      if (supported)
-         {
-         setMem2();
-         is16BitMemory2Operand = true;
-         }
-      }
+        if (supported) {
+            setMem2();
+            is16BitMemory2Operand = true;
+        }
+    }
 
-   if (getEvalChild1())
-      {
-      firstRegister = cg()->evaluate(firstChild);
-      }
+    if (getEvalChild1()) {
+        firstRegister = cg()->evaluate(firstChild);
+    }
 
-   if (getEvalChild2())
-      {
-      secondRegister = cg()->evaluate(secondChild);
-      }
+    if (getEvalChild2()) {
+        secondRegister = cg()->evaluate(secondChild);
+    }
 
-   remapInputs(firstChild, firstRegister, secondChild, secondRegister);
+    remapInputs(firstChild, firstRegister, secondChild, secondRegister);
 
-   if (getCopyReg1())
-      {
-      TR::Register* thirdReg = NULL;
+    if (getCopyReg1()) {
+        TR::Register *thirdReg = NULL;
 
-      switch (firstRegister->getKind())
-         {
-         case TR_RegisterKinds::TR_GPR:
-         case TR_RegisterKinds::TR_FPR:
-            {
-            thirdReg = cg()->allocateRegister(firstRegister->getKind());
-            break;
+        switch (firstRegister->getKind()) {
+            case TR_RegisterKinds::TR_GPR:
+            case TR_RegisterKinds::TR_FPR: {
+                thirdReg = cg()->allocateRegister(firstRegister->getKind());
+                break;
             }
 
-         default:
-            {
-            TR_ASSERT_FATAL(false, "Generic binary analyser for register kind (%d) is unimplemented", firstRegister->getKind());
-            break;
+            default: {
+                TR_ASSERT_FATAL(false, "Generic binary analyser for register kind (%d) is unimplemented",
+                    firstRegister->getKind());
+                break;
             }
-         }
+        }
 
-      bool done = false;
+        bool done = false;
 
-      if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z196))
-         {
-         if (getBinaryReg3Reg2() || secondRegister != NULL)
-            {
-            if (regToRegOpCode == TR::InstOpCode::SR)
-               {
-               generateRRRInstruction(cg(), TR::InstOpCode::SRK, root, thirdReg, firstRegister, secondRegister);
-               done = true;
-               }
-            else if (regToRegOpCode == TR::InstOpCode::SLR)
-               {
-               generateRRRInstruction(cg(), TR::InstOpCode::SLRK, root, thirdReg, firstRegister, secondRegister);
-               done = true;
-               }
-            else if (regToRegOpCode == TR::InstOpCode::SGR)
-               {
-               generateRRRInstruction(cg(), TR::InstOpCode::SGRK, root, thirdReg, firstRegister, secondRegister);
-               done = true;
-               }
-            else if (regToRegOpCode == TR::InstOpCode::SLGR)
-               {
-               generateRRRInstruction(cg(), TR::InstOpCode::SLGRK, root, thirdReg, firstRegister, secondRegister);
-               done = true;
-               }
+        if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z196)) {
+            if (getBinaryReg3Reg2() || secondRegister != NULL) {
+                if (regToRegOpCode == TR::InstOpCode::SR) {
+                    generateRRRInstruction(cg(), TR::InstOpCode::SRK, root, thirdReg, firstRegister, secondRegister);
+                    done = true;
+                } else if (regToRegOpCode == TR::InstOpCode::SLR) {
+                    generateRRRInstruction(cg(), TR::InstOpCode::SLRK, root, thirdReg, firstRegister, secondRegister);
+                    done = true;
+                } else if (regToRegOpCode == TR::InstOpCode::SGR) {
+                    generateRRRInstruction(cg(), TR::InstOpCode::SGRK, root, thirdReg, firstRegister, secondRegister);
+                    done = true;
+                } else if (regToRegOpCode == TR::InstOpCode::SLGR) {
+                    generateRRRInstruction(cg(), TR::InstOpCode::SLGRK, root, thirdReg, firstRegister, secondRegister);
+                    done = true;
+                }
             }
-         }
+        }
 
-      if (!done)
-         {
-         generateRRInstruction(cg(), copyOpCode, root, thirdReg, firstRegister);
-         if (getBinaryReg3Reg2() || (secondRegister != NULL))
-            {
+        if (!done) {
+            generateRRInstruction(cg(), copyOpCode, root, thirdReg, firstRegister);
+            if (getBinaryReg3Reg2() || (secondRegister != NULL)) {
+                generateRRInstruction(cg(), regToRegOpCode, root, thirdReg, secondRegister);
+            } else {
+                TR::Node *loadBaseAddr = is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild;
+                TR::MemoryReference *tempMR = TR::MemoryReference::create(cg(), loadBaseAddr);
+
+                // floating-point arithmatics don't have RXY format instructions, so no long displacement
+                if (secondChild->getOpCode().isFloatingPoint()) {
+                    tempMR->enforce4KDisplacementLimit(secondChild, cg(), NULL);
+                }
+
+                auto instructionFormat = TR::InstOpCode(memToRegOpCode).getInstructionFormat();
+
+                if (instructionFormat == RXE_FORMAT) {
+                    generateRXEInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR, 0);
+                } else {
+                    generateRXInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR);
+                }
+
+                tempMR->stopUsingMemRefRegister(cg());
+                if (is16BitMemory2Operand) {
+                    cg()->decReferenceCount(secondChild->getFirstChild());
+                }
+            }
+        }
+
+        root->setRegister(thirdReg);
+    } else if (getBinaryReg1Reg2()) {
+        generateRRInstruction(cg(), regToRegOpCode, root, firstRegister, secondRegister);
+        root->setRegister(firstRegister);
+    } else // assert getBinaryReg1Mem2() == true
+    {
+        TR_ASSERT(!getInvalid(), "TR_S390BinaryAnalyser::invalid case\n");
+
+        TR::MemoryReference *tempMR
+            = TR::MemoryReference::create(cg(), is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild);
+        // floating-point arithmatics don't have RXY format instructions, so no long displacement
+        if (secondChild->getOpCode().isFloatingPoint()) {
+            tempMR->enforce4KDisplacementLimit(secondChild, cg(), NULL);
+        }
+
+        auto instructionFormat = TR::InstOpCode(memToRegOpCode).getInstructionFormat();
+
+        if (instructionFormat == RXE_FORMAT) {
+            generateRXEInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR, 0);
+        } else {
+            generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR);
+        }
+
+        tempMR->stopUsingMemRefRegister(cg());
+        if (is16BitMemory2Operand)
+            cg()->decReferenceCount(secondChild->getFirstChild());
+        root->setRegister(firstRegister);
+    }
+
+    cg()->decReferenceCount(firstChild);
+    cg()->decReferenceCount(secondChild);
+
+    return;
+}
+
+void TR_S390BinaryAnalyser::longSubtractAnalyser(TR::Node *root)
+{
+    TR::Instruction *cursor = NULL;
+    TR::RegisterDependencyConditions *dependencies = NULL;
+    bool setsOrReadsCC = NEED_CC(root) || (root->getOpCodeValue() == TR::lusubb);
+    TR::InstOpCode::Mnemonic regToRegOpCode;
+    TR::InstOpCode::Mnemonic memToRegOpCode;
+    TR::Compilation *comp = cg()->comp();
+
+    if (!setsOrReadsCC) {
+        regToRegOpCode = TR::InstOpCode::SGR;
+        memToRegOpCode = TR::InstOpCode::SG;
+    } else {
+        regToRegOpCode = TR::InstOpCode::SLGR;
+        memToRegOpCode = TR::InstOpCode::SLG;
+    }
+
+    TR::Node *firstChild = root->getFirstChild();
+    TR::Node *secondChild = root->getSecondChild();
+    TR::Register *firstRegister = firstChild->getRegister();
+    TR::Register *secondRegister = secondChild->getRegister();
+
+    setInputs(firstChild, firstRegister, secondChild, secondRegister, false, false, comp);
+
+    /**  Attempt to use SGH to subtract halfword (64 <- 16).
+     * The second child is a halfword from memory */
+    bool is16BitMemory2Operand = false;
+    if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z14) && secondChild->getOpCodeValue() == TR::s2l
+        && secondChild->getFirstChild()->getOpCodeValue() == TR::sloadi && secondChild->getReferenceCount() == 1
+        && secondChild->getRegister() == NULL && secondChild->getFirstChild()->getReferenceCount() == 1
+        && secondChild->getFirstChild()->getRegister() == NULL) {
+        setMem2();
+        memToRegOpCode = TR::InstOpCode::SGH;
+        is16BitMemory2Operand = true;
+    }
+
+    if (getEvalChild1()) {
+        firstRegister = cg()->evaluate(firstChild);
+    }
+
+    if (getEvalChild2()) {
+        secondRegister = cg()->evaluate(secondChild);
+    }
+
+    remapInputs(firstChild, firstRegister, secondChild, secondRegister);
+
+    if ((root->getOpCodeValue() == TR::lusubb) && TR_S390ComputeCC::setCarryBorrow(root->getChild(2), false, cg())) {
+        // Use SLBGR rather than SLGR/SGR or use SLBR rather than SLR
+        regToRegOpCode = TR::InstOpCode::SLBGR;
+        memToRegOpCode = TR::InstOpCode::SLBG;
+    }
+
+    if (getCopyReg1()) {
+        TR::Register *thirdReg = cg()->allocateRegister();
+
+        root->setRegister(thirdReg);
+        generateRRInstruction(cg(), TR::InstOpCode::LGR, root, thirdReg, firstRegister);
+        if (getBinaryReg3Reg2()) {
             generateRRInstruction(cg(), regToRegOpCode, root, thirdReg, secondRegister);
-            }
-         else
-            {
-            TR::Node* loadBaseAddr = is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild;
-            TR::MemoryReference * tempMR = TR::MemoryReference::create(cg(), loadBaseAddr);
+        } else // assert getBinaryReg3Mem2() == true
+        {
+            TR::MemoryReference *longMR = TR::MemoryReference::create(cg(), secondChild);
 
-            //floating-point arithmatics don't have RXY format instructions, so no long displacement
-            if (secondChild->getOpCode().isFloatingPoint())
-               {
-               tempMR->enforce4KDisplacementLimit(secondChild, cg(), NULL);
-               }
+            generateRXInstruction(cg(), memToRegOpCode, root, thirdReg, longMR);
+            longMR->stopUsingMemRefRegister(cg());
+        }
+    } else if (getBinaryReg1Reg2()) {
+        generateRRInstruction(cg(), regToRegOpCode, root, firstRegister, secondRegister);
 
-            auto instructionFormat = TR::InstOpCode(memToRegOpCode).getInstructionFormat();
+        root->setRegister(firstRegister);
+    } else // assert getBinaryReg1Mem2() == true
+    {
+        TR_ASSERT(!getInvalid(), "TR_S390BinaryAnalyser::invalid case\n");
 
-            if (instructionFormat == RXE_FORMAT)
-               {
-               generateRXEInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR, 0);
-               }
-            else
-               {
-               generateRXInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR);
-               }
+        TR::Node *baseAddrNode = is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild;
+        TR::MemoryReference *longMR = TR::MemoryReference::create(cg(), baseAddrNode);
 
-            tempMR->stopUsingMemRefRegister(cg());
-            if (is16BitMemory2Operand)
-               {
-               cg()->decReferenceCount(secondChild->getFirstChild());
-               }
-            }
-         }
+        generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, longMR);
 
-      root->setRegister(thirdReg);
-      }
-   else if (getBinaryReg1Reg2())
-      {
-      generateRRInstruction(cg(), regToRegOpCode, root, firstRegister, secondRegister);
-      root->setRegister(firstRegister);
-      }
-   else // assert getBinaryReg1Mem2() == true
-      {
-      TR_ASSERT(  !getInvalid(), "TR_S390BinaryAnalyser::invalid case\n");
+        longMR->stopUsingMemRefRegister(cg());
+        root->setRegister(firstRegister);
 
-      TR::MemoryReference * tempMR = TR::MemoryReference::create(cg(), is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild);
-      //floating-point arithmatics don't have RXY format instructions, so no long displacement
-      if (secondChild->getOpCode().isFloatingPoint())
-         {
-         tempMR->enforce4KDisplacementLimit(secondChild, cg(), NULL);
-         }
+        if (is16BitMemory2Operand) {
+            cg()->decReferenceCount(secondChild->getFirstChild());
+        }
+    }
 
-      auto instructionFormat = TR::InstOpCode(memToRegOpCode).getInstructionFormat();
+    cg()->decReferenceCount(firstChild);
+    cg()->decReferenceCount(secondChild);
 
-      if (instructionFormat == RXE_FORMAT)
-         {
-         generateRXEInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR, 0);
-         }
-      else
-         {
-         generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR);
-         }
+    return;
+}
 
-      tempMR->stopUsingMemRefRegister(cg());
-      if (is16BitMemory2Operand)
-         cg()->decReferenceCount(secondChild->getFirstChild());
-      root->setRegister(firstRegister);
-      }
+const uint8_t TR_S390BinaryAnalyser::actionMap[NUM_ACTIONS] = {
+    // Reg1 Mem1 Clob1 Reg2 Mem2 Clob2
+    EvalChild1 | //  0    0     0    0    0     0
+        EvalChild2 | CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    0     0    0    0     1
+        EvalChild2 | CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    0     0    0    1     0
+        CopyReg1 | BinaryReg3Mem2,
+    EvalChild1 | //  0    0     0    0    1     1
+        CopyReg1 | BinaryReg3Mem2,
+    EvalChild1 | //  0    0     0    1    0     0
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    0     0    1    0     1
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    0     0    1    1     0
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    0     0    1    1     1
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    0     1    0    0     0
+        EvalChild2 | BinaryReg1Reg2,
+    EvalChild1 | //  0    0     1    0    0     1
+        EvalChild2 | BinaryReg1Reg2,
+    EvalChild1 | //  0    0     1    0    1     0
+        BinaryReg1Mem2,
+    EvalChild1 | //  0    0     1    0    1     1
+        BinaryReg1Mem2,
+    EvalChild1 | //  0    0     1    1    0     0
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    0     1    1    0     1
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    0     1    1    1     0
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    0     1    1    1     1
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    1     0    0    0     0
+        EvalChild2 | CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    1     0    0    0     1
+        EvalChild2 | CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    1     0    0    1     0
+        CopyReg1 | BinaryReg3Mem2,
+    EvalChild1 | //  0    1     0    0    1     1
+        CopyReg1 | BinaryReg3Mem2,
+    EvalChild1 | //  0    1     0    1    0     0
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    1     0    1    0     1
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    1     0    1    1     0
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    1     0    1    1     1
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild1 | //  0    1     1    0    0     0
+        EvalChild2 | BinaryReg1Reg2,
+    EvalChild1 | //  0    1     1    0    0     1
+        EvalChild2 | BinaryReg1Reg2,
+    EvalChild1 | //  0    1     1    0    1     0
+        BinaryReg1Mem2,
+    EvalChild1 | //  0    1     1    0    1     1
+        BinaryReg1Mem2,
+    EvalChild1 | //  0    1     1    1    0     0
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    1     1    1    0     1
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    1     1    1    1     0
+        BinaryReg1Reg2,
+    EvalChild1 | //  0    1     1    1    1     1
+        BinaryReg1Reg2,
+    EvalChild2 | //  1    0     0    0    0     0
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild2 | //  1    0     0    0    0     1
+        CopyReg1 | BinaryReg3Reg2,
+    CopyReg1 | //  1    0     0    0    1     0
+        BinaryReg3Mem2,
+    CopyReg1 | //  1    0     0    0    1     1
+        BinaryReg3Mem2,
+    CopyReg1 | //  1    0     0    1    0     0
+        BinaryReg3Reg2,
+    CopyReg1 | //  1    0     0    1    0     1
+        BinaryReg3Reg2,
+    CopyReg1 | //  1    0     0    1    1     0
+        BinaryReg3Reg2,
+    CopyReg1 | //  1    0     0    1    1     1
+        BinaryReg3Reg2,
+    EvalChild2 | //  1    0     1    0    0     0
+        BinaryReg1Reg2,
+    EvalChild2 | //  1    0     1    0    0     1
+        BinaryReg1Reg2,
+    EvalChild2 | //  1    0     1    0    1     0
+        BinaryReg1Reg2,
+    BinaryReg1Mem2, //  1    0     1    0    1     1
 
-   cg()->decReferenceCount(firstChild);
-   cg()->decReferenceCount(secondChild);
+    BinaryReg1Reg2, //  1    0     1    1    0     0
 
-   return;
-   }
+    BinaryReg1Reg2, //  1    0     1    1    0     1
 
+    BinaryReg1Reg2, //  1    0     1    1    1     0
 
+    BinaryReg1Reg2, //  1    0     1    1    1     1
 
-void
-TR_S390BinaryAnalyser::longSubtractAnalyser(TR::Node * root)
-   {
-   TR::Instruction * cursor = NULL;
-   TR::RegisterDependencyConditions * dependencies = NULL;
-   bool setsOrReadsCC = NEED_CC(root) || (root->getOpCodeValue() == TR::lusubb);
-   TR::InstOpCode::Mnemonic regToRegOpCode;
-   TR::InstOpCode::Mnemonic memToRegOpCode;
-   TR::Compilation *comp = cg()->comp();
+    EvalChild2 | //  1    1     0    0    0     0
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild2 | //  1    1     0    0    0     1
+        CopyReg1 | BinaryReg3Reg2,
+    EvalChild2 | //  1    1     0    0    1     0
+        CopyReg1 | BinaryReg3Reg2,
+    CopyReg1 | //  1    1     0    0    1     1
+        BinaryReg3Mem2,
+    CopyReg1 | //  1    1     0    1    0     0
+        BinaryReg3Reg2,
+    CopyReg1 | //  1    1     0    1    0     1
+        BinaryReg3Reg2,
+    CopyReg1 | //  1    1     0    1    1     0
+        BinaryReg3Reg2,
+    CopyReg1 | //  1    1     0    1    1     1
+        BinaryReg3Reg2,
+    EvalChild2 | //  1    1     1    0    0     0
+        BinaryReg1Reg2,
+    EvalChild2 | //  1    1     1    0    0     1
+        BinaryReg1Reg2,
+    EvalChild2 | //  1    1     1    0    1     0
+        BinaryReg1Reg2,
+    BinaryReg1Mem2, //  1    1     1    0    1     1
 
-   if (!setsOrReadsCC)
-      {
-      regToRegOpCode = TR::InstOpCode::SGR;
-      memToRegOpCode = TR::InstOpCode::SG;
-      }
-   else
-      {
-      regToRegOpCode = TR::InstOpCode::SLGR;
-      memToRegOpCode = TR::InstOpCode::SLG;
-      }
+    BinaryReg1Reg2, //  1    1     1    1    0     0
 
-   TR::Node* firstChild = root->getFirstChild();
-   TR::Node* secondChild = root->getSecondChild();
-   TR::Register * firstRegister = firstChild->getRegister();
-   TR::Register * secondRegister = secondChild->getRegister();
+    BinaryReg1Reg2, //  1    1     1    1    0     1
 
-   setInputs(firstChild, firstRegister, secondChild, secondRegister,
-             false, false, comp);
+    BinaryReg1Reg2, //  1    1     1    1    1     0
 
-   /**  Attempt to use SGH to subtract halfword (64 <- 16).
-    * The second child is a halfword from memory */
-   bool is16BitMemory2Operand = false;
-   if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z14) &&
-       secondChild->getOpCodeValue() == TR::s2l &&
-       secondChild->getFirstChild()->getOpCodeValue() == TR::sloadi &&
-       secondChild->getReferenceCount() == 1 &&
-       secondChild->getRegister() == NULL &&
-       secondChild->getFirstChild()->getReferenceCount() == 1 &&
-       secondChild->getFirstChild()->getRegister() == NULL)
-      {
-      setMem2();
-      memToRegOpCode = TR::InstOpCode::SGH;
-      is16BitMemory2Operand = true;
-      }
+    BinaryReg1Reg2 //  1    1     1    1    1     1
 
-   if (getEvalChild1())
-      {
-      firstRegister = cg()->evaluate(firstChild);
-      }
+};
 
-   if (getEvalChild2())
-      {
-      secondRegister = cg()->evaluate(secondChild);
-      }
-
-   remapInputs(firstChild, firstRegister, secondChild, secondRegister);
-
-   if ((root->getOpCodeValue() == TR::lusubb) &&
-       TR_S390ComputeCC::setCarryBorrow(root->getChild(2), false, cg()))
-      {
-      // Use SLBGR rather than SLGR/SGR or use SLBR rather than SLR
-      regToRegOpCode = TR::InstOpCode::SLBGR;
-      memToRegOpCode = TR::InstOpCode::SLBG;
-      }
-
-   if (getCopyReg1())
-      {
-      TR::Register * thirdReg = cg()->allocateRegister();
-
-      root->setRegister(thirdReg);
-      generateRRInstruction(cg(), TR::InstOpCode::LGR, root, thirdReg, firstRegister);
-      if (getBinaryReg3Reg2())
-         {
-         generateRRInstruction(cg(), regToRegOpCode, root, thirdReg, secondRegister);
-         }
-      else // assert getBinaryReg3Mem2() == true
-         {
-         TR::MemoryReference * longMR = TR::MemoryReference::create(cg(), secondChild);
-
-         generateRXInstruction(cg(), memToRegOpCode, root, thirdReg, longMR);
-         longMR->stopUsingMemRefRegister(cg());
-         }
-      }
-   else if (getBinaryReg1Reg2())
-      {
-      generateRRInstruction(cg(), regToRegOpCode, root, firstRegister, secondRegister);
-
-      root->setRegister(firstRegister);
-      }
-   else // assert getBinaryReg1Mem2() == true
-      {
-      TR_ASSERT(  !getInvalid(), "TR_S390BinaryAnalyser::invalid case\n");
-
-      TR::Node* baseAddrNode = is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild;
-      TR::MemoryReference * longMR = TR::MemoryReference::create(cg(), baseAddrNode);
-
-      generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, longMR);
-
-      longMR->stopUsingMemRefRegister(cg());
-      root->setRegister(firstRegister);
-
-      if(is16BitMemory2Operand)
-         {
-         cg()->decReferenceCount(secondChild->getFirstChild());
-         }
-      }
-
-   cg()->decReferenceCount(firstChild);
-   cg()->decReferenceCount(secondChild);
-
-   return;
-   }
-
-
-const uint8_t TR_S390BinaryAnalyser::actionMap[NUM_ACTIONS] =
-   {
-                                                               // Reg1 Mem1 Clob1 Reg2 Mem2 Clob2
-   EvalChild1 |                                                //  0    0     0    0    0     0
-   EvalChild2 | CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    0     0    0    0     1
-   EvalChild2 | CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    0     0    0    1     0
-   CopyReg1 | BinaryReg3Mem2,
-   EvalChild1 |                                                //  0    0     0    0    1     1
-   CopyReg1 | BinaryReg3Mem2,
-   EvalChild1 |                                                //  0    0     0    1    0     0
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    0     0    1    0     1
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    0     0    1    1     0
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    0     0    1    1     1
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    0     1    0    0     0
-   EvalChild2 | BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    0     1    0    0     1
-   EvalChild2 | BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    0     1    0    1     0
-   BinaryReg1Mem2,
-   EvalChild1 |                                                //  0    0     1    0    1     1
-   BinaryReg1Mem2,
-   EvalChild1 |                                                //  0    0     1    1    0     0
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    0     1    1    0     1
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    0     1    1    1     0
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    0     1    1    1     1
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    1     0    0    0     0
-   EvalChild2 | CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    1     0    0    0     1
-   EvalChild2 | CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    1     0    0    1     0
-   CopyReg1 | BinaryReg3Mem2,
-   EvalChild1 |                                                //  0    1     0    0    1     1
-   CopyReg1 | BinaryReg3Mem2,
-   EvalChild1 |                                                //  0    1     0    1    0     0
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    1     0    1    0     1
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    1     0    1    1     0
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    1     0    1    1     1
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild1 |                                                //  0    1     1    0    0     0
-   EvalChild2 | BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    1     1    0    0     1
-   EvalChild2 | BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    1     1    0    1     0
-   BinaryReg1Mem2,
-   EvalChild1 |                                                //  0    1     1    0    1     1
-   BinaryReg1Mem2,
-   EvalChild1 |                                                //  0    1     1    1    0     0
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    1     1    1    0     1
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    1     1    1    1     0
-   BinaryReg1Reg2,
-   EvalChild1 |                                                //  0    1     1    1    1     1
-   BinaryReg1Reg2,
-   EvalChild2 |                                                //  1    0     0    0    0     0
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild2 |                                                //  1    0     0    0    0     1
-   CopyReg1 | BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    0     0    0    1     0
-   BinaryReg3Mem2,
-   CopyReg1 |                                                  //  1    0     0    0    1     1
-   BinaryReg3Mem2,
-   CopyReg1 |                                                  //  1    0     0    1    0     0
-   BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    0     0    1    0     1
-   BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    0     0    1    1     0
-   BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    0     0    1    1     1
-   BinaryReg3Reg2,
-   EvalChild2 |                                                //  1    0     1    0    0     0
-   BinaryReg1Reg2,
-   EvalChild2 |                                                //  1    0     1    0    0     1
-   BinaryReg1Reg2,
-   EvalChild2 |                                                //  1    0     1    0    1     0
-   BinaryReg1Reg2,
-   BinaryReg1Mem2,                                             //  1    0     1    0    1     1
-
-   BinaryReg1Reg2,                                             //  1    0     1    1    0     0
-
-   BinaryReg1Reg2,                                             //  1    0     1    1    0     1
-
-   BinaryReg1Reg2,                                             //  1    0     1    1    1     0
-
-   BinaryReg1Reg2,                                             //  1    0     1    1    1     1
-
-   EvalChild2 |                                                //  1    1     0    0    0     0
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild2 |                                                //  1    1     0    0    0     1
-   CopyReg1 | BinaryReg3Reg2,
-   EvalChild2 |                                                //  1    1     0    0    1     0
-   CopyReg1 | BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    1     0    0    1     1
-   BinaryReg3Mem2,
-   CopyReg1 |                                                  //  1    1     0    1    0     0
-   BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    1     0    1    0     1
-   BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    1     0    1    1     0
-   BinaryReg3Reg2,
-   CopyReg1 |                                                  //  1    1     0    1    1     1
-   BinaryReg3Reg2,
-   EvalChild2 |                                                //  1    1     1    0    0     0
-   BinaryReg1Reg2,
-   EvalChild2 |                                                //  1    1     1    0    0     1
-   BinaryReg1Reg2,
-   EvalChild2 |                                                //  1    1     1    0    1     0
-   BinaryReg1Reg2,
-   BinaryReg1Mem2,                                             //  1    1     1    0    1     1
-
-   BinaryReg1Reg2,                                             //  1    1     1    1    0     0
-
-   BinaryReg1Reg2,                                             //  1    1     1    1    0     1
-
-   BinaryReg1Reg2,                                             //  1    1     1    1    1     0
-
-   BinaryReg1Reg2                                              //  1    1     1    1    1     1
-
-   };
-
-const uint8_t TR_S390BinaryAnalyser::clobEvalActionMap[NUM_ACTIONS] =
-   {
-                                       // Reg1 Mem1 Clob1 Reg2 Mem2 Clob2
-   InvalidBACEMap,			// 0 0 0 0 0 0 thru 0 1 1 1 1 1
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,
-   InvalidBACEMap,			// 1 0 0 0 0 0
-   InvalidBACEMap,	 		// 1 0 0 0 0 1
-   CopyReg1 | BinaryReg3Mem2, 	// 1 0 0 0 1 0
-   CopyReg1 | BinaryReg3Mem2, 	// 1 0 0 0 1 1
-   CopyReg1 | BinaryReg3Reg2, 	// 1 0 0 1 0 0
-   CopyReg1 | BinaryReg3Reg2, 	// 1 0 0 1 0 1
-   CopyReg1 | BinaryReg3Reg2, 	// 1 0 0 1 1 0
-   CopyReg1 | BinaryReg3Reg2, 	// 1 0 0 1 1 1
-   InvalidBACEMap,			// 1 0 1 0 0 0
-   InvalidBACEMap,			// 1 0 1 0 0 1
-   BinaryReg1Mem2,		// 1 0 1 0 1 0
-   BinaryReg1Mem2,		// 1 0 1 0 1 1
-   BinaryReg1Reg2,		// 1 0 1 1 0 0
-   BinaryReg1Reg2,		// 1 0 1 1 0 1
-   BinaryReg1Reg2,		// 1 0 1 1 1 0
-   BinaryReg1Reg2,		// 1 0 1 1 1 1
-   InvalidBACEMap,			// 1 1 0 0 0 0
-   InvalidBACEMap,			// 1 1 0 0 0 1
-   CopyReg1 | BinaryReg3Mem2,		// 1 1 0 0 1 0
-   CopyReg1 | BinaryReg3Mem2,		// 1 1 0 0 1 1
-   CopyReg1 | BinaryReg3Reg2,		// 1 1 0 1 0 0
-   CopyReg1 | BinaryReg3Reg2,		// 1 1 0 1 0 1
-   CopyReg1 | BinaryReg3Reg2,		// 1 1 0 1 1 0
-   CopyReg1 | BinaryReg3Reg2,  		// 1 1 0 1 1 1
-   InvalidBACEMap,			// 1 1 1 0 0 0
-   InvalidBACEMap,			// 1 1 1 0 0 1
-   BinaryReg1Mem2,			// 1 1 1 0 1 0
-   BinaryReg1Mem2,			// 1 1 1 0 1 1
-   BinaryReg1Reg2,			// 1 1 1 1 0 0
-   BinaryReg1Reg2,			// 1 1 1 1 0 1
-   BinaryReg1Reg2,			// 1 1 1 1 1 0
-   BinaryReg1Reg2			// 1 1 1 1 1 1
-   };
+const uint8_t TR_S390BinaryAnalyser::clobEvalActionMap[NUM_ACTIONS] = {
+    // Reg1 Mem1 Clob1 Reg2 Mem2 Clob2
+    InvalidBACEMap, // 0 0 0 0 0 0 thru 0 1 1 1 1 1
+    InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap,
+    InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap,
+    InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap,
+    InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap, InvalidBACEMap,
+    InvalidBACEMap, InvalidBACEMap, InvalidBACEMap,
+    InvalidBACEMap, // 1 0 0 0 0 0
+    InvalidBACEMap, // 1 0 0 0 0 1
+    CopyReg1 | BinaryReg3Mem2, // 1 0 0 0 1 0
+    CopyReg1 | BinaryReg3Mem2, // 1 0 0 0 1 1
+    CopyReg1 | BinaryReg3Reg2, // 1 0 0 1 0 0
+    CopyReg1 | BinaryReg3Reg2, // 1 0 0 1 0 1
+    CopyReg1 | BinaryReg3Reg2, // 1 0 0 1 1 0
+    CopyReg1 | BinaryReg3Reg2, // 1 0 0 1 1 1
+    InvalidBACEMap, // 1 0 1 0 0 0
+    InvalidBACEMap, // 1 0 1 0 0 1
+    BinaryReg1Mem2, // 1 0 1 0 1 0
+    BinaryReg1Mem2, // 1 0 1 0 1 1
+    BinaryReg1Reg2, // 1 0 1 1 0 0
+    BinaryReg1Reg2, // 1 0 1 1 0 1
+    BinaryReg1Reg2, // 1 0 1 1 1 0
+    BinaryReg1Reg2, // 1 0 1 1 1 1
+    InvalidBACEMap, // 1 1 0 0 0 0
+    InvalidBACEMap, // 1 1 0 0 0 1
+    CopyReg1 | BinaryReg3Mem2, // 1 1 0 0 1 0
+    CopyReg1 | BinaryReg3Mem2, // 1 1 0 0 1 1
+    CopyReg1 | BinaryReg3Reg2, // 1 1 0 1 0 0
+    CopyReg1 | BinaryReg3Reg2, // 1 1 0 1 0 1
+    CopyReg1 | BinaryReg3Reg2, // 1 1 0 1 1 0
+    CopyReg1 | BinaryReg3Reg2, // 1 1 0 1 1 1
+    InvalidBACEMap, // 1 1 1 0 0 0
+    InvalidBACEMap, // 1 1 1 0 0 1
+    BinaryReg1Mem2, // 1 1 1 0 1 0
+    BinaryReg1Mem2, // 1 1 1 0 1 1
+    BinaryReg1Reg2, // 1 1 1 1 0 0
+    BinaryReg1Reg2, // 1 1 1 1 0 1
+    BinaryReg1Reg2, // 1 1 1 1 1 0
+    BinaryReg1Reg2 // 1 1 1 1 1 1
+};

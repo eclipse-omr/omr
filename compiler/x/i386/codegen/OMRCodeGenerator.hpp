@@ -27,10 +27,14 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
+
 namespace OMR {
-namespace X86 { namespace I386 { class CodeGenerator; } }
+namespace X86 { namespace I386 {
+class CodeGenerator;
+}} // namespace X86::I386
+
 typedef OMR::X86::I386::CodeGenerator CodeGeneratorConnector;
-}
+} // namespace OMR
 #else
 #error OMR::X86::I386::CodeGenerator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -43,47 +47,33 @@ namespace TR {
 class RegisterCandidate;
 class Block;
 class Node;
-}
-template <class T> class TR_LinkHead;
+} // namespace TR
+template<class T> class TR_LinkHead;
 
-namespace OMR
-{
+namespace OMR { namespace X86 { namespace I386 {
 
-namespace X86
-{
-
-namespace I386
-{
-
-class OMR_EXTENSIBLE CodeGenerator : public OMR::X86::CodeGenerator
-   {
-
+class OMR_EXTENSIBLE CodeGenerator : public OMR::X86::CodeGenerator {
 protected:
-
-   CodeGenerator(TR::Compilation *comp);
+    CodeGenerator(TR::Compilation *comp);
 
 public:
+    void initialize();
 
-   void initialize();
+    virtual TR::Register *longClobberEvaluate(TR::Node *node);
 
-   virtual TR::Register *longClobberEvaluate(TR::Node *node);
+    TR_GlobalRegisterNumber pickRegister(TR::RegisterCandidate *, TR::Block **, TR_BitVector &,
+        TR_GlobalRegisterNumber &, TR_LinkHead<TR::RegisterCandidate> *candidates);
 
-   TR_GlobalRegisterNumber pickRegister(TR::RegisterCandidate *, TR::Block * *, TR_BitVector &, TR_GlobalRegisterNumber &, TR_LinkHead<TR::RegisterCandidate> *candidates);
+    using OMR::X86::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge;
+    int32_t getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Node *);
 
-   using OMR::X86::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge;
-   int32_t getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Node *);
+    bool internalPointerSupportImplemented() { return true; }
 
-   bool internalPointerSupportImplemented() {return true;}
-   uint32_t getRegisterMapInfoBitsMask() {return 0x00ff0000;}
+    uint32_t getRegisterMapInfoBitsMask() { return 0x00ff0000; }
 
-   bool codegenMulDecomposition(int64_t multiplier);
+    bool codegenMulDecomposition(int64_t multiplier);
+};
 
-   };
-
-} // namespace I386
-
-} // namespace X86
-
-} // namespace OMR
+}}} // namespace OMR::X86::I386
 
 #endif

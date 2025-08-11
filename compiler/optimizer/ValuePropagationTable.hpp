@@ -48,7 +48,7 @@ TR::Node *constrainBu2l(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainByteConst(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainCase(OMR::ValuePropagation *vp, TR::Node *node);
-//TR::Node *constrainCharConst(OMR::ValuePropagation *vp, TR::Node *node);
+// TR::Node *constrainCharConst(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainCheckcast(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainCheckcastNullChk(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainCmp(OMR::ValuePropagation *vp, TR::Node *node);
@@ -148,18 +148,16 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainIntegralToBCD(OMR::ValuePropagation *vp, TR::Node *node);
 TR::Node *constrainBCDToIntegral(OMR::ValuePropagation *vp, TR::Node *node);
 
-
-TR::Node * constrainIntegerHighestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainIntegerLowestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainIntegerNumberOfLeadingZeros(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainIntegerNumberOfTrailingZeros(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainIntegerBitCount(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainLongHighestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainLongLowestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainLongNumberOfLeadingZeros(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainLongNumberOfTrailingZeros(OMR::ValuePropagation *vp, TR::Node *node);
-TR::Node * constrainLongBitCount(OMR::ValuePropagation *vp, TR::Node *node);
-
+TR::Node *constrainIntegerHighestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainIntegerLowestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainIntegerNumberOfLeadingZeros(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainIntegerNumberOfTrailingZeros(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainIntegerBitCount(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainLongHighestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainLongLowestOneBit(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainLongNumberOfLeadingZeros(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainLongNumberOfTrailingZeros(OMR::ValuePropagation *vp, TR::Node *node);
+TR::Node *constrainLongBitCount(OMR::ValuePropagation *vp, TR::Node *node);
 
 /*
  * One-to-one mapping between opcodes and their value propagation handlers
@@ -936,50 +934,25 @@ TR::Node * constrainLongBitCount(OMR::ValuePropagation *vp, TR::Node *node);
 
 const ValuePropagationPointerTable constraintHandlers;
 
-const ValuePropagationPtr ValuePropagationPointerTable::table[] =
-   {
-#define OPCODE_MACRO(\
-   opcode, \
-   name, \
-   prop1, \
-   prop2, \
-   prop3, \
-   prop4, \
-   dataType, \
-   typeProps, \
-   childProps, \
-   swapChildrenOpcode, \
-   reverseBranchOpcode, \
-   boolCompareOpcode, \
-   ifCompareOpcode, \
-   ...) opcode ## VPHandler,
+const ValuePropagationPtr ValuePropagationPointerTable::table[] = {
+#define OPCODE_MACRO(opcode, name, prop1, prop2, prop3, prop4, dataType, typeProps, childProps, swapChildrenOpcode, \
+    reverseBranchOpcode, boolCompareOpcode, ifCompareOpcode, ...)                                                   \
+    opcode##VPHandler,
 
-   BadILOpVPHandler,
+    BadILOpVPHandler,
 
 #include "il/Opcodes.enum"
 #undef OPCODE_MACRO
 
-#define VECTOR_OPERATION_MACRO(\
-   operation, \
-   name, \
-   prop1, \
-   prop2, \
-   prop3, \
-   prop4, \
-   dataType, \
-   typeProps, \
-   childProps, \
-   swapChildrenOpcode, \
-   reverseBranchOpcode, \
-   boolCompareOpcode, \
-   ifCompareOpcode, \
-   ...) operation ## VPHandler,
+#define VECTOR_OPERATION_MACRO(operation, name, prop1, prop2, prop3, prop4, dataType, typeProps, childProps, \
+    swapChildrenOpcode, reverseBranchOpcode, boolCompareOpcode, ifCompareOpcode, ...)                        \
+    operation##VPHandler,
 
-   BadILOpVPHandler,
+    BadILOpVPHandler,
 
 #include "il/VectorOperations.enum"
 #undef VECTOR_OPERATION_MACRO
 
-   };
+};
 
 #endif

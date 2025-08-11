@@ -34,220 +34,199 @@
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
 
-void
-TR_LiveRegisters::moveRegToList(TR_LiveRegisters* from, TR_LiveRegisters* to, TR::Register *reg)
-   {
-   from->removeRegisterFromLiveList(reg);
-   reg->getLiveRegisterInfo()->addToList(to->_head);
-   to->_numLiveRegisters++;
-   }
+void TR_LiveRegisters::moveRegToList(TR_LiveRegisters *from, TR_LiveRegisters *to, TR::Register *reg)
+{
+    from->removeRegisterFromLiveList(reg);
+    reg->getLiveRegisterInfo()->addToList(to->_head);
+    to->_numLiveRegisters++;
+}
 
-TR_LiveRegisterInfo *
-TR_LiveRegisters::addRegister(TR::Register *reg, bool updateInterferences)
-   {
-   TR_RegisterKinds rk = reg->getKind();
+TR_LiveRegisterInfo *TR_LiveRegisters::addRegister(TR::Register *reg, bool updateInterferences)
+{
+    TR_RegisterKinds rk = reg->getKind();
 
-   TR_LiveRegisterInfo *entry;
+    TR_LiveRegisterInfo *entry;
 
-   // Create a new live register entry
-   //
-   if (_pool)
-      {
-      entry = _pool;
-      entry->removeFromList(_pool);
-      }
-   else
-      entry = new (comp()->trHeapMemory()) TR_LiveRegisterInfo(comp());
+    // Create a new live register entry
+    //
+    if (_pool) {
+        entry = _pool;
+        entry->removeFromList(_pool);
+    } else
+        entry = new (comp()->trHeapMemory()) TR_LiveRegisterInfo(comp());
 
-   entry->initialize(reg);
+    entry->initialize(reg);
 
-   reg->setLiveRegisterInfo(entry);
+    reg->setLiveRegisterInfo(entry);
 
-   // Add the entry to the live register chain
-   //
-   entry->addToList(_head);
-   reg->setIsLive();
-   _numLiveRegisters++;
+    // Add the entry to the live register chain
+    //
+    entry->addToList(_head);
+    reg->setIsLive();
+    _numLiveRegisters++;
 
 #ifdef DEBUG
-   if (debug("traceLiveRegisters"))
-      {
-      diagnostic("Add live register %p for %p while processing node %p, kind %d\n",
-                  entry, reg, cg()->getCurrentEvaluationTreeTop()->getNode(), reg->getKind());
-      }
+    if (debug("traceLiveRegisters")) {
+        diagnostic("Add live register %p for %p while processing node %p, kind %d\n", entry, reg,
+            cg()->getCurrentEvaluationTreeTop()->getNode(), reg->getKind());
+    }
 #endif
 
-   return entry;
-   }
+    return entry;
+}
 
-TR_LiveRegisterInfo *
-TR_LiveRegisters::addRegisterPair(TR::RegisterPair *reg)
-   {
-   TR_LiveRegisterInfo *entry = addRegister(reg);
-   if (!reg->getLowOrder()->isLive())
-      addRegister(reg->getLowOrder());
-   if (!reg->getHighOrder()->isLive())
-      addRegister(reg->getHighOrder());
+TR_LiveRegisterInfo *TR_LiveRegisters::addRegisterPair(TR::RegisterPair *reg)
+{
+    TR_LiveRegisterInfo *entry = addRegister(reg);
+    if (!reg->getLowOrder()->isLive())
+        addRegister(reg->getLowOrder());
+    if (!reg->getHighOrder()->isLive())
+        addRegister(reg->getHighOrder());
 
-   // Don't count the register pair entry in the number of live registers,
-   // since it won't contribute to register pressure
-   //
-   _numLiveRegisters--;
+    // Don't count the register pair entry in the number of live registers,
+    // since it won't contribute to register pressure
+    //
+    _numLiveRegisters--;
 
-   return entry;
-   }
+    return entry;
+}
 
-void
-TR_LiveRegisters::setAssociation(TR::Register *reg, TR::RealRegister *realReg)
-   {
-   if (!reg->isLive())
-      return;
+void TR_LiveRegisters::setAssociation(TR::Register *reg, TR::RealRegister *realReg)
+{
+    if (!reg->isLive())
+        return;
 
-   TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
-   TR_RegisterMask      realRegMask = realReg->getRealRegisterMask();
+    TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
+    TR_RegisterMask realRegMask = realReg->getRealRegisterMask();
 
 #if defined(TR_TARGET_POWER)
-   uint64_t realMask = (uint64_t)realRegMask;
-   if (TR_VSX_SCALAR == reg->getKind() || TR_VSX_VECTOR == reg->getKind())
-      {
-      if (realReg->isNewVSR())
-         {
-         realMask = realMask << 32;
-         }
-      }
-   liveReg->setAssociation(realMask, comp());
+    uint64_t realMask = (uint64_t)realRegMask;
+    if (TR_VSX_SCALAR == reg->getKind() || TR_VSX_VECTOR == reg->getKind()) {
+        if (realReg->isNewVSR()) {
+            realMask = realMask << 32;
+        }
+    }
+    liveReg->setAssociation(realMask, comp());
 #else
-   liveReg->setAssociation(realRegMask, comp());
+    liveReg->setAssociation(realRegMask, comp());
 #endif
-   // The real register interferes with all current live virtual registers.
-   // Also, all current live virtual registers are now not associated with this
-   // real register.
-   //
-   for (TR_LiveRegisterInfo *p = _head; p; p = p->getNext())
-      {
-      if (p != liveReg)
-         p->addInterference(liveReg->getAssociation());
-      }
-   }
-
-void
-TR_LiveRegisters::setByteRegisterAssociation(TR::Register *reg)
-   {
-   TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
-
-   if (reg->isLive())
-      liveReg->addByteRegisterAssociation();
-
-   // Mark all current live virtual registers as interfering with a byte
-   // register.
-   //
-   for (TR_LiveRegisterInfo *p = _head; p; p = p->getNext())
-      {
-      if (p != liveReg)
-         p->addByteRegisterInterference();
-      }
-   }
-
-void
-TR_LiveRegisters::stopUsingRegister(TR::Register *reg)
-   {
-   if (reg->isLive())
-      {
-      if (reg->getLiveRegisterInfo()->getNodeCount() == 0)
-         registerIsDead(reg);
-      }
-   }
-
-void
-TR_LiveRegisters::registerIsDead(TR::Register *reg, bool updateInterferences)
-   {
-   if (!reg->isLive())
-      return;
-
-   // Remove the live register info from the live register chain.
-   //
-   TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
-   liveReg->removeFromList(_head);
-   _numLiveRegisters--;
-
-   TR::RegisterPair *regPair = reg->getRegisterPair();
-   if (regPair)
-      {
-      // For a register pair, it may be the case that we've killed one of its components after its
-      // last reference to reduce interferences.  Hence, we can relax the liveness constraint for
-      // register pair components.
-      //
-      if (regPair->getLowOrder()->isLive() && (regPair->getLowOrder()->getLiveRegisterInfo()->getNodeCount() == 0))
-         {
-         if (cg()->getLiveRegisters(regPair->getLowOrder()->getKind()))
-            cg()->getLiveRegisters(regPair->getLowOrder()->getKind())->registerIsDead(regPair->getLowOrder(), updateInterferences);
-         else
-            registerIsDead(regPair->getLowOrder(), updateInterferences);
-         }
-
-      if (regPair->getHighOrder()->isLive() && (regPair->getHighOrder()->getLiveRegisterInfo()->getNodeCount() == 0))
-         {
-         if (cg()->getLiveRegisters(regPair->getHighOrder()->getKind()))
-            cg()->getLiveRegisters(regPair->getHighOrder()->getKind())->registerIsDead(regPair->getHighOrder(), updateInterferences);
-         else
-            registerIsDead(regPair->getHighOrder(), updateInterferences);
-         }
-
-      // Don't count the register pair entry in the number of live registers,
-      // since it won't contribute to register pressure
-      //
-      _numLiveRegisters++;
-      }
-   else
-      {
-      reg->setInterference(liveReg->getInterference());
-
-      // If this register is associated with a real register, the real register
-      // interferes with all current live virtual registers
-      //
-      if (liveReg->getAssociation())
-         {
-         for (TR_LiveRegisterInfo *p = _head; p; p = p->getNext())
+    // The real register interferes with all current live virtual registers.
+    // Also, all current live virtual registers are now not associated with this
+    // real register.
+    //
+    for (TR_LiveRegisterInfo *p = _head; p; p = p->getNext()) {
+        if (p != liveReg)
             p->addInterference(liveReg->getAssociation());
-         }
-      }
+    }
+}
 
-   reg->resetIsLive();
+void TR_LiveRegisters::setByteRegisterAssociation(TR::Register *reg)
+{
+    TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
+
+    if (reg->isLive())
+        liveReg->addByteRegisterAssociation();
+
+    // Mark all current live virtual registers as interfering with a byte
+    // register.
+    //
+    for (TR_LiveRegisterInfo *p = _head; p; p = p->getNext()) {
+        if (p != liveReg)
+            p->addByteRegisterInterference();
+    }
+}
+
+void TR_LiveRegisters::stopUsingRegister(TR::Register *reg)
+{
+    if (reg->isLive()) {
+        if (reg->getLiveRegisterInfo()->getNodeCount() == 0)
+            registerIsDead(reg);
+    }
+}
+
+void TR_LiveRegisters::registerIsDead(TR::Register *reg, bool updateInterferences)
+{
+    if (!reg->isLive())
+        return;
+
+    // Remove the live register info from the live register chain.
+    //
+    TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
+    liveReg->removeFromList(_head);
+    _numLiveRegisters--;
+
+    TR::RegisterPair *regPair = reg->getRegisterPair();
+    if (regPair) {
+        // For a register pair, it may be the case that we've killed one of its components after its
+        // last reference to reduce interferences.  Hence, we can relax the liveness constraint for
+        // register pair components.
+        //
+        if (regPair->getLowOrder()->isLive() && (regPair->getLowOrder()->getLiveRegisterInfo()->getNodeCount() == 0)) {
+            if (cg()->getLiveRegisters(regPair->getLowOrder()->getKind()))
+                cg()->getLiveRegisters(regPair->getLowOrder()->getKind())
+                    ->registerIsDead(regPair->getLowOrder(), updateInterferences);
+            else
+                registerIsDead(regPair->getLowOrder(), updateInterferences);
+        }
+
+        if (regPair->getHighOrder()->isLive()
+            && (regPair->getHighOrder()->getLiveRegisterInfo()->getNodeCount() == 0)) {
+            if (cg()->getLiveRegisters(regPair->getHighOrder()->getKind()))
+                cg()->getLiveRegisters(regPair->getHighOrder()->getKind())
+                    ->registerIsDead(regPair->getHighOrder(), updateInterferences);
+            else
+                registerIsDead(regPair->getHighOrder(), updateInterferences);
+        }
+
+        // Don't count the register pair entry in the number of live registers,
+        // since it won't contribute to register pressure
+        //
+        _numLiveRegisters++;
+    } else {
+        reg->setInterference(liveReg->getInterference());
+
+        // If this register is associated with a real register, the real register
+        // interferes with all current live virtual registers
+        //
+        if (liveReg->getAssociation()) {
+            for (TR_LiveRegisterInfo *p = _head; p; p = p->getNext())
+                p->addInterference(liveReg->getAssociation());
+        }
+    }
+
+    reg->resetIsLive();
 #ifndef TR_TARGET_POWER
-   if (!TR::isJ9())
-      {
-      reg->setStartOfRangeNode(NULL);
-      reg->setStartOfRange(NULL);
-      }
+    if (!TR::isJ9()) {
+        reg->setStartOfRangeNode(NULL);
+        reg->setStartOfRange(NULL);
+    }
 #endif
 
-   if (debug("traceLiveRegisters"))
-      {
+    if (debug("traceLiveRegisters")) {
 #ifdef TR_TARGET_POWER
-      uint32_t lowerBits = (uint32_t)(reg->getInterference() & 0xFFFFFFFF);
-      uint32_t highBits  = (uint32_t)(reg->getInterference() >> 32);
-      diagnostic("Remove live register %p, interference = %08x%08x, real reg = %08x, kind %d\n",
-                  reg, highBits, lowerBits, liveReg->getAssociation(), reg->getKind());
+        uint32_t lowerBits = (uint32_t)(reg->getInterference() & 0xFFFFFFFF);
+        uint32_t highBits = (uint32_t)(reg->getInterference() >> 32);
+        diagnostic("Remove live register %p, interference = %08x%08x, real reg = %08x, kind %d\n", reg, highBits,
+            lowerBits, liveReg->getAssociation(), reg->getKind());
 #else
-      diagnostic("Remove live register %p, interference = %08x, real reg = %08x\n",
-                  reg, reg->getInterference(), liveReg->getAssociation());
+        diagnostic("Remove live register %p, interference = %08x, real reg = %08x\n", reg, reg->getInterference(),
+            liveReg->getAssociation());
 #endif
-      }
+    }
 
-   // Return this live register info to the pool
-   //
-   liveReg->addToList(_pool);
-   }
+    // Return this live register info to the pool
+    //
+    liveReg->addToList(_pool);
+}
 
-void
-TR_LiveRegisters::removeRegisterFromLiveList(TR::Register *reg)
-   {
-   if (!reg->isLive())
-      return;
+void TR_LiveRegisters::removeRegisterFromLiveList(TR::Register *reg)
+{
+    if (!reg->isLive())
+        return;
 
-   TR_ASSERT(!reg->getRegisterPair(), "not expecting a register pair: %p", reg);
+    TR_ASSERT(!reg->getRegisterPair(), "not expecting a register pair: %p", reg);
 
-   TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
-   liveReg->removeFromList(_head);
-   _numLiveRegisters--;
-   }
+    TR_LiveRegisterInfo *liveReg = reg->getLiveRegisterInfo();
+    liveReg->removeFromList(_head);
+    _numLiveRegisters--;
+}

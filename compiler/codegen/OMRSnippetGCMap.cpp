@@ -25,26 +25,16 @@
 #include "codegen/CodeGenerator.hpp"
 #include "codegen/Instruction.hpp"
 
+void OMR::SnippetGCMap::registerStackMap(TR::Instruction *instruction, TR::CodeGenerator *cg)
+{
+    if (_stackMap) {
+        _stackMap->addToAtlas(instruction, cg);
+    }
+}
 
-void
-OMR::SnippetGCMap::registerStackMap(
-      TR::Instruction *instruction,
-      TR::CodeGenerator *cg)
-   {
-   if (_stackMap)
-      {
-      _stackMap->addToAtlas(instruction, cg);
-      }
-   }
-
-
-void
-OMR::SnippetGCMap::registerStackMap(
-      uint8_t *callSiteAddress,
-      TR::CodeGenerator *cg)
-   {
-   if (_stackMap)
-      {
-      _stackMap->addToAtlas(callSiteAddress, cg);
-      }
-   }
+void OMR::SnippetGCMap::registerStackMap(uint8_t *callSiteAddress, TR::CodeGenerator *cg)
+{
+    if (_stackMap) {
+        _stackMap->addToAtlas(callSiteAddress, cg);
+    }
+}

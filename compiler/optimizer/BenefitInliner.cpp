@@ -25,23 +25,20 @@
 #include "il/Node_inlines.hpp"
 #include <algorithm>
 
+static bool isHot(TR::Compilation *comp) { return comp->getMethodHotness() >= hot; }
 
-static bool isHot(TR::Compilation *comp)
-   {
-   return comp->getMethodHotness() >= hot;
-   }
 static bool isScorching(TR::Compilation *comp)
-   {
-   return ((comp->getMethodHotness() >= scorching) || ((comp->getMethodHotness() >= veryHot) && comp->isProfilingCompilation())) ;
-   }
-
+{
+    return ((comp->getMethodHotness() >= scorching)
+        || ((comp->getMethodHotness() >= veryHot) && comp->isProfilingCompilation()));
+}
 
 /**
  * Steps of BenefitInliner:
  *
  *
- *1. perform() --> 2. build IDT -->  3. abstract interpretation  -->  5. run inliner packing (nested knapsack) --> 6. perform inlining
- *                  |                                                |
+ *1. perform() --> 2. build IDT -->  3. abstract interpretation  -->  5. run inliner packing (nested knapsack) --> 6.
+ *perform inlining |                                                |
  *                  |--  4. update IDT with inlining summaries --    |
  *
  *
@@ -49,238 +46,238 @@ static bool isScorching(TR::Compilation *comp)
  *
  */
 int32_t TR::BenefitInlinerWrapper::perform()
-   {
-   TR::ResolvedMethodSymbol * sym = comp()->getMethodSymbol();
+{
+    TR::ResolvedMethodSymbol *sym = comp()->getMethodSymbol();
 
-   if (sym->mayHaveInlineableCall())
-      {
-      TR::BenefitInliner inliner(optimizer(), this);
-      inliner.buildInliningDependencyTree(); // IDT
-      inliner.inlinerPacking(); // nested knapsack
-      inliner.performInlining(comp()->getMethodSymbol());
-      }
+    if (sym->mayHaveInlineableCall()) {
+        TR::BenefitInliner inliner(optimizer(), this);
+        inliner.buildInliningDependencyTree(); // IDT
+        inliner.inlinerPacking(); // nested knapsack
+        inliner.performInlining(comp()->getMethodSymbol());
+    }
 
-   return 1;
-   }
+    return 1;
+}
 
 void TR::BenefitInliner::buildInliningDependencyTree()
-   {
-   TR::IDTBuilder builder(comp()->getMethodSymbol(), _budget, region(), comp(), this);
-   _inliningDependencyTree = builder.buildIDT();
+{
+    TR::IDTBuilder builder(comp()->getMethodSymbol(), _budget, region(), comp(), this);
+    _inliningDependencyTree = builder.buildIDT();
 
-   if (comp()->getOption(TR_TraceBIIDTGen))
-      _inliningDependencyTree->print();
+    if (comp()->getOption(TR_TraceBIIDTGen))
+        _inliningDependencyTree->print();
 
-   _nextIDTNodeToInlineInto = _inliningDependencyTree->getRoot();
-   }
+    _nextIDTNodeToInlineInto = _inliningDependencyTree->getRoot();
+}
 
 void TR::BenefitInliner::inlinerPacking()
-   {
-   // if get enough budget to inline all options
-   if (_inliningDependencyTree->getTotalCost() <= _budget)
-      {
-      _inliningProposal = new (region()) TR::InliningProposal(region(), _inliningDependencyTree);
+{
+    // if get enough budget to inline all options
+    if (_inliningDependencyTree->getTotalCost() <= _budget) {
+        _inliningProposal = new (region()) TR::InliningProposal(region(), _inliningDependencyTree);
 
-      TR::deque<TR::IDTNode*, TR::Region&> idtNodeQueue(comp()->trMemory()->currentStackRegion());
-      idtNodeQueue.push_back(_inliningDependencyTree->getRoot());
+        TR::deque<TR::IDTNode *, TR::Region &> idtNodeQueue(comp()->trMemory()->currentStackRegion());
+        idtNodeQueue.push_back(_inliningDependencyTree->getRoot());
 
-      while (!idtNodeQueue.empty())
-         {
-         TR::IDTNode* currentNode = idtNodeQueue.front();
-         idtNodeQueue.pop_front();
+        while (!idtNodeQueue.empty()) {
+            TR::IDTNode *currentNode = idtNodeQueue.front();
+            idtNodeQueue.pop_front();
 
-         _inliningProposal->addNode(currentNode);
+            _inliningProposal->addNode(currentNode);
 
-         for (uint32_t i = 0; i < currentNode->getNumChildren(); i ++)
-            {
-            idtNodeQueue.push_back(currentNode->getChild(i));
+            for (uint32_t i = 0; i < currentNode->getNumChildren(); i++) {
+                idtNodeQueue.push_back(currentNode->getChild(i));
             }
-         }
+        }
 
-      return;
-      }
+        return;
+    }
 
-   /**
-    * An implementation of knapsack packing algorithm (a modified dynamic programming algorithm)
-    *
-    * This algorithm is described in following patent:
-    * https://patents.google.com/patent/US10055210B2/en
-    * and this is an implementation of the algorithm on the flowchart FIG.9.
-    *
-    * The following comments label which part they belong to the algorithm on the flowchart FIG.9.
-    */
-   _inliningDependencyTree->flattenIDT();
+    /**
+     * An implementation of knapsack packing algorithm (a modified dynamic programming algorithm)
+     *
+     * This algorithm is described in following patent:
+     * https://patents.google.com/patent/US10055210B2/en
+     * and this is an implementation of the algorithm on the flowchart FIG.9.
+     *
+     * The following comments label which part they belong to the algorithm on the flowchart FIG.9.
+     */
+    _inliningDependencyTree->flattenIDT();
 
-   const uint32_t idtSize = _inliningDependencyTree->getNumNodes();
-   const uint32_t budget = _budget;
+    const uint32_t idtSize = _inliningDependencyTree->getNumNodes();
+    const uint32_t budget = _budget;
 
-   //initialize InliningProposal Table (idtSize x budget+1)
-   TR::InliningProposalTable table(idtSize, budget + 1, comp()->trMemory()->currentStackRegion());
+    // initialize InliningProposal Table (idtSize x budget+1)
+    TR::InliningProposalTable table(idtSize, budget + 1, comp()->trMemory()->currentStackRegion());
 
-   // prepare preorder of inlining options
-   TR::IDTPriorityQueue pQueue(_inliningDependencyTree, comp()->trMemory()->currentStackRegion());
-   for (uint32_t row = 0; row < idtSize; row ++)
-      {
-      for (uint32_t col = 1; col <= budget; col ++)
-         {
-         TR::InliningProposal currentSet(comp()->trMemory()->currentStackRegion(), _inliningDependencyTree); // []
-         TR::IDTNode* currentNode = pQueue.get(row);
+    // prepare preorder of inlining options
+    TR::IDTPriorityQueue pQueue(_inliningDependencyTree, comp()->trMemory()->currentStackRegion());
+    for (uint32_t row = 0; row < idtSize; row++) {
+        for (uint32_t col = 1; col <= budget; col++) {
+            TR::InliningProposal currentSet(comp()->trMemory()->currentStackRegion(), _inliningDependencyTree); // []
+            TR::IDTNode *currentNode = pQueue.get(row);
 
-         currentSet.addNode(currentNode); //[ currentNode ]
+            currentSet.addNode(currentNode); //[ currentNode ]
 
-         uint32_t rowOffset = 1;
+            uint32_t rowOffset = 1;
 
-         // check if proposal is valid
-         while (!currentNode->isRoot()
-            && !table.getByOffset(row, rowOffset, col, currentSet.getCost())->isNodeInProposal(currentNode->getParent()))
-            {
-            // if no, add proposal predecessor to proposal
-            currentSet.addNode(currentNode->getParent());
-            currentNode = currentNode->getParent();
+            // check if proposal is valid
+            while (!currentNode->isRoot()
+                && !table.getByOffset(row, rowOffset, col, currentSet.getCost())
+                        ->isNodeInProposal(currentNode->getParent())) {
+                // if no, add proposal predecessor to proposal
+                currentSet.addNode(currentNode->getParent());
+                currentNode = currentNode->getParent();
             }
 
-         // check if intersects base or if is invalid solution
-         while ( currentSet.intersects(table.getByOffset(row, rowOffset, col, currentSet.getCost()))
-            || ( !(currentNode->getParent() && table.getByOffset(row, rowOffset, col, currentSet.getCost())->isNodeInProposal(currentNode->getParent()) )
-                  && !table.getByOffset(row, rowOffset, col, currentSet.getCost())->isEmpty()
-                  ))
-            {
-            // if yes, consider prior base at same budget
-            rowOffset++;
+            // check if intersects base or if is invalid solution
+            while (currentSet.intersects(table.getByOffset(row, rowOffset, col, currentSet.getCost()))
+                || (!(currentNode->getParent()
+                        && table.getByOffset(row, rowOffset, col, currentSet.getCost())
+                               ->isNodeInProposal(currentNode->getParent()))
+                    && !table.getByOffset(row, rowOffset, col, currentSet.getCost())->isEmpty())) {
+                // if yes, consider prior base at same budget
+                rowOffset++;
             }
 
-         TR::InliningProposal* newProposal = new (comp()->trMemory()->currentStackRegion()) TR::InliningProposal(comp()->trMemory()->currentStackRegion(), _inliningDependencyTree);
-         newProposal->merge(table.getByOffset(row, rowOffset, col, currentSet.getCost()), &currentSet);
+            TR::InliningProposal *newProposal = new (comp()->trMemory()->currentStackRegion())
+                TR::InliningProposal(comp()->trMemory()->currentStackRegion(), _inliningDependencyTree);
+            newProposal->merge(table.getByOffset(row, rowOffset, col, currentSet.getCost()), &currentSet);
 
-         // check if cost less than budget and if previous proposal is better
-         if (newProposal->getCost() <= col && newProposal->getBenefit() > table.getByOffset(row, 1, col, 0)->getBenefit()) //only set the new proposal if it fits the budget and has more benefits
-            table.set(row, col, newProposal);
-         else
-            table.set(row, col, table.getByOffset(row, 1, col, 0));
-         }
-      }
+            // check if cost less than budget and if previous proposal is better
+            if (newProposal->getCost() <= col
+                && newProposal->getBenefit()
+                    > table.getByOffset(row, 1, col, 0)
+                          ->getBenefit()) // only set the new proposal if it fits the budget and has more benefits
+                table.set(row, col, newProposal);
+            else
+                table.set(row, col, table.getByOffset(row, 1, col, 0));
+        }
+    }
 
-   // read solution from table at last row and max budget
-   TR::InliningProposal* result = new (region()) TR::InliningProposal(region(), _inliningDependencyTree);
-   result->merge(result, table.getByOffset(idtSize, 1, budget, 0));
+    // read solution from table at last row and max budget
+    TR::InliningProposal *result = new (region()) TR::InliningProposal(region(), _inliningDependencyTree);
+    result->merge(result, table.getByOffset(idtSize, 1, budget, 0));
 
-   if (comp()->getOption(TR_TraceBIProposal))
-      {
-      traceMsg(comp(), "\n#inliner packing:\n");
-      result->print(comp());
-      }
+    if (comp()->getOption(TR_TraceBIProposal)) {
+        traceMsg(comp(), "\n#inliner packing:\n");
+        result->print(comp());
+    }
 
-   _inliningProposal = result;
-   }
+    _inliningProposal = result;
+}
 
-int32_t TR::BenefitInlinerBase::getInliningBudget(TR::ResolvedMethodSymbol* callerSymbol)
-   {
-   const int32_t size = callerSymbol->getResolvedMethod()->maxBytecodeIndex();
+int32_t TR::BenefitInlinerBase::getInliningBudget(TR::ResolvedMethodSymbol *callerSymbol)
+{
+    const int32_t size = callerSymbol->getResolvedMethod()->maxBytecodeIndex();
 
-   int32_t callerWeightLimit;
+    int32_t callerWeightLimit;
 
-   if (isScorching(comp()))     callerWeightLimit = std::max(1500, size * 2);
-   else if (isHot(comp()))      callerWeightLimit = std::max(1500, size + (size >> 2));
-   else if (size < 125)         callerWeightLimit = 250;
-   else if (size < 700)         callerWeightLimit = std::max(700, size + (size >> 2));
-   else                         callerWeightLimit = size + (size >> 3);
-   return callerWeightLimit - size; //max size we can inline
-   }
+    if (isScorching(comp()))
+        callerWeightLimit = std::max(1500, size * 2);
+    else if (isHot(comp()))
+        callerWeightLimit = std::max(1500, size + (size >> 2));
+    else if (size < 125)
+        callerWeightLimit = 250;
+    else if (size < 700)
+        callerWeightLimit = std::max(700, size + (size >> 2));
+    else
+        callerWeightLimit = size + (size >> 3);
+    return callerWeightLimit - size; // max size we can inline
+}
 
-bool TR::BenefitInlinerBase::inlineCallTargets(TR::ResolvedMethodSymbol *symbol, TR_CallStack *prevCallStack, TR_InnerPreexistenceInfo *info)
-   {
-   if (!_nextIDTNodeToInlineInto)
-      return false;
+bool TR::BenefitInlinerBase::inlineCallTargets(TR::ResolvedMethodSymbol *symbol, TR_CallStack *prevCallStack,
+    TR_InnerPreexistenceInfo *info)
+{
+    if (!_nextIDTNodeToInlineInto)
+        return false;
 
-   if (comp()->getOption(TR_TraceBIProposal))
-      traceMsg(comp(), "#BenefitInliner: inlining into %s\n", _nextIDTNodeToInlineInto->getName(comp()->trMemory()));
+    if (comp()->getOption(TR_TraceBIProposal))
+        traceMsg(comp(), "#BenefitInliner: inlining into %s\n", _nextIDTNodeToInlineInto->getName(comp()->trMemory()));
 
-   TR_CallStack callStack(comp(), symbol, symbol->getResolvedMethod(), prevCallStack, 1500, true);
+    TR_CallStack callStack(comp(), symbol, symbol->getResolvedMethod(), prevCallStack, 1500, true);
 
-   if (info)
-      callStack._innerPrexInfo = info;
+    if (info)
+        callStack._innerPrexInfo = info;
 
-   bool inlined = inlineIntoIDTNode(symbol, &callStack, _nextIDTNodeToInlineInto);
+    bool inlined = inlineIntoIDTNode(symbol, &callStack, _nextIDTNodeToInlineInto);
 
-   return inlined;
-   }
+    return inlined;
+}
 
-bool TR::BenefitInlinerBase::inlineIntoIDTNode(TR::ResolvedMethodSymbol *symbol, TR_CallStack *callStack, TR::IDTNode *idtNode)
-   {
-   uint32_t inlineCount = 0;
+bool TR::BenefitInlinerBase::inlineIntoIDTNode(TR::ResolvedMethodSymbol *symbol, TR_CallStack *callStack,
+    TR::IDTNode *idtNode)
+{
+    uint32_t inlineCount = 0;
 
-   for (TR::TreeTop * tt = symbol->getFirstTreeTop(); tt; tt = tt->getNextTreeTop())
-      {
-      TR::Node * parent = tt->getNode();
-      if (!parent->getNumChildren())
-         continue;
+    for (TR::TreeTop *tt = symbol->getFirstTreeTop(); tt; tt = tt->getNextTreeTop()) {
+        TR::Node *parent = tt->getNode();
+        if (!parent->getNumChildren())
+            continue;
 
-      TR::Node * node = parent->getChild(0);
-      if (!node->getOpCode().isCall())
-         continue;
+        TR::Node *node = parent->getChild(0);
+        if (!node->getOpCode().isCall())
+            continue;
 
-      if (node->getVisitCount() == _visitCount)
-         continue;
+        if (node->getVisitCount() == _visitCount)
+            continue;
 
-      TR_ByteCodeInfo &bcInfo = node->getByteCodeInfo();
+        TR_ByteCodeInfo &bcInfo = node->getByteCodeInfo();
 
-      //The actual call target to inline
-      TR::IDTNode *childToInline = idtNode->findChildWithBytecodeIndex(bcInfo.getByteCodeIndex());
+        // The actual call target to inline
+        TR::IDTNode *childToInline = idtNode->findChildWithBytecodeIndex(bcInfo.getByteCodeIndex());
 
-      if (!childToInline)
-         continue;
+        if (!childToInline)
+            continue;
 
-      //only inline this call target if it is in inlining proposal
-      bool shouldInline = _inliningProposal->isNodeInProposal(childToInline);
+        // only inline this call target if it is in inlining proposal
+        bool shouldInline = _inliningProposal->isNodeInProposal(childToInline);
 
-      if (!shouldInline)
-         continue;
+        if (!shouldInline)
+            continue;
 
-      //set _nextIDTNodeToInlineInto because we expect to enter inlineCallTargets() recursively
-      _nextIDTNodeToInlineInto = childToInline;
+        // set _nextIDTNodeToInlineInto because we expect to enter inlineCallTargets() recursively
+        _nextIDTNodeToInlineInto = childToInline;
 
-      bool success = analyzeCallSite(callStack, tt, parent, node, childToInline->getCallTarget());
+        bool success = analyzeCallSite(callStack, tt, parent, node, childToInline->getCallTarget());
 
-      _nextIDTNodeToInlineInto = idtNode;
+        _nextIDTNodeToInlineInto = idtNode;
 
-      if (success)
-         {
-         inlineCount++;
-         node->setVisitCount(_visitCount);
+        if (success) {
+            inlineCount++;
+            node->setVisitCount(_visitCount);
+        }
+    }
 
-         }
-      }
+    callStack->commit();
+    return inlineCount > 0;
+}
 
-   callStack->commit();
-   return inlineCount > 0;
-   }
+bool TR::BenefitInlinerBase::analyzeCallSite(TR_CallStack *callStack, TR::TreeTop *callNodeTreeTop, TR::Node *parent,
+    TR::Node *callNode, TR_CallTarget *calltargetToInline)
+{
+    TR::SymbolReference *symRef = callNode->getSymbolReference();
 
-bool TR::BenefitInlinerBase::analyzeCallSite(TR_CallStack * callStack, TR::TreeTop * callNodeTreeTop, TR::Node * parent, TR::Node * callNode, TR_CallTarget *calltargetToInline)
-   {
+    TR_CallSite *callsite = TR_CallSite::create(callNodeTreeTop, parent, callNode, (TR_OpaqueClassBlock *)0, symRef,
+        (TR_ResolvedMethod *)0, comp(), trMemory(), stackAlloc);
 
-   TR::SymbolReference *symRef = callNode->getSymbolReference();
+    getSymbolAndFindInlineTargets(callStack, callsite);
 
-   TR_CallSite *callsite = TR_CallSite::create(callNodeTreeTop, parent, callNode,
-                                               (TR_OpaqueClassBlock*) 0, symRef, (TR_ResolvedMethod*) 0,
-                                               comp(), trMemory() , stackAlloc);
+    if (!callsite->numTargets())
+        return false;
 
-   getSymbolAndFindInlineTargets(callStack, callsite);
+    bool success = false;
 
-   if (!callsite->numTargets())
-      return false;
+    for (uint32_t i = 0; i < unsigned(callsite->numTargets()); i++) {
+        TR_CallTarget *calltarget = callsite->getTarget(i);
 
-   bool success = false;
+        if (calltarget->_calleeMethod->isSameMethod(calltargetToInline->_calleeMethod)
+            && !calltarget->_alreadyInlined) // we need to inline the exact call target in the IDTNode
+        {
+            success = inlineCallTarget(callStack, calltarget, false);
+            break;
+        }
+    }
 
-   for(uint32_t i = 0; i < unsigned(callsite->numTargets()); i++)
-      {
-      TR_CallTarget *calltarget = callsite->getTarget(i);
-
-      if (calltarget->_calleeMethod->isSameMethod(calltargetToInline->_calleeMethod) && !calltarget->_alreadyInlined) //we need to inline the exact call target in the IDTNode
-         {
-         success = inlineCallTarget(callStack, calltarget, false);
-         break;
-         }
-      }
-
-   return success;
-   }
+    return success;
+}

@@ -25,20 +25,18 @@
 #include "codegen/OMRSnippetDelegate.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE SnippetDelegate : public OMR::SnippetDelegateConnector
-   {
-   // SnippetDelegate cannot be instantiated.  It can only
-   // contain static members.
-   //
+class OMR_EXTENSIBLE SnippetDelegate : public OMR::SnippetDelegateConnector {
+    // SnippetDelegate cannot be instantiated.  It can only
+    // contain static members.
+    //
 private:
+    SnippetDelegate()
+        : OMR::SnippetDelegateConnector()
+    {}
+};
 
-   SnippetDelegate() : OMR::SnippetDelegateConnector() {}
-
-   };
-
-}
+} // namespace TR
 
 #endif

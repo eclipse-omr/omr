@@ -24,15 +24,13 @@
 
 #include "env/OMRJitConfig.hpp"
 
-namespace TR
-{
-class OMR_EXTENSIBLE JitConfig : public OMR::JitConfigConnector
-   {
+namespace TR {
+class OMR_EXTENSIBLE JitConfig : public OMR::JitConfigConnector {
 public:
-
-   JitConfig() : OMR::JitConfigConnector() {}
-
-   };
-}
+    JitConfig()
+        : OMR::JitConfigConnector()
+    {}
+};
+} // namespace TR
 
 #endif

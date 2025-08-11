@@ -33,130 +33,115 @@
 namespace TR {
 class Node;
 class Register;
-}
+} // namespace TR
 
-#define EvalChild1   0x01
-#define EvalChild2   0x02
-#define CopyReg1     0x04
-#define BinaryReg1Reg2  0x08
-#define BinaryReg3Reg2  0x10
-#define BinaryReg1Mem2  0x20
-#define BinaryReg3Mem2  0x40
-#define InvalidBACEMap  0x80
+#define EvalChild1 0x01
+#define EvalChild2 0x02
+#define CopyReg1 0x04
+#define BinaryReg1Reg2 0x08
+#define BinaryReg3Reg2 0x10
+#define BinaryReg1Mem2 0x20
+#define BinaryReg3Mem2 0x40
+#define InvalidBACEMap 0x80
 
-class TR_S390BinaryAnalyser : public TR_Analyser
-   {
+class TR_S390BinaryAnalyser : public TR_Analyser {
+    static const uint8_t actionMap[NUM_ACTIONS];
+    static const uint8_t clobEvalActionMap[NUM_ACTIONS];
 
-   static const uint8_t  actionMap[NUM_ACTIONS];
-   static const uint8_t  clobEvalActionMap[NUM_ACTIONS];
+    TR::CodeGenerator *_cg;
 
-   TR::CodeGenerator *_cg;
+public:
+    TR_S390BinaryAnalyser(TR::CodeGenerator *cg)
+        : _cg(cg)
+    {}
 
-   public:
+    void genericAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode, TR::InstOpCode::Mnemonic copyOpCode);
 
-   TR_S390BinaryAnalyser(TR::CodeGenerator *cg) : _cg(cg) {}
+    void intBinaryAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode)
+    {
+        TR::InstOpCode::Mnemonic loadOp = TR::InstOpCode::getLoadRegOpCode();
 
-   void genericAnalyser(TR::Node       *root,
-                                TR::InstOpCode::Mnemonic regToRegOpCode,
-                                TR::InstOpCode::Mnemonic memToRegOpCode,
-                                TR::InstOpCode::Mnemonic copyOpCode);
+        genericAnalyser(root, regToRegOpCode, memToRegOpCode, loadOp);
+    }
 
-   void intBinaryAnalyser(TR::Node       *root,
-                                TR::InstOpCode::Mnemonic regToRegOpCode,
-                                TR::InstOpCode::Mnemonic memToRegOpCode)
-     {
+    void longBinaryAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode)
+    {
+        genericAnalyser(root, regToRegOpCode, memToRegOpCode, TR::InstOpCode::LGR);
+    }
 
-     TR::InstOpCode::Mnemonic loadOp = TR::InstOpCode::getLoadRegOpCode();
+    void floatBinaryAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode)
+    {
+        genericAnalyser(root, regToRegOpCode, memToRegOpCode, TR::InstOpCode::LER);
+    }
 
-     genericAnalyser(root,regToRegOpCode,memToRegOpCode,loadOp);
-     }
+    void doubleBinaryAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic regToRegOpCode,
+        TR::InstOpCode::Mnemonic memToRegOpCode)
+    {
+        genericAnalyser(root, regToRegOpCode, memToRegOpCode, TR::InstOpCode::LDR);
+    }
 
-   void longBinaryAnalyser(TR::Node       *root,
-                                TR::InstOpCode::Mnemonic regToRegOpCode,
-                                TR::InstOpCode::Mnemonic memToRegOpCode)
-     {
-     genericAnalyser(root,regToRegOpCode,memToRegOpCode,TR::InstOpCode::LGR);
-     }
+    void longSubtractAnalyser(TR::Node *root);
 
-   void floatBinaryAnalyser(TR::Node       *root,
-                                TR::InstOpCode::Mnemonic regToRegOpCode,
-                                TR::InstOpCode::Mnemonic memToRegOpCode)
-     {
-     genericAnalyser(root,regToRegOpCode,memToRegOpCode,TR::InstOpCode::LER);
-     }
+    bool getEvalChild1() { return (actionMap[getInputs()] & EvalChild1) ? true : false; }
 
+    bool getEvalChild2() { return (actionMap[getInputs()] & EvalChild2) ? true : false; }
 
-   void doubleBinaryAnalyser(TR::Node       *root,
-                                TR::InstOpCode::Mnemonic regToRegOpCode,
-                                TR::InstOpCode::Mnemonic memToRegOpCode)
-     {
-     genericAnalyser(root,regToRegOpCode,memToRegOpCode,TR::InstOpCode::LDR);
-     }
+    bool getCopyReg1()
+    {
+        if (!cg()->useClobberEvaluate()) {
+            return (clobEvalActionMap[getInputs()] & CopyReg1) ? true : false;
+        }
+        return (actionMap[getInputs()] & CopyReg1) ? true : false;
+    }
 
-   void longSubtractAnalyser(TR::Node *root);
+    bool getBinaryReg1Reg2()
+    {
+        if (!cg()->useClobberEvaluate()) {
+            return (clobEvalActionMap[getInputs()] & BinaryReg1Reg2) ? true : false;
+        }
+        return (actionMap[getInputs()] & BinaryReg1Reg2) ? true : false;
+    }
 
-   bool getEvalChild1()  {return (actionMap[getInputs()] & EvalChild1)  ? true : false;}
-   bool getEvalChild2()  {return (actionMap[getInputs()] & EvalChild2)  ? true : false;}
+    bool getBinaryReg3Reg2()
+    {
+        if (!cg()->useClobberEvaluate()) {
+            return (clobEvalActionMap[getInputs()] & BinaryReg3Reg2) ? true : false;
+        }
+        return (actionMap[getInputs()] & BinaryReg3Reg2) ? true : false;
+    }
 
-   bool getCopyReg1()
-      {
-      if (!cg()->useClobberEvaluate())
-         {
-         return (clobEvalActionMap[getInputs()] & CopyReg1)    ? true : false;
-         }
-      return (actionMap[getInputs()] & CopyReg1)    ? true : false;
-      }
+    bool getBinaryReg1Mem2()
+    {
+        if (!cg()->useClobberEvaluate()) {
+            return (clobEvalActionMap[getInputs()] & BinaryReg1Mem2) ? true : false;
+        }
+        return (actionMap[getInputs()] & BinaryReg1Mem2) ? true : false;
+    }
 
-   bool getBinaryReg1Reg2()
-      {
-      if (!cg()->useClobberEvaluate())
-         {
-         return (clobEvalActionMap[getInputs()] & BinaryReg1Reg2) ? true : false;
-         }
-      return (actionMap[getInputs()] & BinaryReg1Reg2) ? true : false;
-      }
+    bool getBinaryReg3Mem2()
+    {
+        if (!cg()->useClobberEvaluate()) {
+            return (clobEvalActionMap[getInputs()] & BinaryReg3Mem2) ? true : false;
+        }
+        return (actionMap[getInputs()] & BinaryReg3Mem2) ? true : false;
+    }
 
-   bool getBinaryReg3Reg2()
-      {
-      if (!cg()->useClobberEvaluate())
-         {
-         return (clobEvalActionMap[getInputs()] & BinaryReg3Reg2) ? true : false;
-         }
-      return (actionMap[getInputs()] & BinaryReg3Reg2) ? true : false;
-      }
+    bool getInvalid()
+    {
+        if (!cg()->useClobberEvaluate()) {
+            return (clobEvalActionMap[getInputs()] & InvalidBACEMap) ? true : false;
+        }
+        return false;
+    }
 
-   bool getBinaryReg1Mem2()
-      {
-      if (!cg()->useClobberEvaluate())
-         {
-         return (clobEvalActionMap[getInputs()] & BinaryReg1Mem2) ? true : false;
-         }
-      return (actionMap[getInputs()] & BinaryReg1Mem2) ? true : false;
-      }
+    TR::CodeGenerator *cg() { return _cg; }
 
-   bool getBinaryReg3Mem2()
-      {
-      if (!cg()->useClobberEvaluate())
-         {
-         return (clobEvalActionMap[getInputs()] & BinaryReg3Mem2) ? true : false;
-         }
-      return (actionMap[getInputs()] & BinaryReg3Mem2) ? true : false;
-      }
-
-   bool getInvalid()
-      {
-      if (!cg()->useClobberEvaluate())
-         {
-         return (clobEvalActionMap[getInputs()] & InvalidBACEMap) ? true : false;
-         }
-      return false;
-      }
-
-   TR::CodeGenerator *cg()               {return _cg;}
-
-   private:
-
-   void remapInputs(TR::Node *, TR::Register *, TR::Node *, TR::Register *);
-   };
+private:
+    void remapInputs(TR::Node *, TR::Register *, TR::Node *, TR::Register *);
+};
 
 #endif

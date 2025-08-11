@@ -27,10 +27,11 @@
  */
 #ifndef OMR_UNRESOLVEDDATASNIPPET_CONNECTOR
 #define OMR_UNRESOLVEDDATASNIPPET_CONNECTOR
+
 namespace OMR {
 class UnresolvedDataSnippet;
 typedef OMR::UnresolvedDataSnippet UnresolvedDataSnippetConnector;
-}
+} // namespace OMR
 #endif
 
 #include "codegen/Snippet.hpp"
@@ -45,64 +46,59 @@ class CodeGenerator;
 class Instruction;
 class Node;
 class UnresolvedDataSnippet;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class UnresolvedDataSnippet : public TR::Snippet
-   {
-
+class UnresolvedDataSnippet : public TR::Snippet {
 public:
+    UnresolvedDataSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef, bool isStore,
+        bool isGCSafePoint);
 
-   UnresolvedDataSnippet(TR::CodeGenerator * cg,
-                         TR::Node * node,
-                         TR::SymbolReference * symRef,
-                         bool isStore,
-                         bool isGCSafePoint);
+    TR::UnresolvedDataSnippet *self();
 
-   TR::UnresolvedDataSnippet * self();
+    static TR::UnresolvedDataSnippet *create(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *s,
+        bool isStore, bool canCauseGC);
 
-   static TR::UnresolvedDataSnippet * create(TR::CodeGenerator * cg, TR::Node * node, TR::SymbolReference *s, bool isStore, bool canCauseGC);
+    TR::SymbolReference *getDataSymbolReference() { return _dataSymbolReference; }
 
-   TR::SymbolReference * getDataSymbolReference()                        { return _dataSymbolReference; }
-   TR::SymbolReference * setDataSymbolReference(TR::SymbolReference *sr) { return (_dataSymbolReference = sr); }
+    TR::SymbolReference *setDataSymbolReference(TR::SymbolReference *sr) { return (_dataSymbolReference = sr); }
 
-   TR::Instruction * getDataReferenceInstruction()                   { return _dataReferenceInstruction; }
-   TR::Instruction * setDataReferenceInstruction(TR::Instruction *i) { return (_dataReferenceInstruction = i); }
+    TR::Instruction *getDataReferenceInstruction() { return _dataReferenceInstruction; }
 
-   uint8_t * getAddressOfDataReference()           { return _addressOfDataReference; }
-   uint8_t * setAddressOfDataReference(uint8_t *p) { return (_addressOfDataReference = p); }
+    TR::Instruction *setDataReferenceInstruction(TR::Instruction *i) { return (_dataReferenceInstruction = i); }
 
-   bool isUnresolvedStore()    { return _flags.testAll(TO_MASK32(IsUnresolvedStore)); }
-   void setUnresolvedStore()   { _flags.set(TO_MASK32(IsUnresolvedStore)); }
-   void resetUnresolvedStore() { _flags.reset(TO_MASK32(IsUnresolvedStore)); }
+    uint8_t *getAddressOfDataReference() { return _addressOfDataReference; }
 
-   virtual uint8_t *emitSnippetBody() { return NULL; }
+    uint8_t *setAddressOfDataReference(uint8_t *p) { return (_addressOfDataReference = p); }
 
-   virtual uint32_t getLength(int32_t estimatedSnippetStart) { return 0; }
+    bool isUnresolvedStore() { return _flags.testAll(TO_MASK32(IsUnresolvedStore)); }
+
+    void setUnresolvedStore() { _flags.set(TO_MASK32(IsUnresolvedStore)); }
+
+    void resetUnresolvedStore() { _flags.reset(TO_MASK32(IsUnresolvedStore)); }
+
+    virtual uint8_t *emitSnippetBody() { return NULL; }
+
+    virtual uint32_t getLength(int32_t estimatedSnippetStart) { return 0; }
 
 protected:
+    enum {
+        IsUnresolvedStore = TR::Snippet::NextSnippetFlag,
+        NextSnippetFlag
+    };
 
-   enum
-      {
-      IsUnresolvedStore = TR::Snippet::NextSnippetFlag,
-      NextSnippetFlag
-      };
-
-   static_assert((int32_t)NextSnippetFlag <= (int32_t)TR::Snippet::MaxSnippetFlag,
-      "OMR::UnresolvedDataSnippet too many flag bits for flag width");
+    static_assert((int32_t)NextSnippetFlag <= (int32_t)TR::Snippet::MaxSnippetFlag,
+        "OMR::UnresolvedDataSnippet too many flag bits for flag width");
 
 private:
+    TR::Instruction *_dataReferenceInstruction;
 
-   TR::Instruction * _dataReferenceInstruction;
+    TR::SymbolReference *_dataSymbolReference;
 
-   TR::SymbolReference * _dataSymbolReference;
+    uint8_t *_addressOfDataReference;
+};
 
-   uint8_t * _addressOfDataReference;
-
-   };
-
-}
+} // namespace OMR
 
 #endif

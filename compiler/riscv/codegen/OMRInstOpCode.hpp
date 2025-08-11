@@ -27,72 +27,67 @@
  */
 #ifndef OMR_INSTOPCODE_CONNECTOR
 #define OMR_INSTOPCODE_CONNECTOR
+
 namespace OMR {
-namespace RV { class InstOpCode; }
-typedef OMR::RV::InstOpCode InstOpCodeConnector;
+namespace RV {
+class InstOpCode;
 }
+
+typedef OMR::RV::InstOpCode InstOpCodeConnector;
+} // namespace OMR
 #else
 #error OMR::RV::InstOpCode expected to be a primary connector, but a OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRInstOpCode.hpp"
 
-namespace OMR
-{
+namespace OMR { namespace RV {
 
-namespace RV
-{
+class InstOpCode : public OMR::InstOpCode {
+protected:
+    /**
+     * @brief Constructor
+     */
+    InstOpCode()
+        : OMR::InstOpCode(bad)
+    {}
 
-class InstOpCode: public OMR::InstOpCode
-   {
-   protected:
+    /**
+     * @brief Constructor
+     * @param[in] m : mnemonic
+     */
+    InstOpCode(Mnemonic m)
+        : OMR::InstOpCode(m)
+    {}
 
-   /**
-    * @brief Constructor
-    */
-   InstOpCode() : OMR::InstOpCode(bad) {}
-   /**
-    * @brief Constructor
-    * @param[in] m : mnemonic
-    */
-   InstOpCode(Mnemonic m) : OMR::InstOpCode(m) {}
+public:
+    typedef uint32_t OpCodeBinaryEntry;
+    static const OpCodeBinaryEntry binaryEncodings[RVNumOpCodes];
 
-   public:
+    /*
+     * @brief Answers binary encoding of Mnemonic
+     * @param[in] m : mnemonic
+     * @return binary encoding
+     */
+    static const OpCodeBinaryEntry getOpCodeBinaryEncoding(Mnemonic m) { return binaryEncodings[m]; }
 
-   typedef uint32_t OpCodeBinaryEntry;
-   static const OpCodeBinaryEntry binaryEncodings[RVNumOpCodes];
+    /*
+     * @brief Answers binary encoding of InstOpCode
+     * @return binary encoding
+     */
+    const OpCodeBinaryEntry getOpCodeBinaryEncoding() { return getOpCodeBinaryEncoding(_mnemonic); }
 
-   /*
-    * @brief Answers binary encoding of Mnemonic
-    * @param[in] m : mnemonic
-    * @return binary encoding
-    */
-   static const OpCodeBinaryEntry getOpCodeBinaryEncoding(Mnemonic m)
-      {
-      return binaryEncodings[m];
-      }
+    /*
+     * @brief Copies binary encoding of the opcode to buffer
+     * @param[in] cursor : instruction cursor
+     * @return instruction cursor
+     */
+    uint8_t *copyBinaryToBuffer(uint8_t *cursor)
+    {
+        *(uint32_t *)cursor = *(uint32_t *)&binaryEncodings[_mnemonic];
+        return cursor;
+    }
+};
 
-   /*
-    * @brief Answers binary encoding of InstOpCode
-    * @return binary encoding
-    */
-   const OpCodeBinaryEntry getOpCodeBinaryEncoding()
-      {
-      return getOpCodeBinaryEncoding(_mnemonic);
-      }
-
-   /*
-    * @brief Copies binary encoding of the opcode to buffer
-    * @param[in] cursor : instruction cursor
-    * @return instruction cursor
-    */
-   uint8_t *copyBinaryToBuffer(uint8_t *cursor)
-      {
-      *(uint32_t *)cursor = *(uint32_t *)&binaryEncodings[_mnemonic];
-      return cursor;
-      }
-   };
-
-} // RV
-} // OMR
+}} // namespace OMR::RV
 #endif

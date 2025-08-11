@@ -27,10 +27,14 @@
  */
 #ifndef OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
 #define OMR_REGISTER_DEPENDENCY_STRUCT_CONNECTOR
+
 namespace OMR {
-namespace X86 { struct RegisterDependency; }
-typedef OMR::X86::RegisterDependency RegisterDependencyConnector;
+namespace X86 {
+struct RegisterDependency;
 }
+
+typedef OMR::X86::RegisterDependency RegisterDependencyConnector;
+} // namespace OMR
 #else
 #error OMR::X86::RegisterDependency expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,34 +43,29 @@ typedef OMR::X86::RegisterDependency RegisterDependencyConnector;
 
 #include <stdint.h>
 
-namespace OMR
-{
-namespace X86
-{
+namespace OMR { namespace X86 {
 
-struct RegisterDependency : OMR::RegisterDependency
-   {
-   /**
-    * @return Answers \c true if this register dependency refers to all x87 floating
-    *         point registers collectively; \c false otherwise.
-    */
-   bool isAllFPRegisters() { return _realRegister == TR::RealRegister::AllFPRegisters; }
+struct RegisterDependency : OMR::RegisterDependency {
+    /**
+     * @return Answers \c true if this register dependency refers to all x87 floating
+     *         point registers collectively; \c false otherwise.
+     */
+    bool isAllFPRegisters() { return _realRegister == TR::RealRegister::AllFPRegisters; }
 
-   /**
-    * @return Answers \c true if this register dependency is a request for the
-    *         best free register from the perspective of the register assigner;
-    *         \c false otherwise.
-    */
-   bool isBestFreeReg() { return _realRegister == TR::RealRegister::BestFreeReg; }
+    /**
+     * @return Answers \c true if this register dependency is a request for the
+     *         best free register from the perspective of the register assigner;
+     *         \c false otherwise.
+     */
+    bool isBestFreeReg() { return _realRegister == TR::RealRegister::BestFreeReg; }
 
-   /**
-    * @return Answers \c true if this register dependency is a request for a
-    *         register that can be used as the byte operand in certain machine
-    *         instructions; \c false otherwise.
-    */
-   bool isByteReg() { return _realRegister == TR::RealRegister::ByteReg; }
-   };
-}
-}
+    /**
+     * @return Answers \c true if this register dependency is a request for a
+     *         register that can be used as the byte operand in certain machine
+     *         instructions; \c false otherwise.
+     */
+    bool isByteReg() { return _realRegister == TR::RealRegister::ByteReg; }
+};
+}} // namespace OMR::X86
 
 #endif

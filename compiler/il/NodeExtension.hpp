@@ -31,8 +31,7 @@
 
 typedef TR_ArenaAllocator TR_NodeExtAllocator;
 
-namespace TR
-{
+namespace TR {
 
 /**
  * A flexible data storage class for associating information with nodes.
@@ -41,52 +40,36 @@ namespace TR
  *       go away in lieu of a more dynamically sized object that is less
  *       discomforting.
  */
-class NodeExtension
-    {
+class NodeExtension {
 public:
-    NodeExtension(TR_NodeExtAllocator & alloc) :
-       _allocator(alloc) {};
+    NodeExtension(TR_NodeExtAllocator &alloc)
+        : _allocator(alloc) {};
 
-    void * operator new (size_t s, uint16_t arrayElems, TR_NodeExtAllocator & m)
-       {
-       s += (arrayElems - NUM_DEFAULT_ELEMS) * sizeof(uintptr_t);
-       return m.allocate(s);
-       }
+    void *operator new(size_t s, uint16_t arrayElems, TR_NodeExtAllocator &m)
+    {
+        s += (arrayElems - NUM_DEFAULT_ELEMS) * sizeof(uintptr_t);
+        return m.allocate(s);
+    }
 
-    void   operator delete(void * ptr, uint16_t arrayElems, TR_NodeExtAllocator & m)
-       {
-       size_t size = sizeof(NodeExtension) + (arrayElems - NUM_DEFAULT_ELEMS) * sizeof(uintptr_t);
-       return m.deallocate(ptr, size);
-       }
+    void operator delete(void *ptr, uint16_t arrayElems, TR_NodeExtAllocator &m)
+    {
+        size_t size = sizeof(NodeExtension) + (arrayElems - NUM_DEFAULT_ELEMS) * sizeof(uintptr_t);
+        return m.deallocate(ptr, size);
+    }
 
-    void   operator delete(void * ptr, size_t s, TR_NodeExtAllocator & m)
-       {
-       m.deallocate(ptr,s);
-       };
+    void operator delete(void *ptr, size_t s, TR_NodeExtAllocator &m) { m.deallocate(ptr, s); };
 
-    template <class T>
-    T  setElem(uint16_t index, T elem)
-       {
-       return (T)(_data[index] = (uintptr_t)elem);
-       }
+    template<class T> T setElem(uint16_t index, T elem) { return (T)(_data[index] = (uintptr_t)elem); }
 
-    template <class T>
-    T  getElem(uint16_t index)
-       {
-       return (T)_data[index];
-       }
+    template<class T> T getElem(uint16_t index) { return (T)_data[index]; }
 
-    void
-    freeExtension(size_t s)
-       {
-       _allocator.deallocate(this,s);
-       }
+    void freeExtension(size_t s) { _allocator.deallocate(this, s); }
 
-  private:
-      TR_NodeExtAllocator & _allocator;
-      uintptr_t _data[NUM_DEFAULT_ELEMS];
-    };
+private:
+    TR_NodeExtAllocator &_allocator;
+    uintptr_t _data[NUM_DEFAULT_ELEMS];
+};
 
-}
+} // namespace TR
 
 #endif

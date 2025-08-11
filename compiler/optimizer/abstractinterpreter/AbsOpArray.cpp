@@ -21,69 +21,59 @@
 
 #include "optimizer/abstractinterpreter/AbsOpArray.hpp"
 
-TR::AbsOpArray* TR::AbsOpArray::clone(TR::Region& region) const
-   {
-   TR::AbsOpArray* copy = new (region) TR::AbsOpArray(static_cast<uint32_t>(_container.size()), region);
-   for (auto i = 0; i < _container.size(); i ++)
-      {
-      copy->_container[i] = _container[i] ? _container[i]->clone(region) : NULL;
-      }
-   return copy;
-   }
+TR::AbsOpArray *TR::AbsOpArray::clone(TR::Region &region) const
+{
+    TR::AbsOpArray *copy = new (region) TR::AbsOpArray(static_cast<uint32_t>(_container.size()), region);
+    for (auto i = 0; i < _container.size(); i++) {
+        copy->_container[i] = _container[i] ? _container[i]->clone(region) : NULL;
+    }
+    return copy;
+}
 
-void TR::AbsOpArray::merge(const TR::AbsOpArray* other, TR::Region& region)
-   {
-   TR_ASSERT_FATAL(other->size() == size(), "Op Array Size not equal! other:%d vs self:%d\n", other->size(), size());
+void TR::AbsOpArray::merge(const TR::AbsOpArray *other, TR::Region &region)
+{
+    TR_ASSERT_FATAL(other->size() == size(), "Op Array Size not equal! other:%d vs self:%d\n", other->size(), size());
 
-   for (auto i = 0; i < size(); i++)
-      {
-      TR::AbsValue *selfValue = at(i);
-      TR::AbsValue *otherValue = other->at(i);
+    for (auto i = 0; i < size(); i++) {
+        TR::AbsValue *selfValue = at(i);
+        TR::AbsValue *otherValue = other->at(i);
 
-      if (!selfValue && !otherValue)
-         {
-         continue;
-         }
-      else if (selfValue && otherValue)
-         {
-         TR::AbsValue* mergedVal = selfValue->merge(otherValue);
-         set(i, mergedVal);
-         }
-      else if (selfValue)
-         {
-         set(i, selfValue);
-         }
-      else
-         {
-         set(i, otherValue->clone(region));
-         }
-      }
-   }
+        if (!selfValue && !otherValue) {
+            continue;
+        } else if (selfValue && otherValue) {
+            TR::AbsValue *mergedVal = selfValue->merge(otherValue);
+            set(i, mergedVal);
+        } else if (selfValue) {
+            set(i, selfValue);
+        } else {
+            set(i, otherValue->clone(region));
+        }
+    }
+}
 
 void TR::AbsOpArray::set(uint32_t index, TR::AbsValue *value)
-   {
-   TR_ASSERT_FATAL(index < size(), "Index out of range! Max array size: %d, Index: %d\n", size(), index);
-   _container[index] = value;
-   }
+{
+    TR_ASSERT_FATAL(index < size(), "Index out of range! Max array size: %d, Index: %d\n", size(), index);
+    _container[index] = value;
+}
 
-TR::AbsValue* TR::AbsOpArray::at(uint32_t index) const
-   {
-   TR_ASSERT_FATAL(index < size(), "Index out of range! Max array size: %d, Index: %d\n", size(), index);
-   return _container[index];
-   }
+TR::AbsValue *TR::AbsOpArray::at(uint32_t index) const
+{
+    TR_ASSERT_FATAL(index < size(), "Index out of range! Max array size: %d, Index: %d\n", size(), index);
+    return _container[index];
+}
 
-void TR::AbsOpArray::print(TR::Compilation* comp) const
-   {
-   traceMsg(comp, "Contents of Abstract Local Variable Array:\n");
-   for (auto i = 0; i < size(); i++)
-      {
-      traceMsg(comp, "A[%d] = ", i);
-      if (!at(i))
-         traceMsg(comp, "Uninitialized");
-      else
-         at(i)->print(comp);
+void TR::AbsOpArray::print(TR::Compilation *comp) const
+{
+    traceMsg(comp, "Contents of Abstract Local Variable Array:\n");
+    for (auto i = 0; i < size(); i++) {
+        traceMsg(comp, "A[%d] = ", i);
+        if (!at(i))
+            traceMsg(comp, "Uninitialized");
+        else
+            at(i)->print(comp);
 
-      traceMsg(comp, "\n");
-      }
-   traceMsg(comp, "\n");
-   }
+        traceMsg(comp, "\n");
+    }
+    traceMsg(comp, "\n");
+}

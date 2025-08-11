@@ -19,10 +19,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#pragma csect(CODE,"OMRZSnippet#C")
-#pragma csect(STATIC,"OMRZSnippet#S")
-#pragma csect(TEST,"OMRZSnippet#T")
-
+#pragma csect(CODE, "OMRZSnippet#C")
+#pragma csect(STATIC, "OMRZSnippet#S")
+#pragma csect(TEST, "OMRZSnippet#T")
 
 #include <stddef.h>
 #include <stdint.h>
@@ -57,44 +56,33 @@ namespace TR {
 class Node;
 }
 
-OMR::Z::Snippet::Snippet(
-      TR::CodeGenerator *cg,
-      TR::Node *node,
-      TR::LabelSymbol *label,
-      bool isGCSafePoint) :
-   OMR::Snippet(cg, node, label, isGCSafePoint),
-      _codeBaseOffset(-1), _pad_bytes(0), _snippetDestAddr(0), _zflags(0)
-   {
-   self()->setNeedLitPoolBasePtr();
-   }
+OMR::Z::Snippet::Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint)
+    : OMR::Snippet(cg, node, label, isGCSafePoint)
+    , _codeBaseOffset(-1)
+    , _pad_bytes(0)
+    , _snippetDestAddr(0)
+    , _zflags(0)
+{
+    self()->setNeedLitPoolBasePtr();
+}
 
-
-
-OMR::Z::Snippet::Snippet(
-      TR::CodeGenerator *cg,
-      TR::Node *node,
-      TR::LabelSymbol *label) :
-   OMR::Snippet(cg, node, label),
-      _codeBaseOffset(-1), _pad_bytes(0), _snippetDestAddr(0), _zflags(0)
-   {
-   self()->setNeedLitPoolBasePtr();
-   }
+OMR::Z::Snippet::Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label)
+    : OMR::Snippet(cg, node, label)
+    , _codeBaseOffset(-1)
+    , _pad_bytes(0)
+    , _snippetDestAddr(0)
+    , _zflags(0)
+{
+    self()->setNeedLitPoolBasePtr();
+}
 
 /**
  * Load the vm thread value into GPR13
  * @todo okay to assume that we can destroy previous contents of r13? is register volatile?
  */
-uint8_t *
-OMR::Z::Snippet::generateLoadVMThreadInstruction(TR::CodeGenerator *cg, uint8_t *cursor)
-   {
-   return cursor;
-   }
+uint8_t *OMR::Z::Snippet::generateLoadVMThreadInstruction(TR::CodeGenerator *cg, uint8_t *cursor) { return cursor; }
 
-uint32_t
-OMR::Z::Snippet::getLoadVMThreadInstructionLength(TR::CodeGenerator *cg)
-   {
-   return 0;
-   }
+uint32_t OMR::Z::Snippet::getLoadVMThreadInstructionLength(TR::CodeGenerator *cg) { return 0; }
 
 /**
  * Helper method to insert Runtime Instrumentation Hooks RION or RIOFF in snippet
@@ -105,11 +93,11 @@ OMR::Z::Snippet::getLoadVMThreadInstructionLength(TR::CodeGenerator *cg)
  * @param isPrivateLinkage Whether the snippet is involved in a private JIT linkage (i.e. Call Helper to JITCODE)
  * @return                 Updated binary encoding cursor after RI hook generation.
  */
-uint8_t *
-OMR::Z::Snippet::generateRuntimeInstrumentationOnOffInstruction(TR::CodeGenerator *cg, uint8_t *cursor, TR::InstOpCode::Mnemonic op, bool isPrivateLinkage)
-   {
-   return cursor;
-   }
+uint8_t *OMR::Z::Snippet::generateRuntimeInstrumentationOnOffInstruction(TR::CodeGenerator *cg, uint8_t *cursor,
+    TR::InstOpCode::Mnemonic op, bool isPrivateLinkage)
+{
+    return cursor;
+}
 
 /**
  * Helper method to query the length of Runtime Instrumentation Hooks RION or RIOFF in snippet
@@ -118,75 +106,70 @@ OMR::Z::Snippet::generateRuntimeInstrumentationOnOffInstruction(TR::CodeGenerato
  * @param isPrivateLinkage Whether the snippet is involved in a private JIT linkage (i.e. Call Helper to JITCODE)
  * @return                 The length of RION or RIOFF encoding if generated.  Zero otherwise.
  */
-uint32_t
-OMR::Z::Snippet::getRuntimeInstrumentationOnOffInstructionLength(TR::CodeGenerator *cg, bool isPrivateLinkage)
-   {
-   return 0;
-   }
-
+uint32_t OMR::Z::Snippet::getRuntimeInstrumentationOnOffInstructionLength(TR::CodeGenerator *cg, bool isPrivateLinkage)
+{
+    return 0;
+}
 
 #include "z/codegen/CallSnippet.hpp"
 #include "z/codegen/ConstantDataSnippet.hpp"
 #include "z/codegen/S390HelperCallSnippet.hpp"
 
-void
-TR_Debug::printz(TR::FILE *pOutFile, TR::Snippet * snippet)
-   {
-   if (pOutFile == NULL)
-      {
-      return;
-      }
-   switch (snippet->getKind())
-      {
-      case TR::Snippet::IsHelperCall:
-         print(pOutFile, (TR::S390HelperCallSnippet *) snippet);
-         break;
+void TR_Debug::printz(TR::FILE *pOutFile, TR::Snippet *snippet)
+{
+    if (pOutFile == NULL) {
+        return;
+    }
+    switch (snippet->getKind()) {
+        case TR::Snippet::IsHelperCall:
+            print(pOutFile, (TR::S390HelperCallSnippet *)snippet);
+            break;
 #if J9_PROJECT_SPECIFIC
-      case TR::Snippet::IsCall:
-         snippet->print(pOutFile, this);
-         break;
-      case TR::Snippet::IsForceRecomp:
-         print(pOutFile, (TR::S390ForceRecompilationSnippet *) snippet);
-         break;
-      case TR::Snippet::IsForceRecompData:
-         print(pOutFile, (TR::S390ForceRecompilationDataSnippet *) snippet);
-         break;
-      case TR::Snippet::IsUnresolvedCall:
-         print(pOutFile, (TR::S390UnresolvedCallSnippet *) snippet);
-         break;
-      case TR::Snippet::IsVirtual:
-         print(pOutFile, (TR::S390VirtualSnippet *) snippet);
-         break;
-      case TR::Snippet::IsVirtualUnresolved:
-         print(pOutFile, (TR::S390VirtualUnresolvedSnippet *) snippet);
-         break;
-      case TR::Snippet::IsInterfaceCall:
-         print(pOutFile, (TR::S390InterfaceCallSnippet *) snippet);
-         break;
-      case TR::Snippet::IsStackCheckFailure:
-         print(pOutFile, (TR::S390StackCheckFailureSnippet *) snippet);
-         break;
-      case TR::Snippet::IsInterfaceCallData:
-         print(pOutFile, (TR::J9S390InterfaceCallDataSnippet *) snippet);
-         break;
+        case TR::Snippet::IsCall:
+            snippet->print(pOutFile, this);
+            break;
+        case TR::Snippet::IsForceRecomp:
+            print(pOutFile, (TR::S390ForceRecompilationSnippet *)snippet);
+            break;
+        case TR::Snippet::IsForceRecompData:
+            print(pOutFile, (TR::S390ForceRecompilationDataSnippet *)snippet);
+            break;
+        case TR::Snippet::IsUnresolvedCall:
+            print(pOutFile, (TR::S390UnresolvedCallSnippet *)snippet);
+            break;
+        case TR::Snippet::IsVirtual:
+            print(pOutFile, (TR::S390VirtualSnippet *)snippet);
+            break;
+        case TR::Snippet::IsVirtualUnresolved:
+            print(pOutFile, (TR::S390VirtualUnresolvedSnippet *)snippet);
+            break;
+        case TR::Snippet::IsInterfaceCall:
+            print(pOutFile, (TR::S390InterfaceCallSnippet *)snippet);
+            break;
+        case TR::Snippet::IsStackCheckFailure:
+            print(pOutFile, (TR::S390StackCheckFailureSnippet *)snippet);
+            break;
+        case TR::Snippet::IsInterfaceCallData:
+            print(pOutFile, (TR::J9S390InterfaceCallDataSnippet *)snippet);
+            break;
 #endif
-      case TR::Snippet::IsConstantData:
-      case TR::Snippet::IsWritableData:
-      case TR::Snippet::IsEyeCatcherData:
-         print(pOutFile, (TR::S390ConstantDataSnippet *) snippet);
-         break;
-      case TR::Snippet::IsUnresolvedData:
-         print(pOutFile, (TR::UnresolvedDataSnippet *) snippet);
-         break;
+        case TR::Snippet::IsConstantData:
+        case TR::Snippet::IsWritableData:
+        case TR::Snippet::IsEyeCatcherData:
+            print(pOutFile, (TR::S390ConstantDataSnippet *)snippet);
+            break;
+        case TR::Snippet::IsUnresolvedData:
+            print(pOutFile, (TR::UnresolvedDataSnippet *)snippet);
+            break;
 
-      case TR::Snippet::IsConstantInstruction:
-         print(pOutFile, (TR::S390ConstantInstructionSnippet *) snippet);
-         break;
-      case TR::Snippet::IsRestoreGPR7:
-         print(pOutFile, (TR::S390RestoreGPR7Snippet *) snippet);
-         break;
+        case TR::Snippet::IsConstantInstruction:
+            print(pOutFile, (TR::S390ConstantInstructionSnippet *)snippet);
+            break;
+        case TR::Snippet::IsRestoreGPR7:
+            print(pOutFile, (TR::S390RestoreGPR7Snippet *)snippet);
+            break;
 
-      default:
-         snippet->print(pOutFile, this);
-      }
-   }
+        default:
+            snippet->print(pOutFile, this);
+    }
+}

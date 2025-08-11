@@ -27,10 +27,11 @@
  */
 #ifndef OMR_CODE_METADATA_CONNECTOR
 #define OMR_CODE_METADATA_CONNECTOR
+
 namespace OMR {
 struct CodeMetaData;
 typedef OMR::CodeMetaData CodeMetaDataConnector;
-}
+} // namespace OMR
 #endif
 
 #include "env/jittypes.h"
@@ -39,83 +40,79 @@ typedef OMR::CodeMetaData CodeMetaDataConnector;
 namespace TR {
 class CodeMetaData;
 class Compilation;
-}
+} // namespace TR
 
 /**
  * CodeMetaData contains metadata information about a single method.
  */
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE CodeMetaData
-   {
-   public:
+class OMR_EXTENSIBLE CodeMetaData {
+public:
+    TR::CodeMetaData *self();
 
-   TR::CodeMetaData *self();
+    /**
+     * @brief Constructor method to create metadata for a method.
+     */
+    CodeMetaData(TR::Compilation *comp);
 
-   /**
-    * @brief Constructor method to create metadata for a method.
-    */
-   CodeMetaData(TR::Compilation *comp);
+    /**
+     * @brief Returns the address of allocated code memory within a code
+     * cache for a method.
+     */
+    uintptr_t codeAllocStart() { return _codeAllocStart; }
 
-   /**
-    * @brief Returns the address of allocated code memory within a code
-    * cache for a method.
-    */
-   uintptr_t codeAllocStart() { return _codeAllocStart; }
+    /**
+     * @brief Returns the total size of code memory allocated for a method
+     * within a code cache.
+     */
+    uint32_t codeAllocSize() { return _codeAllocSize; }
 
-   /**
-    * @brief Returns the total size of code memory allocated for a method 
-    * within a code cache.
-    */
-   uint32_t codeAllocSize() { return _codeAllocSize; }
+    /**
+     * @brief Returns the starting address of compiled code for a
+     * method when invoked from an interpreter.
+     *
+     * Interpreter entry PC may preceed compiled entry PC and may point
+     * to code necessary for proper execution of this method if invoked
+     * from an interpreter. For example, it may need to marshall method
+     * arguments from an interpreter linkage to a compiled method linkage.
+     *
+     * By default, the interpreter entry PC and compiled entry PC point
+     * to the same address.
+     */
+    uintptr_t interpreterEntryPC() { return _interpreterEntryPC; }
 
-   /**
-    * @brief Returns the starting address of compiled code for a
-    * method when invoked from an interpreter.
-    *
-    * Interpreter entry PC may preceed compiled entry PC and may point 
-    * to code necessary for proper execution of this method if invoked 
-    * from an interpreter. For example, it may need to marshall method 
-    * arguments from an interpreter linkage to a compiled method linkage.
-    *
-    * By default, the interpreter entry PC and compiled entry PC point 
-    * to the same address.
-    */
-   uintptr_t interpreterEntryPC() { return _interpreterEntryPC; }
+    /**
+     * @brief Returns the starting address of compiled code for a
+     * method when invoked from compiled code.
+     *
+     * By default, the interpreter entry PC and compiled entry PC point
+     * to the same address.
+     */
+    uintptr_t compiledEntryPC() { return _compiledEntryPC; }
 
-   /**
-    * @brief Returns the starting address of compiled code for a
-    * method when invoked from compiled code.
-    * 
-    * By default, the interpreter entry PC and compiled entry PC point 
-    * to the same address.
-    */
-   uintptr_t compiledEntryPC() { return _compiledEntryPC; }
+    /**
+     * @brief Returns the end address of compiled code for a method.
+     */
+    uintptr_t compiledEndPC() { return _compiledEndPC; }
 
-   /**
-    * @brief Returns the end address of compiled code for a method.
-    */
-   uintptr_t compiledEndPC() { return _compiledEndPC; }
+    /**
+     * @brief Returns the compilation hotness level of a compiled method.
+     */
+    TR_Hotness codeHotness() { return _hotness; }
 
-   /**
-    * @brief Returns the compilation hotness level of a compiled method.
-    */
-   TR_Hotness codeHotness() { return _hotness; }
+protected:
+    uintptr_t _codeAllocStart;
+    uint32_t _codeAllocSize;
 
-   protected:
+    uintptr_t _interpreterEntryPC;
+    uintptr_t _compiledEntryPC;
+    uintptr_t _compiledEndPC;
 
-   uintptr_t _codeAllocStart;
-   uint32_t _codeAllocSize;
+    TR_Hotness _hotness;
+};
 
-   uintptr_t _interpreterEntryPC;
-   uintptr_t _compiledEntryPC;
-   uintptr_t _compiledEndPC;
-
-   TR_Hotness _hotness;
-   };
-
-}
+} // namespace OMR
 
 #endif

@@ -27,34 +27,29 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 
-
-
 namespace TR {
 class Block;
 class Compilation;
-}
+} // namespace TR
 
+class TR_AsyncCheckInsertion : public TR::Optimization {
+public:
+    TR_AsyncCheckInsertion(TR::OptimizationManager *manager);
 
-class TR_AsyncCheckInsertion : public TR::Optimization
-   {
-   public:
-   TR_AsyncCheckInsertion(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_AsyncCheckInsertion(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_AsyncCheckInsertion(manager);
+    }
 
+    static int32_t insertReturnAsyncChecks(TR::Optimization *opt, const char *counterPrefix);
+    static void insertAsyncCheck(TR::Block *block, TR::Compilation *comp, const char *counterPrefix);
 
-   static int32_t insertReturnAsyncChecks(TR::Optimization *opt, const char *counterPrefix);
-   static void insertAsyncCheck(TR::Block *block, TR::Compilation *comp, const char *counterPrefix);
+    virtual bool shouldPerform();
+    virtual int32_t perform();
 
-   virtual bool    shouldPerform();
-   virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   virtual const char * optDetailString() const throw();
-
-   private:
-
-   };
+private:
+};
 
 #endif

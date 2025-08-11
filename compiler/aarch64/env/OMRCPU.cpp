@@ -24,41 +24,36 @@
 #include "env/jittypes.h"
 #include "omrport.h"
 
-bool
-OMR::ARM64::CPU::isTargetWithinUnconditionalBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress)
-   {
-   intptr_t range = targetAddress - sourceAddress;
-   return range <= self()->maxUnconditionalBranchImmediateForwardOffset() &&
-          range >= self()->maxUnconditionalBranchImmediateBackwardOffset();
-   }
+bool OMR::ARM64::CPU::isTargetWithinUnconditionalBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress)
+{
+    intptr_t range = targetAddress - sourceAddress;
+    return range <= self()->maxUnconditionalBranchImmediateForwardOffset()
+        && range >= self()->maxUnconditionalBranchImmediateBackwardOffset();
+}
 
-bool
-OMR::ARM64::CPU::supportsFeature(uint32_t feature)
-   {
-   if (TR::Compiler->omrPortLib == NULL)
-      {
-      return false;
-      }
+bool OMR::ARM64::CPU::supportsFeature(uint32_t feature)
+{
+    if (TR::Compiler->omrPortLib == NULL) {
+        return false;
+    }
 
-   OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
-   return (TRUE == omrsysinfo_processor_has_feature(&_processorDescription, feature));
-   }
+    OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
+    return (TRUE == omrsysinfo_processor_has_feature(&_processorDescription, feature));
+}
 
-const char*
-OMR::ARM64::CPU::getProcessorName()
-   {
-   const char* returnString = "";
-   switch(_processorDescription.processor)
-      {
-      case OMR_PROCESSOR_ARM64_UNKNOWN:
-         returnString = "Unknown ARM64 processor";
-         break;
-      case OMR_PROCESSOR_ARM64_V8_A:
-         returnString = "ARMv8-A processor";
-         break;
-      default:
-         returnString = "Unknown ARM64 processor";
-         break;
-      }
-   return returnString;
-   }
+const char *OMR::ARM64::CPU::getProcessorName()
+{
+    const char *returnString = "";
+    switch (_processorDescription.processor) {
+        case OMR_PROCESSOR_ARM64_UNKNOWN:
+            returnString = "Unknown ARM64 processor";
+            break;
+        case OMR_PROCESSOR_ARM64_V8_A:
+            returnString = "ARMv8-A processor";
+            break;
+        default:
+            returnString = "Unknown ARM64 processor";
+            break;
+    }
+    return returnString;
+}

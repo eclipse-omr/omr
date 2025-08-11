@@ -27,127 +27,64 @@
 #include "env/jittypes.h"
 #include "infra/Assert.hpp"
 
+TR::ArithEnv *OMR::ArithEnv::self() { return static_cast<TR::ArithEnv *>(this); }
 
-TR::ArithEnv *
-OMR::ArithEnv::self()
-   {
-   return static_cast<TR::ArithEnv *>(this);
-   }
+float OMR::ArithEnv::floatAddFloat(float a, float b) { return a + b; }
 
-float
-OMR::ArithEnv::floatAddFloat(float a, float b)
-   {
-   return a+b;
-   }
+float OMR::ArithEnv::floatSubtractFloat(float a, float b) { return a - b; }
 
-float
-OMR::ArithEnv::floatSubtractFloat(float a, float b)
-   {
-   return a-b;
-   }
+float OMR::ArithEnv::floatMultiplyFloat(float a, float b) { return a * b; }
 
-float
-OMR::ArithEnv::floatMultiplyFloat(float a, float b)
-   {
-   return a * b;
-   }
+float OMR::ArithEnv::floatDivideFloat(float a, float b) { return a / b; }
 
-float
-OMR::ArithEnv::floatDivideFloat(float a, float b)
-   {
-   return a / b;
-   }
+float OMR::ArithEnv::floatRemainderFloat(float a, float b)
+{
+    // C99 IEEE remainder is not available in older MSVC versions
 
-float
-OMR::ArithEnv::floatRemainderFloat(float a, float b)
-   {
-
-   // C99 IEEE remainder is not available in older MSVC versions
-
-#if defined (_MSC_VER)
-   return 0;
+#if defined(_MSC_VER)
+    return 0;
 #else
-   return remainderf(a, b);
+    return remainderf(a, b);
 #endif
+}
 
-   }
+float OMR::ArithEnv::floatNegate(float a)
+{
+    float c;
+    c = -a;
+    return c;
+}
 
-float
-OMR::ArithEnv::floatNegate(float a)
-   {
-   float c;
-   c = -a;
-   return c;
-   }
+double OMR::ArithEnv::doubleAddDouble(double a, double b) { return a + b; }
 
-double
-OMR::ArithEnv::doubleAddDouble(double a, double b)
-   {
-   return a + b;
-   }
+double OMR::ArithEnv::doubleSubtractDouble(double a, double b) { return a - b; }
 
-double
-OMR::ArithEnv::doubleSubtractDouble(double a, double b)
-   {
-   return a - b;
-   }
+double OMR::ArithEnv::doubleMultiplyDouble(double a, double b) { return a * b; }
 
-double
-OMR::ArithEnv::doubleMultiplyDouble(double a, double b)
-   {
-   return a * b;
-   }
+double OMR::ArithEnv::doubleDivideDouble(double a, double b) { return a / b; }
 
-double
-OMR::ArithEnv::doubleDivideDouble(double a, double b)
-   {
-   return a / b;
-   }
-
-double
-OMR::ArithEnv::doubleRemainderDouble(double a, double b)
-   {
-#if defined (_MSC_VER)
-   return 0;
+double OMR::ArithEnv::doubleRemainderDouble(double a, double b)
+{
+#if defined(_MSC_VER)
+    return 0;
 #else
-   return remainder(a, b);
+    return remainder(a, b);
 #endif
-   }
+}
 
-double
-OMR::ArithEnv::doubleNegate(double a)
-   {
-   double c;
-   c = -a;
-   return c;
-   }
+double OMR::ArithEnv::doubleNegate(double a)
+{
+    double c;
+    c = -a;
+    return c;
+}
 
-double
-OMR::ArithEnv::floatToDouble(float a)
-   {
-   return (double) a;
-   }
+double OMR::ArithEnv::floatToDouble(float a) { return (double)a; }
 
-float
-OMR::ArithEnv::doubleToFloat(double a)
-   {
-   return (float) a;
-   }
+float OMR::ArithEnv::doubleToFloat(double a) { return (float)a; }
 
-int64_t
-OMR::ArithEnv::longRemainderLong(int64_t a, int64_t b)
-   {
-   return a % b;
-   }
+int64_t OMR::ArithEnv::longRemainderLong(int64_t a, int64_t b) { return a % b; }
 
-int64_t
-OMR::ArithEnv::longDivideLong(int64_t a, int64_t b)
-   {
-   return a / b;
-   }
+int64_t OMR::ArithEnv::longDivideLong(int64_t a, int64_t b) { return a / b; }
 
-int64_t
-OMR::ArithEnv::longMultiplyLong(int64_t a, int64_t b)
-   {
-   return a * b;
-   }
+int64_t OMR::ArithEnv::longMultiplyLong(int64_t a, int64_t b) { return a * b; }

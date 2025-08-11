@@ -24,38 +24,33 @@
 #include "env/jittypes.h"
 #include "omrport.h"
 
-bool
-OMR::RV::CPU::isTargetWithinUnconditionalBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress)
-   {
-   intptr_t range = targetAddress - sourceAddress;
-   return range <= self()->maxUnconditionalBranchImmediateForwardOffset() &&
-          range >= self()->maxUnconditionalBranchImmediateBackwardOffset();
-   }
+bool OMR::RV::CPU::isTargetWithinUnconditionalBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress)
+{
+    intptr_t range = targetAddress - sourceAddress;
+    return range <= self()->maxUnconditionalBranchImmediateForwardOffset()
+        && range >= self()->maxUnconditionalBranchImmediateBackwardOffset();
+}
 
-bool
-OMR::RV::CPU::supportsFeature(uint32_t feature)
-   {
-   if (TR::Compiler->omrPortLib == NULL)
-      {
-      return false;
-      }
+bool OMR::RV::CPU::supportsFeature(uint32_t feature)
+{
+    if (TR::Compiler->omrPortLib == NULL) {
+        return false;
+    }
 
-   OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
-   return (TRUE == omrsysinfo_processor_has_feature(&_processorDescription, feature));
-   }
+    OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
+    return (TRUE == omrsysinfo_processor_has_feature(&_processorDescription, feature));
+}
 
-const char*
-OMR::RV::CPU::getProcessorName()
-   {
-   const char* returnString = "";
-   switch(_processorDescription.processor)
-      {
-      case OMR_PROCESSOR_RISCV64_UNKNOWN:
-         returnString = "Unknown RV64G processor";
-         break;
-      default:
-         returnString = "Unknown RISC-V processor";
-         break;
-      }
-   return returnString;
-   }
+const char *OMR::RV::CPU::getProcessorName()
+{
+    const char *returnString = "";
+    switch (_processorDescription.processor) {
+        case OMR_PROCESSOR_RISCV64_UNKNOWN:
+            returnString = "Unknown RV64G processor";
+            break;
+        default:
+            returnString = "Unknown RISC-V processor";
+            break;
+    }
+    return returnString;
+}

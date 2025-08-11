@@ -24,10 +24,6 @@
 
 #include "optimizer/GlobalRegister.hpp"
 
-TR::GlobalRegister *
-OMR::GlobalRegister::self()
-    {
-    return static_cast<TR::GlobalRegister*>(this);
-    }
+TR::GlobalRegister *OMR::GlobalRegister::self() { return static_cast<TR::GlobalRegister *>(this); }
 
 #endif

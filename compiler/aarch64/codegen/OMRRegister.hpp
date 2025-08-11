@@ -27,58 +27,63 @@
  */
 #ifndef OMR_REGISTER_CONNECTOR
 #define OMR_REGISTER_CONNECTOR
-namespace OMR {
-   namespace ARM64 { class Register; }
-   typedef OMR::ARM64::Register RegisterConnector;
-}
-#else
-   #error OMR::ARM64::Register expected to be a primary connector, but a OMR connector is already defined
-#endif
 
+namespace OMR {
+namespace ARM64 {
+class Register;
+}
+
+typedef OMR::ARM64::Register RegisterConnector;
+} // namespace OMR
+#else
+#error OMR::ARM64::Register expected to be a primary connector, but a OMR connector is already defined
+#endif
 
 #include "compiler/codegen/OMRRegister.hpp"
 
 class TR_LiveRegisterInfo;
 
-namespace OMR
-{
+namespace OMR { namespace ARM64 {
 
-namespace ARM64
-{
+class OMR_EXTENSIBLE Register : public OMR::Register {
+protected:
+    Register(uint32_t f = 0)
+        : OMR::Register(f)
+    {
+        _liveRegisterInfo._liveRegister = NULL;
+    }
 
-class OMR_EXTENSIBLE Register: public OMR::Register
-   {
-   protected:
+    Register(TR_RegisterKinds rk)
+        : OMR::Register(rk)
+    {
+        _liveRegisterInfo._liveRegister = NULL;
+    }
 
-   Register(uint32_t f=0): OMR::Register(f) {_liveRegisterInfo._liveRegister = NULL;}
-   Register(TR_RegisterKinds rk): OMR::Register(rk)  {_liveRegisterInfo._liveRegister = NULL;}
-   Register(TR_RegisterKinds rk, uint16_t ar): OMR::Register(rk, ar) {_liveRegisterInfo._liveRegister = NULL;}
+    Register(TR_RegisterKinds rk, uint16_t ar)
+        : OMR::Register(rk, ar)
+    {
+        _liveRegisterInfo._liveRegister = NULL;
+    }
 
+public:
+    /*
+     * Getter/setters
+     */
+    TR_LiveRegisterInfo *getLiveRegisterInfo() { return _liveRegisterInfo._liveRegister; }
 
-   public:
-   /*
-    * Getter/setters
-    */
-   TR_LiveRegisterInfo *getLiveRegisterInfo()                       {return _liveRegisterInfo._liveRegister;}
-   TR_LiveRegisterInfo *setLiveRegisterInfo(TR_LiveRegisterInfo *p) {return (_liveRegisterInfo._liveRegister = p);}
+    TR_LiveRegisterInfo *setLiveRegisterInfo(TR_LiveRegisterInfo *p) { return (_liveRegisterInfo._liveRegister = p); }
 
-   uint32_t getInterference()           {return _liveRegisterInfo._interference;}
-   uint32_t setInterference(uint64_t i) {return (_liveRegisterInfo._interference = i);}
+    uint32_t getInterference() { return _liveRegisterInfo._interference; }
 
-   private:
+    uint32_t setInterference(uint64_t i) { return (_liveRegisterInfo._interference = i); }
 
-   union
-      {
-      TR_LiveRegisterInfo *_liveRegister; // Live register entry representing this register
-      uint32_t             _interference; // Real registers that interfere with this register
-      } _liveRegisterInfo;
+private:
+    union {
+        TR_LiveRegisterInfo *_liveRegister; // Live register entry representing this register
+        uint32_t _interference; // Real registers that interfere with this register
+    } _liveRegisterInfo;
+};
 
-
-   };
-
-}
-
-}
-
+}} // namespace OMR::ARM64
 
 #endif /* OMR_ARM64_REGISTER_INCL */

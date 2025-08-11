@@ -33,119 +33,121 @@
 #include "infra/IGBase.hpp"
 #include "infra/IGNode.hpp"
 
-template <class T> class TR_Stack;
+template<class T> class TR_Stack;
 
-class TR_InterferenceGraph : public TR_IGBase
-   {
-   struct HashTable;
-   friend struct HashTable;
+class TR_InterferenceGraph : public TR_IGBase {
+    struct HashTable;
+    friend struct HashTable;
 
-   // Ordered table of all allocated nodes.
-   //
-   TR_Array<TR_IGNode *> * _nodeTable;
+    // Ordered table of all allocated nodes.
+    //
+    TR_Array<TR_IGNode *> *_nodeTable;
 
-   // FILO structure of nodes for simplify/select phases.
-   //
-   TR_Stack<TR_IGNode *> * _nodeStack;
+    // FILO structure of nodes for simplify/select phases.
+    //
+    TR_Stack<TR_IGNode *> *_nodeStack;
 
-   // Hash table mapping of entity addresses to IG nodes.
-   //
-   struct HashTableEntry
-      {
-      HashTableEntry *_next;
-      TR_IGNode      *_igNode;
-      };
+    // Hash table mapping of entity addresses to IG nodes.
+    //
+    struct HashTableEntry {
+        HashTableEntry *_next;
+        TR_IGNode *_igNode;
+    };
 
-   struct HashTable
-      {
-      int32_t          _numBuckets;
-      HashTableEntry **_buckets;
-      };
+    struct HashTable {
+        int32_t _numBuckets;
+        HashTableEntry **_buckets;
+    };
 
-   HashTable _entityHash;
+    HashTable _entityHash;
 
-   virtual bool simplify();
-   virtual bool select();
+    virtual bool simplify();
+    virtual bool select();
 
-   protected:
+protected:
+    TR::Compilation *comp() { return _compilation; }
 
-   TR::Compilation * comp() {return _compilation;}
+    TR_Memory *trMemory() { return _trMemory; }
 
-   TR_Memory *               trMemory()                    { return _trMemory; }
-   TR_StackMemory            trStackMemory()               { return _trMemory; }
-   TR_HeapMemory             trHeapMemory()                { return _trMemory; }
+    TR_StackMemory trStackMemory() { return _trMemory; }
 
-   void partitionNodesIntoDegreeSets(TR_BitVector *workingSet,
-                                     TR_BitVector *colourableDegreeSet,
-                                     TR_BitVector *notColourableDegreeSet);
+    TR_HeapMemory trHeapMemory() { return _trMemory; }
 
-   TR::Compilation *_compilation;
-   TR_Memory *_trMemory;
+    void partitionNodesIntoDegreeSets(TR_BitVector *workingSet, TR_BitVector *colourableDegreeSet,
+        TR_BitVector *notColourableDegreeSet);
 
-   public:
+    TR::Compilation *_compilation;
+    TR_Memory *_trMemory;
 
-   TR_InterferenceGraph(TR::Compilation *comp) :
-      _compilation(comp),
-      _nodeTable(NULL),
-      _nodeStack(NULL),
-      _trMemory(comp->trMemory()),
-      TR_IGBase() {}
+public:
+    TR_InterferenceGraph(TR::Compilation *comp)
+        : _compilation(comp)
+        , _nodeTable(NULL)
+        , _nodeStack(NULL)
+        , _trMemory(comp->trMemory())
+        , TR_IGBase()
+    {}
 
-   TR_InterferenceGraph(TR::Compilation *comp, int32_t estimatedNodes = 32);
+    TR_InterferenceGraph(TR::Compilation *comp, int32_t estimatedNodes = 32);
 
-   TR_IGNode *getNodeTable(IGNodeIndex i) {return ((*_nodeTable)[i]);}
+    TR_IGNode *getNodeTable(IGNodeIndex i) { return ((*_nodeTable)[i]); }
 
-   TR_Stack<TR_IGNode *> *getNodeStack()  {return _nodeStack;}
-   TR_Stack<TR_IGNode *> *setNodeStack(TR_Stack<TR_IGNode *> *ns) {return(_nodeStack = ns);}
+    TR_Stack<TR_IGNode *> *getNodeStack() { return _nodeStack; }
 
-   int32_t entityHashBucket(void *entity) {return (int32_t)(((uintptr_t)entity >> 2) % _entityHash._numBuckets);}
-   void addIGNodeToEntityHash(TR_IGNode *igNode);
+    TR_Stack<TR_IGNode *> *setNodeStack(TR_Stack<TR_IGNode *> *ns) { return (_nodeStack = ns); }
 
-   TR_IGNode *add(void *entity, bool ignoreDuplicates = false);
-   void addInterferenceBetween(void *entity1, void *entity2)
-       {
-       TR_IGNode *igNode1 = getIGNodeForEntity(entity1);
-       TR_IGNode *igNode2 = getIGNodeForEntity(entity2);
-       TR_ASSERT(igNode1,"addInterferenceBetween: entity1 %p does not exist in this interference graph\n", entity1);
-       TR_ASSERT(igNode2,"addInterferenceBetween: entity2 %p does not exist in this interference graph\n", entity2);
+    int32_t entityHashBucket(void *entity) { return (int32_t)(((uintptr_t)entity >> 2) % _entityHash._numBuckets); }
 
-       addInterferenceBetween(igNode1,igNode2);
-       }
+    void addIGNodeToEntityHash(TR_IGNode *igNode);
 
-   void addInterferenceBetween(TR_IGNode *igNode1, TR_IGNode *igNode2);
-   void removeAllInterferences(void *entity);
+    TR_IGNode *add(void *entity, bool ignoreDuplicates = false);
 
-   TR_IGNode *getIGNodeForEntity(void *entity);
-   bool hasInterference(void *entity1, void *entity2);
-   bool hasInterference(TR_IGNode *node1, TR_IGNode *node2)
-       {
-       IMIndex bit = getNodePairToBVIndex(node1->getIndex(), node2->getIndex());
-       return getInterferenceMatrix()->isSet(bit);
-       }
+    void addInterferenceBetween(void *entity1, void *entity2)
+    {
+        TR_IGNode *igNode1 = getIGNodeForEntity(entity1);
+        TR_IGNode *igNode2 = getIGNodeForEntity(entity2);
+        TR_ASSERT(igNode1, "addInterferenceBetween: entity1 %p does not exist in this interference graph\n", entity1);
+        TR_ASSERT(igNode2, "addInterferenceBetween: entity2 %p does not exist in this interference graph\n", entity2);
 
-   void removeInterferenceBetween(void *entity1, void *entity2)
-       {
-       TR_IGNode *igNode1 = getIGNodeForEntity(entity1);
-       TR_IGNode *igNode2 = getIGNodeForEntity(entity2);
+        addInterferenceBetween(igNode1, igNode2);
+    }
 
-       TR_ASSERT(igNode1, "hasInterference: entity1 %p does not exist in this interference graph\n", entity1);
-       TR_ASSERT(igNode2, "hasInterference: entity2 %p does not exist in this interference graph\n", entity2);
-       removeInterferenceBetween(igNode1,igNode2);
-       }
-   void removeInterferenceBetween(TR_IGNode *node1, TR_IGNode *node2);
+    void addInterferenceBetween(TR_IGNode *igNode1, TR_IGNode *igNode2);
+    void removeAllInterferences(void *entity);
 
-   void virtualRemoveEntityFromIG(void *entity);
-   void virtualRemoveNodeFromIG(TR_IGNode *igNode);
+    TR_IGNode *getIGNodeForEntity(void *entity);
+    bool hasInterference(void *entity1, void *entity2);
 
-   IGNodeDegree findMaxDegree();
+    bool hasInterference(TR_IGNode *node1, TR_IGNode *node2)
+    {
+        IMIndex bit = getNodePairToBVIndex(node1->getIndex(), node2->getIndex());
+        return getInterferenceMatrix()->isSet(bit);
+    }
 
-   bool doColouring(IGNodeColour numColours);
-   IGNodeColour findMinimumChromaticNumber();
+    void removeInterferenceBetween(void *entity1, void *entity2)
+    {
+        TR_IGNode *igNode1 = getIGNodeForEntity(entity1);
+        TR_IGNode *igNode2 = getIGNodeForEntity(entity2);
+
+        TR_ASSERT(igNode1, "hasInterference: entity1 %p does not exist in this interference graph\n", entity1);
+        TR_ASSERT(igNode2, "hasInterference: entity2 %p does not exist in this interference graph\n", entity2);
+        removeInterferenceBetween(igNode1, igNode2);
+    }
+
+    void removeInterferenceBetween(TR_IGNode *node1, TR_IGNode *node2);
+
+    void virtualRemoveEntityFromIG(void *entity);
+    void virtualRemoveNodeFromIG(TR_IGNode *igNode);
+
+    IGNodeDegree findMaxDegree();
+
+    bool doColouring(IGNodeColour numColours);
+    IGNodeColour findMinimumChromaticNumber();
 
 #ifdef DEBUG
-   void dumpIG(const char *msg = NULL);
+    void dumpIG(const char *msg = NULL);
 #else
-   void dumpIG(const char *msg = NULL) {}
+    void dumpIG(const char *msg = NULL) {}
 #endif
-   };
+};
 #endif

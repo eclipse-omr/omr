@@ -24,29 +24,24 @@
 
 #include "control/OMROptions.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE Options : public OMR::OptionsConnector
-{
+class OMR_EXTENSIBLE Options : public OMR::OptionsConnector {
 public:
+    Options()
+        : OMR::OptionsConnector()
+    {}
 
-   Options() : OMR::OptionsConnector() {}
+    Options(TR_Memory *m, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC,
+        TR_OptimizationPlan *optimizationPlan, bool isAOT = false, int32_t compThreadID = -1)
+        : OMR::OptionsConnector(m, index, lineNumber, compilee, oldStartPC, optimizationPlan, isAOT, compThreadID)
+    {}
 
-   Options(TR_Memory * m,
-           int32_t index,
-           int32_t lineNumber,
-           TR_ResolvedMethod *compilee,
-           void *oldStartPC,
-           TR_OptimizationPlan *optimizationPlan,
-           bool isAOT=false,
-           int32_t compThreadID=-1)
-      : OMR::OptionsConnector(m,index,lineNumber,compilee,oldStartPC,optimizationPlan,isAOT,compThreadID)
-      {}
-
-   Options(TR::Options &other) : OMR::OptionsConnector(other) {}
+    Options(TR::Options &other)
+        : OMR::OptionsConnector(other)
+    {}
 };
 
-}
+} // namespace TR
 
 #endif

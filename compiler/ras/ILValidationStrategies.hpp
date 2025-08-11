@@ -26,29 +26,27 @@
 
 namespace OMR {
 
-enum ILValidationRule
-   {
-   soundnessRule,
-   validateChildCount,
-   validateChildTypes,
-   validateLivenessBoundaries,
-   validateNodeRefCountWithinBlock,
-   validate_ireturnReturnType,
-   validate_axaddEnvironment,
-   /**
-    * NOTE: Please add `id`s for any new ILValidationRule here!
-    *       This needs to match the implementation of said *ILValidationRule.
-    *       See ILValidationRules.cpp for relevant examples.
-    */
+enum ILValidationRule {
+    soundnessRule,
+    validateChildCount,
+    validateChildTypes,
+    validateLivenessBoundaries,
+    validateNodeRefCountWithinBlock,
+    validate_ireturnReturnType,
+    validate_axaddEnvironment,
+    /**
+     * NOTE: Please add `id`s for any new ILValidationRule here!
+     *       This needs to match the implementation of said *ILValidationRule.
+     *       See ILValidationRules.cpp for relevant examples.
+     */
 
-   /* Used to mark the end of an ILValidationStrategy Array. */
-   endRules
-   };
+    /* Used to mark the end of an ILValidationStrategy Array. */
+    endRules
+};
 
-struct ILValidationStrategy
-   {
-   OMR::ILValidationRule        id;
-   };
+struct ILValidationStrategy {
+    OMR::ILValidationRule id;
+};
 
 extern const ILValidationStrategy emptyStrategy[];
 
@@ -56,17 +54,16 @@ extern const ILValidationStrategy postILgenValidatonStrategy[];
 
 extern const ILValidationStrategy preCodegenValidationStrategy[];
 
-} //namespace OMR
+} // namespace OMR
 
 namespace TR {
 
-enum ILValidationContext
-   {
-   noValidation,
-   preCodegenValidation,
-   postILgenValidation
-   /* NOTE: Please add any new ILValidationContext here! */
-   };
+enum ILValidationContext {
+    noValidation,
+    preCodegenValidation,
+    postILgenValidation
+    /* NOTE: Please add any new ILValidationContext here! */
+};
 
 extern const OMR::ILValidationStrategy *omrValidationStrategies[];
 

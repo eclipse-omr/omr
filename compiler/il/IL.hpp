@@ -25,15 +25,10 @@
 #include "il/OMRIL.hpp"
 #include "infra/Annotations.hpp"
 
+namespace TR {
 
-namespace TR
-{
+class OMR_EXTENSIBLE IL : public OMR::ILConnector {};
 
-class OMR_EXTENSIBLE IL : public OMR::ILConnector
-   {
-
-   };
-
-}
+} // namespace TR
 
 #endif

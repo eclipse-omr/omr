@@ -22,7 +22,6 @@
 #ifndef TR_S390_TREE_EVALUATOR_INCL
 #define TR_S390_TREE_EVALUATOR_INCL
 
-
 #include <stddef.h>
 #include <stdint.h>
 #include "codegen/InstOpCode.hpp"
@@ -40,58 +39,32 @@ class Register;
 class RegisterDependencyConditions;
 class RegisterPair;
 class TreeEvaluator;
-}
-
+} // namespace TR
 
 TR::Register *inlineShortReverseBytes(TR::Node *node, TR::CodeGenerator *cg);
 TR::Register *inlineIntegerReverseBytes(TR::Node *node, TR::CodeGenerator *cg);
 TR::Register *inlineLongReverseBytes(TR::Node *node, TR::CodeGenerator *cg);
 
-TR::Register *
-generateExtendedFloatConstantReg(TR::Node *node, TR::CodeGenerator *cg, int64_t constHi, int64_t constLo,
-                                 TR::RegisterDependencyConditions ** depsPtr = NULL);
+TR::Register *generateExtendedFloatConstantReg(TR::Node *node, TR::CodeGenerator *cg, int64_t constHi, int64_t constLo,
+    TR::RegisterDependencyConditions **depsPtr = NULL);
 
-TR::Instruction* generateS390ImmOp(TR::CodeGenerator *cg,
-                TR::InstOpCode::Mnemonic memOp,
-                TR::Node *node,
-                TR::Register *targetRegister,
-                float value,
-                TR::RegisterDependencyConditions *cond = 0,
-                TR::Instruction * preced = 0);
+TR::Instruction *generateS390ImmOp(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic memOp, TR::Node *node,
+    TR::Register *targetRegister, float value, TR::RegisterDependencyConditions *cond = 0, TR::Instruction *preced = 0);
 
-TR::Instruction* generateS390ImmOp(TR::CodeGenerator *cg,
-                TR::InstOpCode::Mnemonic memOp,
-                TR::Node *node,
-                TR::Register *targetRegister,
-                double value,
-                TR::RegisterDependencyConditions *cond = 0,
-                TR::Instruction * preced = 0);
+TR::Instruction *generateS390ImmOp(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic memOp, TR::Node *node,
+    TR::Register *targetRegister, double value, TR::RegisterDependencyConditions *cond = 0,
+    TR::Instruction *preced = 0);
 
-TR::Instruction* generateS390ImmOp(TR::CodeGenerator *cg,
-                TR::InstOpCode::Mnemonic memOp,
-                TR::Node *node,
-                TR::Register *sourceRegister,
-                TR::Register *targetRegister,
-                int64_t value,
-                TR::RegisterDependencyConditions *cond = 0,
-                TR::Register * base=0,
-                TR::Instruction * preced = 0);
+TR::Instruction *generateS390ImmOp(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic memOp, TR::Node *node,
+    TR::Register *sourceRegister, TR::Register *targetRegister, int64_t value,
+    TR::RegisterDependencyConditions *cond = 0, TR::Register *base = 0, TR::Instruction *preced = 0);
 
-TR::Instruction* generateS390ImmOp(TR::CodeGenerator *cg,
-                TR::InstOpCode::Mnemonic memOp,
-                TR::Node *node,
-                TR::Register *srcRegister,
-                TR::Register *targetRegister,
-                int32_t value,
-                TR::RegisterDependencyConditions *cond = 0,
-                TR::Register * base=0,
-                TR::Instruction * preced = 0);
+TR::Instruction *generateS390ImmOp(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic memOp, TR::Node *node,
+    TR::Register *srcRegister, TR::Register *targetRegister, int32_t value, TR::RegisterDependencyConditions *cond = 0,
+    TR::Register *base = 0, TR::Instruction *preced = 0);
 
-TR::Instruction* generateS390ImmToRegister(TR::CodeGenerator * cg,
-                TR::Node * node,
-                TR::Register * targetRegister,
-                intptr_t value,
-                TR::Instruction * cursor);
+TR::Instruction *generateS390ImmToRegister(TR::CodeGenerator *cg, TR::Node *node, TR::Register *targetRegister,
+    intptr_t value, TR::Instruction *cursor);
 
 /** \brief
  *     Generates instructions to materialize (load) a 32-bit constant value into a virtual register.
@@ -115,8 +88,8 @@ TR::Instruction* generateS390ImmToRegister(TR::CodeGenerator * cg,
  *     The cursor instruction to append all generated instructions to.
  *
  *  \param dependencies
- *     The register dependency conditions to which newly allocated registers will be added to if they are needed. All new
- *     allocated registers will be appended as post conditions to \p cond with an AssignAny condition.
+ *     The register dependency conditions to which newly allocated registers will be added to if they are needed. All
+ * new allocated registers will be appended as post conditions to \p cond with an AssignAny condition.
  *
  *  \param literalPoolRegister
  *     The literal pool register to use if the constant \p value needs to be stored in a literal pool entry.
@@ -124,58 +97,68 @@ TR::Instruction* generateS390ImmToRegister(TR::CodeGenerator * cg,
  *  \return
  *     The pointer to the last generated instruction to load the supplied \p value.
  */
-TR::Instruction* generateLoad32BitConstant(TR::CodeGenerator* cg, TR::Node* node, int32_t value, TR::Register* targetRegister, bool canSetConditionCode, TR::Instruction* cursor = NULL, TR::RegisterDependencyConditions* dependencies = NULL, TR::Register* literalPoolRegister = NULL);
+TR::Instruction *generateLoad32BitConstant(TR::CodeGenerator *cg, TR::Node *node, int32_t value,
+    TR::Register *targetRegister, bool canSetConditionCode, TR::Instruction *cursor = NULL,
+    TR::RegisterDependencyConditions *dependencies = NULL, TR::Register *literalPoolRegister = NULL);
 
-TR::Instruction * genLoadLongConstant(TR::CodeGenerator *cg, TR::Node *node, int64_t value, TR::Register *targetRegister, TR::Instruction *cursor=NULL,TR::RegisterDependencyConditions *cond = 0, TR::Register *base = 0);
-TR::Instruction * genLoadAddressConstant(TR::CodeGenerator *cg, TR::Node *node, uintptr_t value, TR::Register *targetRegister, TR::Instruction *cursor=NULL,TR::RegisterDependencyConditions *cond = 0, TR::Register *base = 0);
-TR::Instruction * genLoadAddressConstantInSnippet(TR::CodeGenerator *cg, TR::Node *node, uintptr_t value, TR::Register *targetRegister, TR::Instruction *cursor=NULL,TR::RegisterDependencyConditions *cond = 0, TR::Register *base = 0, bool isPICCandidate=false);
-TR::Instruction * genLoadProfiledClassAddressConstant(TR::CodeGenerator *cg, TR::Node *node, TR_OpaqueClassBlock *clazz, TR::Register *targetRegister, TR::Instruction *cursor = 0,TR::RegisterDependencyConditions *cond = 0, TR::Register *base = 0);
+TR::Instruction *genLoadLongConstant(TR::CodeGenerator *cg, TR::Node *node, int64_t value, TR::Register *targetRegister,
+    TR::Instruction *cursor = NULL, TR::RegisterDependencyConditions *cond = 0, TR::Register *base = 0);
+TR::Instruction *genLoadAddressConstant(TR::CodeGenerator *cg, TR::Node *node, uintptr_t value,
+    TR::Register *targetRegister, TR::Instruction *cursor = NULL, TR::RegisterDependencyConditions *cond = 0,
+    TR::Register *base = 0);
+TR::Instruction *genLoadAddressConstantInSnippet(TR::CodeGenerator *cg, TR::Node *node, uintptr_t value,
+    TR::Register *targetRegister, TR::Instruction *cursor = NULL, TR::RegisterDependencyConditions *cond = 0,
+    TR::Register *base = 0, bool isPICCandidate = false);
+TR::Instruction *genLoadProfiledClassAddressConstant(TR::CodeGenerator *cg, TR::Node *node, TR_OpaqueClassBlock *clazz,
+    TR::Register *targetRegister, TR::Instruction *cursor = 0, TR::RegisterDependencyConditions *cond = 0,
+    TR::Register *base = 0);
 
-TR::MemoryReference * sstoreHelper(TR::Node * node, TR::CodeGenerator * cg, bool isReversed=false);
-TR::MemoryReference * istoreHelper(TR::Node * node, TR::CodeGenerator * cg, bool isReversed=false);
-TR::MemoryReference * lstoreHelper64(TR::Node * node, TR::CodeGenerator * cg, bool isReversed=false);
+TR::MemoryReference *sstoreHelper(TR::Node *node, TR::CodeGenerator *cg, bool isReversed = false);
+TR::MemoryReference *istoreHelper(TR::Node *node, TR::CodeGenerator *cg, bool isReversed = false);
+TR::MemoryReference *lstoreHelper64(TR::Node *node, TR::CodeGenerator *cg, bool isReversed = false);
 
-TR::Register * iloadHelper(TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, bool isReversed=false);
-TR::Register * lloadHelper64(TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, bool isReversed=false);
-TR::Register * sloadHelper(TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, bool isReversed=false);
+TR::Register *iloadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryReference *tempMR, bool isReversed = false);
+TR::Register *lloadHelper64(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryReference *tempMR,
+    bool isReversed = false);
+TR::Register *sloadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryReference *tempMR, bool isReversed = false);
 
-TR::Register *getLitPoolBaseReg(TR::Node *node, TR::CodeGenerator * cg);
+TR::Register *getLitPoolBaseReg(TR::Node *node, TR::CodeGenerator *cg);
 
-enum LoadForm
-   {
-   RegReg,
-   MemReg
-   // Could also add other forms like the Load-and-Add, Load and test, load high, load immediate, etc.
-   };
+enum LoadForm {
+    RegReg,
+    MemReg
+    // Could also add other forms like the Load-and-Add, Load and test, load high, load immediate, etc.
+};
 
+template<uint32_t numberOfBits>
+TR::Register *genericLoad(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryReference *tempMR,
+    TR::Register *srcRegister);
 
-
-
-
-template <uint32_t numberOfBits>
-TR::Register * genericLoad(TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, TR::Register * srcRegister);
-
-template <uint32_t numberOfBits, uint32_t numberOfExtendBits, enum LoadForm form>
+template<uint32_t numberOfBits, uint32_t numberOfExtendBits, enum LoadForm form>
 #if defined(__IBMCPP__) || defined(__ibmxl__) || defined(__open_xl__)
 inline
 #endif
-TR::Register * genericLoadHelper(TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, TR::Register * srcRegister, bool isSourceSigned, bool couldIgnoreExtend);
+    TR::Register *
+    genericLoadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryReference *tempMR, TR::Register *srcRegister,
+        bool isSourceSigned, bool couldIgnoreExtend);
 
 #ifndef _MSC_VER
-//Use of above templates is static to the TreeEvaluator.cpp object. Here are the template instantiations available to other objects:
-extern template TR::Register * genericLoadHelper<32, 32, MemReg>
-      (TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, TR::Register * srcRegister, bool isSourceSigned, bool couldIgnoreExtend);
-extern template TR::Register * genericLoadHelper<64, 64, MemReg>
-      (TR::Node * node, TR::CodeGenerator * cg, TR::MemoryReference * tempMR, TR::Register * srcRegister, bool isSourceSigned, bool couldIgnoreExtend);
+// Use of above templates is static to the TreeEvaluator.cpp object. Here are the template instantiations available to
+// other objects:
+extern template TR::Register *genericLoadHelper<32, 32, MemReg>(TR::Node *node, TR::CodeGenerator *cg,
+    TR::MemoryReference *tempMR, TR::Register *srcRegister, bool isSourceSigned, bool couldIgnoreExtend);
+extern template TR::Register *genericLoadHelper<64, 64, MemReg>(TR::Node *node, TR::CodeGenerator *cg,
+    TR::MemoryReference *tempMR, TR::Register *srcRegister, bool isSourceSigned, bool couldIgnoreExtend);
 #endif
 
-TR::Instruction * generateLoadLiteralPoolAddress(TR::CodeGenerator * cg, TR::Node * node, TR::Register * treg);
+TR::Instruction *generateLoadLiteralPoolAddress(TR::CodeGenerator *cg, TR::Node *node, TR::Register *treg);
 
-TR::Register * generateS390CompareBool(TR::Node * node, TR::CodeGenerator * cg, TR::InstOpCode::Mnemonic branchOp, TR::InstOpCode::S390BranchCondition fBranchOpCond,
-   TR::InstOpCode::S390BranchCondition rBranchOpCond, bool isUnorderedOK = false);
-TR::Register * generateS390CompareBranch(TR::Node * node, TR::CodeGenerator * cg, TR::InstOpCode::Mnemonic branchOp, TR::InstOpCode::S390BranchCondition fBranchOpCond,
-   TR::InstOpCode::S390BranchCondition rBranchOpCond, bool isUnorderedOK = false);
-
+TR::Register *generateS390CompareBool(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic branchOp,
+    TR::InstOpCode::S390BranchCondition fBranchOpCond, TR::InstOpCode::S390BranchCondition rBranchOpCond,
+    bool isUnorderedOK = false);
+TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic branchOp,
+    TR::InstOpCode::S390BranchCondition fBranchOpCond, TR::InstOpCode::S390BranchCondition rBranchOpCond,
+    bool isUnorderedOK = false);
 
 int32_t getVectorElementSize(TR::Node *node);
 int32_t getVectorElementSizeMask(TR::Node *node);
@@ -185,57 +168,74 @@ int32_t getVectorElementSizeMask(int8_t size);
 // Because these templates are not defined in headers, but the cpp TreeEvaluator.cpp, suppress implicit instantiation
 // using these extern definitions. Unfortunately, Visual Studio likes doing things differently, so for VS, this chunk
 // is copied to OMRTreeEvaluator.cpp
-extern template TR::Register * TR::TreeEvaluator::narrowCastEvaluator<true,   8>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::narrowCastEvaluator<false,  8>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::narrowCastEvaluator<true,  16>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::narrowCastEvaluator<false, 16>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::narrowCastEvaluator<true,  32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::narrowCastEvaluator<false, 32>(TR::Node * node, TR::CodeGenerator * cg);
+extern template TR::Register *TR::TreeEvaluator::narrowCastEvaluator<true, 8>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::narrowCastEvaluator<false, 8>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::narrowCastEvaluator<true, 16>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::narrowCastEvaluator<false, 16>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::narrowCastEvaluator<true, 32>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::narrowCastEvaluator<false, 32>(TR::Node *node, TR::CodeGenerator *cg);
 
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,   8, 32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,   8, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false,  8, 32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false,  8, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,  16, 32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,  16, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false, 16, 32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false, 16, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,  32, 32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,  32, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false, 32, 32>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false, 32, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<true,  64, 64>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::extendCastEvaluator<false, 64, 64>(TR::Node * node, TR::CodeGenerator * cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 8, 32>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 8, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 8, 32>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 8, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 16, 32>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 16, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 16, 32>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 16, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 32, 32>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 32, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 32, 32>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 32, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<true, 64, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::extendCastEvaluator<false, 64, 64>(TR::Node *node,
+    TR::CodeGenerator *cg);
 
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator< 8, true >(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator< 8, false>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator<16, true >(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator<16, false>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator<32, true >(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator<32, false>(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator<64, true >(TR::Node * node, TR::CodeGenerator * cg);
-extern template TR::Register * TR::TreeEvaluator::addressCastEvaluator<64, false>(TR::Node * node, TR::CodeGenerator * cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<8, true>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<8, false>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<16, true>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<16, false>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<32, true>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<32, false>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<64, true>(TR::Node *node, TR::CodeGenerator *cg);
+extern template TR::Register *TR::TreeEvaluator::addressCastEvaluator<64, false>(TR::Node *node, TR::CodeGenerator *cg);
 #endif
 
 TR::Register *getConditionCode(TR::Node *node, TR::CodeGenerator *cg, TR::Register *programRegister = NULL);
-TR::RegisterDependencyConditions *getGLRegDepsDependenciesFromIfNode(TR::CodeGenerator *cg, TR::Node* ificmpNode);
+TR::RegisterDependencyConditions *getGLRegDepsDependenciesFromIfNode(TR::CodeGenerator *cg, TR::Node *ificmpNode);
 
-class TR_S390ComputeCC : public TR::TreeEvaluator
-   {
-   public:
-   static bool setCarryBorrow(TR::Node *flagNode, bool invertValue, TR::CodeGenerator *cg);
-   static void computeCC(TR::Node *node, TR::Register *ccReg, TR::CodeGenerator *cg);
-   static void computeCCLogical(TR::Node *node, TR::Register *ccReg, TR::Register *targetReg, TR::CodeGenerator *cg, bool is64Bit=false);
-   private:
-   static void saveHostCC(TR::Node *node, TR::Register *ccReg, TR::CodeGenerator *cg);
-   };
+class TR_S390ComputeCC : public TR::TreeEvaluator {
+public:
+    static bool setCarryBorrow(TR::Node *flagNode, bool invertValue, TR::CodeGenerator *cg);
+    static void computeCC(TR::Node *node, TR::Register *ccReg, TR::CodeGenerator *cg);
+    static void computeCCLogical(TR::Node *node, TR::Register *ccReg, TR::Register *targetReg, TR::CodeGenerator *cg,
+        bool is64Bit = false);
 
-TR::InstOpCode::S390BranchCondition getStandardIfBranchConditionForArraycmp(TR::Node * ifxcmpXXNode, TR::CodeGenerator *cg);
+private:
+    static void saveHostCC(TR::Node *node, TR::Register *ccReg, TR::CodeGenerator *cg);
+};
+
+TR::InstOpCode::S390BranchCondition getStandardIfBranchConditionForArraycmp(TR::Node *ifxcmpXXNode,
+    TR::CodeGenerator *cg);
 
 TR::InstOpCode::S390BranchCondition getStandardIfBranchCondition(TR::ILOpCodes opCode, int64_t compareVal);
 TR::InstOpCode::S390BranchCondition getButestBranchCondition(TR::ILOpCodes opCode, int32_t compareVal);
 
 bool canUseNodeForFusedMultiply(TR::Node *node);
-bool generateFusedMultiplyAddIfPossible(TR::CodeGenerator *cg, TR::Node *addNode, TR::InstOpCode::Mnemonic op, TR::InstOpCode::Mnemonic negateOp = TR::InstOpCode::bad);
+bool generateFusedMultiplyAddIfPossible(TR::CodeGenerator *cg, TR::Node *addNode, TR::InstOpCode::Mnemonic op,
+    TR::InstOpCode::Mnemonic negateOp = TR::InstOpCode::bad);
 
 #endif

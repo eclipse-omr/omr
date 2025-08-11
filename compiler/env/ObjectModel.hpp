@@ -24,16 +24,13 @@
 
 #include "env/OMRObjectModel.hpp"
 
-
-namespace TR
-{
-class ObjectModel : public OMR::ObjectModelConnector
-   {
-   public:
-
-   ObjectModel() : OMR::ObjectModelConnector() {}
-
-   };
-}
+namespace TR {
+class ObjectModel : public OMR::ObjectModelConnector {
+public:
+    ObjectModel()
+        : OMR::ObjectModelConnector()
+    {}
+};
+} // namespace TR
 
 #endif

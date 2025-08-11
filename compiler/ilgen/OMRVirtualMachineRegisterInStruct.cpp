@@ -19,26 +19,21 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 #include "compile/Compilation.hpp"
 
-TR::VirtualMachineState *
-OMR::VirtualMachineRegisterInStruct::MakeCopy()
-   {
-   return new (TR::comp()->trMemory()->trHeapMemory()) TR::VirtualMachineRegisterInStruct(_structName,
-                                                                                          _localNameHoldingStructAddress,
-                                                                                          _fieldName,
-                                                                                          _localName);
-   }
+TR::VirtualMachineState *OMR::VirtualMachineRegisterInStruct::MakeCopy()
+{
+    return new (TR::comp()->trMemory()->trHeapMemory())
+        TR::VirtualMachineRegisterInStruct(_structName, _localNameHoldingStructAddress, _fieldName, _localName);
+}
 
-void *
-OMR::VirtualMachineRegisterInStruct::client()
-   {
-   if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::VirtualMachineRegisterInStruct *>(this));
-   return _client;
-   }
+void *OMR::VirtualMachineRegisterInStruct::client()
+{
+    if (_client == NULL && _clientAllocator != NULL)
+        _client = _clientAllocator(static_cast<TR::VirtualMachineRegisterInStruct *>(this));
+    return _client;
+}
 
 ClientAllocator OMR::VirtualMachineRegisterInStruct::_clientAllocator = NULL;
 ClientAllocator OMR::VirtualMachineRegisterInStruct::_getImpl = NULL;

@@ -29,34 +29,38 @@
 namespace TR {
 class CodeGenerator;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
-class X86DataSnippet : public TR::Snippet
-   {
-   public:
+class X86DataSnippet : public TR::Snippet {
+public:
+    X86DataSnippet(TR::CodeGenerator *cg, TR::Node *, void *c, size_t size);
 
-   X86DataSnippet(TR::CodeGenerator *cg, TR::Node *, void *c, size_t size);
+    virtual Kind getKind() { return IsData; }
 
-   virtual Kind                   getKind()                                { return IsData; }
-   uint8_t*                       getRawData()                             { return _data.data(); }
-   virtual size_t                 getDataSize() const                      { return _data.size(); }
-   virtual uint32_t               getLength(int32_t estimatedSnippetStart) { return static_cast<uint32_t>(getDataSize()); }
-   bool                           isClassAddress()                         { return _isClassAddress; }
-   bool                           setClassAddress(bool isClassAddress)     { return _isClassAddress = isClassAddress;}
-   template <typename T> inline T getData()                                { return *((T*)getRawData()); }
+    uint8_t *getRawData() { return _data.data(); }
 
-   virtual uint8_t*               emitSnippetBody();
-   virtual void                   print(TR::FILE* pOutFile, TR_Debug* debug);
-   virtual void                   printValue(TR::FILE* pOutFile, TR_Debug* debug);
-   void                           addMetaDataForCodeAddress(uint8_t *cursor);
+    virtual size_t getDataSize() const { return _data.size(); }
 
-   private:
-   bool                _isClassAddress;
-   TR::vector<uint8_t> _data;
-   };
+    virtual uint32_t getLength(int32_t estimatedSnippetStart) { return static_cast<uint32_t>(getDataSize()); }
 
-}
+    bool isClassAddress() { return _isClassAddress; }
+
+    bool setClassAddress(bool isClassAddress) { return _isClassAddress = isClassAddress; }
+
+    template<typename T> inline T getData() { return *((T *)getRawData()); }
+
+    virtual uint8_t *emitSnippetBody();
+    virtual void print(TR::FILE *pOutFile, TR_Debug *debug);
+    virtual void printValue(TR::FILE *pOutFile, TR_Debug *debug);
+    void addMetaDataForCodeAddress(uint8_t *cursor);
+
+private:
+    bool _isClassAddress;
+    TR::vector<uint8_t> _data;
+};
+
+} // namespace TR
 
 #endif

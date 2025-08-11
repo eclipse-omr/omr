@@ -24,9 +24,8 @@
 
 #include <stdio.h>
 
-namespace TR
-{
-   typedef ::FILE FILE;
+namespace TR {
+typedef ::FILE FILE;
 }
 
 #endif

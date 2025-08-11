@@ -27,82 +27,68 @@
  */
 #ifndef OMR_REAL_REGISTER_CONNECTOR
 #define OMR_REAL_REGISTER_CONNECTOR
+
 namespace OMR {
-   namespace RV { class RealRegister; }
-   typedef OMR::RV::RealRegister RealRegisterConnector;
+namespace RV {
+class RealRegister;
 }
+
+typedef OMR::RV::RealRegister RealRegisterConnector;
+} // namespace OMR
 #else
-   #error OMR::RV::RealRegister expected to be a primary connector, but an OMR connector is already defined
+#error OMR::RV::RealRegister expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/codegen/OMRRealRegister.hpp"
 #include "infra/Annotations.hpp"
 #include "infra/Assert.hpp"
 
-
 namespace TR {
 class CodeGenerator;
 }
 
+namespace OMR { namespace RV {
 
-namespace OMR
-{
+class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister {
+protected:
+    /**
+     * @param[in] cg : the TR::CodeGenerator object
+     */
+    RealRegister(TR::CodeGenerator *cg)
+        : OMR::RealRegister(cg, NoReg)
+    {}
 
-namespace RV
-{
+    /**
+     * @param[in] rk : kind of real register from TR_RegisterKinds
+     * @param[in] w : register weight
+     * @param[in] s : register state from RegState
+     * @param[in] rn : register number from RegNum
+     * @param[in] m : register mask from RegMask
+     * @param[in] cg : the TR::CodeGenerator object
+     */
+    RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, RegNum rn, RegMask m, TR::CodeGenerator *cg)
+        : OMR::RealRegister(rk, w, s, (uint16_t)0, rn, m, cg)
+    {}
 
-class OMR_EXTENSIBLE RealRegister : public OMR::RealRegister
-   {
-   protected:
+public:
+    /**
+     * @brief Return binary encoding of given @param reg.
+     *
+     * @param reg register to encode
+     * @return register binary encoding
+     */
+    static uint32_t binaryRegCode(RegNum reg) { return (uint32_t)fullRegBinaryEncodings[reg]; }
 
-   /**
-    * @param[in] cg : the TR::CodeGenerator object
-    */
-   RealRegister(TR::CodeGenerator *cg) : OMR::RealRegister(cg, NoReg) {}
+    /**
+     * @brief Return binary encoding of the register
+     * @return: register binary encoding
+     */
+    uint32_t binaryRegCode() { return binaryRegCode(_registerNumber); }
 
-   /**
-    * @param[in] rk : kind of real register from TR_RegisterKinds
-    * @param[in] w : register weight
-    * @param[in] s : register state from RegState
-    * @param[in] rn : register number from RegNum
-    * @param[in] m : register mask from RegMask
-    * @param[in] cg : the TR::CodeGenerator object
-    */
-   RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, RegNum rn, RegMask m, TR::CodeGenerator *cg) :
-          OMR::RealRegister(rk, w, s, (uint16_t)0, rn, m, cg) {}
+private:
+    static const uint8_t fullRegBinaryEncodings[NumRegisters];
+};
 
-   public:
-
-   /**
-    * @brief Return binary encoding of given @param reg.
-    *
-    * @param reg register to encode
-    * @return register binary encoding
-    */
-   static
-   uint32_t binaryRegCode(RegNum reg)
-      {
-      return (uint32_t)fullRegBinaryEncodings[reg];
-      }
-
-
-   /**
-    * @brief Return binary encoding of the register
-    * @return: register binary encoding
-    */
-   uint32_t binaryRegCode()
-      {
-      return binaryRegCode(_registerNumber);
-      }
-
-   private:
-
-   static const uint8_t fullRegBinaryEncodings[NumRegisters];
-
-   };
-
-}
-
-}
+}} // namespace OMR::RV
 
 #endif

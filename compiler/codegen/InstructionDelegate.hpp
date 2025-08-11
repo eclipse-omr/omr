@@ -25,20 +25,18 @@
 #include "codegen/OMRInstructionDelegate.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE InstructionDelegate : public OMR::InstructionDelegateConnector
-   {
-   // InstructionDelegate cannot be instantiated.  It can only
-   // contain static members.
-   //
+class OMR_EXTENSIBLE InstructionDelegate : public OMR::InstructionDelegateConnector {
+    // InstructionDelegate cannot be instantiated.  It can only
+    // contain static members.
+    //
 private:
+    InstructionDelegate()
+        : OMR::InstructionDelegateConnector()
+    {}
+};
 
-   InstructionDelegate() : OMR::InstructionDelegateConnector() {}
-
-   };
-
-}
+} // namespace TR
 
 #endif

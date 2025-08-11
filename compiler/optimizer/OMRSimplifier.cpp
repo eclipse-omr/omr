@@ -78,71 +78,61 @@
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"
 
-
 extern const SimplifierPointerTable simplifierOpts;
 
 void SimplifierPointerTable::checkTableSize()
-   {
-   static_assert((TR::NumScalarIlOps + TR::NumVectorOperations) ==
-              (sizeof(table) / sizeof(table[0])),
-              "SimplifierPointerTable::table is not the correct size");
-   }
+{
+    static_assert((TR::NumScalarIlOps + TR::NumVectorOperations) == (sizeof(table) / sizeof(table[0])),
+        "SimplifierPointerTable::table is not the correct size");
+}
 
 /*
  * Local helper functions
  */
 
 static TR::TreeTop *findNextLegalTreeTop(TR::Compilation *comp, TR::Block *block)
-   {
-   vcount_t startVisitCount = comp->getStartTree()->getNode()->getVisitCount();
-   TR::TreeTop * tt = NULL;
-   for (tt = comp->getStartTree(); tt; tt = tt->getNextTreeTop())
-      {
-      if (tt->getNode()->getVisitCount() < startVisitCount)
-         break;
-      if (tt->getNode()->getOpCodeValue() == TR::BBStart)
-         tt = tt->getNode()->getBlock()->getExit();
-      }
-   return tt;
-   }
+{
+    vcount_t startVisitCount = comp->getStartTree()->getNode()->getVisitCount();
+    TR::TreeTop *tt = NULL;
+    for (tt = comp->getStartTree(); tt; tt = tt->getNextTreeTop()) {
+        if (tt->getNode()->getVisitCount() < startVisitCount)
+            break;
+        if (tt->getNode()->getOpCodeValue() == TR::BBStart)
+            tt = tt->getNode()->getBlock()->getExit();
+    }
+    return tt;
+}
 
-static void countNodes(CS2::ABitVector< TR::Allocator > & mark,
-                       TR::Node * n,
-                       size_t & numNodes)
-   {
-   if (mark.ValueAt(n->getGlobalIndex()))
-      {
-      return;
-      }
+static void countNodes(CS2::ABitVector<TR::Allocator> &mark, TR::Node *n, size_t &numNodes)
+{
+    if (mark.ValueAt(n->getGlobalIndex())) {
+        return;
+    }
 
-   mark[n->getGlobalIndex()] = true;
-   numNodes += 1;
+    mark[n->getGlobalIndex()] = true;
+    numNodes += 1;
 
-   for (auto i = 0; i < n->getNumChildren(); i++)
-      {
-      countNodes(mark, n->getChild(i), numNodes);
-      }
-   }
+    for (auto i = 0; i < n->getNumChildren(); i++) {
+        countNodes(mark, n->getChild(i), numNodes);
+    }
+}
 
-static void computeInvarianceOfAllStructures(TR::Compilation *comp, TR_Structure * s)
-   {
-   TR_RegionStructure *region = s->asRegion();
+static void computeInvarianceOfAllStructures(TR::Compilation *comp, TR_Structure *s)
+{
+    TR_RegionStructure *region = s->asRegion();
 
-   if (region)
-      {
-      TR_StructureSubGraphNode *node;
-      TR_RegionStructure::Cursor si(*region);
-      for (node = si.getCurrent(); node != NULL; node = si.getNext())
-         computeInvarianceOfAllStructures(comp, node->getStructure());
+    if (region) {
+        TR_StructureSubGraphNode *node;
+        TR_RegionStructure::Cursor si(*region);
+        for (node = si.getCurrent(); node != NULL; node = si.getNext())
+            computeInvarianceOfAllStructures(comp, node->getStructure());
 
-      region->resetInvariance();
-      if (region->isNaturalLoop() /*|| region->containsInternalCycles() */)
-         {
-         region->computeInvariantExpressions();
-         }
-      }
-   }
-
+        region->resetInvariance();
+        if (region->isNaturalLoop() /*|| region->containsInternalCycles() */) {
+            region->computeInvariantExpressions();
+        }
+    }
+}
 
 /*
  * Simplifier class functions
@@ -151,274 +141,250 @@ static void computeInvarianceOfAllStructures(TR::Compilation *comp, TR_Structure
 // Simplify all blocks
 //
 OMR::Simplifier::Simplifier(TR::OptimizationManager *manager)
-   : TR::Optimization(manager),
-     _hashTable(manager->trMemory(), stackAlloc),
-     _ccHashTab(manager->trMemory(), stackAlloc),
-     _performLowerTreeNodePairs(getTypedAllocator<std::pair<TR::TreeTop*, TR::Node*>>(self()->allocator()))
-   {
-   _invalidateUseDefInfo      = false;
-   _invalidateValueNumberInfo = false;
-   _alteredBlock = false;
-   _blockRemoved = false;
+    : TR::Optimization(manager)
+    , _hashTable(manager->trMemory(), stackAlloc)
+    , _ccHashTab(manager->trMemory(), stackAlloc)
+    , _performLowerTreeNodePairs(getTypedAllocator<std::pair<TR::TreeTop *, TR::Node *> >(self()->allocator()))
+{
+    _invalidateUseDefInfo = false;
+    _invalidateValueNumberInfo = false;
+    _alteredBlock = false;
+    _blockRemoved = false;
 
-   _useDefInfo = optimizer()->getUseDefInfo();
-   _valueNumberInfo = optimizer()->getValueNumberInfo();
+    _useDefInfo = optimizer()->getUseDefInfo();
+    _valueNumberInfo = optimizer()->getValueNumberInfo();
 
-   _reassociate = comp()->getOption(TR_EnableReassociation);
+    _reassociate = comp()->getOption(TR_EnableReassociation);
 
-   _containingStructure = NULL;
+    _containingStructure = NULL;
 
-   _nodeToDivchk = NULL;
-   }
+    _nodeToDivchk = NULL;
+}
 
 TR::Optimization *OMR::Simplifier::create(TR::OptimizationManager *manager)
-   {
-   return new (manager->allocator()) TR::Simplifier(manager);
-   }
+{
+    return new (manager->allocator()) TR::Simplifier(manager);
+}
 
-void
-OMR::Simplifier::prePerformOnBlocks()
-   {
-   _invalidateUseDefInfo      = false;
-   _alteredBlock = false;
-   _blockRemoved = false;
+void OMR::Simplifier::prePerformOnBlocks()
+{
+    _invalidateUseDefInfo = false;
+    _alteredBlock = false;
+    _blockRemoved = false;
 
-   _useDefInfo = optimizer()->getUseDefInfo();
-   _valueNumberInfo = optimizer()->getValueNumberInfo();
-   _containingStructure = NULL;
+    _useDefInfo = optimizer()->getUseDefInfo();
+    _valueNumberInfo = optimizer()->getValueNumberInfo();
+    _containingStructure = NULL;
 
+    if (_reassociate) {
+        _hashTable.reset();
+        _hashTable.init(1000, true);
 
-   if (_reassociate)
-      {
-      _hashTable.reset();
-      _hashTable.init(1000, true);
+        TR_ASSERT(comp()->getFlowGraph()->getStructure(), "assertion failure");
+        computeInvarianceOfAllStructures(comp(), comp()->getFlowGraph()->getStructure());
+    }
+    _ccHashTab.reset();
+    _ccHashTab.init(64, true);
 
-      TR_ASSERT(comp()->getFlowGraph()->getStructure(), "assertion failure");
-      computeInvarianceOfAllStructures(comp(), comp()->getFlowGraph()->getStructure());
-      }
-      _ccHashTab.reset();
-      _ccHashTab.init(64, true);
+    if (trace()) {
+        comp()->dumpMethodTrees("Trees before simplification");
+    }
+}
 
-   if (trace())
-      {
-      comp()->dumpMethodTrees("Trees before simplification");
-      }
-   }
+void OMR::Simplifier::postPerformOnBlocks()
+{
+    if (trace())
+        comp()->dumpMethodTrees("Trees after simplification");
 
-void
-OMR::Simplifier::postPerformOnBlocks()
-   {
-   if (trace())
-      comp()->dumpMethodTrees("Trees after simplification");
+    // Invalidate usedef and value number information if necessary
+    //
+    if (_useDefInfo && _invalidateUseDefInfo)
+        optimizer()->setUseDefInfo(NULL);
+    if (_valueNumberInfo && _invalidateValueNumberInfo)
+        optimizer()->setValueNumberInfo(NULL);
+}
 
-   // Invalidate usedef and value number information if necessary
-   //
-   if (_useDefInfo && _invalidateUseDefInfo)
-      optimizer()->setUseDefInfo(NULL);
-   if (_valueNumberInfo && _invalidateValueNumberInfo)
-      optimizer()->setValueNumberInfo(NULL);
-   }
+int32_t OMR::Simplifier::perform()
+{
+    vcount_t visitCount = comp()->incOrResetVisitCount();
+    TR::TreeTop *tt;
+    for (tt = comp()->getStartTree(); tt; tt = tt->getNextTreeTop())
+        tt->getNode()->initializeFutureUseCounts(visitCount);
 
-int32_t
-OMR::Simplifier::perform()
-   {
+    comp()->incVisitCount();
+    for (tt = comp()->getStartTree(); tt; tt = tt->getNextTreeTop())
+        cleanupFlags(tt->getNode());
 
-   vcount_t visitCount = comp()->incOrResetVisitCount();
-   TR::TreeTop * tt;
-   for (tt = comp()->getStartTree(); tt; tt = tt->getNextTreeTop())
-      tt->getNode()->initializeFutureUseCounts(visitCount);
+    visitCount = comp()->incVisitCount();
+    tt = comp()->getStartTree();
+    while (tt)
+        tt = simplifyExtendedBlock(tt);
 
-   comp()->incVisitCount();
-   for (tt = comp()->getStartTree(); tt; tt = tt->getNextTreeTop())
-      cleanupFlags(tt->getNode());
+    comp()->getFlowGraph()->removeUnreachableBlocks();
 
-   visitCount = comp()->incVisitCount();
-   tt = comp()->getStartTree();
-   while (tt)
-      tt = simplifyExtendedBlock(tt);
+    if (manager()->numPassesCompleted() == 0)
+        manager()->incNumPassesCompleted();
 
-   comp()->getFlowGraph()->removeUnreachableBlocks();
+    return 1;
+}
 
-   if (manager()->numPassesCompleted() == 0)
-      manager()->incNumPassesCompleted();
+int32_t OMR::Simplifier::performOnBlock(TR::Block *block)
+{
+    if (block->getEntry()) {
+        TR::TreeTop *extendedExitTree = block->getEntry()->getExtendedBlockExitTreeTop();
+        vcount_t visitCount = comp()->incOrResetVisitCount();
+        for (TR::TreeTop *tt = block->getEntry(); tt; tt = tt->getNextTreeTop()) {
+            tt->getNode()->initializeFutureUseCounts(visitCount);
+            if (tt == extendedExitTree)
+                break;
+        }
 
-   return 1;
-   }
-
-
-int32_t
-OMR::Simplifier::performOnBlock(TR::Block * block)
-   {
-   if (block->getEntry())
-      {
-      TR::TreeTop *extendedExitTree = block->getEntry()->getExtendedBlockExitTreeTop();
-      vcount_t visitCount = comp()->incOrResetVisitCount();
-      for (TR::TreeTop * tt = block->getEntry(); tt; tt = tt->getNextTreeTop())
-         {
-         tt->getNode()->initializeFutureUseCounts(visitCount);
-         if (tt == extendedExitTree)
-            break;
-         }
-
-      comp()->incVisitCount();
-      simplifyExtendedBlock(block->getEntry());
-      }
-   return 0;
-   }
+        comp()->incVisitCount();
+        simplifyExtendedBlock(block->getEntry());
+    }
+    return 0;
+}
 
 // Pre-order traversal, remove the flags on the way in.
 // On the way out set the flags to true as appropriate:
 //     nodeRequiresConditionCodes on the first child of computeCC nodes.
 //     adjunct                    on the third child of dual high nodes.
 //
-void
-OMR::Simplifier::cleanupFlags(TR::Node *node)
-   {
-   if (node->getVisitCount() == comp()->getVisitCount())
-      return;
-   node->setVisitCount(comp()->getVisitCount());
+void OMR::Simplifier::cleanupFlags(TR::Node *node)
+{
+    if (node->getVisitCount() == comp()->getVisitCount())
+        return;
+    node->setVisitCount(comp()->getVisitCount());
 
-   if (node->nodeRequiresConditionCodes())
-      node->setNodeRequiresConditionCodes(false);
+    if (node->nodeRequiresConditionCodes())
+        node->setNodeRequiresConditionCodes(false);
 
-   if (node->isAdjunct())
-      node->setIsAdjunct(false);
+    if (node->isAdjunct())
+        node->setIsAdjunct(false);
 
-   for (int32_t i = node->getNumChildren()-1; i >= 0; --i)
-      cleanupFlags(node->getChild(i));
+    for (int32_t i = node->getNumChildren() - 1; i >= 0; --i)
+        cleanupFlags(node->getChild(i));
 
-   if (node->getOpCodeValue() == TR::computeCC)
-      node->getFirstChild()->setNodeRequiresConditionCodes(true);
+    if (node->getOpCodeValue() == TR::computeCC)
+        node->getFirstChild()->setNodeRequiresConditionCodes(true);
 
-   if (node->isDualHigh())
-      node->getChild(2)->setIsAdjunct(true);
-   }
+    if (node->isDualHigh())
+        node->getChild(2)->setIsAdjunct(true);
+}
 
-void
-OMR::Simplifier::setCC(TR::Node *node, OMR::TR_ConditionCodeNumber cc)
-   {
-   TR_ASSERT(node->nodeRequiresConditionCodes(), "assertion failure");
-   TR_ASSERT(cc <= OMR::ConditionCodeLast, "illegal condition code setting");
+void OMR::Simplifier::setCC(TR::Node *node, OMR::TR_ConditionCodeNumber cc)
+{
+    TR_ASSERT(node->nodeRequiresConditionCodes(), "assertion failure");
+    TR_ASSERT(cc <= OMR::ConditionCodeLast, "illegal condition code setting");
 
-   TR_HashId index = 0;
-//   FIXME: is this assume actually needed? It seems harmless if the node is already present
-//   TR_ASSERT(!_ccHashTab.locate(node->getGlobalIndex(), index),
-//   "node already present in cc hashtable");
-   _ccHashTab.add(node->getGlobalIndex(), index, (void*)cc);
-   }
+    TR_HashId index = 0;
+    //   FIXME: is this assume actually needed? It seems harmless if the node is already present
+    //   TR_ASSERT(!_ccHashTab.locate(node->getGlobalIndex(), index),
+    //   "node already present in cc hashtable");
+    _ccHashTab.add(node->getGlobalIndex(), index, (void *)cc);
+}
 
-OMR::TR_ConditionCodeNumber
-OMR::Simplifier::getCC(TR::Node *node)
-   {
-   TR_HashId index;
-   if (!_ccHashTab.locate(node->getGlobalIndex(), index))
-      return OMR::ConditionCodeInvalid;
-   return (OMR::TR_ConditionCodeNumber)(uintptr_t) _ccHashTab.getData(index);
-   }
+OMR::TR_ConditionCodeNumber OMR::Simplifier::getCC(TR::Node *node)
+{
+    TR_HashId index;
+    if (!_ccHashTab.locate(node->getGlobalIndex(), index))
+        return OMR::ConditionCodeInvalid;
+    return (OMR::TR_ConditionCodeNumber)(uintptr_t)_ccHashTab.getData(index);
+}
 
-TR::TreeTop *
-OMR::Simplifier::simplifyExtendedBlock(TR::TreeTop * treeTop)
-   {
-   TR::Block * block = 0;
+TR::TreeTop *OMR::Simplifier::simplifyExtendedBlock(TR::TreeTop *treeTop)
+{
+    TR::Block *block = 0;
 
-   _containingStructure = NULL;
-   _blockRemoved = false;
+    _containingStructure = NULL;
+    _blockRemoved = false;
 
-   for (; treeTop; treeTop = treeTop->getNextTreeTop())
-      {
-      TR::Node * node = treeTop->getNode();
-      TR_ASSERT(node->getOpCodeValue() == TR::BBStart, "Simplification, expected BBStart treetop");
+    for (; treeTop; treeTop = treeTop->getNextTreeTop()) {
+        TR::Node *node = treeTop->getNode();
+        TR_ASSERT(node->getOpCodeValue() == TR::BBStart, "Simplification, expected BBStart treetop");
 
-      TR::Block * b = node->getBlock();
-      if (block && !b->isExtensionOfPreviousBlock())
-         break;
-
-      if (b->isOSRCodeBlock() || b->isOSRCatchBlock())
-         {
-         treeTop = b->getExit();
-         continue;
-         }
-
-      if (!block && _reassociate &&
-          comp()->getFlowGraph()->getStructure() != NULL         // [99391] getStructureOf() only valid if structure isn't invalidated
-         )
-         { // b is first block in the extended block
-         TR_BlockStructure *blockStructure = b->getStructureOf();
-
-         if(blockStructure)
-            {
-            TR_Structure *parent = blockStructure->getParent();
-            while (parent)
-               {
-               TR_RegionStructure *region = parent->asRegion();
-               if (region->isNaturalLoop() /* || region->containsInternalCycles() */)
-                  {
-                  _containingStructure = region;
-                  break;
-                  }
-               parent = parent->getParent();
-               }
-            }
-         }
-
-      block = b;
-
-      if (trace())
-         traceMsg(comp(), "simplifying block_%d\n", block->getNumber());
-
-      simplify(block);
-
-      for(auto cursor = _performLowerTreeNodePairs.begin(); cursor != _performLowerTreeNodePairs.end(); ++cursor)
-         {
-         auto treeNodePair = *cursor;
-         if (trace())
-            traceMsg(comp(), "process _performLowerTreeNodePairs treetop %p node %p\n", treeNodePair.first, treeNodePair.second);
-         TR::Node *performLowerNode = postWalkLowerTreeSimplifier(treeNodePair.first, treeNodePair.second, block, (TR::Simplifier *) this);
-         treeNodePair.first->setNode(performLowerNode);
-         }
-
-      while (!_performLowerTreeNodePairs.empty())
-         _performLowerTreeNodePairs.pop_back();
-
-      // If the block itself was removed from the CFG during simplification, find
-      // the next 'legitimate' block to be simplified
-      //
-      //if (comp()->getFlowGraph()->getRemovedNodes().find(block))
-        if(block->nodeIsRemoved())
-         {
-         TR::TreeTop * tt = findNextLegalTreeTop(comp(), block);
-         // in certain cases the removed block might be the last one we haven't
-         // visited and therefore we won't be able to find a treetop to continue
-         // in such cases we exit the loop
-         //
-         treeTop = tt ? tt->getPrevTreeTop() : 0;
-         if (!treeTop)
+        TR::Block *b = node->getBlock();
+        if (block && !b->isExtensionOfPreviousBlock())
             break;
-         }
-      else
-         {
-         treeTop = block->getExit();
-         }
-      }
 
-   // now remove any unreachable blocks
-   //
-   if (_blockRemoved)
-      {
-      // if the next block to be processed has been removed,
-      // find the next valid block to process
-      //
-      if (treeTop)
-         {
-         TR::Block *b = treeTop->getNode()->getBlock();
-         //if (comp()->getFlowGraph()->getRemovedNodes().find(b))
-           if(b->nodeIsRemoved())
-            treeTop = findNextLegalTreeTop(comp(), b);
-         }
-      }
+        if (b->isOSRCodeBlock() || b->isOSRCatchBlock()) {
+            treeTop = b->getExit();
+            continue;
+        }
 
-   return treeTop;
-   }
+        if (!block && _reassociate
+            && comp()->getFlowGraph()->getStructure()
+                != NULL // [99391] getStructureOf() only valid if structure isn't invalidated
+        ) { // b is first block in the extended block
+            TR_BlockStructure *blockStructure = b->getStructureOf();
+
+            if (blockStructure) {
+                TR_Structure *parent = blockStructure->getParent();
+                while (parent) {
+                    TR_RegionStructure *region = parent->asRegion();
+                    if (region->isNaturalLoop() /* || region->containsInternalCycles() */) {
+                        _containingStructure = region;
+                        break;
+                    }
+                    parent = parent->getParent();
+                }
+            }
+        }
+
+        block = b;
+
+        if (trace())
+            traceMsg(comp(), "simplifying block_%d\n", block->getNumber());
+
+        simplify(block);
+
+        for (auto cursor = _performLowerTreeNodePairs.begin(); cursor != _performLowerTreeNodePairs.end(); ++cursor) {
+            auto treeNodePair = *cursor;
+            if (trace())
+                traceMsg(comp(), "process _performLowerTreeNodePairs treetop %p node %p\n", treeNodePair.first,
+                    treeNodePair.second);
+            TR::Node *performLowerNode
+                = postWalkLowerTreeSimplifier(treeNodePair.first, treeNodePair.second, block, (TR::Simplifier *)this);
+            treeNodePair.first->setNode(performLowerNode);
+        }
+
+        while (!_performLowerTreeNodePairs.empty())
+            _performLowerTreeNodePairs.pop_back();
+
+        // If the block itself was removed from the CFG during simplification, find
+        // the next 'legitimate' block to be simplified
+        //
+        // if (comp()->getFlowGraph()->getRemovedNodes().find(block))
+        if (block->nodeIsRemoved()) {
+            TR::TreeTop *tt = findNextLegalTreeTop(comp(), block);
+            // in certain cases the removed block might be the last one we haven't
+            // visited and therefore we won't be able to find a treetop to continue
+            // in such cases we exit the loop
+            //
+            treeTop = tt ? tt->getPrevTreeTop() : 0;
+            if (!treeTop)
+                break;
+        } else {
+            treeTop = block->getExit();
+        }
+    }
+
+    // now remove any unreachable blocks
+    //
+    if (_blockRemoved) {
+        // if the next block to be processed has been removed,
+        // find the next valid block to process
+        //
+        if (treeTop) {
+            TR::Block *b = treeTop->getNode()->getBlock();
+            // if (comp()->getFlowGraph()->getRemovedNodes().find(b))
+            if (b->nodeIsRemoved())
+                treeTop = findNextLegalTreeTop(comp(), b);
+        }
+    }
+
+    return treeTop;
+}
 
 /*
  * Helper functions needed by simplifier handlers across projects
@@ -426,343 +392,294 @@ OMR::Simplifier::simplifyExtendedBlock(TR::TreeTop * treeTop)
 
 // Simplify the children of a node.
 //
-void
-OMR::Simplifier::simplifyChildren(TR::Node * node, TR::Block * block)
-   {
-   int32_t i = node->getNumChildren();
-   if (i == 0)
-      return;
+void OMR::Simplifier::simplifyChildren(TR::Node *node, TR::Block *block)
+{
+    int32_t i = node->getNumChildren();
+    if (i == 0)
+        return;
 
-   vcount_t visitCount = comp()->getVisitCount();
-   for (--i; i >= 0; --i)
-      {
-      TR::Node * child = node->getChild(i);
-      child->decFutureUseCount();
-      if (child->getVisitCount() != visitCount)
-         {
-         child = simplify(child, block);
-         node->setChild(i, child);
-         }
-      // if simplification produced a PassThrough attach the child of the PassThrough here
-      // to keep the trees clean unless we are dealing with a node where a PassThrough is
-      // important - a null check or GlRegtDeps
-      if (!node->getOpCode().isNullCheck()
-          && node->getOpCodeValue() != TR::GlRegDeps
-          && child->getOpCodeValue() == TR::PassThrough)
-         {
-         node->setAndIncChild(i, child->getFirstChild());
-         child->recursivelyDecReferenceCount();
-         }
-      }
-   }
+    vcount_t visitCount = comp()->getVisitCount();
+    for (--i; i >= 0; --i) {
+        TR::Node *child = node->getChild(i);
+        child->decFutureUseCount();
+        if (child->getVisitCount() != visitCount) {
+            child = simplify(child, block);
+            node->setChild(i, child);
+        }
+        // if simplification produced a PassThrough attach the child of the PassThrough here
+        // to keep the trees clean unless we are dealing with a node where a PassThrough is
+        // important - a null check or GlRegtDeps
+        if (!node->getOpCode().isNullCheck() && node->getOpCodeValue() != TR::GlRegDeps
+            && child->getOpCodeValue() == TR::PassThrough) {
+            node->setAndIncChild(i, child->getFirstChild());
+            child->recursivelyDecReferenceCount();
+        }
+    }
+}
 
-void
-OMR::Simplifier::simplify(TR::Block * block)
-   {
-   _alteredBlock = false;
+void OMR::Simplifier::simplify(TR::Block *block)
+{
+    _alteredBlock = false;
 
-   TR::TreeTop * tt, * next;
+    TR::TreeTop *tt, *next;
 
-   //vcount_t visitCount = comp()->incVisitCount();
-   //for (tt = block->getEntry(); tt; tt = tt->getNextTreeTop())
-    //  tt->getNode()->initializeFutureUseCounts(visitCount);
+    // vcount_t visitCount = comp()->incVisitCount();
+    // for (tt = block->getEntry(); tt; tt = tt->getNextTreeTop())
+    //   tt->getNode()->initializeFutureUseCounts(visitCount);
 
-   for (tt = block->getEntry(); tt; tt = next)
-      {
-      next = simplify(tt, block);
+    for (tt = block->getEntry(); tt; tt = next) {
+        next = simplify(tt, block);
 
-      // NOTE: simplification can change the exit for a block, so don't move
-      // this getExit call out of the loop.
-      //
-      if (tt == block->getExit())
-         break;
-      }
+        // NOTE: simplification can change the exit for a block, so don't move
+        // this getExit call out of the loop.
+        //
+        if (tt == block->getExit())
+            break;
+    }
 
-   if (_alteredBlock)
-      {
-      _invalidateValueNumberInfo = true;
-      requestOpt(OMR::localCSE, true, block);
-      }
-   }
+    if (_alteredBlock) {
+        _invalidateValueNumberInfo = true;
+        requestOpt(OMR::localCSE, true, block);
+    }
+}
 
 // Simplify a complete expression tree.
 // Returns the next treetop to be processed.
 //
-TR::TreeTop *
-OMR::Simplifier::simplify(TR::TreeTop * treeTop, TR::Block * block)
-   {
-   TR::Node * node = treeTop->getNode();
-   if (node->getVisitCount() == comp()->getVisitCount())
-      return treeTop->getNextTreeTop();
+TR::TreeTop *OMR::Simplifier::simplify(TR::TreeTop *treeTop, TR::Block *block)
+{
+    TR::Node *node = treeTop->getNode();
+    if (node->getVisitCount() == comp()->getVisitCount())
+        return treeTop->getNextTreeTop();
 
-   // Note that this call to simplify may cause the treetops before or after
-   // this treetop to be removed, so we can't hold the previous or next
-   // treetop locally across this call.
-   //
-   _curTree = treeTop;
-   node = simplify(node, block);
-   treeTop->setNode(node);
+    // Note that this call to simplify may cause the treetops before or after
+    // this treetop to be removed, so we can't hold the previous or next
+    // treetop locally across this call.
+    //
+    _curTree = treeTop;
+    node = simplify(node, block);
+    treeTop->setNode(node);
 
-   // Grab the next treetop AFTER simplification of the current treetop, since
-   // the next may be affected by simplification.
-   //
-   TR::TreeTop * next = _curTree->getNextTreeTop();
+    // Grab the next treetop AFTER simplification of the current treetop, since
+    // the next may be affected by simplification.
+    //
+    TR::TreeTop *next = _curTree->getNextTreeTop();
 
-   // If the node is null, this treetop can be removed
-   //
-   if (node == NULL &&
-       (!block->getPredecessors().empty() ||
-        !block->getExceptionPredecessors().empty()))
-      TR::TransformUtil::removeTree(comp(), treeTop);
+    // If the node is null, this treetop can be removed
+    //
+    if (node == NULL && (!block->getPredecessors().empty() || !block->getExceptionPredecessors().empty()))
+        TR::TransformUtil::removeTree(comp(), treeTop);
 
-   return next;
-   }
+    return next;
+}
 
 // Simplify a sub-tree.
 // Returns the replaced root of the sub-tree, which may be null if the sub-tree
 // has been removed.
 //
-TR::Node *
-OMR::Simplifier::simplify(TR::Node * node, TR::Block * block)
-   {
-   // Set the visit count for this node to prevent recursion into it
-   //
-   vcount_t visitCount = comp()->getVisitCount();
-   node->setVisitCount(visitCount);
+TR::Node *OMR::Simplifier::simplify(TR::Node *node, TR::Block *block)
+{
+    // Set the visit count for this node to prevent recursion into it
+    //
+    vcount_t visitCount = comp()->getVisitCount();
+    node->setVisitCount(visitCount);
 
-   if (node->nodeRequiresConditionCodes())
-      {
-      // On Java, nodes that require condition codes must not be simplified.
-      dftSimplifier(node, block, (TR::Simplifier *) this);
-      return node;
-      }
+    if (node->nodeRequiresConditionCodes()) {
+        // On Java, nodes that require condition codes must not be simplified.
+        dftSimplifier(node, block, (TR::Simplifier *)this);
+        return node;
+    }
 
-   // Simplify this node.
-   // Note that the processing routine for the node is responsible for
-   // simplifying its children.
-   //
-   preSimplification(node);
-   TR::Node * newNode = simplifierOpts[node->getOpCodeValue()](node, block, (TR::Simplifier *) this);
-   if (newNode)
-      postSimplification(newNode);
-   if ((node != newNode) ||
-       (newNode &&
-        ((newNode->getOpCodeValue() != node->getOpCodeValue()) ||
-         (newNode->getNumChildren() != node->getNumChildren()))))
+    // Simplify this node.
+    // Note that the processing routine for the node is responsible for
+    // simplifying its children.
+    //
+    preSimplification(node);
+    TR::Node *newNode = simplifierOpts[node->getOpCodeValue()](node, block, (TR::Simplifier *)this);
+    if (newNode)
+        postSimplification(newNode);
+    if ((node != newNode)
+        || (newNode
+            && ((newNode->getOpCodeValue() != node->getOpCodeValue())
+                || (newNode->getNumChildren() != node->getNumChildren()))))
         requestOpt(OMR::localCSE, true, block);
 
-   return newNode;
-   }
+    return newNode;
+}
 
-TR::Node *
-OMR::Simplifier::unaryCancelOutWithChild(TR::Node * node, TR::Node * firstChild, TR::TreeTop *anchorTree, TR::ILOpCodes opcode, bool anchorChildren)
-   {
-   if (!isLegalToUnaryCancel(node, firstChild, opcode))
-      return NULL;
+TR::Node *OMR::Simplifier::unaryCancelOutWithChild(TR::Node *node, TR::Node *firstChild, TR::TreeTop *anchorTree,
+    TR::ILOpCodes opcode, bool anchorChildren)
+{
+    if (!isLegalToUnaryCancel(node, firstChild, opcode))
+        return NULL;
 
-   if (firstChild->getOpCodeValue() == opcode &&
-       (node->getType().isAggregate() || firstChild->getType().isAggregate()) &&
-       (node->getSize() > firstChild->getSize() || node->getSize() != firstChild->getFirstChild()->getSize()))
-      {
-      // ensure a truncation side-effect of a conversion is not lost
-      // o2a size=3
-      //   a2o size=3 // conversion truncates in addition to type cast so cannot be removed
-      //     loadaddr size=4
-      // This restriction could be loosened to only disallow intermediate truncations (see BCD case above) but then would require a node
-      // op that would just correct for size (e.g. addrSizeMod size=3 to replace the o2a/a2o pair)
-      //
-      // Do allow cases when all three sizes are the same and when the middle node widens but the top and bottom node have the same size, e.g.
-      //
-      // i2o size=3
-      //   o2i size=4
-      //     oload size=3
-      //
-      // Also allow the special case where the grandchild is not really truncated as the 'truncated' bytes are known to be zero
-      // (i.e. there really isn't an intermediate truncation of 4->3 even though it appears that way from looking at the sizes alone)
-      // o2i
-      //   i2o size=3
-      //     iushr
-      //       x
-      //       iconst 8
-      bool disallow = true;
-      TR::Node *grandChild = firstChild->getFirstChild();
-      size_t nodeSize = node->getSize();
-      if (node->getType().isIntegral() &&
-          nodeSize == grandChild->getSize() &&
-          nodeSize > firstChild->getSize())
-         {
-         size_t truncatedBits = (nodeSize - firstChild->getSize()) * 8;
-         if (grandChild->getOpCode().isRightShift() && grandChild->getOpCode().isShiftLogical() &&
-             grandChild->getSecondChild()->getOpCode().isLoadConst() &&
-             (grandChild->getSecondChild()->get64bitIntegralValue() == truncatedBits))
-            {
-            disallow = false;
-            if (trace())
-               traceMsg(comp(),"do allow unaryCancel of node %s (%p) and firstChild %s (%p) as grandChild %s (%p) zeros the %d truncated bytes\n",
-                       node->getOpCode().getName(),node,firstChild->getOpCode().getName(),firstChild,
-                       grandChild->getOpCode().getName(),grandChild,truncatedBits/8);
+    if (firstChild->getOpCodeValue() == opcode && (node->getType().isAggregate() || firstChild->getType().isAggregate())
+        && (node->getSize() > firstChild->getSize() || node->getSize() != firstChild->getFirstChild()->getSize())) {
+        // ensure a truncation side-effect of a conversion is not lost
+        // o2a size=3
+        //   a2o size=3 // conversion truncates in addition to type cast so cannot be removed
+        //     loadaddr size=4
+        // This restriction could be loosened to only disallow intermediate truncations (see BCD case above) but then
+        // would require a node op that would just correct for size (e.g. addrSizeMod size=3 to replace the o2a/a2o
+        // pair)
+        //
+        // Do allow cases when all three sizes are the same and when the middle node widens but the top and bottom node
+        // have the same size, e.g.
+        //
+        // i2o size=3
+        //   o2i size=4
+        //     oload size=3
+        //
+        // Also allow the special case where the grandchild is not really truncated as the 'truncated' bytes are known
+        // to be zero (i.e. there really isn't an intermediate truncation of 4->3 even though it appears that way from
+        // looking at the sizes alone) o2i
+        //   i2o size=3
+        //     iushr
+        //       x
+        //       iconst 8
+        bool disallow = true;
+        TR::Node *grandChild = firstChild->getFirstChild();
+        size_t nodeSize = node->getSize();
+        if (node->getType().isIntegral() && nodeSize == grandChild->getSize() && nodeSize > firstChild->getSize()) {
+            size_t truncatedBits = (nodeSize - firstChild->getSize()) * 8;
+            if (grandChild->getOpCode().isRightShift() && grandChild->getOpCode().isShiftLogical()
+                && grandChild->getSecondChild()->getOpCode().isLoadConst()
+                && (grandChild->getSecondChild()->get64bitIntegralValue() == truncatedBits)) {
+                disallow = false;
+                if (trace())
+                    traceMsg(comp(),
+                        "do allow unaryCancel of node %s (%p) and firstChild %s (%p) as grandChild %s (%p) zeros the "
+                        "%d truncated bytes\n",
+                        node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild,
+                        grandChild->getOpCode().getName(), grandChild, truncatedBits / 8);
             }
-         }
+        }
 
-      if (disallow)
-         {
-         if (trace())
-            traceMsg(comp(),"disallow unaryCancel of node %s (%p) and firstChild %s (%p) due to unequal sizes (nodeSize %d, firstChildSize %d, firstChild->childSize %d)\n",
-                    node->getOpCode().getName(),node,firstChild->getOpCode().getName(),firstChild,
-                    node->getSize(),firstChild->getSize(),firstChild->getFirstChild()->getSize());
-         return NULL;
-         }
-      }
+        if (disallow) {
+            if (trace())
+                traceMsg(comp(),
+                    "disallow unaryCancel of node %s (%p) and firstChild %s (%p) due to unequal sizes (nodeSize %d, "
+                    "firstChildSize %d, firstChild->childSize %d)\n",
+                    node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild, node->getSize(),
+                    firstChild->getSize(), firstChild->getFirstChild()->getSize());
+            return NULL;
+        }
+    }
 
-   if (firstChild->getOpCodeValue() == opcode &&
-       performTransformation(comp(), "%sRemoving node [" POINTER_PRINTF_FORMAT "] %s and its child [" POINTER_PRINTF_FORMAT "] %s\n",
-             optDetailString(), node, node->getOpCode().getName(), firstChild, firstChild->getOpCode().getName()))
-      {
-      TR::Node *grandChild = firstChild->getFirstChild();
-      grandChild->incReferenceCount();
-      bool anchorChildrenNeeded = anchorChildren &&
-         (node->getNumChildren() > 1 ||
-          firstChild->getNumChildren() > 1 ||
-          node->getOpCode().hasSymbolReference() ||
-          firstChild->getOpCode().hasSymbolReference());
-      prepareToStopUsingNode(node, anchorTree, anchorChildrenNeeded);
-      node->recursivelyDecReferenceCount();
-      node->setVisitCount(0);
-      return grandChild;
-      }
+    if (firstChild->getOpCodeValue() == opcode
+        && performTransformation(comp(),
+            "%sRemoving node [" POINTER_PRINTF_FORMAT "] %s and its child [" POINTER_PRINTF_FORMAT "] %s\n",
+            optDetailString(), node, node->getOpCode().getName(), firstChild, firstChild->getOpCode().getName())) {
+        TR::Node *grandChild = firstChild->getFirstChild();
+        grandChild->incReferenceCount();
+        bool anchorChildrenNeeded = anchorChildren
+            && (node->getNumChildren() > 1 || firstChild->getNumChildren() > 1 || node->getOpCode().hasSymbolReference()
+                || firstChild->getOpCode().hasSymbolReference());
+        prepareToStopUsingNode(node, anchorTree, anchorChildrenNeeded);
+        node->recursivelyDecReferenceCount();
+        node->setVisitCount(0);
+        return grandChild;
+    }
 
-   return NULL;
-   }
+    return NULL;
+}
 
 //---------------------------------------------------------------------
 // Common routine to change a conditional branch into an unconditional one.
 // Change the node to be the unconditional branch or NULL if no branch taken.
 // Return true if blocks were removed as a result of the change
 //
-bool
-OMR::Simplifier::conditionalToUnconditional(TR::Node *&node, TR::Block * block, int takeBranch)
-   {
-   if (!performTransformation(comp(), "%s change conditional to unconditional n%in\n",
-         optDetailString(), node->getGlobalIndex()))
-      {
-      return false;
-      }
-
-   TR::CFGEdge* removedEdge = changeConditionalToUnconditional(node, block, takeBranch, _curTree, optDetailString());
-   bool blocksWereRemoved = removedEdge ? removedEdge->getTo()->nodeIsRemoved() : false;
-
-
-   if (takeBranch)
-      {
-      TR_ASSERT(node->getOpCodeValue() == TR::Goto, "expecting the node to have been converted to a goto");
-      node = simplify(node, block);
-      }
-
-   if (blocksWereRemoved)
-      {
-      _invalidateUseDefInfo = true;
-      _alteredBlock = true;
-      _blockRemoved = true;
-      }
-   return blocksWereRemoved;
-   }
-
-void
-OMR::Simplifier::prepareToReplaceNode(TR::Node * node)
-   {
-   OMR::Optimization::prepareToReplaceNode(node);
-   _alteredBlock = true;
-   }
-
-void
-OMR::Simplifier::anchorOrderDependentNodesInSubtree(TR::Node *node, TR::Node *replacement, TR::TreeTop* anchorTree)
+bool OMR::Simplifier::conditionalToUnconditional(TR::Node *&node, TR::Block *block, int takeBranch)
 {
-   if (node == replacement)
-      return;
+    if (!performTransformation(comp(), "%s change conditional to unconditional n%in\n", optDetailString(),
+            node->getGlobalIndex())) {
+        return false;
+    }
 
-   if (nodeIsOrderDependent(node, 0, false))
-      {
-      if (trace())
-         traceMsg(comp(), "anchor detached node %p\n", node);
+    TR::CFGEdge *removedEdge = changeConditionalToUnconditional(node, block, takeBranch, _curTree, optDetailString());
+    bool blocksWereRemoved = removedEdge ? removedEdge->getTo()->nodeIsRemoved() : false;
 
-      generateAnchor(node, anchorTree);
-      }
-   else
-      anchorChildren(node, anchorTree, 0, node->getReferenceCount() > 1, replacement);
+    if (takeBranch) {
+        TR_ASSERT(node->getOpCodeValue() == TR::Goto, "expecting the node to have been converted to a goto");
+        node = simplify(node, block);
+    }
+
+    if (blocksWereRemoved) {
+        _invalidateUseDefInfo = true;
+        _alteredBlock = true;
+        _blockRemoved = true;
+    }
+    return blocksWereRemoved;
 }
 
-bool
-OMR::Simplifier::isBoundDefinitelyGELength(TR::Node *boundChild, TR::Node *lengthChild)
-   {
-   TR::ILOpCodes boundOp = boundChild->getOpCodeValue();
-   if (boundOp == TR::iadd)
-      {
-      TR::Node *first  = boundChild->getFirstChild();
-      TR::Node *second = boundChild->getSecondChild();
-      if (first == lengthChild)
-         {
-         TR::ILOpCodes secondOp = second->getOpCodeValue();
-         if (second->getOpCode().isArrayLength()                          ||
-             secondOp == TR::bu2i                                          ||
-             secondOp == TR::su2i                                          ||
+void OMR::Simplifier::prepareToReplaceNode(TR::Node *node)
+{
+    OMR::Optimization::prepareToReplaceNode(node);
+    _alteredBlock = true;
+}
 
-             (secondOp == TR::iconst &&
-              second->getInt() >= 0)                                      ||
+void OMR::Simplifier::anchorOrderDependentNodesInSubtree(TR::Node *node, TR::Node *replacement, TR::TreeTop *anchorTree)
+{
+    if (node == replacement)
+        return;
 
-             (secondOp == TR::iand                                     &&
-              second->getSecondChild()->getOpCodeValue() == TR::iconst &&
-              (second->getSecondChild()->getInt() & 80000000) == 0)       ||
+    if (nodeIsOrderDependent(node, 0, false)) {
+        if (trace())
+            traceMsg(comp(), "anchor detached node %p\n", node);
 
-             (secondOp == TR::iushr                                    &&
-              second->getSecondChild()->getOpCodeValue() == TR::iconst &&
-              (second->getSecondChild()->getInt() & 0x1f) > 0))
-            {
-            return true;
+        generateAnchor(node, anchorTree);
+    } else
+        anchorChildren(node, anchorTree, 0, node->getReferenceCount() > 1, replacement);
+}
+
+bool OMR::Simplifier::isBoundDefinitelyGELength(TR::Node *boundChild, TR::Node *lengthChild)
+{
+    TR::ILOpCodes boundOp = boundChild->getOpCodeValue();
+    if (boundOp == TR::iadd) {
+        TR::Node *first = boundChild->getFirstChild();
+        TR::Node *second = boundChild->getSecondChild();
+        if (first == lengthChild) {
+            TR::ILOpCodes secondOp = second->getOpCodeValue();
+            if (second->getOpCode().isArrayLength() || secondOp == TR::bu2i || secondOp == TR::su2i ||
+
+                (secondOp == TR::iconst && second->getInt() >= 0) ||
+
+                (secondOp == TR::iand && second->getSecondChild()->getOpCodeValue() == TR::iconst
+                    && (second->getSecondChild()->getInt() & 80000000) == 0)
+                ||
+
+                (secondOp == TR::iushr && second->getSecondChild()->getOpCodeValue() == TR::iconst
+                    && (second->getSecondChild()->getInt() & 0x1f) > 0)) {
+                return true;
             }
-         }
-      else if (second == lengthChild)
-         {
-         TR::ILOpCodes firstOp = first->getOpCodeValue();
-         if (first->getOpCode().isArrayLength()                          ||
-             firstOp == TR::bu2i                                          ||
-             firstOp == TR::su2i                                          ||
+        } else if (second == lengthChild) {
+            TR::ILOpCodes firstOp = first->getOpCodeValue();
+            if (first->getOpCode().isArrayLength() || firstOp == TR::bu2i || firstOp == TR::su2i ||
 
-             (firstOp == TR::iand                                     &&
-              first->getSecondChild()->getOpCodeValue() == TR::iconst &&
-              (first->getSecondChild()->getInt() & 80000000) == 0)       ||
+                (firstOp == TR::iand && first->getSecondChild()->getOpCodeValue() == TR::iconst
+                    && (first->getSecondChild()->getInt() & 80000000) == 0)
+                ||
 
-             (firstOp == TR::iushr &&
-              first->getSecondChild()->getOpCodeValue() == TR::iconst &&
-              (first->getSecondChild()->getInt() & 0x1f) > 0))
-            {
-            return true;
+                (firstOp == TR::iushr && first->getSecondChild()->getOpCodeValue() == TR::iconst
+                    && (first->getSecondChild()->getInt() & 0x1f) > 0)) {
+                return true;
             }
-         }
-      }
-   else if (boundOp == TR::isub)
-      {
-      TR::Node *first  = boundChild->getFirstChild();
-      TR::Node *second = boundChild->getSecondChild();
-      if (first  == lengthChild)
-         {
-         TR::ILOpCodes secondOp = second->getOpCodeValue();
-         if ((secondOp == TR::iconst &&
-              second->getInt() < 0)                                      ||
+        }
+    } else if (boundOp == TR::isub) {
+        TR::Node *first = boundChild->getFirstChild();
+        TR::Node *second = boundChild->getSecondChild();
+        if (first == lengthChild) {
+            TR::ILOpCodes secondOp = second->getOpCodeValue();
+            if ((secondOp == TR::iconst && second->getInt() < 0) ||
 
-             (secondOp == TR::ior                                      &&
-              second->getSecondChild()->getOpCodeValue() == TR::iconst &&
-              (second->getSecondChild()->getInt() & 0x80000000) != 0))
-            {
-            return true;
+                (secondOp == TR::ior && second->getSecondChild()->getOpCodeValue() == TR::iconst
+                    && (second->getSecondChild()->getInt() & 0x80000000) != 0)) {
+                return true;
             }
-         }
-      }
+        }
+    }
 
-   return false;
-   }
+    return false;
+}
 
-const char *
-OMR::Simplifier::optDetailString() const throw()
-   {
-   return "O^O TREE SIMPLIFICATION: ";
-   }
+const char *OMR::Simplifier::optDetailString() const throw() { return "O^O TREE SIMPLIFICATION: "; }

@@ -30,38 +30,37 @@ class IlBuilder;
 class MethodBuilder;
 class IlType;
 class IlValue;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class JitBuilderRecorderBinaryBuffer : public TR::JitBuilderRecorder
-   {
-   public:
-   JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb, const char *fileName);
-   virtual ~JitBuilderRecorderBinaryBuffer() { }
+class JitBuilderRecorderBinaryBuffer : public TR::JitBuilderRecorder {
+public:
+    JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb, const char *fileName);
 
-   virtual void Close();
-   virtual void String(const char * const string);
-   virtual void Number(int8_t num);
-   virtual void Number(int16_t num);
-   virtual void Number(int32_t num);
-   virtual void Number(int64_t num);
-   virtual void Number(float num);
-   virtual void Number(double num);
-   virtual void ID(TypeID id);
-   virtual void Statement(const char *s);
-   virtual void Type(const TR::IlType *type);
-   virtual void Value(const TR::IlValue *v);
-   virtual void Builder(const TR::IlBuilder *b);
-   virtual void Location(const void * location);
-   virtual void EndStatement();
+    virtual ~JitBuilderRecorderBinaryBuffer() {}
 
-   std::vector<uint8_t> & buffer() { return _buf; }
+    virtual void Close();
+    virtual void String(const char * const string);
+    virtual void Number(int8_t num);
+    virtual void Number(int16_t num);
+    virtual void Number(int32_t num);
+    virtual void Number(int64_t num);
+    virtual void Number(float num);
+    virtual void Number(double num);
+    virtual void ID(TypeID id);
+    virtual void Statement(const char *s);
+    virtual void Type(const TR::IlType *type);
+    virtual void Value(const TR::IlValue *v);
+    virtual void Builder(const TR::IlBuilder *b);
+    virtual void Location(const void *location);
+    virtual void EndStatement();
 
-   protected:
-   std::vector<uint8_t> _buf;
-   };
+    std::vector<uint8_t> &buffer() { return _buf; }
+
+protected:
+    std::vector<uint8_t> _buf;
+};
 
 } // namespace OMR
 

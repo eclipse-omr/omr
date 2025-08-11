@@ -52,188 +52,195 @@ class TR_Debug;
 class TR_FrontEnd;
 class TR_Memory;
 class TR_ResolvedMethod;
+
 namespace OMR {
 struct MethodMetaDataPOD;
 }
+
 namespace TR {
 class Compilation;
 class Options;
 class PersistentInfo;
 class ResolvedMethodSymbol;
 class SymbolReference;
-}
+} // namespace TR
 struct TR_InlinedCallSite;
 
-char * feGetEnv(const char *);
+char *feGetEnv(const char *);
 
-namespace TR
-   {
-   static bool isJ9()
-      {
+namespace TR {
+static bool isJ9()
+{
 #if defined(NONJAVA) || defined(JITTEST)
-      return false;
+    return false;
 #else
-      return true;
+    return true;
 #endif
-      }
-   }
+}
+} // namespace TR
 
 // va_copy for re-using a va_list
 //
-#if defined(_MSC_VER)             // MSVC doesn't define va_copy
+#if defined(_MSC_VER) // MSVC doesn't define va_copy
 #if (_MSC_VER < 1800)
-   #define va_copy(d,s) ((d)=(s))
-   #define va_copy_end(x)
+#define va_copy(d, s) ((d) = (s))
+#define va_copy_end(x)
 #else /* (_MSC_VER < 1800) */
-   #define va_copy_end(x) va_end(x)
+#define va_copy_end(x) va_end(x)
 #endif /* (_MSC_VER < 1800) */
-#elif defined(J9ZOS390) && !defined(__C99)  // zOS defines it only if __C99 is defined
-   #define va_copy(d,s) (memcpy((d),(s),sizeof(va_list)))
-   #define va_copy_end(x)
-#else                                       // other platforms support va_copy properly
-   #define va_copy_end(x) va_end(x)
+#elif defined(J9ZOS390) && !defined(__C99) // zOS defines it only if __C99 is defined
+#define va_copy(d, s) (memcpy((d), (s), sizeof(va_list)))
+#define va_copy_end(x)
+#else // other platforms support va_copy properly
+#define va_copy_end(x) va_end(x)
 #endif
-
 
 /*
  * Codegen-specific data structure to pass data into Frontend-specific binary
  * encoding functions.
  */
-struct TR_BinaryEncodingData
-   {
-   };
+struct TR_BinaryEncodingData {};
 
-
-class TR_FrontEnd : private TR::Uncopyable
-   {
+class TR_FrontEnd : private TR::Uncopyable {
 public:
-   TR_FrontEnd()
-      : _isSafeToFreeOptionsOnShutdown(false)   // most conservative setting, relied upon by OpenJ9
-      {}
+    TR_FrontEnd()
+        : _isSafeToFreeOptionsOnShutdown(false) // most conservative setting, relied upon by OpenJ9
+    {}
 
-   // --------------------------------------------------------------------------
-   // Method
-   // --------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // Method
+    // --------------------------------------------------------------------------
 
-   virtual TR_ResolvedMethod * createResolvedMethod(TR_Memory *, TR_OpaqueMethodBlock *, TR_ResolvedMethod * = 0, TR_OpaqueClassBlock * = 0);
-   virtual OMR::MethodMetaDataPOD *createMethodMetaData(TR::Compilation *comp) { return NULL; }
+    virtual TR_ResolvedMethod *createResolvedMethod(TR_Memory *, TR_OpaqueMethodBlock *, TR_ResolvedMethod * = 0,
+        TR_OpaqueClassBlock * = 0);
 
-   virtual TR_OpaqueMethodBlock * getMethodFromName(const char *className, const char *methodName, const char *signature);
-   virtual uint32_t offsetOfIsOverriddenBit();
+    virtual OMR::MethodMetaDataPOD *createMethodMetaData(TR::Compilation *comp) { return NULL; }
 
-   // Needs VMThread
+    virtual TR_OpaqueMethodBlock *getMethodFromName(const char *className, const char *methodName,
+        const char *signature);
+    virtual uint32_t offsetOfIsOverriddenBit();
 
-   // Check if method entry and exit tracing is enabled
-   virtual bool isMethodTracingEnabled(TR_OpaqueMethodBlock *method);
+    // Needs VMThread
 
-   virtual const char * sampleSignature(TR_OpaqueMethodBlock * aMethod, char * bug = 0, int32_t bufLen = 0,TR_Memory *memory = NULL);
+    // Check if method entry and exit tracing is enabled
+    virtual bool isMethodTracingEnabled(TR_OpaqueMethodBlock *method);
 
-   virtual int32_t getLineNumberForMethodAndByteCodeIndex(TR_OpaqueMethodBlock *, int32_t);
+    virtual const char *sampleSignature(TR_OpaqueMethodBlock *aMethod, char *bug = 0, int32_t bufLen = 0,
+        TR_Memory *memory = NULL);
 
-   virtual bool canDevirtualizeDispatch()     { return true; }
+    virtual int32_t getLineNumberForMethodAndByteCodeIndex(TR_OpaqueMethodBlock *, int32_t);
 
-   // --------------------------------------------------------------------------
-   // Codegen
-   // --------------------------------------------------------------------------
+    virtual bool canDevirtualizeDispatch() { return true; }
 
-   virtual uint8_t * allocateRelocationData(TR::Compilation *, uint32_t numBytes);
+    // --------------------------------------------------------------------------
+    // Codegen
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
-   // Optimizer
-   // --------------------------------------------------------------------------
+    virtual uint8_t *allocateRelocationData(TR::Compilation *, uint32_t numBytes);
 
-   // Inliner
-   virtual bool isInlineableNativeMethod(TR::Compilation * comp, TR::ResolvedMethodSymbol * methodSymbol){ return false;}
+    // --------------------------------------------------------------------------
+    // Optimizer
+    // --------------------------------------------------------------------------
 
-   virtual TR_OpaqueMethodBlock *getInlinedCallSiteMethod(TR_InlinedCallSite *ics);
+    // Inliner
+    virtual bool isInlineableNativeMethod(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol)
+    {
+        return false;
+    }
 
-   // --------------------------------------------------------------------------
-   // Class hierarchy
-   // --------------------------------------------------------------------------
+    virtual TR_OpaqueMethodBlock *getInlinedCallSiteMethod(TR_InlinedCallSite *ics);
 
-   virtual bool classHasBeenExtended(TR_OpaqueClassBlock *);
-   virtual bool classHasBeenReplaced(TR_OpaqueClassBlock *);
-   virtual TR_OpaqueClassBlock * getSuperClass(TR_OpaqueClassBlock * classPointer);
-   virtual TR_YesNoMaybe isInstanceOf(TR_OpaqueClassBlock *instanceClass, TR_OpaqueClassBlock * castClass, bool instanceIsFixed, bool castIsFixed = true, bool callSiteVettedForAOT=false);
-   virtual bool isUnloadAssumptionRequired(TR_OpaqueClassBlock *, TR_ResolvedMethod *);
+    // --------------------------------------------------------------------------
+    // Class hierarchy
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
-   // Persistence
-   // --------------------------------------------------------------------------
+    virtual bool classHasBeenExtended(TR_OpaqueClassBlock *);
+    virtual bool classHasBeenReplaced(TR_OpaqueClassBlock *);
+    virtual TR_OpaqueClassBlock *getSuperClass(TR_OpaqueClassBlock *classPointer);
+    virtual TR_YesNoMaybe isInstanceOf(TR_OpaqueClassBlock *instanceClass, TR_OpaqueClassBlock *castClass,
+        bool instanceIsFixed, bool castIsFixed = true, bool callSiteVettedForAOT = false);
+    virtual bool isUnloadAssumptionRequired(TR_OpaqueClassBlock *, TR_ResolvedMethod *);
 
-   virtual TR::PersistentInfo * getPersistentInfo() = 0;
+    // --------------------------------------------------------------------------
+    // Persistence
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
-   // J9 Object Model
-   // --------------------------------------------------------------------------
+    virtual TR::PersistentInfo *getPersistentInfo() = 0;
 
-   virtual int32_t getArraySpineShift(int32_t);
-   virtual int32_t getArrayletMask(int32_t);
-   virtual int32_t getArrayletLeafIndex(int32_t, int32_t);
-   virtual uintptr_t getOffsetOfContiguousArraySizeField();
-   virtual uintptr_t getOffsetOfDiscontiguousArraySizeField();
-   virtual uintptr_t getObjectHeaderSizeInBytes();
-   virtual uintptr_t getOffsetOfIndexableSizeField();
+    // --------------------------------------------------------------------------
+    // J9 Object Model
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
-   // J9 Classes / VM?
-   // --------------------------------------------------------------------------
+    virtual int32_t getArraySpineShift(int32_t);
+    virtual int32_t getArrayletMask(int32_t);
+    virtual int32_t getArrayletLeafIndex(int32_t, int32_t);
+    virtual uintptr_t getOffsetOfContiguousArraySizeField();
+    virtual uintptr_t getOffsetOfDiscontiguousArraySizeField();
+    virtual uintptr_t getObjectHeaderSizeInBytes();
+    virtual uintptr_t getOffsetOfIndexableSizeField();
 
-   virtual TR::DataType dataTypeForLoadOrStore(TR::DataType dt) { return dt; }
+    // --------------------------------------------------------------------------
+    // J9 Classes / VM?
+    // --------------------------------------------------------------------------
 
-   virtual TR_OpaqueClassBlock * getClassClassPointer(TR_OpaqueClassBlock *objectClassPointer);
-   virtual TR_OpaqueClassBlock * getClassFromMethodBlock(TR_OpaqueMethodBlock *mb);
-   virtual int32_t getNewArrayTypeFromClass(TR_OpaqueClassBlock *clazz);
+    virtual TR::DataType dataTypeForLoadOrStore(TR::DataType dt) { return dt; }
 
-   // VM+Shared
-   virtual TR_OpaqueClassBlock * getArrayClassFromComponentClass(TR_OpaqueClassBlock * componentClass);
-   /** \brief
-    *     Retrieves the nullRestrictedArrayClass from the array component class.
-    *
-    *  \param componentClass
-    *     The array component class
-    *
-    *  \return
-    *     A pointer to nullRestrictedArrayClass if it exists, otherwise NULL
-    */
-   virtual TR_OpaqueClassBlock * getNullRestrictedArrayClassFromComponentClass(TR_OpaqueClassBlock * componentClass);
-   virtual TR_OpaqueClassBlock * getClassFromNewArrayType(int32_t arrayType);
-   virtual TR_OpaqueClassBlock * getClassFromSignature(const char * sig, int32_t length, TR_ResolvedMethod *method, bool callSiteVettedForAOT=false);
-   virtual TR_OpaqueClassBlock * getClassFromSignature(const char * sig, int32_t length, TR_OpaqueMethodBlock *method, bool callSiteVettedForAOT=false);
-   virtual TR_OpaqueClassBlock * getClassOfMethod(TR_OpaqueMethodBlock *method);
-   virtual TR_OpaqueClassBlock * getComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
-   virtual TR_OpaqueClassBlock * getLeafComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
+    virtual TR_OpaqueClassBlock *getClassClassPointer(TR_OpaqueClassBlock *objectClassPointer);
+    virtual TR_OpaqueClassBlock *getClassFromMethodBlock(TR_OpaqueMethodBlock *mb);
+    virtual int32_t getNewArrayTypeFromClass(TR_OpaqueClassBlock *clazz);
 
-   // Null-terminated.  bufferSize >= 1+getStringUTF8Length(objectPointer).  Returns buffer just for convenience.
-   virtual char *getStringUTF8(uintptr_t objectPointer, char *buffer, uintptr_t bufferSize);
-   virtual int32_t getStringUTF8Length(uintptr_t objectPointer);
-   virtual uint64_t getStringUTF8UnabbreviatedLength(uintptr_t objectPointer);
+    // VM+Shared
+    virtual TR_OpaqueClassBlock *getArrayClassFromComponentClass(TR_OpaqueClassBlock *componentClass);
+    /** \brief
+     *     Retrieves the nullRestrictedArrayClass from the array component class.
+     *
+     *  \param componentClass
+     *     The array component class
+     *
+     *  \return
+     *     A pointer to nullRestrictedArrayClass if it exists, otherwise NULL
+     */
+    virtual TR_OpaqueClassBlock *getNullRestrictedArrayClassFromComponentClass(TR_OpaqueClassBlock *componentClass);
+    virtual TR_OpaqueClassBlock *getClassFromNewArrayType(int32_t arrayType);
+    virtual TR_OpaqueClassBlock *getClassFromSignature(const char *sig, int32_t length, TR_ResolvedMethod *method,
+        bool callSiteVettedForAOT = false);
+    virtual TR_OpaqueClassBlock *getClassFromSignature(const char *sig, int32_t length, TR_OpaqueMethodBlock *method,
+        bool callSiteVettedForAOT = false);
+    virtual TR_OpaqueClassBlock *getClassOfMethod(TR_OpaqueMethodBlock *method);
+    virtual TR_OpaqueClassBlock *getComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
+    virtual TR_OpaqueClassBlock *getLeafComponentClassFromArrayClass(TR_OpaqueClassBlock *arrayClass);
 
-   // --------------------------------------------------------------------------
-   // Code cache
-   // --------------------------------------------------------------------------
+    // Null-terminated.  bufferSize >= 1+getStringUTF8Length(objectPointer).  Returns buffer just for convenience.
+    virtual char *getStringUTF8(uintptr_t objectPointer, char *buffer, uintptr_t bufferSize);
+    virtual int32_t getStringUTF8Length(uintptr_t objectPointer);
+    virtual uint64_t getStringUTF8UnabbreviatedLength(uintptr_t objectPointer);
 
-   virtual void reserveTrampolineIfNecessary(TR::Compilation *, TR::SymbolReference *symRef, bool inBinaryEncoding);
-   virtual intptr_t methodTrampolineLookup(TR::Compilation *, TR::SymbolReference *symRef, void * callSite);
+    // --------------------------------------------------------------------------
+    // Code cache
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
-   // Stay in FrontEnd
-   // --------------------------------------------------------------------------
+    virtual void reserveTrampolineIfNecessary(TR::Compilation *, TR::SymbolReference *symRef, bool inBinaryEncoding);
+    virtual intptr_t methodTrampolineLookup(TR::Compilation *, TR::SymbolReference *symRef, void *callSite);
 
-   virtual TR_Debug * createDebug(TR::Compilation * comp = NULL);
+    // --------------------------------------------------------------------------
+    // Stay in FrontEnd
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
+    virtual TR_Debug *createDebug(TR::Compilation *comp = NULL);
 
-   virtual void acquireLogMonitor(); // used for multiple compilation threads
-   virtual void releaseLogMonitor();
-   virtual char *getFormattedName(char *, int32_t, char *, char *, bool);
-   virtual void printVerboseLogHeader(TR::Options *cmdLineOptions) {}
+    // --------------------------------------------------------------------------
 
-   virtual void setIsSafeToFreeOptionsOnShutdown(bool isSafe=true);
-   virtual bool isSafeToFreeOptionsOnShutdown();
+    virtual void acquireLogMonitor(); // used for multiple compilation threads
+    virtual void releaseLogMonitor();
+    virtual char *getFormattedName(char *, int32_t, char *, char *, bool);
+
+    virtual void printVerboseLogHeader(TR::Options *cmdLineOptions) {}
+
+    virtual void setIsSafeToFreeOptionsOnShutdown(bool isSafe = true);
+    virtual bool isSafeToFreeOptionsOnShutdown();
 
 private:
-   bool _isSafeToFreeOptionsOnShutdown;
-   };
+    bool _isSafeToFreeOptionsOnShutdown;
+};
 
 #endif

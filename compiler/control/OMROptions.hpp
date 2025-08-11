@@ -27,12 +27,12 @@
  */
 #ifndef OMR_OPTIONS_CONNECTOR
 #define OMR_OPTIONS_CONNECTOR
+
 namespace OMR {
 class Options;
 typedef OMR::Options OptionsConnector;
-}
+} // namespace OMR
 #endif
-
 
 #include <limits.h>
 #include <stddef.h>
@@ -62,13 +62,18 @@ class TR_Debug;
 class TR_MCTLogs;
 class TR_OptimizationPlan;
 class TR_ResolvedMethod;
+
 namespace TR {
 class SimpleRegex;
 }
+
 namespace OMR {
 class Compilation;
 }
-namespace TR  { class Options;     }
+
+namespace TR {
+class Options;
+}
 struct J9JITConfig;
 
 /**
@@ -84,1097 +89,1093 @@ extern const char TR_BUILD_NAME[];
 
 #define TR_MAX_AVAIL_LIMITED_GRA_REGS 11
 
-enum TR_CompilationOptions
-   {
-   // Option word mask - these bits identify which option word the option is
-   // in (words 0-31)
-   //
-   TR_OWM                        = 0x0000001F,
+enum TR_CompilationOptions {
+    // Option word mask - these bits identify which option word the option is
+    // in (words 0-31)
+    //
+    TR_OWM = 0x0000001F,
 
-   // Option word 0
-   //
-   TR_AOTCompileOnlyFromBootstrap= 0x00000020,
-   TR_AggressiveSwitchingToProfiling = 0x00000040,
-   TR_ReportMethodEnter          = 0x00000080,
-   TR_ReportMethodExit           = 0x00000100,
-   TR_EntryBreakPoints           = 0x00000200,
-   TR_EnableOldEDO               = 0x00000400,
-   TR_InstallAOTToColdCode       = 0x00000800,
-   TR_RegisterMaps               = 0x00001000,
-   TR_CreatePCMaps               = 0x00002000,
-   TR_AggressiveInlining         = 0x00004000,
-   TR_MimicInterpreterFrameShape = 0x00008000,
+    // Option word 0
+    //
+    TR_AOTCompileOnlyFromBootstrap = 0x00000020,
+    TR_AggressiveSwitchingToProfiling = 0x00000040,
+    TR_ReportMethodEnter = 0x00000080,
+    TR_ReportMethodExit = 0x00000100,
+    TR_EntryBreakPoints = 0x00000200,
+    TR_EnableOldEDO = 0x00000400,
+    TR_InstallAOTToColdCode = 0x00000800,
+    TR_RegisterMaps = 0x00001000,
+    TR_CreatePCMaps = 0x00002000,
+    TR_AggressiveInlining = 0x00004000,
+    TR_MimicInterpreterFrameShape = 0x00008000,
 
-   TR_TraceBC                    = 0x00010000,
-   // Available                  = 0x00020000,
-   TR_TraceTrees                 = 0x00040000,
-   TR_TraceCG                    = 0x00080000,
-   TR_TraceAliases               = 0x00100000,
-   // Available                  = 0x00200000,
-   TR_TraceOptDetails            = 0x00400000,
-   TR_TraceAll                   = TR_TraceBC | TR_TraceTrees | TR_TraceCG | TR_TraceOptDetails, // intentionally omits TR_TraceAliases
+    TR_TraceBC = 0x00010000,
+    // Available                  = 0x00020000,
+    TR_TraceTrees = 0x00040000,
+    TR_TraceCG = 0x00080000,
+    TR_TraceAliases = 0x00100000,
+    // Available                  = 0x00200000,
+    TR_TraceOptDetails = 0x00400000,
+    TR_TraceAll = TR_TraceBC | TR_TraceTrees | TR_TraceCG | TR_TraceOptDetails, // intentionally omits TR_TraceAliases
 
-   TR_CountOptTransformations    = 0x00800000, // Must be same option word as TR_TraceOptDetails to allow performTransformation macros to do getAnyOption on them
-   TR_NoRecompile                = 0x01000000,
-   TR_DebugBeforeCompile         = 0x02000000,
-   TR_DebugOnEntry               = 0x04000000,
-   TR_BreakBeforeCompile         = 0x08000000,
-   TR_FailRecompile              = 0x10000000,
-   TR_FailPreXRecompile          = 0x20000000,
-   TR_TraceBBVA                  = 0x40000000,
-   TR_TraceBVA                   = 0x80000000,
+    TR_CountOptTransformations = 0x00800000, // Must be same option word as TR_TraceOptDetails to allow
+                                             // performTransformation macros to do getAnyOption on them
+    TR_NoRecompile = 0x01000000,
+    TR_DebugBeforeCompile = 0x02000000,
+    TR_DebugOnEntry = 0x04000000,
+    TR_BreakBeforeCompile = 0x08000000,
+    TR_FailRecompile = 0x10000000,
+    TR_FailPreXRecompile = 0x20000000,
+    TR_TraceBBVA = 0x40000000,
+    TR_TraceBVA = 0x80000000,
 
-   // Option word 1
-   //
-   TR_DisableInterpreterSampling                    = 0x00000020 + 1,
-   TR_DisableEDO                                    = 0x00000040 + 1,
-   TR_DisableThrowToGoto                            = 0x00000080 + 1,
-   TR_DisableMonitorCoarsening                      = 0x00000100 + 1,
-   TR_DisableJITServerBufferedExpensiveCompilations = 0x00000200 + 1,
-   TR_DisableVirtualInlining                        = 0x00000400 + 1,
-   TR_DisableNonvirtualInlining                     = 0x00000800 + 1,
-   TR_DisableSyncMethodInlining                     = 0x00001000 + 1,
-   TR_DisableTailRecursion                          = 0x00002000 + 1,
-   TR_DisableInterfaceInlining                      = 0x00004000 + 1,
-   TR_DisableProfiledInlining                       = 0x00008000 + 1,
-   TR_DisableAbstractInlining                       = 0x00010000 + 1,
-   TR_DisableHierarchyInlining                      = 0x00020000 + 1,
-   TR_DisableDirectMemoryOps                        = 0x00040000 + 1,
-   TR_DisableArraySetOpts                           = 0x00100000 + 1,
-   TR_TraceLiveMonitorMetadata                      = 0x00200000 + 1,
-   TR_DisableAllocationInlining                     = 0x00400000 + 1,
-   TR_DisableInlineCheckCast                        = 0x00800000 + 1,
-   TR_DisableInlineIfInstanceOf                     = 0x01000000 + 1,
-   TR_DisableInlineInstanceOf                       = 0x02000000 + 1,
-   TR_DisableInlineMonEnt                           = 0x04000000 + 1,
-   TR_DisableInlineMonExit                          = 0x08000000 + 1,
-   TR_DisableUnsafe                                 = 0x10000000 + 1,
-   TR_DisableVirtualGuardNOPing                     = 0x20000000 + 1,
-   TR_DisableNewInstanceImplOpt                     = 0x40000000 + 1,
-   TR_DisableFastStringIndexOf                      = 0x80000000 + 1,
+    // Option word 1
+    //
+    TR_DisableInterpreterSampling = 0x00000020 + 1,
+    TR_DisableEDO = 0x00000040 + 1,
+    TR_DisableThrowToGoto = 0x00000080 + 1,
+    TR_DisableMonitorCoarsening = 0x00000100 + 1,
+    TR_DisableJITServerBufferedExpensiveCompilations = 0x00000200 + 1,
+    TR_DisableVirtualInlining = 0x00000400 + 1,
+    TR_DisableNonvirtualInlining = 0x00000800 + 1,
+    TR_DisableSyncMethodInlining = 0x00001000 + 1,
+    TR_DisableTailRecursion = 0x00002000 + 1,
+    TR_DisableInterfaceInlining = 0x00004000 + 1,
+    TR_DisableProfiledInlining = 0x00008000 + 1,
+    TR_DisableAbstractInlining = 0x00010000 + 1,
+    TR_DisableHierarchyInlining = 0x00020000 + 1,
+    TR_DisableDirectMemoryOps = 0x00040000 + 1,
+    TR_DisableArraySetOpts = 0x00100000 + 1,
+    TR_TraceLiveMonitorMetadata = 0x00200000 + 1,
+    TR_DisableAllocationInlining = 0x00400000 + 1,
+    TR_DisableInlineCheckCast = 0x00800000 + 1,
+    TR_DisableInlineIfInstanceOf = 0x01000000 + 1,
+    TR_DisableInlineInstanceOf = 0x02000000 + 1,
+    TR_DisableInlineMonEnt = 0x04000000 + 1,
+    TR_DisableInlineMonExit = 0x08000000 + 1,
+    TR_DisableUnsafe = 0x10000000 + 1,
+    TR_DisableVirtualGuardNOPing = 0x20000000 + 1,
+    TR_DisableNewInstanceImplOpt = 0x40000000 + 1,
+    TR_DisableFastStringIndexOf = 0x80000000 + 1,
 
-   // Option word 2
-   //
-   TR_DisableIPA                          = 0x00000020 + 2,
-   TR_DisableValueProfiling               = 0x00000040 + 2,
-   TR_DisableUpdateAOTBytesSize           = 0x00000080 + 2,
-   TR_DisableMergeStackMaps               = 0x00000100 + 2,
-   TR_DisableUpdateJITBytesSize           = 0x00000200 + 2,
-   TR_EnableParanoidOptCheck              = 0x00000400 + 2,
-   TR_AlwaysSafeFatal                     = 0x00000800 + 2, ///< Always fire a safe fatal assert for testing purposes
-   TR_DisableReadMonitors                 = 0x00001000 + 2,
-   TR_DisableZ10                          = 0x00002000 + 2,
-   TR_TraceUseDefs                        = 0x00004000 + 2,
-   TR_TraceValueNumbers                   = 0x00008000 + 2,
-   TR_TraceLiveness                       = 0x00010000 + 2,
-   TR_BreakAfterCompile                   = 0x00020000 + 2,
-   TR_PrintErrorInfoOnCompFailure         = 0x00040000 + 2,
-   TR_DisableArrayCopyOpts                = 0x00080000 + 2,
-   TR_NoResumableTrapHandler              = 0x00100000 + 2,
-   TR_disableInterfaceCallCaching         = 0x00200000 + 2,
-   TR_enableInterfaceCallCachingSingleDynamicSlot
-                                          = 0x00400000 + 2,
-   TR_DisableJava8StartupHeuristics       = 0x00800000 + 2,
-   TR_DisableInlinerArgsPropagation       = 0x01000000 + 2,
-   TR_DisableZ13                          = 0x02000000 + 2,
-   TR_noJitDuringBootstrap                = 0x04000000 + 2,
-   TR_DisableOnDemandLiteralPoolRegister  = 0x08000000 + 2,
-   TR_DisableInternalPointers             = 0x10000000 + 2,
-   TR_EnableNodeGC                        = 0x20000000 + 2,
-   TR_OmitFramePointer                    = 0x40000000 + 2,
-   TR_ForceAOT                            = 0x80000000 + 2,
+    // Option word 2
+    //
+    TR_DisableIPA = 0x00000020 + 2,
+    TR_DisableValueProfiling = 0x00000040 + 2,
+    TR_DisableUpdateAOTBytesSize = 0x00000080 + 2,
+    TR_DisableMergeStackMaps = 0x00000100 + 2,
+    TR_DisableUpdateJITBytesSize = 0x00000200 + 2,
+    TR_EnableParanoidOptCheck = 0x00000400 + 2,
+    TR_AlwaysSafeFatal = 0x00000800 + 2, ///< Always fire a safe fatal assert for testing purposes
+    TR_DisableReadMonitors = 0x00001000 + 2,
+    TR_DisableZ10 = 0x00002000 + 2,
+    TR_TraceUseDefs = 0x00004000 + 2,
+    TR_TraceValueNumbers = 0x00008000 + 2,
+    TR_TraceLiveness = 0x00010000 + 2,
+    TR_BreakAfterCompile = 0x00020000 + 2,
+    TR_PrintErrorInfoOnCompFailure = 0x00040000 + 2,
+    TR_DisableArrayCopyOpts = 0x00080000 + 2,
+    TR_NoResumableTrapHandler = 0x00100000 + 2,
+    TR_disableInterfaceCallCaching = 0x00200000 + 2,
+    TR_enableInterfaceCallCachingSingleDynamicSlot = 0x00400000 + 2,
+    TR_DisableJava8StartupHeuristics = 0x00800000 + 2,
+    TR_DisableInlinerArgsPropagation = 0x01000000 + 2,
+    TR_DisableZ13 = 0x02000000 + 2,
+    TR_noJitDuringBootstrap = 0x04000000 + 2,
+    TR_DisableOnDemandLiteralPoolRegister = 0x08000000 + 2,
+    TR_DisableInternalPointers = 0x10000000 + 2,
+    TR_EnableNodeGC = 0x20000000 + 2,
+    TR_OmitFramePointer = 0x40000000 + 2,
+    TR_ForceAOT = 0x80000000 + 2,
 
-   // Option word 3
-   //
-   TR_noJitUntilMain                      = 0x00000040 + 3,
-   TR_DisableMarkingOfHotFields           = 0x00000080 + 3,
-   TR_DisableProfiling                    = 0x00000100 + 3,
-   TR_Timing                              = 0x00000200 + 3,
-   TR_SupportSwitchToInterpreter          = 0x00000400 + 3,
-   TR_DisableFPCodeGen                    = 0x00000800 + 3,
-   TR_DisableAotAtCheapWarm               = 0x00001000 + 3,
-   TR_Profile                             = 0x00002000 + 3,
-   TR_DisableAsyncCompilation             = 0x00004000 + 3,
-   TR_EnforceVectorAPIExpansion           = 0x00008000 + 3,
-   TR_DisableCompilationBeforeCheckpoint  = 0x00010000 + 3,
-   TR_EnableJITServerHeuristics           = 0x00020000 + 3,
-   TR_SoftFailOnAssume                    = 0x00040000 + 3,
-   TR_DisableNewBlockOrdering             = 0x00080000 + 3,
-   TR_DisableZNext                        = 0x00100000 + 3,
-   TR_DisableDynamicLoopTransfer          = 0x00200000 + 3,
-   TR_TraceNodeFlags                      = 0x00400000 + 3,
-   TR_DisableNewBVA                       = 0x00800000 + 3,
-   // Available                           = 0x01000000 + 3,
-   TR_BreakBBStart                        = 0x02000000 + 3,
-   TR_DisableRXusage                      = 0x04000000 + 3,
-   TR_EnableInliningOfUnsafeForArraylets  = 0x08000000 + 3,
-   TR_DisableStringPeepholes              = 0x10000000 + 3,
-   TR_DisableCheapWarmOpts                = 0x20000000 + 3,
-   TR_DisableInliningDuringVPAtWarm       = 0x40000000 + 3,
-   TR_AlwaysFatalAssert                   = 0x80000000 + 3,
+    // Option word 3
+    //
+    TR_noJitUntilMain = 0x00000040 + 3,
+    TR_DisableMarkingOfHotFields = 0x00000080 + 3,
+    TR_DisableProfiling = 0x00000100 + 3,
+    TR_Timing = 0x00000200 + 3,
+    TR_SupportSwitchToInterpreter = 0x00000400 + 3,
+    TR_DisableFPCodeGen = 0x00000800 + 3,
+    TR_DisableAotAtCheapWarm = 0x00001000 + 3,
+    TR_Profile = 0x00002000 + 3,
+    TR_DisableAsyncCompilation = 0x00004000 + 3,
+    TR_EnforceVectorAPIExpansion = 0x00008000 + 3,
+    TR_DisableCompilationBeforeCheckpoint = 0x00010000 + 3,
+    TR_EnableJITServerHeuristics = 0x00020000 + 3,
+    TR_SoftFailOnAssume = 0x00040000 + 3,
+    TR_DisableNewBlockOrdering = 0x00080000 + 3,
+    TR_DisableZNext = 0x00100000 + 3,
+    TR_DisableDynamicLoopTransfer = 0x00200000 + 3,
+    TR_TraceNodeFlags = 0x00400000 + 3,
+    TR_DisableNewBVA = 0x00800000 + 3,
+    // Available                           = 0x01000000 + 3,
+    TR_BreakBBStart = 0x02000000 + 3,
+    TR_DisableRXusage = 0x04000000 + 3,
+    TR_EnableInliningOfUnsafeForArraylets = 0x08000000 + 3,
+    TR_DisableStringPeepholes = 0x10000000 + 3,
+    TR_DisableCheapWarmOpts = 0x20000000 + 3,
+    TR_DisableInliningDuringVPAtWarm = 0x40000000 + 3,
+    TR_AlwaysFatalAssert = 0x80000000 + 3,
 
+    // Option word 4
+    //
+    TR_DisableDynamicSamplingWindow = 0x00000020 + 4,
+    TR_DisableAsyncCheckVersioning = 0x00000040 + 4,
+    TR_DisableInterpreterProfiling = 0x00000080 + 4,
+    TR_ConcurrentLPQ = 0x00000100 + 4,
+    TR_EnableVPICForResolvedVirtualCalls = 0x00000200 + 4,
+    TR_DisableRegisterPressureSimulation = 0x00000400 + 4,
+    TR_DisableBlockVersioner = 0x00000800 + 4,
+    TR_TraceMarkingOfHotFields = 0x00001000 + 4,
+    TR_EnableAnnotations = 0x00002000 + 4, // change to disable when on by default
+    TR_UnresolvedAreNotColdAtCold
+        = 0x00004000 + 4, // cold block marker marks unresolved blocks as cold at hotness cold or less
+    TR_UseSymbolValidationManager = 0x00008000 + 4,
+    TR_EnablePIDExtension = 0x00010000 + 4,
+    TR_GenerateCompleteInlineRanges = 0x00020000 + 4,
+    TR_DisableInliningOfNatives = 0x00040000 + 4,
+    TR_AssignEveryGlobalRegister = 0x00080000 + 4,
+    TR_DisableZ196 = 0x00100000 + 4,
+    TR_EarlyLPQ = 0x00200000 + 4,
+    TR_DisableUpgradingColdCompilations = 0x00400000 + 4, // for cold methods due to classLoadPhase for instance
+    TR_VerboseInterpreterProfiling = 0x00800000 + 4,
+    TR_TraceRegisterPressureDetails = 0x01000000 + 4,
+    TR_EnableYieldVMAccess = 0x02000000 + 4,
+    TR_DisableNoVMAccess = 0x04000000 + 4,
+    TR_DisableStoreSinking = 0x08000000 + 4,
+    TR_DisableIlgenOpts = 0x10000000 + 4,
+    TR_HWProfileDeleteEmptyBlocks = 0x20000000 + 4,
+    TR_DisableLiveMonitorMetadata = 0x40000000 + 4,
+    TR_DisableMonitorOpts = 0x80000000 + 4,
 
-   // Option word 4
-   //
-   TR_DisableDynamicSamplingWindow        = 0x00000020 + 4,
-   TR_DisableAsyncCheckVersioning         = 0x00000040 + 4,
-   TR_DisableInterpreterProfiling         = 0x00000080 + 4,
-   TR_ConcurrentLPQ                       = 0x00000100 + 4,
-   TR_EnableVPICForResolvedVirtualCalls   = 0x00000200 + 4,
-   TR_DisableRegisterPressureSimulation   = 0x00000400 + 4,
-   TR_DisableBlockVersioner               = 0x00000800 + 4,
-   TR_TraceMarkingOfHotFields             = 0x00001000 + 4,
-   TR_EnableAnnotations                   = 0x00002000 + 4, // change to disable when on by default
-   TR_UnresolvedAreNotColdAtCold          = 0x00004000 + 4, // cold block marker marks unresolved blocks as cold at hotness cold or less
-   TR_UseSymbolValidationManager          = 0x00008000 + 4,
-   TR_EnablePIDExtension                  = 0x00010000 + 4,
-   TR_GenerateCompleteInlineRanges        = 0x00020000 + 4,
-   TR_DisableInliningOfNatives            = 0x00040000 + 4,
-   TR_AssignEveryGlobalRegister           = 0x00080000 + 4,
-   TR_DisableZ196                         = 0x00100000 + 4,
-   TR_EarlyLPQ                            = 0x00200000 + 4,
-   TR_DisableUpgradingColdCompilations    = 0x00400000 + 4, // for cold methods due to classLoadPhase for instance
-   TR_VerboseInterpreterProfiling         = 0x00800000 + 4,
-   TR_TraceRegisterPressureDetails        = 0x01000000 + 4,
-   TR_EnableYieldVMAccess                 = 0x02000000 + 4,
-   TR_DisableNoVMAccess                   = 0x04000000 + 4,
-   TR_DisableStoreSinking                 = 0x08000000 + 4,
-   TR_DisableIlgenOpts                    = 0x10000000 + 4,
-   TR_HWProfileDeleteEmptyBlocks          = 0x20000000 + 4,
-   TR_DisableLiveMonitorMetadata          = 0x40000000 + 4,
-   TR_DisableMonitorOpts                  = 0x80000000 + 4,
+    // Option word 5
+    //
+    TR_ExperimentalClassLoadPhase = 0x00000020 + 5,
+    TR_DisableLookahead = 0x00000040 + 5,
+    TR_TraceBFGeneration = 0x00000080 + 5,
+    TR_DisableSVMDuringStartup = 0x00000100 + 5,
+    TR_SuspendEarly = 0x00000200 + 5,
+    TR_EnableEarlyCompilationDuringIdleCpu = 0x00000400 + 5,
+    TR_DisableCallGraphInlining = 0x00000800 + 5, // interpreter profiling
+    TR_enableProfiledDevirtualization = 0x00001000 + 5,
+    TR_EnableValueTracing = 0x00002000 + 5, // run-time value tracing
+    TR_IgnoreAssert = 0x00004000 + 5, // ignore failing assertions
+    TR_EnableSymbolValidationManager = 0x00008000 + 5,
+    TR_EnableNewAllocationProfiling = 0x00010000 + 5, // enable tracing of fields load and store
+    TR_IgnoreIEEERestrictions = 0x00020000 + 5, // enable more aggressive, nonIEEE compliant xforms
+    TR_ProcessHugeMethods = 0x00040000 + 5, // allow processing of huge methods
+    TR_FullSpeedDebug = 0x00080000 + 5,
+    TR_DynamicThreadPriority = 0x00100000 + 5,
+    TR_UseIdleTime = 0x00200000 + 5,
+    TR_UseOptLevelAdjustment = 0x00400000 + 5,
+    TR_DisableTraceRegDeps = 0x00800000 + 5,
+    TR_EnableCodeCacheConsolidation = 0x01000000 + 5,
+    TR_DontJitIfSlotsSharedByRefAndNonRef = 0x02000000 + 5,
+    TR_DisableAOTWarmRunThroughputImprovement = 0x04000000 + 5,
+    TR_EnableUpgradingAllColdCompilations = 0x08000000 + 5,
+    TR_TraceLastOpt = 0x10000000 + 5,
+    TR_UseILValidator = 0x20000000 + 5,
+    TR_DisableFPE = 0x40000000 + 5,
 
-   // Option word 5
-   //
-   TR_ExperimentalClassLoadPhase          = 0x00000020 + 5,
-   TR_DisableLookahead                    = 0x00000040 + 5,
-   TR_TraceBFGeneration                   = 0x00000080 + 5,
-   TR_DisableSVMDuringStartup             = 0x00000100 + 5,
-   TR_SuspendEarly                        = 0x00000200 + 5,
-   TR_EnableEarlyCompilationDuringIdleCpu = 0x00000400 + 5,
-   TR_DisableCallGraphInlining            = 0x00000800 + 5, // interpreter profiling
-   TR_enableProfiledDevirtualization      = 0x00001000 + 5,
-   TR_EnableValueTracing                  = 0x00002000 + 5, // run-time value tracing
-   TR_IgnoreAssert                        = 0x00004000 + 5, // ignore failing assertions
-   TR_EnableSymbolValidationManager       = 0x00008000 + 5,
-   TR_EnableNewAllocationProfiling        = 0x00010000 + 5, // enable tracing of fields load and store
-   TR_IgnoreIEEERestrictions              = 0x00020000 + 5, // enable more aggressive, nonIEEE compliant xforms
-   TR_ProcessHugeMethods                  = 0x00040000 + 5, // allow processing of huge methods
-   TR_FullSpeedDebug                      = 0x00080000 + 5,
-   TR_DynamicThreadPriority               = 0x00100000 + 5,
-   TR_UseIdleTime                         = 0x00200000 + 5,
-   TR_UseOptLevelAdjustment               = 0x00400000 + 5,
-   TR_DisableTraceRegDeps                 = 0x00800000 + 5,
-   TR_EnableCodeCacheConsolidation        = 0x01000000 + 5,
-   TR_DontJitIfSlotsSharedByRefAndNonRef  = 0x02000000 + 5,
-   TR_DisableAOTWarmRunThroughputImprovement  = 0x04000000 + 5,
-   TR_EnableUpgradingAllColdCompilations  = 0x08000000 + 5,
-   TR_TraceLastOpt                        = 0x10000000 + 5,
-   TR_UseILValidator                      = 0x20000000 + 5,
-   TR_DisableFPE                          = 0x40000000 + 5,
+    // Option word 6
+    //
+    TR_EnableAggressiveLoopVersioning = 0x00000020 + 6,
+    TR_DisableImmutableFieldAliasing = 0x00000040 + 6,
+    TR_CompileBit = 0x00000080 + 6,
+    TR_WaitBit = 0x00000100 + 6,
+    TR_DisableZ14 = 0x00000200 + 6,
+    TR_DisableLoopTransfer = 0x00000400 + 6, // disables the loop transfer part of loop versioner
+    TR_EnableRangeSplittingGRA = 0x00000800 + 6,
+    TR_ForceUsePreexistence = 0x00001000 + 6,
+    TR_TLHPrefetch = 0x00002000 + 6,
+    TR_ReservingLocks = 0x00004000
+        + 6, // Can be merged with TR_DisableLockResevation when lock reservation is enabled on all platforms
+    TR_DisableLockResevation = 0x00008000 + 6,
+    TR_DisableNopBreakpointGuard = 0x00010000 + 6,
+    TR_DisableAggressiveRecompilations = 0x00020000 + 6,
+    TR_DisableVariablePrecisionDAA = 0x00040000 + 6,
+    TR_ContinueAfterILValidationError = 0x00080000 + 6,
+    TR_DisableScorchingSampleThresholdScalingBasedOnNumProc = 0x00100000 + 6,
+    TR_CummTiming = 0x00200000 + 6,
+    TR_ReserveAllLocks = 0x00400000 + 6,
+    TR_DisableSamplingJProfiling = 0x00800000 + 6,
+    TR_UseSamplingJProfilingForLPQ = 0x01000000 + 6,
+    TR_UseSamplingJProfilingForAllFirstTimeComps = 0x02000000 + 6,
+    TR_NoStoreAOT = 0x04000000 + 6,
+    TR_NoLoadAOT = 0x08000000 + 6,
+    TR_PrintCodeCacheUsage = 0x10000000 + 6,
+    TR_UseSamplingJProfilingForDLT = 0x20000000 + 6,
+    TR_UseSamplingJProfilingForInterpSampledMethods = 0x40000000 + 6,
+    TR_EmitRelocatableELFFile = 0x80000000 + 6,
 
-   // Option word 6
-   //
-   TR_EnableAggressiveLoopVersioning      = 0x00000020 + 6,
-   TR_DisableImmutableFieldAliasing       = 0x00000040 + 6,
-   TR_CompileBit                          = 0x00000080 + 6,
-   TR_WaitBit                             = 0x00000100 + 6,
-   TR_DisableZ14                          = 0x00000200 + 6,
-   TR_DisableLoopTransfer                 = 0x00000400 + 6, // disables the loop transfer part of loop versioner
-   TR_EnableRangeSplittingGRA             = 0x00000800 + 6,
-   TR_ForceUsePreexistence                = 0x00001000 + 6,
-   TR_TLHPrefetch                         = 0x00002000 + 6,
-   TR_ReservingLocks                      = 0x00004000 + 6, // Can be merged with TR_DisableLockResevation when lock reservation is enabled on all platforms
-   TR_DisableLockResevation               = 0x00008000 + 6,
-   TR_DisableNopBreakpointGuard           = 0x00010000 + 6,
-   TR_DisableAggressiveRecompilations     = 0x00020000 + 6,
-   TR_DisableVariablePrecisionDAA         = 0x00040000 + 6,
-   TR_ContinueAfterILValidationError      = 0x00080000 + 6,
-   TR_DisableScorchingSampleThresholdScalingBasedOnNumProc = 0x00100000 + 6,
-   TR_CummTiming                          = 0x00200000 + 6,
-   TR_ReserveAllLocks                     = 0x00400000 + 6,
-   TR_DisableSamplingJProfiling           = 0x00800000 + 6,
-   TR_UseSamplingJProfilingForLPQ         = 0x01000000 + 6,
-   TR_UseSamplingJProfilingForAllFirstTimeComps   = 0x02000000 + 6,
-   TR_NoStoreAOT                          = 0x04000000 + 6,
-   TR_NoLoadAOT                           = 0x08000000 + 6,
-   TR_PrintCodeCacheUsage                 = 0x10000000 + 6,
-   TR_UseSamplingJProfilingForDLT                 = 0x20000000 + 6,
-   TR_UseSamplingJProfilingForInterpSampledMethods= 0x40000000 + 6,
-   TR_EmitRelocatableELFFile              = 0x80000000 + 6,
+    // Option word 7
+    //
+    TR_DisableCodeCacheSnippets = 0x00000020 + 7,
+    TR_EnableReassociation = 0x00000040 + 7,
+    TR_DisableSSOpts = 0x00000080 + 7,
+    TR_EnableFieldWatch = 0x00000100 + 7,
+    TR_DisableDelayRelocationForAOTCompilations = 0x00000200 + 7,
+    TR_DisableRecompDueToInlinedMethodRedefinition = 0x00000400 + 7,
+    TR_DisableLoopReplicatorColdSideEntryCheck = 0x00000800 + 7,
+    TR_NotCompileTimeSensitive = 0x00001000 + 7, // Can afford to spend more time compiling
+    TR_DontDowgradeToColdDuringGracePeriod = 0x00002000 + 7,
+    TR_EnableRecompilationPushing = 0x00004000 + 7,
+    TR_EnableJCLInline = 0x00008000 + 7, // enable JCL Integer and Long methods inline
+    TR_DisableTreePatternMatching = 0x00010000 + 7,
+    TR_TraceTreePatternMatching = 0x00020000 + 7,
+    TR_DisableCHOpts = 0x00040000 + 7,
+    TR_ForceLoadAOT = 0x00080000 + 7,
+    TR_TraceRelocatableDataCG = 0x00100000 + 7,
+    TR_Disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x00200000 + 7,
+    TR_TraceRelocatableDataDetailsCG = 0x00400000 + 7,
+    TR_Disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x00800000 + 7,
+    TR_TurnOffSelectiveNoOptServerIfNoStartupHint = 0x01000000 + 7,
+    TR_TraceDominators = 0x02000000 + 7,
+    TR_EnableHCR = 0x04000000 + 7, // enable hot code replacement
+    TR_DisableTOC = 0x08000000 + 7,
+    TR_UseLowPriorityQueueDuringCLP = 0x10000000 + 7,
+    TR_DisableVectorBCD = 0x20000000 + 7,
+    TR_RealTimeGC = 0x40000000 + 7,
+    TR_DisableTraps = 0x80000000 + 7,
 
-   // Option word 7
-   //
-   TR_DisableCodeCacheSnippets            = 0x00000020 + 7,
-   TR_EnableReassociation                 = 0x00000040 + 7,
-   TR_DisableSSOpts                       = 0x00000080 + 7,
-   TR_EnableFieldWatch                    = 0x00000100 + 7,
-   TR_DisableDelayRelocationForAOTCompilations   = 0x00000200 + 7,
-   TR_DisableRecompDueToInlinedMethodRedefinition = 0x00000400 + 7,
-   TR_DisableLoopReplicatorColdSideEntryCheck = 0x00000800 + 7,
-   TR_NotCompileTimeSensitive             = 0x00001000 + 7, // Can afford to spend more time compiling
-   TR_DontDowgradeToColdDuringGracePeriod = 0x00002000 + 7,
-   TR_EnableRecompilationPushing          = 0x00004000 + 7,
-   TR_EnableJCLInline                     = 0x00008000 + 7, // enable JCL Integer and Long methods inline
-   TR_DisableTreePatternMatching          = 0x00010000 + 7,
-   TR_TraceTreePatternMatching            = 0x00020000 + 7,
-   TR_DisableCHOpts                       = 0x00040000 + 7,
-   TR_ForceLoadAOT                        = 0x00080000 + 7,
-   TR_TraceRelocatableDataCG              = 0x00100000 + 7,
-   TR_Disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x00200000 + 7,
-   TR_TraceRelocatableDataDetailsCG       = 0x00400000 + 7,
-   TR_Disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x00800000 + 7,
-   TR_TurnOffSelectiveNoOptServerIfNoStartupHint = 0x01000000 + 7,
-   TR_TraceDominators                     = 0x02000000 + 7,
-   TR_EnableHCR                           = 0x04000000 + 7, // enable hot code replacement
-   TR_DisableTOC                          = 0x08000000 + 7,
-   TR_UseLowPriorityQueueDuringCLP        = 0x10000000 + 7,
-   TR_DisableVectorBCD                    = 0x20000000 + 7,
-   TR_RealTimeGC                          = 0x40000000 + 7,
-   TR_DisableTraps                        = 0x80000000 + 7,
+    // Option word 8
+    //
+    TR_EnableLowerCompilationLimitsDecisionMaking = 0x00000020 + 8,
+    TR_DisableDirectToJNI = 0x00000040 + 8,
+    TR_DisableZ16 = 0x00000080 + 8,
+    TR_EmitExecutableELFFile = 0x00000100 + 8,
+    TR_JITServerFollowRemoteCompileWithLocalCompile = 0x00000200 + 8,
+    TR_EnableClassChainValidationCaching = 0x00000800 + 8,
+    TR_DisableLinkageRegisterAllocation = 0x00001000 + 8,
+    TR_EnableClassChainSharing = 0x00002000 + 8,
+    TR_DisableZ15 = 0x00004000 + 8,
+    TR_DisableCompilationAfterDLT = 0x00008000 + 8,
+    TR_DLTMostOnce = 0x00010000 + 8,
+    TR_DisableSelectiveNoOptServer = 0x00020000 + 8,
+    TR_DisableStripMining = 0x00040000 + 8,
+    TR_EnableSharedCacheTiming = 0x00080000 + 8,
+    TR_EnableTM = 0x00100000 + 8,
+    TR_DisablePeephole = 0x00200000 + 8,
+    TR_NoOptServer = 0x00400000 + 8,
+    TR_DisableDLTrecompilationPrevention = 0x00800000 + 8,
+    TR_Disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x01000000 + 8,
+    TR_DisablePeekAOTResolutions = 0x02000000 + 8,
+    TR_UseFlattenedArrayElementRuntimeHelpers = 0x04000000 + 8,
+    TR_UseFlattenedFieldRuntimeHelpers = 0x08000000 + 8,
+    TR_DisableLiveRangeSplitter = 0x10000000 + 8,
+    TR_DisableHalfSlotSpills = 0x20000000 + 8,
+    TR_DisableMHInlineWithoutPeeking = 0x40000000 + 8,
+    TR_Disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x80000000 + 8,
 
-   // Option word 8
-   //
-   TR_EnableLowerCompilationLimitsDecisionMaking
-                                          = 0x00000020 + 8,
-   TR_DisableDirectToJNI                  = 0x00000040 + 8,
-   TR_DisableZ16                          = 0x00000080 + 8,
-   TR_EmitExecutableELFFile               = 0x00000100 + 8,
-   TR_JITServerFollowRemoteCompileWithLocalCompile = 0x00000200 + 8,
-   TR_EnableClassChainValidationCaching   = 0x00000800 + 8,
-   TR_DisableLinkageRegisterAllocation    = 0x00001000 + 8,
-   TR_EnableClassChainSharing             = 0x00002000 + 8,
-   TR_DisableZ15                          = 0x00004000 + 8,
-   TR_DisableCompilationAfterDLT          = 0x00008000 + 8,
-   TR_DLTMostOnce                         = 0x00010000 + 8,
-   TR_DisableSelectiveNoOptServer         = 0x00020000 + 8,
-   TR_DisableStripMining                  = 0x00040000 + 8,
-   TR_EnableSharedCacheTiming             = 0x00080000 + 8,
-   TR_EnableTM                            = 0x00100000 + 8,
-   TR_DisablePeephole                     = 0x00200000 + 8,
-   TR_NoOptServer                         = 0x00400000 + 8,
-   TR_DisableDLTrecompilationPrevention   = 0x00800000 + 8,
-   TR_Disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x01000000 + 8,
-   TR_DisablePeekAOTResolutions           = 0x02000000 + 8,
-   TR_UseFlattenedArrayElementRuntimeHelpers = 0x04000000 + 8,
-   TR_UseFlattenedFieldRuntimeHelpers     = 0x08000000 + 8,
-   TR_DisableLiveRangeSplitter            = 0x10000000 + 8,
-   TR_DisableHalfSlotSpills               = 0x20000000 + 8,
-   TR_DisableMHInlineWithoutPeeking       = 0x40000000 + 8,
-   TR_Disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS = 0x80000000 + 8,
+    // Option word 9
+    //
+    TR_SplitWarmAndColdBlocks = 0x00000020 + 9,
+    TR_DisableReferenceArrayCopyInlineSmallSizeWithoutREPMOVS = 0x00000040 + 9,
+    TR_DisableTLHPrefetch = 0x00000080 + 9,
+    TR_DisableJProfilerThread = 0x00000100 + 9,
+    TR_DisableIProfilerThread = 0x00000200 + 9,
+    TR_DisableGuardedCountingRecompilations = 0x00000400 + 9,
+    TR_EnableCompYieldStats = 0x00000800 + 9,
+    TR_DisableBDLLVersioning = 0x00001000 + 9,
+    TR_IProfilerPerformTimestampCheck = 0x00002000 + 9,
+    TR_VerboseInlineProfiling = 0x00004000 + 9,
+    TR_DisableVectorAPIExpansion = 0x00008000 + 9,
+    TR_TraceVectorAPIExpansion = 0x00010000 + 9,
+    TR_DisableIntegerCompareSimplification = 0x00020000 + 9,
+    TR_DisableAutoSIMD = 0x00040000 + 9,
+    TR_DisableStableAnnotations = 0x00080000 + 9,
+    TR_DisableWriteBarriersRangeCheck = 0x00100000 + 9,
+    TR_Randomize = 0x00200000 + 9,
+    TR_BreakOnWriteBarrier = 0x00400000 + 9,
+    BreakOnWriteBarrierSnippet = 0x00800000 + 9,
+    TR_DisableForceInlineAnnotations = 0x01000000 + 9,
+    TR_CountWriteBarriersRT = 0x02000000 + 9,
+    TR_DisableNoServerDuringStartup = 0x04000000 + 9, // set TR_NoOptServer during startup and insert GCR trees
+    TR_BreakOnNew = 0x08000000 + 9,
+    TR_DisableInliningUnrecognizedIntrinsics = 0x10000000 + 9,
+    TR_EnableVectorAPIExpansion = 0x20000000 + 9,
+    TR_MoveOOLInstructionsToWarmCode = 0x40000000 + 9,
+    TR_MoveSnippetsToWarmCode = 0x80000000 + 9,
 
+    // Option word 10
+    //
+    TR_DisableDataCacheDisclaiming = 0x00000020 + 10,
+    TR_DisableIProfilerDataDisclaiming = 0x00000040 + 10,
+    // Available                           = 0x00000080 + 10,
+    TR_FirstLevelProfiling = 0x00000100 + 10,
+    TR_EnableCodeCacheDisclaiming = 0x00000200 + 10,
+    TR_EnableMHRelocatableCompile = 0x00000400 + 10,
+    TR_EnableCodeCacheDisclaimingSupport = 0x00000800 + 10,
+    TR_RequestJITServerCachedMethods = 0x00001000 + 10,
+    TR_DisableNewMethodOverride = 0x00002000 + 10,
+    TR_EnableSharedCacheDisclaiming = 0x00004000 + 10,
+    TR_DisableDependencyTracking = 0x00008000 + 10,
+    TR_EnableVectorAPIBoxing = 0x00010000 + 10,
+    TR_EnableSequentialLoadStoreWarm = 0x00020000 + 10,
+    TR_EnableSequentialLoadStoreCold = 0x00040000 + 10,
+    TR_DisableAVX = 0x00080000 + 10,
+    TR_DisableAVX2 = 0x00100000 + 10,
+    TR_DisableAVX512 = 0x00200000 + 10,
+    TR_ConservativeCompilation = 0x00400000 + 10,
+    TR_DisableSSE3 = 0x00800000 + 10,
+    TR_DisableSSE4_1 = 0x01000000 + 10,
+    TR_DisableSSE4_2 = 0x02000000 + 10,
+    TR_DisableNewX86VolatileSupport = 0x04000000 + 10,
+    TR_DisableZ17 = 0x08000000 + 10,
+    TR_EnableFileBackedCodeCacheDisclaiming = 0x10000000 + 10,
+    TR_DontDisclaimMemoryOnSwap = 0x20000000 + 10,
+    TR_PreferSwapForMemoryDisclaim = 0x40000000 + 10,
+    TR_DisableDirectToJNIInline = 0x80000000 + 10,
 
-   // Option word 9
-   //
-   TR_SplitWarmAndColdBlocks              = 0x00000020 + 9,
-   TR_DisableReferenceArrayCopyInlineSmallSizeWithoutREPMOVS = 0x00000040 + 9,
-   TR_DisableTLHPrefetch                  = 0x00000080 + 9,
-   TR_DisableJProfilerThread              = 0x00000100 + 9,
-   TR_DisableIProfilerThread              = 0x00000200 + 9,
-   TR_DisableGuardedCountingRecompilations = 0x00000400 + 9,
-   TR_EnableCompYieldStats                = 0x00000800 + 9,
-   TR_DisableBDLLVersioning               = 0x00001000 + 9,
-   TR_IProfilerPerformTimestampCheck      = 0x00002000 + 9,
-   TR_VerboseInlineProfiling              = 0x00004000 + 9,
-   TR_DisableVectorAPIExpansion           = 0x00008000 + 9,
-   TR_TraceVectorAPIExpansion             = 0x00010000 + 9,
-   TR_DisableIntegerCompareSimplification = 0x00020000 + 9,
-   TR_DisableAutoSIMD                     = 0x00040000 + 9,
-   TR_DisableStableAnnotations            = 0x00080000 + 9,
-   TR_DisableWriteBarriersRangeCheck      = 0x00100000 + 9,
-   TR_Randomize                           = 0x00200000 + 9,
-   TR_BreakOnWriteBarrier                 = 0x00400000 + 9,
-   BreakOnWriteBarrierSnippet             = 0x00800000 + 9,
-   TR_DisableForceInlineAnnotations       = 0x01000000 + 9,
-   TR_CountWriteBarriersRT                = 0x02000000 + 9,
-   TR_DisableNoServerDuringStartup        = 0x04000000 + 9,  // set TR_NoOptServer during startup and insert GCR trees
-   TR_BreakOnNew                          = 0x08000000 + 9,
-   TR_DisableInliningUnrecognizedIntrinsics = 0x10000000 + 9,
-   TR_EnableVectorAPIExpansion            = 0x20000000 + 9,
-   TR_MoveOOLInstructionsToWarmCode       = 0x40000000 + 9,
-   TR_MoveSnippetsToWarmCode              = 0x80000000 + 9,
+    // Option word 11
+    //
+    TR_RetryCodeCacheAllocAndIgnoreKind = 0x00000020 + 11,
+    TR_DisableVectorAPIBoxing = 0x00000040 + 11,
+    TR_EnableSelectiveEnterExitHooks = 0x00000080 + 11,
+    // Available                               = 0x00000100 + 11,
+    // Available                               = 0x00000200 + 11,
+    // Available                               = 0x00000400 + 11,
+    // Available                               = 0x00000800 + 11,
+    // Available                               = 0x00001000 + 11,
+    TR_VerboseOptTransformations = 0x00002000 + 11,
+    TR_DisableEnhancedClobberEval = 0x00004000 + 11,
+    TR_Enable39064Epilogue = 0x00008000 + 11,
+    TR_FSDGRA = 0x00010000 + 11,
+    TR_EnableLastCompilationRetrialLogging = 0x00040000 + 11,
+    TR_EnableFastHotRecompilation = 0x00080000 + 11, // RAS
+    TR_EnableFastScorchingRecompilation = 0x00100000 + 11, // RAS
+    TR_DisableTarokInlineArrayletAllocation = 0x00200000 + 11, // TAROK
+    TR_TraceAddAndRemoveEdge = 0x00400000 + 11,
+    TR_DisableHighWordRA = 0x00800000 + 11, // zGryphon
+    TR_DisableZImplicitNullChecks = 0x01000000 + 11,
+    TR_DisablePrexistenceDuringGracePeriod = 0x02000000 + 11,
+    // Available                               = 0x04000000 + 11,
+    TR_DisableInlineWriteBarriersRT = 0x08000000 + 11, // RTJ
+    // Available                               = 0x10000000 + 11,
+    TR_DisableNewInliningInfrastructure = 0x20000000 + 11,
+    // Available                               = 0x40000000 + 11,
+    // Available                               = 0x80000000 + 11,
 
-   // Option word 10
-   //
-   TR_DisableDataCacheDisclaiming         = 0x00000020 + 10,
-   TR_DisableIProfilerDataDisclaiming     = 0x00000040 + 10,
-   // Available                           = 0x00000080 + 10,
-   TR_FirstLevelProfiling                 = 0x00000100 + 10,
-   TR_EnableCodeCacheDisclaiming          = 0x00000200 + 10,
-   TR_EnableMHRelocatableCompile          = 0x00000400 + 10,
-   TR_EnableCodeCacheDisclaimingSupport   = 0x00000800 + 10,
-   TR_RequestJITServerCachedMethods       = 0x00001000 + 10,
-   TR_DisableNewMethodOverride            = 0x00002000 + 10,
-   TR_EnableSharedCacheDisclaiming        = 0x00004000 + 10,
-   TR_DisableDependencyTracking           = 0x00008000 + 10,
-   TR_EnableVectorAPIBoxing               = 0x00010000 + 10,
-   TR_EnableSequentialLoadStoreWarm       = 0x00020000 + 10,
-   TR_EnableSequentialLoadStoreCold       = 0x00040000 + 10,
-   TR_DisableAVX                          = 0x00080000 + 10,
-   TR_DisableAVX2                         = 0x00100000 + 10,
-   TR_DisableAVX512                       = 0x00200000 + 10,
-   TR_ConservativeCompilation             = 0x00400000 + 10,
-   TR_DisableSSE3                         = 0x00800000 + 10,
-   TR_DisableSSE4_1                       = 0x01000000 + 10,
-   TR_DisableSSE4_2                       = 0x02000000 + 10,
-   TR_DisableNewX86VolatileSupport        = 0x04000000 + 10,
-   TR_DisableZ17                          = 0x08000000 + 10,
-   TR_EnableFileBackedCodeCacheDisclaiming = 0x10000000 + 10,
-   TR_DontDisclaimMemoryOnSwap            = 0x20000000 + 10,
-   TR_PreferSwapForMemoryDisclaim         = 0x40000000 + 10,
-   TR_DisableDirectToJNIInline            = 0x80000000 + 10,
+    // Option word 12
+    // Available                               = 0x00000020 + 12,
+    // Available                               = 0x00000040 + 12,
+    TR_DisablePartialInlining = 0x00000080 + 12,
+    TR_AssumeStartupPhaseUntilToldNotTo = 0x00000100 + 12,
+    // Available                               = 0x00000200 + 12,
+    TR_DisableAOTBytesCompression = 0x00000400 + 12,
+    TR_X86UseMFENCE = 0x00000800 + 12,
+    // Available                               = 0x00001000 + 12,
+    // Available                               = 0x00002000 + 12,
+    TR_DisableHPRSpill = 0x00004000 + 12, // zGryphon
+    TR_DisableHPRUpgrade = 0x00008000 + 12, // zGryphon
+    TR_AggressiveOpts = 0x00010000 + 12,
+    TR_DisableMarshallingIntrinsics = 0x00020000 + 12,
+    TR_DisablePackedDecimalIntrinsics = 0x00040000 + 12,
+    TR_DisableCodeAllocationTrimming = 0x00080000 + 12,
+    TR_DisableDememoization = 0x00100000 + 12,
+    TR_DisableStringBuilderTransformer = 0x00200000 + 12,
+    TR_TraceILGen = 0x00400000 + 12,
+    TR_DisableSharedCacheHints = 0x00800000 + 12,
+    TR_EnableBenefitInliner = 0x01000000 + 12,
+    TR_TraceAbstractInterpretation = 0x02000000 + 12,
+    TR_TraceBIIDTGen = 0x04000000 + 12,
+    TR_TraceBIProposal = 0x08000000 + 12,
+    TR_TraceBISummary = 0x10000000 + 12,
+    // Available                               = 0x20000000 + 12,
+    // Available                               = 0x40000000 + 12,
+    TR_DisableAOTInstanceFieldResolution = 0x80000000 + 12,
 
-   // Option word 11
-   //
-   TR_RetryCodeCacheAllocAndIgnoreKind        = 0x00000020 + 11,
-   TR_DisableVectorAPIBoxing                  = 0x00000040 + 11,
-   TR_EnableSelectiveEnterExitHooks           = 0x00000080 + 11,
-   // Available                               = 0x00000100 + 11,
-   // Available                               = 0x00000200 + 11,
-   // Available                               = 0x00000400 + 11,
-   // Available                               = 0x00000800 + 11,
-   // Available                               = 0x00001000 + 11,
-   TR_VerboseOptTransformations               = 0x00002000 + 11,
-   TR_DisableEnhancedClobberEval              = 0x00004000 + 11,
-   TR_Enable39064Epilogue                     = 0x00008000 + 11,
-   TR_FSDGRA                                  = 0x00010000 + 11,
-   TR_EnableLastCompilationRetrialLogging     = 0x00040000 + 11,
-   TR_EnableFastHotRecompilation              = 0x00080000 + 11, // RAS
-   TR_EnableFastScorchingRecompilation        = 0x00100000 + 11, // RAS
-   TR_DisableTarokInlineArrayletAllocation    = 0x00200000 + 11, // TAROK
-   TR_TraceAddAndRemoveEdge                   = 0x00400000 + 11,
-   TR_DisableHighWordRA                       = 0x00800000 + 11, // zGryphon
-   TR_DisableZImplicitNullChecks              = 0x01000000 + 11,
-   TR_DisablePrexistenceDuringGracePeriod     = 0x02000000 + 11,
-   // Available                               = 0x04000000 + 11,
-   TR_DisableInlineWriteBarriersRT            = 0x08000000 + 11, // RTJ
-   // Available                               = 0x10000000 + 11,
-   TR_DisableNewInliningInfrastructure        = 0x20000000 + 11,
-   // Available                               = 0x40000000 + 11,
-   // Available                               = 0x80000000 + 11,
+    // Option word 13
+    // Available                               = 0x00000020 + 13,
+    TR_DisableRefArraycopyRT = 0x00000040 + 13,
+    // Available                               = 0x00000080 + 13,
+    TR_StaticDebugCountersRequested = 0x00000100 + 13,
+    TR_TraceNonLinearRegisterAssigner = 0x00000200 + 13,
+    TR_TraceLookahead = 0x00000400 + 13,
+    TR_DisableMultiLeafArrayCopy = 0x00000800 + 13,
+    TR_DisableInlinerFanIn = 0x00001000 + 13,
+    // Available                               = 0x00002000 + 13,
+    // Available                               = 0x00004000 + 13,
+    // Available                               = 0x00008000 + 13,
+    // Available                               = 0x00010000 + 13,
+    // Available                               = 0x00020000 + 13,
+    TR_EnableMonitorCacheLookup = 0x00040000 + 13,
+    // Available                               = 0x00080000 + 13,
+    // Available                               = 0x00100000 + 13,
+    // Available                               = 0x00200000 + 13,
+    // Available                               = 0x00400000 + 13,
+    // Available                               = 0x00800000 + 13,
+    TR_PaintAllocatedFrameSlotsDead = 0x01000000 + 13, // x86 Only
+    TR_PaintAllocatedFrameSlotsFauxObject = 0x02000000 + 13, // x86 Only
+    // Available                               = 0x04000000 + 13,
+    // Available                               = 0x08000000 + 13,
+    TR_RTGCMapCheck = 0x10000000 + 13, // x86 Only
+    TR_ImmediateCountingRecompilation = 0x20000000 + 13,
+    TR_DisableDumpFlowGraph = 0x40000000 + 13,
+    TR_EnableEBBCCInfo = 0x80000000 + 13,
 
-   // Option word 12
-   // Available                               = 0x00000020 + 12,
-   // Available                               = 0x00000040 + 12,
-   TR_DisablePartialInlining                  = 0x00000080 + 12,
-   TR_AssumeStartupPhaseUntilToldNotTo        = 0x00000100 + 12,
-   // Available                               = 0x00000200 + 12,
-   TR_DisableAOTBytesCompression              = 0x00000400 + 12,
-   TR_X86UseMFENCE                            = 0x00000800 + 12,
-   // Available                               = 0x00001000 + 12,
-   // Available                               = 0x00002000 + 12,
-   TR_DisableHPRSpill                         = 0x00004000 + 12, // zGryphon
-   TR_DisableHPRUpgrade                       = 0x00008000 + 12, // zGryphon
-   TR_AggressiveOpts                          = 0x00010000 + 12,
-   TR_DisableMarshallingIntrinsics            = 0x00020000 + 12,
-   TR_DisablePackedDecimalIntrinsics          = 0x00040000 + 12,
-   TR_DisableCodeAllocationTrimming           = 0x00080000 + 12,
-   TR_DisableDememoization                    = 0x00100000 + 12,
-   TR_DisableStringBuilderTransformer         = 0x00200000 + 12,
-   TR_TraceILGen                              = 0x00400000 + 12,
-   TR_DisableSharedCacheHints                 = 0x00800000 + 12,
-   TR_EnableBenefitInliner                    = 0x01000000 + 12,
-   TR_TraceAbstractInterpretation             = 0x02000000 + 12,
-   TR_TraceBIIDTGen                           = 0x04000000 + 12,
-   TR_TraceBIProposal                         = 0x08000000 + 12,
-   TR_TraceBISummary                          = 0x10000000 + 12,
-   // Available                               = 0x20000000 + 12,
-   // Available                               = 0x40000000 + 12,
-   TR_DisableAOTInstanceFieldResolution       = 0x80000000 + 12,
+    // Option word 14
+    // Available                                       = 0x00000020 + 14,
+    TR_DisableAOTColdCheapTacticalGRA = 0x00000040 + 14,
+    TR_EnableColdCheapTacticalGRA = 0x00000080 + 14,
+    TR_EnableDupRetTree = 0x00000100 + 14,
+    TR_DisableAOTStaticField = 0x00000200 + 14,
+    TR_DisableFreeCodeCacheBlockRecycling = 0x00000400 + 14,
+    TR_ForceBCDInit = 0x00000800 + 14,
+    // Available                                       = 0x00001000 + 14,
+    TR_EnableAOTInlineSystemMethod = 0x00002000 + 14,
+    TR_EnableAOTMethodEnter = 0x00004000 + 14,
+    TR_DisableMaskVFTPointers = 0x00008000 + 14,
+    TR_NoAotSecondRunDetection = 0x00010000 + 14,
+    // Available                                       = 0x00020000 + 14,
+    TR_DebugInliner = 0x00040000 + 14,
+    // Available                                       = 0x00080000 + 14,
+    // Available                                       = 0x00100000 + 14,
+    TR_TraceOSR = 0x00200000 + 14,
+    TR_EnableOSR = 0x00400000 + 14,
+    TR_DisableAOTCheckCastInlining = 0x00800000 + 14,
+    TR_DisableAOTInstanceOfInlining = 0x01000000 + 14,
+    // Available                                       = 0x02000000 + 14,
+    TR_EnableCFGEdgeCounters = 0x04000000 + 14,
+    TR_DisableIntrinsics = 0x08000000 + 14,
+    TR_DisablePersistIProfile = 0x10000000 + 14,
+    // Available                                       = 0x20000000 + 14,
+    // Available                                       = 0x40000000 + 14,
+    // Available                                       = 0x80000000 + 14,
 
-   // Option word 13
-   // Available                               = 0x00000020 + 13,
-   TR_DisableRefArraycopyRT                   = 0x00000040 + 13,
-   // Available                               = 0x00000080 + 13,
-   TR_StaticDebugCountersRequested            = 0x00000100 + 13,
-   TR_TraceNonLinearRegisterAssigner          = 0x00000200 + 13,
-   TR_TraceLookahead                          = 0x00000400 + 13,
-   TR_DisableMultiLeafArrayCopy               = 0x00000800 + 13,
-   TR_DisableInlinerFanIn                     = 0x00001000 + 13,
-   // Available                               = 0x00002000 + 13,
-   // Available                               = 0x00004000 + 13,
-   // Available                               = 0x00008000 + 13,
-   // Available                               = 0x00010000 + 13,
-   // Available                               = 0x00020000 + 13,
-   TR_EnableMonitorCacheLookup                = 0x00040000 + 13,
-   // Available                               = 0x00080000 + 13,
-   // Available                               = 0x00100000 + 13,
-   // Available                               = 0x00200000 + 13,
-   // Available                               = 0x00400000 + 13,
-   // Available                               = 0x00800000 + 13,
-   TR_PaintAllocatedFrameSlotsDead            = 0x01000000 + 13, //x86 Only
-   TR_PaintAllocatedFrameSlotsFauxObject      = 0x02000000 + 13, //x86 Only
-   // Available                               = 0x04000000 + 13,
-   // Available                               = 0x08000000 + 13,
-   TR_RTGCMapCheck                            = 0x10000000 + 13, //x86 Only
-   TR_ImmediateCountingRecompilation          = 0x20000000 + 13,
-   TR_DisableDumpFlowGraph                    = 0x40000000 + 13,
-   TR_EnableEBBCCInfo                         = 0x80000000 + 13,
+    // Option word 15
+    // Available                                       = 0x00000020 + 15,
+    // Available                                       = 0x00000040 + 15,
+    TR_DisableZArraySetUnroll = 0x00000080 + 15,
+    TR_NoIProfilerDuringStartupPhase = 0x00000100 + 15,
+    TR_ScalarizeSSOps = 0x00000200 + 15,
+    TR_DisableIProfilerDataCollection = 0x00000400 + 15,
+    TR_CheckGRA = 0x00000800 + 15,
+    TR_PoisonDeadSlots = 0x00001000 + 15,
+    TR_DisableOSRSharedSlots = 0x00002000 + 15,
+    TR_DisableIncrementalCCR = 0x00004000 + 15, // SRT
+    TR_DisableOSRCallSiteRemat = 0x00008000 + 15,
+    TR_UseLowerMethodCounts = 0x00010000 + 15,
+    TR_DisableOSRLocalRemat = 0x00040000 + 15,
+    TR_DoNotUsePersistentIprofiler = 0x00080000 + 15,
+    TR_DoNotUseFastStackwalk = 0x00100000 + 15,
+    TR_DisableOSRLiveRangeAnalysis = 0x00200000 + 15,
+    TR_DisableOSRGuardMerging = 0x00400000 + 15,
+    // Available                                       = 0x00800000 + 15,
+    // Available                                       = 0x01000000 + 15,
+    // Available                                       = 0x02000000 + 15,
+    TR_DisableDowngradeToColdOnVMPhaseStartup = 0x04000000 + 15,
+    TR_DontDowngradeToCold = 0x08000000 + 15,
+    // Available                                       = 0x10000000 + 15,
+    // Available                                       = 0x20000000 + 15,
+    TR_VerbosePseudoRandom = 0x40000000 + 15,
+    TR_DisableDoubleWordStackAlignment = 0x80000000 + 15, // 390
 
-   // Option word 14
-   // Available                                       = 0x00000020 + 14,
-   TR_DisableAOTColdCheapTacticalGRA                  = 0x00000040 + 14,
-   TR_EnableColdCheapTacticalGRA                      = 0x00000080 + 14,
-   TR_EnableDupRetTree                                = 0x00000100 + 14,
-   TR_DisableAOTStaticField                           = 0x00000200 + 14,
-   TR_DisableFreeCodeCacheBlockRecycling              = 0x00000400 + 14,
-   TR_ForceBCDInit                                    = 0x00000800 + 14,
-   // Available                                       = 0x00001000 + 14,
-   TR_EnableAOTInlineSystemMethod                     = 0x00002000 + 14,
-   TR_EnableAOTMethodEnter                            = 0x00004000 + 14,
-   TR_DisableMaskVFTPointers                          = 0x00008000 + 14,
-   TR_NoAotSecondRunDetection                         = 0x00010000 + 14,
-   // Available                                       = 0x00020000 + 14,
-   TR_DebugInliner                                    = 0x00040000 + 14,
-   // Available                                       = 0x00080000 + 14,
-   // Available                                       = 0x00100000 + 14,
-   TR_TraceOSR                                        = 0x00200000 + 14,
-   TR_EnableOSR                                       = 0x00400000 + 14,
-   TR_DisableAOTCheckCastInlining                     = 0x00800000 + 14,
-   TR_DisableAOTInstanceOfInlining                    = 0x01000000 + 14,
-   // Available                                       = 0x02000000 + 14,
-   TR_EnableCFGEdgeCounters                           = 0x04000000 + 14,
-   TR_DisableIntrinsics                               = 0x08000000 + 14,
-   TR_DisablePersistIProfile                          = 0x10000000 + 14,
-   // Available                                       = 0x20000000 + 14,
-   // Available                                       = 0x40000000 + 14,
-   // Available                                       = 0x80000000 + 14,
+    // Option word 16
+    TR_ForceNonSMP = 0x00000020 + 16,
+    TR_jitAllAtMain = 0x00000040 + 16,
+    // Available                                       = 0x00000080 + 16,
+    // Available                                       = 0x00000100 + 16,
+    TR_EnableAOTMethodExit = 0x00000200 + 16,
+    // Available                                       = 0x00000400 + 16,
+    // Available                                       = 0x00000800 + 16,
+    TR_DisableEmptyPreHeaderCheck = 0x00001000 + 16,
+    // Available                                       = 0x00002000 + 16,
+    TR_EnableDeterministicOrientedCompilation = 0x00004000 + 16,
+    // Available                                       = 0x00008000 + 16,
+    TR_EnableAOTStats = 0x00010000 + 16,
+    // Available                                       = 0x00020000 + 16,
+    TR_DisableSynchronizedFieldLoad = 0x00040000 + 16,
+    TR_QuickProfile = 0x00080000 + 16,
+    TR_DisableVerification = 0x00100000 + 16,
+    TR_DisableZEC12 = 0x00200000 + 16,
+    TR_BreakOnJ2IThunk = 0x00400000 + 16,
+    TR_DisableGlobalStaticBaseRegister = 0x00800000 + 16,
+    TR_DisableMethodHandleThunks = 0x01000000 + 16,
+    // Available                                       = 0x02000000 + 16,
+    // Available                                       = 0x04000000 + 16,
+    // Available                                       = 0x08000000 + 16,
+    // Available                                       = 0x10000000 + 16,
+    TR_KeepBCDWidening = 0x20000000 + 16,
+    // Available                                       = 0x40000000 + 16,
+    TR_CodeCacheSanityCheck = 0x80000000 + 16, // RAS
 
-   // Option word 15
-   // Available                                       = 0x00000020 + 15,
-   // Available                                       = 0x00000040 + 15,
-   TR_DisableZArraySetUnroll                          = 0x00000080 + 15,
-   TR_NoIProfilerDuringStartupPhase                   = 0x00000100 + 15,
-   TR_ScalarizeSSOps                                  = 0x00000200 + 15,
-   TR_DisableIProfilerDataCollection                  = 0x00000400 + 15,
-   TR_CheckGRA                                        = 0x00000800 + 15,
-   TR_PoisonDeadSlots                                 = 0x00001000 + 15,
-   TR_DisableOSRSharedSlots                           = 0x00002000 + 15,
-   TR_DisableIncrementalCCR                           = 0x00004000 + 15, //SRT
-   TR_DisableOSRCallSiteRemat                         = 0x00008000 + 15,
-   TR_UseLowerMethodCounts                            = 0x00010000 + 15,
-   TR_DisableOSRLocalRemat                            = 0x00040000 + 15,
-   TR_DoNotUsePersistentIprofiler                     = 0x00080000 + 15,
-   TR_DoNotUseFastStackwalk                           = 0x00100000 + 15,
-   TR_DisableOSRLiveRangeAnalysis                     = 0x00200000 + 15,
-   TR_DisableOSRGuardMerging                         = 0x00400000 + 15,
-   // Available                                       = 0x00800000 + 15,
-   // Available                                       = 0x01000000 + 15,
-   // Available                                       = 0x02000000 + 15,
-   TR_DisableDowngradeToColdOnVMPhaseStartup          = 0x04000000 + 15,
-   TR_DontDowngradeToCold                             = 0x08000000 + 15,
-   // Available                                       = 0x10000000 + 15,
-   // Available                                       = 0x20000000 + 15,
-   TR_VerbosePseudoRandom                             = 0x40000000 + 15,
-   TR_DisableDoubleWordStackAlignment                 = 0x80000000 + 15, //390
+    // Option word 17
+    TR_EnableSnapshotBlockOpts = 0x00000020 + 17,
+    // Available                                       = 0x00000040 + 17,
+    TR_EnableParanoidRefCountChecks = 0x00000080 + 17,
+    TR_DisableThunkTupleJ2I = 0x00000100 + 17,
+    // Available                                       = 0x00000200 + 17,
+    // Available                                       = 0x00000400 + 17,
+    // Available                                       = 0x00000800 + 17,
+    // Available                                       = 0x00001000 + 17,
+    // Available                                       = 0x00002000 + 17,
+    // Available                                       = 0x00004000 + 17,
+    TR_DisableRefinedBCDClobberEval = 0x00008000 + 17,
+    // Available                                       = 0x00010000 + 17,
+    // Available                                       = 0x00020000 + 17,
+    TR_DisableTLE = 0x00040000 + 17,
+    TR_ForceVSSStackCompaction = 0x00080000 + 17, // always compact variable size symbols
+    TR_DisableVSSStackCompaction = 0x00100000 + 17, // never compact variable size symbols -- if not force or disable
+                                                    // then use heuristic based on opt level and VSS total size
+    TR_EnableThisLiveRangeExtension = 0x00200000 + 17, // "this" live range extension
+    // Available                                       = 0x00400000 + 17,
+    TR_EnableDowngradeOnHugeQSZ = 0x00800000 + 17,
+    TR_DisablePostProfileCompPriorityBoost = 0x01000000 + 17,
+    TR_DisableBasicBlockPeepHole = 0x02000000 + 17,
+    // Available                                       = 0x04000000 + 17,
+    // Available                                       = 0x08000000 + 17,
+    TR_DisableMethodIsCold = 0x10000000 + 17,
+    TR_DisableNewStoreHint = 0x20000000 + 17,
+    // Available                                       = 0x40000000 + 17,
+    // Available                                       = 0x80000000 + 17,
 
-   // Option word 16
-   TR_ForceNonSMP                                     = 0x00000020 + 16,
-   TR_jitAllAtMain                                    = 0x00000040 + 16,
-   // Available                                       = 0x00000080 + 16,
-   // Available                                       = 0x00000100 + 16,
-   TR_EnableAOTMethodExit                             = 0x00000200 + 16,
-   // Available                                       = 0x00000400 + 16,
-   // Available                                       = 0x00000800 + 16,
-   TR_DisableEmptyPreHeaderCheck                      = 0x00001000 + 16,
-   // Available                                       = 0x00002000 + 16,
-   TR_EnableDeterministicOrientedCompilation          = 0x00004000 + 16,
-   // Available                                       = 0x00008000 + 16,
-   TR_EnableAOTStats                                  = 0x00010000 + 16,
-   // Available                                       = 0x00020000 + 16,
-   TR_DisableSynchronizedFieldLoad                    = 0x00040000 + 16,
-   TR_QuickProfile                                    = 0x00080000 + 16,
-   TR_DisableVerification                             = 0x00100000 + 16,
-   TR_DisableZEC12                                    = 0x00200000 + 16,
-   TR_BreakOnJ2IThunk                                 = 0x00400000 + 16,
-   TR_DisableGlobalStaticBaseRegister                 = 0x00800000 + 16,
-   TR_DisableMethodHandleThunks                       = 0x01000000 + 16,
-   // Available                                       = 0x02000000 + 16,
-   // Available                                       = 0x04000000 + 16,
-   // Available                                       = 0x08000000 + 16,
-   // Available                                       = 0x10000000 + 16,
-   TR_KeepBCDWidening                                 = 0x20000000 + 16,
-   // Available                                       = 0x40000000 + 16,
-   TR_CodeCacheSanityCheck                            = 0x80000000 + 16, // RAS
+    // Option word 18
+    // Available                                       = 0x00000020 + 18,
+    // Available                                       = 0x00000040 + 18,
+    // Available                                       = 0x00000080 + 18,
+    // Available                                       = 0x00000100 + 18,
+    TR_UseStrictStartupHints = 0x00000200 + 18,
+    // Available                                       = 0x00000400 + 18,
+    // Available                                       = 0x00000800 + 18,
+    // Available                                       = 0x00001000 + 18,
+    // Available                                       = 0x00004000 + 18,
+    // Available                                       = 0x00008000 + 18,
+    // Available                                       = 0x00010000 + 18,
+    // Available                                       = 0x00040000 + 18,
+    // Available                                       = 0x00080000 + 18,
+    // Available                                       = 0x00100000 + 18,
+    TR_DisableOutlinedNew = 0x00200000 + 18, // Expand object allocation logic inline instead of using a fast jit helper
+    // Available                                       = 0x00400000 + 18,
+    // Available                                       = 0x00800000 + 18,
+    // Available                                       = 0x01000000 + 18,
+    TR_TraceOpts = 0x02000000 + 18, // list optimization group in its dynamic order
+    // Available                                       = 0x04000000 + 18,
+    // Available                                       = 0x08000000 + 18,
+    // Available                                       = 0x10000000 + 18,
+    // Available                                       = 0x20000000 + 18,
+    // Available                                       = 0x40000000 + 18,
+    // Available                                       = 0x80000000 + 18,
 
-   // Option word 17
-   TR_EnableSnapshotBlockOpts                         = 0x00000020 + 17,
-   // Available                                       = 0x00000040 + 17,
-   TR_EnableParanoidRefCountChecks                    = 0x00000080 + 17,
-   TR_DisableThunkTupleJ2I                            = 0x00000100 + 17,
-   // Available                                       = 0x00000200 + 17,
-   // Available                                       = 0x00000400 + 17,
-   // Available                                       = 0x00000800 + 17,
-   // Available                                       = 0x00001000 + 17,
-   // Available                                       = 0x00002000 + 17,
-   // Available                                       = 0x00004000 + 17,
-   TR_DisableRefinedBCDClobberEval                    = 0x00008000 + 17,
-   // Available                                       = 0x00010000 + 17,
-   // Available                                       = 0x00020000 + 17,
-   TR_DisableTLE                                      = 0x00040000 + 17,
-   TR_ForceVSSStackCompaction                         = 0x00080000 + 17, // always compact variable size symbols
-   TR_DisableVSSStackCompaction                       = 0x00100000 + 17, // never compact variable size symbols -- if not force or disable then use heuristic based on opt level and VSS total size
-   TR_EnableThisLiveRangeExtension                    = 0x00200000 + 17, // "this" live range extension
-   // Available                                       = 0x00400000 + 17,
-   TR_EnableDowngradeOnHugeQSZ                        = 0x00800000 + 17,
-   TR_DisablePostProfileCompPriorityBoost             = 0x01000000 + 17,
-   TR_DisableBasicBlockPeepHole                       = 0x02000000 + 17,
-   // Available                                       = 0x04000000 + 17,
-   // Available                                       = 0x08000000 + 17,
-   TR_DisableMethodIsCold                             = 0x10000000 + 17,
-   TR_DisableNewStoreHint                             = 0x20000000 + 17,
-   // Available                                       = 0x40000000 + 17,
-   // Available                                       = 0x80000000 + 17,
+    // Option word 19
+    // Available                                       = 0x00000020 + 19,
+    TR_NoClassGC = 0x00000040 + 19, // -Xnoclassgc
+    // Available                                       = 0x00000080 + 19,
+    // Available                                       = 0x00000400 + 19,
+    // Available                                       = 0x00000800 + 19,
+    // Available                                       = 0x00001000 + 19,
+    // Available                                       = 0x00002000 + 19,
+    // Available                                       = 0x00004000 + 19,
+    TR_Server = 0x00008000 + 19, // -server
+    // Available                                       = 0x00010000 + 19,
+    // Available                                       = 0x00020000 + 19,
+    // Available                                       = 0x00040000 + 19,
+    // Available                                       = 0x00080000 + 19,
+    // Available                                       = 0x00100000 + 19,
+    // Available                                       = 0x00200000 + 19,
+    // Available                                       = 0x00400000 + 19,
+    // Available                                       = 0x00800000 + 19,
+    TR_EnableRATPurging = 0x01000000 + 19, // enable periodic RAT table purging
+    // Available                                       = 0x02000000 + 19,
+    // Available                                       = 0x04000000 + 19,
+    // Available                                       = 0x08000000 + 19,
+    TR_UpgradeBootstrapAtWarm = 0x10000000 + 19,
+    // Available                                       = 0x20000000 + 19,
+    // Available                                       = 0x40000000 + 19,
+    // Available                                       = 0x80000000 + 19,
 
-   // Option word 18
-   // Available                                       = 0x00000020 + 18,
-   // Available                                       = 0x00000040 + 18,
-   // Available                                       = 0x00000080 + 18,
-   // Available                                       = 0x00000100 + 18,
-   TR_UseStrictStartupHints                           = 0x00000200 + 18,
-   // Available                                       = 0x00000400 + 18,
-   // Available                                       = 0x00000800 + 18,
-   // Available                                       = 0x00001000 + 18,
-   // Available                                       = 0x00004000 + 18,
-   // Available                                       = 0x00008000 + 18,
-   // Available                                       = 0x00010000 + 18,
-   // Available                                       = 0x00040000 + 18,
-   // Available                                       = 0x00080000 + 18,
-   // Available                                       = 0x00100000 + 18,
-   TR_DisableOutlinedNew                              = 0x00200000 + 18, // Expand object allocation logic inline instead of using a fast jit helper
-   // Available                                       = 0x00400000 + 18,
-   // Available                                       = 0x00800000 + 18,
-   // Available                                       = 0x01000000 + 18,
-   TR_TraceOpts                                       = 0x02000000 + 18, // list optimization group in its dynamic order
-   // Available                                       = 0x04000000 + 18,
-   // Available                                       = 0x08000000 + 18,
-   // Available                                       = 0x10000000 + 18,
-   // Available                                       = 0x20000000 + 18,
-   // Available                                       = 0x40000000 + 18,
-   // Available                                       = 0x80000000 + 18,
+    // Option word 20
+    // Available                                       = 0x00000020 + 20,
+    // Available                                       = 0x00000040 + 20,
+    TR_PrivatizeOverlaps = 0x00000080 + 20, // avoid overlapping BCD stores
+    // Available                                       = 0x00000100 + 20,
+    TR_DisableKnownObjectTable = 0x00000200 + 20,
+    // Available                                       = 0x00000400 + 20,
+    // Available                                       = 0x00000800 + 20,
+    TR_DisableAOTResolveDiffCLMethods = 0x00001000 + 20, // disable passing nested autos as parameters
+    TR_DisableMethodHandleInvokeOpts = 0x00002000 + 20, // JSR292
+    TR_InhibitRecompilation = 0x00004000 + 20,
+    // Available                                       = 0x00008000 + 20,
+    TR_PaintDataCacheOnFree = 0x00010000 + 20, // Enable painting of data caches on reclamation
+    TR_DisableDataCacheReclamation = 0x00020000 + 20, // Disable reaping of data caches
+    TR_DisableUseDefForShadows = 0x00040000 + 20,
+    // Available                                       = 0x00080000 + 20,
+    // Available                                       = 0x00100000 + 20,
+    // Available                                       = 0x00200000 + 20,
+    TR_DisableConservativeHotRecompilationForServerMode = 0x00400000 + 20,
+    TR_DisableRampupImprovements = 0x00800000 + 20,
+    TR_EnableCompilationSpreading = 0x01000000 + 20,
+    TR_LowerCountsForAotCold = 0x02000000 + 20,
+    TR_DisableBranchPreload = 0x04000000 + 20,
+    TR_EnableBranchPreload = 0x08000000 + 20,
+    TR_TerseRegisterPressureTrace = 0x20000000 + 20,
+    TR_DisableMutableCallSiteGuards = 0x40000000 + 20, // JSR292
+    TR_DisableCallConstUncommoning = 0x80000000 + 20,
 
-   // Option word 19
-   // Available                                       = 0x00000020 + 19,
-   TR_NoClassGC                                       = 0x00000040 + 19,  // -Xnoclassgc
-   // Available                                       = 0x00000080 + 19,
-   // Available                                       = 0x00000400 + 19,
-   // Available                                       = 0x00000800 + 19,
-   // Available                                       = 0x00001000 + 19,
-   // Available                                       = 0x00002000 + 19,
-   // Available                                       = 0x00004000 + 19,
-   TR_Server                                          = 0x00008000 + 19,  // -server
-   // Available                                       = 0x00010000 + 19,
-   // Available                                       = 0x00020000 + 19,
-   // Available                                       = 0x00040000 + 19,
-   // Available                                       = 0x00080000 + 19,
-   // Available                                       = 0x00100000 + 19,
-   // Available                                       = 0x00200000 + 19,
-   // Available                                       = 0x00400000 + 19,
-   // Available                                       = 0x00800000 + 19,
-   TR_EnableRATPurging                                = 0x01000000 + 19,  // enable periodic RAT table purging
-   // Available                                       = 0x02000000 + 19,
-   // Available                                       = 0x04000000 + 19,
-   // Available                                       = 0x08000000 + 19,
-   TR_UpgradeBootstrapAtWarm                          = 0x10000000 + 19,
-   // Available                                       = 0x20000000 + 19,
-   // Available                                       = 0x40000000 + 19,
-   // Available                                       = 0x80000000 + 19,
+    // Option word 21
+    // Available                                       = 0x00000020 + 21,
+    // Available                                       = 0x00000040 + 21,
+    // Available                                       = 0x00000080 + 21,
+    TR_DisableCodeCacheReclamation = 0x00000100 + 21, // Disable the freeing of compiled methods
+    TR_DisableClearCodeCacheFullFlag = 0x00000200
+        + 21, // Disable the re-enabling of the code cache when a method body is freed after the cache has become full
+    // Available                                       = 0x00000400 + 21,
+    TR_EnableAOTRelocationTiming = 0x00000800 + 21,
+    // Available                                       = 0x00001000 + 21,
+    // Available                                       = 0x00002000 + 21,
+    TR_DisableBCDOppTracing = 0x00004000 + 21,
+    // Available                                       = 0x00008000 + 21,
+    // Available                                       = 0x00010000 + 21,
+    TR_OldDataCacheImplementation = 0x00020000 + 21,
+    TR_EnableDataCacheStatistics = 0x00040000 + 21,
+    // Available                                       = 0x00080000 + 21,
+    // Available                                       = 0x00100000 + 21,
+    TR_AllowVPRangeNarrowingBasedOnDeclaredType = 0x00200000 + 21,
+    TR_EnableScratchMemoryDebugging = 0x00400000 + 21,
+    TR_ProfileMemoryRegions = 0x00800000 + 21,
+    TR_DisableConverterReducer = 0x01000000 + 21,
+    TR_CompileTimeProfiler = 0x02000000 + 21,
+    // Available                                       = 0x04000000 + 21,
+    // Available                                       = 0x08000000 + 21,
+    // Available                                       = 0x10000000 + 21,
+    TR_PerformLookaheadAtWarmCold = 0x20000000 + 21,
+    // Available                                       = 0x40000000 + 21,
+    TR_ActivateCompThreadWhenHighPriReqIsBlocked = 0x80000000 + 21,
 
-   // Option word 20
-   // Available                                       = 0x00000020 + 20,
-   // Available                                       = 0x00000040 + 20,
-   TR_PrivatizeOverlaps                               = 0x00000080 + 20,  // avoid overlapping BCD stores
-   // Available                                       = 0x00000100 + 20,
-   TR_DisableKnownObjectTable                         = 0x00000200 + 20,
-   // Available                                       = 0x00000400 + 20,
-   // Available                                       = 0x00000800 + 20,
-   TR_DisableAOTResolveDiffCLMethods                  = 0x00001000 + 20,  // disable passing nested autos as parameters
-   TR_DisableMethodHandleInvokeOpts                   = 0x00002000 + 20,  // JSR292
-   TR_InhibitRecompilation                            = 0x00004000 + 20,
-   // Available                                       = 0x00008000 + 20,
-   TR_PaintDataCacheOnFree                            = 0x00010000 + 20,  // Enable painting of data caches on reclamation
-   TR_DisableDataCacheReclamation                     = 0x00020000 + 20,  // Disable reaping of data caches
-   TR_DisableUseDefForShadows                         = 0x00040000 + 20,
-   // Available                                       = 0x00080000 + 20,
-   // Available                                       = 0x00100000 + 20,
-   // Available                                       = 0x00200000 + 20,
-   TR_DisableConservativeHotRecompilationForServerMode= 0x00400000 + 20,
-   TR_DisableRampupImprovements                       = 0x00800000 + 20,
-   TR_EnableCompilationSpreading                      = 0x01000000 + 20,
-   TR_LowerCountsForAotCold                           = 0x02000000 + 20,
-   TR_DisableBranchPreload                            = 0x04000000 + 20,
-   TR_EnableBranchPreload                             = 0x08000000 + 20,
-   TR_TerseRegisterPressureTrace                      = 0x20000000 + 20,
-   TR_DisableMutableCallSiteGuards                    = 0x40000000 + 20,  // JSR292
-   TR_DisableCallConstUncommoning                     = 0x80000000 + 20,
+    // Option word 22
+    TR_DisableIterativeSA = 0x00000020 + 22,
+    // Available                                       = 0x00000040 + 22,
+    TR_TraceVPConstraints = 0x00000080 + 22,
+    TR_EnableMultipleGCRPeriods = 0x00000100 + 22,
+    TR_TraceKnownObjectGraph = 0x00000200 + 22,
+    TR_EnableAppThreadYield = 0x00000400 + 22,
+    TR_EnableRampupImprovements = 0x00000800 + 22,
+    TR_EnableGCRPatching = 0x00001000 + 22,
+    // Available                                       = 0x00002000 + 22,
+    TR_DisableProfiledMethodInlining = 0x00004000 + 22,
+    TR_DisableSmartPlacementOfCodeCaches = 0x00200000 + 22,
+    // Available                                       = 0x00400000 + 22,
+    TR_DisableAESInHardware = 0x00800000 + 22,
+    TR_EnableMHCustomizationLogicCalls = 0x01000000 + 22,
+    TR_EnableJITHelpershashCodeImpl = 0x02000000 + 22,
+    TR_EnablePerfAsserts = 0x04000000 + 22,
+    TR_EnableAOTCacheReclamation = 0x08000000 + 22,
+    // Available                                       = 0x10000000 + 22,
+    TR_DisableCPUUtilization = 0x20000000 + 22,
+    // Available                                       = 0x40000000 + 22,
+    // Available                                       = 0x80000000 + 22,
 
-   // Option word 21
-   // Available                                       = 0x00000020 + 21,
-   // Available                                       = 0x00000040 + 21,
-   // Available                                       = 0x00000080 + 21,
-   TR_DisableCodeCacheReclamation                     = 0x00000100 + 21, // Disable the freeing of compiled methods
-   TR_DisableClearCodeCacheFullFlag                   = 0x00000200 + 21, // Disable the re-enabling of the code cache when a method body is freed after the cache has become full
-   // Available                                       = 0x00000400 + 21,
-   TR_EnableAOTRelocationTiming                       = 0x00000800 + 21,
-   // Available                                       = 0x00001000 + 21,
-   // Available                                       = 0x00002000 + 21,
-   TR_DisableBCDOppTracing                            = 0x00004000 + 21,
-   // Available                                       = 0x00008000 + 21,
-   // Available                                       = 0x00010000 + 21,
-   TR_OldDataCacheImplementation                      = 0x00020000 + 21,
-   TR_EnableDataCacheStatistics                       = 0x00040000 + 21,
-   // Available                                       = 0x00080000 + 21,
-   // Available                                       = 0x00100000 + 21,
-   TR_AllowVPRangeNarrowingBasedOnDeclaredType        = 0x00200000 + 21,
-   TR_EnableScratchMemoryDebugging                    = 0x00400000 + 21,
-   TR_ProfileMemoryRegions                            = 0x00800000 + 21,
-   TR_DisableConverterReducer                         = 0x01000000 + 21,
-   TR_CompileTimeProfiler                             = 0x02000000 + 21,
-   // Available                                       = 0x04000000 + 21,
-   // Available                                       = 0x08000000 + 21,
-   // Available                                       = 0x10000000 + 21,
-   TR_PerformLookaheadAtWarmCold                      = 0x20000000 + 21,
-   // Available                                       = 0x40000000 + 21,
-   TR_ActivateCompThreadWhenHighPriReqIsBlocked       = 0x80000000 + 21,
+    // Option word 23
+    TR_TraceMethodIndex = 0x00000020 + 23,
+    TR_DisableGuardedCallArgumentRemat = 0x00000040 + 23,
+    // Available                                       = 0x00000080 + 23,
+    // Available                                       = 0x00000100 + 23,
+    TR_DisableMCSBypass = 0x00000200 + 23, // JSR292: MutableCallSite bypass optimization
+    TR_DisableHWProfilerThread = 0x00000400 + 23,
+    TR_DisableHWProfilerDataCollection = 0x00000800 + 23,
+    // Available                                       = 0x00001000 + 23,
+    // Available                                       = 0x00002000 + 23,
+    // Available                                       = 0x00004000 + 23,
+    TR_RandomSeedSignatureHash = 0x00008000 + 23,
+    // Available                                       = 0x00010000 + 23,
+    // Available                                       = 0x00020000 + 23,
+    TR_DebugRedundantMonitorElimination = 0x00040000 + 23,
+    // Available                                       = 0x00080000 + 23,
+    // Available                                       = 0x00100000 + 23,
+    // Available                                       = 0x00200000 + 23,
+    TR_EnableScorchInterpBlockFrequencyProfiling = 0x00400000 + 23,
+    TR_EnableSIMDLibrary = 0x00800000 + 23,
+    // Available                                       = 0x01000000 + 23,
+    // Available                                       = 0x02000000 + 23,
+    TR_EnableOSROnGuardFailure = 0x04000000 + 23,
+    TR_DisableOSR = 0x08000000 + 23,
+    TR_DisableDualTLH = 0x10000000 + 23,
+    // Available                                       = 0x10000000 + 23,
+    // Available                                       = 0x20000000 + 23,
+    TR_DisableArrayStoreCheckOpts = 0x40000000 + 23,
+    TR_DisableFastAssumptionReclamation = 0x80000000 + 23,
 
-   // Option word 22
-   TR_DisableIterativeSA                              = 0x00000020 + 22,
-   // Available                                       = 0x00000040 + 22,
-   TR_TraceVPConstraints                              = 0x00000080 + 22,
-   TR_EnableMultipleGCRPeriods                        = 0x00000100 + 22,
-   TR_TraceKnownObjectGraph                           = 0x00000200 + 22,
-   TR_EnableAppThreadYield                            = 0x00000400 + 22,
-   TR_EnableRampupImprovements                        = 0x00000800 + 22,
-   TR_EnableGCRPatching                               = 0x00001000 + 22,
-   // Available                                       = 0x00002000 + 22,
-   TR_DisableProfiledMethodInlining                   = 0x00004000 + 22,
-   TR_DisableSmartPlacementOfCodeCaches               = 0x00200000 + 22,
-   // Available                                       = 0x00400000 + 22,
-   TR_DisableAESInHardware                            = 0x00800000 + 22,
-   TR_EnableMHCustomizationLogicCalls                 = 0x01000000 + 22,
-   TR_EnableJITHelpershashCodeImpl                    = 0x02000000 + 22,
-   TR_EnablePerfAsserts                               = 0x04000000 + 22,
-   TR_EnableAOTCacheReclamation                       = 0x08000000 + 22,
-   // Available                                       = 0x10000000 + 22,
-   TR_DisableCPUUtilization                           = 0x20000000 + 22,
-   // Available                                       = 0x40000000 + 22,
-   // Available                                       = 0x80000000 + 22,
+    // Option word 24
+    TR_UseHigherMethodCounts = 0x00000020 + 24,
+    TR_FullInlineUnderOSRDebug = 0x00000040 + 24,
+    TR_DisablePRBE = 0x00000080 + 24,
+    // Available                                       = 0x00000100 + 24,
+    TR_X86HLE = 0x00000200 + 24,
+    TR_DisableAdaptiveDumbInliner = 0x00000400 + 24,
+    // Available                                       = 0x00000800 + 24,
+    // Available                                       = 0x00001000 + 24,
+    TR_EnableCopyingTROTInduction1Idioms = 0x00002000 + 24,
+    // Available                                       = 0x00004000 + 24,
+    // Available                                       = 0x00008000 + 24,
+    // Available                                       = 0x00010000 + 24,
+    // Available                                       = 0x00020000 + 24,
+    TR_CrashDuringCompilation = 0x00040000 + 24,
+    TR_DisableShareableMethodHandleThunks = 0x00080000 + 24,
+    TR_DisableCustomMethodHandleThunks = 0x00100000 + 24,
+    TR_DisableReducedPriorityForCustomMethodHandleThunks = 0x00200000 + 24,
+    TR_TraceSA = 0x00400000 + 24,
+    // Available                                       = 0x00800000 + 24,
+    TR_EnablePrepareForOSREvenIfThatDoesNothing = 0x01000000 + 24,
+    // Available                                       = 0x02000000 + 24,
+    // Available		                              = 0x04000000 + 24,
+    // Available                                       = 0x08000000 + 24,
+    TR_EnableIprofilerChanges = 0x10000000 + 24,
+    TR_DumpPersistedIProfilerMethodNamesAndCounts = 0x20000000 + 24,
+    TR_FirstRun = 0x40000000 + 24,
+    TR_DumpInitialMethodNamesAndCounts = 0x80000000 + 24,
 
-   // Option word 23
-   TR_TraceMethodIndex                                = 0x00000020 + 23,
-   TR_DisableGuardedCallArgumentRemat                 = 0x00000040 + 23,
-   // Available                                       = 0x00000080 + 23,
-   // Available                                       = 0x00000100 + 23,
-   TR_DisableMCSBypass                                = 0x00000200 + 23, // JSR292: MutableCallSite bypass optimization
-   TR_DisableHWProfilerThread                         = 0x00000400 + 23,
-   TR_DisableHWProfilerDataCollection                 = 0x00000800 + 23,
-   // Available                                       = 0x00001000 + 23,
-   // Available                                       = 0x00002000 + 23,
-   // Available                                       = 0x00004000 + 23,
-   TR_RandomSeedSignatureHash                         = 0x00008000 + 23,
-   // Available                                       = 0x00010000 + 23,
-   // Available                                       = 0x00020000 + 23,
-   TR_DebugRedundantMonitorElimination                = 0x00040000 + 23,
-   // Available                                       = 0x00080000 + 23,
-   // Available                                       = 0x00100000 + 23,
-   // Available                                       = 0x00200000 + 23,
-   TR_EnableScorchInterpBlockFrequencyProfiling       = 0x00400000 + 23,
-   TR_EnableSIMDLibrary                               = 0x00800000 + 23,
-   // Available                                       = 0x01000000 + 23,
-   // Available                                       = 0x02000000 + 23,
-   TR_EnableOSROnGuardFailure                         = 0x04000000 + 23,
-   TR_DisableOSR                                      = 0x08000000 + 23,
-   TR_DisableDualTLH                                  = 0x10000000 + 23,
-   // Available                                       = 0x10000000 + 23,
-   // Available                                       = 0x20000000 + 23,
-   TR_DisableArrayStoreCheckOpts                      = 0x40000000 + 23,
-   TR_DisableFastAssumptionReclamation                = 0x80000000 + 23,
+    // Option word 25
+    TR_DumpFinalMethodNamesAndCounts = 0x00000020 + 25,
+    TR_DisableRecognizedMethods = 0x00000040 + 25,
+    TR_DisableBitOpcode = 0x00000080 + 25,
+    TR_DisableRecognizeCurrentThread = 0x00000100 + 25,
+    // Available                                       = 0x00000200 + 25,
+    // Available                                       = 0x00000400 + 25,
+    // Available                                       = 0x00000800 + 25,
+    // Available                                       = 0x00001000 + 25,
+    TR_TracePREForOptimalSubNodeReplacement = 0x00002000 + 25,
+    // Available                                       = 0x00008000 + 25,
+    TR_PerfTool = 0x00010000 + 25,
+    // Available                                       = 0x00020000 + 25,
+    TR_DisableBranchOnCount = 0x00040000 + 25,
+    // Available                                       = 0x00080000 + 25,
+    TR_DisableLoopEntryAlignment = 0x00100000 + 25,
+    TR_EnableLoopEntryAlignment = 0x00200000 + 25,
+    TR_DisableLeafRoutineDetection = 0x00400000 + 25,
+    TR_EnableCompThreadThrottlingDuringStartup = 0x00800000 + 25,
+    TR_EnableHardwareProfileRecompilation = 0x02000000 + 25,
+    // Available                                       = 0x04000000 + 25,
+    // Available                                       = 0x08000000 + 25,
+    // Available                                       = 0x10000000 + 25,
+    // Available                                       = 0x20000000 + 25,
+    // Available                                       = 0x40000000 + 25,
+    TR_DisableSIMDArrayTranslate = 0x80000000 + 25,
 
-   //Option word 24
-   TR_UseHigherMethodCounts                           = 0x00000020 + 24,
-   TR_FullInlineUnderOSRDebug                         = 0x00000040 + 24,
-   TR_DisablePRBE                                     = 0x00000080 + 24,
-   // Available                                       = 0x00000100 + 24,
-   TR_X86HLE                                          = 0x00000200 + 24,
-   TR_DisableAdaptiveDumbInliner                      = 0x00000400 + 24,
-   // Available                                       = 0x00000800 + 24,
-   // Available                                       = 0x00001000 + 24,
-   TR_EnableCopyingTROTInduction1Idioms               = 0x00002000 + 24,
-   // Available                                       = 0x00004000 + 24,
-   // Available                                       = 0x00008000 + 24,
-   // Available                                       = 0x00010000 + 24,
-   // Available                                       = 0x00020000 + 24,
-   TR_CrashDuringCompilation                          = 0x00040000 + 24,
-   TR_DisableShareableMethodHandleThunks              = 0x00080000 + 24,
-   TR_DisableCustomMethodHandleThunks                 = 0x00100000 + 24,
-   TR_DisableReducedPriorityForCustomMethodHandleThunks=0x00200000 + 24,
-   TR_TraceSA                                         = 0x00400000 + 24,
-   // Available                                       = 0x00800000 + 24,
-   TR_EnablePrepareForOSREvenIfThatDoesNothing        = 0x01000000 + 24,
-   // Available                                       = 0x02000000 + 24,
-   // Available		                              = 0x04000000 + 24,
-   // Available                                       = 0x08000000 + 24,
-   TR_EnableIprofilerChanges                          = 0x10000000 + 24,
-   TR_DumpPersistedIProfilerMethodNamesAndCounts      = 0x20000000 + 24,
-   TR_FirstRun                                        = 0x40000000 + 24,
-   TR_DumpInitialMethodNamesAndCounts                 = 0x80000000 + 24,
+    // Option word 26
+    TR_DisableSIMDArrayCompare = 0x00000020 + 26,
+    TR_EnableJITHelpersoptimizedClone = 0x00000040 + 26,
+    TR_DontAllocateScratchBTL = 0x00000080 + 26,
+    // Available                                       = 0x00000100 + 26,
+    // Available                                       = 0x00000200 + 26,
+    TR_TrustAllInterfaceTypeInfo = 0x00000400 + 26,
+    TR_DisableRefinedAliases = 0x00000800 + 26,
+    // Available                                       = 0x00001000 + 26,
+    // Available                                       = 0x00002000 + 26,
+    TR_DisableTM = 0x00004000 + 26,
+    TR_DisableInlineCheckIfFinalizeObject = 0x00008000 + 26,
+    TR_LexicalMemProfiler = 0x00010000 + 26,
+    TR_UseVmTotalCpuTimeAsAbstractTime = 0x00020000 + 26,
+    TR_HWProfilerDisableAOT = 0x00040000 + 26,
+    TR_HWProfilerDisableRIOverPrivateLinkage = 0x00080000 + 26,
+    TR_DisableBCDArithChildOrdering = 0x00100000 + 26,
+    TR_EnableVirtualScratchMemory = 0x00200000 + 26,
+    TR_EnableVirtualPersistentMemory = 0x00400000 + 26,
+    TR_DisableArraysetStoreElimination = 0x00800000 + 26,
+    TR_DisableSeparateInitFromAlloc = 0x01000000 + 26,
+    TR_DisableMaxMinOptimization = 0x02000000 + 26,
+    TR_DisableUncountedUnrolls = 0x04000000 + 26,
+    TR_DisableUpgrades = 0x08000000 + 26,
+    TR_EnableJitSamplingUpgradesDuringHWProfiling = 0x10000000 + 26,
+    TR_DisableDeadStoreBailOut = 0x20000000 + 26,
+    TR_TraceReachability = 0x40000000 + 26,
+    TR_FloatMAF = 0x80000000 + 26,
 
-   //Option word 25
-   TR_DumpFinalMethodNamesAndCounts                   = 0x00000020 + 25,
-   TR_DisableRecognizedMethods                        = 0x00000040 + 25,
-   TR_DisableBitOpcode                                = 0x00000080 + 25,
-   TR_DisableRecognizeCurrentThread                   = 0x00000100 + 25,
-   // Available                                       = 0x00000200 + 25,
-   // Available                                       = 0x00000400 + 25,
-   // Available                                       = 0x00000800 + 25,
-   // Available                                       = 0x00001000 + 25,
-   TR_TracePREForOptimalSubNodeReplacement            = 0x00002000 + 25,
-   // Available                                       = 0x00008000 + 25,
-   TR_PerfTool                                        = 0x00010000 + 25,
-   // Available                                       = 0x00020000 + 25,
-   TR_DisableBranchOnCount                            = 0x00040000 + 25,
-   // Available                                       = 0x00080000 + 25,
-   TR_DisableLoopEntryAlignment                       = 0x00100000 + 25,
-   TR_EnableLoopEntryAlignment                        = 0x00200000 + 25,
-   TR_DisableLeafRoutineDetection                     = 0x00400000 + 25,
-   TR_EnableCompThreadThrottlingDuringStartup         = 0x00800000 + 25,
-   TR_EnableHardwareProfileRecompilation              = 0x02000000 + 25,
-   // Available                                       = 0x04000000 + 25,
-   // Available                                       = 0x08000000 + 25,
-   // Available                                       = 0x10000000 + 25,
-   // Available                                       = 0x20000000 + 25,
-   // Available                                       = 0x40000000 + 25,
-   TR_DisableSIMDArrayTranslate                       = 0x80000000 + 25,
+    // Option word 27
+    TR_ForceIEEEDivideByZeroException = 0x00000020 + 27,
+    TR_TraceRA = 0x00000040 + 27,
+    TR_DisableDirectStaticAccessOnZ = 0x00000080 + 27,
+    // Available                                       = 0x00000100 + 27,
+    TR_EnableRIEMIT = 0x00000200 + 27,
+    TR_DisableConservativeColdInlining = 0x00000400 + 27,
+    TR_DisableConservativeInlining = 0x00000800 + 27,
+    TR_EnableExpensiveOptsAtWarm = 0x00001000 + 27,
+    TR_DisableCheckcastAndProfiledGuardCoalescer = 0x00002000 + 27,
+    // Available                                       = 0x00004000 + 27,
+    TR_DisableVectorRegGRA = 0x00008000 + 27,
+    TR_DisableSIMD = 0x00010000 + 27,
+    // Available                                       = 0x00020000 + 27,
+    TR_DisableSIMDStringCaseConv = 0x00040000 + 27,
+    TR_DisableSIMDUTF16BEEncoder = 0x00080000 + 27,
+    TR_DisableSIMDArrayCopy = 0x00100000 + 27,
+    TR_CheckStructureDuringExitExtraction = 0x00200000 + 27,
+    TR_EnableRMODE64 = 0x00400000 + 27,
+    TR_EnableLocalVPSkipLowFreqBlock = 0x00800000 + 27,
+    TR_DisableLastITableCache = 0x01000000 + 27,
+    TR_StressTrampolines = 0x02000000 + 27,
+    TR_DisableSIMDUTF16LEEncoder = 0x04000000 + 27,
+    TR_DisableExitExtraction = 0x08000000 + 27,
+    TR_TraceExitExtraction = 0x10000000 + 27,
+    TR_VaryInlinerAggressivenessWithTime = 0x20000000 + 27,
+    TR_EnableGRACostBenefitModel = 0x40000000 + 27,
+    TR_VerifyReferenceCounts = 0x80000000 + 27,
 
-   //Option word 26
-   TR_DisableSIMDArrayCompare                         = 0x00000020 + 26,
-   TR_EnableJITHelpersoptimizedClone                  = 0x00000040 + 26,
-   TR_DontAllocateScratchBTL                          = 0x00000080 + 26,
-   // Available                                       = 0x00000100 + 26,
-   // Available                                       = 0x00000200 + 26,
-   TR_TrustAllInterfaceTypeInfo                       = 0x00000400 + 26,
-   TR_DisableRefinedAliases                           = 0x00000800 + 26,
-   // Available                                       = 0x00001000 + 26,
-   // Available                                       = 0x00002000 + 26,
-   TR_DisableTM                                       = 0x00004000 + 26,
-   TR_DisableInlineCheckIfFinalizeObject              = 0x00008000 + 26,
-   TR_LexicalMemProfiler                              = 0x00010000 + 26,
-   TR_UseVmTotalCpuTimeAsAbstractTime                 = 0x00020000 + 26,
-   TR_HWProfilerDisableAOT                            = 0x00040000 + 26,
-   TR_HWProfilerDisableRIOverPrivateLinkage           = 0x00080000 + 26,
-   TR_DisableBCDArithChildOrdering                    = 0x00100000 + 26,
-   TR_EnableVirtualScratchMemory                      = 0x00200000 + 26,
-   TR_EnableVirtualPersistentMemory                   = 0x00400000 + 26,
-   TR_DisableArraysetStoreElimination                 = 0x00800000 + 26,
-   TR_DisableSeparateInitFromAlloc                    = 0x01000000 + 26,
-   TR_DisableMaxMinOptimization                       = 0x02000000 + 26,
-   TR_DisableUncountedUnrolls                         = 0x04000000 + 26,
-   TR_DisableUpgrades                                 = 0x08000000 + 26,
-   TR_EnableJitSamplingUpgradesDuringHWProfiling      = 0x10000000 + 26,
-   TR_DisableDeadStoreBailOut                         = 0x20000000 + 26,
-   TR_TraceReachability                               = 0x40000000 + 26,
-   TR_FloatMAF                                        = 0x80000000 + 26,
+    // Option word 28
+    TR_DeferReferenceManipulations = 0x00000020 + 28,
+    // Available                                       = 0x00000040 + 28,
+    // Available                                       = 0x00000100 + 28,
+    // Available                                       = 0x00000200 + 28,
+    // Available                                       = 0x00000400 + 28,
+    TR_InlinerFanInUseCalculatedSize = 0x00000800 + 28,
+    // Available                                       = 0x00001000 + 28,
+    TR_DisableProfilingDataReclamation = 0x00002000 + 28,
+    TR_DisableTrivialDeadBlockRemover = 0x00004000 + 28,
+    TR_DisableInvariantCodeMotion = 0x00008000 + 28,
+    TR_EnableSelfTuningScratchMemoryUsageBeforeCompile = 0x00010000 + 28,
+    TR_EnableSelfTuningScratchMemoryUsageInTrMemory = 0x00020000 + 28,
+    TR_DisableUTF16BEEncoder = 0x00040000 + 28,
+    // Available                                       = 0x00080000 + 28,
+    TR_DisableDAATrailingZero = 0x00100000 + 28,
+    TR_DisableDynamicRIBufferProcessing = 0x00200000 + 28,
+    // Available                                       = 0x00400000 + 28,
+    TR_DisableFastDLTOnLongRunningInterpreter = 0x02000000 + 28,
+    TR_SubtractMethodCountsWhenIprofilerIsOff = 0x04000000 + 28,
+    TR_SubtractLoopyMethodCounts = 0x08000000 + 28,
+    TR_UseOldIProfilerDeactivationLogic = 0x10000000 + 28,
+    TR_EnableOutlinedNew = 0x20000000 + 28,
+    TR_DisableZealousCodegenOpts = 0x40000000 + 28,
+    TR_PrintAbsoluteTimestampInVerboseLog = 0x80000000 + 28,
 
-   // Option word 27
-   TR_ForceIEEEDivideByZeroException                  = 0x00000020 + 27,
-   TR_TraceRA                                         = 0x00000040 + 27,
-   TR_DisableDirectStaticAccessOnZ                    = 0x00000080 + 27,
-   // Available                                       = 0x00000100 + 27,
-   TR_EnableRIEMIT                                    = 0x00000200 + 27,
-   TR_DisableConservativeColdInlining                 = 0x00000400 + 27,
-   TR_DisableConservativeInlining                     = 0x00000800 + 27,
-   TR_EnableExpensiveOptsAtWarm                       = 0x00001000 + 27,
-   TR_DisableCheckcastAndProfiledGuardCoalescer       = 0x00002000 + 27,
-   // Available                                       = 0x00004000 + 27,
-   TR_DisableVectorRegGRA                             = 0x00008000 + 27,
-   TR_DisableSIMD                                     = 0x00010000 + 27,
-   // Available                                       = 0x00020000 + 27,
-   TR_DisableSIMDStringCaseConv                       = 0x00040000 + 27,
-   TR_DisableSIMDUTF16BEEncoder                       = 0x00080000 + 27,
-   TR_DisableSIMDArrayCopy                            = 0x00100000 + 27,
-   TR_CheckStructureDuringExitExtraction              = 0x00200000 + 27,
-   TR_EnableRMODE64                                   = 0x00400000 + 27,
-   TR_EnableLocalVPSkipLowFreqBlock                   = 0x00800000 + 27,
-   TR_DisableLastITableCache                          = 0x01000000 + 27,
-   TR_StressTrampolines                               = 0x02000000 + 27,
-   TR_DisableSIMDUTF16LEEncoder                       = 0x04000000 + 27,
-   TR_DisableExitExtraction                           = 0x08000000 + 27,
-   TR_TraceExitExtraction                             = 0x10000000 + 27,
-   TR_VaryInlinerAggressivenessWithTime               = 0x20000000 + 27,
-   TR_EnableGRACostBenefitModel                       = 0x40000000 + 27,
-   TR_VerifyReferenceCounts                           = 0x80000000 + 27,
+    // Option word 29
+    TR_InlineVeryLargeCompiledMethods = 0x00000040 + 29,
+    // Available                                       = 0x00000080 + 29,
+    TR_UseOldHCRGuardAOTRelocations = 0x00000100 + 29,
+    // Available                                       = 0x00000200 + 29,
+    TR_DisableSupportForCpuSpentInCompilation = 0x00000400 + 29,
+    TR_DisableSwitchAwayFromProfilingForHotAndVeryhot = 0x00000800 + 29,
+    TR_UseLowerCountsForNonSCCMethodsDuringStartup = 0x00001000 + 29,
+    TR_UseHigherCountsForNonSCCMethods = 0x00002000 + 29,
+    TR_UseHigherMethodCountsAfterStartup = 0x00004000 + 29,
+    TR_DisableNextGenHCR = 0x00008000 + 29,
+    TR_DisableMetadataReclamation = 0x00010000 + 29,
+    TR_DisableInlineIsInstance = 0x00020000 + 29,
+    TR_DisableSIMDStringHashCode = 0x00040000 + 29,
+    TR_IncreaseCountsForNonBootstrapMethods = 0x00080000 + 29,
+    TR_ReduceCountsForMethodsCompiledDuringStartup = 0x00100000 + 29,
+    TR_IncreaseCountsForMethodsCompiledOutsideStartup = 0x00200000 + 29,
+    TR_ForceGenerateReadOnlyCode = 0x00400000 + 29,
+    TR_UseGlueIfMethodTrampolinesAreNotNeeded = 0x00800000 + 29,
+    TR_EnableFpreductionAnnotation = 0x01000000 + 29,
+    TR_ExtractExitsByInvalidatingStructure = 0x02000000 + 29,
+    TR_DisableCrackedEditOptimization = 0x04000000 + 29,
+    TR_InhibitRIBufferProcessingDuringDeepSteady = 0x08000000 + 29,
+    TR_DontDowngradeWhenRIIsTemporarilyOff = 0x10000000 + 29,
+    TR_DontRIUpgradeAOTWarmMethods = 0x20000000 + 29,
+    TR_UseRIOnlyForLargeQSZ = 0x20000000 + 29,
+    TR_EnableAggressiveLiveness = 0x40000000 + 29,
+    TR_DisableGuardedStaticFinalFieldFolding = 0x80000000 + 29,
 
-   // Option word 28
-   TR_DeferReferenceManipulations                     = 0x00000020 + 28,
-   // Available                                       = 0x00000040 + 28,
-   // Available                                       = 0x00000100 + 28,
-   // Available                                       = 0x00000200 + 28,
-   // Available                                       = 0x00000400 + 28,
-   TR_InlinerFanInUseCalculatedSize                   = 0x00000800 + 28,
-   // Available                                       = 0x00001000 + 28,
-   TR_DisableProfilingDataReclamation                 = 0x00002000 + 28,
-   TR_DisableTrivialDeadBlockRemover                  = 0x00004000 + 28,
-   TR_DisableInvariantCodeMotion                      = 0x00008000 + 28,
-   TR_EnableSelfTuningScratchMemoryUsageBeforeCompile = 0x00010000 + 28,
-   TR_EnableSelfTuningScratchMemoryUsageInTrMemory    = 0x00020000 + 28,
-   TR_DisableUTF16BEEncoder                           = 0x00040000 + 28,
-   // Available                                       = 0x00080000 + 28,
-   TR_DisableDAATrailingZero                          = 0x00100000 + 28,
-   TR_DisableDynamicRIBufferProcessing                = 0x00200000 + 28,
-   // Available                                       = 0x00400000 + 28,
-   TR_DisableFastDLTOnLongRunningInterpreter          = 0x02000000 + 28,
-   TR_SubtractMethodCountsWhenIprofilerIsOff          = 0x04000000 + 28,
-   TR_SubtractLoopyMethodCounts                       = 0x08000000 + 28,
-   TR_UseOldIProfilerDeactivationLogic                = 0x10000000 + 28,
-   TR_EnableOutlinedNew                               = 0x20000000 + 28,
-   TR_DisableZealousCodegenOpts                       = 0x40000000 + 28,
-   TR_PrintAbsoluteTimestampInVerboseLog              = 0x80000000 + 28,
+    // Option word 30
+    TR_DisableGLUColdRedirection = 0x00000020 + 30,
+    TR_DisableLocalCSEVolatileCommoning = 0x00000040 + 30,
+    TR_TraceILWalks = 0x00000080 + 30,
+    TR_DisableSIMDDoubleMaxMin = 0x00000100 + 30,
+    TR_DisableStoreOnCondition = 0x00000200 + 30,
+    // Available                                       = 0x00000400 + 30,
+    TR_DisableInlineEXTarget = 0x00000800 + 30,
+    TR_EnableNewCheckCastInstanceOf = 0x00001000 + 30,
+    TR_DisableHardwareProfilerReducedWarm = 0x00002000 + 30,
+    TR_RestrictStaticFieldFolding = 0x00004000 + 30,
+    TR_TraceILValidator = 0x00008000 + 30,
+    TR_DisableJProfilingInProfilingCompilations = 0x00010000 + 30,
+    TR_EnableJProfiling = 0x00020000 + 30,
+    TR_DisableForcedEXInlining = 0x00040000 + 30,
+    TR_EnableOnsiteCacheForSuperClassTest = 0x00080000 + 30,
+    TR_DisableVMCSProfiling = 0x00100000 + 30,
+    TR_EnableHardwareProfileIndirectDispatch = 0x00200000 + 30,
+    TR_DisableCompareAndBranchInstruction = 0x00400000 + 30,
+    TR_EnableMetadataBytecodePCToIAMap = 0x00800000 + 30,
+    TR_DisableHardwareProfilerReducedWarmUpgrades = 0x01000000 + 30,
+    TR_DontAddHWPDataToIProfiler = 0x02000000 + 30,
+    TR_InlineNativeOnly = 0x04000000 + 30,
+    TR_DisableMultiTargetInlining = 0x08000000 + 30,
+    TR_DisableHardwareProfilerDuringStartup = 0x10000000 + 30,
+    TR_RestrictInlinerDuringStartup = 0x20000000 + 30,
+    TR_EnableLoopVersionerCountAllocationFences = 0x40000000 + 30,
+    TR_DisableHeapAllocOOL = 0x80000000 + 30,
 
-   // Option word 29
-   TR_InlineVeryLargeCompiledMethods                  = 0x00000040 + 29,
-   // Available                                       = 0x00000080 + 29,
-   TR_UseOldHCRGuardAOTRelocations                    = 0x00000100 + 29,
-   // Available                                       = 0x00000200 + 29,
-   TR_DisableSupportForCpuSpentInCompilation          = 0x00000400 + 29,
-   TR_DisableSwitchAwayFromProfilingForHotAndVeryhot  = 0x00000800 + 29,
-   TR_UseLowerCountsForNonSCCMethodsDuringStartup     = 0x00001000 + 29,
-   TR_UseHigherCountsForNonSCCMethods                 = 0x00002000 + 29,
-   TR_UseHigherMethodCountsAfterStartup               = 0x00004000 + 29,
-   TR_DisableNextGenHCR                               = 0x00008000 + 29,
-   TR_DisableMetadataReclamation                      = 0x00010000 + 29,
-   TR_DisableInlineIsInstance                         = 0x00020000 + 29,
-   TR_DisableSIMDStringHashCode                       = 0x00040000 + 29,
-   TR_IncreaseCountsForNonBootstrapMethods            = 0x00080000 + 29,
-   TR_ReduceCountsForMethodsCompiledDuringStartup     = 0x00100000 + 29,
-   TR_IncreaseCountsForMethodsCompiledOutsideStartup  = 0x00200000 + 29,
-   TR_ForceGenerateReadOnlyCode                       = 0x00400000 + 29,
-   TR_UseGlueIfMethodTrampolinesAreNotNeeded          = 0x00800000 + 29,
-   TR_EnableFpreductionAnnotation                     = 0x01000000 + 29,
-   TR_ExtractExitsByInvalidatingStructure             = 0x02000000 + 29,
-   TR_DisableCrackedEditOptimization                  = 0x04000000 + 29,
-   TR_InhibitRIBufferProcessingDuringDeepSteady       = 0x08000000 + 29,
-   TR_DontDowngradeWhenRIIsTemporarilyOff             = 0x10000000 + 29,
-   TR_DontRIUpgradeAOTWarmMethods                     = 0x20000000 + 29,
-   TR_UseRIOnlyForLargeQSZ                            = 0x20000000 + 29,
-   TR_EnableAggressiveLiveness                        = 0x40000000 + 29,
-   TR_DisableGuardedStaticFinalFieldFolding           = 0x80000000 + 29,
+    /* PLEASE READ BELOW BEFORE ADDING ANY NEW OPTION FLAG
+     *
+     * Before adding a new option flag, check if any existing flags above are
+     * obsolete and available for recycling.  Many reusable flags are marked
+     * "AVAILABLE FOR USE"
+     */
 
+    // Debug Enable flags
+    TR_EnableUnneededNarrowIntConversion = 0x00000001,
 
-   // Option word 30
-   TR_DisableGLUColdRedirection                       = 0x00000020 + 30,
-   TR_DisableLocalCSEVolatileCommoning                = 0x00000040 + 30,
-   TR_TraceILWalks                                    = 0x00000080 + 30,
-   TR_DisableSIMDDoubleMaxMin                         = 0x00000100 + 30,
-   TR_DisableStoreOnCondition                         = 0x00000200 + 30,
-   // Available                                       = 0x00000400 + 30,
-   TR_DisableInlineEXTarget                           = 0x00000800 + 30,
-   TR_EnableNewCheckCastInstanceOf                    = 0x00001000 + 30,
-   TR_DisableHardwareProfilerReducedWarm              = 0x00002000 + 30,
-   TR_RestrictStaticFieldFolding                      = 0x00004000 + 30,
-   TR_TraceILValidator                                = 0x00008000 + 30,
-   TR_DisableJProfilingInProfilingCompilations        = 0x00010000 + 30,
-   TR_EnableJProfiling                                = 0x00020000 + 30,
-   TR_DisableForcedEXInlining                         = 0x00040000 + 30,
-   TR_EnableOnsiteCacheForSuperClassTest              = 0x00080000 + 30,
-   TR_DisableVMCSProfiling                            = 0x00100000 + 30,
-   TR_EnableHardwareProfileIndirectDispatch           = 0x00200000 + 30,
-   TR_DisableCompareAndBranchInstruction              = 0x00400000 + 30,
-   TR_EnableMetadataBytecodePCToIAMap                 = 0x00800000 + 30,
-   TR_DisableHardwareProfilerReducedWarmUpgrades      = 0x01000000 + 30,
-   TR_DontAddHWPDataToIProfiler                       = 0x02000000 + 30,
-   TR_InlineNativeOnly                                = 0x04000000 + 30,
-   TR_DisableMultiTargetInlining                      = 0x08000000 + 30,
-   TR_DisableHardwareProfilerDuringStartup            = 0x10000000 + 30,
-   TR_RestrictInlinerDuringStartup                    = 0x20000000 + 30,
-   TR_EnableLoopVersionerCountAllocationFences        = 0x40000000 + 30,
-   TR_DisableHeapAllocOOL                             = 0x80000000 + 30,
+    // Trace file addresses enumeration option word
+    //
+    TR_EnumerateBlock = 0x00000001,
+    TR_EnumerateInstruction = 0x00000002,
+    TR_EnumerateNode = 0x00000004,
+    TR_EnumerateRegister = 0x00000008,
+    TR_EnumerateSymbol = 0x00000010,
+    TR_EnumerateStructure = 0x00000020,
 
-   /* PLEASE READ BELOW BEFORE ADDING ANY NEW OPTION FLAG
-    *
-    * Before adding a new option flag, check if any existing flags above are
-    * obsolete and available for recycling.  Many reusable flags are marked
-    * "AVAILABLE FOR USE"
-    */
+    // GPU options
+    //
+    TR_EnableGPU = 0x00000001,
+    TR_EnableGPUForce = 0x00000002,
+    TR_EnableGPUVerbose = 0x00000004,
+    TR_EnableGPUDetails = 0x00000008,
+    TR_EnableSafeMT = 0x00000010,
+    TR_EnableGPUEnableMath = 0x00000020,
+    TR_EnableGPUDisableTransferHoist = 0x00000040,
+};
 
-   // Debug Enable flags
-   TR_EnableUnneededNarrowIntConversion = 0x00000001,
+enum TR_VerboseFlags {
+    TR_VerboseOptions,
+    TR_VerboseCompileStart,
+    TR_VerboseCompileEnd,
 
-   // Trace file addresses enumeration option word
-   //
-   TR_EnumerateBlock                   = 0x00000001,
-   TR_EnumerateInstruction             = 0x00000002,
-   TR_EnumerateNode                    = 0x00000004,
-   TR_EnumerateRegister                = 0x00000008,
-   TR_EnumerateSymbol                  = 0x00000010,
-   TR_EnumerateStructure               = 0x00000020,
+    // Add new verbose options above this point at your own peril.  Some parts
+    // of the option-processing code rely on these ones being where they are.
 
-   // GPU options
-   //
-   TR_EnableGPU                         = 0x00000001,
-   TR_EnableGPUForce                    = 0x00000002,
-   TR_EnableGPUVerbose                  = 0x00000004,
-   TR_EnableGPUDetails                  = 0x00000008,
-   TR_EnableSafeMT                      = 0x00000010,
-   TR_EnableGPUEnableMath               = 0x00000020,
-   TR_EnableGPUDisableTransferHoist     = 0x00000040,
-   };
-
-enum TR_VerboseFlags
-   {
-   TR_VerboseOptions,
-   TR_VerboseCompileStart,
-   TR_VerboseCompileEnd,
-
-   // Add new verbose options above this point at your own peril.  Some parts
-   // of the option-processing code rely on these ones being where they are.
-
-   TR_VerboseCompileRequest,
-   TR_VerboseGc,
-   TR_VerboseRecompile,   // this adds jit profiling information
-   TR_VerbosePerformance, // Print options, compilation start/end/failure/time/memory
-   TR_VerboseFilters,
-   TR_VerboseSampling,
-   TR_VerboseMMap,
-   TR_VerboseCompileExclude,   // prints a message if a method cannot be translated due to filters
-   TR_VerboseLink,             // Trace linking progress on the zEmulator JIT
-   TR_VerboseCLP,              // classLoadPhase info printed in vlog
-   TR_VerboseGCcycle,          // Info about comp thread waiting for GC cycle to finish; only used in RTJ
-   TR_VerboseCompYieldStats,   // Info about max time between 2 comp yield points
-   TR_VerboseHeartbeat,        // sampling heartbeat: periodic summary of JIT activity
-   TR_VerboseExtended,         // Extended options information
-   TR_VerboseSCHints,
-   TR_VerboseCounts,
-   TR_VerboseCompFailure,  // print extra message when a first time compilation is going to be continue interpreted
+    TR_VerboseCompileRequest,
+    TR_VerboseGc,
+    TR_VerboseRecompile, // this adds jit profiling information
+    TR_VerbosePerformance, // Print options, compilation start/end/failure/time/memory
+    TR_VerboseFilters,
+    TR_VerboseSampling,
+    TR_VerboseMMap,
+    TR_VerboseCompileExclude, // prints a message if a method cannot be translated due to filters
+    TR_VerboseLink, // Trace linking progress on the zEmulator JIT
+    TR_VerboseCLP, // classLoadPhase info printed in vlog
+    TR_VerboseGCcycle, // Info about comp thread waiting for GC cycle to finish; only used in RTJ
+    TR_VerboseCompYieldStats, // Info about max time between 2 comp yield points
+    TR_VerboseHeartbeat, // sampling heartbeat: periodic summary of JIT activity
+    TR_VerboseExtended, // Extended options information
+    TR_VerboseSCHints,
+    TR_VerboseCounts,
+    TR_VerboseCompFailure, // print extra message when a first time compilation is going to be continue interpreted
                            // Must leave this as a separate option because sometimes the error do not
                            // show when full blown verbose options are specified
-   TR_VerboseJitState,
-   TR_VerboseJitMemory,    // Print JIT memory usage every 5 minutes; I should add this to end of run too
-   TR_VerboseCompilationThreads,
-   TR_VerboseCompilationThreadsDetails,
-   TR_VerboseCodeCacheReclamation,
-   TR_VerboseDump,
-   TR_VerboseHooks,
-   TR_VerboseHookDetails,
-   TR_VerboseRuntimeAssumptions,
-   TR_VerboseMethodHandles,
-   TR_VerboseMethodHandleDetails,
-   TR_VerboseJ2IThunks,
-   TR_VerboseVMemAvailable, // print virtual memory available to user at end of compilation; currntly used only for win32
-   TR_VerboseCodeCache,
-   TR_VerbosePrecompile,
-   TR_VerboseOSR,           // On-stack replacement
-   TR_VerboseOSRDetails,
-   TR_VerboseOptimizer,
-   TR_VerboseHWProfiler,
-   TR_VerboseInlining,
-   TR_VerboseClassUnloading,
-   TR_VerbosePatching,
-   TR_VerboseCompilationDispatch,
-   TR_VerboseReclamation,
-   TR_VerboseHookDetailsClassLoading,
-   TR_VerboseHookDetailsClassUnloading,
-   TR_VerboseSampleDensity,
-   TR_VerboseProfiling,
-   TR_VerboseJITServer,
-   TR_VerboseAOTCompression,
-   TR_VerboseJITServerConns,
-   TR_VerboseVectorAPI,
-   TR_VerboseIProfilerPersistence,
-   TR_VerboseCheckpointRestore,
-   TR_VerboseCheckpointRestoreDetails,
-   TR_VerboseRSSReport,
-   TR_VerboseRSSReportDetailed,
-   TR_VerboseDependencyTracking,
-   TR_VerboseDependencyTrackingDetails,
-   TR_VerboseJITServerSharedProfile,
-   TR_VerboseJITServerSharedProfileDetails,
-   //If adding new options add an entry to _verboseOptionNames as well
-   TR_NumVerboseOptions        // Must be the last one;
-   };
+    TR_VerboseJitState,
+    TR_VerboseJitMemory, // Print JIT memory usage every 5 minutes; I should add this to end of run too
+    TR_VerboseCompilationThreads,
+    TR_VerboseCompilationThreadsDetails,
+    TR_VerboseCodeCacheReclamation,
+    TR_VerboseDump,
+    TR_VerboseHooks,
+    TR_VerboseHookDetails,
+    TR_VerboseRuntimeAssumptions,
+    TR_VerboseMethodHandles,
+    TR_VerboseMethodHandleDetails,
+    TR_VerboseJ2IThunks,
+    TR_VerboseVMemAvailable, // print virtual memory available to user at end of compilation; currntly used only for
+                             // win32
+    TR_VerboseCodeCache,
+    TR_VerbosePrecompile,
+    TR_VerboseOSR, // On-stack replacement
+    TR_VerboseOSRDetails,
+    TR_VerboseOptimizer,
+    TR_VerboseHWProfiler,
+    TR_VerboseInlining,
+    TR_VerboseClassUnloading,
+    TR_VerbosePatching,
+    TR_VerboseCompilationDispatch,
+    TR_VerboseReclamation,
+    TR_VerboseHookDetailsClassLoading,
+    TR_VerboseHookDetailsClassUnloading,
+    TR_VerboseSampleDensity,
+    TR_VerboseProfiling,
+    TR_VerboseJITServer,
+    TR_VerboseAOTCompression,
+    TR_VerboseJITServerConns,
+    TR_VerboseVectorAPI,
+    TR_VerboseIProfilerPersistence,
+    TR_VerboseCheckpointRestore,
+    TR_VerboseCheckpointRestoreDetails,
+    TR_VerboseRSSReport,
+    TR_VerboseRSSReportDetailed,
+    TR_VerboseDependencyTracking,
+    TR_VerboseDependencyTrackingDetails,
+    TR_VerboseJITServerSharedProfile,
+    TR_VerboseJITServerSharedProfileDetails,
+    // If adding new options add an entry to _verboseOptionNames as well
+    TR_NumVerboseOptions // Must be the last one;
+};
 
-enum TR_SamplingJProfilingFlags
-   {
-   TR_SamplingJProfilingInvokeVirtual,
-   TR_SamplingJProfilingInvokeInterface,
-   TR_SamplingJProfilingInvokeStatic,
-   TR_SamplingJProfilingBranches,
-   TR_SamplingJProfilingCheckCast,
-   TR_SamplingJProfilingInstanceOf,
-   // Any new option added here must be added also to _samplingJProfilingOptionNames
+enum TR_SamplingJProfilingFlags {
+    TR_SamplingJProfilingInvokeVirtual,
+    TR_SamplingJProfilingInvokeInterface,
+    TR_SamplingJProfilingInvokeStatic,
+    TR_SamplingJProfilingBranches,
+    TR_SamplingJProfilingCheckCast,
+    TR_SamplingJProfilingInstanceOf,
+    // Any new option added here must be added also to _samplingJProfilingOptionNames
 
-   // The below must be the last option...
-   TR_NumSamplingJProfilingFlags,
-   };
+    // The below must be the last option...
+    TR_NumSamplingJProfilingFlags,
+};
 
 // Used for _processOptionsStatus to determine
 // if there is an error in JIT/AOT processing.
-enum TR_ProcessOptionsFlags
-   {
-   TR_Unprocessed            = 0x00000000,
-   TR_AOTProcessedOK         = 0x00000001,
-   TR_AOTProcessErrorFE      = 0x00000002,
-   TR_AOTProcessErrorAOTOpts = 0x00000004,
-   TR_AOTProcessErrorUnknown = 0x00000008,
-   TR_JITProcessedOK         = 0x00000010,
-   TR_JITProcessErrorFE      = 0x00000020,
-   TR_JITProcessErrorJITOpts = 0x00000040,
-   TR_JITProcessErrorUnknown = 0x00000080
-   };
+enum TR_ProcessOptionsFlags {
+    TR_Unprocessed = 0x00000000,
+    TR_AOTProcessedOK = 0x00000001,
+    TR_AOTProcessErrorFE = 0x00000002,
+    TR_AOTProcessErrorAOTOpts = 0x00000004,
+    TR_AOTProcessErrorUnknown = 0x00000008,
+    TR_JITProcessedOK = 0x00000010,
+    TR_JITProcessErrorFE = 0x00000020,
+    TR_JITProcessErrorJITOpts = 0x00000040,
+    TR_JITProcessErrorUnknown = 0x00000080
+};
 
-enum TR_ReductionAlgorithms
-   {
-   TR_HotFieldReductionAlgorithmSum,
-   TR_HotFieldReductionAlgorithmAverage,
-   TR_HotFieldReductionAlgorithmMax,
-   // Any new option added here must be added also to _hotFieldReductionAlgorithmNames
+enum TR_ReductionAlgorithms {
+    TR_HotFieldReductionAlgorithmSum,
+    TR_HotFieldReductionAlgorithmAverage,
+    TR_HotFieldReductionAlgorithmMax,
+    // Any new option added here must be added also to _hotFieldReductionAlgorithmNames
 
-   // The below must be the last option...
-   TR_NumReductionAlgorithms,
-   };
+    // The below must be the last option...
+    TR_NumReductionAlgorithms,
+};
 
-#define TR_FILTER_EXCLUDE_NAME_ONLY         1
-#define TR_FILTER_EXCLUDE_NAME_AND_SIG      2
-#define TR_FILTER_EXCLUDE_SPECIFIC_METHOD   3
-#define TR_FILTER_EXCLUDE_REGEX             4
-#define TR_FILTER_EXCLUDE_MAX               4
+#define TR_FILTER_EXCLUDE_NAME_ONLY 1
+#define TR_FILTER_EXCLUDE_NAME_AND_SIG 2
+#define TR_FILTER_EXCLUDE_SPECIFIC_METHOD 3
+#define TR_FILTER_EXCLUDE_REGEX 4
+#define TR_FILTER_EXCLUDE_MAX 4
 
-#define TR_FILTER_NAME_ONLY                 5
-#define TR_FILTER_NAME_AND_SIG              6
-#define TR_FILTER_SPECIFIC_METHOD           7
-#define TR_FILTER_REGEX                     8
-#define TR_FILTER_SAMPLE_COMPILED           9
-#define TR_FILTER_SAMPLE_INTERPRETED       10
+#define TR_FILTER_NAME_ONLY 5
+#define TR_FILTER_NAME_AND_SIG 6
+#define TR_FILTER_SPECIFIC_METHOD 7
+#define TR_FILTER_REGEX 8
+#define TR_FILTER_SAMPLE_COMPILED 9
+#define TR_FILTER_SAMPLE_INTERPRETED 10
 
-#define TR_EXCLUDED_OPTIONSET_INDEX        10 // Normal options sets have single-digit indexes
+#define TR_EXCLUDED_OPTIONSET_INDEX 10 // Normal options sets have single-digit indexes
 
-#define TR_DEFAULT_INITIAL_COUNT         3000
-#define TR_DEFAULT_INITIAL_BCOUNT        3000
-#define TR_DEFAULT_INITIAL_MILCOUNT       250
+#define TR_DEFAULT_INITIAL_COUNT 3000
+#define TR_DEFAULT_INITIAL_BCOUNT 3000
+#define TR_DEFAULT_INITIAL_MILCOUNT 250
 
-#define TR_LARGE_SMP_INITIAL_COUNT       2000
-#define TR_LARGE_SMP_INITIAL_BCOUNT      1000
-#define TR_NUMPROC_FOR_LARGE_SMP            4 // Minimum number of CPUs to declare this environment as a "large SMP"
+#define TR_LARGE_SMP_INITIAL_COUNT 2000
+#define TR_LARGE_SMP_INITIAL_BCOUNT 1000
+#define TR_NUMPROC_FOR_LARGE_SMP 4 // Minimum number of CPUs to declare this environment as a "large SMP"
 
-#define TR_QUICKSTART_INITIAL_COUNT      1000
-#define TR_QUICKSTART_INITIAL_BCOUNT      250
-#define TR_QUICKSTART_INITIAL_MILCOUNT      1
-#define TR_QUICKSTART_INITIAL_SCOUNT        1
-#define TR_QUICKSTART_SMALLER_INITIAL_COUNT  500 // Used for Windows under Xquickstart
+#define TR_QUICKSTART_INITIAL_COUNT 1000
+#define TR_QUICKSTART_INITIAL_BCOUNT 250
+#define TR_QUICKSTART_INITIAL_MILCOUNT 1
+#define TR_QUICKSTART_INITIAL_SCOUNT 1
+#define TR_QUICKSTART_SMALLER_INITIAL_COUNT 500 // Used for Windows under Xquickstart
 #define TR_QUICKSTART_SMALLER_INITIAL_BCOUNT 250
-#define TR_INITIAL_COLDRUN_COUNT          450 // we want this smaller than TR_QUICKSTART_INITIAL_COUNT
-#define TR_INITIAL_COLDRUN_BCOUNT         125 // we want this smaller than TR_QUICKSTART_INITIAL_BCOUNT
-#define TR_MAX_SPREAD_COUNT_LOOPLESS    10000
-#define TR_MAX_SPREAD_COUNT_LOOPY        2500
+#define TR_INITIAL_COLDRUN_COUNT 450 // we want this smaller than TR_QUICKSTART_INITIAL_COUNT
+#define TR_INITIAL_COLDRUN_BCOUNT 125 // we want this smaller than TR_QUICKSTART_INITIAL_BCOUNT
+#define TR_MAX_SPREAD_COUNT_LOOPLESS 10000
+#define TR_MAX_SPREAD_COUNT_LOOPY 2500
 
+#define TR_INITIAL_SCOUNT 20
+#define TR_UNRESOLVED_IMPLIES_COLD_COUNT \
+    200 // If a method has run this many times, we can assume unresolved symbols indicate cold paths
 
-#define TR_INITIAL_SCOUNT                  20
-#define TR_UNRESOLVED_IMPLIES_COLD_COUNT  200  // If a method has run this many times, we can assume unresolved symbols indicate cold paths
+#define TR_DEFAULT_COLD_UPGRADE_SAMPLE_THRESHOLD 3
+#define TR_DEFAULT_GCR_RESET_COUNT 10000
+#define TR_DEFAULT_GCR_DEC_COUNT 1
 
-#define TR_DEFAULT_COLD_UPGRADE_SAMPLE_THRESHOLD  3
-#define TR_DEFAULT_GCR_RESET_COUNT      10000
-#define TR_DEFAULT_GCR_DEC_COUNT            1
-
-#define TRIVIAL_INLINER_MAX_SIZE           25
+#define TRIVIAL_INLINER_MAX_SIZE 25
 
 #if defined(J9ZOS390)
 #define DEFAULT_WAIT_TIME_TO_EXIT_STARTUP_MODE 5500 // ms
@@ -1182,7 +1183,8 @@ enum TR_ReductionAlgorithms
 #define DEFAULT_WAIT_TIME_TO_EXIT_STARTUP_MODE 2500 // ms
 #endif
 
-#define DEFAULT_ABSTRACT_TIME_SAMPLES_GRACE_PERIOD (2 * 60 * 100) // 1200 global samples (2 minutes single threaded, 1 minute for two thread
+#define DEFAULT_ABSTRACT_TIME_SAMPLES_GRACE_PERIOD \
+    (2 * 60 * 100) // 1200 global samples (2 minutes single threaded, 1 minute for two thread
 #define DEFAULT_ABSTRACT_TIME_SAMPLES_TO_REDUCE_INLINING_AGGRESSIVENESS (4 * 60 * 100)
 #define DEFAULT_ABSTRACT_TIME_MS_CPU_GRACE_PERIOD (2 * 60 * 1000) // 2 minutes single threaded
 #define DEFAULT_ABSTRACT_TIME_MS_CPU_TO_REDUCE_INLINING_AGGRESSIVENESS (4 * 60 * 1000)
@@ -1193,8 +1195,8 @@ enum TR_ReductionAlgorithms
 
 #define TR_DEFAULT_INTERPRETER_SAMPLING_DIVISOR 16
 
-#define DEFAULT_SCRATCH_SPACE_LIMIT_KB (256*1024)
-#define DEFAULT_SCRATCH_SPACE_LOWER_BOUND_KB (16*1024)
+#define DEFAULT_SCRATCH_SPACE_LIMIT_KB (256 * 1024)
+#define DEFAULT_SCRATCH_SPACE_LOWER_BOUND_KB (16 * 1024)
 
 #if defined(J9ZOS390) && defined(TR_TARGET_32BIT)
 #define JSR292_SCRATCH_SPACE_FACTOR 1 // 1.5GB on 31-bit z/OS is too much
@@ -1212,1391 +1214,1649 @@ enum TR_ReductionAlgorithms
 
 // Binary search tree for translation filters
 //
-class TR_FilterBST
-   {
+class TR_FilterBST {
 public:
-   void * operator new(size_t size, TR::PersistentAllocator &allocator);
-   TR_FilterBST(int32_t type, int32_t optionSet)
-      {
-      memset(this, 0, sizeof(TR_FilterBST));
-      _filterType = (char)type;
-      _optionSet = optionSet;
-      }
+    void *operator new(size_t size, TR::PersistentAllocator &allocator);
 
-   TR_FilterBST(int32_t type, int32_t optionSet, int32_t lineNumber)
-      {
-      memset(this, 0, sizeof(TR_FilterBST));
-      _filterType = (char)type;
-      _optionSet = optionSet;
-      _lineNumber = lineNumber;
-      }
+    TR_FilterBST(int32_t type, int32_t optionSet)
+    {
+        memset(this, 0, sizeof(TR_FilterBST));
+        _filterType = (char)type;
+        _optionSet = optionSet;
+    }
 
-   bool isExclude()          {return _filterType <= TR_FILTER_EXCLUDE_MAX;}
-   char getFilterType()       {return _filterType;}
-   void setFilterType(char type) {_filterType = type;}
+    TR_FilterBST(int32_t type, int32_t optionSet, int32_t lineNumber)
+    {
+        memset(this, 0, sizeof(TR_FilterBST));
+        _filterType = (char)type;
+        _optionSet = optionSet;
+        _lineNumber = lineNumber;
+    }
 
-   int32_t getLineNumber()      {return _lineNumber;}
+    bool isExclude() { return _filterType <= TR_FILTER_EXCLUDE_MAX; }
 
-   int32_t getOptionSet()       {return _optionSet;}
-   int32_t getTickCount()       {return _optionSet;}
+    char getFilterType() { return _filterType; }
 
-   char *getName()            {return _name;}
-   void setName(char *n, int32_t l) {_name = n; _nameLen = l;}
-   char *getClass()           {return _class;}
-   void setClass(char *c)     {_class = c;}
-   char *getSignature()       {return _signature;}
-   void setSignature(char *s) {_signature = s;}
+    void setFilterType(char type) { _filterType = type; }
 
-   int32_t getNameLen()         {return _nameLen;}
+    int32_t getLineNumber() { return _lineNumber; }
 
-   TR_FilterBST  *getChild(int32_t c) {return _child[c];}
-   void setChild(int32_t c, TR_FilterBST *node) {_child[c] = node;}
+    int32_t getOptionSet() { return _optionSet; }
 
-   TR_FilterBST  *getNext()     {return _child[0];}
-   TR_FilterBST **getNextSlot() {return &_child[0];}
-   void           setNext(TR_FilterBST *next) {_child[0] = next;}
+    int32_t getTickCount() { return _optionSet; }
 
-   TR_FilterBST *find(const char *methodName, int32_t methodNameLen);
-   TR_FilterBST *find(const char *methodName, int32_t methodNameLen,
-                      const char *methodClass, int32_t methodClassLen,
-                      const char *methodSignature, int32_t methodSignatureLen);
-   void insert(TR_FilterBST *parent);
+    char *getName() { return _name; }
 
-   TR::SimpleRegex *getRegex()           {return _regex;}
-   void setRegex(TR::SimpleRegex *regex) {_regex = regex;}
-   TR_FilterBST *findRegex(const char *methodSpec);
+    void setName(char *n, int32_t l)
+    {
+        _name = n;
+        _nameLen = l;
+    }
 
-   char *_name;
-   char *_class;
-   char *_signature;
-   TR::SimpleRegex *_regex;
+    char *getClass() { return _class; }
 
-   // _child[0] = left child
-   // _child[1] = right child
-   //
-   TR_FilterBST *_child[2];
+    void setClass(char *c) { _class = c; }
 
-   // For method filter, the option set to be used for this compile, 0-9
-   // For sampling point, the tick count
-   int32_t _optionSet;
+    char *getSignature() { return _signature; }
 
-   // For filter position in a limit file
-   int32_t _lineNumber;
+    void setSignature(char *s) { _signature = s; }
 
-   uint32_t _nameLen;
+    int32_t getNameLen() { return _nameLen; }
 
-   // The filter type - see definitions above
-   //
-   char _filterType;
+    TR_FilterBST *getChild(int32_t c) { return _child[c]; }
 
-   // Sub group filters
-   //
-   TR::CompilationFilters * subGroup;
+    void setChild(int32_t c, TR_FilterBST *node) { _child[c] = node; }
 
-   };
+    TR_FilterBST *getNext() { return _child[0]; }
 
-namespace TR
-{
+    TR_FilterBST **getNextSlot() { return &_child[0]; }
 
-class CompilationFilters
-   {
+    void setNext(TR_FilterBST *next) { _child[0] = next; }
+
+    TR_FilterBST *find(const char *methodName, int32_t methodNameLen);
+    TR_FilterBST *find(const char *methodName, int32_t methodNameLen, const char *methodClass, int32_t methodClassLen,
+        const char *methodSignature, int32_t methodSignatureLen);
+    void insert(TR_FilterBST *parent);
+
+    TR::SimpleRegex *getRegex() { return _regex; }
+
+    void setRegex(TR::SimpleRegex *regex) { _regex = regex; }
+
+    TR_FilterBST *findRegex(const char *methodSpec);
+
+    char *_name;
+    char *_class;
+    char *_signature;
+    TR::SimpleRegex *_regex;
+
+    // _child[0] = left child
+    // _child[1] = right child
+    //
+    TR_FilterBST *_child[2];
+
+    // For method filter, the option set to be used for this compile, 0-9
+    // For sampling point, the tick count
+    int32_t _optionSet;
+
+    // For filter position in a limit file
+    int32_t _lineNumber;
+
+    uint32_t _nameLen;
+
+    // The filter type - see definitions above
+    //
+    char _filterType;
+
+    // Sub group filters
+    //
+    TR::CompilationFilters *subGroup;
+};
+
+namespace TR {
+
+class CompilationFilters {
 public:
-   #define FILTER_HASH_SIZE 211
-   // Hash table for complete class+name+signature or name+signature.
-   //
-   TR_FilterBST  **filterHash;
+#define FILTER_HASH_SIZE 211
+    // Hash table for complete class+name+signature or name+signature.
+    //
+    TR_FilterBST **filterHash;
 
-   // Linked list for name or part thereof.
-   //
-   TR_FilterBST  *filterNameList;
+    // Linked list for name or part thereof.
+    //
+    TR_FilterBST *filterNameList;
 
-   // Linked list for regular expressions.
-   //
-   TR_FilterBST  *filterRegexList;
+    // Linked list for regular expressions.
+    //
+    TR_FilterBST *filterRegexList;
 
-   // Special filter representing excluded methods
-   //
-   TR_FilterBST  *excludedMethodFilter;
+    // Special filter representing excluded methods
+    //
+    TR_FilterBST *excludedMethodFilter;
 
-  enum
-      {
-      HasNameFilter         = 0x01,
-      HasClassNameSigFilter = 0x02,
-      HasNameSigFilter      = 0x04,
-      HasRegexFilter        = 0x08,
-      DefaultExclude        = 0x10
-      };
+    enum {
+        HasNameFilter = 0x01,
+        HasClassNameSigFilter = 0x02,
+        HasNameSigFilter = 0x04,
+        HasRegexFilter = 0x08,
+        DefaultExclude = 0x10
+    };
 
-   uint32_t       flags;
+    uint32_t flags;
 
-   uint32_t hasNameFilter()         {return flags & HasNameFilter;}
-   uint32_t hasClassNameSigFilter() {return flags & HasClassNameSigFilter;}
-   uint32_t hasNameSigFilter()      {return flags & HasNameSigFilter;}
-   uint32_t hasRegexFilter()        {return flags & HasRegexFilter;}
-   uint32_t defaultExclude()        {return flags & DefaultExclude;}
+    uint32_t hasNameFilter() { return flags & HasNameFilter; }
 
-   void setHasNameFilter()          {flags |= HasNameFilter;}
-   void setHasClassNameSigFilter()  {flags |= HasClassNameSigFilter;}
-   void setHasNameSigFilter()       {flags |= HasNameSigFilter;}
-   void setHasRegexFilter()         {flags |= HasRegexFilter;}
-   void setDefaultExclude(bool b)   {if (b) flags |= DefaultExclude;else flags &= ~DefaultExclude;}
-   };
-} //namespace TR
+    uint32_t hasClassNameSigFilter() { return flags & HasClassNameSigFilter; }
+
+    uint32_t hasNameSigFilter() { return flags & HasNameSigFilter; }
+
+    uint32_t hasRegexFilter() { return flags & HasRegexFilter; }
+
+    uint32_t defaultExclude() { return flags & DefaultExclude; }
+
+    void setHasNameFilter() { flags |= HasNameFilter; }
+
+    void setHasClassNameSigFilter() { flags |= HasClassNameSigFilter; }
+
+    void setHasNameSigFilter() { flags |= HasNameSigFilter; }
+
+    void setHasRegexFilter() { flags |= HasRegexFilter; }
+
+    void setDefaultExclude(bool b)
+    {
+        if (b)
+            flags |= DefaultExclude;
+        else
+            flags &= ~DefaultExclude;
+    }
+};
+} // namespace TR
 
 // Compilation options - each compilation has a pointer to one of these objects
 // to represent the options used for that compilation. There is a single
 // options object allocated to represent the command-line options.
 //
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE Options
-   {
+class OMR_EXTENSIBLE Options {
 protected:
-   TR::Options* self();
-   const TR::Options* self() const;
+    TR::Options *self();
+    const TR::Options *self() const;
 
 public:
-   TR_ALLOC(TR_Memory::Options)
+    TR_ALLOC(TR_Memory::Options)
 
-   TR::CodeCacheKind getCodeCacheKind() { return _codeCacheKind; }
-   void setCodeCacheKind(TR::CodeCacheKind kind) { _codeCacheKind = kind; }
+    TR::CodeCacheKind getCodeCacheKind() { return _codeCacheKind; }
 
-   void init()
-   {
-      _optionSets = NULL;
-      _postRestoreOptionSets = NULL;
-      _startOptions = NULL;
-      _envOptions = NULL;
-      _logFileName = NULL;
-      _suffixLogsFormat = NULL;
-      _logFile = NULL;
-      _optFileName = NULL;
-      _customStrategy = NULL;
-      _customStrategySize = 0;
-      _optLevel = 0;
-      _initialOptLevel = 0;
-      _countString = NULL;
-      _initialCount = 0;
-      _initialBCount = 0;
-      _initialMILCount = 0;
-      _initialColdRunCount = 0;
-      _initialColdRunBCount = 0;
-      _maxSpreadCountLoopless = 0;
-      _maxSpreadCountLoopy = 0;
-      _GCRCount = 0;
-      _GCRDecCount = 0;
-      _GCRResetCount = 0;
-      _firstOptIndex = 0;
-      _lastOptIndex = 0;
-      _lastOptSubIndex = 0;
-      _lastSearchCount = 0;
-      _lastIpaOptTransformationIndex = 0;
-      _firstOptTransformationIndex = 0;
-      _lastOptTransformationIndex = 0;
-      _largeNumberOfLoops = 0;
-      _stackPCDumpNumberOfBuffers = 0;
-      _stackPCDumpNumberOfFrames = 0;
-      _tracingOptimization = false;
-      _delayCompileWithCPUBurn = 0;
-      _disabledOptTransformations = NULL;
-      _disabledInlineSites = NULL;
-      _disabledOpts = NULL;
-      _optsToTrace = NULL;
-      _optsToDumpTrees = NULL;
-      _dontInline = NULL;
-      _onlyInline = NULL;
-      _tryToInline = NULL;
-      _slipTrap = NULL;
-      _lockReserveClass = NULL;
-      _breakOnOpts = NULL;
-      _breakOnCreate = NULL;
-      _debugOnCreate = NULL;
-      _breakOnThrow = NULL;
-      _breakOnPrint = NULL;
-      _enabledStaticCounterNames = NULL;
-      _enabledDynamicCounterNames = NULL;
-      _counterHistogramNames = NULL;
-      _verboseOptTransformationsRegex = NULL;
-      _packedTest = NULL;
-      _memUsage = NULL;
-      _classesWithFolableFinalFields = NULL;
-      _disabledIdiomPatterns = NULL;
-      _suppressEA = NULL;
-      _dontFoldStaticFinalFields = NULL;
-      _gcCardSize = 0;
-      _heapBase = 0;
-      _heapTop = 0;
-      _heapAddressToCardAddressShift = 0;
-      _heapBaseForBarrierRange0 = 0;
-      _heapSizeForBarrierRange0 = 0;
-      _activeCardTableBase = 0;
-      _isVariableHeapBaseForBarrierRange0 = false;
-      _isVariableHeapSizeForBarrierRange0 = false;
-      _isVariableActiveCardTableBase = false;
-      _osVersionString = NULL;
-      _allowRecompilation = false;
-      _anOptionSetContainsACountValue = false;
-      _anOptionSetContainsADltOptLevel = false;
-      _numInterfaceCallCacheSlots = 0;
-      _numInterfaceCallStaticSlots = 0;
-      _storeSinkingLastOpt = 0;
-      _test390StackBuffer = 0;
-      _test390LitPoolBuffer = 0;
-      _addressToEnumerate = 0;
-      _debugEnableFlags = 0;
-      _optLevelDowngraded = false;
-      _compileExcludedmethods = false;
-      _maxUnloadedAddressRanges = 0;
-      _maxStaticPICSlots = 0;
-      _hotMaxStaticPICSlots = 0;
-      _newAotrtDebugLevel = 0;
-      _disableDLTBytecodeIndex = -1;
-      _enableDLTBytecodeIndex = -1;
-      _dltOptLevel = -1;
-      _profilingCount = 0;
-      _profilingFrequency = 0;
-      _counterBucketGranularity = 0;
-      _minCounterFidelity = 0;
-      _debugCounterWarmupSeconds = 0;
-      _insertDebuggingCounters = 0;
-      _inlineCntrCalleeTooBigBucketSize = 0;
-      _inlineCntrColdAndNotTinyBucketSize = 0;
-      _inlineCntrWarmCalleeTooBigBucketSize = 0;
-      _inlineCntrRanOutOfBudgetBucketSize = 0;
-      _inlineCntrCalleeTooDeepBucketSize = 0;
-      _inlineCntrWarmCallerHasTooManyNodesBucketSize = 0;
-      _inlineCntrWarmCalleeHasTooManyNodesBucketSize = 0;
-      _inlineCntrDepthExceededBucketSize = 0;
-      _inlineCntrAllBucketSize = 0;
-      _maxInlinedCalls = 0;
-      _dumbInlinerBytecodeSizeMaxCutoff = 0;
-      _dumbInlinerBytecodeSizeMinCutoff = 0;
-      _dumbInlinerBytecodeSizeCutoff = 0;
-      _dumbInlinerBytecodeSizeDivisor = 0;
-      _trivialInlinerMaxSize = 0;
-      _inlinerArgumentHeuristicFractionUpToWarm = 0;
-      _inlinerArgumentHeuristicFractionBeyondWarm = 0;
-      _inlinerVeryColdBorderFrequencyAtCold = 0;
-      _inlinerBorderFrequency = 0;
-      _inlinerColdBorderFrequency = 0;
-      _inlinerVeryColdBorderFrequency = 0;
-      _inlinerCGBorderFrequency = 0;
-      _inlinerCGColdBorderFrequency = 0;
-      _inlinerCGVeryColdBorderFrequency = 0;
-      _alwaysWorthInliningThreshold = 0;
-      _initialSCount = 0;
-      _enableSCHintFlags = 0;
-      _insertGCRTrees = false;
-      _maxLimitedGRACandidates = 0;
-      _maxLimitedGRARegs = 0;
-      _enableGPU = 0;
-      _isAOTCompile = false;
-      _jProfilingMethodRecompThreshold = 0;
-      _jProfilingLoopRecompThreshold = 0;
-      _blockShufflingSequence = NULL;
-      _randomSeed = 0;
-      _logListForOtherCompThreads = NULL;
-      _induceOSR = NULL;
-      _bigCalleeThreshold = 0;
-      _bigCalleeThresholdForColdCallsAtWarm = 0;
-      _bigCalleeFreqCutoffAtWarm = 0;
-      _bigCalleeHotOptThreshold = 0;
-      _bigCalleeThresholdForColdCallsAtHot = 0;
-      _bigCalleeFreqCutoffAtHot = 0;
-      _bigCalleeScorchingOptThreshold = 0;
-      _inlinerVeryLargeCompiledMethodThreshold = 0;
-      _inlinerVeryLargeCompiledMethodFaninThreshold = 0;
-      _largeCompiledMethodExemptionFreqCutoff = 0;
-      _maxSzForVPInliningWarm = 0;
-      _loopyAsyncCheckInsertionMaxEntryFreq = 0;
-      _objectFileName = 0;
-      _edoRecompSizeThreshold = 0;
-      _edoRecompSizeThresholdInStartupMode = 0;
-      _catchBlockCounterThreshold = 0;
-      _arraycopyRepMovsByteArrayThreshold = 32;
-      _arraycopyRepMovsCharArrayThreshold = 32;
-      _arraycopyRepMovsIntArrayThreshold = 32;
-      _arraycopyRepMovsLongArrayThreshold = 32;
-      _arraycopyRepMovsReferenceArrayThreshold = 32;
-      _codeCacheKind = TR::CodeCacheKind::DEFAULT_CC;
+    void setCodeCacheKind(TR::CodeCacheKind kind) { _codeCacheKind = kind; }
 
-      memset(_options, 0, sizeof(_options));
-      memset(_disabledOptimizations, false, sizeof(_disabledOptimizations));
-      memset(_traceOptimizations, false, sizeof(_traceOptimizations));
-   }
+    void init()
+    {
+        _optionSets = NULL;
+        _postRestoreOptionSets = NULL;
+        _startOptions = NULL;
+        _envOptions = NULL;
+        _logFileName = NULL;
+        _suffixLogsFormat = NULL;
+        _logFile = NULL;
+        _optFileName = NULL;
+        _customStrategy = NULL;
+        _customStrategySize = 0;
+        _optLevel = 0;
+        _initialOptLevel = 0;
+        _countString = NULL;
+        _initialCount = 0;
+        _initialBCount = 0;
+        _initialMILCount = 0;
+        _initialColdRunCount = 0;
+        _initialColdRunBCount = 0;
+        _maxSpreadCountLoopless = 0;
+        _maxSpreadCountLoopy = 0;
+        _GCRCount = 0;
+        _GCRDecCount = 0;
+        _GCRResetCount = 0;
+        _firstOptIndex = 0;
+        _lastOptIndex = 0;
+        _lastOptSubIndex = 0;
+        _lastSearchCount = 0;
+        _lastIpaOptTransformationIndex = 0;
+        _firstOptTransformationIndex = 0;
+        _lastOptTransformationIndex = 0;
+        _largeNumberOfLoops = 0;
+        _stackPCDumpNumberOfBuffers = 0;
+        _stackPCDumpNumberOfFrames = 0;
+        _tracingOptimization = false;
+        _delayCompileWithCPUBurn = 0;
+        _disabledOptTransformations = NULL;
+        _disabledInlineSites = NULL;
+        _disabledOpts = NULL;
+        _optsToTrace = NULL;
+        _optsToDumpTrees = NULL;
+        _dontInline = NULL;
+        _onlyInline = NULL;
+        _tryToInline = NULL;
+        _slipTrap = NULL;
+        _lockReserveClass = NULL;
+        _breakOnOpts = NULL;
+        _breakOnCreate = NULL;
+        _debugOnCreate = NULL;
+        _breakOnThrow = NULL;
+        _breakOnPrint = NULL;
+        _enabledStaticCounterNames = NULL;
+        _enabledDynamicCounterNames = NULL;
+        _counterHistogramNames = NULL;
+        _verboseOptTransformationsRegex = NULL;
+        _packedTest = NULL;
+        _memUsage = NULL;
+        _classesWithFolableFinalFields = NULL;
+        _disabledIdiomPatterns = NULL;
+        _suppressEA = NULL;
+        _dontFoldStaticFinalFields = NULL;
+        _gcCardSize = 0;
+        _heapBase = 0;
+        _heapTop = 0;
+        _heapAddressToCardAddressShift = 0;
+        _heapBaseForBarrierRange0 = 0;
+        _heapSizeForBarrierRange0 = 0;
+        _activeCardTableBase = 0;
+        _isVariableHeapBaseForBarrierRange0 = false;
+        _isVariableHeapSizeForBarrierRange0 = false;
+        _isVariableActiveCardTableBase = false;
+        _osVersionString = NULL;
+        _allowRecompilation = false;
+        _anOptionSetContainsACountValue = false;
+        _anOptionSetContainsADltOptLevel = false;
+        _numInterfaceCallCacheSlots = 0;
+        _numInterfaceCallStaticSlots = 0;
+        _storeSinkingLastOpt = 0;
+        _test390StackBuffer = 0;
+        _test390LitPoolBuffer = 0;
+        _addressToEnumerate = 0;
+        _debugEnableFlags = 0;
+        _optLevelDowngraded = false;
+        _compileExcludedmethods = false;
+        _maxUnloadedAddressRanges = 0;
+        _maxStaticPICSlots = 0;
+        _hotMaxStaticPICSlots = 0;
+        _newAotrtDebugLevel = 0;
+        _disableDLTBytecodeIndex = -1;
+        _enableDLTBytecodeIndex = -1;
+        _dltOptLevel = -1;
+        _profilingCount = 0;
+        _profilingFrequency = 0;
+        _counterBucketGranularity = 0;
+        _minCounterFidelity = 0;
+        _debugCounterWarmupSeconds = 0;
+        _insertDebuggingCounters = 0;
+        _inlineCntrCalleeTooBigBucketSize = 0;
+        _inlineCntrColdAndNotTinyBucketSize = 0;
+        _inlineCntrWarmCalleeTooBigBucketSize = 0;
+        _inlineCntrRanOutOfBudgetBucketSize = 0;
+        _inlineCntrCalleeTooDeepBucketSize = 0;
+        _inlineCntrWarmCallerHasTooManyNodesBucketSize = 0;
+        _inlineCntrWarmCalleeHasTooManyNodesBucketSize = 0;
+        _inlineCntrDepthExceededBucketSize = 0;
+        _inlineCntrAllBucketSize = 0;
+        _maxInlinedCalls = 0;
+        _dumbInlinerBytecodeSizeMaxCutoff = 0;
+        _dumbInlinerBytecodeSizeMinCutoff = 0;
+        _dumbInlinerBytecodeSizeCutoff = 0;
+        _dumbInlinerBytecodeSizeDivisor = 0;
+        _trivialInlinerMaxSize = 0;
+        _inlinerArgumentHeuristicFractionUpToWarm = 0;
+        _inlinerArgumentHeuristicFractionBeyondWarm = 0;
+        _inlinerVeryColdBorderFrequencyAtCold = 0;
+        _inlinerBorderFrequency = 0;
+        _inlinerColdBorderFrequency = 0;
+        _inlinerVeryColdBorderFrequency = 0;
+        _inlinerCGBorderFrequency = 0;
+        _inlinerCGColdBorderFrequency = 0;
+        _inlinerCGVeryColdBorderFrequency = 0;
+        _alwaysWorthInliningThreshold = 0;
+        _initialSCount = 0;
+        _enableSCHintFlags = 0;
+        _insertGCRTrees = false;
+        _maxLimitedGRACandidates = 0;
+        _maxLimitedGRARegs = 0;
+        _enableGPU = 0;
+        _isAOTCompile = false;
+        _jProfilingMethodRecompThreshold = 0;
+        _jProfilingLoopRecompThreshold = 0;
+        _blockShufflingSequence = NULL;
+        _randomSeed = 0;
+        _logListForOtherCompThreads = NULL;
+        _induceOSR = NULL;
+        _bigCalleeThreshold = 0;
+        _bigCalleeThresholdForColdCallsAtWarm = 0;
+        _bigCalleeFreqCutoffAtWarm = 0;
+        _bigCalleeHotOptThreshold = 0;
+        _bigCalleeThresholdForColdCallsAtHot = 0;
+        _bigCalleeFreqCutoffAtHot = 0;
+        _bigCalleeScorchingOptThreshold = 0;
+        _inlinerVeryLargeCompiledMethodThreshold = 0;
+        _inlinerVeryLargeCompiledMethodFaninThreshold = 0;
+        _largeCompiledMethodExemptionFreqCutoff = 0;
+        _maxSzForVPInliningWarm = 0;
+        _loopyAsyncCheckInsertionMaxEntryFreq = 0;
+        _objectFileName = 0;
+        _edoRecompSizeThreshold = 0;
+        _edoRecompSizeThresholdInStartupMode = 0;
+        _catchBlockCounterThreshold = 0;
+        _arraycopyRepMovsByteArrayThreshold = 32;
+        _arraycopyRepMovsCharArrayThreshold = 32;
+        _arraycopyRepMovsIntArrayThreshold = 32;
+        _arraycopyRepMovsLongArrayThreshold = 32;
+        _arraycopyRepMovsReferenceArrayThreshold = 32;
+        _codeCacheKind = TR::CodeCacheKind::DEFAULT_CC;
 
-   Options() { OMR::Options::init(); }
-   Options(TR_Memory *, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC, TR_OptimizationPlan *optimizationPlan, bool isAOT=false,  int32_t compThreadID=-1);
-   Options(TR::Options &other);
+        memset(_options, 0, sizeof(_options));
+        memset(_disabledOptimizations, false, sizeof(_disabledOptimizations));
+        memset(_traceOptimizations, false, sizeof(_traceOptimizations));
+    }
 
-   enum TR_AggresivenessLevel {
-      CONSERVATIVE_QUICKSTART = 0,
-      QUICKSTART,
-      AGGRESSIVE_QUICKSTART,
-      AGGRESSIVE_AOT,
-      CONSERVATIVE_DEFAULT,
-      DEFAULT,
-      AGGRESSIVE_THROUGHPUT,
-      LAST_AGGRESSIVENESS_LEVEL
-   };
+    Options() { OMR::Options::init(); }
 
-   static TR::OptionFunctionPtr negateProcessingMethod(TR::OptionFunctionPtr);
+    Options(TR_Memory *, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC,
+        TR_OptimizationPlan *optimizationPlan, bool isAOT = false, int32_t compThreadID = -1);
+    Options(TR::Options &other);
 
-   static void       setIsFullyInitialized()           { _fullyInitialized = true; }
-   static bool       isFullyInitialized()              { return _fullyInitialized; }
+    enum TR_AggresivenessLevel {
+        CONSERVATIVE_QUICKSTART = 0,
+        QUICKSTART,
+        AGGRESSIVE_QUICKSTART,
+        AGGRESSIVE_AOT,
+        CONSERVATIVE_DEFAULT,
+        DEFAULT,
+        AGGRESSIVE_THROUGHPUT,
+        LAST_AGGRESSIVENESS_LEVEL
+    };
 
-   static TR::OptionSet *findOptionSet(TR_Memory *, int32_t index, int32_t lineNum, TR_ResolvedMethod *, TR_Hotness, bool);
-   static TR::OptionSet *findOptionSet(TR_Memory *, TR_ResolvedMethod *, bool);
-   static TR::OptionSet *findOptionSet(int32_t index, int32_t lineNum, const char *, TR_Hotness, bool);
+    static TR::OptionFunctionPtr negateProcessingMethod(TR::OptionFunctionPtr);
 
-   static const char  *getDefaultOptions();
-   static char        *validateOptions(void *feBase, TR_FrontEnd *fe);
-   static const char  *processOptionsJIT(const char *jitOptions, void *feBase, TR_FrontEnd *fe);
-   static const char  *processOptionsAOT(const char *aotOptions, void *feBase, TR_FrontEnd *fe);
-   static const char  *processOptions(const char *options, const char *envOptions, void *feBase, TR_FrontEnd *fe, TR::Options *cmdLineOptions);
-   static const char  *latePostProcessJIT(void *jitConfig);
-   static const char  *latePostProcessAOT(void *jitConfig);
-   static const char  *latePostProcess(TR::Options *options, void *jitConfig, bool isAOT);
-   static const char  *processOptions(const char *options, const char *moreOptions, TR::Options *cmdLineOptions);
-   static TR::Options *getCmdLineOptions();
-   static TR::Options *getAOTCmdLineOptions();
-   static void         setAOTCmdLineOptions(TR::Options *options);
-   static TR::Options *getJITCmdLineOptions();
-          void         saveOptionSet(TR::OptionSet *o);
-          void         mergePostRestoreOptionSets();
-          bool         hasOptionSets() {return _optionSets != NULL;}
-          const char  *setCounts();
+    static void setIsFullyInitialized() { _fullyInitialized = true; }
 
-   static bool     useCompressedPointers();
+    static bool isFullyInitialized() { return _fullyInitialized; }
 
-   TR::FILE *          getLogFile()          {return _logFile;}
-   void            setLogFile(TR::FILE * f)  {_logFile = f;}
-   char *          getLogFileName()      {return _logFileName;}
+    static TR::OptionSet *findOptionSet(TR_Memory *, int32_t index, int32_t lineNum, TR_ResolvedMethod *, TR_Hotness,
+        bool);
+    static TR::OptionSet *findOptionSet(TR_Memory *, TR_ResolvedMethod *, bool);
+    static TR::OptionSet *findOptionSet(int32_t index, int32_t lineNum, const char *, TR_Hotness, bool);
 
-   char *    getBlockShufflingSequence(){ return _blockShufflingSequence; }
+    static const char *getDefaultOptions();
+    static char *validateOptions(void *feBase, TR_FrontEnd *fe);
+    static const char *processOptionsJIT(const char *jitOptions, void *feBase, TR_FrontEnd *fe);
+    static const char *processOptionsAOT(const char *aotOptions, void *feBase, TR_FrontEnd *fe);
+    static const char *processOptions(const char *options, const char *envOptions, void *feBase, TR_FrontEnd *fe,
+        TR::Options *cmdLineOptions);
+    static const char *latePostProcessJIT(void *jitConfig);
+    static const char *latePostProcessAOT(void *jitConfig);
+    static const char *latePostProcess(TR::Options *options, void *jitConfig, bool isAOT);
+    static const char *processOptions(const char *options, const char *moreOptions, TR::Options *cmdLineOptions);
+    static TR::Options *getCmdLineOptions();
+    static TR::Options *getAOTCmdLineOptions();
+    static void setAOTCmdLineOptions(TR::Options *options);
+    static TR::Options *getJITCmdLineOptions();
+    void saveOptionSet(TR::OptionSet *o);
+    void mergePostRestoreOptionSets();
 
-   int32_t         getRandomSeed(){ return _randomSeed; }
+    bool hasOptionSets() { return _optionSets != NULL; }
 
-   enum CustomStrategyFlags
-      {
-      OptNumMask = 0x0ffff,
-      MustBeDone = 0x10000,
-      };
+    const char *setCounts();
 
-   int32_t         getCustomStrategySize(){ return _customStrategySize; }
-   int32_t *       getCustomStrategy()    { return _customStrategy;     }
+    static bool useCompressedPointers();
 
-   TR::OptionSet *  getFirstOptionSet()   {return _optionSets;}
+    TR::FILE *getLogFile() { return _logFile; }
 
-   char *          getSuffixLogsFormat() { return _suffixLogsFormat; }
+    void setLogFile(TR::FILE *f) { _logFile = f; }
 
-   // methods that set or query the command line option and the option sets
-   //
-   static bool     isOptionSetForAnyMethod(TR_CompilationOptions);
-   static void     setForAllMethods(TR_CompilationOptions);
+    char *getLogFileName() { return _logFileName; }
 
-   static void     disableForAllMethods(OMR::Optimizations o);
-   static bool     isDisabledForAllMethods (OMR::Optimizations o);
-   static bool     isDisabledForAnyMethod  (OMR::Optimizations o);
+    char *getBlockShufflingSequence() { return _blockShufflingSequence; }
 
-   static bool     hasSomeLogFile()      {return _hasLogFile;}
-   static void     suppressLogFileBecauseDebugObjectNotCreated(bool b = true) {_suppressLogFileBecauseDebugObjectNotCreated = b;}
-   static bool     requiresDebugObject();
+    int32_t getRandomSeed() { return _randomSeed; }
 
-   bool      getAnyOption(uint32_t mask)       {return (_options[mask & TR_OWM] & (mask & ~TR_OWM)) != 0;}
-   bool      getAllOptions(uint32_t mask)      {return (_options[mask & TR_OWM] & (mask & ~TR_OWM)) == mask;}
-   bool      getOption(uint32_t mask);
+    enum CustomStrategyFlags {
+        OptNumMask = 0x0ffff,
+        MustBeDone = 0x10000,
+    };
 
-   static bool  getSamplingJProfilingOption(TR_SamplingJProfilingFlags op)   { return _samplingJProfilingOptionFlags.isSet(op); }
-   static void  setSamplingJProfilingOption(TR_SamplingJProfilingFlags op)   { _samplingJProfilingOptionFlags.set(op); }
-   static void  resetSamplingJProfilingOption(TR_SamplingJProfilingFlags op) { _samplingJProfilingOptionFlags.reset(op); }
-   static bool  isAnySamplingJProfilingOptionSet()                   { return !_samplingJProfilingOptionFlags.isEmpty(); }
+    int32_t getCustomStrategySize() { return _customStrategySize; }
 
-   static bool  getReductionAlgorithm(TR_ReductionAlgorithms op)     {  return _hotFieldReductionAlgorithms.isSet(op); }
-   static void  setReductionAlgorithm(TR_ReductionAlgorithms op)     { _hotFieldReductionAlgorithms.set(op); }
-   static void  resetReductionAlgorithm(TR_SamplingJProfilingFlags op) { _hotFieldReductionAlgorithms.reset(op); }
-   static bool  isAnyReductionAlgorithmSet()                   { return !_hotFieldReductionAlgorithms.isEmpty(); }
-   static bool  getVerboseOption(TR_VerboseFlags op)     {  return _verboseOptionFlags.isSet(op); }
-   static void  setVerboseOption(TR_VerboseFlags op)     { _verboseOptionFlags.set(op); }
-   static void  setVerboseOptions(uint64_t mask)         { _verboseOptionFlags.maskWord(0, mask); }
-   static void  resetVerboseOption(TR_VerboseFlags op)   { _verboseOptionFlags.reset(op); }
-   static const char *getVerboseOptionName(TR_VerboseFlags op) { return _verboseOptionNames[op]; }
-   static bool  isAnyVerboseOptionSet()                  { return !_verboseOptionFlags.isEmpty(); }
-   static bool  isAnyVerboseOptionSet(TR_VerboseFlags op1);
-   static bool  isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2);
-   static bool  isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3);
-   static bool  isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3, TR_VerboseFlags op4);
-   static bool  isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3, TR_VerboseFlags op4, TR_VerboseFlags op5);
-   static bool  isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3, TR_VerboseFlags op4, TR_VerboseFlags op5, TR_VerboseFlags op6);
-   bool isVerboseFileSet();
+    int32_t *getCustomStrategy() { return _customStrategy; }
 
-   bool      getAddressEnumerationOption(uint32_t mask)   {return (_addressToEnumerate & mask) != 0;}
+    TR::OptionSet *getFirstOptionSet() { return _optionSets; }
 
-   bool      getDebugEnableFlag(uint32_t mask) { return (_debugEnableFlags & mask) != 0; }
-   bool      getEnableGPU(uint32_t mask) { return (_enableGPU & mask) != 0; }
+    char *getSuffixLogsFormat() { return _suffixLogsFormat; }
 
-   // If we running at a fixed opt level (non-recomp) then this routine
-   // returns that particular opt level - otherwise ??. (FIXME)
-   //
-   int32_t    getFixedOptLevel();
+    // methods that set or query the command line option and the option sets
+    //
+    static bool isOptionSetForAnyMethod(TR_CompilationOptions);
+    static void setForAllMethods(TR_CompilationOptions);
 
-   // This routine returns the opt level the current compilation is using
-   int32_t    getOptLevel() const;
-   void       setOptLevel(int32_t);
+    static void disableForAllMethods(OMR::Optimizations o);
+    static bool isDisabledForAllMethods(OMR::Optimizations o);
+    static bool isDisabledForAnyMethod(OMR::Optimizations o);
 
-   TR_Hotness getNextHotnessLevel(bool methodHasLoops, TR_Hotness current);
-   int32_t    getCountValue      (bool methodHasLoops, TR_Hotness hotness);
+    static bool hasSomeLogFile() { return _hasLogFile; }
 
-   static bool canJITCompile()                 {return _canJITCompile;}
-   static void setCanJITCompile(bool f);
-   bool      allowRecompilation()              {return _allowRecompilation;}
-   static void      disableSamplingThread()    {_samplingFrequency = 0;}
-   static int32_t   getSamplingFrequency()     {return _samplingFrequency;}
+    static void suppressLogFileBecauseDebugObjectNotCreated(bool b = true)
+    {
+        _suppressLogFileBecauseDebugObjectNotCreated = b;
+    }
 
+    static bool requiresDebugObject();
 
-   static int32_t   getMaxPeekedBytecodeSize() { return _maxPeekedBytecodeSize; }
+    bool getAnyOption(uint32_t mask) { return (_options[mask & TR_OWM] & (mask & ~TR_OWM)) != 0; }
 
-   int32_t   getTOCSize()                      {return _tocSizeInKB;}
-   int32_t   getFirstOptIndex()                {return _firstOptIndex;}
-   int32_t   getLastOptIndex()                 {return _lastOptIndex;}
-   int32_t   getLastOptSubIndex()              {return _lastOptSubIndex;}
-   int32_t   getLastIpaOptTransformationIndex() {return _lastIpaOptTransformationIndex;}
-   int32_t   getNumInterfaceCallCacheSlots()     {return _numInterfaceCallCacheSlots;}
-   int32_t   getNumInterfaceCallStaticSlots()    {return _numInterfaceCallStaticSlots;}
-   int32_t   getStoreSinkingLastOpt()          {return _storeSinkingLastOpt;}
-   int32_t   getFirstOptTransformationIndex()  {return _firstOptTransformationIndex;}
-   int32_t   getLastOptTransformationIndex()   {return _lastOptTransformationIndex;}
-   int32_t   getMinFirstOptTransformationIndex()  {return -1;}
-   int32_t   getMaxLastOptTransformationIndex()   {return INT_MAX;}
+    bool getAllOptions(uint32_t mask) { return (_options[mask & TR_OWM] & (mask & ~TR_OWM)) == mask; }
 
-   int32_t   getLargeNumberOfLoops()           {return _largeNumberOfLoops;}
-   bool      isDisabled(OMR::Optimizations o)       {return _disabledOptimizations[o]; }
-   void      setDisabled(OMR::Optimizations o, bool b)  {_disabledOptimizations[o] = b; }
-   bool      trace(OMR::Optimizations o)            {return _traceOptimizations[o]; }
-   void      enableTracing(OMR::Optimizations o)    {_traceOptimizations[o] = true; }
-   bool      tracingOptimization()             {return _tracingOptimization; }
-   int32_t   getMaxUnloadedAddressRanges()     {return _maxUnloadedAddressRanges;}
-   int32_t   getMaxStaticPICSlots(TR_Hotness h){return (h >= hot)? _hotMaxStaticPICSlots : _maxStaticPICSlots; }
-   int32_t   getMaxNumPrexAssumptions()        {return _maxNumPrexAssumptions;}
-   int32_t   getMaxNumVisitedSubclasses()      {return _maxNumVisitedSubclasses;}
+    bool getOption(uint32_t mask);
 
-   bool      anOptionSetContainsACountValue()          {return _anOptionSetContainsACountValue; }
-   void      setAnOptionSetContainsACountValue(bool b) { _anOptionSetContainsACountValue = b; }
+    static bool getSamplingJProfilingOption(TR_SamplingJProfilingFlags op)
+    {
+        return _samplingJProfilingOptionFlags.isSet(op);
+    }
 
-   bool      anOptionSetContainsADltOptLevel()          {return _anOptionSetContainsADltOptLevel; }
-   void      setAnOptionSetContainsADltOptLevel(bool b) { _anOptionSetContainsADltOptLevel = b; }
-   int32_t   getEnableDLTBytecodeIndex()       {return _enableDLTBytecodeIndex;}
-   int32_t   getDisableDLTBytecodeIndex()      {return _disableDLTBytecodeIndex;}
-   int32_t   getDLTOptLevel()                  {return _dltOptLevel;}
-   int32_t   getProfilingCount()               {return _profilingCount;}
-   int32_t   getProfilingFrequency()           {return _profilingFrequency;}
-   int32_t   insertDebuggingCounters()         {return _insertDebuggingCounters;}
-   int32_t   getLastSearchCount()              {return _lastSearchCount;}
+    static void setSamplingJProfilingOption(TR_SamplingJProfilingFlags op) { _samplingJProfilingOptionFlags.set(op); }
 
-   int32_t   getAotrtDebugLevel()              {return _newAotrtDebugLevel;}
+    static void resetSamplingJProfilingOption(TR_SamplingJProfilingFlags op)
+    {
+        _samplingJProfilingOptionFlags.reset(op);
+    }
 
-   bool enableDebugCounters()
-      {
-      // Fast-path inlineable query
-      return _enabledDynamicCounterNames || _enabledStaticCounterNames;
-      }
+    static bool isAnySamplingJProfilingOptionSet() { return !_samplingJProfilingOptionFlags.isEmpty(); }
 
-   bool staticDebugCounterIsEnabled    (const char *name, int8_t fidelity);
-   bool dynamicDebugCounterIsEnabled   (const char *name, int8_t fidelity = TR::DebugCounter::Undetermined);
-   bool debugCounterHistogramIsEnabled (const char *name, int8_t fidelity);
-   int32_t getDebugCounterBucketGranularity(){ return _counterBucketGranularity; }
-   int64_t getDebugCounterWarmupSeconds(){ return _debugCounterWarmupSeconds; }
-   const char *debugCounterInsertedFormat(TR_Memory *mem, const char *name, const char *format)
-      {
-      auto nameLen = strlen(name);
-      auto formatLen = strlen(format);
-      char *result = (char*)mem->allocateMemory(nameLen + formatLen + 2, heapAlloc);
-      const char *splitPoint = strchr(name, '~');
-      if (splitPoint)
-         {
-         // Replace "~" in the name with "~:{format}"
-         int32_t splitIndex = static_cast<int32_t>(splitPoint - name + 1);
-         strncpy(result, name, splitIndex);
-         result[splitIndex] = ':';
-         strcpy(result + splitIndex + 1, format);
-         strcpy(result + splitIndex + 1 + formatLen, name + splitIndex);
-         }
-      else
-         {
-         // Append in the form "{name}:{format}"
-         strncpy(result, name, nameLen);
-         result[nameLen] = ':';
-         strcpy(result + nameLen + 1, format);
-         }
-      return result;
-      }
+    static bool getReductionAlgorithm(TR_ReductionAlgorithms op) { return _hotFieldReductionAlgorithms.isSet(op); }
 
+    static void setReductionAlgorithm(TR_ReductionAlgorithms op) { _hotFieldReductionAlgorithms.set(op); }
 
-   bool      requiresLogFile();
+    static void resetReductionAlgorithm(TR_SamplingJProfilingFlags op) { _hotFieldReductionAlgorithms.reset(op); }
 
-   TR::SimpleRegex * getDisabledOptTransformations()   {return _disabledOptTransformations; }
-   TR::SimpleRegex * getDisabledOpts()                 {return _disabledOpts; }
-   TR::SimpleRegex * getDisabledInlineSites()          {return _disabledInlineSites; }
-   TR::SimpleRegex * getOptsToTrace()                  {return _optsToTrace; }
-   TR::SimpleRegex * getOptsToDumpTrees()              {return _optsToDumpTrees; }
-   TR::SimpleRegex * getDontInline()                   {return _dontInline; }
-   TR::SimpleRegex * getOnlyInline()                   {return _onlyInline; }
-   TR::SimpleRegex * getTryToInline()                  {return _tryToInline; }
-   TR::SimpleRegex * getBreakOnOpts()                  {return _breakOnOpts; }
-   TR::SimpleRegex * getSlipTrap()                     {return _slipTrap; }
-   TR::SimpleRegex * getLockReserveClass()             {return _lockReserveClass; }
-   TR::SimpleRegex * getBreakOnCreate()                {return _breakOnCreate;}
-   TR::SimpleRegex * getDebugOnCreate()                {return _debugOnCreate;}
-   TR::SimpleRegex * getBreakOnThrow()                 {return _breakOnThrow;}
-   TR::SimpleRegex * getBreakOnPrint()                 {return _breakOnPrint;}
-   TR::SimpleRegex * getVerboseOptTransformationsRegex(){return _verboseOptTransformationsRegex;}
-   TR::SimpleRegex * getPackedTestRegex()              {return _packedTest;}
-   TR::SimpleRegex * getClassesWithFoldableFinalFields(){return _classesWithFolableFinalFields;}
-   TR::SimpleRegex * getDisabledIdiomPatterns()        {return _disabledIdiomPatterns;}
-   TR::SimpleRegex * getSuppressEARegex()              {return _suppressEA;}
-   TR::SimpleRegex * getDontFoldStaticFinalFields()    {return _dontFoldStaticFinalFields;}
+    static bool isAnyReductionAlgorithmSet() { return !_hotFieldReductionAlgorithms.isEmpty(); }
 
-   char* getInduceOSR()                               {return _induceOSR;}
-   int32_t getBigCalleeThreshold() const              {return _bigCalleeThreshold;}
-   int32_t getBigCalleeThresholdForColdCallsAtWarm() const  {return _bigCalleeThresholdForColdCallsAtWarm;}
-   int32_t getBigCalleeFrequencyCutoffAtWarm() const  {return _bigCalleeFreqCutoffAtWarm;}
-   int32_t getBigCalleeHotOptThreshold() const        {return _bigCalleeHotOptThreshold;}
-   int32_t getBigCalleeThresholdForColdCallsAtHot() const  {return _bigCalleeThresholdForColdCallsAtHot;}
-   int32_t getBigCalleeFrequencyCutoffAtHot() const   {return _bigCalleeFreqCutoffAtHot;}
-   int32_t getBigCalleeScorchingOptThreshold() const  {return _bigCalleeScorchingOptThreshold;}
-   void setBigCalleeScorchingOptThreshold(int32_t t) { _bigCalleeScorchingOptThreshold = t; }
-   int32_t getLargeCompiledMethodExemptionFreqCutoff() const {return _largeCompiledMethodExemptionFreqCutoff;}
-   int32_t getMaxSzForVPInliningWarm() const          {return _maxSzForVPInliningWarm;}
-   int32_t getInlinerVeryLargeCompiledMethodThreshold() const {return _inlinerVeryLargeCompiledMethodThreshold;}
-   int32_t getInlinerVeryLargeCompiledMethodFaninThreshold() const {return _inlinerVeryLargeCompiledMethodFaninThreshold;}
+    static bool getVerboseOption(TR_VerboseFlags op) { return _verboseOptionFlags.isSet(op); }
 
-   void setOption(uint32_t mask, bool b = true)
-      {
-      if (b)
-         _options[mask & TR_OWM] |= (mask & ~TR_OWM);
-      else
-         _options[mask & TR_OWM] &= ~(mask & ~TR_OWM);
-      }
-   static void setOptionInAllOptionSets(uint32_t mask, bool b = true);
-   void setFixedOptLevel(int32_t level);
-   void setTarget();
-   void setAllowRecompilation(bool b)   {_allowRecompilation = b;}
-   void setQuickStart();
-   void setConservativeQuickStart();
-   void setAggressiveQuickStart();
-   void setGlobalAggressiveAOT();
-   void setLocalAggressiveAOT();
-   void setInlinerOptionsForAggressiveAOT();
-   void setConservativeDefaultBehavior();
-   void setAggressiveThroughput();
+    static void setVerboseOption(TR_VerboseFlags op) { _verboseOptionFlags.set(op); }
 
-   static bool getCountsAreProvidedByUser() { return _countsAreProvidedByUser; } // set very late in setCounts()
-   static TR_YesNoMaybe startupTimeMatters() { return _startupTimeMatters; } // set very late in setCounts()
-   int32_t getInitialCount()         { return _initialCount; }
-   void    setInitialCount(int32_t n){ _initialCount = n; }
-   int32_t getInitialBCount()        { return _initialBCount; }
-   void    setInitialBCount(int32_t n){ _initialBCount = n; }
-   int32_t getInitialMILCount()      { return _initialMILCount; }
-   void    setInitialMILCount(int32_t n){ _initialMILCount = n; }
-   int32_t getInitialColdRunCount()  { return _initialColdRunCount; }
-   int32_t getInitialColdRunBCount() { return _initialColdRunBCount; }
-   static int32_t getHighCodeCacheOccupancyCount() { return _highCodeCacheOccupancyCount; }
-   static int32_t getHighCodeCacheOccupancyBCount() { return _highCodeCacheOccupancyBCount; }
-   int32_t getMaxSpreadCountLoopless() { return _maxSpreadCountLoopless; }
-   int32_t getMaxSpreadCountLoopy()    { return _maxSpreadCountLoopy; }
+    static void setVerboseOptions(uint64_t mask) { _verboseOptionFlags.maskWord(0, mask); }
 
-   int32_t getGCRCount()             { return _GCRCount; }
-   void    setGCRCount(int32_t v)    { _GCRCount = v; }
-   int32_t getGCRDecCount()          { return _GCRDecCount; }
-   int32_t getGCRResetCount()        { return _GCRResetCount; }
-   bool    getInsertGCRTrees()       { return _insertGCRTrees; }
-   void    setInsertGCRTrees()       { _insertGCRTrees = true; }
-   int32_t getStackPCDumpNumberOfBuffers() { return _stackPCDumpNumberOfBuffers;}
-   int32_t getStackPCDumpNumberOfFrames()  { return _stackPCDumpNumberOfFrames;}
-   int32_t get390StackBufferSize()   { return _test390StackBuffer; }
-   int32_t get390LitPoolBufferSize() { return _test390LitPoolBuffer; }
-   int32_t getInitialSCount()        { return _initialSCount; }
-   int32_t getEnableSCHintFlags()    { return _enableSCHintFlags; }
+    static void resetVerboseOption(TR_VerboseFlags op) { _verboseOptionFlags.reset(op); }
 
-   int32_t getInlineCntrCalleeTooBigBucketSize() { return _inlineCntrCalleeTooBigBucketSize; }
-   int32_t getInlineCntrColdAndNotTinyBucketSize() { return _inlineCntrColdAndNotTinyBucketSize; }
-   int32_t getInlineCntrWarmCalleeTooBigBucketSize() { return _inlineCntrWarmCalleeTooBigBucketSize; }
-   int32_t getInlineCntrRanOutOfBudgetBucketSize() { return _inlineCntrRanOutOfBudgetBucketSize; }
-   int32_t getInlineCntrCalleeTooDeepBucketSize() { return _inlineCntrCalleeTooDeepBucketSize; }
-   int32_t getInlineCntrWarmCallerHasTooManyNodesBucketSize() { return _inlineCntrWarmCallerHasTooManyNodesBucketSize; }
-   int32_t getInlineCntrWarmCalleeHasTooManyNodesBucketSize() { return _inlineCntrWarmCalleeHasTooManyNodesBucketSize; }
-   int32_t getInlineCntrDepthExceededBucketSize() { return _inlineCntrDepthExceededBucketSize; }
-   int32_t getInlineCntrAllBucketSize() { return _inlineCntrAllBucketSize; }
-   int32_t getDelayCompileWithCPUBurn() const { return _delayCompileWithCPUBurn; }
-   int32_t getMaxInlinedCalls() { return _maxInlinedCalls; }
-   int32_t getDumbInlinerBytecodeSizeMaxCutoff() const { return _dumbInlinerBytecodeSizeMaxCutoff; }
-   int32_t getDumbInlinerBytecodeSizeMinCutoff() const { return _dumbInlinerBytecodeSizeMinCutoff; }
-   int32_t getDumbInlinerBytecodeSizeCutoff() const { return _dumbInlinerBytecodeSizeCutoff; }
-   void    setDumbInlinerBytecodeSizeCutoff(int32_t n) { _dumbInlinerBytecodeSizeCutoff = n; }
-   int32_t getDumbInlinerBytecodeSizeDivisor() const { return _dumbInlinerBytecodeSizeDivisor; }
-   int32_t getTrivialInlinerMaxSize() const { return _trivialInlinerMaxSize; }
-   void    setTrivialInlinerMaxSize(int32_t n) { _trivialInlinerMaxSize = n; }
-   int32_t getInlinerArgumentHeuristicFraction() const;
-   int32_t getInlinerVeryColdBorderFrequencyAtCold() { return _inlinerVeryColdBorderFrequencyAtCold; }
-   void    setInlinerVeryColdBorderFrequencyAtCold(int32_t n) { _inlinerVeryColdBorderFrequencyAtCold = n; }
-   int32_t getInlinerBorderFrequency() { return _inlinerBorderFrequency; }
-   void    setInlinerBorderFrequency(int32_t n) { _inlinerBorderFrequency = n; }
-   int32_t getInlinerColdBorderFrequency() { return _inlinerColdBorderFrequency; }
-   void    setInlinerColdBorderFrequency(int32_t n) { _inlinerColdBorderFrequency = n; }
-   int32_t getInlinerVeryColdBorderFrequency() { return _inlinerVeryColdBorderFrequency; }
-   void    setInlinerVeryColdBorderFrequency(int32_t n) { _inlinerVeryColdBorderFrequency = n; }
-   int32_t getInlinerCGBorderFrequency() { return _inlinerCGBorderFrequency; }
-   void    setInlinerCGBorderFrequency(int32_t n) { _inlinerCGBorderFrequency = n; }
-   int32_t getInlinerCGColdBorderFrequency() { return _inlinerCGColdBorderFrequency; }
-   void    setInlinerCGColdBorderFrequency(int32_t n) { _inlinerCGColdBorderFrequency = n; }
-   int32_t getInlinerCGVeryColdBorderFrequency() { return _inlinerCGVeryColdBorderFrequency; }
-   void    setInlinerCGVeryColdBorderFrequency(int32_t n) { _inlinerCGVeryColdBorderFrequency = n; }
-   int32_t getAlwaysWorthInliningThreshold() const { return _alwaysWorthInliningThreshold; }
-   int32_t getMaxLimitedGRACandidates()   { return _maxLimitedGRACandidates; }
-   int32_t getMaxLimitedGRARegs()         { return _maxLimitedGRARegs; }
-   int32_t getNumLimitedGRARegsWithheld();
+    static const char *getVerboseOptionName(TR_VerboseFlags op) { return _verboseOptionNames[op]; }
 
-   int32_t getProfilingCompNodecountThreshold()  { return _profilingCompNodecountThreshold; }
+    static bool isAnyVerboseOptionSet() { return !_verboseOptionFlags.isEmpty(); }
 
-   int32_t getLoopyAsyncCheckInsertionMaxEntryFreq()
-      {
-      return _loopyAsyncCheckInsertionMaxEntryFreq;
-      }
+    static bool isAnyVerboseOptionSet(TR_VerboseFlags op1);
+    static bool isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2);
+    static bool isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3);
+    static bool isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3,
+        TR_VerboseFlags op4);
+    static bool isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3,
+        TR_VerboseFlags op4, TR_VerboseFlags op5);
+    static bool isAnyVerboseOptionSet(TR_VerboseFlags op1, TR_VerboseFlags op2, TR_VerboseFlags op3,
+        TR_VerboseFlags op4, TR_VerboseFlags op5, TR_VerboseFlags op6);
+    bool isVerboseFileSet();
 
-   int32_t getEdoRecompSizeThreshold() { return _edoRecompSizeThreshold; }
-   int32_t getEdoRecompSizeThresholdInStartupMode() { return _edoRecompSizeThresholdInStartupMode; }
-   int32_t getCatchBlockCounterThreshold() { return _catchBlockCounterThreshold; }
+    bool getAddressEnumerationOption(uint32_t mask) { return (_addressToEnumerate & mask) != 0; }
 
-   int32_t getArraycopyRepMovsByteArrayThreshold() { return _arraycopyRepMovsByteArrayThreshold; }
-   int32_t getArraycopyRepMovsCharArrayThreshold() { return _arraycopyRepMovsCharArrayThreshold; }
-   int32_t getArraycopyRepMovsIntArrayThreshold() { return _arraycopyRepMovsIntArrayThreshold; }
-   int32_t getArraycopyRepMovsLongArrayThreshold() { return _arraycopyRepMovsLongArrayThreshold; }
-   int32_t getArraycopyRepMovsReferenceArrayThreshold() { return _arraycopyRepMovsReferenceArrayThreshold; }
+    bool getDebugEnableFlag(uint32_t mask) { return (_debugEnableFlags & mask) != 0; }
 
+    bool getEnableGPU(uint32_t mask) { return (_enableGPU & mask) != 0; }
+
+    // If we running at a fixed opt level (non-recomp) then this routine
+    // returns that particular opt level - otherwise ??. (FIXME)
+    //
+    int32_t getFixedOptLevel();
+
+    // This routine returns the opt level the current compilation is using
+    int32_t getOptLevel() const;
+    void setOptLevel(int32_t);
+
+    TR_Hotness getNextHotnessLevel(bool methodHasLoops, TR_Hotness current);
+    int32_t getCountValue(bool methodHasLoops, TR_Hotness hotness);
+
+    static bool canJITCompile() { return _canJITCompile; }
+
+    static void setCanJITCompile(bool f);
+
+    bool allowRecompilation() { return _allowRecompilation; }
+
+    static void disableSamplingThread() { _samplingFrequency = 0; }
+
+    static int32_t getSamplingFrequency() { return _samplingFrequency; }
+
+    static int32_t getMaxPeekedBytecodeSize() { return _maxPeekedBytecodeSize; }
+
+    int32_t getTOCSize() { return _tocSizeInKB; }
+
+    int32_t getFirstOptIndex() { return _firstOptIndex; }
+
+    int32_t getLastOptIndex() { return _lastOptIndex; }
+
+    int32_t getLastOptSubIndex() { return _lastOptSubIndex; }
+
+    int32_t getLastIpaOptTransformationIndex() { return _lastIpaOptTransformationIndex; }
+
+    int32_t getNumInterfaceCallCacheSlots() { return _numInterfaceCallCacheSlots; }
+
+    int32_t getNumInterfaceCallStaticSlots() { return _numInterfaceCallStaticSlots; }
+
+    int32_t getStoreSinkingLastOpt() { return _storeSinkingLastOpt; }
+
+    int32_t getFirstOptTransformationIndex() { return _firstOptTransformationIndex; }
+
+    int32_t getLastOptTransformationIndex() { return _lastOptTransformationIndex; }
+
+    int32_t getMinFirstOptTransformationIndex() { return -1; }
+
+    int32_t getMaxLastOptTransformationIndex() { return INT_MAX; }
+
+    int32_t getLargeNumberOfLoops() { return _largeNumberOfLoops; }
+
+    bool isDisabled(OMR::Optimizations o) { return _disabledOptimizations[o]; }
+
+    void setDisabled(OMR::Optimizations o, bool b) { _disabledOptimizations[o] = b; }
+
+    bool trace(OMR::Optimizations o) { return _traceOptimizations[o]; }
+
+    void enableTracing(OMR::Optimizations o) { _traceOptimizations[o] = true; }
+
+    bool tracingOptimization() { return _tracingOptimization; }
+
+    int32_t getMaxUnloadedAddressRanges() { return _maxUnloadedAddressRanges; }
+
+    int32_t getMaxStaticPICSlots(TR_Hotness h) { return (h >= hot) ? _hotMaxStaticPICSlots : _maxStaticPICSlots; }
+
+    int32_t getMaxNumPrexAssumptions() { return _maxNumPrexAssumptions; }
+
+    int32_t getMaxNumVisitedSubclasses() { return _maxNumVisitedSubclasses; }
+
+    bool anOptionSetContainsACountValue() { return _anOptionSetContainsACountValue; }
+
+    void setAnOptionSetContainsACountValue(bool b) { _anOptionSetContainsACountValue = b; }
+
+    bool anOptionSetContainsADltOptLevel() { return _anOptionSetContainsADltOptLevel; }
+
+    void setAnOptionSetContainsADltOptLevel(bool b) { _anOptionSetContainsADltOptLevel = b; }
+
+    int32_t getEnableDLTBytecodeIndex() { return _enableDLTBytecodeIndex; }
+
+    int32_t getDisableDLTBytecodeIndex() { return _disableDLTBytecodeIndex; }
+
+    int32_t getDLTOptLevel() { return _dltOptLevel; }
+
+    int32_t getProfilingCount() { return _profilingCount; }
+
+    int32_t getProfilingFrequency() { return _profilingFrequency; }
+
+    int32_t insertDebuggingCounters() { return _insertDebuggingCounters; }
+
+    int32_t getLastSearchCount() { return _lastSearchCount; }
+
+    int32_t getAotrtDebugLevel() { return _newAotrtDebugLevel; }
+
+    bool enableDebugCounters()
+    {
+        // Fast-path inlineable query
+        return _enabledDynamicCounterNames || _enabledStaticCounterNames;
+    }
+
+    bool staticDebugCounterIsEnabled(const char *name, int8_t fidelity);
+    bool dynamicDebugCounterIsEnabled(const char *name, int8_t fidelity = TR::DebugCounter::Undetermined);
+    bool debugCounterHistogramIsEnabled(const char *name, int8_t fidelity);
+
+    int32_t getDebugCounterBucketGranularity() { return _counterBucketGranularity; }
+
+    int64_t getDebugCounterWarmupSeconds() { return _debugCounterWarmupSeconds; }
+
+    const char *debugCounterInsertedFormat(TR_Memory *mem, const char *name, const char *format)
+    {
+        auto nameLen = strlen(name);
+        auto formatLen = strlen(format);
+        char *result = (char *)mem->allocateMemory(nameLen + formatLen + 2, heapAlloc);
+        const char *splitPoint = strchr(name, '~');
+        if (splitPoint) {
+            // Replace "~" in the name with "~:{format}"
+            int32_t splitIndex = static_cast<int32_t>(splitPoint - name + 1);
+            strncpy(result, name, splitIndex);
+            result[splitIndex] = ':';
+            strcpy(result + splitIndex + 1, format);
+            strcpy(result + splitIndex + 1 + formatLen, name + splitIndex);
+        } else {
+            // Append in the form "{name}:{format}"
+            strncpy(result, name, nameLen);
+            result[nameLen] = ':';
+            strcpy(result + nameLen + 1, format);
+        }
+        return result;
+    }
+
+    bool requiresLogFile();
+
+    TR::SimpleRegex *getDisabledOptTransformations() { return _disabledOptTransformations; }
+
+    TR::SimpleRegex *getDisabledOpts() { return _disabledOpts; }
+
+    TR::SimpleRegex *getDisabledInlineSites() { return _disabledInlineSites; }
+
+    TR::SimpleRegex *getOptsToTrace() { return _optsToTrace; }
+
+    TR::SimpleRegex *getOptsToDumpTrees() { return _optsToDumpTrees; }
+
+    TR::SimpleRegex *getDontInline() { return _dontInline; }
+
+    TR::SimpleRegex *getOnlyInline() { return _onlyInline; }
+
+    TR::SimpleRegex *getTryToInline() { return _tryToInline; }
+
+    TR::SimpleRegex *getBreakOnOpts() { return _breakOnOpts; }
+
+    TR::SimpleRegex *getSlipTrap() { return _slipTrap; }
+
+    TR::SimpleRegex *getLockReserveClass() { return _lockReserveClass; }
+
+    TR::SimpleRegex *getBreakOnCreate() { return _breakOnCreate; }
+
+    TR::SimpleRegex *getDebugOnCreate() { return _debugOnCreate; }
+
+    TR::SimpleRegex *getBreakOnThrow() { return _breakOnThrow; }
+
+    TR::SimpleRegex *getBreakOnPrint() { return _breakOnPrint; }
+
+    TR::SimpleRegex *getVerboseOptTransformationsRegex() { return _verboseOptTransformationsRegex; }
+
+    TR::SimpleRegex *getPackedTestRegex() { return _packedTest; }
+
+    TR::SimpleRegex *getClassesWithFoldableFinalFields() { return _classesWithFolableFinalFields; }
+
+    TR::SimpleRegex *getDisabledIdiomPatterns() { return _disabledIdiomPatterns; }
+
+    TR::SimpleRegex *getSuppressEARegex() { return _suppressEA; }
+
+    TR::SimpleRegex *getDontFoldStaticFinalFields() { return _dontFoldStaticFinalFields; }
+
+    char *getInduceOSR() { return _induceOSR; }
+
+    int32_t getBigCalleeThreshold() const { return _bigCalleeThreshold; }
+
+    int32_t getBigCalleeThresholdForColdCallsAtWarm() const { return _bigCalleeThresholdForColdCallsAtWarm; }
+
+    int32_t getBigCalleeFrequencyCutoffAtWarm() const { return _bigCalleeFreqCutoffAtWarm; }
+
+    int32_t getBigCalleeHotOptThreshold() const { return _bigCalleeHotOptThreshold; }
+
+    int32_t getBigCalleeThresholdForColdCallsAtHot() const { return _bigCalleeThresholdForColdCallsAtHot; }
+
+    int32_t getBigCalleeFrequencyCutoffAtHot() const { return _bigCalleeFreqCutoffAtHot; }
+
+    int32_t getBigCalleeScorchingOptThreshold() const { return _bigCalleeScorchingOptThreshold; }
+
+    void setBigCalleeScorchingOptThreshold(int32_t t) { _bigCalleeScorchingOptThreshold = t; }
+
+    int32_t getLargeCompiledMethodExemptionFreqCutoff() const { return _largeCompiledMethodExemptionFreqCutoff; }
+
+    int32_t getMaxSzForVPInliningWarm() const { return _maxSzForVPInliningWarm; }
+
+    int32_t getInlinerVeryLargeCompiledMethodThreshold() const { return _inlinerVeryLargeCompiledMethodThreshold; }
+
+    int32_t getInlinerVeryLargeCompiledMethodFaninThreshold() const
+    {
+        return _inlinerVeryLargeCompiledMethodFaninThreshold;
+    }
+
+    void setOption(uint32_t mask, bool b = true)
+    {
+        if (b)
+            _options[mask & TR_OWM] |= (mask & ~TR_OWM);
+        else
+            _options[mask & TR_OWM] &= ~(mask & ~TR_OWM);
+    }
+
+    static void setOptionInAllOptionSets(uint32_t mask, bool b = true);
+    void setFixedOptLevel(int32_t level);
+    void setTarget();
+
+    void setAllowRecompilation(bool b) { _allowRecompilation = b; }
+
+    void setQuickStart();
+    void setConservativeQuickStart();
+    void setAggressiveQuickStart();
+    void setGlobalAggressiveAOT();
+    void setLocalAggressiveAOT();
+    void setInlinerOptionsForAggressiveAOT();
+    void setConservativeDefaultBehavior();
+    void setAggressiveThroughput();
+
+    static bool getCountsAreProvidedByUser() { return _countsAreProvidedByUser; } // set very late in setCounts()
+
+    static TR_YesNoMaybe startupTimeMatters() { return _startupTimeMatters; } // set very late in setCounts()
+
+    int32_t getInitialCount() { return _initialCount; }
+
+    void setInitialCount(int32_t n) { _initialCount = n; }
+
+    int32_t getInitialBCount() { return _initialBCount; }
+
+    void setInitialBCount(int32_t n) { _initialBCount = n; }
+
+    int32_t getInitialMILCount() { return _initialMILCount; }
+
+    void setInitialMILCount(int32_t n) { _initialMILCount = n; }
+
+    int32_t getInitialColdRunCount() { return _initialColdRunCount; }
+
+    int32_t getInitialColdRunBCount() { return _initialColdRunBCount; }
+
+    static int32_t getHighCodeCacheOccupancyCount() { return _highCodeCacheOccupancyCount; }
+
+    static int32_t getHighCodeCacheOccupancyBCount() { return _highCodeCacheOccupancyBCount; }
+
+    int32_t getMaxSpreadCountLoopless() { return _maxSpreadCountLoopless; }
+
+    int32_t getMaxSpreadCountLoopy() { return _maxSpreadCountLoopy; }
+
+    int32_t getGCRCount() { return _GCRCount; }
+
+    void setGCRCount(int32_t v) { _GCRCount = v; }
+
+    int32_t getGCRDecCount() { return _GCRDecCount; }
+
+    int32_t getGCRResetCount() { return _GCRResetCount; }
+
+    bool getInsertGCRTrees() { return _insertGCRTrees; }
+
+    void setInsertGCRTrees() { _insertGCRTrees = true; }
+
+    int32_t getStackPCDumpNumberOfBuffers() { return _stackPCDumpNumberOfBuffers; }
+
+    int32_t getStackPCDumpNumberOfFrames() { return _stackPCDumpNumberOfFrames; }
+
+    int32_t get390StackBufferSize() { return _test390StackBuffer; }
+
+    int32_t get390LitPoolBufferSize() { return _test390LitPoolBuffer; }
+
+    int32_t getInitialSCount() { return _initialSCount; }
+
+    int32_t getEnableSCHintFlags() { return _enableSCHintFlags; }
+
+    int32_t getInlineCntrCalleeTooBigBucketSize() { return _inlineCntrCalleeTooBigBucketSize; }
+
+    int32_t getInlineCntrColdAndNotTinyBucketSize() { return _inlineCntrColdAndNotTinyBucketSize; }
+
+    int32_t getInlineCntrWarmCalleeTooBigBucketSize() { return _inlineCntrWarmCalleeTooBigBucketSize; }
+
+    int32_t getInlineCntrRanOutOfBudgetBucketSize() { return _inlineCntrRanOutOfBudgetBucketSize; }
+
+    int32_t getInlineCntrCalleeTooDeepBucketSize() { return _inlineCntrCalleeTooDeepBucketSize; }
+
+    int32_t getInlineCntrWarmCallerHasTooManyNodesBucketSize()
+    {
+        return _inlineCntrWarmCallerHasTooManyNodesBucketSize;
+    }
+
+    int32_t getInlineCntrWarmCalleeHasTooManyNodesBucketSize()
+    {
+        return _inlineCntrWarmCalleeHasTooManyNodesBucketSize;
+    }
+
+    int32_t getInlineCntrDepthExceededBucketSize() { return _inlineCntrDepthExceededBucketSize; }
+
+    int32_t getInlineCntrAllBucketSize() { return _inlineCntrAllBucketSize; }
+
+    int32_t getDelayCompileWithCPUBurn() const { return _delayCompileWithCPUBurn; }
+
+    int32_t getMaxInlinedCalls() { return _maxInlinedCalls; }
+
+    int32_t getDumbInlinerBytecodeSizeMaxCutoff() const { return _dumbInlinerBytecodeSizeMaxCutoff; }
+
+    int32_t getDumbInlinerBytecodeSizeMinCutoff() const { return _dumbInlinerBytecodeSizeMinCutoff; }
+
+    int32_t getDumbInlinerBytecodeSizeCutoff() const { return _dumbInlinerBytecodeSizeCutoff; }
+
+    void setDumbInlinerBytecodeSizeCutoff(int32_t n) { _dumbInlinerBytecodeSizeCutoff = n; }
+
+    int32_t getDumbInlinerBytecodeSizeDivisor() const { return _dumbInlinerBytecodeSizeDivisor; }
+
+    int32_t getTrivialInlinerMaxSize() const { return _trivialInlinerMaxSize; }
+
+    void setTrivialInlinerMaxSize(int32_t n) { _trivialInlinerMaxSize = n; }
+
+    int32_t getInlinerArgumentHeuristicFraction() const;
+
+    int32_t getInlinerVeryColdBorderFrequencyAtCold() { return _inlinerVeryColdBorderFrequencyAtCold; }
+
+    void setInlinerVeryColdBorderFrequencyAtCold(int32_t n) { _inlinerVeryColdBorderFrequencyAtCold = n; }
+
+    int32_t getInlinerBorderFrequency() { return _inlinerBorderFrequency; }
+
+    void setInlinerBorderFrequency(int32_t n) { _inlinerBorderFrequency = n; }
+
+    int32_t getInlinerColdBorderFrequency() { return _inlinerColdBorderFrequency; }
+
+    void setInlinerColdBorderFrequency(int32_t n) { _inlinerColdBorderFrequency = n; }
+
+    int32_t getInlinerVeryColdBorderFrequency() { return _inlinerVeryColdBorderFrequency; }
+
+    void setInlinerVeryColdBorderFrequency(int32_t n) { _inlinerVeryColdBorderFrequency = n; }
+
+    int32_t getInlinerCGBorderFrequency() { return _inlinerCGBorderFrequency; }
+
+    void setInlinerCGBorderFrequency(int32_t n) { _inlinerCGBorderFrequency = n; }
+
+    int32_t getInlinerCGColdBorderFrequency() { return _inlinerCGColdBorderFrequency; }
+
+    void setInlinerCGColdBorderFrequency(int32_t n) { _inlinerCGColdBorderFrequency = n; }
+
+    int32_t getInlinerCGVeryColdBorderFrequency() { return _inlinerCGVeryColdBorderFrequency; }
+
+    void setInlinerCGVeryColdBorderFrequency(int32_t n) { _inlinerCGVeryColdBorderFrequency = n; }
+
+    int32_t getAlwaysWorthInliningThreshold() const { return _alwaysWorthInliningThreshold; }
+
+    int32_t getMaxLimitedGRACandidates() { return _maxLimitedGRACandidates; }
+
+    int32_t getMaxLimitedGRARegs() { return _maxLimitedGRARegs; }
+
+    int32_t getNumLimitedGRARegsWithheld();
+
+    int32_t getProfilingCompNodecountThreshold() { return _profilingCompNodecountThreshold; }
+
+    int32_t getLoopyAsyncCheckInsertionMaxEntryFreq() { return _loopyAsyncCheckInsertionMaxEntryFreq; }
+
+    int32_t getEdoRecompSizeThreshold() { return _edoRecompSizeThreshold; }
+
+    int32_t getEdoRecompSizeThresholdInStartupMode() { return _edoRecompSizeThresholdInStartupMode; }
+
+    int32_t getCatchBlockCounterThreshold() { return _catchBlockCounterThreshold; }
+
+    int32_t getArraycopyRepMovsByteArrayThreshold() { return _arraycopyRepMovsByteArrayThreshold; }
+
+    int32_t getArraycopyRepMovsCharArrayThreshold() { return _arraycopyRepMovsCharArrayThreshold; }
+
+    int32_t getArraycopyRepMovsIntArrayThreshold() { return _arraycopyRepMovsIntArrayThreshold; }
+
+    int32_t getArraycopyRepMovsLongArrayThreshold() { return _arraycopyRepMovsLongArrayThreshold; }
+
+    int32_t getArraycopyRepMovsReferenceArrayThreshold() { return _arraycopyRepMovsReferenceArrayThreshold; }
 
 public:
+    static void shutdown(TR_FrontEnd *fe);
 
-   static void shutdown(TR_FrontEnd * fe);
+    static int32_t getNumUsableCompilationThreads() { return _numUsableCompilationThreads; }
 
-   static int32_t getNumUsableCompilationThreads() { return _numUsableCompilationThreads; }
-   static int32_t getNumAllocatedCompilationThreads() { return _numAllocatedCompilationThreads; }
+    static int32_t getNumAllocatedCompilationThreads() { return _numAllocatedCompilationThreads; }
 
-   static int32_t getTrampolineSpacePercentage() { return _trampolineSpacePercentage; }
-   static size_t getScratchSpaceLimit() { return _scratchSpaceLimit; }
-   static void setScratchSpaceLimit(size_t newScratchSpaceLimit) { _scratchSpaceLimit = newScratchSpaceLimit; }
-   static size_t getScratchSpaceLowerBound() { return _scratchSpaceLowerBound; }
-   static void setScratchSpaceLowerBound(size_t scratchSpaceLowerBound) { _scratchSpaceLowerBound = scratchSpaceLowerBound; }
+    static int32_t getTrampolineSpacePercentage() { return _trampolineSpacePercentage; }
 
+    static size_t getScratchSpaceLimit() { return _scratchSpaceLimit; }
 
-   static int32_t getAggressivityLevel() { return _aggressivenessLevel; }
-   static int32_t getDeterministicMode() { return _deterministicMode; }
+    static void setScratchSpaceLimit(size_t newScratchSpaceLimit) { _scratchSpaceLimit = newScratchSpaceLimit; }
 
-   static bool    _fullyInitialized;
-   static bool    _canJITCompile;
+    static size_t getScratchSpaceLowerBound() { return _scratchSpaceLowerBound; }
 
-   static bool    _postRestoreProcessing;
+    static void setScratchSpaceLowerBound(size_t scratchSpaceLowerBound)
+    {
+        _scratchSpaceLowerBound = scratchSpaceLowerBound;
+    }
 
-   static int32_t _samplingFrequency;
+    static int32_t getAggressivityLevel() { return _aggressivenessLevel; }
 
-   static int32_t _sampleInterval;
-   static int32_t _sampleThreshold;
-   static int32_t _startupMethodDontDowngradeThreshold;
+    static int32_t getDeterministicMode() { return _deterministicMode; }
 
-   static int32_t _tocSizeInKB;
+    static bool _fullyInitialized;
+    static bool _canJITCompile;
 
-   static int32_t _aggressiveRecompilationChances;
-   static int32_t _bigAppThreshold; // loaded classes
+    static bool _postRestoreProcessing;
 
-   static int32_t _coldUpgradeSampleThreshold;
+    static int32_t _samplingFrequency;
 
-   static int32_t _interpreterSamplingDivisorInStartupMode;
+    static int32_t _sampleInterval;
+    static int32_t _sampleThreshold;
+    static int32_t _startupMethodDontDowngradeThreshold;
 
-   static int32_t _numVecRegsToLock;
-   static int32_t _hotFieldThreshold; // a number between 0 and 100
+    static int32_t _tocSizeInKB;
 
-   static int32_t _iprofilerDialDownThreshold;
+    static int32_t _aggressiveRecompilationChances;
+    static int32_t _bigAppThreshold; // loaded classes
 
-   static int32_t _maxNumPrexAssumptions;
-   static int32_t _maxNumVisitedSubclasses;
-   static int32_t _minProfiledCheckcastFrequency; // as a percentage
-   static int32_t _lowCodeCacheThreshold; // Turn off Iprofiler if available code cache space is lower than this value
-   static int32_t _highCodeCacheOccupancyPercentage;
+    static int32_t _coldUpgradeSampleThreshold;
 
+    static int32_t _interpreterSamplingDivisorInStartupMode;
 
-   static uint32_t _memExpensiveCompThreshold; // threshold for when compilations are considered memory hungry
-   static uint32_t _cpuExpensiveCompThreshold; // threshold for when compilations are considered cpu hungry
+    static int32_t _numVecRegsToLock;
+    static int32_t _hotFieldThreshold; // a number between 0 and 100
 
+    static int32_t _iprofilerDialDownThreshold;
 
-   static int32_t _maxPeekedBytecodeSize;
+    static int32_t _maxNumPrexAssumptions;
+    static int32_t _maxNumVisitedSubclasses;
+    static int32_t _minProfiledCheckcastFrequency; // as a percentage
+    static int32_t _lowCodeCacheThreshold; // Turn off Iprofiler if available code cache space is lower than this value
+    static int32_t _highCodeCacheOccupancyPercentage;
 
-   static int32_t _queueWeightThresholdForAppThreadYield; // used only for LINUX; app threads will sleep sometimes
-   static int32_t _queueWeightThresholdForStarvation;
+    static uint32_t _memExpensiveCompThreshold; // threshold for when compilations are considered memory hungry
+    static uint32_t _cpuExpensiveCompThreshold; // threshold for when compilations are considered cpu hungry
 
+    static int32_t _maxPeekedBytecodeSize;
 
-   static int32_t INLINE_fanInCallGraphFactor;
-   static int32_t INLINE_calleeToBig;
-   static int32_t INLINE_calleeToDeep;
-   static int32_t INLINE_calleeHasTooManyNodes;
-   static int32_t INLINE_ranOutOfBudget;
-   static int64_t INLINE_calleeToBigSum;
-   static int64_t INLINE_calleeToDeepSum;
-   static int64_t INLINE_calleeHasTooManyNodesSum;
+    static int32_t _queueWeightThresholdForAppThreadYield; // used only for LINUX; app threads will sleep sometimes
+    static int32_t _queueWeightThresholdForStarvation;
 
-   static int32_t _inlinerVeryLargeCompiledMethodAdjustFactor;
+    static int32_t INLINE_fanInCallGraphFactor;
+    static int32_t INLINE_calleeToBig;
+    static int32_t INLINE_calleeToDeep;
+    static int32_t INLINE_calleeHasTooManyNodes;
+    static int32_t INLINE_ranOutOfBudget;
+    static int64_t INLINE_calleeToBigSum;
+    static int64_t INLINE_calleeToDeepSum;
+    static int64_t INLINE_calleeHasTooManyNodesSum;
 
-   static int32_t _numUsableCompilationThreads;
-   static int32_t _numAllocatedCompilationThreads;
+    static int32_t _inlinerVeryLargeCompiledMethodAdjustFactor;
 
-   static int32_t _trampolineSpacePercentage;
+    static int32_t _numUsableCompilationThreads;
+    static int32_t _numAllocatedCompilationThreads;
 
-   static int32_t _traceFileLength;
+    static int32_t _trampolineSpacePercentage;
 
-   static size_t _scratchSpaceLimit;
-   static size_t _scratchSpaceLowerBound;
-   static uint32_t _minBytesToLeaveAllocatedInSharedPool; // 0 to disable the feature and revert to old behavior
-   static uint32_t _maxBytesToLeaveAllocatedInSharedPool; // 0 to disable the feature and revert to old behavior
+    static int32_t _traceFileLength;
 
-   static int32_t _classExtendRatSize;
-   static int32_t _methodOverrideRatSize;
-   static int32_t _classRedefinitionUPICRatSize;
+    static size_t _scratchSpaceLimit;
+    static size_t _scratchSpaceLowerBound;
+    static uint32_t _minBytesToLeaveAllocatedInSharedPool; // 0 to disable the feature and revert to old behavior
+    static uint32_t _maxBytesToLeaveAllocatedInSharedPool; // 0 to disable the feature and revert to old behavior
 
+    static int32_t _classExtendRatSize;
+    static int32_t _methodOverrideRatSize;
+    static int32_t _classRedefinitionUPICRatSize;
 
-   static int32_t  _profilingCompNodecountThreshold;
+    static int32_t _profilingCompNodecountThreshold;
 
-   static int32_t _aggressivenessLevel;
+    static int32_t _aggressivenessLevel;
 
-   // Exploitation of idle cpu
-   static int32_t _numIProfiledCallsToTriggerLowPriComp;
-   static int32_t _qsziMaxToTrackLowPriComp;
-   static int32_t _delayToEnableIdleCpuExploitation;
-   static int32_t _countPercentageForEarlyCompilation;
+    // Exploitation of idle cpu
+    static int32_t _numIProfiledCallsToTriggerLowPriComp;
+    static int32_t _qsziMaxToTrackLowPriComp;
+    static int32_t _delayToEnableIdleCpuExploitation;
+    static int32_t _countPercentageForEarlyCompilation;
 
-   static int32_t _sampleDensityBaseThreshold;
-   static int32_t _sampleDensityIncrementThreshold;
+    static int32_t _sampleDensityBaseThreshold;
+    static int32_t _sampleDensityIncrementThreshold;
 
-   static int32_t _processOptionsStatus;
+    static int32_t _processOptionsStatus;
 
-   static int32_t _abstractTimeGracePeriod;
-   static int32_t _abstractTimeToReduceInliningAggressiveness;
+    static int32_t _abstractTimeGracePeriod;
+    static int32_t _abstractTimeToReduceInliningAggressiveness;
 
-   static int32_t _compThreadCPUEntitlement;
-   static int32_t _minSleepTimeMsForCompThrottling;
-   static int32_t _maxSleepTimeMsForCompThrottling;
-   static int32_t _startThrottlingTime; // ms
-   static int32_t _stopThrottlingTime;  // ms. 0 means no expiration time
+    static int32_t _compThreadCPUEntitlement;
+    static int32_t _minSleepTimeMsForCompThrottling;
+    static int32_t _maxSleepTimeMsForCompThrottling;
+    static int32_t _startThrottlingTime; // ms
+    static int32_t _stopThrottlingTime; // ms. 0 means no expiration time
 
-   static int32_t _deterministicMode;
-   static int32_t _TransactionalMemoryRetryCount;
-   static int32_t _minimalNumberOfTreeTopsInsideTMMonitor;
-   static int32_t _userSpaceVirtualMemoryMB;
-   static uint32_t _virtualMemoryCheckFrequencySec;
-   static uint32_t _cpuUsageCircularBufferUpdateFrequencySec;
-   static uint32_t _cpuUsageCircularBufferSize;
+    static int32_t _deterministicMode;
+    static int32_t _TransactionalMemoryRetryCount;
+    static int32_t _minimalNumberOfTreeTopsInsideTMMonitor;
+    static int32_t _userSpaceVirtualMemoryMB;
+    static uint32_t _virtualMemoryCheckFrequencySec;
+    static uint32_t _cpuUsageCircularBufferUpdateFrequencySec;
+    static uint32_t _cpuUsageCircularBufferSize;
 
-   // Debug counter insertion options
-   static TR::SimpleRegex *_debugCounterInsertByteCode;
-   static TR::SimpleRegex *_debugCounterInsertJittedBody;
-   static TR::SimpleRegex *_debugCounterInsertMethod;
+    // Debug counter insertion options
+    static TR::SimpleRegex *_debugCounterInsertByteCode;
+    static TR::SimpleRegex *_debugCounterInsertJittedBody;
+    static TR::SimpleRegex *_debugCounterInsertMethod;
 
-   static TR_Debug * getDebug() { return _debug; }
-   static bool createDebug();
-   static TR_Debug * findOrCreateDebug();
+    static TR_Debug *getDebug() { return _debug; }
 
-   uintptr_t           getGcCardSize()   { return _gcCardSize; }
-   uintptr_t           getHeapBase()     { return _heapBase; }
-   uintptr_t           getHeapTop()      { return _heapTop; }
+    static bool createDebug();
+    static TR_Debug *findOrCreateDebug();
 
-   void setGcCardSize(uintptr_t g)       { _gcCardSize = g; }
-   void setHeapBase(uintptr_t g)         { _heapBase = g; }
-   void setHeapTop(uintptr_t g)          { _heapTop = g; }
+    uintptr_t getGcCardSize() { return _gcCardSize; }
 
-   void setIsVariableHeapBaseForBarrierRange0(uintptr_t b) { _isVariableHeapBaseForBarrierRange0 = b ? true : false; }
-   bool isVariableHeapBaseForBarrierRange0() { return _isVariableHeapBaseForBarrierRange0; }
+    uintptr_t getHeapBase() { return _heapBase; }
 
-   void setIsVariableHeapSizeForBarrierRange0(uintptr_t b) { _isVariableHeapSizeForBarrierRange0 = b ? true : false; }
-   bool isVariableHeapSizeForBarrierRange0() { return _isVariableHeapSizeForBarrierRange0; }
+    uintptr_t getHeapTop() { return _heapTop; }
 
-   void setIsVariableActiveCardTableBase(uintptr_t b) { _isVariableActiveCardTableBase = b ? true : false; }
-   bool isVariableActiveCardTableBase() { return _isVariableActiveCardTableBase; }
+    void setGcCardSize(uintptr_t g) { _gcCardSize = g; }
 
-   void setHeapAddressToCardAddressShift(uintptr_t s) { _heapAddressToCardAddressShift = (int32_t)s; }
-   int32_t getHeapAddressToCardAddressShift() { return (int32_t)_heapAddressToCardAddressShift; }
+    void setHeapBase(uintptr_t g) { _heapBase = g; }
 
-   void setHeapSizeForBarrierRange0(uintptr_t b) { _heapSizeForBarrierRange0 = b; }
-   uintptr_t getHeapSizeForBarrierRange0() { return _heapSizeForBarrierRange0; }
+    void setHeapTop(uintptr_t g) { _heapTop = g; }
 
-   void setHeapBaseForBarrierRange0(uintptr_t b) { _heapBaseForBarrierRange0 = b; }
-   uintptr_t getHeapBaseForBarrierRange0() { return _heapBaseForBarrierRange0; }
+    void setIsVariableHeapBaseForBarrierRange0(uintptr_t b) { _isVariableHeapBaseForBarrierRange0 = b ? true : false; }
 
-   void setActiveCardTableBase(uintptr_t b) { _activeCardTableBase = b; }
-   uintptr_t getActiveCardTableBase() { return _activeCardTableBase; }
+    bool isVariableHeapBaseForBarrierRange0() { return _isVariableHeapBaseForBarrierRange0; }
 
-   void setRealTimeGC(bool m);
-   bool realTimeGC();
+    void setIsVariableHeapSizeForBarrierRange0(uintptr_t b) { _isVariableHeapSizeForBarrierRange0 = b ? true : false; }
 
-   static void setSharedClassCache(bool c){ _sharedClassCache = c; }
-   inline static bool sharedClassCache()  { return _sharedClassCache; }
+    bool isVariableHeapSizeForBarrierRange0() { return _isVariableHeapSizeForBarrierRange0; }
 
-   static TR_Hotness getInitialHotnessLevel(bool methodHasLoops);
+    void setIsVariableActiveCardTableBase(uintptr_t b) { _isVariableActiveCardTableBase = b ? true : false; }
 
-   bool getOptLevelDowngraded() const { return _optLevelDowngraded; }
-   static const char *getCompilationStrategyName() { return _compilationStrategyName; }
+    bool isVariableActiveCardTableBase() { return _isVariableActiveCardTableBase; }
 
-/**   \brief Returns a threshold on the profiling method invocations to trip recompilation
- */
-   int32_t getJProfilingMethodRecompThreshold() { return _jProfilingMethodRecompThreshold; }
-/**   \brief Returns a base threshold for loop to trip recompilation
- */
-   int32_t getJProfilingLoopRecompThreshold() { return _jProfilingLoopRecompThreshold; }
+    void setHeapAddressToCardAddressShift(uintptr_t s) { _heapAddressToCardAddressShift = (int32_t)s; }
 
-   inline static float getMinProfiledCheckcastFrequency() { return _minProfiledCheckcastFrequency/((float)100.0); }
-   static bool isQuickstartDetected() { return _quickstartDetected; }
-   void disableCHOpts(); // disable CHOpts, but also IPA and prex which depend on the chtable
+    int32_t getHeapAddressToCardAddressShift() { return (int32_t)_heapAddressToCardAddressShift; }
 
-   const char *getObjectFileName() { return _objectFileName; }
+    void setHeapSizeForBarrierRange0(uintptr_t b) { _heapSizeForBarrierRange0 = b; }
 
-   /**
-    * \brief API to process options post restore (from a checkpoint).
-    *
-    * \param jitConfig Pointer to a JitConfig instance.
-    * \param options Pointer to the options string to be parsed and processed.
-    * \param optBase Pointer to the TR::Options object that will represent the parsed options.
-    * \param isAOT bool to represent whether optBase represents relocatable compilation options.
-    *
-    * \return pointer to the end of the options string if success, or to the invalid option
-    */
-   static const char *processOptionSetPostRestore(void *jitConfig, const char *options, TR::Options *optBase, bool isAOT);
+    uintptr_t getHeapSizeForBarrierRange0() { return _heapSizeForBarrierRange0; }
+
+    void setHeapBaseForBarrierRange0(uintptr_t b) { _heapBaseForBarrierRange0 = b; }
+
+    uintptr_t getHeapBaseForBarrierRange0() { return _heapBaseForBarrierRange0; }
+
+    void setActiveCardTableBase(uintptr_t b) { _activeCardTableBase = b; }
+
+    uintptr_t getActiveCardTableBase() { return _activeCardTableBase; }
+
+    void setRealTimeGC(bool m);
+    bool realTimeGC();
+
+    static void setSharedClassCache(bool c) { _sharedClassCache = c; }
+
+    inline static bool sharedClassCache() { return _sharedClassCache; }
+
+    static TR_Hotness getInitialHotnessLevel(bool methodHasLoops);
+
+    bool getOptLevelDowngraded() const { return _optLevelDowngraded; }
+
+    static const char *getCompilationStrategyName() { return _compilationStrategyName; }
+
+    /**   \brief Returns a threshold on the profiling method invocations to trip recompilation
+     */
+    int32_t getJProfilingMethodRecompThreshold() { return _jProfilingMethodRecompThreshold; }
+
+    /**   \brief Returns a base threshold for loop to trip recompilation
+     */
+    int32_t getJProfilingLoopRecompThreshold() { return _jProfilingLoopRecompThreshold; }
+
+    inline static float getMinProfiledCheckcastFrequency() { return _minProfiledCheckcastFrequency / ((float)100.0); }
+
+    static bool isQuickstartDetected() { return _quickstartDetected; }
+
+    void disableCHOpts(); // disable CHOpts, but also IPA and prex which depend on the chtable
+
+    const char *getObjectFileName() { return _objectFileName; }
+
+    /**
+     * \brief API to process options post restore (from a checkpoint).
+     *
+     * \param jitConfig Pointer to a JitConfig instance.
+     * \param options Pointer to the options string to be parsed and processed.
+     * \param optBase Pointer to the TR::Options object that will represent the parsed options.
+     * \param isAOT bool to represent whether optBase represents relocatable compilation options.
+     *
+     * \return pointer to the end of the options string if success, or to the invalid option
+     */
+    static const char *processOptionSetPostRestore(void *jitConfig, const char *options, TR::Options *optBase,
+        bool isAOT);
 
 protected:
-   void  jitPreProcess();
-   bool  fePreProcess(void *base);
-   bool  jitPostProcess();
-   bool  fePostProcessAOT(void *base);
-   bool  fePostProcessJIT(void *base);
-   bool  jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig);
-   bool  feLatePostProcess(void *base, TR::OptionSet *optionSet);
-   void  addOptionSet(TR::OptionSet *o) {o->setNext(_optionSets);_optionSets = o;}
-   void  addPostRestoreOptionSet(TR::OptionSet *o) {o->setNext(_postRestoreOptionSets);_postRestoreOptionSets = o;}
-   void  setAggressivenessLevelOpts();
+    void jitPreProcess();
+    bool fePreProcess(void *base);
+    bool jitPostProcess();
+    bool fePostProcessAOT(void *base);
+    bool fePostProcessJIT(void *base);
+    bool jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig);
+    bool feLatePostProcess(void *base, TR::OptionSet *optionSet);
+
+    void addOptionSet(TR::OptionSet *o)
+    {
+        o->setNext(_optionSets);
+        _optionSets = o;
+    }
+
+    void addPostRestoreOptionSet(TR::OptionSet *o)
+    {
+        o->setNext(_postRestoreOptionSets);
+        _postRestoreOptionSets = o;
+    }
+
+    void setAggressivenessLevelOpts();
 
 private:
-   friend class OMR::Compilation;
-   friend class ::TR_Debug;
+    friend class OMR::Compilation;
+    friend class ::TR_Debug;
 
-   template <typename Enum, int NUM_FLAGS> class OptionFlagArray
-      {
-      // It is important not to add any more fields to this, because sometimes ordinary option
-      // words are typecast to one of these (eg. TR_JitPrivateConfig->verboseFlags).
-      //
-      uint64_t _words[(NUM_FLAGS+63)/64];
+    template<typename Enum, int NUM_FLAGS> class OptionFlagArray {
+        // It is important not to add any more fields to this, because sometimes ordinary option
+        // words are typecast to one of these (eg. TR_JitPrivateConfig->verboseFlags).
+        //
+        uint64_t _words[(NUM_FLAGS + 63) / 64];
 
-      inline uint64_t &word(int flagIndex){ return _words[flagIndex / 64]; }
-      inline uint64_t  bit (int flagIndex){ return  ((uint64_t)1) << (flagIndex % 64); }
+        inline uint64_t &word(int flagIndex) { return _words[flagIndex / 64]; }
 
-      public:
-      OptionFlagArray(){ memset(_words, 0, sizeof(_words)); }
-      void operator=(const OptionFlagArray &other){ memcpy(_words, other._words, sizeof(_words)); }
+        inline uint64_t bit(int flagIndex) { return ((uint64_t)1) << (flagIndex % 64); }
 
-      bool isEmpty()
-         {
-         for (int i = 0; i < sizeof(_words) / sizeof(_words[0]); i++)
-            if (_words[i])
-               return false;
-         return true;
-         }
+    public:
+        OptionFlagArray() { memset(_words, 0, sizeof(_words)); }
 
-      bool isSet(int  flagIndex){ return (word(flagIndex) &   bit(flagIndex)) != 0; }
-      void   set(int  flagIndex){         word(flagIndex) |=  bit(flagIndex); }
-      void reset(int  flagIndex){         word(flagIndex) &= ~bit(flagIndex); }
+        void operator=(const OptionFlagArray &other) { memcpy(_words, other._words, sizeof(_words)); }
 
-      bool isSet(Enum flagIndex){ return isSet((int)flagIndex); }
-      void   set(Enum flagIndex){   set((int)flagIndex); }
-      void reset(Enum flagIndex){ reset((int)flagIndex); }
+        bool isEmpty()
+        {
+            for (int i = 0; i < sizeof(_words) / sizeof(_words[0]); i++)
+                if (_words[i])
+                    return false;
+            return true;
+        }
 
-      void maskWord(int wordIndex, uint64_t mask){ _words[wordIndex] |= mask; }
-      void replaceWord(int wordIndex, uint64_t newValue){ _words[wordIndex] = newValue; }
-      };
-   typedef OptionFlagArray<TR_VerboseFlags, TR_NumVerboseOptions> VerboseOptionFlagArray;
+        bool isSet(int flagIndex) { return (word(flagIndex) & bit(flagIndex)) != 0; }
 
-   static bool validateOptionsTables(void *feBase, TR_FrontEnd *fe);
+        void set(int flagIndex) { word(flagIndex) |= bit(flagIndex); }
 
-   static bool compareOptionsForBinarySearch(const TR::OptionTable &a, const TR::OptionTable &b);
+        void reset(int flagIndex) { word(flagIndex) &= ~bit(flagIndex); }
 
-   static const char *processOptionSet(const char *options, const char *envOptions, TR::Options *jitBase, bool isAOT);
-   static const char *processOptionSet(const char *options, const char *envOptions, TR::OptionSet *optionSet);
-   static const char *processOptionSet(const char *options, TR::OptionSet *optionSet, void *jitBase, bool isAOT);
-   static const char *processOption(const char *option, TR::OptionTable *table, void *base, int32_t numEntries, TR::OptionSet *optionSet);
-          void  printOptions(const char *options, const char *envOptions);
+        bool isSet(Enum flagIndex) { return isSet((int)flagIndex); }
 
-          bool  showOptionsInEffect();
-          bool  showPID();
+        void set(Enum flagIndex) { set((int)flagIndex); }
 
-   void setAOTCompile(bool isAOT);
-   bool getAOTCompile();
+        void reset(Enum flagIndex) { reset((int)flagIndex); }
 
-   TR_MCTLogs *    getLogListForOtherCompThreads() { return _logListForOtherCompThreads; }
-   void            setLogListForOtherCompThreads(TR_MCTLogs *l) { _logListForOtherCompThreads = l; }
-   TR_MCTLogs *    findLogFileForCompilationThread(int32_t compThreadID);
-   void            setLogForCompilationThread(int32_t compThreadID, TR::Options *mainOptions);
-   static void     safelyCloseLogs(TR::Options *options, TR_MCTLogs * &closedLogs, TR_FrontEnd * fe);
-   static void     closeLogsForOtherCompilationThreads(TR_FrontEnd * fe);
+        void maskWord(int wordIndex, uint64_t mask) { _words[wordIndex] |= mask; }
+
+        void replaceWord(int wordIndex, uint64_t newValue) { _words[wordIndex] = newValue; }
+    };
+
+    typedef OptionFlagArray<TR_VerboseFlags, TR_NumVerboseOptions> VerboseOptionFlagArray;
+
+    static bool validateOptionsTables(void *feBase, TR_FrontEnd *fe);
+
+    static bool compareOptionsForBinarySearch(const TR::OptionTable &a, const TR::OptionTable &b);
+
+    static const char *processOptionSet(const char *options, const char *envOptions, TR::Options *jitBase, bool isAOT);
+    static const char *processOptionSet(const char *options, const char *envOptions, TR::OptionSet *optionSet);
+    static const char *processOptionSet(const char *options, TR::OptionSet *optionSet, void *jitBase, bool isAOT);
+    static const char *processOption(const char *option, TR::OptionTable *table, void *base, int32_t numEntries,
+        TR::OptionSet *optionSet);
+    void printOptions(const char *options, const char *envOptions);
+
+    bool showOptionsInEffect();
+    bool showPID();
+
+    void setAOTCompile(bool isAOT);
+    bool getAOTCompile();
+
+    TR_MCTLogs *getLogListForOtherCompThreads() { return _logListForOtherCompThreads; }
+
+    void setLogListForOtherCompThreads(TR_MCTLogs *l) { _logListForOtherCompThreads = l; }
+
+    TR_MCTLogs *findLogFileForCompilationThread(int32_t compThreadID);
+    void setLogForCompilationThread(int32_t compThreadID, TR::Options *mainOptions);
+    static void safelyCloseLogs(TR::Options *options, TR_MCTLogs *&closedLogs, TR_FrontEnd *fe);
+    static void closeLogsForOtherCompilationThreads(TR_FrontEnd *fe);
 
 protected:
-   void  openLogFile (int32_t idSuffix = -1);
-   static void  closeLogFile(TR_FrontEnd *fe, TR::FILE * file);
+    void openLogFile(int32_t idSuffix = -1);
+    static void closeLogFile(TR_FrontEnd *fe, TR::FILE *file);
 
 private:
-   // Standard option processing methods
+    // Standard option processing methods
 
-   // Set bit(s) defined by "mask" at offset "offset" from the base
-   //
-   static const char *setBit(const char *option, void *base, TR::OptionTable *entry);
+    // Set bit(s) defined by "mask" at offset "offset" from the base
+    //
+    static const char *setBit(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set verbose bits
-   //
-   static const char *setVerboseBits(const char *option, void *base, TR::OptionTable *entry);
-   static const char *setVerboseBitsInJitPrivateConfig(const char *option, void *base, TR::OptionTable *entry);
-   // Helper method used by the two methods above
-   static const char *setVerboseBitsHelper(const char *option, VerboseOptionFlagArray *verboseOptionFlags, uintptr_t defaultVerboseFlags);
+    // Set verbose bits
+    //
+    static const char *setVerboseBits(const char *option, void *base, TR::OptionTable *entry);
+    static const char *setVerboseBitsInJitPrivateConfig(const char *option, void *base, TR::OptionTable *entry);
+    // Helper method used by the two methods above
+    static const char *setVerboseBitsHelper(const char *option, VerboseOptionFlagArray *verboseOptionFlags,
+        uintptr_t defaultVerboseFlags);
 
-   //set hot field reduction algorithm for dynamicBreadthFirstScanOrdering
-   //
-   static const char *setHotFieldReductionAlgorithm(const char *option, void *base, TR::OptionTable *entry);
+    // set hot field reduction algorithm for dynamicBreadthFirstScanOrdering
+    //
+    static const char *setHotFieldReductionAlgorithm(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set samplingjprofiling bits
-   //
-   static const char *setSamplingJProfilingBits(const char* option, void *base, TR::OptionTable *entry);
+    // Set samplingjprofiling bits
+    //
+    static const char *setSamplingJProfilingBits(const char *option, void *base, TR::OptionTable *entry);
 
-   // Reset bit(s) defined by "mask" at offset "offset" from the base
-   //
-   static const char *resetBit(const char *option, void *base, TR::OptionTable *entry);
+    // Reset bit(s) defined by "mask" at offset "offset" from the base
+    //
+    static const char *resetBit(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set (pointer-sized) word at offset "offset" from the base to "value"
-   //
-   static const char *setValue(const char *option, void *base, TR::OptionTable *entry);
+    // Set (pointer-sized) word at offset "offset" from the base to "value"
+    //
+    static const char *setValue(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set 32-bit word at offset "offset" from the base to "value"
-   //
-   static const char *set32BitValue(const char *option, void *base, TR::OptionTable *entry);
+    // Set 32-bit word at offset "offset" from the base to "value"
+    //
+    static const char *set32BitValue(const char *option, void *base, TR::OptionTable *entry);
 
-   // Disable an optimization
-   //
-   static const char *disableOptimization(const char *option, void *base, TR::OptionTable *entry);
-   static const char *enableOptimization(const char *option, void *base, TR::OptionTable *entry);
+    // Disable an optimization
+    //
+    static const char *disableOptimization(const char *option, void *base, TR::OptionTable *entry);
+    static const char *enableOptimization(const char *option, void *base, TR::OptionTable *entry);
 
-   // Trace an optimization
-   //
-   static const char *traceOptimization(const char *option, void *base, TR::OptionTable *entry);
-   static const char *dontTraceOptimization(const char *option, void *base, TR::OptionTable *entry);
+    // Trace an optimization
+    //
+    static const char *traceOptimization(const char *option, void *base, TR::OptionTable *entry);
+    static const char *dontTraceOptimization(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a numeric value and set word at offset "offset"
-   // from the base to that value. That "word" is of 32bit or 64bit, depending on JIT.
-   //
-   static const char *setNumeric(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a numeric value and set word at offset "offset"
+    // from the base to that value. That "word" is of 32bit or 64bit, depending on JIT.
+    //
+    static const char *setNumeric(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a numeric value and set 32bit word at offset "offset"
-   // from the base to that value.
-   //
-   static const char *set32BitNumeric(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a numeric value and set 32bit word at offset "offset"
+    // from the base to that value.
+    //
+    static const char *set32BitNumeric(const char *option, void *base, TR::OptionTable *entry);
 
-  /**
-   * \brief Option processing function for 32 bit numeric fields stored in JitConfig
-   *
-   * Scans the option for a numeric value and set the 32-bit word at offset
-   * entry->param1 from the start of JitConfig to that value.
-   *
-   * \param [in] option  String representing the value of the option
-   * \param [in] base    Not used
-   * \param [in] entry   OptionTable entry specifying the offset of the JITConfig word
-   *                     32-bit that needs to be set
-   * \return A pointer to the option parameter
-   */
-   static const char *set32BitNumericInJitConfig(const char *option, void *base, TR::OptionTable *entry);
+    /**
+     * \brief Option processing function for 32 bit numeric fields stored in JitConfig
+     *
+     * Scans the option for a numeric value and set the 32-bit word at offset
+     * entry->param1 from the start of JitConfig to that value.
+     *
+     * \param [in] option  String representing the value of the option
+     * \param [in] base    Not used
+     * \param [in] entry   OptionTable entry specifying the offset of the JITConfig word
+     *                     32-bit that needs to be set
+     * \return A pointer to the option parameter
+     */
+    static const char *set32BitNumericInJitConfig(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a hexadecimal value and set 32bit word at offset "offset"
-   // from the base to that value.
-   //
-   static const char *set32BitHexadecimal(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a hexadecimal value and set 32bit word at offset "offset"
+    // from the base to that value.
+    //
+    static const char *set32BitHexadecimal(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a numeric value and set 32bit word at offset "offset"
-   // from the 'private' base (derived from the 'base' passed in) to that value.
-   //
-   static const char *setStaticNumericKBAdjusted(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a numeric value and set 32bit word at offset "offset"
+    // from the 'private' base (derived from the 'base' passed in) to that value.
+    //
+    static const char *setStaticNumericKBAdjusted(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a string and set the value at offset "offset"
-   // from the 'private' base (derived from the 'base' passed in) to that value.
-   //
-   static const char *setStringForPrivateBase(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a string and set the value at offset "offset"
+    // from the 'private' base (derived from the 'base' passed in) to that value.
+    //
+    static const char *setStringForPrivateBase(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a (possibly negative) numeric value and set 32bit
-   // word at offset "offset" from the base to that value.
-   //
-   static const char *set32BitSignedNumeric(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a (possibly negative) numeric value and set 32bit
+    // word at offset "offset" from the base to that value.
+    //
+    static const char *set32BitSignedNumeric(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a (possibly negative) numeric value and set 32bit
-   // word at offset "offset" from the base to that value.
-   //
-   static const char *set64BitSignedNumeric(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a (possibly negative) numeric value and set 32bit
+    // word at offset "offset" from the base to that value.
+    //
+    static const char *set64BitSignedNumeric(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a numeric value and set word at parm1 to that value
-   //
-   static const char *setStaticNumeric(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a numeric value and set word at parm1 to that value
+    //
+    static const char *setStaticNumeric(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a hexadecimal value and set word at parm1 to that value
-   //
-   static const char *setStaticHexadecimal(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a hexadecimal value and set word at parm1 to that value
+    //
+    static const char *setStaticHexadecimal(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set word at parm1 to 32-bit value at parm2
-   //
-   static const char *setStatic32BitValue(const char *option, void *base, TR::OptionTable *entry);
+    // Set word at parm1 to 32-bit value at parm2
+    //
+    static const char *setStatic32BitValue(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set bool at parm1 to value at parm2
-   //
-   static const char *setStaticBool(const char *option, void *base, TR::OptionTable *entry);
+    // Set bool at parm1 to value at parm2
+    //
+    static const char *setStaticBool(const char *option, void *base, TR::OptionTable *entry);
 
-   // Scan the option for a string value and copy the string to the address
-   // given by entry->parm1
-   //
-   static const char *setStaticString(const char *option, void *base, TR::OptionTable *entry);
+    // Scan the option for a string value and copy the string to the address
+    // given by entry->parm1
+    //
+    static const char *setStaticString(const char *option, void *base, TR::OptionTable *entry);
 
-   /**
-   * \brief Option processing function for strings
-   *
-   * Scans the option parameter for a string value and sets a pointer at
-   * offset entry->param1 from the start of 'base' to a copy of that string.
-   *
-   * \param [in] option  String representing the value of the option
-   * \param [in] base    Base address of the structure that gets modified.
-   *                     Typically an Options object.
-   * \param [in] entry   OptionTable entry specifying the offset of the
-   *                     string field that needs to be set
-   * \return A pointer to the option parameter
-   */
-   static const char *setString(const char *option, void *base, TR::OptionTable *entry);
+    /**
+     * \brief Option processing function for strings
+     *
+     * Scans the option parameter for a string value and sets a pointer at
+     * offset entry->param1 from the start of 'base' to a copy of that string.
+     *
+     * \param [in] option  String representing the value of the option
+     * \param [in] base    Base address of the structure that gets modified.
+     *                     Typically an Options object.
+     * \param [in] entry   OptionTable entry specifying the offset of the
+     *                     string field that needs to be set
+     * \return A pointer to the option parameter
+     */
+    static const char *setString(const char *option, void *base, TR::OptionTable *entry);
 
-   /**
-   * \brief Option processing function for string fields stored in JitConfig
-   *
-   * Scans the option parameter for a string value and sets a pointer at offset
-   * entry->param1 from the start of JitConfig to a copy of that string.
-   *
-   * \param [in] option  String representing the value of the option
-   * \param [in] base    Not used
-   * \param [in] entry   OptionTable entry specifying the offset of the JITConfig
-   *                     field (a char pointer) that needs to be set
-   * \return A pointer to the option parameter
-   */
-   static const char *setStringInJitConfig(const char *option, void *base, TR::OptionTable *entry);
+    /**
+     * \brief Option processing function for string fields stored in JitConfig
+     *
+     * Scans the option parameter for a string value and sets a pointer at offset
+     * entry->param1 from the start of JitConfig to a copy of that string.
+     *
+     * \param [in] option  String representing the value of the option
+     * \param [in] base    Not used
+     * \param [in] entry   OptionTable entry specifying the offset of the JITConfig
+     *                     field (a char pointer) that needs to be set
+     * \return A pointer to the option parameter
+     */
+    static const char *setStringInJitConfig(const char *option, void *base, TR::OptionTable *entry);
 
+    // Add "debugString" to the JIT debug strings
+    //
+    static const char *setDebug(const char *option, void *, TR::OptionTable *entry);
 
-   // Add "debugString" to the JIT debug strings
-   //
-   static const char *setDebug(const char *option, void *, TR::OptionTable *entry);
+    static const char *setRegex(const char *option, void *, TR::OptionTable *entry);
+    static const char *setStaticRegex(const char *option, void *, TR::OptionTable *entry);
 
-   static const char *setRegex(const char *option, void *, TR::OptionTable *entry);
-   static const char *setStaticRegex(const char *option, void *, TR::OptionTable *entry);
+    // Set address enumeration bits
+    //
+    static const char *setAddressEnumerationBits(const char *option, void *base, TR::OptionTable *entry);
 
-   // Set address enumeration bits
-   //
-   static const char *setAddressEnumerationBits(const char *option, void *base, TR::OptionTable *entry);
+    // Set bits from a set of string options
+    //
+    typedef struct {
+        const char *bitName;
+        int32_t bitValue;
+    } TR_OptionStringToBit;
 
-   // Set bits from a set of string options
-   //
-   typedef struct { const char *bitName; int32_t bitValue; } TR_OptionStringToBit;
-   private:
-   static TR_OptionStringToBit _optionStringToBitMapping[];
-   public:
-   static const char *setBitsFromStringSet(const char *option, void *base, TR::OptionTable *entry);
-   static const char *clearBitsFromStringSet(const char *option, void *base, TR::OptionTable *entry);
+private:
+    static TR_OptionStringToBit _optionStringToBitMapping[];
 
-   static const char *configureOptReporting(const char *option, void *base, TR::OptionTable *entry);
-   static const char *disableCPUFeatures(const char *option, void *base, TR::OptionTable *entry);
+public:
+    static const char *setBitsFromStringSet(const char *option, void *base, TR::OptionTable *entry);
+    static const char *clearBitsFromStringSet(const char *option, void *base, TR::OptionTable *entry);
 
-   // Option processing helper functions
-   //
-   static int64_t getNumericValue(const char *&option);
+    static const char *configureOptReporting(const char *option, void *base, TR::OptionTable *entry);
+    static const char *disableCPUFeatures(const char *option, void *base, TR::OptionTable *entry);
 
-   // Display help information
-   //
-   static const char *helpOption(const char *option, void *, TR::OptionTable *entry);
+    // Option processing helper functions
+    //
+    static int64_t getNumericValue(const char *&option);
 
-   static const char *limitOption(const char *option, void *, TR::OptionTable *entry);
-   static const char *inlinefileOption(const char *option, void *, TR::OptionTable *entry);
-   static const char *limitfileOption(const char *option, void *, TR::OptionTable *entry);
-   static const char *versionOption(const char *option, void *, TR::OptionTable *entry);
+    // Display help information
+    //
+    static const char *helpOption(const char *option, void *, TR::OptionTable *entry);
 
-   static const char *breakOnLoad(const char *option, void *, TR::OptionTable *entry);
-   static const char *setCount(const char *option, void *base, TR::OptionTable *entry);
-   const char *getDefaultCountString();
+    static const char *limitOption(const char *option, void *, TR::OptionTable *entry);
+    static const char *inlinefileOption(const char *option, void *, TR::OptionTable *entry);
+    static const char *limitfileOption(const char *option, void *, TR::OptionTable *entry);
+    static const char *versionOption(const char *option, void *, TR::OptionTable *entry);
 
-   bool counterIsEnabled(const char *name, int8_t fidelity, TR::SimpleRegex *nameRegex);
+    static const char *breakOnLoad(const char *option, void *, TR::OptionTable *entry);
+    static const char *setCount(const char *option, void *base, TR::OptionTable *entry);
+    const char *getDefaultCountString();
 
-   static bool checkDisableFlagForAllMethods(OMR::Optimizations o, bool b);
-   void setDefaultsForDeterministicMode();
-   void setMoreAggressiveInlining();
+    bool counterIsEnabled(const char *name, int8_t fidelity, TR::SimpleRegex *nameRegex);
+
+    static bool checkDisableFlagForAllMethods(OMR::Optimizations o, bool b);
+    void setDefaultsForDeterministicMode();
+    void setMoreAggressiveInlining();
 
 protected:
-   static bool           _optionsTablesValidated;
-   static TR::OptionTable _jitOptions[];
-   static TR::OptionTable _feOptions[];
-   static TR::Options    *_cmdLineOptions;
-   static TR::Options    *_jitCmdLineOptions;
-   static TR::Options    *_aotCmdLineOptions;
-          TR::OptionSet  *_optionSets;
-          TR::OptionSet  *_postRestoreOptionSets;
-   static void          *_feBase;
-   static TR_FrontEnd   *_fe;
-   static bool           _hasLogFile;
-   static bool           _suppressLogFileBecauseDebugObjectNotCreated;
-   static TR_Debug  *_debug;
-   static int32_t        _numJitEntries;
-   static int32_t        _numVmEntries;
-   static TR::OptionSet  *_currentOptionSet;
-          const char *   _startOptions;
-          const char *   _envOptions;
-   static const char *   _compilationStrategyName;
+    static bool _optionsTablesValidated;
+    static TR::OptionTable _jitOptions[];
+    static TR::OptionTable _feOptions[];
+    static TR::Options *_cmdLineOptions;
+    static TR::Options *_jitCmdLineOptions;
+    static TR::Options *_aotCmdLineOptions;
+    TR::OptionSet *_optionSets;
+    TR::OptionSet *_postRestoreOptionSets;
+    static void *_feBase;
+    static TR_FrontEnd *_fe;
+    static bool _hasLogFile;
+    static bool _suppressLogFileBecauseDebugObjectNotCreated;
+    static TR_Debug *_debug;
+    static int32_t _numJitEntries;
+    static int32_t _numVmEntries;
+    static TR::OptionSet *_currentOptionSet;
+    const char *_startOptions;
+    const char *_envOptions;
+    static const char *_compilationStrategyName;
 
-   // Option flag words
-   //
-   uint32_t                    _options[TR_OWM+1];
+    // Option flag words
+    //
+    uint32_t _options[TR_OWM + 1];
 
-   // Logging and debugging options
-   //
-   char                       *_logFileName;
-   char                       *_suffixLogsFormat;
-   TR::FILE *                      _logFile;
+    // Logging and debugging options
+    //
+    char *_logFileName;
+    char *_suffixLogsFormat;
+    TR::FILE *_logFile;
 
+    char *_optFileName;
+    int32_t *_customStrategy; // Actually array of TR_OptimizerImpl::Optimizations numbers read from optFileName
+    int32_t _customStrategySize; // In elements, including endOpts terminator
 
-   char                       *_optFileName;
-   int32_t                    *_customStrategy;     // Actually array of TR_OptimizerImpl::Optimizations numbers read from optFileName
-   int32_t                     _customStrategySize; // In elements, including endOpts terminator
+    // Optimization levels
+    //
+    int32_t _optLevel;
+    int32_t _initialOptLevel; // opt level for first time compilations
+    const char *_countString;
+    int32_t _initialCount;
+    int32_t _initialBCount;
+    int32_t _initialMILCount;
+    int32_t _initialColdRunCount;
+    int32_t _initialColdRunBCount;
+    int32_t _maxSpreadCountLoopless;
+    int32_t _maxSpreadCountLoopy;
+    static int32_t _highCodeCacheOccupancyCount;
+    static int32_t _highCodeCacheOccupancyBCount;
+    int32_t _GCRCount;
+    int32_t _GCRDecCount;
+    int32_t _GCRResetCount;
+    int32_t _firstOptIndex;
+    int32_t _lastOptIndex;
+    int32_t _lastOptSubIndex;
+    int32_t _lastSearchCount;
+    int32_t _lastIpaOptTransformationIndex;
+    int32_t _firstOptTransformationIndex;
+    int32_t _lastOptTransformationIndex;
+    int32_t _largeNumberOfLoops;
+    int32_t _stackPCDumpNumberOfBuffers;
+    int32_t _stackPCDumpNumberOfFrames;
+    bool _disabledOptimizations[OMR::numOpts];
+    bool _traceOptimizations[OMR::numOpts];
+    bool _tracingOptimization;
+    int32_t _delayCompileWithCPUBurn;
+    TR::SimpleRegex *_disabledOptTransformations;
+    TR::SimpleRegex *_disabledInlineSites;
+    TR::SimpleRegex *_disabledOpts;
+    TR::SimpleRegex *_optsToTrace;
+    TR::SimpleRegex *_optsToDumpTrees;
+    TR::SimpleRegex *_dontInline;
+    TR::SimpleRegex *_onlyInline;
+    TR::SimpleRegex *_tryToInline;
+    TR::SimpleRegex *_slipTrap;
+    TR::SimpleRegex *_lockReserveClass;
+    TR::SimpleRegex *_breakOnOpts;
+    TR::SimpleRegex *_breakOnCreate;
+    TR::SimpleRegex *_debugOnCreate;
+    TR::SimpleRegex *_breakOnThrow;
+    TR::SimpleRegex *_breakOnPrint;
+    TR::SimpleRegex *_enabledStaticCounterNames;
+    TR::SimpleRegex *_enabledDynamicCounterNames;
+    TR::SimpleRegex *_counterHistogramNames;
+    TR::SimpleRegex *_verboseOptTransformationsRegex;
+    TR::SimpleRegex *_packedTest;
+    TR::SimpleRegex *_memUsage;
+    TR::SimpleRegex *_classesWithFolableFinalFields;
+    TR::SimpleRegex *_disabledIdiomPatterns;
+    TR::SimpleRegex *_suppressEA;
+    TR::SimpleRegex *_dontFoldStaticFinalFields;
+    uintptr_t _gcCardSize;
+    uintptr_t _heapBase;
+    uintptr_t _heapTop;
 
-   // Optimization levels
-   //
-   int32_t                     _optLevel;
-   int32_t                     _initialOptLevel; // opt level for first time compilations
-   const char *                _countString;
-   int32_t                     _initialCount;
-   int32_t                     _initialBCount;
-   int32_t                     _initialMILCount;
-   int32_t                     _initialColdRunCount;
-   int32_t                     _initialColdRunBCount;
-   int32_t                     _maxSpreadCountLoopless;
-   int32_t                     _maxSpreadCountLoopy;
-   static int32_t              _highCodeCacheOccupancyCount;
-   static int32_t              _highCodeCacheOccupancyBCount;
-   int32_t                     _GCRCount;
-   int32_t                     _GCRDecCount;
-   int32_t                     _GCRResetCount;
-   int32_t                     _firstOptIndex;
-   int32_t                     _lastOptIndex;
-   int32_t                     _lastOptSubIndex;
-   int32_t                     _lastSearchCount;
-   int32_t                     _lastIpaOptTransformationIndex;
-   int32_t                     _firstOptTransformationIndex;
-   int32_t                     _lastOptTransformationIndex;
-   int32_t                     _largeNumberOfLoops;
-   int32_t                     _stackPCDumpNumberOfBuffers;
-   int32_t                     _stackPCDumpNumberOfFrames;
-   bool                        _disabledOptimizations[OMR::numOpts];
-   bool                        _traceOptimizations[OMR::numOpts];
-   bool                        _tracingOptimization;
-   int32_t                     _delayCompileWithCPUBurn;
-   TR::SimpleRegex *            _disabledOptTransformations;
-   TR::SimpleRegex *            _disabledInlineSites;
-   TR::SimpleRegex *            _disabledOpts;
-   TR::SimpleRegex *            _optsToTrace;
-   TR::SimpleRegex *            _optsToDumpTrees;
-   TR::SimpleRegex *            _dontInline;
-   TR::SimpleRegex *            _onlyInline;
-   TR::SimpleRegex *            _tryToInline;
-   TR::SimpleRegex *            _slipTrap;
-   TR::SimpleRegex *            _lockReserveClass;
-   TR::SimpleRegex *            _breakOnOpts;
-   TR::SimpleRegex *            _breakOnCreate;
-   TR::SimpleRegex *            _debugOnCreate;
-   TR::SimpleRegex *            _breakOnThrow;
-   TR::SimpleRegex *            _breakOnPrint;
-   TR::SimpleRegex *            _enabledStaticCounterNames;
-   TR::SimpleRegex *            _enabledDynamicCounterNames;
-   TR::SimpleRegex *            _counterHistogramNames;
-   TR::SimpleRegex *            _verboseOptTransformationsRegex;
-   TR::SimpleRegex *            _packedTest;
-   TR::SimpleRegex *            _memUsage;
-   TR::SimpleRegex *            _classesWithFolableFinalFields;
-   TR::SimpleRegex *            _disabledIdiomPatterns;
-   TR::SimpleRegex *            _suppressEA;
-   TR::SimpleRegex *            _dontFoldStaticFinalFields;
-   uintptr_t                   _gcCardSize;
-   uintptr_t                   _heapBase;
-   uintptr_t                   _heapTop;
+    uintptr_t _heapAddressToCardAddressShift;
+    uintptr_t _heapBaseForBarrierRange0;
+    uintptr_t _heapSizeForBarrierRange0;
+    uintptr_t _activeCardTableBase;
+    bool _isVariableHeapBaseForBarrierRange0;
+    bool _isVariableHeapSizeForBarrierRange0;
+    bool _isVariableActiveCardTableBase;
 
-   uintptr_t                   _heapAddressToCardAddressShift;
-   uintptr_t                   _heapBaseForBarrierRange0;
-   uintptr_t                   _heapSizeForBarrierRange0;
-   uintptr_t                   _activeCardTableBase;
-   bool                        _isVariableHeapBaseForBarrierRange0;
-   bool                        _isVariableHeapSizeForBarrierRange0;
-   bool                        _isVariableActiveCardTableBase;
+    static bool _sharedClassCache;
 
-   static bool                 _sharedClassCache;
+    static bool _countsAreProvidedByUser; // set very late in setCounts()
+    static TR_YesNoMaybe _startupTimeMatters; // set very late in setCounts()
+    // If countsAreProvidedByUser, then this flag is undefined
 
-   static bool                 _countsAreProvidedByUser; // set very late in setCounts()
-   static TR_YesNoMaybe        _startupTimeMatters; // set very late in setCounts()
-   // If countsAreProvidedByUser, then this flag is undefined
+    static VerboseOptionFlagArray _verboseOptionFlags;
+    static const char *_verboseOptionNames[TR_NumVerboseOptions];
+    static bool _quickstartDetected; // set when Quickstart was specified on the command line
 
-   static VerboseOptionFlagArray  _verboseOptionFlags;
-   static const char          *_verboseOptionNames[TR_NumVerboseOptions];
-   static bool                 _quickstartDetected; // set when Quickstart was specified on the command line
+    typedef OptionFlagArray<TR_SamplingJProfilingFlags, TR_NumSamplingJProfilingFlags>
+        SamplingJProfilingOptionFlagArray;
+    static SamplingJProfilingOptionFlagArray _samplingJProfilingOptionFlags;
+    static const char *_samplingJProfilingOptionNames[TR_NumSamplingJProfilingFlags];
 
-   typedef OptionFlagArray<TR_SamplingJProfilingFlags, TR_NumSamplingJProfilingFlags> SamplingJProfilingOptionFlagArray;
-   static SamplingJProfilingOptionFlagArray _samplingJProfilingOptionFlags;
-   static const char          *_samplingJProfilingOptionNames[TR_NumSamplingJProfilingFlags];
+    typedef OptionFlagArray<TR_ReductionAlgorithms, TR_NumReductionAlgorithms> HotFieldReductionAlgorithmArray;
+    static HotFieldReductionAlgorithmArray _hotFieldReductionAlgorithms;
+    static const char *_hotFieldReductionAlgorithmNames[TR_NumReductionAlgorithms];
+    // Miscellaneous options
+    //
+    char *_osVersionString;
+    bool _allowRecompilation;
+    bool _anOptionSetContainsACountValue;
+    bool _anOptionSetContainsADltOptLevel;
+    int32_t _numInterfaceCallCacheSlots;
+    int32_t _numInterfaceCallStaticSlots;
+    int32_t _storeSinkingLastOpt;
+    int32_t _test390StackBuffer; // Buffer to force a large stack on 390
+    int32_t _test390LitPoolBuffer; // Buffer to force a large lit pool on 390
+    int32_t _addressToEnumerate; // Addresses enumeration option flags
+    int32_t _debugEnableFlags; // For miscellaneeous flags used to enable things
+    bool _optLevelDowngraded; // this is a flag rather than an option
+                              // set in the constructor if we downgraded
+                              // this compilation to a lower opt level
+    bool _compileExcludedmethods; // If true, "excluded" methods are compiled using TR_EXCLUDED_OPTIONSET_INDEX
+    int32_t _maxUnloadedAddressRanges;
+    int32_t _maxStaticPICSlots;
+    int32_t _hotMaxStaticPICSlots;
 
-   typedef OptionFlagArray<TR_ReductionAlgorithms, TR_NumReductionAlgorithms> HotFieldReductionAlgorithmArray;
-   static HotFieldReductionAlgorithmArray  _hotFieldReductionAlgorithms;
-   static const char          *_hotFieldReductionAlgorithmNames[TR_NumReductionAlgorithms];
-   // Miscellaneous options
-   //
-   char *                      _osVersionString;
-   bool                        _allowRecompilation;
-   bool                        _anOptionSetContainsACountValue;
-   bool                        _anOptionSetContainsADltOptLevel;
-   int32_t                     _numInterfaceCallCacheSlots;
-   int32_t                     _numInterfaceCallStaticSlots;
-   int32_t                     _storeSinkingLastOpt;
-   int32_t                     _test390StackBuffer;   // Buffer to force a large stack on 390
-   int32_t                     _test390LitPoolBuffer; // Buffer to force a large lit pool on 390
-   int32_t                     _addressToEnumerate;   // Addresses enumeration option flags
-   int32_t                     _debugEnableFlags;     // For miscellaneeous flags used to enable things
-   bool                        _optLevelDowngraded;   // this is a flag rather than an option
-                                                      // set in the constructor if we downgraded
-                                                      // this compilation to a lower opt level
-   bool                        _compileExcludedmethods; // If true, "excluded" methods are compiled using TR_EXCLUDED_OPTIONSET_INDEX
-   int32_t                     _maxUnloadedAddressRanges;
-   int32_t                     _maxStaticPICSlots;
-   int32_t                     _hotMaxStaticPICSlots;
+    int32_t _newAotrtDebugLevel;
 
-   int32_t                     _newAotrtDebugLevel;
+    int32_t _disableDLTBytecodeIndex;
+    int32_t _enableDLTBytecodeIndex;
+    int32_t _dltOptLevel;
+    int32_t _profilingCount;
+    int32_t _profilingFrequency;
+    int32_t _counterBucketGranularity;
+    int32_t _minCounterFidelity;
+    int64_t _debugCounterWarmupSeconds;
+    int32_t _insertDebuggingCounters;
 
-   int32_t                     _disableDLTBytecodeIndex;
-   int32_t                     _enableDLTBytecodeIndex;
-   int32_t                     _dltOptLevel;
-   int32_t                     _profilingCount;
-   int32_t                     _profilingFrequency;
-   int32_t                     _counterBucketGranularity;
-   int32_t                     _minCounterFidelity;
-   int64_t                     _debugCounterWarmupSeconds;
-   int32_t                     _insertDebuggingCounters;
+    int32_t _inlineCntrCalleeTooBigBucketSize;
+    int32_t _inlineCntrColdAndNotTinyBucketSize;
+    int32_t _inlineCntrWarmCalleeTooBigBucketSize;
+    int32_t _inlineCntrRanOutOfBudgetBucketSize;
+    int32_t _inlineCntrCalleeTooDeepBucketSize;
+    int32_t _inlineCntrWarmCallerHasTooManyNodesBucketSize;
+    int32_t _inlineCntrWarmCalleeHasTooManyNodesBucketSize;
+    int32_t _inlineCntrDepthExceededBucketSize;
+    int32_t _inlineCntrAllBucketSize;
+    int32_t _maxInlinedCalls;
+    int32_t _dumbInlinerBytecodeSizeMaxCutoff;
+    int32_t _dumbInlinerBytecodeSizeMinCutoff;
+    int32_t _dumbInlinerBytecodeSizeCutoff; // not configurable; can change between max and min above
+    int32_t _dumbInlinerBytecodeSizeDivisor;
+    int32_t _trivialInlinerMaxSize;
+    int32_t _inlinerArgumentHeuristicFractionUpToWarm;
+    int32_t _inlinerArgumentHeuristicFractionBeyondWarm;
+    int32_t _inlinerVeryColdBorderFrequencyAtCold;
+    int32_t _inlinerBorderFrequency;
+    int32_t _inlinerColdBorderFrequency;
+    int32_t _inlinerVeryColdBorderFrequency;
+    int32_t _inlinerCGBorderFrequency;
+    int32_t _inlinerCGColdBorderFrequency;
+    int32_t _inlinerCGVeryColdBorderFrequency;
+    int32_t _alwaysWorthInliningThreshold;
 
-   int32_t                     _inlineCntrCalleeTooBigBucketSize;
-   int32_t                     _inlineCntrColdAndNotTinyBucketSize;
-   int32_t                     _inlineCntrWarmCalleeTooBigBucketSize;
-   int32_t                     _inlineCntrRanOutOfBudgetBucketSize;
-   int32_t                     _inlineCntrCalleeTooDeepBucketSize;
-   int32_t                     _inlineCntrWarmCallerHasTooManyNodesBucketSize;
-   int32_t                     _inlineCntrWarmCalleeHasTooManyNodesBucketSize;
-   int32_t                     _inlineCntrDepthExceededBucketSize;
-   int32_t                     _inlineCntrAllBucketSize;
-   int32_t                     _maxInlinedCalls;
-   int32_t                     _dumbInlinerBytecodeSizeMaxCutoff;
-   int32_t                     _dumbInlinerBytecodeSizeMinCutoff;
-   int32_t                     _dumbInlinerBytecodeSizeCutoff; // not configurable; can change between max and min above
-   int32_t                     _dumbInlinerBytecodeSizeDivisor;
-   int32_t                     _trivialInlinerMaxSize;
-   int32_t                     _inlinerArgumentHeuristicFractionUpToWarm;
-   int32_t                     _inlinerArgumentHeuristicFractionBeyondWarm;
-   int32_t                     _inlinerVeryColdBorderFrequencyAtCold;
-   int32_t                     _inlinerBorderFrequency;
-   int32_t                     _inlinerColdBorderFrequency;
-   int32_t                     _inlinerVeryColdBorderFrequency;
-   int32_t                     _inlinerCGBorderFrequency;
-   int32_t                     _inlinerCGColdBorderFrequency;
-   int32_t                     _inlinerCGVeryColdBorderFrequency;
-   int32_t                     _alwaysWorthInliningThreshold;
+    int32_t _initialSCount;
+    int32_t _enableSCHintFlags;
+    bool _insertGCRTrees; // more like a flag than an option; cannot be set by user
 
-   int32_t                     _initialSCount;
-   int32_t                     _enableSCHintFlags;
-   bool                        _insertGCRTrees; // more like a flag than an option; cannot be set by user
+    int32_t _maxLimitedGRACandidates;
+    int32_t _maxLimitedGRARegs;
 
-   int32_t                     _maxLimitedGRACandidates;
-   int32_t                     _maxLimitedGRARegs;
+    int32_t _enableGPU;
 
-   int32_t                     _enableGPU;
+    bool _isAOTCompile;
 
-   bool                        _isAOTCompile;
+    int32_t _jProfilingMethodRecompThreshold;
+    int32_t _jProfilingLoopRecompThreshold;
+    char *_blockShufflingSequence;
+    int32_t _randomSeed;
+    TR_MCTLogs *_logListForOtherCompThreads;
+    static bool _dualLogging; // a log file is used in two different option sets, or in
+                              // in the main TR::Options object and in an option set
+    static bool _logsForOtherCompilationThreadsExist;
 
-   int32_t                     _jProfilingMethodRecompThreshold;
-   int32_t                     _jProfilingLoopRecompThreshold;
-   char *                _blockShufflingSequence;
-   int32_t                     _randomSeed;
-   TR_MCTLogs *                _logListForOtherCompThreads;
-   static bool                 _dualLogging;    // a log file is used in two different option sets, or in
-                                                // in the main TR::Options object and in an option set
-   static bool                 _logsForOtherCompilationThreadsExist;
+    char *_induceOSR;
+    int32_t _bigCalleeThreshold;
+    int32_t _bigCalleeThresholdForColdCallsAtWarm; // for inlining
+    int32_t _bigCalleeFreqCutoffAtWarm; // for inlining
+    int32_t _bigCalleeHotOptThreshold; // for inlining
+    int32_t _bigCalleeThresholdForColdCallsAtHot; // for inlining
+    int32_t _bigCalleeFreqCutoffAtHot; // for inlining
+    int32_t _bigCalleeScorchingOptThreshold; // for inlining
+    int32_t _inlinerVeryLargeCompiledMethodThreshold; // for inlining
+    int32_t _inlinerVeryLargeCompiledMethodFaninThreshold; // for inlining
+    int32_t _largeCompiledMethodExemptionFreqCutoff;
+    int32_t _maxSzForVPInliningWarm;
 
-   char*                       _induceOSR;
-   int32_t                     _bigCalleeThreshold;
-   int32_t                     _bigCalleeThresholdForColdCallsAtWarm; //for inlining
-   int32_t                     _bigCalleeFreqCutoffAtWarm; //for inlining
-   int32_t                     _bigCalleeHotOptThreshold; // for inlining
-   int32_t                     _bigCalleeThresholdForColdCallsAtHot; //for inlining
-   int32_t                     _bigCalleeFreqCutoffAtHot; //for inlining
-   int32_t                     _bigCalleeScorchingOptThreshold; // for inlining
-   int32_t                     _inlinerVeryLargeCompiledMethodThreshold; // for inlining
-   int32_t                     _inlinerVeryLargeCompiledMethodFaninThreshold; // for inlining
-   int32_t                     _largeCompiledMethodExemptionFreqCutoff;
-   int32_t                     _maxSzForVPInliningWarm;
+    int32_t _loopyAsyncCheckInsertionMaxEntryFreq;
 
-   int32_t                     _loopyAsyncCheckInsertionMaxEntryFreq;
+    char *_objectFileName; // Name of the relocatable ELF file *.o if one is to be generated
+    int32_t _edoRecompSizeThreshold; // Size threshold (in nodes) for candidates to recompilation through EDO
+    int32_t _edoRecompSizeThresholdInStartupMode; // Size threshold (in nodes) for candidates to recompilation through
+                                                  // EDO during startup
+    int32_t _catchBlockCounterThreshold; // Counter threshold for catch blocks to trigger more aggresive inlining on the
+                                         // throw path
 
-   char *                      _objectFileName; //Name of the relocatable ELF file *.o if one is to be generated
-   int32_t                     _edoRecompSizeThreshold; // Size threshold (in nodes) for candidates to recompilation through EDO
-   int32_t                     _edoRecompSizeThresholdInStartupMode; // Size threshold (in nodes) for candidates to recompilation through EDO during startup
-   int32_t                     _catchBlockCounterThreshold; // Counter threshold for catch blocks to trigger more aggresive inlining on the throw path
+    int32_t _arraycopyRepMovsByteArrayThreshold; // Byte array copy threshold for using REP MOVS instructions. Only
+                                                 // supports 32 or 64 bytes
+    int32_t _arraycopyRepMovsCharArrayThreshold; // Char array copy threshold for using REP MOVS instructions. Only
+                                                 // supports 32 or 64 bytes
+    int32_t _arraycopyRepMovsIntArrayThreshold; //  Int array copy threshold for using REP MOVS instructions. Only
+                                                //  supports 32, 64, or 128 bytes
+    int32_t _arraycopyRepMovsLongArrayThreshold; // Long array copy threshold for using REP MOVS instructions. Only
+                                                 // supports 32, 64, or 128 bytes
+    int32_t _arraycopyRepMovsReferenceArrayThreshold; // Reference array copy threshold for using REP MOVS instructions.
+                                                      // Only supports 32, 64, or 128 bytes
 
-   int32_t                     _arraycopyRepMovsByteArrayThreshold; // Byte array copy threshold for using REP MOVS instructions. Only supports 32 or 64 bytes
-   int32_t                     _arraycopyRepMovsCharArrayThreshold; // Char array copy threshold for using REP MOVS instructions. Only supports 32 or 64 bytes
-   int32_t                     _arraycopyRepMovsIntArrayThreshold; //  Int array copy threshold for using REP MOVS instructions. Only supports 32, 64, or 128 bytes
-   int32_t                     _arraycopyRepMovsLongArrayThreshold; // Long array copy threshold for using REP MOVS instructions. Only supports 32, 64, or 128 bytes
-   int32_t                     _arraycopyRepMovsReferenceArrayThreshold; // Reference array copy threshold for using REP MOVS instructions. Only supports 32, 64, or 128 bytes
+    TR::CodeCacheKind _codeCacheKind;
+}; // TR::Options
 
-   TR::CodeCacheKind           _codeCacheKind;
-   }; // TR::Options
-
-}
-
+} // namespace OMR
 
 /**
  * Logging facility used with multiple compilation threads
  * This structure holds the descriptor for the log file used
  * By a compilation thread with an ID other than 0
  */
-class TR_MCTLogs
-   {
-   public:
-   TR_ALLOC(TR_Memory::Options)
+class TR_MCTLogs {
+public:
+    TR_ALLOC(TR_Memory::Options)
 
-   TR_MCTLogs(int32_t compThreadID, TR::Options *options):
-         _next(NULL),
-         _compThreadID(compThreadID),
-         _options(options),
-         _logFile(NULL)
-   {}
+    TR_MCTLogs(int32_t compThreadID, TR::Options *options)
+        : _next(NULL)
+        , _compThreadID(compThreadID)
+        , _options(options)
+        , _logFile(NULL)
+    {}
 
-   TR::FILE *       getLogFile() const          {return _logFile;}
-   void             setLogFile(TR::FILE * f)    {_logFile = f;}
-   TR_MCTLogs *     next() const                { return _next; }
-   void             setNext(TR_MCTLogs *l)      { _next = l; }
-   int32_t          getID() const               { return _compThreadID; }
-   char *           getLogFileName();
+    TR::FILE *getLogFile() const { return _logFile; }
 
-   private:
-   TR_MCTLogs*      _next;         ///< logs are linked
-   TR::FILE *       _logFile;      ///< file descriptor for this log; comp thread will create these
-   TR::Options*     _options;      ///< pointer back to the TR::Options obj that contains this list
-   int32_t          _compThreadID; ///< the ID of the compilation thread that can use this log
+    void setLogFile(TR::FILE *f) { _logFile = f; }
 
-   }; // TR_MCTLogs
+    TR_MCTLogs *next() const { return _next; }
+
+    void setNext(TR_MCTLogs *l) { _next = l; }
+
+    int32_t getID() const { return _compThreadID; }
+
+    char *getLogFileName();
+
+private:
+    TR_MCTLogs *_next; ///< logs are linked
+    TR::FILE *_logFile; ///< file descriptor for this log; comp thread will create these
+    TR::Options *_options; ///< pointer back to the TR::Options obj that contains this list
+    int32_t _compThreadID; ///< the ID of the compilation thread that can use this log
+
+}; // TR_MCTLogs
 #endif

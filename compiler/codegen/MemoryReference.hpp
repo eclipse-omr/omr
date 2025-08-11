@@ -24,16 +24,12 @@
 
 #include "codegen/OMRMemoryReference.hpp"
 
-namespace TR
-{
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector
-   {
-   public:
-
-   MemoryReference() :
-      OMR::MemoryReferenceConnector() {};
-
-   };
-}
+namespace TR {
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
+public:
+    MemoryReference()
+        : OMR::MemoryReferenceConnector() {};
+};
+} // namespace TR
 
 #endif

@@ -24,16 +24,18 @@
 
 #include "codegen/OMRInstOpCode.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class InstOpCode : public OMR::InstOpCodeConnector
-   {
-   public:
+class InstOpCode : public OMR::InstOpCodeConnector {
+public:
+    InstOpCode()
+        : OMR::InstOpCodeConnector(bad)
+    {}
 
-   InstOpCode() : OMR::InstOpCodeConnector(bad) {}
-   InstOpCode(TR::InstOpCode::Mnemonic m) : OMR::InstOpCodeConnector(m) {}
-   };
-}
+    InstOpCode(TR::InstOpCode::Mnemonic m)
+        : OMR::InstOpCodeConnector(m)
+    {}
+};
+} // namespace TR
 
 #endif

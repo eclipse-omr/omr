@@ -24,18 +24,14 @@
 
 #include "codegen/OMRRegisterDependency.hpp"
 
-namespace TR
-{
+namespace TR {
 class OMR_EXTENSIBLE RegisterDependencyGroup : public OMR::RegisterDependencyGroupConnector {};
 
-class RegisterDependencyConditions : public OMR::RegisterDependencyConditionsConnector
-   {
-   public:
-
-   RegisterDependencyConditions() :
-      OMR::RegisterDependencyConditions() {};
-
-   };
-}
+class RegisterDependencyConditions : public OMR::RegisterDependencyConditionsConnector {
+public:
+    RegisterDependencyConditions()
+        : OMR::RegisterDependencyConditions() {};
+};
+} // namespace TR
 
 #endif

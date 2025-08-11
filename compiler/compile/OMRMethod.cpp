@@ -29,154 +29,126 @@
 #include "il/ILOpCodes.hpp"
 #include "infra/Assert.hpp"
 
-TR::Method *
-OMR::Method::self()
-   {
-   return static_cast<TR::Method *>(this);
-   }
+TR::Method *OMR::Method::self() { return static_cast<TR::Method *>(this); }
 
-uint32_t
-OMR::Method::numberOfExplicitParameters()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uint32_t OMR::Method::numberOfExplicitParameters()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-TR::DataType
-OMR::Method::parmType(uint32_t)
-   {
-   TR_UNIMPLEMENTED();
-   return TR::NoType;
-   }
+TR::DataType OMR::Method::parmType(uint32_t)
+{
+    TR_UNIMPLEMENTED();
+    return TR::NoType;
+}
 
-TR::ILOpCodes
-OMR::Method::directCallOpCode()
-   {
-   TR_UNIMPLEMENTED();
-   return TR::BadILOp;
-   }
+TR::ILOpCodes OMR::Method::directCallOpCode()
+{
+    TR_UNIMPLEMENTED();
+    return TR::BadILOp;
+}
 
-TR::ILOpCodes
-OMR::Method::indirectCallOpCode()
-   {
-   TR_UNIMPLEMENTED();
-   return TR::BadILOp;
-   }
+TR::ILOpCodes OMR::Method::indirectCallOpCode()
+{
+    TR_UNIMPLEMENTED();
+    return TR::BadILOp;
+}
 
-TR::DataType
-OMR::Method::returnType()
-   {
-   TR_UNIMPLEMENTED();
-   return TR::NoType;
-   }
+TR::DataType OMR::Method::returnType()
+{
+    TR_UNIMPLEMENTED();
+    return TR::NoType;
+}
 
-bool
-OMR::Method::returnTypeIsUnsigned()
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+bool OMR::Method::returnTypeIsUnsigned()
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
 
-uint32_t
-OMR::Method::returnTypeWidth()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uint32_t OMR::Method::returnTypeWidth()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-TR::ILOpCodes
-OMR::Method::returnOpCode()
-   {
-   TR_UNIMPLEMENTED();
-   return TR::BadILOp;
-   }
+TR::ILOpCodes OMR::Method::returnOpCode()
+{
+    TR_UNIMPLEMENTED();
+    return TR::BadILOp;
+}
 
-uint16_t
-OMR::Method::classNameLength()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uint16_t OMR::Method::classNameLength()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uint16_t
-OMR::Method::nameLength()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uint16_t OMR::Method::nameLength()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uint16_t
-OMR::Method::signatureLength()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uint16_t OMR::Method::signatureLength()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-char *
-OMR::Method::classNameChars()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+char *OMR::Method::classNameChars()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-char *
-OMR::Method::nameChars()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+char *OMR::Method::nameChars()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-char *
-OMR::Method::signatureChars()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+char *OMR::Method::signatureChars()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-bool
-OMR::Method::isConstructor()
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+bool OMR::Method::isConstructor()
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
 
-bool
-OMR::Method::isFinalInObject()
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+bool OMR::Method::isFinalInObject()
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
 
-const char *
-OMR::Method::signature(TR_Memory *, TR_AllocationKind)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+const char *OMR::Method::signature(TR_Memory *, TR_AllocationKind)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-void
-OMR::Method::setArchetypeSpecimen(bool b)
-   {
-   TR_UNIMPLEMENTED();
-   }
+void OMR::Method::setArchetypeSpecimen(bool b) { TR_UNIMPLEMENTED(); }
 
-TR_MethodParameterIterator *
-OMR::Method::getParameterIterator(TR::Compilation&, TR_ResolvedMethod *)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+TR_MethodParameterIterator *OMR::Method::getParameterIterator(TR::Compilation &, TR_ResolvedMethod *)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-bool
-OMR::Method::isUnsafeCAS()
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+bool OMR::Method::isUnsafeCAS()
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
 
-bool
-OMR::Method::isUnsafeWithObjectArg()
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+bool OMR::Method::isUnsafeWithObjectArg()
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}

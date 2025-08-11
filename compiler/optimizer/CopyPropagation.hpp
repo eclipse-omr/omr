@@ -31,12 +31,13 @@
 #include "infra/Checklist.hpp"
 
 class TR_BitVector;
+
 namespace TR {
 class SymbolReference;
 class Block;
 class Node;
 class TreeTop;
-}
+} // namespace TR
 
 // Copy Propagation
 //
@@ -53,75 +54,81 @@ class TreeTop;
 // the copy (definition) statement altogether in some cases.
 //
 
-class TR_CopyPropagation : public TR::Optimization
-   {
-   public:
+class TR_CopyPropagation : public TR::Optimization {
+public:
+    // Performs copy propagation using the
+    // use/def values of relevant nodes.
+    //
+    TR_CopyPropagation(TR::OptimizationManager *manager);
 
-   // Performs copy propagation using the
-   // use/def values of relevant nodes.
-   //
-   TR_CopyPropagation(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_CopyPropagation(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_CopyPropagation(manager);
+    }
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   private :
-   void replaceCopySymbolReferenceByOriginalIn(TR::SymbolReference * copySymRef, TR::Node * rhsOfStoreDefNode, TR::Node * useNode, TR::Node *defNode, TR::Node * baseAddrNode = NULL,bool baseAddrAvail = false);
-   void replaceCopySymbolReferenceByOriginalRegLoadIn(TR::Node *regLoadNode, TR::Node *useNode, TR::SymbolReference *copySymbolReference, TR::Node *node, TR::Node *parent, int32_t childNum);
-   void adjustUseDefInfo(TR::Node *, TR::Node *, TR_UseDefInfo *);
-   bool isUniqueDefinitionOfUse(TR_BitVector *, TR_UseDefInfo *, int32_t);
-   bool isLoadNodeSuitableForPropagation(TR::Node * useNode, TR::Node * storeNode, TR::Node * loadNode);
-   TR::Node *areAllDefsInCorrectForm(TR::Node*, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *, int32_t, TR::Node * &, int32_t &, TR::Node * &);
-   bool isSafeToPropagate(TR::Node *, TR::Node *);
-   TR::Node* skipTreeTopAndGetNode (TR::TreeTop* tt);
-   bool isCorrectToPropagate(TR::Node *, TR::Node *, TR::list< TR::Node *> &, TR::SparseBitVector &, int32_t, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
-   bool isCorrectToReplace(TR::Node *, TR::Node *, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
-   bool isRedefinedBetweenStoreTreeAnd(TR::list< TR::Node *> & checkNodes, TR::SparseBitVector &, TR::Node * storeNode, TR::TreeTop * exitTree, int32_t regNumber, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
-   bool recursive_isRedefinedBetweenStoreTreeAnd(TR::list< TR::Node *> & checkNodes, TR::SparseBitVector &, TR::Node * storeNode, TR::TreeTop * exitTree, int32_t regNumber, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
-   bool containsNode(TR::Node * node1, TR::Node * node2, bool searchClones = true);
-   TR::Node *isLoadVarWithConst(TR::Node *);
-   TR::Node *isIndirectLoadFromAuto(TR::Node *);
-   TR::Node *isIndirectLoadFromRegister(TR::Node *, TR::Node * &);
-   TR::Node *isValidRegLoad(TR::Node *, TR::TreeTop *, int32_t &);
-   TR::Node *isCheapRematerializationCandidate(TR::Node * , TR::Node *);
-   bool containsLoadOfSymbol(TR::Node * node,TR::SymbolReference * symRef, TR::Node ** loadNode);
-   TR::Node * isBaseAddrAvailable(TR::Node *, TR::Node *, bool &);
-   bool isNodeAvailableInBlock(TR::TreeTop *, TR::Node *);
+private:
+    void replaceCopySymbolReferenceByOriginalIn(TR::SymbolReference *copySymRef, TR::Node *rhsOfStoreDefNode,
+        TR::Node *useNode, TR::Node *defNode, TR::Node *baseAddrNode = NULL, bool baseAddrAvail = false);
+    void replaceCopySymbolReferenceByOriginalRegLoadIn(TR::Node *regLoadNode, TR::Node *useNode,
+        TR::SymbolReference *copySymbolReference, TR::Node *node, TR::Node *parent, int32_t childNum);
+    void adjustUseDefInfo(TR::Node *, TR::Node *, TR_UseDefInfo *);
+    bool isUniqueDefinitionOfUse(TR_BitVector *, TR_UseDefInfo *, int32_t);
+    bool isLoadNodeSuitableForPropagation(TR::Node *useNode, TR::Node *storeNode, TR::Node *loadNode);
+    TR::Node *areAllDefsInCorrectForm(TR::Node *, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *, int32_t,
+        TR::Node *&, int32_t &, TR::Node *&);
+    bool isSafeToPropagate(TR::Node *, TR::Node *);
+    TR::Node *skipTreeTopAndGetNode(TR::TreeTop *tt);
+    bool isCorrectToPropagate(TR::Node *, TR::Node *, TR::list<TR::Node *> &, TR::SparseBitVector &, int32_t,
+        const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
+    bool isCorrectToReplace(TR::Node *, TR::Node *, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
+    bool isRedefinedBetweenStoreTreeAnd(TR::list<TR::Node *> &checkNodes, TR::SparseBitVector &, TR::Node *storeNode,
+        TR::TreeTop *exitTree, int32_t regNumber, const TR_UseDefInfo::BitVector &, TR_UseDefInfo *);
+    bool recursive_isRedefinedBetweenStoreTreeAnd(TR::list<TR::Node *> &checkNodes, TR::SparseBitVector &,
+        TR::Node *storeNode, TR::TreeTop *exitTree, int32_t regNumber, const TR_UseDefInfo::BitVector &,
+        TR_UseDefInfo *);
+    bool containsNode(TR::Node *node1, TR::Node *node2, bool searchClones = true);
+    TR::Node *isLoadVarWithConst(TR::Node *);
+    TR::Node *isIndirectLoadFromAuto(TR::Node *);
+    TR::Node *isIndirectLoadFromRegister(TR::Node *, TR::Node *&);
+    TR::Node *isValidRegLoad(TR::Node *, TR::TreeTop *, int32_t &);
+    TR::Node *isCheapRematerializationCandidate(TR::Node *, TR::Node *);
+    bool containsLoadOfSymbol(TR::Node *node, TR::SymbolReference *symRef, TR::Node **loadNode);
+    TR::Node *isBaseAddrAvailable(TR::Node *, TR::Node *, bool &);
+    bool isNodeAvailableInBlock(TR::TreeTop *, TR::Node *);
 
-   // The treetop for a use node is often required during
-   // this optimization. To reduce compile time overhead, they
-   // are stashed into the _useTreeTops map. This should be respected
-   // by updating this map if existing uses are moved to new treetops
-   //
-   void collectUseTrees(TR::TreeTop *tree, TR::Node *node, TR::NodeChecklist &checklist);
-   void findUseTree(TR::Node *);
+    // The treetop for a use node is often required during
+    // this optimization. To reduce compile time overhead, they
+    // are stashed into the _useTreeTops map. This should be respected
+    // by updating this map if existing uses are moved to new treetops
+    //
+    void collectUseTrees(TR::TreeTop *tree, TR::Node *node, TR::NodeChecklist &checklist);
+    void findUseTree(TR::Node *);
 
-   TR::TreeTop *findAnchorTree(TR::Node *, TR::Node *);
-   void rematerializeIndirectLoadsFromAutos();
-   void commonIndirectLoadsFromAutos();
+    TR::TreeTop *findAnchorTree(TR::Node *, TR::Node *);
+    void rematerializeIndirectLoadsFromAutos();
+    void commonIndirectLoadsFromAutos();
 
-   bool _canMaintainUseDefs;
-   bool _cleanupTemps;
-   TR::TreeTop *_storeTree;
-   TR::TreeTop *_useTree;
+    bool _canMaintainUseDefs;
+    bool _cleanupTemps;
+    TR::TreeTop *_storeTree;
+    TR::TreeTop *_useTree;
 
-   typedef TR::typed_allocator<std::pair<TR::Node* const, TR::TreeTop*>, TR::Region&> StoreTreeMapAllocator;
-   typedef std::less<TR::Node*> StoreTreeMapComparator;
-   typedef std::map<TR::Node *, TR::TreeTop *, StoreTreeMapComparator, StoreTreeMapAllocator> StoreTreeMap;
-   StoreTreeMap _storeTreeTops;
+    typedef TR::typed_allocator<std::pair<TR::Node * const, TR::TreeTop *>, TR::Region &> StoreTreeMapAllocator;
+    typedef std::less<TR::Node *> StoreTreeMapComparator;
+    typedef std::map<TR::Node *, TR::TreeTop *, StoreTreeMapComparator, StoreTreeMapAllocator> StoreTreeMap;
+    StoreTreeMap _storeTreeTops;
 
-   typedef TR::typed_allocator<std::pair<TR::Node* const, TR::TreeTop*>, TR::Region&> UseTreeMapAllocator;
-   typedef std::less<TR::Node*> UseTreeMapComparator;
-   typedef std::map<TR::Node*, TR::TreeTop*, UseTreeMapComparator, UseTreeMapAllocator> UseTreeMap;
-   UseTreeMap _useTreeTops;
-   
-   TR::Block *_storeBlock;
-   bool _lookForOriginalDefs;
-   bool _propagatingWholeExpression;
-   };
+    typedef TR::typed_allocator<std::pair<TR::Node * const, TR::TreeTop *>, TR::Region &> UseTreeMapAllocator;
+    typedef std::less<TR::Node *> UseTreeMapComparator;
+    typedef std::map<TR::Node *, TR::TreeTop *, UseTreeMapComparator, UseTreeMapAllocator> UseTreeMap;
+    UseTreeMap _useTreeTops;
+
+    TR::Block *_storeBlock;
+    bool _lookForOriginalDefs;
+    bool _propagatingWholeExpression;
+};
 
 #endif

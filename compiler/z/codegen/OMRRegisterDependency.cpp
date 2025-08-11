@@ -19,14 +19,14 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-//On zOS XLC linker can't handle files with same name at link time
-//This workaround with pragma is needed. What this does is essentially
-//give a different name to the codesection (csect) for this file. So it
-//doesn't conflict with another file with same name.
+// On zOS XLC linker can't handle files with same name at link time
+// This workaround with pragma is needed. What this does is essentially
+// give a different name to the codesection (csect) for this file. So it
+// doesn't conflict with another file with same name.
 
-#pragma csect(CODE,"OMRZRegisterDependency#C")
-#pragma csect(STATIC,"OMRZRegisterDependency#S")
-#pragma csect(TEST,"OMRZRegisterDependency#T")
+#pragma csect(CODE, "OMRZRegisterDependency#C")
+#pragma csect(STATIC, "OMRZRegisterDependency#S")
+#pragma csect(TEST, "OMRZRegisterDependency#T")
 
 #include <stddef.h>
 #include <stdint.h>
@@ -65,1528 +65,1335 @@
 #include "z/codegen/S390Instruction.hpp"
 #include "env/IO.hpp"
 
-OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(TR::CodeGenerator * cg, TR::Node * node,
-   uint32_t          extranum, TR::Instruction ** cursorPtr)
-   {
-   TR::Compilation *comp = cg->comp();
-   _cg = cg;
-   List<TR::Register> regList(cg->trMemory());
-   TR::Instruction * iCursor = (cursorPtr == NULL) ? NULL : *cursorPtr;
-   int32_t totalNum = node->getNumChildren() + extranum;
-   int32_t i;
+OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node,
+    uint32_t extranum, TR::Instruction **cursorPtr)
+{
+    TR::Compilation *comp = cg->comp();
+    _cg = cg;
+    List<TR::Register> regList(cg->trMemory());
+    TR::Instruction *iCursor = (cursorPtr == NULL) ? NULL : *cursorPtr;
+    int32_t totalNum = node->getNumChildren() + extranum;
+    int32_t i;
 
-   comp->incVisitCount();
+    comp->incVisitCount();
 
-   int32_t numLongs = 0;
-   int32_t numLongDoubles = 0;
-   //
-   // Pre-compute how many longs are global register candidates
-   //
-   for (i = 0; i < node->getNumChildren(); ++i)
-      {
-      TR::Node * child = node->getChild(i);
-      TR::Register * reg = child->getRegister();
-      if (reg->getKind() == TR_GPR)
-         {
-         if (child->getHighGlobalRegisterNumber() > -1)
-            {
-            numLongs++;
+    int32_t numLongs = 0;
+    int32_t numLongDoubles = 0;
+    //
+    // Pre-compute how many longs are global register candidates
+    //
+    for (i = 0; i < node->getNumChildren(); ++i) {
+        TR::Node *child = node->getChild(i);
+        TR::Register *reg = child->getRegister();
+        if (reg->getKind() == TR_GPR) {
+            if (child->getHighGlobalRegisterNumber() > -1) {
+                numLongs++;
             }
-         }
-      }
+        }
+    }
 
-   totalNum = totalNum + numLongs + numLongDoubles;
+    totalNum = totalNum + numLongs + numLongDoubles;
 
-   _preConditions = new (totalNum, cg->trMemory()) TR::RegisterDependencyGroup;
-   _postConditions = new (totalNum, cg->trMemory()) TR::RegisterDependencyGroup;
-   _numPreConditions = totalNum;
-   _addCursorForPre = 0;
-   _numPostConditions = totalNum;
-   _addCursorForPost = 0;
-   _isUsed = false;
+    _preConditions = new (totalNum, cg->trMemory()) TR::RegisterDependencyGroup;
+    _postConditions = new (totalNum, cg->trMemory()) TR::RegisterDependencyGroup;
+    _numPreConditions = totalNum;
+    _addCursorForPre = 0;
+    _numPostConditions = totalNum;
+    _addCursorForPost = 0;
+    _isUsed = false;
 
-   for (i = 0; i < totalNum; i++)
-      {
-      _preConditions->clearDependencyInfo(i);
-      _postConditions->clearDependencyInfo(i);
-      }
-
-   for (i = 0; i < node->getNumChildren(); i++)
-      {
-      TR::Node * child = node->getChild(i);
-      TR::Register * reg = child->getRegister();
-      TR::Register * highReg = NULL;
-      TR::Register * copyReg = NULL;
-      TR::Register * highCopyReg = NULL;
-
-      TR::RealRegister::RegNum regNum = (TR::RealRegister::RegNum)
-         cg->getGlobalRegister(child->getGlobalRegisterNumber());
-
-
-      TR::RealRegister::RegNum highRegNum;
-      if (child->getHighGlobalRegisterNumber() > -1)
-         {
-         highRegNum = (TR::RealRegister::RegNum) cg->getGlobalRegister(child->getHighGlobalRegisterNumber());
-         }
-
-      TR::RegisterPair * regPair = reg->getRegisterPair();
-      resolveSplitDependencies(cg, node, child, regPair, regList, reg, highReg, copyReg, highCopyReg, iCursor, regNum);
-
-      reg->setAssociation(regNum);
-      cg->setRealRegisterAssociation(reg, regNum);
-
-      addPreCondition(reg, regNum);
-      addPostCondition(reg, regNum);
-
-      if (copyReg != NULL)
-         {
-         cg->stopUsingRegister(copyReg);
-         }
-
-      if (highReg)
-         {
-         highReg->setAssociation(highRegNum);
-         cg->setRealRegisterAssociation(highReg, highRegNum);
-         addPreCondition(highReg, highRegNum);
-         addPostCondition(highReg, highRegNum);
-         if (highCopyReg != NULL)
-            {
-            cg->stopUsingRegister(highCopyReg);
-            }
-         }
-      }
-
-   if (iCursor != NULL && cursorPtr != NULL)
-      {
-      *cursorPtr = iCursor;
-      }
-   }
-
-OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(TR::RegisterDependencyConditions* iConds, uint16_t numNewPreConds, uint16_t numNewPostConds, TR::CodeGenerator * cg)
-   : _preConditions(new ((iConds ? iConds->getNumPreConditions() : 0) + numNewPreConds, cg->trMemory()) TR::RegisterDependencyGroup),
-     _postConditions(new ((iConds ? iConds->getNumPostConditions() : 0) + numNewPostConds, cg->trMemory()) TR::RegisterDependencyGroup),
-     _numPreConditions((iConds?iConds->getNumPreConditions():0)+numNewPreConds),
-     _addCursorForPre(0),
-     _numPostConditions((iConds?iConds->getNumPostConditions():0)+numNewPostConds),
-     _addCursorForPost(0),
-     _isUsed(false),
-     _cg(cg)
-   {
-     int32_t i;
-
-     TR::RegisterDependencyGroup* depGroup;
-     uint16_t numPreConds = (iConds?iConds->getNumPreConditions():0)+numNewPreConds;
-     uint16_t numPostConds = (iConds?iConds->getNumPostConditions():0)+numNewPostConds;
-     uint32_t flag;
-     TR::RealRegister::RegNum rr;
-     TR::Register* vr;
-     for(i=0;i<numPreConds;i++)
-        {
+    for (i = 0; i < totalNum; i++) {
         _preConditions->clearDependencyInfo(i);
-        }
-     for(int32_t j=0;j<numPostConds;j++)
-        {
-        _postConditions->clearDependencyInfo(j);
+        _postConditions->clearDependencyInfo(i);
+    }
+
+    for (i = 0; i < node->getNumChildren(); i++) {
+        TR::Node *child = node->getChild(i);
+        TR::Register *reg = child->getRegister();
+        TR::Register *highReg = NULL;
+        TR::Register *copyReg = NULL;
+        TR::Register *highCopyReg = NULL;
+
+        TR::RealRegister::RegNum regNum
+            = (TR::RealRegister::RegNum)cg->getGlobalRegister(child->getGlobalRegisterNumber());
+
+        TR::RealRegister::RegNum highRegNum;
+        if (child->getHighGlobalRegisterNumber() > -1) {
+            highRegNum = (TR::RealRegister::RegNum)cg->getGlobalRegister(child->getHighGlobalRegisterNumber());
         }
 
-     if (iConds != NULL)
-        {
+        TR::RegisterPair *regPair = reg->getRegisterPair();
+        resolveSplitDependencies(cg, node, child, regPair, regList, reg, highReg, copyReg, highCopyReg, iCursor,
+            regNum);
+
+        reg->setAssociation(regNum);
+        cg->setRealRegisterAssociation(reg, regNum);
+
+        addPreCondition(reg, regNum);
+        addPostCondition(reg, regNum);
+
+        if (copyReg != NULL) {
+            cg->stopUsingRegister(copyReg);
+        }
+
+        if (highReg) {
+            highReg->setAssociation(highRegNum);
+            cg->setRealRegisterAssociation(highReg, highRegNum);
+            addPreCondition(highReg, highRegNum);
+            addPostCondition(highReg, highRegNum);
+            if (highCopyReg != NULL) {
+                cg->stopUsingRegister(highCopyReg);
+            }
+        }
+    }
+
+    if (iCursor != NULL && cursorPtr != NULL) {
+        *cursorPtr = iCursor;
+    }
+}
+
+OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(TR::RegisterDependencyConditions *iConds,
+    uint16_t numNewPreConds, uint16_t numNewPostConds, TR::CodeGenerator *cg)
+    : _preConditions(new((iConds ? iConds->getNumPreConditions() : 0) + numNewPreConds, cg->trMemory())
+              TR::RegisterDependencyGroup)
+    , _postConditions(new((iConds ? iConds->getNumPostConditions() : 0) + numNewPostConds, cg->trMemory())
+              TR::RegisterDependencyGroup)
+    , _numPreConditions((iConds ? iConds->getNumPreConditions() : 0) + numNewPreConds)
+    , _addCursorForPre(0)
+    , _numPostConditions((iConds ? iConds->getNumPostConditions() : 0) + numNewPostConds)
+    , _addCursorForPost(0)
+    , _isUsed(false)
+    , _cg(cg)
+{
+    int32_t i;
+
+    TR::RegisterDependencyGroup *depGroup;
+    uint16_t numPreConds = (iConds ? iConds->getNumPreConditions() : 0) + numNewPreConds;
+    uint16_t numPostConds = (iConds ? iConds->getNumPostConditions() : 0) + numNewPostConds;
+    uint32_t flag;
+    TR::RealRegister::RegNum rr;
+    TR::Register *vr;
+    for (i = 0; i < numPreConds; i++) {
+        _preConditions->clearDependencyInfo(i);
+    }
+    for (int32_t j = 0; j < numPostConds; j++) {
+        _postConditions->clearDependencyInfo(j);
+    }
+
+    if (iConds != NULL) {
         depGroup = iConds->getPreConditions();
         //      depGroup->printDeps(stdout, iConds->getNumPreConditions());
-        for(i=0;i<iConds->getAddCursorForPre();i++)
-           {
-          TR::RegisterDependency* dep = depGroup->getRegisterDependency(i);
+        for (i = 0; i < iConds->getAddCursorForPre(); i++) {
+            TR::RegisterDependency *dep = depGroup->getRegisterDependency(i);
 
-           flag = dep->getFlags();
-           vr   = dep->getRegister();
-           rr   = dep->getRealRegister();
+            flag = dep->getFlags();
+            vr = dep->getRegister();
+            rr = dep->getRealRegister();
 
-           _preConditions->setDependencyInfo(_addCursorForPre++, vr, rr, flag);
-           }
+            _preConditions->setDependencyInfo(_addCursorForPre++, vr, rr, flag);
+        }
 
         depGroup = iConds->getPostConditions();
         //        depGroup->printDeps(stdout, iConds->getNumPostConditions());
-        for(i=0;i<iConds->getAddCursorForPost();i++)
-           {
-           TR::RegisterDependency* dep = depGroup->getRegisterDependency(i);
+        for (i = 0; i < iConds->getAddCursorForPost(); i++) {
+            TR::RegisterDependency *dep = depGroup->getRegisterDependency(i);
 
-           flag = dep->getFlags();
-           vr   = dep->getRegister();
-           rr   = dep->getRealRegister();
+            flag = dep->getFlags();
+            vr = dep->getRegister();
+            rr = dep->getRealRegister();
 
-           _postConditions->setDependencyInfo(_addCursorForPost++, vr, rr, flag);
-           }
+            _postConditions->setDependencyInfo(_addCursorForPost++, vr, rr, flag);
         }
-   }
+    }
+}
 
-OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(TR::RegisterDependencyConditions * conds_1,
-                                     TR::RegisterDependencyConditions * conds_2,
-                                     TR::CodeGenerator * cg)
-   : _preConditions(new (conds_1->getNumPreConditions() + conds_2->getNumPreConditions(), cg->trMemory()) TR::RegisterDependencyGroup),
-     _postConditions(new (conds_1->getNumPostConditions()+conds_2->getNumPostConditions(), cg->trMemory()) TR::RegisterDependencyGroup),
-     _numPreConditions(conds_1->getNumPreConditions()+conds_2->getNumPreConditions()),
-     _addCursorForPre(0),
-     _numPostConditions(conds_1->getNumPostConditions()+conds_2->getNumPostConditions()),
-     _addCursorForPost(0),
-     _isUsed(false),
-     _cg(cg)
-   {
-   int32_t i;
-   TR::RegisterDependencyGroup* depGroup;
-   uint32_t flag;
-   TR::RealRegister::RegNum rr;
-   TR::Register* vr;
+OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(TR::RegisterDependencyConditions *conds_1,
+    TR::RegisterDependencyConditions *conds_2, TR::CodeGenerator *cg)
+    : _preConditions(new(conds_1->getNumPreConditions() + conds_2->getNumPreConditions(), cg->trMemory())
+              TR::RegisterDependencyGroup)
+    , _postConditions(new(conds_1->getNumPostConditions() + conds_2->getNumPostConditions(), cg->trMemory())
+              TR::RegisterDependencyGroup)
+    , _numPreConditions(conds_1->getNumPreConditions() + conds_2->getNumPreConditions())
+    , _addCursorForPre(0)
+    , _numPostConditions(conds_1->getNumPostConditions() + conds_2->getNumPostConditions())
+    , _addCursorForPost(0)
+    , _isUsed(false)
+    , _cg(cg)
+{
+    int32_t i;
+    TR::RegisterDependencyGroup *depGroup;
+    uint32_t flag;
+    TR::RealRegister::RegNum rr;
+    TR::Register *vr;
 
-   for( i = 0; i < _numPreConditions; i++)
-      {
-      _preConditions->clearDependencyInfo(i);
-      }
+    for (i = 0; i < _numPreConditions; i++) {
+        _preConditions->clearDependencyInfo(i);
+    }
 
-   for( i = 0; i < _numPostConditions; i++)
-      {
-      _postConditions->clearDependencyInfo(i);
-      }
+    for (i = 0; i < _numPostConditions; i++) {
+        _postConditions->clearDependencyInfo(i);
+    }
 
-   // Merge pre conditions
-   depGroup = conds_1->getPreConditions();
-   for( i = 0; i < conds_1->getAddCursorForPre(); i++)
-      {
-      TR::RegisterDependency* dep = depGroup->getRegisterDependency(i);
+    // Merge pre conditions
+    depGroup = conds_1->getPreConditions();
+    for (i = 0; i < conds_1->getAddCursorForPre(); i++) {
+        TR::RegisterDependency *dep = depGroup->getRegisterDependency(i);
 
-      if( doesPreConditionExist( dep ) )
-         {
-         _numPreConditions--;
-         }
-      else if( !addPreConditionIfNotAlreadyInserted( dep ) )
-         {
-         _numPreConditions--;
-         }
-      }
+        if (doesPreConditionExist(dep)) {
+            _numPreConditions--;
+        } else if (!addPreConditionIfNotAlreadyInserted(dep)) {
+            _numPreConditions--;
+        }
+    }
 
-   depGroup = conds_2->getPreConditions();
-   for( i = 0; i < conds_2->getAddCursorForPre(); i++)
-      {
-      TR::RegisterDependency* dep = depGroup->getRegisterDependency(i);
+    depGroup = conds_2->getPreConditions();
+    for (i = 0; i < conds_2->getAddCursorForPre(); i++) {
+        TR::RegisterDependency *dep = depGroup->getRegisterDependency(i);
 
-      if( doesPreConditionExist( dep ) )
-         {
-         _numPreConditions--;
-         }
-      else if( !addPreConditionIfNotAlreadyInserted( dep ) )
-         {
-         _numPreConditions--;
-         }
-      }
+        if (doesPreConditionExist(dep)) {
+            _numPreConditions--;
+        } else if (!addPreConditionIfNotAlreadyInserted(dep)) {
+            _numPreConditions--;
+        }
+    }
 
-   // Merge post conditions
-   depGroup = conds_1->getPostConditions();
-   for( i = 0; i < conds_1->getAddCursorForPost(); i++)
-      {
-      TR::RegisterDependency* dep = depGroup->getRegisterDependency(i);
+    // Merge post conditions
+    depGroup = conds_1->getPostConditions();
+    for (i = 0; i < conds_1->getAddCursorForPost(); i++) {
+        TR::RegisterDependency *dep = depGroup->getRegisterDependency(i);
 
-      if( doesPostConditionExist( dep ) )
-         {
-         _numPostConditions--;
-         }
-      else if( !addPostConditionIfNotAlreadyInserted( dep ) )
-         {
-         _numPostConditions--;
-         }
-      }
+        if (doesPostConditionExist(dep)) {
+            _numPostConditions--;
+        } else if (!addPostConditionIfNotAlreadyInserted(dep)) {
+            _numPostConditions--;
+        }
+    }
 
-   depGroup = conds_2->getPostConditions();
-   for( i = 0; i < conds_2->getAddCursorForPost(); i++)
-      {
-      TR::RegisterDependency* dep = depGroup->getRegisterDependency(i);
+    depGroup = conds_2->getPostConditions();
+    for (i = 0; i < conds_2->getAddCursorForPost(); i++) {
+        TR::RegisterDependency *dep = depGroup->getRegisterDependency(i);
 
-      if( doesPostConditionExist( dep ) )
-         {
-         _numPostConditions--;
-         }
-      else if( !addPostConditionIfNotAlreadyInserted( dep ) )
-         {
-         _numPostConditions--;
-         }
-      }
-   }
+        if (doesPostConditionExist(dep)) {
+            _numPostConditions--;
+        } else if (!addPostConditionIfNotAlreadyInserted(dep)) {
+            _numPostConditions--;
+        }
+    }
+}
 
-OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds, TR::CodeGenerator *cg)
-   : _preConditions(new (numPreConds, cg->trMemory()) TR::RegisterDependencyGroup),
-     _postConditions(new (numPostConds + NUM_VM_THREAD_REG_DEPS, cg->trMemory()) TR::RegisterDependencyGroup),
-      _numPreConditions(numPreConds),
-      _addCursorForPre(0),
-      _numPostConditions(numPostConds + NUM_VM_THREAD_REG_DEPS),
-      _addCursorForPost(0),
-      _isUsed(false),
-      _cg(cg)
-   {
-   for(int32_t i=0;i<numPreConds;i++)
-      {
-      _preConditions->clearDependencyInfo(i);
-      }
-   for(int32_t j=0;j<numPostConds + NUM_VM_THREAD_REG_DEPS;j++)
-      {
-      _postConditions->clearDependencyInfo(j);
-      }
-   }
+OMR::Z::RegisterDependencyConditions::RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds,
+    TR::CodeGenerator *cg)
+    : _preConditions(new(numPreConds, cg->trMemory()) TR::RegisterDependencyGroup)
+    , _postConditions(new(numPostConds + NUM_VM_THREAD_REG_DEPS, cg->trMemory()) TR::RegisterDependencyGroup)
+    , _numPreConditions(numPreConds)
+    , _addCursorForPre(0)
+    , _numPostConditions(numPostConds + NUM_VM_THREAD_REG_DEPS)
+    , _addCursorForPost(0)
+    , _isUsed(false)
+    , _cg(cg)
+{
+    for (int32_t i = 0; i < numPreConds; i++) {
+        _preConditions->clearDependencyInfo(i);
+    }
+    for (int32_t j = 0; j < numPostConds + NUM_VM_THREAD_REG_DEPS; j++) {
+        _postConditions->clearDependencyInfo(j);
+    }
+}
 
-void OMR::Z::RegisterDependencyConditions::resolveSplitDependencies(
-   TR::CodeGenerator* cg,
-   TR::Node* node, TR::Node* child,
-   TR::RegisterPair* regPair, List<TR::Register>& regList,
-   TR::Register*& reg, TR::Register*& highReg,
-   TR::Register*& copyReg, TR::Register*& highCopyReg,
-   TR::Instruction*& iCursor,
-   TR::RealRegister::RegNum& regNum)
-   {
-   TR::Compilation *comp = cg->comp();
-   TR_Debug * debugObj = cg->getDebug();
-   bool foundLow = false;
-   bool foundHigh = false;
-   if (regPair)
-      {
-      foundLow = regList.find(regPair->getLowOrder());
-      foundHigh = regList.find(regPair->getHighOrder());
-      }
-   else
-      {
-      foundLow = regList.find(reg);
-      }
+void OMR::Z::RegisterDependencyConditions::resolveSplitDependencies(TR::CodeGenerator *cg, TR::Node *node,
+    TR::Node *child, TR::RegisterPair *regPair, List<TR::Register> &regList, TR::Register *&reg, TR::Register *&highReg,
+    TR::Register *&copyReg, TR::Register *&highCopyReg, TR::Instruction *&iCursor, TR::RealRegister::RegNum &regNum)
+{
+    TR::Compilation *comp = cg->comp();
+    TR_Debug *debugObj = cg->getDebug();
+    bool foundLow = false;
+    bool foundHigh = false;
+    if (regPair) {
+        foundLow = regList.find(regPair->getLowOrder());
+        foundHigh = regList.find(regPair->getHighOrder());
+    } else {
+        foundLow = regList.find(reg);
+    }
 
-   if (foundLow || foundHigh)
-      {
-      TR::InstOpCode::Mnemonic opCode;
-      TR_RegisterKinds kind = reg->getKind();
-      bool isVector = kind == TR_VRF ? true : false;
-      if (kind == TR_GPR || kind == TR_FPR)
-         {
-         if (regPair)
+    if (foundLow || foundHigh) {
+        TR::InstOpCode::Mnemonic opCode;
+        TR_RegisterKinds kind = reg->getKind();
+        bool isVector = kind == TR_VRF ? true : false;
+        if (kind == TR_GPR || kind == TR_FPR) {
+            if (regPair) {
+                highReg = regPair->getHighOrder();
+                reg = regPair->getLowOrder();
+            } else if (child->getHighGlobalRegisterNumber() > -1) {
+                TR_ASSERT(0, "Long child does not have a register pair\n");
+            }
+        }
+
+        bool containsInternalPointer = false;
+        if (reg->getPinningArrayPointer()) {
+            containsInternalPointer = true;
+        }
+
+        copyReg = (reg->containsCollectedReference() && !containsInternalPointer)
+            ? cg->allocateCollectedReferenceRegister()
+            : cg->allocateRegister(kind);
+
+        if (containsInternalPointer) {
+            copyReg->setContainsInternalPointer();
+            copyReg->setPinningArrayPointer(reg->getPinningArrayPointer());
+        }
+
+        switch (kind) {
+            case TR_GPR:
+                if (reg->is64BitReg()) {
+                    opCode = TR::InstOpCode::LGR;
+                } else {
+                    opCode = TR::InstOpCode::LR;
+                }
+                break;
+            case TR_FPR:
+                opCode = TR::InstOpCode::LDR;
+                break;
+            case TR_VRF:
+                opCode = TR::InstOpCode::VLR;
+                break;
+            default:
+                TR_ASSERT(0, "Invalid register kind.");
+        }
+
+        iCursor = isVector ? generateVRRaInstruction(cg, opCode, node, copyReg, reg, iCursor)
+                           : generateRRInstruction(cg, opCode, node, copyReg, reg, iCursor);
+
+        reg = copyReg;
+        if (debugObj) {
+            if (isVector)
+                debugObj->addInstructionComment(toS390VRRaInstruction(iCursor), "VLR=Reg_deps2");
+            else
+                debugObj->addInstructionComment(toS390RRInstruction(iCursor), "LR=Reg_deps2");
+        }
+
+        if (highReg) {
+            if (kind == TR_GPR) {
+                containsInternalPointer = false;
+                if (highReg->getPinningArrayPointer()) {
+                    containsInternalPointer = true;
+                }
+
+                highCopyReg = (highReg->containsCollectedReference() && !containsInternalPointer)
+                    ? cg->allocateCollectedReferenceRegister()
+                    : cg->allocateRegister(kind);
+
+                if (containsInternalPointer) {
+                    highCopyReg->setContainsInternalPointer();
+                    highCopyReg->setPinningArrayPointer(highReg->getPinningArrayPointer());
+                }
+
+                iCursor = generateRRInstruction(cg, opCode, node, highCopyReg, highReg, iCursor);
+                highReg = highCopyReg;
+            } else // kind == FPR
             {
+                highCopyReg = cg->allocateRegister(kind);
+                iCursor = generateRRInstruction(cg, opCode, node, highCopyReg, highReg, iCursor);
+                debugObj->addInstructionComment(toS390RRInstruction(iCursor), "LR=Reg_deps2");
+                highReg = highCopyReg;
+            }
+        }
+    } else {
+        if (regPair) {
+            regList.add(regPair->getHighOrder());
+            regList.add(regPair->getLowOrder());
+        } else {
+            regList.add(reg);
+        }
+
+        if (regPair) {
             highReg = regPair->getHighOrder();
             reg = regPair->getLowOrder();
-            }
-         else if (child->getHighGlobalRegisterNumber() > -1)
-            {
-            TR_ASSERT( 0,"Long child does not have a register pair\n");
-            }
-         }
-
-      bool containsInternalPointer = false;
-      if (reg->getPinningArrayPointer())
-         {
-         containsInternalPointer = true;
-         }
-
-      copyReg = (reg->containsCollectedReference() && !containsInternalPointer) ?
-         cg->allocateCollectedReferenceRegister() :
-         cg->allocateRegister(kind);
-
-      if (containsInternalPointer)
-         {
-         copyReg->setContainsInternalPointer();
-         copyReg->setPinningArrayPointer(reg->getPinningArrayPointer());
-         }
-
-      switch (kind)
-         {
-         case TR_GPR:
-            if (reg->is64BitReg())
-               {
-               opCode = TR::InstOpCode::LGR;
-               }
-            else
-               {
-               opCode = TR::InstOpCode::LR;
-               }
-            break;
-         case TR_FPR:
-            opCode = TR::InstOpCode::LDR;
-            break;
-         case TR_VRF:
-            opCode = TR::InstOpCode::VLR;
-            break;
-         default:
-            TR_ASSERT( 0, "Invalid register kind.");
-         }
-
-      iCursor = isVector ? generateVRRaInstruction(cg, opCode, node, copyReg, reg, iCursor):
-                           generateRRInstruction  (cg, opCode, node, copyReg, reg, iCursor);
-
-      reg = copyReg;
-      if (debugObj)
-         {
-         if (isVector)
-            debugObj->addInstructionComment( toS390VRRaInstruction(iCursor), "VLR=Reg_deps2");
-         else
-            debugObj->addInstructionComment( toS390RRInstruction(iCursor), "LR=Reg_deps2");
-         }
-
-      if (highReg)
-        {
-        if(kind == TR_GPR)
-         {
-         containsInternalPointer = false;
-         if (highReg->getPinningArrayPointer())
-            {
-            containsInternalPointer = true;
-            }
-
-         highCopyReg = (highReg->containsCollectedReference() && !containsInternalPointer) ?
-            cg->allocateCollectedReferenceRegister() :
-            cg->allocateRegister(kind);
-
-         if (containsInternalPointer)
-            {
-            highCopyReg->setContainsInternalPointer();
-            highCopyReg->setPinningArrayPointer(highReg->getPinningArrayPointer());
-            }
-
-         iCursor = generateRRInstruction(cg, opCode, node, highCopyReg, highReg, iCursor);
-         highReg = highCopyReg;
-         }
-        else // kind == FPR
-         {
-         highCopyReg = cg->allocateRegister(kind);
-         iCursor = generateRRInstruction  (cg, opCode, node, highCopyReg, highReg, iCursor);
-         debugObj->addInstructionComment( toS390RRInstruction(iCursor), "LR=Reg_deps2");
-         highReg = highCopyReg;
-         }
+        } else if ((child->getHighGlobalRegisterNumber() > -1)) {
+            TR_ASSERT(0, "Long child does not have a register pair\n");
         }
-      }
-   else
-      {
-      if (regPair)
-         {
-         regList.add(regPair->getHighOrder());
-         regList.add(regPair->getLowOrder());
-         }
-      else
-         {
-         regList.add(reg);
-         }
+    }
+}
 
-      if (regPair)
-         {
-         highReg = regPair->getHighOrder();
-         reg = regPair->getLowOrder();
-         }
-      else if ((child->getHighGlobalRegisterNumber() > -1))
-         {
-         TR_ASSERT( 0, "Long child does not have a register pair\n");
-         }
-      }
-   }
+TR::RegisterDependencyConditions *OMR::Z::RegisterDependencyConditions::clone(TR::CodeGenerator *cg,
+    int32_t additionalRegDeps)
+{
+    TR::RegisterDependencyConditions *other = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(
+        _numPreConditions + additionalRegDeps, _numPostConditions + additionalRegDeps, cg);
+    int32_t i = 0;
 
-TR::RegisterDependencyConditions  *OMR::Z::RegisterDependencyConditions::clone(TR::CodeGenerator *cg, int32_t additionalRegDeps)
-   {
-   TR::RegisterDependencyConditions  *other =
-      new (cg->trHeapMemory()) TR::RegisterDependencyConditions(_numPreConditions  + additionalRegDeps,
-                                                                   _numPostConditions + additionalRegDeps, cg);
-   int32_t i = 0;
+    for (i = _numPreConditions - 1; i >= 0; --i) {
+        TR::RegisterDependency *dep = getPreConditions()->getRegisterDependency(i);
+        other->getPreConditions()->setDependencyInfo(i, dep->getRegister(), dep->getRealRegister(), dep->getFlags());
+    }
 
-   for (i = _numPreConditions-1; i >= 0; --i)
-      {
-      TR::RegisterDependency  *dep = getPreConditions()->getRegisterDependency(i);
-      other->getPreConditions()->setDependencyInfo(i, dep->getRegister(), dep->getRealRegister(), dep->getFlags());
-      }
+    for (i = _numPostConditions - 1; i >= 0; --i) {
+        TR::RegisterDependency *dep = getPostConditions()->getRegisterDependency(i);
+        other->getPostConditions()->setDependencyInfo(i, dep->getRegister(), dep->getRealRegister(), dep->getFlags());
+    }
 
-   for (i = _numPostConditions-1; i >= 0; --i)
-      {
-      TR::RegisterDependency  *dep = getPostConditions()->getRegisterDependency(i);
-      other->getPostConditions()->setDependencyInfo(i, dep->getRegister(), dep->getRealRegister(), dep->getFlags());
-      }
+    other->setAddCursorForPre(_addCursorForPre);
+    other->setAddCursorForPost(_addCursorForPost);
+    return other;
+}
 
-   other->setAddCursorForPre(_addCursorForPre);
-   other->setAddCursorForPost(_addCursorForPost);
-   return other;
-   }
+uint32_t OMR::Z::RegisterDependencyConditions::setNumPreConditions(uint16_t n, TR_Memory *m)
+{
+    if (_preConditions == NULL) {
+        _preConditions = new (n, m) TR::RegisterDependencyGroup;
 
+        for (int32_t i = 0; i < n; i++) {
+            _preConditions->clearDependencyInfo(i);
+        }
+    }
+    return _numPreConditions = n;
+}
 
-uint32_t
-OMR::Z::RegisterDependencyConditions::setNumPreConditions(uint16_t n, TR_Memory * m)
-   {
-   if (_preConditions == NULL)
-      {
-      _preConditions = new (n,m) TR::RegisterDependencyGroup;
+void OMR::Z::RegisterDependencyConditions::addPreCondition(TR::Register *vr, TR::RealRegister::RegDep rr, uint8_t flag)
+{
+    TR_ASSERT(!getIsUsed(), "ERROR: cannot add pre conditions to an used dependency, create a copy first\n");
 
-      for (int32_t i = 0; i < n; i++)
-         {
-         _preConditions->clearDependencyInfo(i);
-         }
-      }
-   return _numPreConditions = n;
-   }
+    // dont add dependencies if reg is real register
+    if (vr && vr->getRealRegister() != NULL)
+        return;
 
-void
-OMR::Z::RegisterDependencyConditions::addPreCondition(TR::Register *vr, TR::RealRegister::RegDep rr, uint8_t flag)
-   {
-   TR_ASSERT(!getIsUsed(), "ERROR: cannot add pre conditions to an used dependency, create a copy first\n");
+    TR_ASSERT_FATAL(_addCursorForPre < _numPreConditions,
+        "addPreCondition list overflow. addCursorForPre(%d), numPreConditions(%d), virtual register name(%s) and "
+        "pointer(%p)\n",
+        _addCursorForPre, _numPreConditions, vr->getRegisterName(_cg->comp()), vr);
+    _preConditions->setDependencyInfo(_addCursorForPre++, vr, static_cast<TR::RealRegister::RegNum>(rr), flag);
+}
 
-   // dont add dependencies if reg is real register
-   if (vr && vr->getRealRegister()!=NULL) return;
+void OMR::Z::RegisterDependencyConditions::addPostCondition(TR::Register *vr, TR::RealRegister::RegDep rr, uint8_t flag)
+{
+    TR_ASSERT(!getIsUsed(), "ERROR: cannot add post conditions to an used dependency, create a copy first\n");
 
-   TR_ASSERT_FATAL(_addCursorForPre < _numPreConditions,"addPreCondition list overflow. addCursorForPre(%d), numPreConditions(%d), virtual register name(%s) and pointer(%p)\n",_addCursorForPre, _numPreConditions,vr->getRegisterName(_cg->comp()),vr);
-   _preConditions->setDependencyInfo(_addCursorForPre++, vr, static_cast<TR::RealRegister::RegNum>(rr), flag);
-   }
+    // dont add dependencies if reg is real register
+    if (vr && vr->getRealRegister() != NULL)
+        return;
+    TR_ASSERT_FATAL(_addCursorForPost < _numPostConditions,
+        "addPostCondition list overflow. addCursorForPost(%d), numPostConditions(%d), virtual register name(%s) and "
+        "pointer(%p)\n",
+        _addCursorForPost, _numPostConditions, vr->getRegisterName(_cg->comp()), vr);
+    _postConditions->setDependencyInfo(_addCursorForPost++, vr, static_cast<TR::RealRegister::RegNum>(rr), flag);
+}
 
-void
-OMR::Z::RegisterDependencyConditions::addPostCondition(TR::Register *vr, TR::RealRegister::RegDep rr, uint8_t flag)
-   {
-   TR_ASSERT(!getIsUsed(), "ERROR: cannot add post conditions to an used dependency, create a copy first\n");
+void OMR::Z::RegisterDependencyConditions::assignPreConditionRegisters(TR::Instruction *currentInstruction,
+    TR_RegisterKinds kindToBeAssigned, TR::CodeGenerator *cg)
+{
+    if (_preConditions != NULL) {
+        cg->clearRegisterAssignmentFlags();
+        cg->setRegisterAssignmentFlag(TR_PreDependencyCoercion);
+        _preConditions->assignRegisters(currentInstruction, kindToBeAssigned, _addCursorForPre, cg);
+    }
+}
 
-   // dont add dependencies if reg is real register
-   if (vr && vr->getRealRegister()!=NULL) return;
-   TR_ASSERT_FATAL(_addCursorForPost < _numPostConditions,"addPostCondition list overflow. addCursorForPost(%d), numPostConditions(%d), virtual register name(%s) and pointer(%p)\n",_addCursorForPost, _numPostConditions,vr->getRegisterName(_cg->comp()),vr);
-   _postConditions->setDependencyInfo(_addCursorForPost++, vr, static_cast<TR::RealRegister::RegNum>(rr), flag);
-   }
+void OMR::Z::RegisterDependencyConditions::assignPostConditionRegisters(TR::Instruction *currentInstruction,
+    TR_RegisterKinds kindToBeAssigned, TR::CodeGenerator *cg)
+{
+    if (_postConditions != NULL) {
+        cg->clearRegisterAssignmentFlags();
+        cg->setRegisterAssignmentFlag(TR_PostDependencyCoercion);
+        _postConditions->assignRegisters(currentInstruction, kindToBeAssigned, _addCursorForPost, cg);
+    }
+}
 
-void
-OMR::Z::RegisterDependencyConditions::assignPreConditionRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned, TR::CodeGenerator *cg)
-   {
-   if (_preConditions != NULL)
-      {
-      cg->clearRegisterAssignmentFlags();
-      cg->setRegisterAssignmentFlag(TR_PreDependencyCoercion);
-      _preConditions->assignRegisters(currentInstruction, kindToBeAssigned, _addCursorForPre, cg);
-      }
-   }
+TR::Register *OMR::Z::RegisterDependencyConditions::searchPreConditionRegister(TR::RealRegister::RegNum rr,
+    uint8_t flag)
+{
+    return _preConditions == NULL ? NULL : _preConditions->searchForRegister(rr, flag, _addCursorForPre, _cg);
+}
 
-void
-OMR::Z::RegisterDependencyConditions::assignPostConditionRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindToBeAssigned, TR::CodeGenerator *cg)
-   {
-   if (_postConditions != NULL)
-      {
-      cg->clearRegisterAssignmentFlags();
-      cg->setRegisterAssignmentFlag(TR_PostDependencyCoercion);
-      _postConditions->assignRegisters(currentInstruction, kindToBeAssigned, _addCursorForPost, cg);
-      }
-   }
+TR::Register *OMR::Z::RegisterDependencyConditions::searchPostConditionRegister(TR::RealRegister::RegNum rr,
+    uint8_t flag)
+{
+    return _postConditions == NULL ? NULL : _postConditions->searchForRegister(rr, flag, _addCursorForPost, _cg);
+}
 
-TR::Register *
-OMR::Z::RegisterDependencyConditions::searchPreConditionRegister(TR::RealRegister::RegNum rr, uint8_t flag)
-   {
-   return _preConditions==NULL?NULL:_preConditions->searchForRegister(rr, flag, _addCursorForPre, _cg);
-   }
+TR::Register *OMR::Z::RegisterDependencyConditions::searchPreConditionRegister(TR::Register *vr, uint8_t flag)
+{
+    return _preConditions == NULL ? NULL : _preConditions->searchForRegister(vr, flag, _addCursorForPre, _cg);
+}
 
-TR::Register *
-OMR::Z::RegisterDependencyConditions::searchPostConditionRegister(TR::RealRegister::RegNum rr, uint8_t flag)
-   {
-   return _postConditions==NULL?NULL:_postConditions->searchForRegister(rr, flag, _addCursorForPost, _cg);
-   }
+TR::Register *OMR::Z::RegisterDependencyConditions::searchPostConditionRegister(TR::Register *vr, uint8_t flag)
+{
+    return _postConditions == NULL ? NULL : _postConditions->searchForRegister(vr, flag, _addCursorForPost, _cg);
+}
 
-TR::Register *
-OMR::Z::RegisterDependencyConditions::searchPreConditionRegister(TR::Register * vr, uint8_t flag)
-   {
-   return _preConditions==NULL?NULL:_preConditions->searchForRegister(vr, flag, _addCursorForPre, _cg);
-   }
+int32_t OMR::Z::RegisterDependencyConditions::searchPostConditionRegisterPos(TR::Register *vr, uint8_t flag)
+{
+    return _postConditions == NULL ? -1 : _postConditions->searchForRegisterPos(vr, flag, _addCursorForPost, _cg);
+}
 
-TR::Register *
-OMR::Z::RegisterDependencyConditions::searchPostConditionRegister(TR::Register * vr, uint8_t flag)
-   {
-   return _postConditions==NULL?NULL:_postConditions->searchForRegister(vr, flag, _addCursorForPost, _cg);
-   }
+void OMR::Z::RegisterDependencyConditions::stopUsingDepRegs(TR::CodeGenerator *cg, TR::Register *ret1,
+    TR::Register *ret2)
+{
+    if (_preConditions != NULL)
+        _preConditions->stopUsingDepRegs(_addCursorForPre, ret1, ret2, cg);
+    if (_postConditions != NULL)
+        _postConditions->stopUsingDepRegs(_addCursorForPost, ret1, ret2, cg);
+}
 
-int32_t
-OMR::Z::RegisterDependencyConditions::searchPostConditionRegisterPos(TR::Register * vr, uint8_t flag)
-   {
-   return _postConditions==NULL?-1:_postConditions->searchForRegisterPos(vr, flag, _addCursorForPost, _cg);
-   }
+uint32_t OMR::Z::RegisterDependencyConditions::setNumPostConditions(uint16_t n, TR_Memory *m)
+{
+    if (_postConditions == NULL) {
+        _postConditions = new (n, m) TR::RegisterDependencyGroup;
 
-void
-OMR::Z::RegisterDependencyConditions::stopUsingDepRegs(TR::CodeGenerator *cg, TR::Register *ret1, TR::Register *ret2)
-   {
-   if (_preConditions != NULL)
-      _preConditions->stopUsingDepRegs(_addCursorForPre, ret1, ret2, cg);
-   if (_postConditions != NULL)
-      _postConditions->stopUsingDepRegs(_addCursorForPost, ret1, ret2, cg);
-   }
+        for (int32_t i = 0; i < n; i++) {
+            _postConditions->clearDependencyInfo(i);
+        }
+    }
+    return _numPostConditions = n;
+}
 
-uint32_t
-OMR::Z::RegisterDependencyConditions::setNumPostConditions(uint16_t n, TR_Memory * m)
-   {
-   if (_postConditions == NULL)
-      {
-      _postConditions = new (n,m) TR::RegisterDependencyGroup;
+bool OMR::Z::RegisterDependencyConditions::refsRegister(TR::Register *r)
+{
+    for (int32_t i = 0; i < _numPreConditions; i++) {
+        if (_preConditions->getRegisterDependency(i)->getRegister() == r
+            && _preConditions->getRegisterDependency(i)->getRefsRegister()) {
+            return true;
+        }
+    }
+    for (int32_t j = 0; j < _numPostConditions; j++) {
+        if (_postConditions->getRegisterDependency(j)->getRegister() == r
+            && _postConditions->getRegisterDependency(j)->getRefsRegister()) {
+            return true;
+        }
+    }
+    return false;
+}
 
-      for (int32_t i = 0; i < n; i++)
-         {
-         _postConditions->clearDependencyInfo(i);
-         }
-      }
-   return _numPostConditions = n;
-   }
+bool OMR::Z::RegisterDependencyConditions::defsRegister(TR::Register *r)
+{
+    for (int32_t i = 0; i < _numPreConditions; i++) {
+        if (_preConditions->getRegisterDependency(i)->getRegister() == r
+            && _preConditions->getRegisterDependency(i)->getDefsRegister()) {
+            return true;
+        }
+    }
+    for (int32_t j = 0; j < _numPostConditions; j++) {
+        if (_postConditions->getRegisterDependency(j)->getRegister() == r
+            && _postConditions->getRegisterDependency(j)->getDefsRegister()) {
+            return true;
+        }
+    }
+    return false;
+}
 
-bool
-OMR::Z::RegisterDependencyConditions::refsRegister(TR::Register * r)
-   {
-   for (int32_t i = 0; i < _numPreConditions; i++)
-      {
-      if (_preConditions->getRegisterDependency(i)->getRegister() == r &&
-         _preConditions->getRegisterDependency(i)->getRefsRegister())
-         {
-         return true;
-         }
-      }
-   for (int32_t j = 0; j < _numPostConditions; j++)
-      {
-      if (_postConditions->getRegisterDependency(j)->getRegister() == r &&
-         _postConditions->getRegisterDependency(j)->getRefsRegister())
-         {
-         return true;
-         }
-      }
-   return false;
-   }
+bool OMR::Z::RegisterDependencyConditions::usesRegister(TR::Register *r)
+{
+    for (int32_t i = 0; i < _numPreConditions; i++) {
+        if (_preConditions->getRegisterDependency(i)->getRegister() == r
+            && (_preConditions->getRegisterDependency(i)->getRefsRegister()
+                || _preConditions->getRegisterDependency(i)->getDefsRegister())) {
+            return true;
+        }
+    }
 
-bool
-OMR::Z::RegisterDependencyConditions::defsRegister(TR::Register * r)
-   {
-   for (int32_t i = 0; i < _numPreConditions; i++)
-      {
-      if (_preConditions->getRegisterDependency(i)->getRegister() == r &&
-         _preConditions->getRegisterDependency(i)->getDefsRegister())
-         {
-         return true;
-         }
-      }
-   for (int32_t j = 0; j < _numPostConditions; j++)
-      {
-      if (_postConditions->getRegisterDependency(j)->getRegister() == r &&
-         _postConditions->getRegisterDependency(j)->getDefsRegister())
-         {
-         return true;
-         }
-      }
-   return false;
-   }
-
-bool
-OMR::Z::RegisterDependencyConditions::usesRegister(TR::Register * r)
-   {
-   for (int32_t i = 0; i < _numPreConditions; i++)
-      {
-      if (_preConditions->getRegisterDependency(i)->getRegister() == r &&
-          (_preConditions->getRegisterDependency(i)->getRefsRegister() || _preConditions->getRegisterDependency(i)->getDefsRegister()))
-         {
-         return true;
-         }
-      }
-
-   for (int32_t j = 0; j < _numPostConditions; j++)
-      {
-      if (_postConditions->getRegisterDependency(j)->getRegister() == r &&
-          (_postConditions->getRegisterDependency(j)->getRefsRegister() || _postConditions->getRegisterDependency(j)->getDefsRegister()))
-         {
-         return true;
-         }
-      }
-   return false;
-   }
+    for (int32_t j = 0; j < _numPostConditions; j++) {
+        if (_postConditions->getRegisterDependency(j)->getRegister() == r
+            && (_postConditions->getRegisterDependency(j)->getRefsRegister()
+                || _postConditions->getRegisterDependency(j)->getDefsRegister())) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /**
  * Reason for oldPreCursor/oldPostCursor:
- * When the dependencies have been created by merging new registers into an existing list then only call useRegister for the new registers in the list.
- * Calling useRegister again on the existing registers will cause the totalUseCount to be too high and the virtual register will remain set to the real register
- * for the entire duration of register assignment.
+ * When the dependencies have been created by merging new registers into an existing list then only call useRegister for
+ * the new registers in the list. Calling useRegister again on the existing registers will cause the totalUseCount to be
+ * too high and the virtual register will remain set to the real register for the entire duration of register
+ * assignment.
  */
-void
-OMR::Z::RegisterDependencyConditions::bookKeepingRegisterUses(TR::Instruction * instr, TR::CodeGenerator * cg, int32_t oldPreCursor, int32_t oldPostCursor)
-   {
-   if (instr->getOpCodeValue() != TR::InstOpCode::assocreg)
-      {
-      // We create a register association directive for each dependency
+void OMR::Z::RegisterDependencyConditions::bookKeepingRegisterUses(TR::Instruction *instr, TR::CodeGenerator *cg,
+    int32_t oldPreCursor, int32_t oldPostCursor)
+{
+    if (instr->getOpCodeValue() != TR::InstOpCode::assocreg) {
+        // We create a register association directive for each dependency
 
-      if (cg->enableRegisterAssociations() && !cg->isOutOfLineColdPath())
-         {
-         createRegisterAssociationDirective(instr, cg);
-         }
+        if (cg->enableRegisterAssociations() && !cg->isOutOfLineColdPath()) {
+            createRegisterAssociationDirective(instr, cg);
+        }
 
-      if (_preConditions != NULL)
-         {
-         for (int32_t i = oldPreCursor; i < _addCursorForPre; i++)
-            {
-            instr->useRegister(_preConditions->getRegisterDependency(i)->getRegister(), true);
+        if (_preConditions != NULL) {
+            for (int32_t i = oldPreCursor; i < _addCursorForPre; i++) {
+                instr->useRegister(_preConditions->getRegisterDependency(i)->getRegister(), true);
             }
-         }
+        }
 
-      if (_postConditions != NULL)
-         {
-         for (int32_t j = oldPostCursor; j < _addCursorForPost; j++)
-            {
-            instr->useRegister(_postConditions->getRegisterDependency(j)->getRegister(), true);
+        if (_postConditions != NULL) {
+            for (int32_t j = oldPostCursor; j < _addCursorForPost; j++) {
+                instr->useRegister(_postConditions->getRegisterDependency(j)->getRegister(), true);
             }
-         }
-      }
-   }
+        }
+    }
+}
 
-uint32_t
-OMR::Z::RegisterDependencyGroup::genBitMapOfAssignableGPRs(TR::CodeGenerator * cg,
-                                                           uint32_t numberOfRegisters)
-   {
-   TR::Machine* machine = cg->machine();
+uint32_t OMR::Z::RegisterDependencyGroup::genBitMapOfAssignableGPRs(TR::CodeGenerator *cg, uint32_t numberOfRegisters)
+{
+    TR::Machine *machine = cg->machine();
 
-   // TODO: This looks like it can be cached as it should be the same value every time in a single compilation. Should
-   // also investigate whether we even need this? Don't we already block registers which are part of a dependency? I
-   // suppose with a mask we can avoid shuffling things into GPRs which are part of the dependency and may need to get
-   // other virtual registers shuffled into such GPRs. Need to think about this. Are other codegens doing this?
-   uint32_t availRegMap = machine->genBitMapOfAssignableGPRs();
+    // TODO: This looks like it can be cached as it should be the same value every time in a single compilation. Should
+    // also investigate whether we even need this? Don't we already block registers which are part of a dependency? I
+    // suppose with a mask we can avoid shuffling things into GPRs which are part of the dependency and may need to get
+    // other virtual registers shuffled into such GPRs. Need to think about this. Are other codegens doing this?
+    uint32_t availRegMap = machine->genBitMapOfAssignableGPRs();
 
-   for (uint32_t i = 0; i < numberOfRegisters; i++)
-      {
-      TR::RealRegister::RegNum realReg = _dependencies[i].getRealRegister();
-      if (TR::RealRegister::isGPR(realReg))
-         {
-         availRegMap &= ~machine->getRealRegister(realReg)->getRealRegisterMask();
-         }
-      }
+    for (uint32_t i = 0; i < numberOfRegisters; i++) {
+        TR::RealRegister::RegNum realReg = _dependencies[i].getRealRegister();
+        if (TR::RealRegister::isGPR(realReg)) {
+            availRegMap &= ~machine->getRealRegister(realReg)->getRealRegisterMask();
+        }
+    }
 
-   return availRegMap;
-   }
+    return availRegMap;
+}
 
-void
-OMR::Z::RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstruction,
-                                                TR_RegisterKinds  kindToBeAssigned,
-                                                uint32_t          numOfDependencies,
-                                                TR::CodeGenerator *cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   TR::Machine *machine = cg->machine();
-   TR::Register * virtReg;
-   TR::RealRegister::RegNum dependentRegNum;
-   TR::RealRegister * dependentRealReg, * assignedRegister;
-   int32_t i, j;
-   bool changed;
-   uint32_t availRegMask = self()->genBitMapOfAssignableGPRs(cg, numOfDependencies);
+void OMR::Z::RegisterDependencyGroup::assignRegisters(TR::Instruction *currentInstruction,
+    TR_RegisterKinds kindToBeAssigned, uint32_t numOfDependencies, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    TR::Machine *machine = cg->machine();
+    TR::Register *virtReg;
+    TR::RealRegister::RegNum dependentRegNum;
+    TR::RealRegister *dependentRealReg, *assignedRegister;
+    int32_t i, j;
+    bool changed;
+    uint32_t availRegMask = self()->genBitMapOfAssignableGPRs(cg, numOfDependencies);
 
-   for (i = 0; i< numOfDependencies; i++)
-      {
-      TR::RegisterDependency &regDep = _dependencies[i];
-      virtReg = regDep.getRegister();
-      if (regDep.isSpilledReg() && !virtReg->getRealRegister())
-         {
-         TR_ASSERT_FATAL(virtReg->getBackingStorage() != NULL, "Spilled virtual register on dependency list does not have backing storage");
+    for (i = 0; i < numOfDependencies; i++) {
+        TR::RegisterDependency &regDep = _dependencies[i];
+        virtReg = regDep.getRegister();
+        if (regDep.isSpilledReg() && !virtReg->getRealRegister()) {
+            TR_ASSERT_FATAL(virtReg->getBackingStorage() != NULL,
+                "Spilled virtual register on dependency list does not have backing storage");
 
-         if (virtReg->getAssignedRealRegister())
-            {
-            // this happens when the register was first spilled in main line path then was reverse spilled
-            // and assigned to a real register in OOL path. We protected the backing store when doing
-            // the reverse spill so we could re-spill to the same slot now
-            TR::Node *currentNode = currentInstruction->getNode();
-            TR::RealRegister *assignedReg = toRealRegister(virtReg->getAssignedRegister());
-            cg->traceRegisterAssignment ("\nOOL: Found %R spilled in main line and reused inside OOL", virtReg);
-            TR::MemoryReference * tempMR = generateS390MemoryReference(currentNode, virtReg->getBackingStorage()->getSymbolReference(), cg);
-            TR::InstOpCode::Mnemonic opCode;
+            if (virtReg->getAssignedRealRegister()) {
+                // this happens when the register was first spilled in main line path then was reverse spilled
+                // and assigned to a real register in OOL path. We protected the backing store when doing
+                // the reverse spill so we could re-spill to the same slot now
+                TR::Node *currentNode = currentInstruction->getNode();
+                TR::RealRegister *assignedReg = toRealRegister(virtReg->getAssignedRegister());
+                cg->traceRegisterAssignment("\nOOL: Found %R spilled in main line and reused inside OOL", virtReg);
+                TR::MemoryReference *tempMR
+                    = generateS390MemoryReference(currentNode, virtReg->getBackingStorage()->getSymbolReference(), cg);
+                TR::InstOpCode::Mnemonic opCode;
+                TR_RegisterKinds rk = virtReg->getKind();
+                switch (rk) {
+                    case TR_GPR:
+                        if (virtReg->is64BitReg()) {
+                            opCode = TR::InstOpCode::LG;
+                        } else {
+                            opCode = TR::InstOpCode::L;
+                        }
+                        break;
+                    case TR_FPR:
+                        opCode = TR::InstOpCode::LD;
+                        break;
+                    case TR_VRF:
+                        opCode = TR::InstOpCode::VL;
+                        break;
+                    default:
+                        TR_ASSERT(0, "\nRegister kind not supported in OOL spill\n");
+                        break;
+                }
+
+                bool isVector = (rk == TR_VRF);
+
+                TR::Instruction *inst = isVector
+                    ? generateVRXInstruction(cg, opCode, currentNode, assignedReg, tempMR, 0, currentInstruction)
+                    : generateRXInstruction(cg, opCode, currentNode, assignedReg, tempMR, currentInstruction);
+                cg->traceRAInstruction(inst);
+
+                assignedReg->setAssignedRegister(NULL);
+                virtReg->setAssignedRegister(NULL);
+                assignedReg->setState(TR::RealRegister::Free);
+            }
+
+            // now we are leaving the OOL sequence, anything that was previously spilled in OOL hot path or main line
+            // should be considered as mainline spill for the next OOL sequence.
+            virtReg->getBackingStorage()->setMaxSpillDepth(1);
+        }
+        // we also need to free up all locked backing storage if we are exiting the OOL during backwards RA assignment
+        else if (currentInstruction->isLabel() && virtReg->getAssignedRealRegister()) {
+            TR_BackingStore *location = virtReg->getBackingStorage();
             TR_RegisterKinds rk = virtReg->getKind();
-            switch (rk)
-               {
-               case TR_GPR:
-                  if (virtReg->is64BitReg())
-                     {
-                     opCode = TR::InstOpCode::LG;
-                     }
-                  else
-                     {
-                     opCode = TR::InstOpCode::L;
-                     }
-                  break;
-               case TR_FPR:
-                  opCode = TR::InstOpCode::LD;
-                  break;
-               case TR_VRF:
-                  opCode = TR::InstOpCode::VL;
-                  break;
-               default:
-                  TR_ASSERT( 0, "\nRegister kind not supported in OOL spill\n");
-                  break;
-               }
+            int32_t dataSize;
+            if (toS390LabelInstruction(currentInstruction)->getLabelSymbol()->isStartOfColdInstructionStream()
+                && location) {
+                traceMsg(comp, "\nOOL: Releasing backing storage (%p)\n", location);
+                if (rk == TR_GPR)
+                    dataSize = TR::Compiler->om.sizeofReferenceAddress();
+                else if (rk == TR_VRF)
+                    dataSize = 16; // Will change to 32 in a few years..
+                else
+                    dataSize = 8;
 
-            bool isVector = (rk == TR_VRF);
-
-            TR::Instruction *inst = isVector ? generateVRXInstruction(cg, opCode, currentNode, assignedReg, tempMR, 0, currentInstruction) :
-                                                   generateRXInstruction (cg, opCode, currentNode, assignedReg, tempMR, currentInstruction);
-            cg->traceRAInstruction(inst);
-
-            assignedReg->setAssignedRegister(NULL);
-            virtReg->setAssignedRegister(NULL);
-            assignedReg->setState(TR::RealRegister::Free);
+                location->setMaxSpillDepth(0);
+                cg->freeSpill(location, dataSize, 0);
+                virtReg->setBackingStorage(NULL);
             }
+        }
+    }
 
-         // now we are leaving the OOL sequence, anything that was previously spilled in OOL hot path or main line
-         // should be considered as mainline spill for the next OOL sequence.
-         virtReg->getBackingStorage()->setMaxSpillDepth(1);
-         }
-      // we also need to free up all locked backing storage if we are exiting the OOL during backwards RA assignment
-      else if (currentInstruction->isLabel() && virtReg->getAssignedRealRegister())
-         {
-         TR_BackingStore * location = virtReg->getBackingStorage();
-         TR_RegisterKinds rk = virtReg->getKind();
-         int32_t dataSize;
-         if (toS390LabelInstruction(currentInstruction)->getLabelSymbol()->isStartOfColdInstructionStream() &&
-               location)
-            {
-            traceMsg (comp,"\nOOL: Releasing backing storage (%p)\n", location);
-            if (rk == TR_GPR)
-               dataSize = TR::Compiler->om.sizeofReferenceAddress();
-            else if (rk == TR_VRF)
-               dataSize = 16; // Will change to 32 in a few years..
-            else
-               dataSize = 8;
+    uint32_t numGPRs = 0;
+    uint32_t numFPRs = 0;
+    uint32_t numVRFs = 0;
 
-            location->setMaxSpillDepth(0);
-            cg->freeSpill(location,dataSize,0);
-            virtReg->setBackingStorage(NULL);
+    // Used to do lookups using real register numbers
+    OMR::RegisterDependencyMap map(_dependencies, numOfDependencies);
+
+    for (i = 0; i < numOfDependencies; i++) {
+        TR::RegisterDependency &regDep = _dependencies[i];
+
+        map.addDependency(regDep, i);
+
+        if (!regDep.isSpilledReg() && !regDep.isKillVolHighRegs() && !regDep.isNoReg()) {
+            virtReg = regDep.getRegister();
+            switch (virtReg->getKind()) {
+                case TR_GPR:
+                    ++numGPRs;
+                    break;
+                case TR_FPR:
+                    ++numFPRs;
+                    break;
+                case TR_VRF:
+                    ++numVRFs;
+                    break;
+                default:
+                    break;
             }
-         }
-      }
-
-   uint32_t numGPRs = 0;
-   uint32_t numFPRs = 0;
-   uint32_t numVRFs = 0;
-
-   // Used to do lookups using real register numbers
-   OMR::RegisterDependencyMap map(_dependencies, numOfDependencies);
-
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      TR::RegisterDependency &regDep = _dependencies[i];
-
-      map.addDependency(regDep, i);
-
-      if (!regDep.isSpilledReg() &&
-          !regDep.isKillVolHighRegs() &&
-          !regDep.isNoReg())
-         {
-         virtReg = regDep.getRegister();
-         switch (virtReg->getKind())
-            {
-            case TR_GPR:
-               ++numGPRs;
-               break;
-            case TR_FPR:
-               ++numFPRs;
-               break;
-            case TR_VRF:
-               ++numVRFs;
-               break;
-            default:
-               break;
-            }
-         }
-      }
+        }
+    }
 
 #ifdef DEBUG
-   int32_t lockedGPRs = 0;
-   int32_t lockedFPRs = 0;
-   int32_t lockedVRFs = 0;
+    int32_t lockedGPRs = 0;
+    int32_t lockedFPRs = 0;
+    int32_t lockedVRFs = 0;
 
-   // count up how many registers are locked for each type
-   for (int32_t i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastGPR; ++i)
-      {
-      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
-      if (realReg->getState() == TR::RealRegister::Locked)
-         ++lockedGPRs;
-      }
+    // count up how many registers are locked for each type
+    for (int32_t i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastGPR; ++i) {
+        TR::RealRegister *realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
+        if (realReg->getState() == TR::RealRegister::Locked)
+            ++lockedGPRs;
+    }
 
-   for (int32_t i = TR::RealRegister::FirstFPR; i <= TR::RealRegister::LastFPR; ++i)
-      {
-      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
-      if (realReg->getState() == TR::RealRegister::Locked)
-         ++lockedFPRs;
-      }
+    for (int32_t i = TR::RealRegister::FirstFPR; i <= TR::RealRegister::LastFPR; ++i) {
+        TR::RealRegister *realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
+        if (realReg->getState() == TR::RealRegister::Locked)
+            ++lockedFPRs;
+    }
 
-   for (int32_t i = TR::RealRegister::FirstVRF; i <= TR::RealRegister::LastVRF; ++i)
-      {
-      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
-      if (realReg->getState() == TR::RealRegister::Locked)
-         ++lockedVRFs;
-      }
+    for (int32_t i = TR::RealRegister::FirstVRF; i <= TR::RealRegister::LastVRF; ++i) {
+        TR::RealRegister *realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
+        if (realReg->getState() == TR::RealRegister::Locked)
+            ++lockedVRFs;
+    }
 
-   TR_ASSERT(lockedGPRs == machine->getNumberOfLockedRegisters(TR_GPR), "Inconsistent number of locked GPRs");
-   TR_ASSERT(lockedFPRs == machine->getNumberOfLockedRegisters(TR_FPR), "Inconsistent number of locked FPRs");
-   TR_ASSERT(lockedVRFs == machine->getNumberOfLockedRegisters(TR_VRF), "Inconsistent number of locked VRFs");
+    TR_ASSERT(lockedGPRs == machine->getNumberOfLockedRegisters(TR_GPR), "Inconsistent number of locked GPRs");
+    TR_ASSERT(lockedFPRs == machine->getNumberOfLockedRegisters(TR_FPR), "Inconsistent number of locked FPRs");
+    TR_ASSERT(lockedVRFs == machine->getNumberOfLockedRegisters(TR_VRF), "Inconsistent number of locked VRFs");
 #endif
 
-   // To handle circular dependencies, we block a real register if (1) it is already assigned to a correct
-   // virtual register and (2) if it is assigned to one register in the list but is required by another.
-   // However, if all available registers are requested, we do not block in case (2) to avoid all registers
-   // being blocked.
+    // To handle circular dependencies, we block a real register if (1) it is already assigned to a correct
+    // virtual register and (2) if it is assigned to one register in the list but is required by another.
+    // However, if all available registers are requested, we do not block in case (2) to avoid all registers
+    // being blocked.
 
-   bool haveSpareGPRs = true;
-   bool haveSpareFPRs = true;
-   bool haveSpareVRFs = true;
+    bool haveSpareGPRs = true;
+    bool haveSpareFPRs = true;
+    bool haveSpareVRFs = true;
 
-   TR_ASSERT(numGPRs <= (TR::RealRegister::LastGPR - TR::RealRegister::FirstGPR + 1 - machine->getNumberOfLockedRegisters(TR_GPR)), "Too many GPR dependencies, unable to assign");
-   TR_ASSERT(numFPRs <= (TR::RealRegister::LastFPR - TR::RealRegister::FirstFPR + 1 - machine->getNumberOfLockedRegisters(TR_FPR)), "Too many FPR dependencies, unable to assign");
-   TR_ASSERT(numVRFs <= (TR::RealRegister::LastVRF - TR::RealRegister::FirstVRF + 1 - machine->getNumberOfLockedRegisters(TR_VRF)), "Too many VRF dependencies, unable to assign");
+    TR_ASSERT(numGPRs <= (TR::RealRegister::LastGPR - TR::RealRegister::FirstGPR + 1
+                  - machine->getNumberOfLockedRegisters(TR_GPR)),
+        "Too many GPR dependencies, unable to assign");
+    TR_ASSERT(numFPRs <= (TR::RealRegister::LastFPR - TR::RealRegister::FirstFPR + 1
+                  - machine->getNumberOfLockedRegisters(TR_FPR)),
+        "Too many FPR dependencies, unable to assign");
+    TR_ASSERT(numVRFs <= (TR::RealRegister::LastVRF - TR::RealRegister::FirstVRF + 1
+                  - machine->getNumberOfLockedRegisters(TR_VRF)),
+        "Too many VRF dependencies, unable to assign");
 
-   if (numGPRs == (TR::RealRegister::LastGPR - TR::RealRegister::FirstGPR + 1 - machine->getNumberOfLockedRegisters(TR_GPR)))
-      haveSpareGPRs = false;
-   if (numFPRs == (TR::RealRegister::LastFPR - TR::RealRegister::FirstFPR + 1 - machine->getNumberOfLockedRegisters(TR_FPR)))
-      haveSpareFPRs = false;
-   if (numVRFs == (TR::RealRegister::LastVRF - TR::RealRegister::FirstVRF + 1 - machine->getNumberOfLockedRegisters(TR_VRF)))
-      haveSpareVRFs = false;
+    if (numGPRs
+        == (TR::RealRegister::LastGPR - TR::RealRegister::FirstGPR + 1 - machine->getNumberOfLockedRegisters(TR_GPR)))
+        haveSpareGPRs = false;
+    if (numFPRs
+        == (TR::RealRegister::LastFPR - TR::RealRegister::FirstFPR + 1 - machine->getNumberOfLockedRegisters(TR_FPR)))
+        haveSpareFPRs = false;
+    if (numVRFs
+        == (TR::RealRegister::LastVRF - TR::RealRegister::FirstVRF + 1 - machine->getNumberOfLockedRegisters(TR_VRF)))
+        haveSpareVRFs = false;
 
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      virtReg = _dependencies[i].getRegister();
+    for (i = 0; i < numOfDependencies; i++) {
+        virtReg = _dependencies[i].getRegister();
 
-      if (virtReg->getAssignedRealRegister() != NULL)
-         {
-         if (_dependencies[i].isNoReg())
-            {
-            virtReg->block();
+        if (virtReg->getAssignedRealRegister() != NULL) {
+            if (_dependencies[i].isNoReg()) {
+                virtReg->block();
+            } else {
+                TR::RealRegister::RegNum assignedRegNum
+                    = toRealRegister(virtReg->getAssignedRealRegister())->getRegisterNumber();
+
+                // Always block if the required register and assigned register match or if the assigned register is
+                // required by another dependency but only if there are any spare registers left so as to avoid blocking
+                // all existing registers
+                if (_dependencies[i].getRealRegister() == assignedRegNum
+                    || (map.getDependencyWithTarget(assignedRegNum)
+                        && ((virtReg->getKind() != TR_GPR || haveSpareGPRs)
+                            && (virtReg->getKind() != TR_FPR || haveSpareFPRs)
+                            && (virtReg->getKind() != TR_VRF || haveSpareVRFs)))) {
+                    virtReg->block();
+                }
             }
-         else
-            {
-            TR::RealRegister::RegNum assignedRegNum = toRealRegister(virtReg->getAssignedRealRegister())->getRegisterNumber();
+        }
 
-            // Always block if the required register and assigned register match or if the assigned register is
-            // required by another dependency but only if there are any spare registers left so as to avoid blocking
-            // all existing registers
-            if (_dependencies[i].getRealRegister() == assignedRegNum ||
-                (map.getDependencyWithTarget(assignedRegNum) &&
-                 ((virtReg->getKind() != TR_GPR || haveSpareGPRs) &&
-                  (virtReg->getKind() != TR_FPR || haveSpareFPRs) &&
-                  (virtReg->getKind() != TR_VRF || haveSpareVRFs))))
-               {
-               virtReg->block();
-               }
-            }
-         }
+        // Check for directive to spill high registers. Used on callouts
+        if (_dependencies[i].isKillVolHighRegs()) {
+            machine->spillAllVolatileHighRegisters(currentInstruction);
+            _dependencies[i].setRealRegister(TR::RealRegister::NoReg); // ignore from now on
+        }
+    }
 
-      // Check for directive to spill high registers. Used on callouts
-      if ( _dependencies[i].isKillVolHighRegs())
-         {
-         machine->spillAllVolatileHighRegisters(currentInstruction);
-         _dependencies[i].setRealRegister(TR::RealRegister::NoReg);  // ignore from now on
-         }
-      }
+    /////    REGISTER PAIRS
 
-   /////    REGISTER PAIRS
+    // We handle register pairs by passing regpair dependencies stubs into the register dependency
+    // list.  The following pieces of code are responsible for replacing these stubs with actual
+    // real register values, using register allocation routines in the S390Machine, and hence,
+    // allow the dependency routines to complete the allocation.
+    //
+    // We need to run through the list of dependencies looking for register pairs.
+    // We assign a register pair to any such pairs that are found and then look for the low
+    // and high order regs in the list of deps.  We update the low and high order pair deps with
+    // the real reg assigned by to the pair, and then let the these deps be handled as any other
+    // single reg dep.
+    //
+    // If the virt registers have already been assigned, the low and high order
+    // regs obtained from regPair will not match the ones in the dependency list.
+    // Hence, will fall through the dep entries for the associated virt high
+    // and low regs as the real high and low will not match the dep virt reg entries.
+    //
+    for (i = 0; i < numOfDependencies; i++) {
+        TR::RegisterDependency &regDep = _dependencies[i];
 
-   // We handle register pairs by passing regpair dependencies stubs into the register dependency
-   // list.  The following pieces of code are responsible for replacing these stubs with actual
-   // real register values, using register allocation routines in the S390Machine, and hence,
-   // allow the dependency routines to complete the allocation.
-   //
-   // We need to run through the list of dependencies looking for register pairs.
-   // We assign a register pair to any such pairs that are found and then look for the low
-   // and high order regs in the list of deps.  We update the low and high order pair deps with
-   // the real reg assigned by to the pair, and then let the these deps be handled as any other
-   // single reg dep.
-   //
-   // If the virt registers have already been assigned, the low and high order
-   // regs obtained from regPair will not match the ones in the dependency list.
-   // Hence, will fall through the dep entries for the associated virt high
-   // and low regs as the real high and low will not match the dep virt reg entries.
-   //
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      TR::RegisterDependency &regDep = _dependencies[i];
+        // Get reg pair pointer
+        //
+        TR::RegisterPair *virtRegPair = regDep.getRegister()->getRegisterPair();
 
-      // Get reg pair pointer
-      //
-      TR::RegisterPair * virtRegPair = regDep.getRegister()->getRegisterPair();
+        // If it is a register pair
+        //
+        if (virtRegPair == NULL) {
+            continue;
+        }
 
-      // If it is a register pair
-      //
-      if (virtRegPair == NULL)
-         {
-         continue;
-         }
+        // Is this an Even-Odd pair assignment
+        //
+        if (regDep.isEvenOddPair() || regDep.isFPPair()) {
+            TR::Register *virtRegHigh = virtRegPair->getHighOrder();
+            TR::Register *virtRegLow = virtRegPair->getLowOrder();
+            TR::RegisterPair *retPair = NULL;
 
-      // Is this an Even-Odd pair assignment
-      //
-      if (regDep.isEvenOddPair()
-          || regDep.isFPPair())
-         {
-         TR::Register * virtRegHigh = virtRegPair->getHighOrder();
-         TR::Register * virtRegLow = virtRegPair->getLowOrder();
-         TR::RegisterPair * retPair = NULL;
-
-         #if 0
+#if 0
          fprintf(stderr, "DEP: PRE REG PAIR ASS: %p(%p,%p)->(%p,%p)\n", virtRegPair, virtRegPair->getHighOrder(),
             virtRegPair->getLowOrder(), virtRegPair->getHighOrder()->getAssignedRegister(),
             virtRegPair->getLowOrder()->getAssignedRegister());
-         #endif
+#endif
 
-         // Assign a real register pair
-         // This call returns a pair placeholder that points to the assigned real registers
-         //     retPair:
-         //                 high -> realRegHigh -> virtRegHigh
-         //                 low  -> realRegLow  -> virtRegLow
-         //
-         // No bookkeeping on assignment call as we do bookkeeping at end of this method
-         //
-         retPair = (TR::RegisterPair *) machine->assignBestRegister((TR::Register *) virtRegPair,
-                                                                   currentInstruction,
-                                                                   NOBOOKKEEPING,
-                                                                   availRegMask);
+            // Assign a real register pair
+            // This call returns a pair placeholder that points to the assigned real registers
+            //     retPair:
+            //                 high -> realRegHigh -> virtRegHigh
+            //                 low  -> realRegLow  -> virtRegLow
+            //
+            // No bookkeeping on assignment call as we do bookkeeping at end of this method
+            //
+            retPair = (TR::RegisterPair *)machine->assignBestRegister((TR::Register *)virtRegPair, currentInstruction,
+                NOBOOKKEEPING, availRegMask);
 
-         // Grab real regs that are returned as high/low in retPair
-         //
-         TR::Register * realRegHigh = retPair->getHighOrder();
-         TR::Register * realRegLow  = retPair->getLowOrder();
+            // Grab real regs that are returned as high/low in retPair
+            //
+            TR::Register *realRegHigh = retPair->getHighOrder();
+            TR::Register *realRegLow = retPair->getLowOrder();
 
-         // We need to update the virtRegPair assignedRegister pointers
-         // The real regs should already be pointing at the virtuals after
-         // returning from the assignment call.
-         //
-         virtRegPair->getHighOrder()->setAssignedRegister(realRegHigh);
-         virtRegPair->getLowOrder()->setAssignedRegister(realRegLow);
+            // We need to update the virtRegPair assignedRegister pointers
+            // The real regs should already be pointing at the virtuals after
+            // returning from the assignment call.
+            //
+            virtRegPair->getHighOrder()->setAssignedRegister(realRegHigh);
+            virtRegPair->getLowOrder()->setAssignedRegister(realRegLow);
 
-         #if 0
+#if 0
          fprintf(stderr, "DEP: POST REG PAIR ASS: %p(%p,%p)->(%p,%p)=(%d,%d)\n", virtRegPair, virtRegPair->getHighOrder(),
             virtRegPair->getLowOrder(), virtRegPair->getHighOrder()->getAssignedRegister(),
             virtRegPair->getLowOrder()->getAssignedRegister(), toRealRegister(realRegHigh)->getRegisterNumber() - 1,
             toRealRegister(realRegLow)->getRegisterNumber() - 1);
-         #endif
+#endif
 
-         // We are done with the reg pair structure.  No assignment later here.
-         //
-         regDep.setRealRegister(TR::RealRegister::NoReg);
-
-         // See if there are any LegalEvenOfPair/LegalOddOfPair deps in list that correspond
-         // to the assigned pair
-         //
-         for (j = 0; j < numOfDependencies; j++)
-            {
-            TR::RegisterDependency &innerRegDep = _dependencies[j];
-
-            // Check to ensure correct assignment of even/odd pair.
+            // We are done with the reg pair structure.  No assignment later here.
             //
-            if (((innerRegDep.isLegalEvenOfPair()
-                 || innerRegDep.isLegalFirstOfFPPair()) &&
-                 innerRegDep.getRegister() == virtRegLow) ||
-                ((innerRegDep.isLegalOddOfPair()
-                 || innerRegDep.isLegalSecondOfFPPair())  &&
-                 innerRegDep.getRegister() == virtRegHigh))
-               {
-               TR_ASSERT( 0, "Register pair odd and even assigned wrong\n");
-               }
-
-            // Look for the Even reg in deps
-            if ((innerRegDep.isLegalEvenOfPair()
-                || innerRegDep.isLegalFirstOfFPPair()) &&
-                innerRegDep.getRegister() == virtRegHigh)
-               {
-               innerRegDep.setRealRegister(TR::RealRegister::NoReg);
-               toRealRegister(realRegLow)->block();
-               }
-
-            // Look for the Odd reg in deps
-            if ((innerRegDep.isLegalOddOfPair()
-                || innerRegDep.isLegalSecondOfFPPair()) &&
-                innerRegDep.getRegister() == virtRegLow)
-               {
-               innerRegDep.setRealRegister(TR::RealRegister::NoReg);
-               toRealRegister(realRegHigh)->block();
-               }
-            }
-
-         changed = true;
-         }
-      }
-
-   // If we have an [Even|Odd]OfLegal of that has not been associated
-   // to a reg pair in this list (in case we only need to ensure that the
-   // reg can be assigned to a pair in the future), we need to handle such
-   // cases here.
-   //
-   // It is possible that left over legal even/odd regs are actually real regs
-   // that were already assigned in a previous instruction.  We check for this
-   // case before assigning a new reg by checking for assigned real regs.  If
-   // real reg is assigned, we need to make sure it is a legal assignment.
-   //
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      TR::RegisterDependency &regDep = _dependencies[i];
-      TR::Register * virtReg = regDep.getRegister();
-      TR::Register * assRealReg = virtReg->getAssignedRealRegister();
-
-      if (regDep.isLegalEvenOfPair())
-         {
-         // if not assigned, or assigned but not legal.
-         //
-         if (assRealReg == NULL || (!machine->isLegalEvenRegister(toRealRegister(assRealReg), ALLOWBLOCKED)))
-            {
-            TR::RealRegister * bestEven = machine->findBestLegalEvenRegister();
             regDep.setRealRegister(TR::RealRegister::NoReg);
-            toRealRegister(bestEven)->block();
 
-            #ifdef DEBUG_MMIT
-            fprintf(stderr, "DEP ASS Best Legal Even %p (NOT pair)\n", toRealRegister(bestEven)->getRegisterNumber() - 1);
-            #endif
+            // See if there are any LegalEvenOfPair/LegalOddOfPair deps in list that correspond
+            // to the assigned pair
+            //
+            for (j = 0; j < numOfDependencies; j++) {
+                TR::RegisterDependency &innerRegDep = _dependencies[j];
+
+                // Check to ensure correct assignment of even/odd pair.
+                //
+                if (((innerRegDep.isLegalEvenOfPair() || innerRegDep.isLegalFirstOfFPPair())
+                        && innerRegDep.getRegister() == virtRegLow)
+                    || ((innerRegDep.isLegalOddOfPair() || innerRegDep.isLegalSecondOfFPPair())
+                        && innerRegDep.getRegister() == virtRegHigh)) {
+                    TR_ASSERT(0, "Register pair odd and even assigned wrong\n");
+                }
+
+                // Look for the Even reg in deps
+                if ((innerRegDep.isLegalEvenOfPair() || innerRegDep.isLegalFirstOfFPPair())
+                    && innerRegDep.getRegister() == virtRegHigh) {
+                    innerRegDep.setRealRegister(TR::RealRegister::NoReg);
+                    toRealRegister(realRegLow)->block();
+                }
+
+                // Look for the Odd reg in deps
+                if ((innerRegDep.isLegalOddOfPair() || innerRegDep.isLegalSecondOfFPPair())
+                    && innerRegDep.getRegister() == virtRegLow) {
+                    innerRegDep.setRealRegister(TR::RealRegister::NoReg);
+                    toRealRegister(realRegHigh)->block();
+                }
             }
-         else
-            {
-            regDep.setRealRegister(TR::RealRegister::NoReg);
+
+            changed = true;
+        }
+    }
+
+    // If we have an [Even|Odd]OfLegal of that has not been associated
+    // to a reg pair in this list (in case we only need to ensure that the
+    // reg can be assigned to a pair in the future), we need to handle such
+    // cases here.
+    //
+    // It is possible that left over legal even/odd regs are actually real regs
+    // that were already assigned in a previous instruction.  We check for this
+    // case before assigning a new reg by checking for assigned real regs.  If
+    // real reg is assigned, we need to make sure it is a legal assignment.
+    //
+    for (i = 0; i < numOfDependencies; i++) {
+        TR::RegisterDependency &regDep = _dependencies[i];
+        TR::Register *virtReg = regDep.getRegister();
+        TR::Register *assRealReg = virtReg->getAssignedRealRegister();
+
+        if (regDep.isLegalEvenOfPair()) {
+            // if not assigned, or assigned but not legal.
+            //
+            if (assRealReg == NULL || (!machine->isLegalEvenRegister(toRealRegister(assRealReg), ALLOWBLOCKED))) {
+                TR::RealRegister *bestEven = machine->findBestLegalEvenRegister();
+                regDep.setRealRegister(TR::RealRegister::NoReg);
+                toRealRegister(bestEven)->block();
+
+#ifdef DEBUG_MMIT
+                fprintf(stderr, "DEP ASS Best Legal Even %p (NOT pair)\n",
+                    toRealRegister(bestEven)->getRegisterNumber() - 1);
+#endif
+            } else {
+                regDep.setRealRegister(TR::RealRegister::NoReg);
             }
-         }
+        }
 
-      if (regDep.isLegalOddOfPair())
-         {
-         // if not assigned, or assigned but not legal.
-         //
-         if (assRealReg == NULL || (!machine->isLegalOddRegister(toRealRegister(assRealReg), ALLOWBLOCKED)))
-            {
-            TR::RealRegister * bestOdd = machine->findBestLegalOddRegister();
-            regDep.setRealRegister(TR::RealRegister::NoReg);
-            toRealRegister(bestOdd)->block();
+        if (regDep.isLegalOddOfPair()) {
+            // if not assigned, or assigned but not legal.
+            //
+            if (assRealReg == NULL || (!machine->isLegalOddRegister(toRealRegister(assRealReg), ALLOWBLOCKED))) {
+                TR::RealRegister *bestOdd = machine->findBestLegalOddRegister();
+                regDep.setRealRegister(TR::RealRegister::NoReg);
+                toRealRegister(bestOdd)->block();
 
-            #ifdef DEBUG_MMIT
-            fprintf(stderr, "DEP ASS Best Legal Odd %p (NOT pair)\n", toRealRegister(bestOdd)->getRegisterNumber() - 1);
-            #endif
+#ifdef DEBUG_MMIT
+                fprintf(stderr, "DEP ASS Best Legal Odd %p (NOT pair)\n",
+                    toRealRegister(bestOdd)->getRegisterNumber() - 1);
+#endif
+            } else {
+                regDep.setRealRegister(TR::RealRegister::NoReg);
             }
-         else
-            {
-            regDep.setRealRegister(TR::RealRegister::NoReg);
+        }
+
+        if (regDep.isLegalFirstOfFPPair()) {
+            // if not assigned, or assigned but not legal.
+            //
+            if (assRealReg == NULL || (!machine->isLegalFirstOfFPRegister(toRealRegister(assRealReg), ALLOWBLOCKED))) {
+                TR::RealRegister *bestFirstFP = machine->findBestLegalSiblingFPRegister(true);
+                regDep.setRealRegister(TR::RealRegister::NoReg);
+                toRealRegister(bestFirstFP)->block();
+
+#ifdef DEBUG_FPPAIR
+                fprintf(stderr, "DEP ASS Best Legal FirstOfFPPair %p (NOT pair)\n",
+                    toRealRegister(bestFirstFP)->getRegisterNumber() - 1);
+#endif
+            } else {
+                regDep.setRealRegister(TR::RealRegister::NoReg);
             }
-         }
+        }
 
-      if (regDep.isLegalFirstOfFPPair())
-         {
-         // if not assigned, or assigned but not legal.
-         //
-         if (assRealReg == NULL || (!machine->isLegalFirstOfFPRegister(toRealRegister(assRealReg), ALLOWBLOCKED)))
-            {
-            TR::RealRegister * bestFirstFP = machine->findBestLegalSiblingFPRegister(true);
-            regDep.setRealRegister(TR::RealRegister::NoReg);
-            toRealRegister(bestFirstFP)->block();
+        if (regDep.isLegalSecondOfFPPair()) {
+            // if not assigned, or assigned but not legal.
+            //
+            if (assRealReg == NULL || (!machine->isLegalSecondOfFPRegister(toRealRegister(assRealReg), ALLOWBLOCKED))) {
+                TR::RealRegister *bestSecondFP = machine->findBestLegalSiblingFPRegister(false);
+                regDep.setRealRegister(TR::RealRegister::NoReg);
+                toRealRegister(bestSecondFP)->block();
 
-            #ifdef DEBUG_FPPAIR
-            fprintf(stderr, "DEP ASS Best Legal FirstOfFPPair %p (NOT pair)\n", toRealRegister(bestFirstFP)->getRegisterNumber() - 1);
-            #endif
+#ifdef DEBUG_FPPAIR
+                fprintf(stderr, "DEP ASS Best Legal SecondOfFPPair  %p (NOT pair)\n",
+                    toRealRegister(bestSecondFP)->getRegisterNumber() - 1);
+#endif
+            } else {
+                regDep.setRealRegister(TR::RealRegister::NoReg);
             }
-         else
-            {
-            regDep.setRealRegister(TR::RealRegister::NoReg);
-            }
-         }
+        }
 
-      if (regDep.isLegalSecondOfFPPair())
-         {
-         // if not assigned, or assigned but not legal.
-         //
-         if (assRealReg == NULL || (!machine->isLegalSecondOfFPRegister(toRealRegister(assRealReg), ALLOWBLOCKED)))
-            {
-            TR::RealRegister * bestSecondFP = machine->findBestLegalSiblingFPRegister(false);
-            regDep.setRealRegister(TR::RealRegister::NoReg);
-            toRealRegister(bestSecondFP)->block();
+    } // for
 
-            #ifdef DEBUG_FPPAIR
-            fprintf(stderr, "DEP ASS Best Legal SecondOfFPPair  %p (NOT pair)\n", toRealRegister(bestSecondFP)->getRegisterNumber() - 1);
-            #endif
-            }
-         else
-            {
-            regDep.setRealRegister(TR::RealRegister::NoReg);
-            }
-         }
-
-      }// for
-
-   #if 0
+#if 0
     {
       fprintf(stdout,"PART II ---------------------------------------\n");
       fprintf(stdout,"DEPENDS for INST [%p]\n",currentInstruction);
       printDeps(stdout, numberOfRegisters);
     }
-   #endif
+#endif
 
+    /////    COERCE
 
-   /////    COERCE
+    // These routines are responsible for assigning registers and using necessary
+    // ops to ensure that any defined dependency [virt reg, real reg] (where real reg
+    // is not NoReg), is assigned such that virtreg->realreg.
+    //
+    do {
+        changed = false;
 
-   // These routines are responsible for assigning registers and using necessary
-   // ops to ensure that any defined dependency [virt reg, real reg] (where real reg
-   // is not NoReg), is assigned such that virtreg->realreg.
-   //
-   do
-      {
-      changed = false;
+        // For each dependency
+        //
+        for (i = 0; i < numOfDependencies; i++) {
+            TR::RegisterDependency &regDep = _dependencies[i];
 
-      // For each dependency
-      //
-      for (i = 0; i < numOfDependencies; i++)
-         {
-         TR::RegisterDependency &regDep = _dependencies[i];
+            virtReg = regDep.getRegister();
 
-         virtReg = regDep.getRegister();
+            TR_ASSERT(virtReg != NULL, "null virtual register during coercion");
+            dependentRegNum = regDep.getRealRegister();
 
-         TR_ASSERT( virtReg != NULL, "null virtual register during coercion");
-         dependentRegNum = regDep.getRealRegister();
+            dependentRealReg = machine->getRealRegister(dependentRegNum);
 
-         dependentRealReg = machine->getRealRegister(dependentRegNum);
-
-         // If dep requires a specific real reg, and the real reg is free
-         if (!regDep.isNoReg() &&
-             !regDep.isAssignAny() &&
-             !regDep.isSpilledReg() &&
-             dependentRealReg->getState() == TR::RealRegister::Free)
-            {
-            #if 0
+            // If dep requires a specific real reg, and the real reg is free
+            if (!regDep.isNoReg() && !regDep.isAssignAny() && !regDep.isSpilledReg()
+                && dependentRealReg->getState() == TR::RealRegister::Free) {
+#if 0
                fprintf(stdout, "COERCE1 %i (%s, %d)\n", i, cg->getDebug()->getName(virtReg), dependentRegNum-1);
-            #endif
+#endif
 
-            // Assign the real reg to the virt reg
-            machine->coerceRegisterAssignment(currentInstruction, virtReg, dependentRegNum);
-            virtReg->block();
-            changed = true;
+                // Assign the real reg to the virt reg
+                machine->coerceRegisterAssignment(currentInstruction, virtReg, dependentRegNum);
+                virtReg->block();
+                changed = true;
             }
-         }
-      }
-   while (changed == true);
+        }
+    } while (changed == true);
 
+    do {
+        changed = false;
+        // For each dependency
+        for (i = 0; i < numOfDependencies; i++) {
+            TR::RegisterDependency &regDep = _dependencies[i];
+            virtReg = regDep.getRegister();
+            assignedRegister = NULL;
 
-   do
-      {
-      changed = false;
-      // For each dependency
-      for (i = 0; i < numOfDependencies; i++)
-         {
-         TR::RegisterDependency &regDep = _dependencies[i];
-         virtReg = regDep.getRegister();
-         assignedRegister = NULL;
-
-         // Is a real reg assigned to the virt reg
-         if (virtReg->getAssignedRealRegister() != NULL)
-            {
-            assignedRegister = toRealRegister(virtReg->getAssignedRealRegister());
+            // Is a real reg assigned to the virt reg
+            if (virtReg->getAssignedRealRegister() != NULL) {
+                assignedRegister = toRealRegister(virtReg->getAssignedRealRegister());
             }
 
-         dependentRegNum = regDep.getRealRegister();
-         dependentRealReg = machine->getRealRegister(dependentRegNum);
+            dependentRegNum = regDep.getRealRegister();
+            dependentRealReg = machine->getRealRegister(dependentRegNum);
 
-         // If the dependency requires a real reg
-         // and the assigned real reg is not equal to the required one
-         if (!regDep.isNoReg() &&
-             !regDep.isAssignAny() &&
-             !regDep.isSpilledReg())
-            {
-            if(dependentRealReg != assignedRegister)
-              {
-              // Coerce the assignment
-              #if 0
+            // If the dependency requires a real reg
+            // and the assigned real reg is not equal to the required one
+            if (!regDep.isNoReg() && !regDep.isAssignAny() && !regDep.isSpilledReg()) {
+                if (dependentRealReg != assignedRegister) {
+// Coerce the assignment
+#if 0
                fprintf(stdout, "COERCE2 %i (%s, %d)\n", i, cg->getDebug()->getName(virtReg), dependentRegNum-1);
-              #endif
+#endif
 
-               machine->coerceRegisterAssignment(currentInstruction, virtReg, dependentRegNum);
-               virtReg->block();
-               changed = true;
+                    machine->coerceRegisterAssignment(currentInstruction, virtReg, dependentRegNum);
+                    virtReg->block();
+                    changed = true;
 
-               // If there was a wrongly assigned real register
-               if (assignedRegister != NULL && assignedRegister->getState() == TR::RealRegister::Free)
-                 {
-                 // For each dependency
-                 for (int32_t lcount = 0; lcount < numOfDependencies; lcount++)
-                   {
-                   TR::RegisterDependency &regDep = _dependencies[lcount];
-                   // get the dependencies required real reg
-                   TR::RealRegister::RegNum aRealNum = regDep.getRealRegister();
-                   // If the real reg is the same as the one just assigned
-                   if (!regDep.isNoReg() &&
-                       !regDep.isAssignAny() &&
-                       !regDep.isSpilledReg() &&
-                       assignedRegister == machine->getRealRegister(aRealNum))
-                     {
-                       #if 0
+                    // If there was a wrongly assigned real register
+                    if (assignedRegister != NULL && assignedRegister->getState() == TR::RealRegister::Free) {
+                        // For each dependency
+                        for (int32_t lcount = 0; lcount < numOfDependencies; lcount++) {
+                            TR::RegisterDependency &regDep = _dependencies[lcount];
+                            // get the dependencies required real reg
+                            TR::RealRegister::RegNum aRealNum = regDep.getRealRegister();
+                            // If the real reg is the same as the one just assigned
+                            if (!regDep.isNoReg() && !regDep.isAssignAny() && !regDep.isSpilledReg()
+                                && assignedRegister == machine->getRealRegister(aRealNum)) {
+#if 0
                         fprintf(stdout, "COERCE3 %i (%s, %d)\n", i, cg->getDebug()->getName(virtReg), aRealNum-1);
-                       #endif
+#endif
 
-                        // Coerce the assignment
-                        TR::Register *depReg = _dependencies[lcount].getRegister();
-                        machine->coerceRegisterAssignment(currentInstruction, depReg, aRealNum);
-                        _dependencies[lcount].getRegister()->block();
-                        break;
-                     }
-                   }
-                 }
-              }
+                                // Coerce the assignment
+                                TR::Register *depReg = _dependencies[lcount].getRegister();
+                                machine->coerceRegisterAssignment(currentInstruction, depReg, aRealNum);
+                                _dependencies[lcount].getRegister()->block();
+                                break;
+                            }
+                        }
+                    }
+                }
             }
-         }
-      }
-   while (changed == true);
+        }
+    } while (changed == true);
 
+    /////    ASSIGN ANY
 
-
-   /////    ASSIGN ANY
-
-   // AssignAny Support
-   // This code allows any register to be assigned to the dependency.
-   // This is generally used when we wish to force an early assignment to a virt reg
-   // (before the first inst that actually uses the reg).
-   //
-   // assign those used in memref first
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      if (_dependencies[i].isAssignAny())
-         {
-         virtReg = _dependencies[i].getRegister();
-
-         if(virtReg->isUsedInMemRef())
-           {
-           uint32_t availRegMask =~TR::RealRegister::GPR0Mask;
-
-            // No bookkeeping on assignment call as we do bookkeeping at end of this method
-            TR::Register * targetReg = machine->assignBestRegister(virtReg, currentInstruction, NOBOOKKEEPING, availRegMask);
-
-            // Disable this dependency
-            _dependencies[i].setRealRegister(toRealRegister(targetReg)->getRegisterNumber());
-            virtReg->block();
-           }
-         }
-      }
-
-   // assign those which are not used in memref
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      if (_dependencies[i].isAssignAny())
-         {
-         virtReg = _dependencies[i].getRegister();
-
-         if(!virtReg->isUsedInMemRef())
-            {
+    // AssignAny Support
+    // This code allows any register to be assigned to the dependency.
+    // This is generally used when we wish to force an early assignment to a virt reg
+    // (before the first inst that actually uses the reg).
+    //
+    // assign those used in memref first
+    for (i = 0; i < numOfDependencies; i++) {
+        if (_dependencies[i].isAssignAny()) {
             virtReg = _dependencies[i].getRegister();
-            // No bookkeeping on assignment call as we do bookkeeping at end of this method
-            TR::Register * targetReg = machine->assignBestRegister(virtReg, currentInstruction, NOBOOKKEEPING, 0xffffffff);
 
-            // Disable this dependency
-            _dependencies[i].setRealRegister(toRealRegister(targetReg)->getRegisterNumber());
+            if (virtReg->isUsedInMemRef()) {
+                uint32_t availRegMask = ~TR::RealRegister::GPR0Mask;
 
-            virtReg->block();
+                // No bookkeeping on assignment call as we do bookkeeping at end of this method
+                TR::Register *targetReg
+                    = machine->assignBestRegister(virtReg, currentInstruction, NOBOOKKEEPING, availRegMask);
+
+                // Disable this dependency
+                _dependencies[i].setRealRegister(toRealRegister(targetReg)->getRegisterNumber());
+                virtReg->block();
             }
-          }
-      }
+        }
+    }
 
-   /////    UNBLOCK
+    // assign those which are not used in memref
+    for (i = 0; i < numOfDependencies; i++) {
+        if (_dependencies[i].isAssignAny()) {
+            virtReg = _dependencies[i].getRegister();
 
+            if (!virtReg->isUsedInMemRef()) {
+                virtReg = _dependencies[i].getRegister();
+                // No bookkeeping on assignment call as we do bookkeeping at end of this method
+                TR::Register *targetReg
+                    = machine->assignBestRegister(virtReg, currentInstruction, NOBOOKKEEPING, 0xffffffff);
 
-   // Unblock all other regs
-   //
-   self()->unblockRegisters(numOfDependencies, cg);
+                // Disable this dependency
+                _dependencies[i].setRealRegister(toRealRegister(targetReg)->getRegisterNumber());
 
+                virtReg->block();
+            }
+        }
+    }
 
+    /////    UNBLOCK
 
-   /////    BOOKKEEPING
+    // Unblock all other regs
+    //
+    self()->unblockRegisters(numOfDependencies, cg);
 
-   // Check to see if we can release any registers that are not used in the future
-   // This is why we omit BOOKKEEPING in the assign calls above
-   //
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      TR::Register * dependentRegister = self()->getRegisterDependency(i)->getRegister();
+    /////    BOOKKEEPING
 
-      // We decrement the use count, and kill if there are no further uses
-      // We pay special attention to pairs, as it is not the parent placeholder
-      // that must have its count decremented, but rather the children.
-      if (dependentRegister->getRegisterPair() == NULL &&
-          dependentRegister->getAssignedRegister() != NULL &&
-          !self()->getRegisterDependency(i)->isSpilledReg()
-         )
-         {
-         TR::Register * assignedRegister = dependentRegister->getAssignedRegister();
-         TR::RealRegister * assignedRealRegister = assignedRegister != NULL ? assignedRegister->getRealRegister() : NULL;
-         dependentRegister->decFutureUseCount();
-         dependentRegister->setIsLive();
-         if (assignedRegister && assignedRealRegister->getState() != TR::RealRegister::Locked)
-            {
-            TR_ASSERT(dependentRegister->getFutureUseCount() >=0,
+    // Check to see if we can release any registers that are not used in the future
+    // This is why we omit BOOKKEEPING in the assign calls above
+    //
+    for (i = 0; i < numOfDependencies; i++) {
+        TR::Register *dependentRegister = self()->getRegisterDependency(i)->getRegister();
+
+        // We decrement the use count, and kill if there are no further uses
+        // We pay special attention to pairs, as it is not the parent placeholder
+        // that must have its count decremented, but rather the children.
+        if (dependentRegister->getRegisterPair() == NULL && dependentRegister->getAssignedRegister() != NULL
+            && !self()->getRegisterDependency(i)->isSpilledReg()) {
+            TR::Register *assignedRegister = dependentRegister->getAssignedRegister();
+            TR::RealRegister *assignedRealRegister
+                = assignedRegister != NULL ? assignedRegister->getRealRegister() : NULL;
+            dependentRegister->decFutureUseCount();
+            dependentRegister->setIsLive();
+            if (assignedRegister && assignedRealRegister->getState() != TR::RealRegister::Locked) {
+                TR_ASSERT(dependentRegister->getFutureUseCount() >= 0,
                     "\nReg dep assignment: futureUseCount should not be negative\n");
             }
-         if (dependentRegister->getFutureUseCount() == 0)
-            {
-            dependentRegister->setAssignedRegister(NULL);
-            dependentRegister->resetIsLive();
-            if(assignedRealRegister)
-              {
-              assignedRealRegister->setState(TR::RealRegister::Unlatched);
-              if (assignedRealRegister->getState() == TR::RealRegister::Locked)
-                 assignedRealRegister->setAssignedRegister(NULL);
-              cg->traceRegFreed(dependentRegister, assignedRealRegister);
-              }
+            if (dependentRegister->getFutureUseCount() == 0) {
+                dependentRegister->setAssignedRegister(NULL);
+                dependentRegister->resetIsLive();
+                if (assignedRealRegister) {
+                    assignedRealRegister->setState(TR::RealRegister::Unlatched);
+                    if (assignedRealRegister->getState() == TR::RealRegister::Locked)
+                        assignedRealRegister->setAssignedRegister(NULL);
+                    cg->traceRegFreed(dependentRegister, assignedRealRegister);
+                }
             }
-         }
-      else if (dependentRegister->getRegisterPair() != NULL)
-         {
-         TR::Register * dependentRegisterHigh = dependentRegister->getHighOrder();
+        } else if (dependentRegister->getRegisterPair() != NULL) {
+            TR::Register *dependentRegisterHigh = dependentRegister->getHighOrder();
 
-         dependentRegisterHigh->decFutureUseCount();
-         dependentRegisterHigh->setIsLive();
-         TR::Register * highAssignedRegister = dependentRegisterHigh->getAssignedRegister();
+            dependentRegisterHigh->decFutureUseCount();
+            dependentRegisterHigh->setIsLive();
+            TR::Register *highAssignedRegister = dependentRegisterHigh->getAssignedRegister();
 
-         if (highAssignedRegister &&
-             highAssignedRegister->getRealRegister()->getState() != TR::RealRegister::Locked)
-            {
-            TR_ASSERT(dependentRegisterHigh->getFutureUseCount() >=0,
+            if (highAssignedRegister
+                && highAssignedRegister->getRealRegister()->getState() != TR::RealRegister::Locked) {
+                TR_ASSERT(dependentRegisterHigh->getFutureUseCount() >= 0,
                     "\nReg dep assignment: futureUseCount should not be negative\n");
             }
-         if (highAssignedRegister &&
-             dependentRegisterHigh->getFutureUseCount() == 0)
-            {
-            TR::RealRegister * assignedRegister = highAssignedRegister->getRealRegister();
-            dependentRegisterHigh->setAssignedRegister(NULL);
-            assignedRegister->setState(TR::RealRegister::Unlatched);
-            if (assignedRegister->getState() == TR::RealRegister::Locked)
-               assignedRegister->setAssignedRegister(NULL);
+            if (highAssignedRegister && dependentRegisterHigh->getFutureUseCount() == 0) {
+                TR::RealRegister *assignedRegister = highAssignedRegister->getRealRegister();
+                dependentRegisterHigh->setAssignedRegister(NULL);
+                assignedRegister->setState(TR::RealRegister::Unlatched);
+                if (assignedRegister->getState() == TR::RealRegister::Locked)
+                    assignedRegister->setAssignedRegister(NULL);
 
-            cg->traceRegFreed(dependentRegisterHigh, assignedRegister);
+                cg->traceRegFreed(dependentRegisterHigh, assignedRegister);
             }
 
-         TR::Register * dependentRegisterLow = dependentRegister->getLowOrder();
+            TR::Register *dependentRegisterLow = dependentRegister->getLowOrder();
 
-         dependentRegisterLow->decFutureUseCount();
-         dependentRegisterLow->setIsLive();
+            dependentRegisterLow->decFutureUseCount();
+            dependentRegisterLow->setIsLive();
 
-         TR::Register * lowAssignedRegister = dependentRegisterLow->getAssignedRegister();
+            TR::Register *lowAssignedRegister = dependentRegisterLow->getAssignedRegister();
 
-
-         if (lowAssignedRegister &&
-             lowAssignedRegister->getRealRegister()->getState() != TR::RealRegister::Locked)
-            {
-            TR_ASSERT(dependentRegisterLow->getFutureUseCount() >=0,
+            if (lowAssignedRegister && lowAssignedRegister->getRealRegister()->getState() != TR::RealRegister::Locked) {
+                TR_ASSERT(dependentRegisterLow->getFutureUseCount() >= 0,
                     "\nReg dep assignment: futureUseCount should not be negative\n");
             }
-         if (lowAssignedRegister &&
-             dependentRegisterLow->getFutureUseCount() == 0)
-            {
-            TR::RealRegister * assignedRegister = lowAssignedRegister->getRealRegister();
-            dependentRegisterLow->setAssignedRegister(NULL);
-            assignedRegister->setState(TR::RealRegister::Unlatched);
-            if (assignedRegister->getState() == TR::RealRegister::Locked)
-               assignedRegister->setAssignedRegister(NULL);
-            cg->traceRegFreed(dependentRegisterLow, assignedRegister);
+            if (lowAssignedRegister && dependentRegisterLow->getFutureUseCount() == 0) {
+                TR::RealRegister *assignedRegister = lowAssignedRegister->getRealRegister();
+                dependentRegisterLow->setAssignedRegister(NULL);
+                assignedRegister->setState(TR::RealRegister::Unlatched);
+                if (assignedRegister->getState() == TR::RealRegister::Locked)
+                    assignedRegister->setAssignedRegister(NULL);
+                cg->traceRegFreed(dependentRegisterLow, assignedRegister);
             }
-         }
-      }
+        }
+    }
 
-   // TODO: Is this HPR related? Do we need this code?
-   for (i = 0; i < numOfDependencies; i++)
-      {
-      if (_dependencies[i].getRegister()->getRealRegister())
-         {
-         TR::RealRegister* realReg = toRealRegister(_dependencies[i].getRegister());
-         if (_dependencies[i].isSpilledReg())
-            {
-            virtReg = realReg->getAssignedRegister();
+    // TODO: Is this HPR related? Do we need this code?
+    for (i = 0; i < numOfDependencies; i++) {
+        if (_dependencies[i].getRegister()->getRealRegister()) {
+            TR::RealRegister *realReg = toRealRegister(_dependencies[i].getRegister());
+            if (_dependencies[i].isSpilledReg()) {
+                virtReg = realReg->getAssignedRegister();
 
-            traceMsg(comp,"\nOOL HPR Spill: %s", cg->getDebug()->getName(realReg));
-            traceMsg(comp,":%s\n", cg->getDebug()->getName(virtReg));
+                traceMsg(comp, "\nOOL HPR Spill: %s", cg->getDebug()->getName(realReg));
+                traceMsg(comp, ":%s\n", cg->getDebug()->getName(virtReg));
 
-            virtReg->setAssignedRegister(NULL);
+                virtReg->setAssignedRegister(NULL);
             }
-         }
-      }
-   }
+        }
+    }
+}
 
 /**
  * Register association
  */
-void
-OMR::Z::RegisterDependencyConditions::createRegisterAssociationDirective(TR::Instruction * instruction, TR::CodeGenerator * cg)
-   {
-   TR::Machine *machine = cg->machine();
+void OMR::Z::RegisterDependencyConditions::createRegisterAssociationDirective(TR::Instruction *instruction,
+    TR::CodeGenerator *cg)
+{
+    TR::Machine *machine = cg->machine();
 
-   machine->createRegisterAssociationDirective(instruction->getPrev());
+    machine->createRegisterAssociationDirective(instruction->getPrev());
 
-   // Now set up the new register associations as required by the current
-   // dependent register instruction onto the machine.
-   // Only the registers that this instruction interferes with are modified.
-   //
-   TR::RegisterDependencyGroup * depGroup = getPreConditions();
-   for (int32_t j = 0; j < getNumPreConditions(); j++)
-      {
-      TR::RegisterDependency * dependency = depGroup->getRegisterDependency(j);
-      if (dependency->getRegister())
-         {
-         machine->setVirtualAssociatedWithReal(dependency->getRealRegister(), dependency->getRegister());
-         }
-      }
+    // Now set up the new register associations as required by the current
+    // dependent register instruction onto the machine.
+    // Only the registers that this instruction interferes with are modified.
+    //
+    TR::RegisterDependencyGroup *depGroup = getPreConditions();
+    for (int32_t j = 0; j < getNumPreConditions(); j++) {
+        TR::RegisterDependency *dependency = depGroup->getRegisterDependency(j);
+        if (dependency->getRegister()) {
+            machine->setVirtualAssociatedWithReal(dependency->getRealRegister(), dependency->getRegister());
+        }
+    }
 
-   depGroup = getPostConditions();
-   for (int32_t k = 0; k < getNumPostConditions(); k++)
-      {
-      TR::RegisterDependency * dependency = depGroup->getRegisterDependency(k);
-      if (dependency->getRegister())
-         {
-         machine->setVirtualAssociatedWithReal(dependency->getRealRegister(), dependency->getRegister());
-         }
-      }
-   }
+    depGroup = getPostConditions();
+    for (int32_t k = 0; k < getNumPostConditions(); k++) {
+        TR::RegisterDependency *dependency = depGroup->getRegisterDependency(k);
+        if (dependency->getRegister()) {
+            machine->setVirtualAssociatedWithReal(dependency->getRealRegister(), dependency->getRegister());
+        }
+    }
+}
 
-bool OMR::Z::RegisterDependencyConditions::doesConditionExist( TR::RegisterDependencyGroup * regDepArr, TR::RegisterDependency *depToCheck, uint32_t numberOfRegisters )
-   {
-   uint32_t flag = depToCheck->getFlags();
-   TR::Register *vr = depToCheck->getRegister();
-   TR::RealRegister::RegNum rr = depToCheck->getRealRegister();
+bool OMR::Z::RegisterDependencyConditions::doesConditionExist(TR::RegisterDependencyGroup *regDepArr,
+    TR::RegisterDependency *depToCheck, uint32_t numberOfRegisters)
+{
+    uint32_t flag = depToCheck->getFlags();
+    TR::Register *vr = depToCheck->getRegister();
+    TR::RealRegister::RegNum rr = depToCheck->getRealRegister();
 
-   for( int32_t i = 0; i < numberOfRegisters; i++ )
-      {
-      TR::RegisterDependency * regDep = regDepArr->getRegisterDependency(i);
+    for (int32_t i = 0; i < numberOfRegisters; i++) {
+        TR::RegisterDependency *regDep = regDepArr->getRegisterDependency(i);
 
-      if( ( regDep->getRegister() == vr ) && ( regDep->getFlags() == flag ) )
-         {
-         // If all properties of these two dependencies are the same, then it exists
-         // already in the dependency group.
-         if( regDep->getRealRegister() == rr )
-            {
-            return true;
+        if ((regDep->getRegister() == vr) && (regDep->getFlags() == flag)) {
+            // If all properties of these two dependencies are the same, then it exists
+            // already in the dependency group.
+            if (regDep->getRealRegister() == rr) {
+                return true;
             }
 
-         // Post-condition number: Virtual register pointer, RegNum number, condition flags
-         // 0: 4AE60068, 71(AssignAny), 00000003
-         // 1: 4AE5F04C, 71(AssignAny), 00000003
-         // 2: 4AE60158, 15(GPR14), 00000003
-         //
-         // merged with:
-         //
-         // 0: 4AE60068, 1(GPR0), 00000003
-         //
-         // Produces an assertion. The fix for this is to overwrite the AssignAny dependency.
-         //
-         else if( regDep->isAssignAny() )
-            {
-            // AssignAny exists already, and the argument real register is not AssignAny
-            // - overwrite the existing real register with the argument real register
-            regDep->setRealRegister( rr );
-            return true;
+            // Post-condition number: Virtual register pointer, RegNum number, condition flags
+            // 0: 4AE60068, 71(AssignAny), 00000003
+            // 1: 4AE5F04C, 71(AssignAny), 00000003
+            // 2: 4AE60158, 15(GPR14), 00000003
+            //
+            // merged with:
+            //
+            // 0: 4AE60068, 1(GPR0), 00000003
+            //
+            // Produces an assertion. The fix for this is to overwrite the AssignAny dependency.
+            //
+            else if (regDep->isAssignAny()) {
+                // AssignAny exists already, and the argument real register is not AssignAny
+                // - overwrite the existing real register with the argument real register
+                regDep->setRealRegister(rr);
+                return true;
+            } else if (depToCheck->isAssignAny()) {
+                // The existing register dependency is not AssignAny but the argument real register is
+                // - simply return true
+                return true;
             }
-         else if( depToCheck->isAssignAny() )
-            {
-            // The existing register dependency is not AssignAny but the argument real register is
-            // - simply return true
-            return true;
-            }
-         }
-      }
+        }
+    }
 
-   return false;
-   }
+    return false;
+}
 
-bool OMR::Z::RegisterDependencyConditions::doesPreConditionExist( TR::RegisterDependency *depToCheck )
-   {
-   return doesConditionExist( _preConditions, depToCheck, _addCursorForPre );
-   }
+bool OMR::Z::RegisterDependencyConditions::doesPreConditionExist(TR::RegisterDependency *depToCheck)
+{
+    return doesConditionExist(_preConditions, depToCheck, _addCursorForPre);
+}
 
-bool OMR::Z::RegisterDependencyConditions::doesPostConditionExist( TR::RegisterDependency *depToCheck )
-   {
-   return doesConditionExist( _postConditions, depToCheck, _addCursorForPost );
-   }
+bool OMR::Z::RegisterDependencyConditions::doesPostConditionExist(TR::RegisterDependency *depToCheck)
+{
+    return doesConditionExist(_postConditions, depToCheck, _addCursorForPost);
+}
 
 bool OMR::Z::RegisterDependencyConditions::addPreConditionIfNotAlreadyInserted(TR::RegisterDependency *regDep)
-   {
-   uint32_t flag = regDep->getFlags();
-   TR::Register* vr = regDep->getRegister();
-   TR::RealRegister::RegNum rr = regDep->getRealRegister();
+{
+    uint32_t flag = regDep->getFlags();
+    TR::Register *vr = regDep->getRegister();
+    TR::RealRegister::RegNum rr = regDep->getRealRegister();
 
-   return addPreConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
-   }
+    return addPreConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
+}
 
 bool OMR::Z::RegisterDependencyConditions::addPreConditionIfNotAlreadyInserted(TR::Register *vr,
-                                                                                  TR::RealRegister::RegNum rr,
-                                                                                  uint8_t flag)
-   {
-   return addPreConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
-   }
+    TR::RealRegister::RegNum rr, uint8_t flag)
+{
+    return addPreConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
+}
 
 /**
  * Checks for an existing pre-condition for given virtual register.  If found,
@@ -1599,40 +1406,35 @@ bool OMR::Z::RegisterDependencyConditions::addPreConditionIfNotAlreadyInserted(T
  * @sa addPostConditionIfNotAlreadyInserted()
  */
 bool OMR::Z::RegisterDependencyConditions::addPreConditionIfNotAlreadyInserted(TR::Register *vr,
-                                                                                  TR::RealRegister::RegDep rr,
-                                                                                  uint8_t flag)
-   {
-   int32_t pos = -1;
-   if (_preConditions != NULL && (pos = _preConditions->searchForRegisterPos(vr, RefsAndDefsDependentRegister, _addCursorForPre, _cg)) < 0)
-      {
-      if (!(vr->getRealRegister() && vr->getRealRegister()->getState() == TR::RealRegister::Locked))
-         addPreCondition(vr, rr, flag);
-      return true;
-      }
-   else if (pos >= 0 && _preConditions->getRegisterDependency(pos)->getFlags() != flag)
-      {
-      _preConditions->getRegisterDependency(pos)->setFlags(flag);
-      return false;
-      }
-   return false;
-   }
-
+    TR::RealRegister::RegDep rr, uint8_t flag)
+{
+    int32_t pos = -1;
+    if (_preConditions != NULL
+        && (pos = _preConditions->searchForRegisterPos(vr, RefsAndDefsDependentRegister, _addCursorForPre, _cg)) < 0) {
+        if (!(vr->getRealRegister() && vr->getRealRegister()->getState() == TR::RealRegister::Locked))
+            addPreCondition(vr, rr, flag);
+        return true;
+    } else if (pos >= 0 && _preConditions->getRegisterDependency(pos)->getFlags() != flag) {
+        _preConditions->getRegisterDependency(pos)->setFlags(flag);
+        return false;
+    }
+    return false;
+}
 
 bool OMR::Z::RegisterDependencyConditions::addPostConditionIfNotAlreadyInserted(TR::RegisterDependency *regDep)
-   {
-   uint32_t flag = regDep->getFlags();
-   TR::Register* vr = regDep->getRegister();
-   TR::RealRegister::RegNum rr = regDep->getRealRegister();
+{
+    uint32_t flag = regDep->getFlags();
+    TR::Register *vr = regDep->getRegister();
+    TR::RealRegister::RegNum rr = regDep->getRealRegister();
 
-   return addPostConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
-   }
+    return addPostConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
+}
 
 bool OMR::Z::RegisterDependencyConditions::addPostConditionIfNotAlreadyInserted(TR::Register *vr,
-                                                                                   TR::RealRegister::RegNum rr,
-                                                                                   uint8_t flag)
-   {
-   return addPostConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
-   }
+    TR::RealRegister::RegNum rr, uint8_t flag)
+{
+    return addPostConditionIfNotAlreadyInserted(vr, static_cast<TR::RealRegister::RegDep>(rr), flag);
+}
 
 /**
  * Checks for an existing post-condition for given virtual register.  If found,
@@ -1645,20 +1447,18 @@ bool OMR::Z::RegisterDependencyConditions::addPostConditionIfNotAlreadyInserted(
  * @sa addPreConditionIfNotAlreadyInserted()
  */
 bool OMR::Z::RegisterDependencyConditions::addPostConditionIfNotAlreadyInserted(TR::Register *vr,
-                                                                                   TR::RealRegister::RegDep rr,
-                                                                                   uint8_t flag)
-   {
-   int32_t pos = -1;
-   if (_postConditions != NULL && (pos = _postConditions->searchForRegisterPos(vr, RefsAndDefsDependentRegister, _addCursorForPost, _cg)) < 0)
-      {
-      if (!(vr->getRealRegister() && vr->getRealRegister()->getState() == TR::RealRegister::Locked))
-         addPostCondition(vr, rr, flag);
-      return true;
-      }
-   else if (pos >= 0 && _postConditions->getRegisterDependency(pos)->getFlags() != flag)
-      {
-      _postConditions->getRegisterDependency(pos)->setFlags(flag);
-      return false;
-      }
-   return false;
-   }
+    TR::RealRegister::RegDep rr, uint8_t flag)
+{
+    int32_t pos = -1;
+    if (_postConditions != NULL
+        && (pos = _postConditions->searchForRegisterPos(vr, RefsAndDefsDependentRegister, _addCursorForPost, _cg))
+            < 0) {
+        if (!(vr->getRealRegister() && vr->getRealRegister()->getState() == TR::RealRegister::Locked))
+            addPostCondition(vr, rr, flag);
+        return true;
+    } else if (pos >= 0 && _postConditions->getRegisterDependency(pos)->getFlags() != flag) {
+        _postConditions->getRegisterDependency(pos)->setFlags(flag);
+        return false;
+    }
+    return false;
+}

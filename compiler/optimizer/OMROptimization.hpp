@@ -27,10 +27,11 @@
  */
 #ifndef OMR_OPTIMIZATION_CONNECTOR
 #define OMR_OPTIMIZATION_CONNECTOR
+
 namespace OMR {
 class Optimization;
 typedef OMR::Optimization OptimizationConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -46,136 +47,140 @@ typedef OMR::Optimization OptimizationConnector;
 #include "optimizer/Optimizer.hpp"
 class TR_Debug;
 class TR_FrontEnd;
+
 namespace TR {
 class SymbolReferenceTable;
 class Block;
 class CodeGenerator;
 class Node;
 class Optimization;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE Optimization: public TR_HasRandomGenerator
-   {
-   public:
+class OMR_EXTENSIBLE Optimization : public TR_HasRandomGenerator {
+public:
+    static void *operator new(size_t size, TR::Allocator a) { return a.allocate(size); }
 
-   static void *operator new(size_t size, TR::Allocator a)
-      { return a.allocate(size); }
-   static void  operator delete(void *ptr, TR::Allocator a)
-      {
-      // If there is an exception thrown during construction, the compilation
-      // will be aborted, and all memory associated with that compilation will get freed.
-      }
-   static void  operator delete(void *ptr, size_t size)
-      { ((Optimization*)ptr)->allocator().deallocate(ptr, size); } /* t->allocator() better return the same allocator as used for new */
+    static void operator delete(void *ptr, TR::Allocator a)
+    {
+        // If there is an exception thrown during construction, the compilation
+        // will be aborted, and all memory associated with that compilation will get freed.
+    }
 
-   /* Virtual destructor is necessary for the above delete operator to work
-    * See "Modern C++ Design" section 4.7
-    */
-   virtual ~Optimization() {}
+    static void operator delete(void *ptr, size_t size)
+    {
+        ((Optimization *)ptr)->allocator().deallocate(ptr, size);
+    } /* t->allocator() better return the same allocator as used for new */
 
-   inline TR::Optimization * self();
+    /* Virtual destructor is necessary for the above delete operator to work
+     * See "Modern C++ Design" section 4.7
+     */
+    virtual ~Optimization() {}
 
-   Optimization(TR::OptimizationManager *manager)
-      : TR_HasRandomGenerator(manager->comp()),
-        _manager(manager)
-      {}
+    inline TR::Optimization *self();
 
-   virtual bool shouldPerform()
-      {
-      // Opts that need to do additional checks should override this method.
-      return true;
-      }
+    Optimization(TR::OptimizationManager *manager)
+        : TR_HasRandomGenerator(manager->comp())
+        , _manager(manager)
+    {}
 
-   virtual int32_t perform() = 0;
+    virtual bool shouldPerform()
+    {
+        // Opts that need to do additional checks should override this method.
+        return true;
+    }
 
-   // called once before perform is executed
-   virtual void prePerform();
+    virtual int32_t perform() = 0;
 
-   // called once after perform is executed
-   virtual void postPerform();
+    // called once before perform is executed
+    virtual void prePerform();
 
-   virtual int32_t performOnBlock(TR::Block *block)
-      {
-      TR_ASSERT(0, "performOnBlock should be implemented if this opt is being enabled block by block\n");
-      return 0;
-      }
+    // called once after perform is executed
+    virtual void postPerform();
 
-   // called once before performOnBlock is executed for all relevant blocks
-   virtual void prePerformOnBlocks() {}
+    virtual int32_t performOnBlock(TR::Block *block)
+    {
+        TR_ASSERT(0, "performOnBlock should be implemented if this opt is being enabled block by block\n");
+        return 0;
+    }
 
-   // called once after performOnBlock is executed for all relevant blocks
-   virtual void postPerformOnBlocks() {}
+    // called once before performOnBlock is executed for all relevant blocks
+    virtual void prePerformOnBlocks() {}
 
-   TR::OptimizationManager *  manager() 	{ return _manager; }
-   TR::Compilation *          comp() 		{ return _manager->comp(); }
-   TR::Optimizer *            optimizer() { return _manager->optimizer(); }
+    // called once after performOnBlock is executed for all relevant blocks
+    virtual void postPerformOnBlocks() {}
 
-   TR::CodeGenerator *        cg();
-   TR_FrontEnd *              fe();
-   TR_Debug *             getDebug();
-   TR::SymbolReferenceTable *getSymRefTab();
+    TR::OptimizationManager *manager() { return _manager; }
 
-   TR_Memory *                trMemory();
-   TR_StackMemory             trStackMemory();
-   TR_HeapMemory              trHeapMemory();
-   TR_PersistentMemory *      trPersistentMemory();
+    TR::Compilation *comp() { return _manager->comp(); }
 
-   TR::Allocator              allocator();
+    TR::Optimizer *optimizer() { return _manager->optimizer(); }
 
-   OMR::Optimizations         id();
-   const char *               name();
-   virtual const char *       optDetailString() const throw() = 0;
+    TR::CodeGenerator *cg();
+    TR_FrontEnd *fe();
+    TR_Debug *getDebug();
+    TR::SymbolReferenceTable *getSymRefTab();
 
-   inline bool                trace();
-   void                       setTrace(bool trace = true);
-   /**
-    * @brief Checks if opt has any trace options specified
-    * 
-    * @return True if any trace option is specified, false otherwise
-    */
-   bool                       traceAny();
+    TR_Memory *trMemory();
+    TR_StackMemory trStackMemory();
+    TR_HeapMemory trHeapMemory();
+    TR_PersistentMemory *trPersistentMemory();
 
-   bool                       getLastRun();
+    TR::Allocator allocator();
 
-   void requestOpt(OMR::Optimizations optNum, bool value = true, TR::Block *block = NULL);
+    OMR::Optimizations id();
+    const char *name();
+    virtual const char *optDetailString() const throw() = 0;
 
-   // useful utility functions for opts
-   void requestDeadTreesCleanup(bool value = true, TR::Block *block = NULL);
+    inline bool trace();
+    void setTrace(bool trace = true);
+    /**
+     * @brief Checks if opt has any trace options specified
+     *
+     * @return True if any trace option is specified, false otherwise
+     */
+    bool traceAny();
 
-   void prepareToReplaceNode(TR::Node * node);
-   void prepareToReplaceNode(TR::Node * node, TR::ILOpCodes opcode);
+    bool getLastRun();
 
-   // Code refactored from SimplifierCommon. In all methods using anchorTree,
-   // children needing to be anchored will be anchored before the specified
-   // treetop (via insertBefore)
-   //
-   // FIXME: The majority of these functions don't belong here, and should be moved.
-   bool nodeIsOrderDependent(TR::Node *node, uint32_t depth, bool hasCommonedAncestor);
-   void anchorChildren(TR::Node *node, TR::TreeTop* anchorTree, uint32_t depth=0, bool hasCommonedAncestor=false, TR::Node *replacement=0);
-   void anchorAllChildren(TR::Node *node, TR::TreeTop* anchorTree);
-   void generateAnchor(TR::Node *node, TR::TreeTop* anchorTree);
-   void anchorNode(TR::Node *node, TR::TreeTop* anchorTree);
+    void requestOpt(OMR::Optimizations optNum, bool value = true, TR::Block *block = NULL);
 
-   //lower-level methods for folding branches
-   //promoted to TR_Optimization, so the other opts can call this method
-   bool removeOrconvertIfToGoto(TR::Node*& node, TR::Block* block, int takeBranch, TR::TreeTop* curTree, TR::TreeTop*& reachableTarget, TR::TreeTop*& unreachableTarget, const char* opt_details);
-   TR::CFGEdge* changeConditionalToUnconditional(TR::Node*& node, TR::Block* block, int takeBranch, TR::TreeTop* curTree, const char* opt_details = "UNKNOWN OPT");
+    // useful utility functions for opts
+    void requestDeadTreesCleanup(bool value = true, TR::Block *block = NULL);
 
-   void prepareToStopUsingNode(TR::Node *node, TR::TreeTop* anchorTree, bool anchorChildren=true);
-   TR::Node *replaceNodeWithChild(TR::Node *node, TR::Node *child, TR::TreeTop* anchorTree, TR::Block *block, bool correctBCDPrecision=true);
-   TR::Node *replaceNode(TR::Node * node, TR::Node *other, TR::TreeTop* anchorTree, bool anchorChildren=true);
-   void removeNode(TR::Node * node, TR::TreeTop* anchorTree);
+    void prepareToReplaceNode(TR::Node *node);
+    void prepareToReplaceNode(TR::Node *node, TR::ILOpCodes opcode);
 
+    // Code refactored from SimplifierCommon. In all methods using anchorTree,
+    // children needing to be anchored will be anchored before the specified
+    // treetop (via insertBefore)
+    //
+    // FIXME: The majority of these functions don't belong here, and should be moved.
+    bool nodeIsOrderDependent(TR::Node *node, uint32_t depth, bool hasCommonedAncestor);
+    void anchorChildren(TR::Node *node, TR::TreeTop *anchorTree, uint32_t depth = 0, bool hasCommonedAncestor = false,
+        TR::Node *replacement = 0);
+    void anchorAllChildren(TR::Node *node, TR::TreeTop *anchorTree);
+    void generateAnchor(TR::Node *node, TR::TreeTop *anchorTree);
+    void anchorNode(TR::Node *node, TR::TreeTop *anchorTree);
 
-   protected:
+    // lower-level methods for folding branches
+    // promoted to TR_Optimization, so the other opts can call this method
+    bool removeOrconvertIfToGoto(TR::Node *&node, TR::Block *block, int takeBranch, TR::TreeTop *curTree,
+        TR::TreeTop *&reachableTarget, TR::TreeTop *&unreachableTarget, const char *opt_details);
+    TR::CFGEdge *changeConditionalToUnconditional(TR::Node *&node, TR::Block *block, int takeBranch,
+        TR::TreeTop *curTree, const char *opt_details = "UNKNOWN OPT");
 
-   TR::OptimizationManager   *_manager;
+    void prepareToStopUsingNode(TR::Node *node, TR::TreeTop *anchorTree, bool anchorChildren = true);
+    TR::Node *replaceNodeWithChild(TR::Node *node, TR::Node *child, TR::TreeTop *anchorTree, TR::Block *block,
+        bool correctBCDPrecision = true);
+    TR::Node *replaceNode(TR::Node *node, TR::Node *other, TR::TreeTop *anchorTree, bool anchorChildren = true);
+    void removeNode(TR::Node *node, TR::TreeTop *anchorTree);
 
-   };
+protected:
+    TR::OptimizationManager *_manager;
+};
 
-}
+} // namespace OMR
 
 #endif

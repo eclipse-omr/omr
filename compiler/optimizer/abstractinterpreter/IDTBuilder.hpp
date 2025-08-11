@@ -19,7 +19,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-
 #ifndef TR_IDT_BUILDER_INCL
 #define TR_IDT_BUILDER_INCL
 
@@ -29,18 +28,18 @@ namespace TR {
 class ResolvedMethodSymbol;
 class Region;
 class Compilation;
-}
+} // namespace TR
 class TR_InlinerBase;
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE IDTBuilder : public OMR::IDTBuilderConnector
-   {
-   public:
-   IDTBuilder(TR::ResolvedMethodSymbol* symbol, int32_t budget, TR::Region& region, TR::Compilation* comp, TR_InlinerBase* inliner) :
-      OMR::IDTBuilderConnector(symbol, budget, region, comp, inliner) {}
-   };
-}
+class OMR_EXTENSIBLE IDTBuilder : public OMR::IDTBuilderConnector {
+public:
+    IDTBuilder(TR::ResolvedMethodSymbol *symbol, int32_t budget, TR::Region &region, TR::Compilation *comp,
+        TR_InlinerBase *inliner)
+        : OMR::IDTBuilderConnector(symbol, budget, region, comp, inliner)
+    {}
+};
+} // namespace TR
 
 #endif

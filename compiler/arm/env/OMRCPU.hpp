@@ -27,10 +27,14 @@
  */
 #ifndef OMR_CPU_CONNECTOR
 #define OMR_CPU_CONNECTOR
+
 namespace OMR {
-namespace ARM { class CPU; }
-typedef OMR::ARM::CPU CPUConnector;
+namespace ARM {
+class CPU;
 }
+
+typedef OMR::ARM::CPU CPUConnector;
+} // namespace OMR
 #else
 #error OMR::ARM::CPU expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -39,83 +43,85 @@ typedef OMR::ARM::CPU CPUConnector;
 #include "compiler/env/OMRCPU.hpp"
 #include "env/jittypes.h"
 
+namespace OMR { namespace ARM {
 
-namespace OMR
-{
-
-namespace ARM
-{
-
-class OMR_EXTENSIBLE CPU : public OMR::CPU
-   {
+class OMR_EXTENSIBLE CPU : public OMR::CPU {
 protected:
+    CPU()
+        : OMR::CPU()
+    {}
 
-   CPU() : OMR::CPU() {}
-   CPU(const OMRProcessorDesc& processorDescription) : OMR::CPU(processorDescription) {}
+    CPU(const OMRProcessorDesc &processorDescription)
+        : OMR::CPU(processorDescription)
+    {}
 
 public:
+    /**
+     * @brief Provides the maximum forward branch displacement in bytes reachable
+     *        with a relative branch with immediate (B or BL) instruction.
+     *
+     * @return Maximum forward branch displacement in bytes.
+     */
+    int32_t maxBranchImmediateForwardOffset() { return 0x01fffffc; }
 
-   /**
-    * @brief Provides the maximum forward branch displacement in bytes reachable
-    *        with a relative branch with immediate (B or BL) instruction.
-    *
-    * @return Maximum forward branch displacement in bytes.
-    */
-   int32_t maxBranchImmediateForwardOffset() { return 0x01fffffc; }
+    /**
+     * @brief Provides the maximum backward branch displacement in bytes reachable
+     *        with a relative branch with immediate (B or BL) instruction.
+     *
+     * @return Maximum backward branch displacement in bytes.
+     */
+    int32_t maxBranchImmediateBackwardOffset() { return 0xfe000000; }
 
-   /**
-    * @brief Provides the maximum backward branch displacement in bytes reachable
-    *        with a relative branch with immediate (B or BL) instruction.
-    *
-    * @return Maximum backward branch displacement in bytes.
-    */
-   int32_t maxBranchImmediateBackwardOffset() { return 0xfe000000; }
+    /**
+     * @brief Answers whether the distance between a target and source address
+     *        is within the reachable displacement range for a relative branch
+     *        with immediate (B or BL) instruction.
+     *
+     * @param[in] : targetAddress : the address of the target
+     *
+     * @param[in] : sourceAddress : the address of the relative branch with
+     *                 immediate (B or BL) instruction from which the displacement
+     *                 range is measured.
+     *
+     * @return true if the target is within range; false otherwise.
+     */
+    bool isTargetWithinBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress);
 
-   /**
-    * @brief Answers whether the distance between a target and source address
-    *        is within the reachable displacement range for a relative branch
-    *        with immediate (B or BL) instruction.
-    *
-    * @param[in] : targetAddress : the address of the target
-    *
-    * @param[in] : sourceAddress : the address of the relative branch with
-    *                 immediate (B or BL) instruction from which the displacement
-    *                 range is measured.
-    *
-    * @return true if the target is within range; false otherwise.
-    */
-   bool isTargetWithinBranchImmediateRange(intptr_t targetAddress, intptr_t sourceAddress);
+    /**
+     * @brief Determines whether 32bit integer rotate is available
+     *
+     * @details
+     *    Returns true if 32bit integer rotate to left is available when requireRotateToLeft is true.
+     *    Returns true if 32bit integer rotate (right or left) is available when requireRotateToLeft is false.
+     *
+     * @param requireRotateToLeft if true, returns true if rotate to left operation is available.
+     */
+    bool getSupportsHardware32bitRotate(bool requireRotateToLeft = false)
+    {
+        return !requireRotateToLeft;
+    } // only rotate to right is available
 
-   /**
-    * @brief Determines whether 32bit integer rotate is available
-    *
-    * @details
-    *    Returns true if 32bit integer rotate to left is available when requireRotateToLeft is true.
-    *    Returns true if 32bit integer rotate (right or left) is available when requireRotateToLeft is false.
-    *
-    * @param requireRotateToLeft if true, returns true if rotate to left operation is available.
-    */
-   bool getSupportsHardware32bitRotate(bool requireRotateToLeft=false) { return !requireRotateToLeft; } // only rotate to right is available
-   /**
-    * @brief Determines whether 64bit integer rotate is available
-    *
-    * @details
-    *    Returns true if 64bit integer rotate to left is available when requireRotateToLeft is true.
-    *    Returns true if 64bit integer rotate (right or left) is available when requireRotateToLeft is false.
-    *
-    * @param requireRotateToLeft if true, returns true if rotate to left operation is available.
-    */
-   bool getSupportsHardware64bitRotate(bool requireRotateToLeft=false) { return !requireRotateToLeft; } // only rotate to right is available
+    /**
+     * @brief Determines whether 64bit integer rotate is available
+     *
+     * @details
+     *    Returns true if 64bit integer rotate to left is available when requireRotateToLeft is true.
+     *    Returns true if 64bit integer rotate (right or left) is available when requireRotateToLeft is false.
+     *
+     * @param requireRotateToLeft if true, returns true if rotate to left operation is available.
+     */
+    bool getSupportsHardware64bitRotate(bool requireRotateToLeft = false)
+    {
+        return !requireRotateToLeft;
+    } // only rotate to right is available
 
-   /**
-    * @brief Returns name of the current processor
-    * @returns const char* string representing the name of the current processor
-    */
-   const char* getProcessorName() { return "Unknown Arm Processor"; }
-   };
+    /**
+     * @brief Returns name of the current processor
+     * @returns const char* string representing the name of the current processor
+     */
+    const char *getProcessorName() { return "Unknown Arm Processor"; }
+};
 
-}
-
-}
+}} // namespace OMR::ARM
 
 #endif

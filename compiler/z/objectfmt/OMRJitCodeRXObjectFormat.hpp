@@ -27,10 +27,14 @@
  */
 #ifndef OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
+
 namespace OMR {
-namespace Z { class JitCodeRXObjectFormat; }
-typedef OMR::Z::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
+namespace Z {
+class JitCodeRXObjectFormat;
 }
+
+typedef OMR::Z::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
+} // namespace OMR
 #else
 #error OMR::Z::JitCodeRXObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -40,38 +44,25 @@ typedef OMR::Z::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
 namespace TR {
 class Instruction;
 class FunctionCallData;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace Z {
 
-namespace Z
-{
-
-class OMR_EXTENSIBLE JitCodeRXObjectFormat : public OMR::JitCodeRXObjectFormat
-   {
+class OMR_EXTENSIBLE JitCodeRXObjectFormat : public OMR::JitCodeRXObjectFormat {
 public:
+    virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
 
-   virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
+    virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
 
-   virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
+    virtual int32_t estimateBinaryLength() { return 8; }
 
-   virtual int32_t estimateBinaryLength()
-      {
-      return 8;
-      }
+    virtual uint8_t *printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data);
 
-   virtual uint8_t* printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data);
+    struct ccGlobalFunctionData {
+        uintptr_t address;
+    };
+};
 
-   struct ccGlobalFunctionData
-      {
-      uintptr_t address;
-      };
-
-   };
-
-}
-
-}
+}} // namespace OMR::Z
 
 #endif

@@ -27,8 +27,13 @@
 
 #define OPT_DETAILS "O^O THUNKBUILDER: "
 
-#define TraceEnabled    (comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(comp(), m, ##__VA_ARGS__);}}
+#define TraceEnabled (comp()->getOption(TR_TraceILGen))
+#define TraceIL(m, ...)                         \
+    {                                           \
+        if (TraceEnabled) {                     \
+            traceMsg(comp(), m, ##__VA_ARGS__); \
+        }                                       \
+    }
 
 /**
  * ThunkBuilder is a MethodBuilder object representing a thunk for
@@ -42,66 +47,55 @@
  */
 
 OMR::ThunkBuilder::ThunkBuilder(TR::TypeDictionary *types, const char *name, TR::IlType *returnType,
-                                uint32_t numCalleeParams, TR::IlType **calleeParamTypes)
-   : TR::MethodBuilder(types),
-   _numCalleeParams(numCalleeParams),
-   _calleeParamTypes(calleeParamTypes)
-   {
-   DefineFile(__FILE__);
-   DefineLine(LINETOSTR(__LINE__));
-   DefineName(name);
-   DefineReturnType(returnType);
-   DefineParameter("target", Address); // target
-   DefineParameter("args", types->PointerTo(Word));     // array of arguments
+    uint32_t numCalleeParams, TR::IlType **calleeParamTypes)
+    : TR::MethodBuilder(types)
+    , _numCalleeParams(numCalleeParams)
+    , _calleeParamTypes(calleeParamTypes)
+{
+    DefineFile(__FILE__);
+    DefineLine(LINETOSTR(__LINE__));
+    DefineName(name);
+    DefineReturnType(returnType);
+    DefineParameter("target", Address); // target
+    DefineParameter("args", types->PointerTo(Word)); // array of arguments
 
-   DefineFunction("thunkCallee",
-                  __FILE__,
-                  LINETOSTR(__LINE__),
-                  0, // entry will be a computed value
-                  returnType,
-                  numCalleeParams,
-                  calleeParamTypes);
-   }
+    DefineFunction("thunkCallee", __FILE__, LINETOSTR(__LINE__),
+        0, // entry will be a computed value
+        returnType, numCalleeParams, calleeParamTypes);
+}
 
-bool
-OMR::ThunkBuilder::buildIL()
-   {
-   TR::IlType *pWord = typeDictionary()->PointerTo(Word);
+bool OMR::ThunkBuilder::buildIL()
+{
+    TR::IlType *pWord = typeDictionary()->PointerTo(Word);
 
-   uint32_t numArgs = _numCalleeParams+1;
-   TR::IlValue **args = (TR::IlValue **) comp()->trMemory()->allocateHeapMemory(numArgs * sizeof(TR::IlValue *));
+    uint32_t numArgs = _numCalleeParams + 1;
+    TR::IlValue **args = (TR::IlValue **)comp()->trMemory()->allocateHeapMemory(numArgs * sizeof(TR::IlValue *));
 
-   // first argument is the target address
-   args[0] = Load("target");
+    // first argument is the target address
+    args[0] = Load("target");
 
-   // followed by the actual arguments
-   for (uint32_t p=0; p < _numCalleeParams; p++)
-      {
-      uint32_t a=p+1;
-      args[a] = ConvertTo(_calleeParamTypes[p],
-                   LoadAt(pWord,
-                      IndexAt(pWord,
-                         Load("args"),
-                         ConstInt32(p))));
-      }
+    // followed by the actual arguments
+    for (uint32_t p = 0; p < _numCalleeParams; p++) {
+        uint32_t a = p + 1;
+        args[a] = ConvertTo(_calleeParamTypes[p], LoadAt(pWord, IndexAt(pWord, Load("args"), ConstInt32(p))));
+    }
 
-   TR::IlValue *retValue = ComputedCall("thunkCallee", numArgs, args);
+    TR::IlValue *retValue = ComputedCall("thunkCallee", numArgs, args);
 
-   if (getReturnType() != NoType)
-      Return(retValue);
+    if (getReturnType() != NoType)
+        Return(retValue);
 
-   Return();
+    Return();
 
-   return true;
-   }
+    return true;
+}
 
-void *
-OMR::ThunkBuilder::client()
-   {
-   if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::ThunkBuilder *>(this));
-   return _client;
-   }
+void *OMR::ThunkBuilder::client()
+{
+    if (_client == NULL && _clientAllocator != NULL)
+        _client = _clientAllocator(static_cast<TR::ThunkBuilder *>(this));
+    return _client;
+}
 
 ClientAllocator OMR::ThunkBuilder::_clientAllocator = NULL;
 ClientAllocator OMR::ThunkBuilder::_getImpl = NULL;

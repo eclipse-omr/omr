@@ -35,228 +35,236 @@ namespace TR {
 class Block;
 class Optimizer;
 class TreeTop;
-}
+} // namespace TR
 
-class TR_LocalAnalysisInfo
-   {
-   public:
-   TR_ALLOC(TR_Memory::LocalAnalysis)
-   typedef TR_BitVector ContainerType;
+class TR_LocalAnalysisInfo {
+public:
+    TR_ALLOC(TR_Memory::LocalAnalysis)
+    typedef TR_BitVector ContainerType;
 
-   TR_LocalAnalysisInfo(TR::Compilation *comp, bool);
+    TR_LocalAnalysisInfo(TR::Compilation *comp, bool);
 
-   TR::Compilation *comp()            { return _compilation; }
+    TR::Compilation *comp() { return _compilation; }
 
-   TR_Memory *    trMemory()         { return _trMemory; }
-   TR_StackMemory trStackMemory()    { return _trMemory; }
-   TR_HeapMemory  trHeapMemory()     { return _trMemory; }
+    TR_Memory *trMemory() { return _trMemory; }
 
-   struct LAInfo
-      {
-      TR_ALLOC(TR_Memory::LocalAnalysis)
+    TR_StackMemory trStackMemory() { return _trMemory; }
 
-      TR::Block *_block;
-      ContainerType *_analysisInfo;
-      ContainerType *_downwardExposedAnalysisInfo;
-      ContainerType *_downwardExposedStoreAnalysisInfo;
-      };
+    TR_HeapMemory trHeapMemory() { return _trMemory; }
+
+    struct LAInfo {
+        TR_ALLOC(TR_Memory::LocalAnalysis)
+
+        TR::Block *_block;
+        ContainerType *_analysisInfo;
+        ContainerType *_downwardExposedAnalysisInfo;
+        ContainerType *_downwardExposedStoreAnalysisInfo;
+    };
 
 #define NODES_PER_CHUNK 3
-   class HashTable
-      {
-      public:
-      HashTable(int32_t numBuckets, TR::Compilation *comp)
-         : _allocator(comp->allocator()), _numBuckets(numBuckets)
-         {
-         _buckets = (Chunk**)_allocator.allocate(numBuckets*sizeof(Chunk*));
-         memset(_buckets, 0, numBuckets*sizeof(Chunk*));
-         }
-      ~HashTable()
-         {
-         int32_t i;
-         for (i = _numBuckets-1; i >= 0; i--)
-            {
-            Chunk *chunk, *next;
-            for (chunk = _buckets[i]; chunk; chunk = next)
-               {
-               next = chunk->_next;
-               _allocator.deallocate(chunk, sizeof(Chunk));
-               }
+
+    class HashTable {
+    public:
+        HashTable(int32_t numBuckets, TR::Compilation *comp)
+            : _allocator(comp->allocator())
+            , _numBuckets(numBuckets)
+        {
+            _buckets = (Chunk **)_allocator.allocate(numBuckets * sizeof(Chunk *));
+            memset(_buckets, 0, numBuckets * sizeof(Chunk *));
+        }
+
+        ~HashTable()
+        {
+            int32_t i;
+            for (i = _numBuckets - 1; i >= 0; i--) {
+                Chunk *chunk, *next;
+                for (chunk = _buckets[i]; chunk; chunk = next) {
+                    next = chunk->_next;
+                    _allocator.deallocate(chunk, sizeof(Chunk));
+                }
             }
-         _allocator.deallocate(_buckets, _numBuckets*sizeof(Chunk*));
-         }
-      void add(TR::Node *node, int32_t bucket)
-         {
-         if (!_buckets[bucket])
+            _allocator.deallocate(_buckets, _numBuckets * sizeof(Chunk *));
+        }
+
+        void add(TR::Node *node, int32_t bucket)
+        {
+            if (!_buckets[bucket])
+                _buckets[bucket] = allocateChunk();
+            Chunk *chunk = _buckets[bucket];
+            int32_t i;
+            for (i = 0; i < NODES_PER_CHUNK; i++) {
+                if (!chunk->_nodes[i]) {
+                    chunk->_nodes[i] = node;
+                    return;
+                }
+            }
             _buckets[bucket] = allocateChunk();
-         Chunk *chunk = _buckets[bucket];
-         int32_t i;
-         for (i = 0; i < NODES_PER_CHUNK; i++)
-            {
-            if (!chunk->_nodes[i])
-               {
-               chunk->_nodes[i] = node;
-               return;
-               }
-            }
-         _buckets[bucket] = allocateChunk();
-         _buckets[bucket]->_next = chunk;
-         _buckets[bucket]->_nodes[0] = node;
-         }
-      int32_t hash(TR::Node *);
+            _buckets[bucket]->_next = chunk;
+            _buckets[bucket]->_nodes[0] = node;
+        }
 
-      private:
-      struct Chunk
-         {
-         Chunk *_next;
-         TR::Node *_nodes[NODES_PER_CHUNK];
-         };
+        int32_t hash(TR::Node *);
 
-      public:
-      class Cursor
-         {
-         public:
-         Cursor(HashTable *table, int32_t bucket);
-         TR::Node *firstNode();
-         TR::Node *nextNode();
+    private:
+        struct Chunk {
+            Chunk *_next;
+            TR::Node *_nodes[NODES_PER_CHUNK];
+        };
 
-         private:
-         HashTable &_table;
-         Chunk     *_chunk;
-         int32_t    _bucket;
-         int32_t    _index;
-         };
+    public:
+        class Cursor {
+        public:
+            Cursor(HashTable *table, int32_t bucket);
+            TR::Node *firstNode();
+            TR::Node *nextNode();
 
-      private:
-      friend class Cursor;
-      Chunk *allocateChunk()
-         {
-         Chunk *chunk = (Chunk*)_allocator.allocate(sizeof(Chunk));
-         memset(chunk, 0, sizeof(Chunk));
-         return chunk;
-         }
-      TR::Allocator _allocator;
-      int32_t _numBuckets;
-      Chunk **_buckets;
-      };
+        private:
+            HashTable &_table;
+            Chunk *_chunk;
+            int32_t _bucket;
+            int32_t _index;
+        };
 
-   //void initialize(TR::Block *);
-   int hasOldExpressionOnRhs(TR::Node *node, bool recalcContainsCall = true, bool containsCallInStoreLhsSubTree = false);
-   bool collectSupportedNodes(TR::Node *, TR::Node *);
-   bool countSupportedNodes(TR::Node *node, TR::Node *parent, bool &containsCallInStoreLhs);
-   bool areSyntacticallyEquivalent(TR::Node *, TR::Node *);
-   bool isCallLike(TR::Node *node);
-   bool containsCall(TR::Node *, bool &);
-   bool containsCallInTree(TR::Node *, bool &);
-   void containsCallResetVisitCounts(TR::Node *);
-   bool trace() { return _trace; }
+    private:
+        friend class Cursor;
 
-   TR::Compilation *_compilation;
-   TR_Memory * _trMemory;
-   //TR::Block **_blocksInfo;
-   TR::Node **_supportedNodesAsArray;
-   TR::Node **_nullCheckNodesAsArray;
-   TR::Optimizer *_optimizer;
-   HashTable *_hashTable;
-   ContainerType *_checkSymbolReferences;
-   ContainerType *_checkExpressions;
-   int32_t _numNodes;
-   int32_t _numNullChecks;
-   vcount_t _visitCount;
-   int32_t _numBlocks;
-   bool    _trace;
-   };
+        Chunk *allocateChunk()
+        {
+            Chunk *chunk = (Chunk *)_allocator.allocate(sizeof(Chunk));
+            memset(chunk, 0, sizeof(Chunk));
+            return chunk;
+        }
 
-class TR_LocalAnalysis
-   {
-   public:
-   TR_ALLOC(TR_Memory::LocalAnalysis)
+        TR::Allocator _allocator;
+        int32_t _numBuckets;
+        Chunk **_buckets;
+    };
 
-   typedef TR_LocalAnalysisInfo::ContainerType ContainerType;
+    // void initialize(TR::Block *);
+    int hasOldExpressionOnRhs(TR::Node *node, bool recalcContainsCall = true,
+        bool containsCallInStoreLhsSubTree = false);
+    bool collectSupportedNodes(TR::Node *, TR::Node *);
+    bool countSupportedNodes(TR::Node *node, TR::Node *parent, bool &containsCallInStoreLhs);
+    bool areSyntacticallyEquivalent(TR::Node *, TR::Node *);
+    bool isCallLike(TR::Node *node);
+    bool containsCall(TR::Node *, bool &);
+    bool containsCallInTree(TR::Node *, bool &);
+    void containsCallResetVisitCounts(TR::Node *);
+
+    bool trace() { return _trace; }
+
+    TR::Compilation *_compilation;
+    TR_Memory *_trMemory;
+    // TR::Block **_blocksInfo;
+    TR::Node **_supportedNodesAsArray;
+    TR::Node **_nullCheckNodesAsArray;
+    TR::Optimizer *_optimizer;
+    HashTable *_hashTable;
+    ContainerType *_checkSymbolReferences;
+    ContainerType *_checkExpressions;
+    int32_t _numNodes;
+    int32_t _numNullChecks;
+    vcount_t _visitCount;
+    int32_t _numBlocks;
+    bool _trace;
+};
+
+class TR_LocalAnalysis {
+public:
+    TR_ALLOC(TR_Memory::LocalAnalysis)
+
+    typedef TR_LocalAnalysisInfo::ContainerType ContainerType;
 
     TR_LocalAnalysis(TR_LocalAnalysisInfo &, bool);
 
-   void initializeLocalAnalysis(bool, bool = false);
-   void initializeBlocks(TR::Block *, TR::BitVector &);
+    void initializeLocalAnalysis(bool, bool = false);
+    void initializeBlocks(TR::Block *, TR::BitVector &);
 
-   TR::Compilation *comp() {return _lainfo._compilation;}
+    TR::Compilation *comp() { return _lainfo._compilation; }
 
-   TR_Memory *    trMemory()         { return comp()->trMemory(); }
-   TR_StackMemory trStackMemory()    { return comp()->trMemory(); }
-   TR_HeapMemory  trHeapMemory()     { return comp()->trMemory(); }
+    TR_Memory *trMemory() { return comp()->trMemory(); }
 
-   int32_t       getNumNodes() {return _lainfo._numNodes;}
-   bool          trace()       {return _trace; }
-   ContainerType *getAnalysisInfo(int32_t blockNum)
-      {return _info[blockNum]._analysisInfo;}
-   ContainerType *getDownwardExposedAnalysisInfo(int32_t blockNum)
-      {return _info[blockNum]._downwardExposedAnalysisInfo;}
-   ContainerType *getDownwardExposedStoreAnalysisInfo(int32_t blockNum)
-      {return _info[blockNum]._downwardExposedStoreAnalysisInfo;}
+    TR_StackMemory trStackMemory() { return comp()->trMemory(); }
 
+    TR_HeapMemory trHeapMemory() { return comp()->trMemory(); }
 
-   ContainerType *getCheckSymbolReferences() {return _lainfo._checkSymbolReferences;}
-   ContainerType *getCheckExpressions() {return _lainfo._checkExpressions;}
+    int32_t getNumNodes() { return _lainfo._numNodes; }
 
-   // Note that the properties list needs to be updated if any new opcode is
-   // required to be commoned.
-   // Also called by Partial Redundancy since the list of supported opcodes must
-   // be the same for both.
-   //
-   static bool isSupportedOpCode(TR::ILOpCode &opCode, TR::Compilation *comp) { return opCode.isSupportedForPRE(); }
+    bool trace() { return _trace; }
 
-   static bool isSupportedNodeForFieldPrivatization(TR::Node * node, TR::Compilation * comp, TR::Node * parent);
-   static bool isSupportedNodeForPREPerformance(TR::Node * node, TR::Compilation * comp, TR::Node * parent);
-   static bool isSupportedNodeForFunctionality(TR::Node * node, TR::Compilation * comp, TR::Node * parent, bool isSupportedStoreNode = false);
-   static bool isSupportedNode(TR::Node *node, TR::Compilation *comp, TR::Node *parent, bool isSupportedStoreNode = false);
+    ContainerType *getAnalysisInfo(int32_t blockNum) { return _info[blockNum]._analysisInfo; }
 
-   protected:
+    ContainerType *getDownwardExposedAnalysisInfo(int32_t blockNum)
+    {
+        return _info[blockNum]._downwardExposedAnalysisInfo;
+    }
 
-   ContainerType *allocateContainer(int32_t size)
-      {
-      return new (trStackMemory()) TR_BitVector(size, trMemory(), stackAlloc, notGrowable);
-      }
-   ContainerType *allocateTempContainer(int32_t size)
-      {
-      return new (trStackMemory()) TR_BitVector(size, trMemory(), stackAlloc, notGrowable);
-      }
+    ContainerType *getDownwardExposedStoreAnalysisInfo(int32_t blockNum)
+    {
+        return _info[blockNum]._downwardExposedStoreAnalysisInfo;
+    }
 
-   TR_LocalAnalysisInfo::LAInfo *_info;
-   TR_LocalAnalysisInfo & _lainfo;
-   bool _registersScarce;
-   bool _trace;
-   };
+    ContainerType *getCheckSymbolReferences() { return _lainfo._checkSymbolReferences; }
 
+    ContainerType *getCheckExpressions() { return _lainfo._checkExpressions; }
 
+    // Note that the properties list needs to be updated if any new opcode is
+    // required to be commoned.
+    // Also called by Partial Redundancy since the list of supported opcodes must
+    // be the same for both.
+    //
+    static bool isSupportedOpCode(TR::ILOpCode &opCode, TR::Compilation *comp) { return opCode.isSupportedForPRE(); }
 
-class TR_LocalTransparency : public TR_LocalAnalysis
-   {
-   public:
+    static bool isSupportedNodeForFieldPrivatization(TR::Node *node, TR::Compilation *comp, TR::Node *parent);
+    static bool isSupportedNodeForPREPerformance(TR::Node *node, TR::Compilation *comp, TR::Node *parent);
+    static bool isSupportedNodeForFunctionality(TR::Node *node, TR::Compilation *comp, TR::Node *parent,
+        bool isSupportedStoreNode = false);
+    static bool isSupportedNode(TR::Node *node, TR::Compilation *comp, TR::Node *parent,
+        bool isSupportedStoreNode = false);
 
-   TR_LocalTransparency(TR_LocalAnalysisInfo &, bool);
-   void updateInfoForSupportedNodes(TR::Node *, ContainerType *, ContainerType *, ContainerType *, ContainerType *, ContainerType *, ContainerType *, vcount_t);
-   void updateUsesAndDefs(TR::Node *, ContainerType *, ContainerType *, ContainerType *,  ContainerType *, ContainerType *, vcount_t, ContainerType *, TR_BitVector *, ContainerType *);
-   void adjustInfoForAddressAdd(TR::Node *, TR::Node *, ContainerType *, ContainerType *);
+protected:
+    ContainerType *allocateContainer(int32_t size)
+    {
+        return new (trStackMemory()) TR_BitVector(size, trMemory(), stackAlloc, notGrowable);
+    }
 
-   bool loadaddrAsLoad() {return _loadaddrAsLoad;}
-   ContainerType *getTransparencyInfo(int32_t);
+    ContainerType *allocateTempContainer(int32_t size)
+    {
+        return new (trStackMemory()) TR_BitVector(size, trMemory(), stackAlloc, notGrowable);
+    }
 
+    TR_LocalAnalysisInfo::LAInfo *_info;
+    TR_LocalAnalysisInfo &_lainfo;
+    bool _registersScarce;
+    bool _trace;
+};
 
-   private:
+class TR_LocalTransparency : public TR_LocalAnalysis {
+public:
+    TR_LocalTransparency(TR_LocalAnalysisInfo &, bool);
+    void updateInfoForSupportedNodes(TR::Node *, ContainerType *, ContainerType *, ContainerType *, ContainerType *,
+        ContainerType *, ContainerType *, vcount_t);
+    void updateUsesAndDefs(TR::Node *, ContainerType *, ContainerType *, ContainerType *, ContainerType *,
+        ContainerType *, vcount_t, ContainerType *, TR_BitVector *, ContainerType *);
+    void adjustInfoForAddressAdd(TR::Node *, TR::Node *, ContainerType *, ContainerType *);
 
-   TR::TreeTop *_checkTree;
-   ContainerType *_hasTransparencyInfoFor;
-   ContainerType **_transparencyInfo;
-   ContainerType **_blockCheckTransparencyInfo;
-   ContainerType *_supportedNodes;
-   int32_t _storedSymbolReferenceNumber;
-   bool _isStoreTree;
-   bool _isNullCheckTree;
-   bool _inNullCheckReferenceSubtree;
-   bool _inStoreLhsTree;
-   bool _loadaddrAsLoad;
-   };
+    bool loadaddrAsLoad() { return _loadaddrAsLoad; }
 
+    ContainerType *getTransparencyInfo(int32_t);
+
+private:
+    TR::TreeTop *_checkTree;
+    ContainerType *_hasTransparencyInfoFor;
+    ContainerType **_transparencyInfo;
+    ContainerType **_blockCheckTransparencyInfo;
+    ContainerType *_supportedNodes;
+    int32_t _storedSymbolReferenceNumber;
+    bool _isStoreTree;
+    bool _isNullCheckTree;
+    bool _inNullCheckReferenceSubtree;
+    bool _inStoreLhsTree;
+    bool _loadaddrAsLoad;
+};
 
 /**
  * This is pretty much a straight implementation of what is in Muchnick Section
@@ -285,37 +293,38 @@ class TR_LocalTransparency : public TR_LocalAnalysis
  * please read Muchnick or the Lazy Code Motion paper by Knoop, Ruthing and
  * Steffan (PLDI 1992)
  */
-class TR_LocalAnticipatability : public TR_LocalAnalysis
-   {
-   public:
+class TR_LocalAnticipatability : public TR_LocalAnalysis {
+public:
+    TR_LocalAnticipatability(TR_LocalAnalysisInfo &, TR_LocalTransparency *, bool trace);
+    void analyzeBlock(TR::Block *, vcount_t, vcount_t, TR_BitVector *);
+    bool updateAnticipatabilityForSupportedNodes(TR::Node *, ContainerType *, ContainerType *, TR::Block *,
+        ContainerType *, ContainerType *, ContainerType *, TR_BitVector *, ContainerType *, vcount_t);
+    void updateUsesAndDefs(TR::Node *, TR::Block *, ContainerType *, ContainerType *, ContainerType *, ContainerType *,
+        TR_BitVector *, ContainerType *, vcount_t);
+    bool adjustInfoForAddressAdd(TR::Node *, TR::Node *, ContainerType *, ContainerType *, ContainerType *,
+        ContainerType *, TR::Block *);
 
-   TR_LocalAnticipatability(TR_LocalAnalysisInfo &, TR_LocalTransparency *, bool trace);
-   void analyzeBlock(TR::Block *, vcount_t, vcount_t, TR_BitVector *);
-   bool updateAnticipatabilityForSupportedNodes(TR::Node *, ContainerType *, ContainerType *, TR::Block *, ContainerType *, ContainerType *, ContainerType *, TR_BitVector *, ContainerType *, vcount_t);
-   void updateUsesAndDefs(TR::Node *, TR::Block *, ContainerType *, ContainerType *, ContainerType *, ContainerType *, TR_BitVector *, ContainerType *, vcount_t);
-   bool adjustInfoForAddressAdd(TR::Node *, TR::Node *, ContainerType *, ContainerType *, ContainerType *, ContainerType *, TR::Block *);
-   bool loadaddrAsLoad() {return _loadaddrAsLoad;}
-   void killDownwardExposedExprs(TR::Block *, ContainerType *, TR::Node *node);
-   void killDownwardExposedExprs(TR::Block *, TR::Node *node);
+    bool loadaddrAsLoad() { return _loadaddrAsLoad; }
 
-   private:
+    void killDownwardExposedExprs(TR::Block *, ContainerType *, TR::Node *node);
+    void killDownwardExposedExprs(TR::Block *, TR::Node *node);
 
-   TR::TreeTop *_checkTree;
-   ContainerType *_seenCallSymbolReferences;
-   int32_t _storedSymbolReferenceNumber;
-   bool _isStoreTree;
-   bool _isNullCheckTree;
-   bool _inNullCheckReferenceSubtree;
-   bool _inStoreLhsTree;
-   bool _loadaddrAsLoad;
-   TR_LocalTransparency * _localTransparency;
-   ContainerType *_downwardExposedBeforeButNotAnymore;
-   ContainerType *_notDownwardExposed;
-   ContainerType *_temp;
-   ContainerType *_temp2;
-   ContainerType *_visitedNodes;
-   ContainerType *_visitedNodesAfterThisTree;
-   };
-
+private:
+    TR::TreeTop *_checkTree;
+    ContainerType *_seenCallSymbolReferences;
+    int32_t _storedSymbolReferenceNumber;
+    bool _isStoreTree;
+    bool _isNullCheckTree;
+    bool _inNullCheckReferenceSubtree;
+    bool _inStoreLhsTree;
+    bool _loadaddrAsLoad;
+    TR_LocalTransparency *_localTransparency;
+    ContainerType *_downwardExposedBeforeButNotAnymore;
+    ContainerType *_notDownwardExposed;
+    ContainerType *_temp;
+    ContainerType *_temp2;
+    ContainerType *_visitedNodes;
+    ContainerType *_visitedNodesAfterThisTree;
+};
 
 #endif

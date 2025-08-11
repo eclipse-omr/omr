@@ -26,62 +26,62 @@
 #include "compile/Compilation.hpp"
 
 TR_HasRandomGenerator::TR_HasRandomGenerator(TR::Compilation *comp)
-  : _randomGenerator(comp->primaryRandom()) {}
+    : _randomGenerator(comp->primaryRandom())
+{}
 
 uint32_t TR_RandomGenerator::getRandom()
-   {
-   // Linear congruential parameters used by GCC; see https://en.wikipedia.org/wiki/Linear_congruential_generator
-   // ...except we keep the sign bit (bit 31) while apparently they do not.
-   //
-   _bits = 1103515245 * _bits + 12345;
+{
+    // Linear congruential parameters used by GCC; see https://en.wikipedia.org/wiki/Linear_congruential_generator
+    // ...except we keep the sign bit (bit 31) while apparently they do not.
+    //
+    _bits = 1103515245 * _bits + 12345;
 
-   // _bits alternates between odd and even, which is terrible for randomBoolean.
-   // Let's mix it up a bit.
-   //
-   return (uint32_t)(_bits ^ (_bits >> 16));
-   }
+    // _bits alternates between odd and even, which is terrible for randomBoolean.
+    // Let's mix it up a bit.
+    //
+    return (uint32_t)(_bits ^ (_bits >> 16));
+}
 
 int32_t TR_RandomGenerator::getRandom(int32_t min, int32_t max)
-   {
-   uint32_t bits = getRandom();
-   uint32_t range = max-min+1;
-   if (range == 0) // corner case when range is INT_MIN..INT_MAX
-      return (int32_t)bits;
-   uint32_t rand = bits % range; // unsigned remainder
-   return min + rand;
-   }
+{
+    uint32_t bits = getRandom();
+    uint32_t range = max - min + 1;
+    if (range == 0) // corner case when range is INT_MIN..INT_MAX
+        return (int32_t)bits;
+    uint32_t rand = bits % range; // unsigned remainder
+    return min + rand;
+}
 
 void TR_RandomGenerator::setSeed(uint32_t newSeed)
-   {
-   _bits = newSeed;
+{
+    _bits = newSeed;
 
-   // Similar seeds can produce sequences that start off similar, so eat a few.
-   //
-   for (int i = 0; i < 5; i++)
-      getRandom();
-   }
+    // Similar seeds can produce sequences that start off similar, so eat a few.
+    //
+    for (int i = 0; i < 5; i++)
+        getRandom();
+}
 
-class RandomExercizer: public TR_HasRandomGenerator
-   {
-   TR::Compilation *_comp;
+class RandomExercizer : public TR_HasRandomGenerator {
+    TR::Compilation *_comp;
 
-   public:
+public:
+    RandomExercizer(TR::Compilation *comp)
+        : TR_HasRandomGenerator(comp)
+        , _comp(comp)
+    {}
 
-   RandomExercizer(TR::Compilation *comp): TR_HasRandomGenerator(comp), _comp(comp){}
-
-   TR::Compilation *comp(){ return _comp; }
-   };
-
+    TR::Compilation *comp() { return _comp; }
+};
 
 void TR_RandomGenerator::exercise(int32_t period, TR::Compilation *comp)
-   {
-   // Don't use the actual random generator because we don't want to perturb it
-   RandomExercizer ex(comp);
-   traceMsg(comp, "  %12s %12s %12s %12s %12s %12s\n",
-      "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)", "Boolean", "Boolean(5)");
-   for (int32_t i = 0; i < period; i++)
-      {
-      traceMsg(comp, "  %12d %12d %12d %12d %12d %12d\n",
-         ex.randomInt(), ex.randomInt(-5,5), ex.randomInt(1,1), ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
-      }
-   }
+{
+    // Don't use the actual random generator because we don't want to perturb it
+    RandomExercizer ex(comp);
+    traceMsg(comp, "  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)", "Boolean",
+        "Boolean(5)");
+    for (int32_t i = 0; i < period; i++) {
+        traceMsg(comp, "  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5), ex.randomInt(1, 1),
+            ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
+    }
+}

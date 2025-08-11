@@ -55,1008 +55,869 @@
 #define OPT_DETAILS "O^O EXPRESSION SIMPLIFICATION: "
 
 TR_ExpressionsSimplification::TR_ExpressionsSimplification(TR::OptimizationManager *manager)
-   : TR::Optimization(manager)
-   {}
+    : TR::Optimization(manager)
+{}
 
-int32_t
-TR_ExpressionsSimplification::perform()
-   {
-   TR::StackMemoryRegion stackMemoryRegion(*trMemory());
+int32_t TR_ExpressionsSimplification::perform()
+{
+    TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
-   int32_t cost = 0;
-   _supportedExpressions = NULL;
+    int32_t cost = 0;
+    _supportedExpressions = NULL;
 
-   if (trace())
-      {
-      comp()->dumpMethodTrees("Trees Before Performing Expression Simplification");
-      }
-   cost = perform(comp()->getFlowGraph()->getStructure());
+    if (trace()) {
+        comp()->dumpMethodTrees("Trees Before Performing Expression Simplification");
+    }
+    cost = perform(comp()->getFlowGraph()->getStructure());
 
-   return cost;
-   }
-
+    return cost;
+}
 
 // Process the structure recursively
 //
-int32_t
-TR_ExpressionsSimplification::perform(TR_Structure * str)
-   {
-   if (trace())
-      traceMsg(comp(), "Analyzing root Structure : %p\n", str);
+int32_t TR_ExpressionsSimplification::perform(TR_Structure *str)
+{
+    if (trace())
+        traceMsg(comp(), "Analyzing root Structure : %p\n", str);
 
-   TR_RegionStructure *region;
+    TR_RegionStructure *region;
 
-   // Only regions can be simplified
-   //
-   if (!(region = str->asRegion()))
-      return 0;
+    // Only regions can be simplified
+    //
+    if (!(region = str->asRegion()))
+        return 0;
 
-   TR_RegionStructure::Cursor it(*region);
+    TR_RegionStructure::Cursor it(*region);
 
-   for (TR_StructureSubGraphNode *node = it.getCurrent();
-        node != 0;
-        node = it.getNext())
-      {
-      // Too strict
-      /*
-      if ((node->getPredecessors().size() == 1))
-         {
-         TR::CFGEdge *edge = node->getPredecessors().front();
-         TR_StructureSubGraphNode *pred = toStructureSubGraphNode(edge->getFrom());
-         TR_BlockStructure *b = pred->getStructure()->asBlock();
-         if (b && pred->getSuccessors().size() == 1))
-            perform(node->getStructure());
-         }
-      */
-      perform(node->getStructure());
-      }
+    for (TR_StructureSubGraphNode *node = it.getCurrent(); node != 0; node = it.getNext()) {
+        // Too strict
+        /*
+        if ((node->getPredecessors().size() == 1))
+           {
+           TR::CFGEdge *edge = node->getPredecessors().front();
+           TR_StructureSubGraphNode *pred = toStructureSubGraphNode(edge->getFrom());
+           TR_BlockStructure *b = pred->getStructure()->asBlock();
+           if (b && pred->getSuccessors().size() == 1))
+              perform(node->getStructure());
+           }
+        */
+        perform(node->getStructure());
+    }
 
-   // debug only
-   //
-   /*
-   if (region->isNaturalLoop() &&
-          (region->getParent()  &&
-            !region->getParent()->asRegion()->isCanonicalizedLoop()))
-      {
-      traceMsg(comp(), "Loop not canonicalized %x\n", region);
-      }
-   */
+    // debug only
+    //
+    /*
+    if (region->isNaturalLoop() &&
+           (region->getParent()  &&
+             !region->getParent()->asRegion()->isCanonicalizedLoop()))
+       {
+       traceMsg(comp(), "Loop not canonicalized %x\n", region);
+       }
+    */
 
-   TR::Block *entryBlock = region->getEntryBlock();
-   if (region->isNaturalLoop() && !entryBlock->isCold() &&
+    TR::Block *entryBlock = region->getEntryBlock();
+    if (region->isNaturalLoop() && !entryBlock->isCold() &&
           (region->getParent() /* &&
             region->getParent()->asRegion()->isCanonicalizedLoop() */))
          {
-         if (trace())
-           traceMsg(comp(), "Found candidate non cold loop %p for expression elimination\n", region);
+        if (trace())
+            traceMsg(comp(), "Found candidate non cold loop %p for expression elimination\n", region);
 
-         findAndSimplifyInvariantLoopExpressions(region);
-         }
+        findAndSimplifyInvariantLoopExpressions(region);
+    }
 
-   return 1;  // Need to specify the cost
-   }
+    return 1; // Need to specify the cost
+}
 
+void TR_ExpressionsSimplification::findAndSimplifyInvariantLoopExpressions(TR_RegionStructure *region)
+{
+    _currentRegion = region;
+    TR::Block *entryBlock = _currentRegion->getEntryBlock();
+    if (trace())
+        traceMsg(comp(), "Entry block: %p in loop region %p\n", entryBlock, region);
 
-void
-TR_ExpressionsSimplification::findAndSimplifyInvariantLoopExpressions(TR_RegionStructure * region)
-   {
-   _currentRegion = region;
-   TR::Block *entryBlock = _currentRegion->getEntryBlock();
-   if (trace())
-      traceMsg(comp(), "Entry block: %p in loop region %p\n", entryBlock, region);
+    // Generate a list of blocks that can be processed
+    // Criteria: the block must be excucted exactly once
+    //
+    TR_ScratchList<TR::Block> candidateBlocksList(trMemory());
+    _currentRegion->getBlocks(&candidateBlocksList);
 
+    if (candidateBlocksList.getSize() > 1) {
+        if (trace())
+            traceMsg(comp(), "More than 1 blocks in the natural loop, need to remove uncertain blocks\n");
 
-   // Generate a list of blocks that can be processed
-   // Criteria: the block must be excucted exactly once
-   //
-   TR_ScratchList<TR::Block> candidateBlocksList(trMemory());
-   _currentRegion->getBlocks(&candidateBlocksList);
+        removeUncertainBlocks(_currentRegion, &candidateBlocksList);
 
-   if (candidateBlocksList.getSize() > 1)
-      {
-      if (trace())
-         traceMsg(comp(), "More than 1 blocks in the natural loop, need to remove uncertain blocks\n");
+        if (candidateBlocksList.getSize() < 1)
+            return;
+    }
 
-      removeUncertainBlocks(_currentRegion, &candidateBlocksList);
+    _currentRegion->resetInvariance();
+    _currentRegion->computeInvariantExpressions();
 
-      if (candidateBlocksList.getSize() < 1)
-         return;
-      }
-
-   _currentRegion->resetInvariance();
-   _currentRegion->computeInvariantExpressions();
-
-   // The rest is the transformation
-   //
-   // For each block that is definitely executed once
-   // analyze its nodes
-   //
-   ListIterator<TR::Block> candidateBlocks;
-   candidateBlocks.set(&candidateBlocksList);
-   simplifyInvariantLoopExpressions(candidateBlocks);
-   }
+    // The rest is the transformation
+    //
+    // For each block that is definitely executed once
+    // analyze its nodes
+    //
+    ListIterator<TR::Block> candidateBlocks;
+    candidateBlocks.set(&candidateBlocksList);
+    simplifyInvariantLoopExpressions(candidateBlocks);
+}
 
 void TR_ExpressionsSimplification::simplifyInvariantLoopExpressions(ListIterator<TR::Block> &blocks)
-   {
-   // Need to locate the induction variable of the loop
-   //
-   LoopInfo *loopInfo = findLoopInfo(_currentRegion);
+{
+    // Need to locate the induction variable of the loop
+    //
+    LoopInfo *loopInfo = findLoopInfo(_currentRegion);
 
-   bool canReduceSummations = false;
-   if (!loopInfo)
-      {
-      if (trace())
-         traceMsg(comp(), "Accurate loop info is not found, cannot carry out summation reduction\n");
-      }
-   else
-      {
-      if (trace())
-         traceMsg(comp(), "Accurate loop info has been found, will try to carry out summation reduction\n");
+    bool canReduceSummations = false;
+    if (!loopInfo) {
+        if (trace())
+            traceMsg(comp(), "Accurate loop info is not found, cannot carry out summation reduction\n");
+    } else {
+        if (trace())
+            traceMsg(comp(), "Accurate loop info has been found, will try to carry out summation reduction\n");
 
-      int32_t iters = loopInfo->getNumIterations();
-      if (loopInfo->getBoundaryNode())
-         {
-         if (trace())
-            traceMsg(comp(), "Variable iterations from node %p has not been handled\n",loopInfo->getBoundaryNode());
-         }
-      else if (iters <= 0)
-         {
-         if (trace())
-            traceMsg(comp(), "Failed to determine iteration count\n");
-         }
-      else
-         {
-         canReduceSummations = true;
-         if (trace())
-            traceMsg(comp(), "Natural Loop %p will run %d times\n", _currentRegion, iters);
-         }
-      }
+        int32_t iters = loopInfo->getNumIterations();
+        if (loopInfo->getBoundaryNode()) {
+            if (trace())
+                traceMsg(comp(), "Variable iterations from node %p has not been handled\n",
+                    loopInfo->getBoundaryNode());
+        } else if (iters <= 0) {
+            if (trace())
+                traceMsg(comp(), "Failed to determine iteration count\n");
+        } else {
+            canReduceSummations = true;
+            if (trace())
+                traceMsg(comp(), "Natural Loop %p will run %d times\n", _currentRegion, iters);
+        }
+    }
 
-   // Initialize the list of candidates
-   //
-   _candidates = new (trStackMemory()) TR_ScratchList<SimplificationCandidateTuple>(trMemory());
+    // Initialize the list of candidates
+    //
+    _candidates = new (trStackMemory()) TR_ScratchList<SimplificationCandidateTuple>(trMemory());
 
-   for (TR::Block *currentBlock = blocks.getFirst(); currentBlock; currentBlock  = blocks.getNext())
-      {
-      if (trace())
-         traceMsg(comp(), "Analyzing block #%d, which must be executed once per iteration\n", currentBlock->getNumber());
+    for (TR::Block *currentBlock = blocks.getFirst(); currentBlock; currentBlock = blocks.getNext()) {
+        if (trace())
+            traceMsg(comp(), "Analyzing block #%d, which must be executed once per iteration\n",
+                currentBlock->getNumber());
 
+        // Scan through each node in the block
+        //
+        TR::TreeTop *tt = currentBlock->getEntry();
+        TR::TreeTop *exitTreeTop = currentBlock->getExit();
+        while (tt != exitTreeTop) {
+            TR::Node *currentNode = tt->getNode();
+            if (trace())
+                traceMsg(comp(), "Analyzing tree top node %p\n", currentNode);
 
-      // Scan through each node in the block
-      //
-      TR::TreeTop *tt = currentBlock->getEntry();
-      TR::TreeTop *exitTreeTop = currentBlock->getExit();
-      while (tt != exitTreeTop)
-         {
-         TR::Node *currentNode = tt->getNode();
-         if (trace())
-            traceMsg(comp(), "Analyzing tree top node %p\n", currentNode);
-
-         if (canReduceSummations)
-            {
-            // requires loop info for the number of iterations
-            setSummationReductionCandidates(currentNode, tt);
+            if (canReduceSummations) {
+                // requires loop info for the number of iterations
+                setSummationReductionCandidates(currentNode, tt);
             }
-         setStoreMotionCandidates(currentNode, tt);
+            setStoreMotionCandidates(currentNode, tt);
 
-         tt = tt->getNextTreeTop();
-         }
-      }
+            tt = tt->getNextTreeTop();
+        }
+    }
 
-   // New code: without using any UDI
-   // walk through the trees in the loop
-   // to invalidate the candidates
-   //
-   if (!_supportedExpressions)
-      {
-      _supportedExpressions = new (trStackMemory()) TR_BitVector(comp()->getNodeCount(), trMemory(), stackAlloc, growable);
-      }
+    // New code: without using any UDI
+    // walk through the trees in the loop
+    // to invalidate the candidates
+    //
+    if (!_supportedExpressions) {
+        _supportedExpressions
+            = new (trStackMemory()) TR_BitVector(comp()->getNodeCount(), trMemory(), stackAlloc, growable);
+    }
 
-   invalidateCandidates();
+    invalidateCandidates();
 
-   ListIterator<SimplificationCandidateTuple> candidates(_candidates);
-   for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate; nextCandidate = candidates.getNext())
-      {
-      TR::TreeTop *treeTop = nextCandidate->getTreeTop();
-      if (trace())
-         {
-         nextCandidate->print(comp());
-         }
+    ListIterator<SimplificationCandidateTuple> candidates(_candidates);
+    for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate;
+         nextCandidate = candidates.getNext()) {
+        TR::TreeTop *treeTop = nextCandidate->getTreeTop();
+        if (trace()) {
+            nextCandidate->print(comp());
+        }
 
-      bool usedCandidate = false;
-      bool isPreheaderBlockInvalid = false;
+        bool usedCandidate = false;
+        bool isPreheaderBlockInvalid = false;
 
-      if (canReduceSummations && nextCandidate->isSummationReductionCandidate())
-         {
-         usedCandidate = tranformSummationReductionCandidate(treeTop, loopInfo, &isPreheaderBlockInvalid);
-         }
+        if (canReduceSummations && nextCandidate->isSummationReductionCandidate()) {
+            usedCandidate = tranformSummationReductionCandidate(treeTop, loopInfo, &isPreheaderBlockInvalid);
+        }
 
-      if (isPreheaderBlockInvalid)
-         {
-         break;
-         }
+        if (isPreheaderBlockInvalid) {
+            break;
+        }
 
-      if (!usedCandidate && nextCandidate->isInvariantExpressionCandidate())
-         {
-         tranformStoreMotionCandidate(treeTop, &isPreheaderBlockInvalid);
-         }
-      if (isPreheaderBlockInvalid)
-         {
-         break;
-         }
-      }
-   }
+        if (!usedCandidate && nextCandidate->isInvariantExpressionCandidate()) {
+            tranformStoreMotionCandidate(treeTop, &isPreheaderBlockInvalid);
+        }
+        if (isPreheaderBlockInvalid) {
+            break;
+        }
+    }
+}
 
 void TR_ExpressionsSimplification::setSummationReductionCandidates(TR::Node *node, TR::TreeTop *tt)
-   {
-   // Must be a store node
-   //
-   if (node->getOpCodeValue() != TR::istore
-   /* || node->getOpCodeValue() != TR::astore */)
-      {
-      if (trace())
-         traceMsg(comp(), "Node %p: The opcode is not istore so not a summation reduction candidate\n",node);
-      return;
-      }
+{
+    // Must be a store node
+    //
+    if (node->getOpCodeValue() != TR::istore
+        /* || node->getOpCodeValue() != TR::astore */) {
+        if (trace())
+            traceMsg(comp(), "Node %p: The opcode is not istore so not a summation reduction candidate\n", node);
+        return;
+    }
 
-   TR::Node *opNode = node->getFirstChild();
+    TR::Node *opNode = node->getFirstChild();
 
-   if (opNode->getOpCodeValue() == TR::iadd ||
-       opNode->getOpCodeValue() == TR::isub)
-      {
-      TR::Node *firstNode = opNode->getFirstChild();
-      TR::Node *secondNode = opNode->getSecondChild();
+    if (opNode->getOpCodeValue() == TR::iadd || opNode->getOpCodeValue() == TR::isub) {
+        TR::Node *firstNode = opNode->getFirstChild();
+        TR::Node *secondNode = opNode->getSecondChild();
 
-      if (firstNode->getOpCode().hasSymbolReference() &&
-            node->getSymbolReference() == firstNode->getSymbolReference() &&
-            opNode->getReferenceCount() == 1 && firstNode->getReferenceCount() == 1)
-         {
-         // The second node must be loop invariant
-         //
-         if (!_currentRegion->isExprInvariant(secondNode))
-            {
-            if (trace())
-               {
-               traceMsg(comp(), "The node %p is not loop invariant\n",secondNode);
+        if (firstNode->getOpCode().hasSymbolReference() && node->getSymbolReference() == firstNode->getSymbolReference()
+            && opNode->getReferenceCount() == 1 && firstNode->getReferenceCount() == 1) {
+            // The second node must be loop invariant
+            //
+            if (!_currentRegion->isExprInvariant(secondNode)) {
+                if (trace()) {
+                    traceMsg(comp(), "The node %p is not loop invariant\n", secondNode);
 
-               // This can be the arithmetic series case
-               // only when the node is an induction variable
-               if (secondNode->getNumChildren() == 1 && secondNode->getOpCode().hasSymbolReference())
-                  {
-                  TR_InductionVariable *indVar = _currentRegion->findMatchingIV(secondNode->getSymbolReference());
-                  if (indVar)
-                     {
-                     //printf("Found Candidate of arithmetic series\n" );
-                     }
-                  }
-               }
-            return;
+                    // This can be the arithmetic series case
+                    // only when the node is an induction variable
+                    if (secondNode->getNumChildren() == 1 && secondNode->getOpCode().hasSymbolReference()) {
+                        TR_InductionVariable *indVar = _currentRegion->findMatchingIV(secondNode->getSymbolReference());
+                        if (indVar) {
+                            // printf("Found Candidate of arithmetic series\n" );
+                        }
+                    }
+                }
+                return;
             }
 
-         _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
-                                                   flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
-         }
-      else if (secondNode->getOpCode().hasSymbolReference() &&
-            node->getSymbolReference() == secondNode->getSymbolReference() &&
-            opNode->getReferenceCount() == 1 && secondNode->getReferenceCount() == 1 &&
-            _currentRegion->isExprInvariant(firstNode))
-         {
-         _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
-                                                   flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
-         }
-      }
-   else if (opNode->getOpCodeValue() == TR::ixor ||
-            opNode->getOpCodeValue() == TR::ineg)
-      {
-      if (opNode->getFirstChild()->getOpCode().hasSymbolReference() &&
-            node->getSymbolReference() == opNode->getFirstChild()->getSymbolReference() &&
-            opNode->getReferenceCount() == 1 && opNode->getFirstChild()->getReferenceCount() == 1 &&
-            (opNode->getOpCodeValue() == TR::ineg || _currentRegion->isExprInvariant(opNode->getSecondChild())))
-         {
-         _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
-                                                   flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
-         }
-      else if (opNode->getOpCodeValue() == TR::ixor && opNode->getSecondChild()->getOpCode().hasSymbolReference() &&
-            node->getSymbolReference() == opNode->getSecondChild()->getSymbolReference() &&
-            opNode->getReferenceCount() == 1 && opNode->getSecondChild()->getReferenceCount() == 1 &&
-            _currentRegion->isExprInvariant(opNode->getFirstChild()))
-         {
-         _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
-                                                   flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
-         }
-      }
-   }
+            _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
+                flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
+        } else if (secondNode->getOpCode().hasSymbolReference()
+            && node->getSymbolReference() == secondNode->getSymbolReference() && opNode->getReferenceCount() == 1
+            && secondNode->getReferenceCount() == 1 && _currentRegion->isExprInvariant(firstNode)) {
+            _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
+                flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
+        }
+    } else if (opNode->getOpCodeValue() == TR::ixor || opNode->getOpCodeValue() == TR::ineg) {
+        if (opNode->getFirstChild()->getOpCode().hasSymbolReference()
+            && node->getSymbolReference() == opNode->getFirstChild()->getSymbolReference()
+            && opNode->getReferenceCount() == 1 && opNode->getFirstChild()->getReferenceCount() == 1
+            && (opNode->getOpCodeValue() == TR::ineg || _currentRegion->isExprInvariant(opNode->getSecondChild()))) {
+            _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
+                flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
+        } else if (opNode->getOpCodeValue() == TR::ixor && opNode->getSecondChild()->getOpCode().hasSymbolReference()
+            && node->getSymbolReference() == opNode->getSecondChild()->getSymbolReference()
+            && opNode->getReferenceCount() == 1 && opNode->getSecondChild()->getReferenceCount() == 1
+            && _currentRegion->isExprInvariant(opNode->getFirstChild())) {
+            _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
+                flags32_t(SimplificationCandidateTuple::SummationReductionCandidate)));
+        }
+    }
+}
 
 void TR_ExpressionsSimplification::setStoreMotionCandidates(TR::Node *node, TR::TreeTop *tt)
-   {
-   // Must be a store node, of any type but not holding a monitor object
-   //
-   if (node->getOpCode().isStore() &&
-       !node->getSymbol()->isStatic() &&
-       !node->getSymbol()->holdsMonitoredObject())
-      {
-      if (trace())
-         traceMsg(comp(), "Node %p: The opcode is a non-static, non-monitor object store\n", node);
+{
+    // Must be a store node, of any type but not holding a monitor object
+    //
+    if (node->getOpCode().isStore() && !node->getSymbol()->isStatic() && !node->getSymbol()->holdsMonitoredObject()) {
+        if (trace())
+            traceMsg(comp(), "Node %p: The opcode is a non-static, non-monitor object store\n", node);
 
-      for (int32_t i = 0; i < node->getNumChildren(); i++)
-         {
-         if (!_currentRegion->isExprInvariant(node->getChild(i)))
-            {
+        for (int32_t i = 0; i < node->getNumChildren(); i++) {
+            if (!_currentRegion->isExprInvariant(node->getChild(i))) {
+                if (trace())
+                    traceMsg(comp(), "Node %p: The store is not loop-invariant due to child %p\n", node,
+                        node->getChild(i));
+                return;
+            }
+        }
+        // If store's operands are loop-invariant
+        if (trace()) {
+            traceMsg(comp(), "Node %p: The store's operands are all loop-invariant, adding candidate\n", node);
+            traceMsg(comp(), "Node %p:   - value of isExprInvariant for the store itself is %s\n", node,
+                _currentRegion->isExprInvariant(node) ? "true" : "false");
+        }
+        _candidates->add(new (trStackMemory())
+                SimplificationCandidateTuple(tt, SimplificationCandidateTuple::InvariantExpressionCandidate));
+    }
+}
+
+bool TR_ExpressionsSimplification::tranformSummationReductionCandidate(TR::TreeTop *treeTop, LoopInfo *loopInfo,
+    bool *isPreheaderBlockInvalid)
+{
+    TR::Node *node = treeTop->getNode();
+    TR::Node *opNode = node->getFirstChild();
+    TR::Node *expNode = NULL;
+    int32_t expChildNumber = 0;
+    bool removeOnly = false;
+    bool replaceWithNewNode = false;
+
+    if (opNode->getOpCodeValue() == TR::iadd || opNode->getOpCodeValue() == TR::isub) {
+        if (opNode->getSecondChild()->getOpCode().hasSymbolReference()
+            && node->getSymbolReference() == opNode->getSecondChild()->getSymbolReference()) {
+            expChildNumber = 0;
+            expNode = opNode->getFirstChild();
+        } else {
+            expChildNumber = 1;
+            expNode = opNode->getSecondChild();
+        }
+        expNode = iaddisubSimplifier(expNode, loopInfo);
+        replaceWithNewNode = true;
+    } else if (opNode->getOpCodeValue() == TR::ixor || opNode->getOpCodeValue() == TR::ineg) {
+        expNode = ixorinegSimplifier(opNode, loopInfo, &removeOnly);
+    }
+
+    if (expNode) {
+        if (trace())
+            comp()->getDebug()->print(comp()->getOutFile(), expNode, 0, true);
+
+        TR::Block *entryBlock = _currentRegion->getEntryBlock();
+        TR::Block *preheaderBlock = findPredecessorBlock(entryBlock);
+
+        if (!preheaderBlock) {
             if (trace())
-               traceMsg(comp(), "Node %p: The store is not loop-invariant due to child %p\n", node, node->getChild(i));
-            return;
+                traceMsg(comp(), "Fail to find a place to put the hoist code in\n");
+            *isPreheaderBlockInvalid = true;
+            return true;
+        }
+
+        if (loopInfo->getNumIterations() > 0 || // make sure that the loop is going to be executed at least once
+            _currentRegion->isCanonicalizedLoop()) // or that the loop is canonicalized, in which case the preheader is
+        { // executed in its first iteration and is protected.
+            if (performTransformation(comp(), "%sMove out reduction node [%p] to block_%d\n", OPT_DETAILS, node,
+                    preheaderBlock->getNumber())) {
+                if (!(removeOnly)) {
+                    TR::Node *newNode = node->duplicateTree();
+                    if (replaceWithNewNode)
+                        newNode->getFirstChild()->setAndIncChild(expChildNumber, expNode);
+                    transformNode(newNode, preheaderBlock);
+                }
+                TR::TransformUtil::removeTree(comp(), treeTop);
             }
-         }
-      // If store's operands are loop-invariant
-      if (trace())
-         {
-         traceMsg(comp(), "Node %p: The store's operands are all loop-invariant, adding candidate\n", node);
-         traceMsg(comp(), "Node %p:   - value of isExprInvariant for the store itself is %s\n", node, _currentRegion->isExprInvariant(node) ? "true" : "false");
-         }
-      _candidates->add(new (trStackMemory()) SimplificationCandidateTuple(tt,
-                                                SimplificationCandidateTuple::InvariantExpressionCandidate));
-      }
-   }
-
-bool TR_ExpressionsSimplification::tranformSummationReductionCandidate(TR::TreeTop *treeTop, LoopInfo *loopInfo, bool *isPreheaderBlockInvalid)
-   {
-   TR::Node *node = treeTop->getNode();
-   TR::Node *opNode = node->getFirstChild();
-   TR::Node *expNode = NULL;
-   int32_t expChildNumber = 0;
-   bool removeOnly = false;
-   bool replaceWithNewNode = false;
-
-   if (opNode->getOpCodeValue() == TR::iadd || opNode->getOpCodeValue() == TR::isub)
-      {
-      if (opNode->getSecondChild()->getOpCode().hasSymbolReference() &&
-            node->getSymbolReference() == opNode->getSecondChild()->getSymbolReference())
-         {
-         expChildNumber = 0;
-         expNode = opNode->getFirstChild();
-         }
-      else
-         {
-         expChildNumber = 1;
-         expNode = opNode->getSecondChild();
-         }
-      expNode = iaddisubSimplifier(expNode, loopInfo);
-      replaceWithNewNode = true;
-      }
-   else if (opNode->getOpCodeValue() == TR::ixor || opNode->getOpCodeValue() == TR::ineg)
-      {
-      expNode = ixorinegSimplifier(opNode, loopInfo, &removeOnly);
-      }
-
-   if (expNode)
-      {
-      if (trace())
-         comp()->getDebug()->print(comp()->getOutFile(), expNode, 0, true);
-
-      TR::Block *entryBlock = _currentRegion->getEntryBlock();
-      TR::Block *preheaderBlock = findPredecessorBlock(entryBlock);
-
-      if (!preheaderBlock)
-         {
-         if (trace())
-            traceMsg(comp(), "Fail to find a place to put the hoist code in\n");
-         *isPreheaderBlockInvalid = true;
-         return true;
-         }
-
-      if (loopInfo->getNumIterations() > 0 ||     // make sure that the loop is going to be executed at least once
-            _currentRegion->isCanonicalizedLoop())  // or that the loop is canonicalized, in which case the preheader is
-         {                                        // executed in its first iteration and is protected.
-         if (performTransformation(comp(), "%sMove out reduction node [%p] to block_%d\n", OPT_DETAILS, node, preheaderBlock->getNumber()))
-            {
-            if (!(removeOnly))
-               {
-               TR::Node *newNode = node->duplicateTree();
-               if (replaceWithNewNode)
-                  newNode->getFirstChild()->setAndIncChild(expChildNumber, expNode);
-               transformNode(newNode, preheaderBlock);
-               }
-            TR::TransformUtil::removeTree(comp(), treeTop);
-            }
-         }
-      }
-      return (expNode != NULL);
-   }
+        }
+    }
+    return (expNode != NULL);
+}
 
 void TR_ExpressionsSimplification::tranformStoreMotionCandidate(TR::TreeTop *treeTop, bool *isPreheaderBlockInvalid)
-   {
-   TR::Node *node = treeTop->getNode();
+{
+    TR::Node *node = treeTop->getNode();
 
-   TR_ASSERT(node->getOpCode().isStore() && !node->getSymbol()->isStatic() && !node->getSymbol()->holdsMonitoredObject(),
-      "node %p was expected to be a non-static non-monitored object store and was not.", node);
+    TR_ASSERT(node->getOpCode().isStore() && !node->getSymbol()->isStatic()
+            && !node->getSymbol()->holdsMonitoredObject(),
+        "node %p was expected to be a non-static non-monitored object store and was not.", node);
 
-   // this candidate should be valid, either direct or indirect
+    // this candidate should be valid, either direct or indirect
 
-   if (trace())
-      comp()->getDebug()->print(comp()->getOutFile(), node, 0, true);
+    if (trace())
+        comp()->getDebug()->print(comp()->getOutFile(), node, 0, true);
 
-   TR::Block *entryBlock = _currentRegion->getEntryBlock();
-   TR::Block *preheaderBlock = findPredecessorBlock(entryBlock);
+    TR::Block *entryBlock = _currentRegion->getEntryBlock();
+    TR::Block *preheaderBlock = findPredecessorBlock(entryBlock);
 
-   if (!preheaderBlock)
-      {
-      if (trace())
-         traceMsg(comp(), "Fail to find a place to put the hoist code in\n");
-      *isPreheaderBlockInvalid = true;
-      return;
-      }
+    if (!preheaderBlock) {
+        if (trace())
+            traceMsg(comp(), "Fail to find a place to put the hoist code in\n");
+        *isPreheaderBlockInvalid = true;
+        return;
+    }
 
-   // Earlier post-dominance test ensures that the loop is executed as least once, or is canonicalized.
-   // but to be safe we still perform on canonicalized loops only.
-   if (_currentRegion->isCanonicalizedLoop())  // make sure that the loop is canonicalized, in which case the preheader is
-      {                                        // executed in its first iteration and is protected.
-      if (performTransformation(comp(), "%sMove out loop-invariant store [%p] to block_%d\n", OPT_DETAILS, node, preheaderBlock->getNumber()))
-         {
-         TR::Node *newNode = node->duplicateTree();
-         transformNode(newNode, preheaderBlock);
-         TR::TransformUtil::removeTree(comp(), treeTop);
-         }
-      }
-   else
-      {
-      if (trace())
-         traceMsg(comp(), "No canonicalized loop for this candidate\n");
-      }
-   }
+    // Earlier post-dominance test ensures that the loop is executed as least once, or is canonicalized.
+    // but to be safe we still perform on canonicalized loops only.
+    if (_currentRegion
+            ->isCanonicalizedLoop()) // make sure that the loop is canonicalized, in which case the preheader is
+    { // executed in its first iteration and is protected.
+        if (performTransformation(comp(), "%sMove out loop-invariant store [%p] to block_%d\n", OPT_DETAILS, node,
+                preheaderBlock->getNumber())) {
+            TR::Node *newNode = node->duplicateTree();
+            transformNode(newNode, preheaderBlock);
+            TR::TransformUtil::removeTree(comp(), treeTop);
+        }
+    } else {
+        if (trace())
+            traceMsg(comp(), "No canonicalized loop for this candidate\n");
+    }
+}
 
-void
-TR_ExpressionsSimplification::invalidateCandidates()
-   {
-   _visitCount = comp()->incVisitCount();
+void TR_ExpressionsSimplification::invalidateCandidates()
+{
+    _visitCount = comp()->incVisitCount();
 
-   if (trace())
-      {
-      traceMsg(comp(), "Checking which candidates may be invalidated\n");
+    if (trace()) {
+        traceMsg(comp(), "Checking which candidates may be invalidated\n");
 
-      ListIterator<SimplificationCandidateTuple> candidates(_candidates);
-      for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate; nextCandidate = candidates.getNext())
-         {
-         nextCandidate->print(comp());
-         }
-      }
+        ListIterator<SimplificationCandidateTuple> candidates(_candidates);
+        for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate;
+             nextCandidate = candidates.getNext()) {
+            nextCandidate->print(comp());
+        }
+    }
 
-   TR_ScratchList<TR::Block> blocksInLoop(trMemory());
-   _currentRegion->getBlocks(&blocksInLoop);
-   ListIterator<TR::Block> blocks(&blocksInLoop);
+    TR_ScratchList<TR::Block> blocksInLoop(trMemory());
+    _currentRegion->getBlocks(&blocksInLoop);
+    ListIterator<TR::Block> blocks(&blocksInLoop);
 
-   for (TR::Block *currentBlock = blocks.getFirst(); currentBlock; currentBlock  = blocks.getNext())
-      {
-      TR::TreeTop *tt = currentBlock->getEntry();
-      TR::TreeTop *exitTreeTop = currentBlock->getExit();
-      while (tt != exitTreeTop)
-         {
-         TR::Node *currentNode = tt->getNode();
+    for (TR::Block *currentBlock = blocks.getFirst(); currentBlock; currentBlock = blocks.getNext()) {
+        TR::TreeTop *tt = currentBlock->getEntry();
+        TR::TreeTop *exitTreeTop = currentBlock->getExit();
+        while (tt != exitTreeTop) {
+            TR::Node *currentNode = tt->getNode();
 
-         if (trace())
-            traceMsg(comp(), "Looking at treeTop [%p]\n", currentNode);
+            if (trace())
+                traceMsg(comp(), "Looking at treeTop [%p]\n", currentNode);
 
-         removeCandidate(currentNode, tt);
+            removeCandidate(currentNode, tt);
 
-         tt = tt->getNextTreeTop();
-         }
-      }
-   removeUnsupportedCandidates();
-   }
+            tt = tt->getNextTreeTop();
+        }
+    }
+    removeUnsupportedCandidates();
+}
 
-void
-TR_ExpressionsSimplification::removeUnsupportedCandidates()
-   {
-   ListIterator<SimplificationCandidateTuple> candidates(_candidates);
-   for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate; nextCandidate = candidates.getNext())
-      {
-      TR::TreeTop *candidateTT = nextCandidate->getTreeTop();
-      TR::Node *candidateNode = candidateTT->getNode();
-      if (!_supportedExpressions->get(candidateNode->getGlobalIndex()))
-         {
-         if (trace())
-            traceMsg(comp(), "Removing candidate %p which is unsupported or has unsupported subexpressions\n", candidateNode);
+void TR_ExpressionsSimplification::removeUnsupportedCandidates()
+{
+    ListIterator<SimplificationCandidateTuple> candidates(_candidates);
+    for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate;
+         nextCandidate = candidates.getNext()) {
+        TR::TreeTop *candidateTT = nextCandidate->getTreeTop();
+        TR::Node *candidateNode = candidateTT->getNode();
+        if (!_supportedExpressions->get(candidateNode->getGlobalIndex())) {
+            if (trace())
+                traceMsg(comp(), "Removing candidate %p which is unsupported or has unsupported subexpressions\n",
+                    candidateNode);
 
-         _candidates->remove(nextCandidate);
-         }
-      }
-   }
+            _candidates->remove(nextCandidate);
+        }
+    }
+}
 
-void
-TR_ExpressionsSimplification::removeCandidate(TR::Node *node, TR::TreeTop* tt)
-   {
-   if (node->getVisitCount() == _visitCount)
-      return;
+void TR_ExpressionsSimplification::removeCandidate(TR::Node *node, TR::TreeTop *tt)
+{
+    if (node->getVisitCount() == _visitCount)
+        return;
 
-   node->setVisitCount(_visitCount);
+    node->setVisitCount(_visitCount);
 
-   if (trace())
-      traceMsg(comp(), "Looking at Node [%p]\n", node);
+    if (trace())
+        traceMsg(comp(), "Looking at Node [%p]\n", node);
 
-   ListIterator<SimplificationCandidateTuple> candidates(_candidates);
-   for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate; nextCandidate = candidates.getNext())
-      {
-      TR::TreeTop *candidateTT = nextCandidate->getTreeTop();
-      if (tt != candidateTT &&
-          node->getOpCode().hasSymbolReference() &&
-          candidateTT->getNode()->mayKill(true).contains(node->getSymbolReference(), comp()))
-         {
-         if (trace())
-            traceMsg(comp(), "Removing candidate %p which has aliases in the loop\n", candidateTT->getNode());
+    ListIterator<SimplificationCandidateTuple> candidates(_candidates);
+    for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate;
+         nextCandidate = candidates.getNext()) {
+        TR::TreeTop *candidateTT = nextCandidate->getTreeTop();
+        if (tt != candidateTT && node->getOpCode().hasSymbolReference()
+            && candidateTT->getNode()->mayKill(true).contains(node->getSymbolReference(), comp())) {
+            if (trace())
+                traceMsg(comp(), "Removing candidate %p which has aliases in the loop\n", candidateTT->getNode());
 
-         _candidates->remove(nextCandidate);
-         continue;
-         }
-      }
+            _candidates->remove(nextCandidate);
+            continue;
+        }
+    }
 
-   bool hasSupportedChildren = true;
+    bool hasSupportedChildren = true;
 
-   // Process the children as well
-   //
-   for (int32_t i = 0; i < node->getNumChildren(); i++)
-      {
-      removeCandidate(node->getChild(i), tt);
-      // candidates child expressions must be invariant and supported. Here we determine if they are supported.
-      if (!_supportedExpressions->get(node->getChild(i)->getGlobalIndex()))
-         {
-         hasSupportedChildren = false;
-         }
-      }
+    // Process the children as well
+    //
+    for (int32_t i = 0; i < node->getNumChildren(); i++) {
+        removeCandidate(node->getChild(i), tt);
+        // candidates child expressions must be invariant and supported. Here we determine if they are supported.
+        if (!_supportedExpressions->get(node->getChild(i)->getGlobalIndex())) {
+            hasSupportedChildren = false;
+        }
+    }
 
-   if (hasSupportedChildren && isSupportedNodeForExpressionSimplification(node))
-      {
-       _supportedExpressions->set(node->getGlobalIndex());
-      }
-   else
-      {
-      if (trace())
-         traceMsg(comp(), "  Node %p is unsupported expression because %s\n", node,
-               !hasSupportedChildren ? "it has unsupported children" : "it is itself unsupported");
-      }
-   }
+    if (hasSupportedChildren && isSupportedNodeForExpressionSimplification(node)) {
+        _supportedExpressions->set(node->getGlobalIndex());
+    } else {
+        if (trace())
+            traceMsg(comp(), "  Node %p is unsupported expression because %s\n", node,
+                !hasSupportedChildren ? "it has unsupported children" : "it is itself unsupported");
+    }
+}
 
-bool
-TR_ExpressionsSimplification::isSupportedNodeForExpressionSimplification(TR::Node *node)
-   {
-   // types of stores that may be supported by loop invariant store motion
-   bool isSupportedStoreNode = node->getOpCode().isStore();
-   return TR_LocalAnalysis::isSupportedNodeForFunctionality(node, comp(), NULL, isSupportedStoreNode);
-   }
-
+bool TR_ExpressionsSimplification::isSupportedNodeForExpressionSimplification(TR::Node *node)
+{
+    // types of stores that may be supported by loop invariant store motion
+    bool isSupportedStoreNode = node->getOpCode().isStore();
+    return TR_LocalAnalysis::isSupportedNodeForFunctionality(node, comp(), NULL, isSupportedStoreNode);
+}
 
 static bool examineNode(TR::Node *node, intptr_t visitCount)
-   {
-   if (node->getVisitCount() == visitCount)
-      return false;
+{
+    if (node->getVisitCount() == visitCount)
+        return false;
 
-   node->setVisitCount(static_cast<vcount_t>(visitCount));
+    node->setVisitCount(static_cast<vcount_t>(visitCount));
 
-   if (node->getOpCode().isCall())
-      return true;
+    if (node->getOpCode().isCall())
+        return true;
 
-   bool hasCalls = false;
-   for (int32_t i = 0; !hasCalls && i < node->getNumChildren(); i++)
-      {
-      hasCalls = examineNode(node->getChild(i), visitCount);
-      }
+    bool hasCalls = false;
+    for (int32_t i = 0; !hasCalls && i < node->getNumChildren(); i++) {
+        hasCalls = examineNode(node->getChild(i), visitCount);
+    }
 
-   return hasCalls;
-   }
+    return hasCalls;
+}
 
 static bool blockHasCalls(TR::Block *block, TR::Compilation *comp)
-   {
-   intptr_t visitCount = comp->incVisitCount();
+{
+    intptr_t visitCount = comp->incVisitCount();
 
-   TR::TreeTop *currentTree = block->getEntry();
-   TR::TreeTop *exitTree = block->getExit();
-   bool hasCalls = false;
+    TR::TreeTop *currentTree = block->getEntry();
+    TR::TreeTop *exitTree = block->getExit();
+    bool hasCalls = false;
 
-   while (!hasCalls && currentTree != exitTree)
-      {
-      hasCalls = examineNode(currentTree->getNode(), visitCount);
-      currentTree = currentTree->getNextTreeTop();
-      }
+    while (!hasCalls && currentTree != exitTree) {
+        hasCalls = examineNode(currentTree->getNode(), visitCount);
+        currentTree = currentTree->getNextTreeTop();
+    }
 
-   return hasCalls;
-   }
+    return hasCalls;
+}
 
-void
-TR_ExpressionsSimplification::removeUncertainBlocks(TR_RegionStructure* region, List<TR::Block> *candidateBlocksList)
-   {
-   // Examine the top region block first
-   //
-   TR::Block *entryBlock = region->getEntryBlock();
-   ListIterator<TR::Block> blocks;
-   blocks.set(candidateBlocksList);
+void TR_ExpressionsSimplification::removeUncertainBlocks(TR_RegionStructure *region,
+    List<TR::Block> *candidateBlocksList)
+{
+    // Examine the top region block first
+    //
+    TR::Block *entryBlock = region->getEntryBlock();
+    ListIterator<TR::Block> blocks;
+    blocks.set(candidateBlocksList);
 
-   if (trace())
-      traceMsg(comp(), "Number of blocks %d, entry block number %d\n", candidateBlocksList->getSize(), entryBlock->getNumber());
+    if (trace())
+        traceMsg(comp(), "Number of blocks %d, entry block number %d\n", candidateBlocksList->getSize(),
+            entryBlock->getNumber());
 
-   for (TR::Block *block = blocks.getFirst(); block; block = blocks.getNext())
-      {
-      TR::CFGNode *cfgNode = block;
-      if (!(cfgNode->getExceptionSuccessors().empty()) || blockHasCalls(block, comp()))
-         {
-         if (trace())
-            traceMsg(comp(), "An exception can be thrown from block_%d. Removing all the blocks, since we cannot know the number of iterations.\n", block->getNumber());
-         candidateBlocksList->deleteAll();
-         break;
-         }
-      }
+    for (TR::Block *block = blocks.getFirst(); block; block = blocks.getNext()) {
+        TR::CFGNode *cfgNode = block;
+        if (!(cfgNode->getExceptionSuccessors().empty()) || blockHasCalls(block, comp())) {
+            if (trace())
+                traceMsg(comp(),
+                    "An exception can be thrown from block_%d. Removing all the blocks, since we cannot know the "
+                    "number of iterations.\n",
+                    block->getNumber());
+            candidateBlocksList->deleteAll();
+            break;
+        }
+    }
 
-   TR_PostDominators postDominators(comp());
-   if (postDominators.isValid())
-      {
-      postDominators.findControlDependents();
-      for (TR::Block *block = blocks.getFirst(); block; block = blocks.getNext())
-         {
-         if (postDominators.dominates(block, entryBlock) == 0)
-            {
+    TR_PostDominators postDominators(comp());
+    if (postDominators.isValid()) {
+        postDominators.findControlDependents();
+        for (TR::Block *block = blocks.getFirst(); block; block = blocks.getNext()) {
+            if (postDominators.dominates(block, entryBlock) == 0) {
+                candidateBlocksList->remove(block);
+                if (trace())
+                    traceMsg(comp(),
+                        "Block_%d is not guaranteed to be executed at least once. Removing it from the list.\n",
+                        block->getNumber());
+            } else {
+                // If the block is within another loop that's nested in
+                // the current region, remove it from consideration - blocks
+                // must be executed exactly once in the loop to be considered
+                TR_BlockStructure *blockStructure = block->getStructureOf();
+                TR_Structure *parent = blockStructure->getParent();
+
+                while (parent != NULL) {
+                    TR_RegionStructure *parentRegion = parent->asRegion();
+
+                    if (parentRegion == region) {
+                        break;
+                    }
+                    if (parentRegion->isNaturalLoop() || parentRegion->containsInternalCycles()) {
+                        candidateBlocksList->remove(block);
+
+                        if (trace()) {
+                            traceMsg(comp(),
+                                "Block_%d is nested within another loop in the current loop. Removing it from the "
+                                "list.\n",
+                                block->getNumber());
+                        }
+                        break;
+                    }
+
+                    parent = parent->getParent();
+                }
+            }
+        }
+    } else {
+        if (trace())
+            traceMsg(comp(), "There is no post dominators information. Removing all the blocks.\n");
+        for (TR::Block *block = blocks.getFirst(); block; block = blocks.getNext()) {
             candidateBlocksList->remove(block);
             if (trace())
-               traceMsg(comp(), "Block_%d is not guaranteed to be executed at least once. Removing it from the list.\n", block->getNumber());
+                traceMsg(comp(), "Block_%d is removed from the list\n", block->getNumber());
+        }
+    }
+}
+
+TR_ExpressionsSimplification::LoopInfo *TR_ExpressionsSimplification::findLoopInfo(TR_RegionStructure *region)
+{
+    ListIterator<TR::CFGEdge> exitEdges(&region->getExitEdges());
+
+    if (region->getExitEdges().getSize() != 1) {
+        if (trace())
+            traceMsg(comp(), "Region with more than 1 exit edges can't be handled\n");
+        return 0;
+    }
+
+    TR::CFGEdge *exitEdge = exitEdges.getFirst();
+    TR_StructureSubGraphNode *exitNode = toStructureSubGraphNode(exitEdge->getFrom());
+    int32_t exitTarget = exitEdge->getTo()->getNumber();
+
+    if (!exitNode->getStructure()->asBlock()) {
+        if (trace())
+            traceMsg(comp(), "The exit block can't be found\n");
+        return 0;
+    }
+
+    TR::Block *exitBlock = exitNode->getStructure()->asBlock()->getBlock();
+    TR::Node *lastTreeInExitBlock = exitBlock->getLastRealTreeTop()->getNode();
+
+    if (trace()) {
+        traceMsg(comp(), "The exit block is %d\n", exitBlock->getNumber());
+        traceMsg(comp(), "The branch node is %p\n", lastTreeInExitBlock);
+    }
+
+    if (!lastTreeInExitBlock->getOpCode().isBranch()) {
+        if (trace())
+            traceMsg(comp(), "The branch node couldn't be found\n");
+        return 0;
+    }
+
+    if (lastTreeInExitBlock->getNumChildren() < 2) {
+        if (trace())
+            traceMsg(comp(), "The branch node has less than 2 children\n");
+        return 0;
+    }
+
+    TR::Node *firstChildOfLastTree = lastTreeInExitBlock->getFirstChild();
+    TR::Node *secondChildOfLastTree = lastTreeInExitBlock->getSecondChild();
+
+    if (!firstChildOfLastTree->getOpCode().hasSymbolReference()) {
+        if (trace())
+            traceMsg(comp(), "The branch node's first child node %p - its opcode does not have a symbol reference\n",
+                firstChildOfLastTree);
+        return 0;
+    }
+
+    TR::SymbolReference *firstChildSymRef = firstChildOfLastTree->getSymbolReference();
+
+    if (trace())
+        traceMsg(comp(), "Symbol Reference: %p Symbol: %p\n", firstChildSymRef, firstChildSymRef->getSymbol());
+
+    // Locate the induction variable that matches with the exit node symbol
+    //
+    TR_InductionVariable *indVar = region->findMatchingIV(firstChildSymRef);
+    if (!indVar)
+        return 0;
+
+    if (!indVar->getIncr()->asIntConst()) {
+        if (trace())
+            traceMsg(comp(), "Increment is not a constant\n");
+        return 0;
+    }
+
+    int32_t increment = indVar->getIncr()->getLowInt();
+
+    _visitCount = comp()->incVisitCount();
+    bool indVarWrittenAndUsedUnexpectedly = false;
+    if (firstChildOfLastTree->getReferenceCount() > 1) {
+        TR::TreeTop *cursorTreeTopInExitBlock = exitBlock->getEntry();
+        TR::TreeTop *exitTreeTopInExitBlock = exitBlock->getExit();
+
+        bool loadSeen = false;
+        while (cursorTreeTopInExitBlock != exitTreeTopInExitBlock) {
+            TR::Node *cursorNode = cursorTreeTopInExitBlock->getNode();
+            if (checkForLoad(cursorNode, firstChildOfLastTree))
+                loadSeen = true;
+
+            if (!cursorNode->getOpCode().isStore() && (cursorNode->getNumChildren() > 0))
+                cursorNode = cursorNode->getFirstChild();
+
+            if (cursorNode->getOpCode().isStore() && (cursorNode->getSymbolReference() == firstChildSymRef)) {
+                indVarWrittenAndUsedUnexpectedly = true;
+                if ((cursorNode->getFirstChild() == firstChildOfLastTree) || !loadSeen)
+                    indVarWrittenAndUsedUnexpectedly = false;
+                else
+                    break;
             }
-         else
-            {
-            // If the block is within another loop that's nested in
-            // the current region, remove it from consideration - blocks
-            // must be executed exactly once in the loop to be considered
-            TR_BlockStructure *blockStructure = block->getStructureOf();
-            TR_Structure *parent = blockStructure->getParent();
 
-            while (parent != NULL)
-               {
-               TR_RegionStructure *parentRegion = parent->asRegion();
+            cursorTreeTopInExitBlock = cursorTreeTopInExitBlock->getNextTreeTop();
+        }
+    }
 
-               if (parentRegion == region)
-                  {
-                  break;
-                  }
-               if (parentRegion->isNaturalLoop() || parentRegion->containsInternalCycles())
-                  {
-                  candidateBlocksList->remove(block);
+    if (indVarWrittenAndUsedUnexpectedly) {
+        return 0;
+    }
 
-                  if (trace())
-                     {
-                     traceMsg(comp(), "Block_%d is nested within another loop in the current loop. Removing it from the list.\n", block->getNumber());
-                     }
-                  break;
-                  }
+    int32_t lowerBound;
+    int32_t upperBound = 0;
+    TR::Node *bound = 0;
+    bool equals = false;
 
-               parent = parent->getParent();
-               }
+    switch (lastTreeInExitBlock->getOpCodeValue()) {
+        case TR::ificmplt:
+        case TR::ificmpgt:
+            equals = true;
+        case TR::ificmple:
+        case TR::ificmpge: {
+            TR::TreeTop *branchDestTT = lastTreeInExitBlock->getBranchDestination();
+            TR::Block *branchDest = branchDestTT->getNode()->getBlock();
+            if (branchDest->getNumber() != exitTarget)
+                equals = !equals;
+
+            if (!(indVar->getEntry() && indVar->getEntry()->asIntConst())) {
+                if (trace())
+                    traceMsg(comp(), "Entry value is not a constant\n");
+                return 0;
             }
-         }
-      }
-   else
-      {
-      if (trace())
-         traceMsg(comp(), "There is no post dominators information. Removing all the blocks.\n");
-      for (TR::Block *block = blocks.getFirst(); block; block = blocks.getNext())
-         {
-         candidateBlocksList->remove(block);
-         if (trace())
-            traceMsg(comp(), "Block_%d is removed from the list\n", block->getNumber());
-         }
-      }
-   }
+            lowerBound = indVar->getEntry()->getLowInt();
 
+            if (secondChildOfLastTree->getOpCode().isLoadConst()) {
+                upperBound = secondChildOfLastTree->getInt();
+            } else if (secondChildOfLastTree->getOpCode().isLoadVar()) {
+                bound = secondChildOfLastTree;
+            } else {
+                if (trace())
+                    traceMsg(comp(), "Second child is not a const or a load\n");
+                return 0;
+            }
+            return new (trStackMemory()) LoopInfo(bound, lowerBound, upperBound, increment, equals);
+        }
 
+        default:
+            if (trace())
+                traceMsg(comp(), "The condition has not been implemeted\n");
+            return 0;
+    }
 
-TR_ExpressionsSimplification::LoopInfo*
-TR_ExpressionsSimplification::findLoopInfo(TR_RegionStructure* region)
-   {
-   ListIterator<TR::CFGEdge> exitEdges(&region->getExitEdges());
+    return 0;
+}
 
-   if (region->getExitEdges().getSize() != 1)
-      {
-      if (trace())
-         traceMsg(comp(), "Region with more than 1 exit edges can't be handled\n");
-      return 0;
-      }
+bool TR_ExpressionsSimplification::checkForLoad(TR::Node *node, TR::Node *load)
+{
+    if (node->getVisitCount() == _visitCount)
+        return false;
 
-   TR::CFGEdge *exitEdge = exitEdges.getFirst();
-   TR_StructureSubGraphNode* exitNode = toStructureSubGraphNode(exitEdge->getFrom());
-   int32_t exitTarget = exitEdge->getTo()->getNumber();
+    node->setVisitCount(_visitCount);
 
-   if (!exitNode->getStructure()->asBlock())
-      {
-      if (trace())
-         traceMsg(comp(), "The exit block can't be found\n");
-      return 0;
-      }
+    if (node == load)
+        return true;
 
-   TR::Block *exitBlock = exitNode->getStructure()->asBlock()->getBlock();
-   TR::Node *lastTreeInExitBlock = exitBlock->getLastRealTreeTop()->getNode();
+    for (int32_t i = 0; i < node->getNumChildren(); i++) {
+        if (checkForLoad(node->getChild(i), load))
+            return true;
+    }
 
-   if (trace())
-      {
-      traceMsg(comp(), "The exit block is %d\n", exitBlock->getNumber());
-      traceMsg(comp(), "The branch node is %p\n", lastTreeInExitBlock);
-      }
+    return false;
+}
 
+TR::Node *TR_ExpressionsSimplification::iaddisubSimplifier(TR::Node *invariantNode, LoopInfo *loopInfo)
+{
+    TR_ASSERT_FATAL(loopInfo->getBoundaryNode() == NULL, "iteration count must be constant for loop %d",
+        _currentRegion->getNumber());
 
-   if (!lastTreeInExitBlock->getOpCode().isBranch())
-      {
-      if (trace())
-         traceMsg(comp(), "The branch node couldn't be found\n");
-      return 0;
-      }
+    int32_t iters = loopInfo->getNumIterations();
+    TR_ASSERT_FATAL(iters > 0, "iteration count (%d) must be known and positive for loop %d", iters,
+        _currentRegion->getNumber());
 
-   if (lastTreeInExitBlock->getNumChildren() < 2)
-      {
-      if (trace())
-         traceMsg(comp(), "The branch node has less than 2 children\n");
-      return 0;
-      }
+    return TR::Node::create(invariantNode, TR::imul, 2, invariantNode->duplicateTree(),
+        TR::Node::create(invariantNode, TR::iconst, 0, iters));
+}
 
-   TR::Node *firstChildOfLastTree = lastTreeInExitBlock->getFirstChild();
-   TR::Node *secondChildOfLastTree = lastTreeInExitBlock->getSecondChild();
+TR::Node *TR_ExpressionsSimplification::ixorinegSimplifier(TR::Node *node, LoopInfo *loopInfo, bool *removeOnly)
+{
+    TR::Node *newNode = 0;
+    *removeOnly = false;
 
-   if (!firstChildOfLastTree->getOpCode().hasSymbolReference())
-      {
-      if (trace())
-         traceMsg(comp(), "The branch node's first child node %p - its opcode does not have a symbol reference\n", firstChildOfLastTree);
-      return 0;
-      }
+    if (loopInfo->getBoundaryNode()) {
+        if (trace())
+            traceMsg(comp(), "Loop has a non constant boundary, but this case is not taken care of\n");
+    } else {
+        if (loopInfo->getNumIterations() > 0) {
+            newNode = node;
+            if (loopInfo->getNumIterations() % 2 == 0) {
+                *removeOnly = true;
+            }
+        }
+    }
 
-   TR::SymbolReference *firstChildSymRef = firstChildOfLastTree->getSymbolReference();
+    return newNode;
+}
 
-   if (trace())
-      traceMsg(comp(), "Symbol Reference: %p Symbol: %p\n", firstChildSymRef, firstChildSymRef->getSymbol());
+TR::Block *TR_ExpressionsSimplification::findPredecessorBlock(TR::CFGNode *entryNode)
+{
+    if (!(entryNode->getPredecessors().size() == 2))
+        return 0;
 
-   // Locate the induction variable that matches with the exit node symbol
-   //
-   TR_InductionVariable *indVar = region->findMatchingIV(firstChildSymRef);
-   if (!indVar) return 0;
+    TR::Block *block = 0;
 
-   if (!indVar->getIncr()->asIntConst())
-      {
-      if (trace())
-         traceMsg(comp(), "Increment is not a constant\n");
-      return 0;
-      }
-
-   int32_t increment = indVar->getIncr()->getLowInt();
-
-   _visitCount = comp()->incVisitCount();
-   bool indVarWrittenAndUsedUnexpectedly = false;
-   if (firstChildOfLastTree->getReferenceCount() > 1)
-      {
-      TR::TreeTop *cursorTreeTopInExitBlock = exitBlock->getEntry();
-      TR::TreeTop *exitTreeTopInExitBlock = exitBlock->getExit();
-
-      bool loadSeen = false;
-      while (cursorTreeTopInExitBlock != exitTreeTopInExitBlock)
-         {
-         TR::Node *cursorNode = cursorTreeTopInExitBlock->getNode();
-         if (checkForLoad(cursorNode, firstChildOfLastTree))
-            loadSeen = true;
-
-         if (!cursorNode->getOpCode().isStore() &&
-             (cursorNode->getNumChildren() > 0))
-           cursorNode = cursorNode->getFirstChild();
-
-         if (cursorNode->getOpCode().isStore() &&
-             (cursorNode->getSymbolReference() == firstChildSymRef))
-            {
-            indVarWrittenAndUsedUnexpectedly = true;
-            if ((cursorNode->getFirstChild() == firstChildOfLastTree) ||
-                !loadSeen)
-               indVarWrittenAndUsedUnexpectedly = false;
+    for (auto edge = entryNode->getPredecessors().begin(); edge != entryNode->getPredecessors().end(); ++edge) {
+        if ((*edge)->getFrom()->getSuccessors().size() == 1) {
+            block = toBlock((*edge)->getFrom());
+            if (block->getStructureOf()->isLoopInvariantBlock())
+                break;
             else
-               break;
-            }
+                block = 0;
+        }
+    }
+    // traceMsg(comp(), "Commoned code will be put in block_%d\n", block->getNumber());
+    return block;
+}
 
-         cursorTreeTopInExitBlock = cursorTreeTopInExitBlock->getNextTreeTop();
-         }
-      }
+void TR_ExpressionsSimplification::transformNode(TR::Node *srcNode, TR::Block *dstBlock)
+{
+    TR::TreeTop *lastTree = dstBlock->getLastRealTreeTop();
+    TR::TreeTop *prevTree = lastTree->getPrevTreeTop();
+    TR::TreeTop *srcNodeTT = TR::TreeTop::create(comp(), srcNode);
 
-   if (indVarWrittenAndUsedUnexpectedly)
-      {
-      return 0;
-      }
+    if (trace())
+        comp()->getDebug()->print(comp()->getOutFile(), srcNode, 0, true);
 
-   int32_t lowerBound;
-   int32_t upperBound = 0;
-   TR::Node *bound = 0;
-   bool equals = false;
+    if (lastTree->getNode()->getOpCode().isBranch()
+        || (lastTree->getNode()->getOpCode().isJumpWithMultipleTargets()
+            && lastTree->getNode()->getOpCode().hasBranchChildren())) {
+        srcNodeTT->join(lastTree);
+        prevTree->join(srcNodeTT);
+    }
+    /*
+    else if (dstBlock->getEntry()->getNode()->getOpCodeValue() == TR::BBStart)
+       {
+       srcNodeTT->join(dstBlock->getExit());
+       dstBlock->getEntry()->join(srcNodeTT);
+       }
+    */
+    else {
+        srcNodeTT->join(dstBlock->getExit());
+        lastTree->join(srcNodeTT);
+    }
+    return;
+}
 
-   switch(lastTreeInExitBlock->getOpCodeValue())
-      {
-      case TR::ificmplt:
-      case TR::ificmpgt:
-         equals = true;
-      case TR::ificmple:
-      case TR::ificmpge:
-         {
-         TR::TreeTop *branchDestTT = lastTreeInExitBlock->getBranchDestination();
-         TR::Block *branchDest = branchDestTT->getNode()->getBlock();
-         if (branchDest->getNumber() != exitTarget)
-            equals = !equals;
+const char *TR_ExpressionsSimplification::optDetailString() const throw() { return "O^O EXPRESSION SIMPLIFICATION: "; }
 
-         if (!(indVar->getEntry() && indVar->getEntry()->asIntConst()))
-            {
-            if (trace())
-               traceMsg(comp(), "Entry value is not a constant\n");
-            return 0;
-            }
-         lowerBound = indVar->getEntry()->getLowInt();
+void TR_ExpressionsSimplification::SimplificationCandidateTuple::print(TR::Compilation *comp)
+{
+    traceMsg(comp, "   Candidate treetop: %p node: %p  flags={", _treeTop, _treeTop->getNode());
 
-         if (secondChildOfLastTree->getOpCode().isLoadConst())
-            {
-            upperBound = secondChildOfLastTree->getInt();
-            }
-         else if (secondChildOfLastTree->getOpCode().isLoadVar())
-            {
-            bound = secondChildOfLastTree;
-            }
-         else
-            {
-            if (trace())
-               traceMsg(comp(), "Second child is not a const or a load\n");
-            return 0;
-            }
-         return new (trStackMemory()) LoopInfo(bound, lowerBound, upperBound, increment, equals);
-         }
+    if (isSummationReductionCandidate()) {
+        traceMsg(comp, "SummationReductionCandidate ");
+    }
 
-      default:
-         if (trace())
-            traceMsg(comp(), "The condition has not been implemeted\n");
-         return 0;
-      }
+    if (isInvariantExpressionCandidate()) {
+        traceMsg(comp, "InvariantExpressionCandidate ");
+    }
 
-   return 0;
-   }
-
-
-bool
-TR_ExpressionsSimplification::checkForLoad(TR::Node *node, TR::Node *load)
-   {
-   if (node->getVisitCount() == _visitCount)
-      return false;
-
-   node->setVisitCount(_visitCount);
-
-   if (node == load)
-      return true;
-
-   for (int32_t i = 0; i < node->getNumChildren(); i++)
-      {
-      if (checkForLoad(node->getChild(i), load))
-         return true;
-      }
-
-   return false;
-   }
-
-
-TR::Node *
-TR_ExpressionsSimplification::iaddisubSimplifier(TR::Node *invariantNode, LoopInfo* loopInfo)
-   {
-   TR_ASSERT_FATAL(
-      loopInfo->getBoundaryNode() == NULL,
-      "iteration count must be constant for loop %d",
-      _currentRegion->getNumber());
-
-   int32_t iters = loopInfo->getNumIterations();
-   TR_ASSERT_FATAL(
-     iters > 0,
-     "iteration count (%d) must be known and positive for loop %d",
-     iters,
-     _currentRegion->getNumber());
-
-   return TR::Node::create(
-      invariantNode,
-      TR::imul,
-      2,
-      invariantNode->duplicateTree(),
-      TR::Node::create(invariantNode, TR::iconst, 0, iters));
-   }
-
-
-TR::Node *
-TR_ExpressionsSimplification::ixorinegSimplifier(TR::Node *node, LoopInfo* loopInfo, bool *removeOnly)
-   {
-   TR::Node *newNode = 0;
-   *removeOnly = false;
-
-   if (loopInfo->getBoundaryNode())
-      {
-      if (trace())
-         traceMsg(comp(), "Loop has a non constant boundary, but this case is not taken care of\n");
-      }
-   else
-      {
-      if (loopInfo->getNumIterations() > 0)
-         {
-         newNode = node;
-         if (loopInfo->getNumIterations() % 2 == 0)
-            {
-            *removeOnly = true;
-            }
-         }
-      }
-
-   return newNode;
-   }
-
-
-TR::Block *
-TR_ExpressionsSimplification::findPredecessorBlock(TR::CFGNode *entryNode)
-   {
-   if (!(entryNode->getPredecessors().size() == 2))
-       return 0;
-
-
-   TR::Block *block = 0;
-
-   for (auto edge = entryNode->getPredecessors().begin(); edge != entryNode->getPredecessors().end(); ++edge)
-      {
-      if ((*edge)->getFrom()->getSuccessors().size() == 1)
-         {
-         block = toBlock((*edge)->getFrom());
-         if (block->getStructureOf()->isLoopInvariantBlock())
-            break;
-         else
-            block = 0;
-         }
-      }
-   //traceMsg(comp(), "Commoned code will be put in block_%d\n", block->getNumber());
-   return block;
-   }
-
-
-void
-TR_ExpressionsSimplification::transformNode(TR::Node *srcNode, TR::Block *dstBlock)
-   {
-   TR::TreeTop *lastTree = dstBlock->getLastRealTreeTop();
-   TR::TreeTop *prevTree = lastTree->getPrevTreeTop();
-   TR::TreeTop *srcNodeTT = TR::TreeTop::create(comp(), srcNode);
-
-   if (trace())
-      comp()->getDebug()->print(comp()->getOutFile(),srcNode,0,true);
-
-   if (lastTree->getNode()->getOpCode().isBranch() ||
-       (lastTree->getNode()->getOpCode().isJumpWithMultipleTargets() && lastTree->getNode()->getOpCode().hasBranchChildren()))
-      {
-      srcNodeTT->join(lastTree);
-      prevTree->join(srcNodeTT);
-      }
-   /*
-   else if (dstBlock->getEntry()->getNode()->getOpCodeValue() == TR::BBStart)
-      {
-      srcNodeTT->join(dstBlock->getExit());
-      dstBlock->getEntry()->join(srcNodeTT);
-      }
-   */
-   else
-      {
-      srcNodeTT->join(dstBlock->getExit());
-      lastTree->join(srcNodeTT);
-      }
-   return;
-   }
-
-const char *
-TR_ExpressionsSimplification::optDetailString() const throw()
-   {
-   return "O^O EXPRESSION SIMPLIFICATION: ";
-   }
-
-void
-TR_ExpressionsSimplification::SimplificationCandidateTuple::print(TR::Compilation *comp)
-   {
-   traceMsg(comp, "   Candidate treetop: %p node: %p  flags={", _treeTop, _treeTop->getNode());
-
-   if (isSummationReductionCandidate())
-      {
-      traceMsg(comp, "SummationReductionCandidate ");
-      }
-
-   if (isInvariantExpressionCandidate())
-      {
-      traceMsg(comp, "InvariantExpressionCandidate ");
-      }
-
-   traceMsg(comp, "}\n");
-   }
+    traceMsg(comp, "}\n");
+}

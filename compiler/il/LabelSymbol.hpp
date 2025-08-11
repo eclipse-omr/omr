@@ -27,28 +27,25 @@
 namespace TR {
 class Block;
 class CodeGenerator;
-}
+} // namespace TR
 
 namespace TR {
 
-class OMR_EXTENSIBLE LabelSymbol : public OMR::LabelSymbolConnector
-   {
-
+class OMR_EXTENSIBLE LabelSymbol : public OMR::LabelSymbolConnector {
 protected:
+    LabelSymbol(TR::CodeGenerator *cg)
+        : OMR::LabelSymbolConnector(cg)
+    {}
 
-   LabelSymbol(TR::CodeGenerator *cg) :
-      OMR::LabelSymbolConnector(cg) { }
-
-   LabelSymbol(TR::CodeGenerator *cg, TR::Block *labb):
-      OMR::LabelSymbolConnector(cg, labb) { }
+    LabelSymbol(TR::CodeGenerator *cg, TR::Block *labb)
+        : OMR::LabelSymbolConnector(cg, labb)
+    {}
 
 private:
+    // When adding another class to the hierarchy, add it as a friend here
+    friend class OMR::LabelSymbol;
+};
 
-   // When adding another class to the hierarchy, add it as a friend here
-   friend class OMR::LabelSymbol;
-
-   };
-
-}
+} // namespace TR
 
 #endif

@@ -25,14 +25,10 @@
 #include "objectfmt/OMRObjectFormat.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE ObjectFormat : public OMR::ObjectFormatConnector
-   {
+class OMR_EXTENSIBLE ObjectFormat : public OMR::ObjectFormatConnector {};
 
-   };
-
-}
+} // namespace TR
 
 #endif

@@ -27,10 +27,11 @@
  */
 #ifndef OMR_GCREGISTERMAP_CONNECTOR
 #define OMR_GCREGISTERMAP_CONNECTOR
+
 namespace OMR {
 class GCRegisterMap;
 typedef OMR::GCRegisterMap GCRegisterMapConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stdint.h>
@@ -40,36 +41,42 @@ namespace TR {
 class GCRegisterMap;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class GCRegisterMap
-   {
-   public:
+class GCRegisterMap {
+public:
+    TR_ALLOC(TR_Memory::GCRegisterMap)
 
-   TR_ALLOC(TR_Memory::GCRegisterMap)
+    GCRegisterMap()
+        : _map(0)
+        , _registerSaveDescription(0)
+    {}
 
-   GCRegisterMap() : _map(0), _registerSaveDescription(0) {}
+    TR::GCRegisterMap *self();
 
-   TR::GCRegisterMap * self();
+    uint32_t getMap() { return _map; }
 
-   uint32_t getMap() {return _map;}
-   void setRegisterBits(uint32_t bits) {_map |= bits;}
-   void resetRegisterBits(uint32_t bits) { _map &= ~bits; }
-   void empty() {_map = 0;}
-   void maskRegisters(uint32_t mask) {_map &= mask;}
-   void maskRegistersWithInfoBits(uint32_t mask, uint32_t info) {_map = (mask & (_map | info));}
-   void setInfoBits(uint32_t info) {_map |= info;}
+    void setRegisterBits(uint32_t bits) { _map |= bits; }
 
-   uint32_t getRegisterSaveDescription() {return _registerSaveDescription;}
-   void setRegisterSaveDescription(uint32_t bits) {_registerSaveDescription = bits;}
+    void resetRegisterBits(uint32_t bits) { _map &= ~bits; }
 
-   private:
+    void empty() { _map = 0; }
 
-   uint32_t _map;
-   uint32_t _registerSaveDescription;
-   };
+    void maskRegisters(uint32_t mask) { _map &= mask; }
 
-}
+    void maskRegistersWithInfoBits(uint32_t mask, uint32_t info) { _map = (mask & (_map | info)); }
+
+    void setInfoBits(uint32_t info) { _map |= info; }
+
+    uint32_t getRegisterSaveDescription() { return _registerSaveDescription; }
+
+    void setRegisterSaveDescription(uint32_t bits) { _registerSaveDescription = bits; }
+
+private:
+    uint32_t _map;
+    uint32_t _registerSaveDescription;
+};
+
+} // namespace OMR
 
 #endif

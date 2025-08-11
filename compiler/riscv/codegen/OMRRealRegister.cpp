@@ -21,13 +21,12 @@
 
 #include "codegen/RealRegister.hpp"
 
-const uint8_t OMR::RV::RealRegister::fullRegBinaryEncodings[TR::RealRegister::NumRegisters] =
-   {
-      0x00, // NoReg
+const uint8_t OMR::RV::RealRegister::fullRegBinaryEncodings[TR::RealRegister::NumRegisters] = {
+    0x00, // NoReg
 #define DECLARE_GPR(regname, abiname, encoding) encoding,
 #define DECLARE_FPR(regname, abiname, encoding) encoding,
 #include "codegen/riscv-regs.h"
 #undef DECLARE_GPR
 #undef DECLARE_FPR
-      0x00  // SpilledReg
-   };
+    0x00 // SpilledReg
+};

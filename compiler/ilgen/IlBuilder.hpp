@@ -24,19 +24,17 @@
 
 #include "ilgen/OMRIlBuilder.hpp"
 
-namespace TR
-{
-   class IlBuilder : public OMR::IlBuilder
-      {
-      public:
-         IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types, int32_t bcIndex=-1)
-            : OMR::IlBuilder(methodBuilder, types, bcIndex)
-            { }
+namespace TR {
+class IlBuilder : public OMR::IlBuilder {
+public:
+    IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types, int32_t bcIndex = -1)
+        : OMR::IlBuilder(methodBuilder, types, bcIndex)
+    {}
 
-         IlBuilder(TR::IlBuilder *source)
-            : OMR::IlBuilder(source)
-            { }
-      };
+    IlBuilder(TR::IlBuilder *source)
+        : OMR::IlBuilder(source)
+    {}
+};
 
 } // namespace TR
 

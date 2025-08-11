@@ -25,17 +25,15 @@
 #include "compile/OMRMethod.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class Method : public OMR::MethodConnector
-   {
+class Method : public OMR::MethodConnector {
 public:
+    Method(Type t = J9)
+        : OMR::MethodConnector(t)
+    {}
+};
 
-   Method(Type t = J9) : OMR::MethodConnector(t) {}
-
-   };
-
-}
+} // namespace TR
 
 #endif

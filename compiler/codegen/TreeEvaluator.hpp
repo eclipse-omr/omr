@@ -24,14 +24,10 @@
 
 #include "codegen/OMRTreeEvaluator.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE TreeEvaluator: public OMR::TreeEvaluatorConnector
-   {
+class OMR_EXTENSIBLE TreeEvaluator : public OMR::TreeEvaluatorConnector {};
 
-   };
-
-}
+} // namespace TR
 
 #endif

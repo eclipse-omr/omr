@@ -27,10 +27,14 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
+
 namespace OMR {
-namespace RV { class Instruction; }
-typedef OMR::RV::Instruction InstructionConnector;
+namespace RV {
+class Instruction;
 }
+
+typedef OMR::RV::Instruction InstructionConnector;
+} // namespace OMR
 #else
 #error OMR::RV::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -48,187 +52,179 @@ class Node;
 class Register;
 class RegisterDependencyConditions;
 class BtypeInstruction;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace RV {
 
-namespace RV
-{
+class OMR_EXTENSIBLE Instruction : public OMR::Instruction {
+public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] op : opcode
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] precedingInstruction : preceding instruction
+     * @param[in] op : opcode
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::Node *node = NULL);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] op : opcode
+     * @param[in] cond : register dependency conditions
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond,
+        TR::Node *node = NULL);
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] precedingInstruction : preceding instruction
+     * @param[in] op : opcode
+     * @param[in] cond : register dependency conditions
+     * @param[in] node : node
+     */
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
 
-class OMR_EXTENSIBLE Instruction : public OMR::Instruction
-   {
+    /**
+     * @brief Instruction description string
+     * @return description string
+     */
+    virtual const char *description() { return "RV"; }
 
-   public:
+    /**
+     * @brief Gets instruction kind
+     * @return instruction kind
+     */
+    virtual Kind getKind() { return IsNotExtended; }
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] op : opcode
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] precedingInstruction : preceding instruction
-    * @param[in] op : opcode
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] op : opcode
-    * @param[in] cond : register dependency conditions
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] precedingInstruction : preceding instruction
-    * @param[in] op : opcode
-    * @param[in] cond : register dependency conditions
-    * @param[in] node : node
-    */
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
+    /**
+     * @brief Estimates binary length
+     * @param[in] currentEstimate : current estimated length
+     * @return estimated binary length
+     */
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate);
 
-   /**
-    * @brief Instruction description string
-    * @return description string
-    */
-   virtual const char *description() { return "RV"; }
+    /**
+     * @brief Generates binary encoding of the instruction
+     * @return instruction cursor
+     */
+    virtual uint8_t *generateBinaryEncoding();
 
-   /**
-    * @brief Gets instruction kind
-    * @return instruction kind
-    */
-   virtual Kind getKind() { return IsNotExtended; }
+    /**
+     * @brief Removes this instruction from instruction list
+     */
+    void remove();
 
-   /**
-    * @brief Estimates binary length
-    * @param[in] currentEstimate : current estimated length
-    * @return estimated binary length
-    */
-   virtual int32_t estimateBinaryLength(int32_t currentEstimate);
+    /**
+     * @brief Answers if this instruction is a label or not
+     * @return true if this instruction is a label, false otherwise
+     */
+    virtual bool isLabel() { return _opcode.getMnemonic() == TR::InstOpCode::label; }
 
-   /**
-    * @brief Generates binary encoding of the instruction
-    * @return instruction cursor
-    */
-   virtual uint8_t *generateBinaryEncoding();
+    /**
+     * @brief Gets the register dependency conditions
+     * @return register dependency conditions
+     */
+    virtual TR::RegisterDependencyConditions *getDependencyConditions() { return _conditions; }
 
-   /**
-    * @brief Removes this instruction from instruction list
-    */
-   void remove();
+    /**
+     * @brief Sets the register dependency conditions
+     * @param[in] cond : register dependency conditions
+     * @return register dependency conditions
+     */
+    TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
+    {
+        return (_conditions = cond);
+    }
 
-   /**
-    * @brief Answers if this instruction is a label or not
-    * @return true if this instruction is a label, false otherwise
-    */
-   virtual bool isLabel() { return _opcode.getMnemonic() == TR::InstOpCode::label; }
+    /**
+     * @brief Sets GCMap mask
+     * @param[in] cg : CodeGenerator
+     * @param[in] mask : GCMap mask
+     */
+    void RVNeedsGCMap(TR::CodeGenerator *cg, uint32_t mask);
 
-   /**
-    * @brief Gets the register dependency conditions
-    * @return register dependency conditions
-    */
-   virtual TR::RegisterDependencyConditions *getDependencyConditions()
-      {
-      return _conditions;
-      }
-   /**
-    * @brief Sets the register dependency conditions
-    * @param[in] cond : register dependency conditions
-    * @return register dependency conditions
-    */
-   TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
-      {
-      return (_conditions = cond);
-      }
+    /**
+     * @brief Assigns registers
+     * @param[in] kindToBeAssigned : register kind
+     */
+    virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
 
-   /**
-    * @brief Sets GCMap mask
-    * @param[in] cg : CodeGenerator
-    * @param[in] mask : GCMap mask
-    */
-   void RVNeedsGCMap(TR::CodeGenerator *cg, uint32_t mask);
+    /**
+     * @brief Answers whether this instruction references the given virtual register
+     * @param[in] reg : virtual register
+     * @return true when the instruction references the virtual register
+     */
+    virtual bool refsRegister(TR::Register *reg);
 
-   /**
-    * @brief Assigns registers
-    * @param[in] kindToBeAssigned : register kind
-    */
-   virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
+    /**
+     * @brief Answers whether this instruction defines the given virtual register
+     * @param[in] reg : virtual register
+     * @return true when the instruction defines the virtual register
+     */
+    virtual bool defsRegister(TR::Register *reg);
 
-   /**
-    * @brief Answers whether this instruction references the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when the instruction references the virtual register
-    */
-   virtual bool refsRegister(TR::Register *reg);
+    /**
+     * @brief Answers whether this instruction uses the given virtual register
+     * @param[in] reg : virtual register
+     * @return true when the instruction uses the virtual register
+     */
+    virtual bool usesRegister(TR::Register *reg);
 
-   /**
-    * @brief Answers whether this instruction defines the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when the instruction defines the virtual register
-    */
-   virtual bool defsRegister(TR::Register *reg);
+    /**
+     * @brief Answers whether a dependency condition associated with this instruction references the given virtual
+     * register
+     * @param[in] reg : virtual register
+     * @return true when a dependency condtion references the virtual register
+     */
+    virtual bool dependencyRefsRegister(TR::Register *reg);
 
-   /**
-    * @brief Answers whether this instruction uses the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when the instruction uses the virtual register
-    */
-   virtual bool usesRegister(TR::Register *reg);
+    /*
+     * Maps to TIndex in Instruction. Here we set values specific to RV CodeGen.
+     *
+     * A 32-bit field where the lower 24-bits contain an integer that represents an
+     * approximate ordering of instructions.
+     *
+     * The upper 8 bits are used for flags.
+     * Instruction flags encoded by their bit position.  Subclasses may use any
+     * available bits between LastBaseFlag and MaxBaseFlag inclusive.
+     */
+    enum {
+        WillBePatched = 0x08000000
+    };
 
-   /**
-    * @brief Answers whether a dependency condition associated with this instruction references the given virtual register
-    * @param[in] reg : virtual register
-    * @return true when a dependency condtion references the virtual register
-    */
-   virtual bool dependencyRefsRegister(TR::Register *reg);
+    /**
+     * @brief Answers the status of WillBePatched flag
+     * @return true when WillBePatched flag is set
+     */
+    bool willBePatched() { return (_index & WillBePatched) != 0; }
 
-   /*
-    * Maps to TIndex in Instruction. Here we set values specific to RV CodeGen.
-    *
-    * A 32-bit field where the lower 24-bits contain an integer that represents an
-    * approximate ordering of instructions.
-    *
-    * The upper 8 bits are used for flags.
-    * Instruction flags encoded by their bit position.  Subclasses may use any
-    * available bits between LastBaseFlag and MaxBaseFlag inclusive.
-    */
-   enum
-      {
-      WillBePatched        = 0x08000000
-      };
+    /**
+     * @brief Sets WillBePatched flag
+     * @param[in] v : flag status
+     */
+    void setWillBePatched(bool v = true) { v ? _index |= WillBePatched : _index &= ~WillBePatched; }
 
-   /**
-    * @brief Answers the status of WillBePatched flag
-    * @return true when WillBePatched flag is set
-    */
-   bool willBePatched() {return (_index & WillBePatched) != 0; }
+    /**
+     * @brief: It this is a B-type instruction, return it. Otherwise return NULL.
+     *
+     * @return: B-type instruction or NULL
+     */
+    virtual TR::BtypeInstruction *getBtypeInstruction();
 
-   /**
-    * @brief Sets WillBePatched flag
-    * @param[in] v : flag status
-    */
-   void setWillBePatched(bool v = true) { v ? _index |= WillBePatched : _index &= ~WillBePatched; }
+private:
+    TR::RegisterDependencyConditions *_conditions;
+};
 
-   /**
-    * @brief: It this is a B-type instruction, return it. Otherwise return NULL.
-    *
-    * @return: B-type instruction or NULL
-    */
-   virtual TR::BtypeInstruction *getBtypeInstruction();
-
-   private:
-      TR::RegisterDependencyConditions *_conditions;
-   };
-
-} // RV
-
-} // OMR
+}} // namespace OMR::RV
 
 #endif

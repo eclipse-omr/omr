@@ -24,10 +24,6 @@
 
 #include "il/Block.hpp"
 
-inline TR::Block*
-OMR::Block::self()
-   {
-   return static_cast<TR::Block*>(this);
-   }
+inline TR::Block *OMR::Block::self() { return static_cast<TR::Block *>(this); }
 
 #endif

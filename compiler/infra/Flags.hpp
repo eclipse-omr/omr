@@ -24,60 +24,66 @@
 
 #include <stdint.h>
 
+#define TO_MASK8(b) (1 << (uint8_t)b)
+#define TO_MASK16(b) (1 << (uint16_t)b)
+#define TO_MASK32(b) (1 << (uint32_t)b)
 
-#define TO_MASK8(b) (1<<(uint8_t)b)
-#define TO_MASK16(b) (1<<(uint16_t)b)
-#define TO_MASK32(b) (1<<(uint32_t)b)
-
-namespace OMR
-{
+namespace OMR {
 
 // Maintain a set of ``packed'' flags and values as an unsigned type.
 // Supply methods to test the values of flags and values.
 //
-template<class T> class FlagsTemplate
-   {
+template<class T> class FlagsTemplate {
+public:
+    FlagsTemplate(T t = 0)
+        : _flags(t)
+    {}
 
-   public:
+    bool testAny(T mask) const { return (_flags & mask) != 0; }
 
-   FlagsTemplate(T t = 0) : _flags(t) {}
+    bool testAll(T mask) const { return (_flags & mask) == mask; }
 
-   bool testAny(T mask) const { return (_flags & mask) != 0; }
-   bool testAll(T mask) const { return (_flags & mask) == mask; }
+    void set(T mask) { _flags |= mask; }
 
-   void set(T mask) { _flags |= mask; }
-   void set(FlagsTemplate<T> mask) { _flags |= mask._flags; }
-   void reset(T mask) { _flags &= ~mask; }
-   void set(T mask, bool b) { b ? set(mask) : reset(mask); }
-   void toggle(T mask) { _flags ^= mask; }
-   void clear() { _flags = 0; }
-   bool isClear() { return (_flags == 0); }
+    void set(FlagsTemplate<T> mask) { _flags |= mask._flags; }
 
-   // The next three methods manipulate a single multi-bit value.
-   // It can be used, for example, to pack small integers together.
-   //
-   bool testValue(T mask, T value) const { return (_flags & mask) == value; }
-   void setValue(T mask, T value) { _flags = (_flags & ~mask) | value; }
-   T getValue(T mask) const { return _flags & mask; }
-   T getValue() const { return _flags; }
+    void reset(T mask) { _flags &= ~mask; }
 
-   bool operator==(FlagsTemplate<T> &other) { return getValue() == other.getValue(); }
+    void set(T mask, bool b) { b ? set(mask) : reset(mask); }
 
-   private:
+    void toggle(T mask) { _flags ^= mask; }
 
-   T _flags;
-   };
+    void clear() { _flags = 0; }
 
-typedef FlagsTemplate<uint8_t>  flags8_t;
+    bool isClear() { return (_flags == 0); }
+
+    // The next three methods manipulate a single multi-bit value.
+    // It can be used, for example, to pack small integers together.
+    //
+    bool testValue(T mask, T value) const { return (_flags & mask) == value; }
+
+    void setValue(T mask, T value) { _flags = (_flags & ~mask) | value; }
+
+    T getValue(T mask) const { return _flags & mask; }
+
+    T getValue() const { return _flags; }
+
+    bool operator==(FlagsTemplate<T> &other) { return getValue() == other.getValue(); }
+
+private:
+    T _flags;
+};
+
+typedef FlagsTemplate<uint8_t> flags8_t;
 typedef FlagsTemplate<uint16_t> flags16_t;
 typedef FlagsTemplate<uint32_t> flags32_t;
 typedef FlagsTemplate<uint64_t> flags64_t;
 
-}
+} // namespace OMR
 
-using OMR::flags8_t;
 using OMR::flags16_t;
 using OMR::flags32_t;
 using OMR::flags64_t;
+using OMR::flags8_t;
 
 #endif

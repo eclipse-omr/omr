@@ -29,34 +29,32 @@ class IlBuilder;
 class MethodBuilder;
 class IlType;
 class IlValue;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
-   {
-   public:
-   JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName);
-   virtual ~JitBuilderRecorderTextFile() { }
+class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder {
+public:
+    JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName);
 
-   virtual void Close();
-   virtual void String(const char * const string);
-   virtual void Number(int8_t num);
-   virtual void Number(int16_t num);
-   virtual void Number(int32_t num);
-   virtual void Number(int64_t num);
-   virtual void Number(float num);
-   virtual void Number(double num);
-   virtual void ID(TypeID id);
-   virtual void Statement(const char *s);
-   virtual void Type(const TR::IlType *type);
-   virtual void Value(const TR::IlValue *v);
-   virtual void Builder(const TR::IlBuilder *b);
-   virtual void Location(const void * location);
-   virtual void EndStatement();
+    virtual ~JitBuilderRecorderTextFile() {}
 
-   };
+    virtual void Close();
+    virtual void String(const char * const string);
+    virtual void Number(int8_t num);
+    virtual void Number(int16_t num);
+    virtual void Number(int32_t num);
+    virtual void Number(int64_t num);
+    virtual void Number(float num);
+    virtual void Number(double num);
+    virtual void ID(TypeID id);
+    virtual void Statement(const char *s);
+    virtual void Type(const TR::IlType *type);
+    virtual void Value(const TR::IlValue *v);
+    virtual void Builder(const TR::IlBuilder *b);
+    virtual void Location(const void *location);
+    virtual void EndStatement();
+};
 
 } // namespace OMR
 

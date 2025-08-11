@@ -47,70 +47,60 @@ namespace TR {
 class LabelSymbol;
 }
 
-TR_S390OutOfLineCodeSection::TR_S390OutOfLineCodeSection(TR::Node  *callNode,
-                                                 TR::ILOpCodes      callOp,
-                                                 TR::Register      *targetReg,
-                                                 TR::LabelSymbol    *entryLabel,
-                                                 TR::LabelSymbol    *restartLabel,
-                                                 TR::CodeGenerator *cg) :
-                                                 TR_OutOfLineCodeSection(callNode,callOp,targetReg,entryLabel,restartLabel,cg),
-                                                   _targetRegMovOpcode(cg->comp()->target().is64Bit() ? TR::InstOpCode::LGR : TR::InstOpCode::LR)
-   {
-   // isPreparedForDirectJNI also checks if the node is a call
-   if(callNode->isPreparedForDirectJNI())
-      {
-      _callNode->setPreparedForDirectJNI();
-      }
-   }
+TR_S390OutOfLineCodeSection::TR_S390OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp,
+    TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+    : TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
+    , _targetRegMovOpcode(cg->comp()->target().is64Bit() ? TR::InstOpCode::LGR : TR::InstOpCode::LR)
+{
+    // isPreparedForDirectJNI also checks if the node is a call
+    if (callNode->isPreparedForDirectJNI()) {
+        _callNode->setPreparedForDirectJNI();
+    }
+}
 
-TR_S390OutOfLineCodeSection::TR_S390OutOfLineCodeSection(TR::Node  *callNode,
-                                                 TR::ILOpCodes      callOp,
-                                                 TR::Register      *targetReg,
-                                                 TR::LabelSymbol    *entryLabel,
-                                                 TR::LabelSymbol    *restartLabel,
-                                                 TR::InstOpCode::Mnemonic    targetRegMovOpcode,
-                                                 TR::CodeGenerator *cg) : TR_OutOfLineCodeSection(callNode,callOp,targetReg,entryLabel,restartLabel,cg),
-                                                	_targetRegMovOpcode(targetRegMovOpcode)
-   {
-   //generateS390OutOfLineCodeSectionDispatch();
-   }
+TR_S390OutOfLineCodeSection::TR_S390OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp,
+    TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel,
+    TR::InstOpCode::Mnemonic targetRegMovOpcode, TR::CodeGenerator *cg)
+    : TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
+    , _targetRegMovOpcode(targetRegMovOpcode)
+{
+    // generateS390OutOfLineCodeSectionDispatch();
+}
 
 void TR_S390OutOfLineCodeSection::generateS390OutOfLineCodeSectionDispatch()
-   {
-   // Switch to cold helper instruction stream.
-   //
-   swapInstructionListsWithCompilation();
+{
+    // Switch to cold helper instruction stream.
+    //
+    swapInstructionListsWithCompilation();
 
-   TR::Compilation *comp = _cg->comp();
-   TR::Register    *vmThreadReg = _cg->getMethodMetaDataRealRegister();
-   TR::Instruction  *temp = generateS390LabelInstruction(_cg, TR::InstOpCode::label, _callNode, _entryLabel);
+    TR::Compilation *comp = _cg->comp();
+    TR::Register *vmThreadReg = _cg->getMethodMetaDataRealRegister();
+    TR::Instruction *temp = generateS390LabelInstruction(_cg, TR::InstOpCode::label, _callNode, _entryLabel);
 
-   _cg->incOutOfLineColdPathNestedDepth();
-   TR_Debug * debugObj = _cg->getDebug();
-   if (debugObj)
-     {
-     debugObj->addInstructionComment(temp, "Denotes start of OOL sequence");
-     }
+    _cg->incOutOfLineColdPathNestedDepth();
+    TR_Debug *debugObj = _cg->getDebug();
+    if (debugObj) {
+        debugObj->addInstructionComment(temp, "Denotes start of OOL sequence");
+    }
 
-   TR::Register *resultReg = TR::TreeEvaluator::performCall(_callNode, _callNode->getOpCode().isCallIndirect(), _cg);
+    TR::Register *resultReg = TR::TreeEvaluator::performCall(_callNode, _callNode->getOpCode().isCallIndirect(), _cg);
 
-   if (_targetReg)
-      temp = generateRRInstruction(_cg, _targetRegMovOpcode, _callNode, _targetReg, _callNode->getRegister());
+    if (_targetReg)
+        temp = generateRRInstruction(_cg, _targetRegMovOpcode, _callNode, _targetReg, _callNode->getRegister());
 
-   _cg->decReferenceCount(_callNode);
+    _cg->decReferenceCount(_callNode);
 
-   temp = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_BRC, _callNode, _restartLabel);
+    temp = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_BRC, _callNode, _restartLabel);
 
-   if (debugObj)
-     {
-     debugObj->addInstructionComment(temp, "Denotes end of OOL: return to mainline");
-     }
+    if (debugObj) {
+        debugObj->addInstructionComment(temp, "Denotes end of OOL: return to mainline");
+    }
 
-   _cg->decOutOfLineColdPathNestedDepth();
+    _cg->decOutOfLineColdPathNestedDepth();
 
-   // Switch from cold helper instruction stream.
-   swapInstructionListsWithCompilation();
-   }
+    // Switch from cold helper instruction stream.
+    swapInstructionListsWithCompilation();
+}
 
 /**
  * Create a NoReg dependency for each child of a call that has been evaluated into a register.
@@ -118,42 +108,34 @@ void TR_S390OutOfLineCodeSection::generateS390OutOfLineCodeSectionDispatch()
  * the helper call stream.
  */
 TR::RegisterDependencyConditions *TR_S390OutOfLineCodeSection::formEvaluatedArgumentDepList()
-   {
-   int32_t i, c=0;
+{
+    int32_t i, c = 0;
 
-   for (i=_callNode->getFirstArgumentIndex(); i<_callNode->getNumChildren(); i++)
-      {
-      TR::Register *reg = _callNode->getChild(i)->getRegister();
-      if (reg)
-         {
-         TR::RegisterPair *regPair = reg->getRegisterPair();
-         c += regPair? 2 : 1;
-         }
-      }
-
-   TR::RegisterDependencyConditions *depConds = NULL;
-
-   if (c)
-      {
-      TR::Machine *machine = _cg->machine();
-      depConds = generateRegisterDependencyConditions(0, c, _cg);
-      for (i=_callNode->getFirstArgumentIndex(); i<_callNode->getNumChildren(); i++)
-         {
-         TR::Register *reg = _callNode->getChild(i)->getRegister();
-         if (reg)
-            {
+    for (i = _callNode->getFirstArgumentIndex(); i < _callNode->getNumChildren(); i++) {
+        TR::Register *reg = _callNode->getChild(i)->getRegister();
+        if (reg) {
             TR::RegisterPair *regPair = reg->getRegisterPair();
-            if (regPair)
-               {
-               depConds->addPostCondition(regPair->getLowOrder(), TR::RealRegister::NoReg);
-               depConds->addPostCondition(regPair->getHighOrder(), TR::RealRegister::NoReg);
-               }
-            else
-               {
-               depConds->addPostCondition(reg, TR::RealRegister::NoReg);
-               }
+            c += regPair ? 2 : 1;
+        }
+    }
+
+    TR::RegisterDependencyConditions *depConds = NULL;
+
+    if (c) {
+        TR::Machine *machine = _cg->machine();
+        depConds = generateRegisterDependencyConditions(0, c, _cg);
+        for (i = _callNode->getFirstArgumentIndex(); i < _callNode->getNumChildren(); i++) {
+            TR::Register *reg = _callNode->getChild(i)->getRegister();
+            if (reg) {
+                TR::RegisterPair *regPair = reg->getRegisterPair();
+                if (regPair) {
+                    depConds->addPostCondition(regPair->getLowOrder(), TR::RealRegister::NoReg);
+                    depConds->addPostCondition(regPair->getHighOrder(), TR::RealRegister::NoReg);
+                } else {
+                    depConds->addPostCondition(reg, TR::RealRegister::NoReg);
+                }
             }
-         }
-      }
-   return depConds;
-   }
+        }
+    }
+    return depConds;
+}

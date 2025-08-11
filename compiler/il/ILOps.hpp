@@ -24,22 +24,21 @@
 
 #include "il/OMRILOps.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class ILOpCode : public OMR::ILOpCode
-   {
+class ILOpCode : public OMR::ILOpCode {
 public:
-   ILOpCode() : OMR::ILOpCode() {}
+    ILOpCode()
+        : OMR::ILOpCode()
+    {}
 
-   ILOpCode(TR::ILOpCodes opCode)
-      : OMR::ILOpCode(opCode)
-      {
-      TR_ASSERT(opCode < TR::NumAllIlOps, "assertion failure");
-      }
+    ILOpCode(TR::ILOpCodes opCode)
+        : OMR::ILOpCode(opCode)
+    {
+        TR_ASSERT(opCode < TR::NumAllIlOps, "assertion failure");
+    }
+};
 
-   };
-
-}
+} // namespace TR
 
 #endif

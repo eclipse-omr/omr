@@ -33,148 +33,134 @@ class Symbol;
 class SymbolReference;
 class MethodBuilder;
 class IlValue;
-}
+} // namespace TR
 
 extern "C" {
-typedef void * (*ClientAllocator)(void * impl);
-typedef void * (*ImplGetter)(void *client);
+typedef void *(*ClientAllocator)(void *impl);
+typedef void *(*ImplGetter)(void *client);
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class IlValue
-   {
+class IlValue {
 public:
-   TR_ALLOC(TR_Memory::IlGenerator)
+    TR_ALLOC(TR_Memory::IlGenerator)
 
-   /**
-    * @brief initial state assumes value will only be used locally
-    */
-   IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder);
+    /**
+     * @brief initial state assumes value will only be used locally
+     */
+    IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder);
 
-   /**
-    * @brief return a TR::Node that computes this value, either directly if in same block or by loading a local variable if not
-    * @param block TR::Block for the load point so it can be compared to the TR::Block where value is computed
-    */
-   TR::Node *load(TR::Block *block);
+    /**
+     * @brief return a TR::Node that computes this value, either directly if in same block or by loading a local
+     * variable if not
+     * @param block TR::Block for the load point so it can be compared to the TR::Block where value is computed
+     */
+    TR::Node *load(TR::Block *block);
 
-   /**
-    * @brief ensures that the provided value replaces the current value, but only affects subsequent loads
-    * @param value the new value that should be returned whenever the current value is loaded
-    * @param block TR::Block for the replacement point, so that either the node pointer is changed or what's stored in the symbol reference
-    */
-   void storeOver(TR::IlValue *value, TR::Block *block);
+    /**
+     * @brief ensures that the provided value replaces the current value, but only affects subsequent loads
+     * @param value the new value that should be returned whenever the current value is loaded
+     * @param block TR::Block for the replacement point, so that either the node pointer is changed or what's stored in
+     * the symbol reference
+     */
+    void storeOver(TR::IlValue *value, TR::Block *block);
 
-   /**
-    * @brief return the data type of this value
-    */
-   TR::DataType getDataType();
+    /**
+     * @brief return the data type of this value
+     */
+    TR::DataType getDataType();
 
-   /**
-    * @brief returns the TR::SymbolReference holding the value, or NULL if willBeUsedInAnotherBlock() has not yet been called
-    * Caller should ensure the current block is different than the block that computes the value; if the current block is the
-    * same then it is better to use the value as a node pointer via GetNodePointerIfLegal().
-    */
-   TR::SymbolReference *getSymbolReference()
-      {
-      return _symRefThatCanBeUsedInOtherBlocks;
-      }
+    /**
+     * @brief returns the TR::SymbolReference holding the value, or NULL if willBeUsedInAnotherBlock() has not yet been
+     * called Caller should ensure the current block is different than the block that computes the value; if the current
+     * block is the same then it is better to use the value as a node pointer via GetNodePointerIfLegal().
+     */
+    TR::SymbolReference *getSymbolReference() { return _symRefThatCanBeUsedInOtherBlocks; }
 
-   /**
-    * @brief returns a unique identifier for this IlValue object within its MethodBuilder
-    * Note that IlValues from different MethodBuilders can have the same ID.
-    */
-   int32_t getID()
-      {
-      return _id;
-      }
+    /**
+     * @brief returns a unique identifier for this IlValue object within its MethodBuilder
+     * Note that IlValues from different MethodBuilders can have the same ID.
+     */
+    int32_t getID() { return _id; }
 
-   /**
-    * @brief associates this object with a particular client object
-    */
-   void setClient(void *client)
-      {
-      _client = client;
-      }
+    /**
+     * @brief associates this object with a particular client object
+     */
+    void setClient(void *client) { _client = client; }
 
-   /**
-    * @brief returns the client object associated with this object
-    */
-   void *client();
+    /**
+     * @brief returns the client object associated with this object
+     */
+    void *client();
 
-   /**
-    * @brief Set the Client Allocator function
-    *
-    * @param allocator a function pointer to the client object allocator
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
+    /**
+     * @brief Set the Client Allocator function
+     *
+     * @param allocator a function pointer to the client object allocator
+     */
+    static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
 
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
+    /**
+     * @brief Set the Get Impl function
+     *
+     * @param getter function pointer to the impl getter
+     */
+    static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
 
 protected:
-   /**
-    * @brief ensures this value is accessible via an auto symbol, but only generates store if hasn't already been stored
-    */
-   void storeToAuto();
+    /**
+     * @brief ensures this value is accessible via an auto symbol, but only generates store if hasn't already been
+     * stored
+     */
+    void storeToAuto();
 
-   /**
-    * @brief pointer to a client object that corresponds to this object
-    */
-   void                * _client;
+    /**
+     * @brief pointer to a client object that corresponds to this object
+     */
+    void *_client;
 
-   /**
-    * @brief pointer to the function used to allocate an instance of a
-    * client object
-    */
-   static ClientAllocator _clientAllocator;
+    /**
+     * @brief pointer to the function used to allocate an instance of a
+     * client object
+     */
+    static ClientAllocator _clientAllocator;
 
-   /**
-    * @brief pointer to impl getter function
-    */
-   static ImplGetter _getImpl;
+    /**
+     * @brief pointer to impl getter function
+     */
+    static ImplGetter _getImpl;
 
-   /**
-    * @brief identifying number for values guaranteed to be unique per MethodBuilder
-    */
-   int32_t               _id;
+    /**
+     * @brief identifying number for values guaranteed to be unique per MethodBuilder
+     */
+    int32_t _id;
 
-   /**
-    * @brief TR::Node pointer that computes the actual value
-    */
-   TR::Node            * _nodeThatComputesValue;
+    /**
+     * @brief TR::Node pointer that computes the actual value
+     */
+    TR::Node *_nodeThatComputesValue;
 
-   /**
-    * @brief TR::TreeTop that anchors this node (though not necessarily directly)
-    */
-   TR::TreeTop         * _treeTopThatAnchorsValue;
+    /**
+     * @brief TR::TreeTop that anchors this node (though not necessarily directly)
+     */
+    TR::TreeTop *_treeTopThatAnchorsValue;
 
-   /**
-    * @brief TR::Block where the value is computed
-    */
-   TR::Block           * _blockThatComputesValue;
+    /**
+     * @brief TR::Block where the value is computed
+     */
+    TR::Block *_blockThatComputesValue;
 
-   /**
-    * @brief Method builder object where value is computed
-    */
-   TR::MethodBuilder   * _methodBuilder;
+    /**
+     * @brief Method builder object where value is computed
+     */
+    TR::MethodBuilder *_methodBuilder;
 
-   /**
-    * @brief TR::SymbolReference for temp holding value if it needs to be used outside basic block that computes it
-    */
-   TR::SymbolReference * _symRefThatCanBeUsedInOtherBlocks;
-   };
+    /**
+     * @brief TR::SymbolReference for temp holding value if it needs to be used outside basic block that computes it
+     */
+    TR::SymbolReference *_symRefThatCanBeUsedInOtherBlocks;
+};
 
 } // namespace OMR
 

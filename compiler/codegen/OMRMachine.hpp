@@ -27,10 +27,11 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
+
 namespace OMR {
 class Machine;
 typedef OMR::Machine MachineConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -43,119 +44,117 @@ typedef OMR::Machine MachineConnector;
 namespace TR {
 class CodeGenerator;
 class Machine;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE Machine
-   {
+class OMR_EXTENSIBLE Machine {
+    int16_t numLockedGPRs;
+    int16_t numLockedFPRs;
+    int16_t numLockedVRFs;
 
-   int16_t numLockedGPRs;
-   int16_t numLockedFPRs;
-   int16_t numLockedVRFs;
+public:
+    TR_ALLOC(TR_Memory::Machine)
 
-   public:
+    Machine(TR::CodeGenerator *cg)
+        : _cg(cg)
+        , numLockedGPRs(-1)
+        , numLockedFPRs(-1)
+        , numLockedVRFs(-1)
+    {}
 
-   TR_ALLOC(TR_Memory::Machine)
+    inline TR::Machine *self();
 
-   Machine(TR::CodeGenerator *cg)
-      :
-      _cg(cg),
-      numLockedGPRs(-1),
-      numLockedFPRs(-1),
-      numLockedVRFs(-1)
-      {
-      }
+    /**
+     * @brief Converts RegNum to RealRegister
+     * @param[in] regNum : register number
+     * @return RealRegister for specified register number
+     */
+    TR::RealRegister *getRealRegister(TR::RealRegister::RegNum regNum) { return _registerFile[regNum]; }
 
-   inline TR::Machine * self();
+    /**
+     * \return : the cached TR::CodeGenerator object
+     */
+    TR::CodeGenerator *cg() { return _cg; }
 
-   /**
-    * @brief Converts RegNum to RealRegister
-    * @param[in] regNum : register number
-    * @return RealRegister for specified register number
-    */
-   TR::RealRegister *getRealRegister(TR::RealRegister::RegNum regNum)
-      {
-      return _registerFile[regNum];
-      }
+    /** \brief
+     *     Sets the number of locked registers of a specific register kind for use as a cache lookup.
+     *
+     *  \param kind
+     *     The register kind to count.
+     *
+     *  \param numLocked
+     *     The number of registers of the respective kind that are in the locked state.
+     *
+     *  \return
+     *     The number of registers of the respective kind that are in the locked state.
+     */
+    int16_t setNumberOfLockedRegisters(TR_RegisterKinds kind, int16_t numLocked)
+    {
+        TR_ASSERT(numLocked >= 0, "Expecting number of locked registers to be >= 0");
+        switch (kind) {
+            case TR_GPR:
+                numLockedGPRs = numLocked;
+                return numLockedGPRs;
+            case TR_FPR:
+                numLockedFPRs = numLocked;
+                return numLockedFPRs;
+            case TR_VRF:
+                numLockedVRFs = numLocked;
+                return numLockedVRFs;
+            default:
+                TR_ASSERT_FATAL(false, "Unknown register kind");
+                return -1;
+        }
+    }
 
-   /**
-    * \return : the cached TR::CodeGenerator object
-    */
-   TR::CodeGenerator *cg() {return _cg;}
+    /** \brief
+     *     Gets the number of locked registers of a specific register kind.
+     *
+     *  \param kind
+     *     The register kind to count.
+     *
+     *  \return
+     *     The number of registers of the respective kind that are in the locked state.
+     */
+    int16_t getNumberOfLockedRegisters(TR_RegisterKinds kind)
+    {
+        switch (kind) {
+            case TR_GPR:
+                TR_ASSERT(numLockedGPRs >= 0, "Expecting number of locked registers to be >= 0");
+                return numLockedGPRs;
+            case TR_FPR:
+                TR_ASSERT(numLockedFPRs >= 0, "Expecting number of locked registers to be >= 0");
+                return numLockedFPRs;
+            case TR_VRF:
+                TR_ASSERT(numLockedVRFs >= 0, "Expecting number of locked registers to be >= 0");
+                return numLockedVRFs;
+            default:
+                TR_ASSERT_FATAL(false, "Unknown register kind");
+                return -1;
+        }
+    }
 
-   /** \brief
-    *     Sets the number of locked registers of a specific register kind for use as a cache lookup.
-    *
-    *  \param kind
-    *     The register kind to count.
-    *
-    *  \param numLocked
-    *     The number of registers of the respective kind that are in the locked state.
-    *
-    *  \return
-    *     The number of registers of the respective kind that are in the locked state.
-    */
-   int16_t setNumberOfLockedRegisters(TR_RegisterKinds kind, int16_t numLocked)
-      {
-      TR_ASSERT(numLocked >= 0, "Expecting number of locked registers to be >= 0");
-      switch (kind)
-         {
-         case TR_GPR: numLockedGPRs = numLocked; return numLockedGPRs;
-         case TR_FPR: numLockedFPRs = numLocked; return numLockedFPRs;
-         case TR_VRF: numLockedVRFs = numLocked; return numLockedVRFs;
-         default:
-            TR_ASSERT_FATAL(false, "Unknown register kind");
-            return -1;
-         }
-      }
+    /**
+     * \brief Retrieve a pointer to the register file
+     */
+    TR::RealRegister **registerFile() { return _registerFile; }
 
-   /** \brief
-    *     Gets the number of locked registers of a specific register kind.
-    *
-    *  \param kind
-    *     The register kind to count.
-    *
-    *  \return
-    *     The number of registers of the respective kind that are in the locked state.
-    */
-   int16_t getNumberOfLockedRegisters(TR_RegisterKinds kind)
-      {
-      switch (kind)
-         {
-         case TR_GPR: TR_ASSERT(numLockedGPRs >= 0, "Expecting number of locked registers to be >= 0"); return numLockedGPRs;
-         case TR_FPR: TR_ASSERT(numLockedFPRs >= 0, "Expecting number of locked registers to be >= 0"); return numLockedFPRs;
-         case TR_VRF: TR_ASSERT(numLockedVRFs >= 0, "Expecting number of locked registers to be >= 0"); return numLockedVRFs;
-         default:
-            TR_ASSERT_FATAL(false, "Unknown register kind");
-            return -1;
-         }
-      }
-
-   /**
-    * \brief Retrieve a pointer to the register file
-    */
-   TR::RealRegister **registerFile() { return _registerFile; }
-
-   /**
-    * \brief Retrieves the TR::RealRegister object for the given real register
-    *
-    * \param[in] rn : the desired real register
-    *
-    * \return : the desired TR::RealRegister object
-    */
-   TR::RealRegister *realRegister(TR::RealRegister::RegNum rn) { return _registerFile[rn]; }
+    /**
+     * \brief Retrieves the TR::RealRegister object for the given real register
+     *
+     * \param[in] rn : the desired real register
+     *
+     * \return : the desired TR::RealRegister object
+     */
+    TR::RealRegister *realRegister(TR::RealRegister::RegNum rn) { return _registerFile[rn]; }
 
 private:
-
-   TR::CodeGenerator *_cg;
+    TR::CodeGenerator *_cg;
 
 protected:
-
-   TR::RealRegister *_registerFile[TR::RealRegister::NumRegisters];
-
-   };
-}
+    TR::RealRegister *_registerFile[TR::RealRegister::NumRegisters];
+};
+} // namespace OMR
 
 #endif

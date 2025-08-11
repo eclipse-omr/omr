@@ -29,20 +29,17 @@ namespace TR {
 class Compilation;
 }
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGeneratorConnector
-   {
+class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGeneratorConnector {
 public:
-
-   /**
-    * @param[in] comp : the TR::Compilation object
-    */
-   CodeGenerator(TR::Compilation *comp) :
-      OMR::CodeGeneratorConnector(comp) {}
-
-   };
-}
+    /**
+     * @param[in] comp : the TR::Compilation object
+     */
+    CodeGenerator(TR::Compilation *comp)
+        : OMR::CodeGeneratorConnector(comp)
+    {}
+};
+} // namespace TR
 
 #endif

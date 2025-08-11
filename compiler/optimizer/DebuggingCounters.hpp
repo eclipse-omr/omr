@@ -31,7 +31,7 @@ namespace TR {
 class Compilation;
 class Method;
 class TreeTop;
-}
+} // namespace TR
 
 // This is the type of the debugging counters.
 #define SMALL_COUNTER_TYPE uint32_t
@@ -40,47 +40,45 @@ class TreeTop;
 /**
  * Simple list to track already instrumented call sites.
  */
-struct CountedCallSite
-  {
-  TR::TreeTop * callTreeTop;
-  char name[64];
-  bool flag;
-  int32_t size;
-  int32_t frequency;
-  int32_t numLocals;
-  TR_OpaqueMethodBlock *opaque_method;
-  TR::Method *method;
-  TR_ByteCodeInfo bcInfo;
-  CountedCallSite * _next;
-  };
+struct CountedCallSite {
+    TR::TreeTop *callTreeTop;
+    char name[64];
+    bool flag;
+    int32_t size;
+    int32_t frequency;
+    int32_t numLocals;
+    TR_OpaqueMethodBlock *opaque_method;
+    TR::Method *method;
+    TR_ByteCodeInfo bcInfo;
+    CountedCallSite *_next;
+};
 
 /**
  *  Structure to hold all data for a given named counter.
  */
-struct NamedCounterInfo
-  {
-  // Named of this counter
-  char * counterName;
+struct NamedCounterInfo {
+    // Named of this counter
+    char *counterName;
 
-  // A small counter that is incremented without being corrupted by
-  // races (may drop samples)
-  SMALL_COUNTER_TYPE smallCount;
+    // A small counter that is incremented without being corrupted by
+    // races (may drop samples)
+    SMALL_COUNTER_TYPE smallCount;
 
-  // A large counter that won't overflow.  Updated periodically from
-  // the interval count
-  LARGE_COUNTER_TYPE totalCount;
+    // A large counter that won't overflow.  Updated periodically from
+    // the interval count
+    LARGE_COUNTER_TYPE totalCount;
 
-  // Counter to track how many different locations in the code (at
-  // compile time) increment this counter.
-  SMALL_COUNTER_TYPE compilationCount;
+    // Counter to track how many different locations in the code (at
+    // compile time) increment this counter.
+    SMALL_COUNTER_TYPE compilationCount;
 
-  // Linked list of infos
-  NamedCounterInfo * _next;
+    // Linked list of infos
+    NamedCounterInfo *_next;
 
-  int32_t delta;
+    int32_t delta;
 
-  int32_t bucketSize;
-  };
+    int32_t bucketSize;
+};
 
 /**
  *  Class to contain functionality specific to debugging counters.
@@ -88,37 +86,40 @@ struct NamedCounterInfo
  *  the data could probably become instance-specific to support reentrant
  *  compilation.
  */
-class TR_DebuggingCounters
-  {
-  public:
-  TR_ALLOC(TR_Memory::TR_DebuggingCounters)
-  static void initializeCompilation();
-  static void transferSmallCountsToTotalCounts();
-  static void report();
+class TR_DebuggingCounters {
+public:
+    TR_ALLOC(TR_Memory::TR_DebuggingCounters)
+    static void initializeCompilation();
+    static void transferSmallCountsToTotalCounts();
+    static void report();
 
-  private:
-  // Linked list of counter infos
-  static NamedCounterInfo * namedCounterInfos;
+private:
+    // Linked list of counter infos
+    static NamedCounterInfo *namedCounterInfos;
 
-  // Methods
-  static NamedCounterInfo* getOrCreateNamedCounter(TR::Compilation *comp, const char * name, int32_t d, int32_t bucketSize);
-  static void insertCounter(const char * name, TR::Compilation * comp, TR::TreeTop * tt, int32_t d);
-  static bool insertIfMissing(TR::Compilation * comp, const char *name, bool flag, TR::TreeTop * tt, int32_t size = 0, int32_t numLocals=0);
+    // Methods
+    static NamedCounterInfo *getOrCreateNamedCounter(TR::Compilation *comp, const char *name, int32_t d,
+        int32_t bucketSize);
+    static void insertCounter(const char *name, TR::Compilation *comp, TR::TreeTop *tt, int32_t d);
+    static bool insertIfMissing(TR::Compilation *comp, const char *name, bool flag, TR::TreeTop *tt, int32_t size = 0,
+        int32_t numLocals = 0);
 
-  /*
-   *  The routines below are specific to inlining counters, but use
-   *  the generic debugging counters above as the implementation
-   *
-   *  This could be done through inheritance, but it doesn't seem worth it at this point.
-   */
-  public:
-  static void insertInliningCounter(const char * name, TR::Compilation * comp, TR::TreeTop * tt, int32_t size = 0, int32_t delta = 0, int32_t numLocals=0);
-  static void insertInliningCounterOK(const char * name, TR::Compilation * comp, TR::TreeTop *origTT, TR::TreeTop * tt, int32_t size = 0, int32_t numLocals=0);
-  static void inliningReportForMethod(TR::Compilation *comp);
+    /*
+     *  The routines below are specific to inlining counters, but use
+     *  the generic debugging counters above as the implementation
+     *
+     *  This could be done through inheritance, but it doesn't seem worth it at this point.
+     */
+public:
+    static void insertInliningCounter(const char *name, TR::Compilation *comp, TR::TreeTop *tt, int32_t size = 0,
+        int32_t delta = 0, int32_t numLocals = 0);
+    static void insertInliningCounterOK(const char *name, TR::Compilation *comp, TR::TreeTop *origTT, TR::TreeTop *tt,
+        int32_t size = 0, int32_t numLocals = 0);
+    static void inliningReportForMethod(TR::Compilation *comp);
 
-  private:
-  static CountedCallSite * countedCallSiteList;
-  static FILE *output;
-  };
+private:
+    static CountedCallSite *countedCallSiteList;
+    static FILE *output;
+};
 
 #endif

@@ -27,10 +27,11 @@
  */
 #ifndef OMR_FRONTEND_CONNECTOR
 #define OMR_FRONTEND_CONNECTOR
+
 namespace OMR {
 class FrontEnd;
 typedef OMR::FrontEnd FrontEndConnector;
-}
+} // namespace OMR
 #endif
 
 #include "compile/CompilationTypes.hpp"
@@ -47,51 +48,62 @@ class FrontEnd;
 }
 class TR_ResolvedMethod;
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE FrontEnd : public ::TR_FrontEnd
-{
-
+class OMR_EXTENSIBLE FrontEnd : public ::TR_FrontEnd {
 public:
+    FrontEnd();
 
-   FrontEnd();
+    static TR::FrontEnd *instance();
 
-   static TR::FrontEnd *instance();
+    virtual TR_Debug *createDebug(TR::Compilation *comp = NULL);
 
-   virtual TR_Debug *createDebug(TR::Compilation *comp = NULL);
+    virtual TR_OpaqueClassBlock *getClassFromSignature(const char *sig, int32_t length, TR_ResolvedMethod *method,
+        bool isVettedForAOT = false)
+    {
+        return NULL;
+    }
 
-   virtual TR_OpaqueClassBlock *getClassFromSignature(const char *sig, int32_t length, TR_ResolvedMethod *method, bool isVettedForAOT=false) { return NULL; }
-   virtual TR_OpaqueClassBlock *getClassFromSignature(const char *sig, int32_t length, TR_OpaqueMethodBlock *method, bool isVettedForAOT=false) { return NULL; }
-   virtual const char *sampleSignature(TR_OpaqueMethodBlock *aMethod, char *buf, int32_t bufLen, TR_Memory *memory) { return NULL; }
+    virtual TR_OpaqueClassBlock *getClassFromSignature(const char *sig, int32_t length, TR_OpaqueMethodBlock *method,
+        bool isVettedForAOT = false)
+    {
+        return NULL;
+    }
 
-   // need this so z codegen can create a sym ref to compare to another sym ref it cannot possibly be equal to
-   virtual uintptr_t getOffsetOfIndexableSizeField() { return -1; }
+    virtual const char *sampleSignature(TR_OpaqueMethodBlock *aMethod, char *buf, int32_t bufLen, TR_Memory *memory)
+    {
+        return NULL;
+    }
 
-   TR::JitConfig *jitConfig() { return &_config; }
-   TR::CodeCacheManager &codeCacheManager() { return _codeCacheManager; }
+    // need this so z codegen can create a sym ref to compare to another sym ref it cannot possibly be equal to
+    virtual uintptr_t getOffsetOfIndexableSizeField() { return -1; }
 
-   virtual uint8_t *allocateRelocationData(TR::Compilation *comp, uint32_t size);
+    TR::JitConfig *jitConfig() { return &_config; }
 
-   virtual TR_PersistentMemory *persistentMemory() { return &_persistentMemory; }
-   virtual TR::PersistentInfo *getPersistentInfo() { return _persistentMemory.getPersistentInfo(); }
+    TR::CodeCacheManager &codeCacheManager() { return _codeCacheManager; }
 
-   virtual void reserveTrampolineIfNecessary(TR::Compilation *comp, TR::SymbolReference *symRef, bool inBinaryEncoding);
+    virtual uint8_t *allocateRelocationData(TR::Compilation *comp, uint32_t size);
 
-   TR_ResolvedMethod *createResolvedMethod(TR_Memory *trMemory, TR_OpaqueMethodBlock *aMethod,
-                                           TR_ResolvedMethod *owningMethod, TR_OpaqueClassBlock *classForNewInstance);
+    virtual TR_PersistentMemory *persistentMemory() { return &_persistentMemory; }
+
+    virtual TR::PersistentInfo *getPersistentInfo() { return _persistentMemory.getPersistentInfo(); }
+
+    virtual void reserveTrampolineIfNecessary(TR::Compilation *comp, TR::SymbolReference *symRef,
+        bool inBinaryEncoding);
+
+    TR_ResolvedMethod *createResolvedMethod(TR_Memory *trMemory, TR_OpaqueMethodBlock *aMethod,
+        TR_ResolvedMethod *owningMethod, TR_OpaqueClassBlock *classForNewInstance);
 
 private:
+    TR::JitConfig _config;
+    TR::CodeCacheManager _codeCacheManager;
 
-   TR::JitConfig _config;
-   TR::CodeCacheManager _codeCacheManager;
+    // this is deprecated in favour of TR::Allocator
+    TR_PersistentMemory _persistentMemory; // global memory
 
-   // this is deprecated in favour of TR::Allocator
-   TR_PersistentMemory _persistentMemory; // global memory
-
-   static TR::FrontEnd *_instance;
+    static TR::FrontEnd *_instance;
 };
 
-}
+} // namespace OMR
 
 #endif

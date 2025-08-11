@@ -27,171 +27,142 @@
  */
 #ifndef OMR_VMACCESSCRITICALSECTION_CONNECTOR
 #define OMR_VMACCESSCRITICALSECTION_CONNECTOR
+
 namespace OMR {
 class VMAccessCriticalSection;
 typedef OMR::VMAccessCriticalSection VMAccessCriticalSectionConnector;
-}
+} // namespace OMR
 #endif
-
 
 #include "compile/Compilation.hpp"
 #include "env/CompilerEnv.hpp"
 #include "infra/Annotations.hpp"
 
+namespace OMR {
 
-namespace OMR
-{
-
-class OMR_EXTENSIBLE VMAccessCriticalSection
-   {
+class OMR_EXTENSIBLE VMAccessCriticalSection {
 public:
-
-   enum VMAccessAcquireProtocol
-      {
-      acquireVMAccessIfNeeded,
-      tryToAcquireVMAccess
-      };
+    enum VMAccessAcquireProtocol {
+        acquireVMAccessIfNeeded,
+        tryToAcquireVMAccess
+    };
 
 protected:
+    VMAccessCriticalSection(VMAccessAcquireProtocol protocol, TR::Compilation *comp)
+        : _protocol(protocol)
+        , _acquiredVMAccess(false)
+        , _hasVMAccess(false)
+        , _comp(comp)
+        , _omrVMThread(NULL)
+        , _vmAccessReleased(false)
+        , _initializedBySubClass(false)
+    {
+        // Implementation provided by subclass
+    }
 
-   VMAccessCriticalSection(
-         VMAccessAcquireProtocol protocol,
-         TR::Compilation *comp) :
-      _protocol(protocol),
-      _acquiredVMAccess(false),
-      _hasVMAccess(false),
-      _comp(comp),
-      _omrVMThread(NULL),
-      _vmAccessReleased(false),
-      _initializedBySubClass(false)
-      {
-      // Implementation provided by subclass
-      }
-
-   VMAccessCriticalSection(
-         VMAccessAcquireProtocol protocol,
-         OMR_VMThread *omrVMThread) :
-      _protocol(protocol),
-      _acquiredVMAccess(false),
-      _hasVMAccess(false),
-      _comp(NULL),
-      _omrVMThread(omrVMThread),
-      _vmAccessReleased(false),
-      _initializedBySubClass(false)
-      {
-      // Implementation provided by subclass
-      }
+    VMAccessCriticalSection(VMAccessAcquireProtocol protocol, OMR_VMThread *omrVMThread)
+        : _protocol(protocol)
+        , _acquiredVMAccess(false)
+        , _hasVMAccess(false)
+        , _comp(NULL)
+        , _omrVMThread(omrVMThread)
+        , _vmAccessReleased(false)
+        , _initializedBySubClass(false)
+    {
+        // Implementation provided by subclass
+    }
 
 public:
+    VMAccessCriticalSection(TR::Compilation *comp, VMAccessAcquireProtocol protocol)
+        : _protocol(protocol)
+        , _acquiredVMAccess(false)
+        , _hasVMAccess(false)
+        , _omrVMThread(NULL)
+        , _comp(comp)
+        , _vmAccessReleased(false)
+        , _initializedBySubClass(false)
+    {
+        switch (protocol) {
+            case acquireVMAccessIfNeeded:
+                _acquiredVMAccess = TR::Compiler->vm.acquireVMAccessIfNeeded(comp);
+                _hasVMAccess = true;
+                break;
 
-   VMAccessCriticalSection(
-         TR::Compilation *comp,
-         VMAccessAcquireProtocol protocol) :
-      _protocol(protocol),
-      _acquiredVMAccess(false),
-      _hasVMAccess(false),
-      _omrVMThread(NULL),
-      _comp(comp),
-      _vmAccessReleased(false),
-      _initializedBySubClass(false)
-      {
-      switch (protocol)
-         {
-         case acquireVMAccessIfNeeded:
-            _acquiredVMAccess = TR::Compiler->vm.acquireVMAccessIfNeeded(comp);
-            _hasVMAccess = true;
-            break;
+            case tryToAcquireVMAccess:
+                _hasVMAccess = TR::Compiler->vm.tryToAcquireAccess(comp, &_acquiredVMAccess);
+        }
+    }
 
-         case tryToAcquireVMAccess:
-            _hasVMAccess = TR::Compiler->vm.tryToAcquireAccess(comp, &_acquiredVMAccess);
-         }
-      }
+    VMAccessCriticalSection(OMR_VMThread *omrVMThread, VMAccessAcquireProtocol protocol)
+        : _protocol(protocol)
+        , _acquiredVMAccess(false)
+        , _hasVMAccess(false)
+        , _omrVMThread(omrVMThread)
+        , _comp(NULL)
+        , _vmAccessReleased(false)
+        , _initializedBySubClass(false)
+    {
+        switch (protocol) {
+            case acquireVMAccessIfNeeded:
+                _acquiredVMAccess = TR::Compiler->vm.acquireVMAccessIfNeeded(omrVMThread);
+                _hasVMAccess = true;
+                break;
 
+            case tryToAcquireVMAccess:
+                _hasVMAccess = TR::Compiler->vm.tryToAcquireAccess(omrVMThread, &_acquiredVMAccess);
+                break;
+        }
+    }
 
-   VMAccessCriticalSection(
-         OMR_VMThread *omrVMThread,
-         VMAccessAcquireProtocol protocol) :
-      _protocol(protocol),
-      _acquiredVMAccess(false),
-      _hasVMAccess(false),
-      _omrVMThread(omrVMThread),
-      _comp(NULL),
-      _vmAccessReleased(false),
-      _initializedBySubClass(false)
-      {
-      switch (protocol)
-         {
-         case acquireVMAccessIfNeeded:
-            _acquiredVMAccess = TR::Compiler->vm.acquireVMAccessIfNeeded(omrVMThread);
-            _hasVMAccess = true;
-            break;
+    ~VMAccessCriticalSection()
+    {
+        // Do not run this destructor unless it was the OMR class that acquired access
+        //
+        if (!_initializedBySubClass) {
+            // Do not run this destructor if a subclass destructor has already released access
+            //
+            if (!_vmAccessReleased) {
+                if (_comp) {
+                    switch (_protocol) {
+                        case acquireVMAccessIfNeeded:
+                            TR::Compiler->vm.releaseVMAccessIfNeeded(_comp, _acquiredVMAccess);
+                            break;
 
-         case tryToAcquireVMAccess:
-            _hasVMAccess = TR::Compiler->vm.tryToAcquireAccess(omrVMThread, &_acquiredVMAccess);
-            break;
-         }
-      }
+                        case tryToAcquireVMAccess:
+                            if (_hasVMAccess && _acquiredVMAccess)
+                                TR::Compiler->vm.releaseAccess(_comp);
+                    }
+                } else {
+                    switch (_protocol) {
+                        case acquireVMAccessIfNeeded:
+                            TR::Compiler->vm.releaseVMAccessIfNeeded(_omrVMThread, _acquiredVMAccess);
+                            break;
 
-   ~VMAccessCriticalSection()
-      {
+                        case tryToAcquireVMAccess:
+                            if (_hasVMAccess && _acquiredVMAccess)
+                                TR::Compiler->vm.releaseAccess(_omrVMThread);
+                    }
+                }
 
-      // Do not run this destructor unless it was the OMR class that acquired access
-      //
-      if (!_initializedBySubClass)
-         {
-
-         // Do not run this destructor if a subclass destructor has already released access
-         //
-         if (!_vmAccessReleased)
-            {
-            if (_comp)
-               {
-               switch (_protocol)
-                  {
-                  case acquireVMAccessIfNeeded:
-                     TR::Compiler->vm.releaseVMAccessIfNeeded(_comp, _acquiredVMAccess);
-                     break;
-
-                  case tryToAcquireVMAccess:
-                     if (_hasVMAccess && _acquiredVMAccess)
-                        TR::Compiler->vm.releaseAccess(_comp);
-                  }
-               }
-            else
-               {
-               switch (_protocol)
-                  {
-                  case acquireVMAccessIfNeeded:
-                     TR::Compiler->vm.releaseVMAccessIfNeeded(_omrVMThread, _acquiredVMAccess);
-                     break;
-
-                  case tryToAcquireVMAccess:
-                     if (_hasVMAccess && _acquiredVMAccess)
-                        TR::Compiler->vm.releaseAccess(_omrVMThread);
-                  }
-               }
-
-            _vmAccessReleased = true;
+                _vmAccessReleased = true;
             }
+        }
+    }
 
-         }
+    bool acquiredVMAccess() { return _acquiredVMAccess; }
 
-      }
-
-   bool acquiredVMAccess() { return _acquiredVMAccess; }
-   bool hasVMAccess() { return _hasVMAccess; }
+    bool hasVMAccess() { return _hasVMAccess; }
 
 protected:
+    bool _initializedBySubClass;
+    bool _vmAccessReleased;
+    bool _acquiredVMAccess;
+    bool _hasVMAccess;
+    VMAccessAcquireProtocol _protocol;
+    TR::Compilation *_comp;
+    OMR_VMThread *_omrVMThread;
+};
 
-   bool _initializedBySubClass;
-   bool _vmAccessReleased;
-   bool _acquiredVMAccess;
-   bool _hasVMAccess;
-   VMAccessAcquireProtocol _protocol;
-   TR::Compilation *_comp;
-   OMR_VMThread *_omrVMThread;
-   };
-
-}
+} // namespace OMR
 
 #endif

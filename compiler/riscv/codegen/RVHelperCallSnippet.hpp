@@ -31,72 +31,68 @@ namespace TR {
 class CodeGenerator;
 class LabelSymbol;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
-class RVHelperCallSnippet : public TR::Snippet
-   {
-   TR::SymbolReference      *_destination;
-   TR::LabelSymbol          *_restartLabel;
+class RVHelperCallSnippet : public TR::Snippet {
+    TR::SymbolReference *_destination;
+    TR::LabelSymbol *_restartLabel;
 
-   public:
+public:
+    /**
+     * @brief Constructor
+     */
+    RVHelperCallSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *snippetlab, TR::SymbolReference *helper,
+        TR::LabelSymbol *restartLabel = NULL)
+        : TR::Snippet(cg, node, snippetlab, helper->canCauseGC())
+        , _destination(helper)
+        , _restartLabel(restartLabel)
+    {}
 
-   /**
-    * @brief Constructor
-    */
-   RVHelperCallSnippet(TR::CodeGenerator    *cg,
-                          TR::Node             *node,
-                          TR::LabelSymbol      *snippetlab,
-                          TR::SymbolReference  *helper,
-                          TR::LabelSymbol      *restartLabel=NULL)
-      : TR::Snippet(cg, node, snippetlab, helper->canCauseGC()),
-        _destination(helper),
-        _restartLabel(restartLabel)
-      {
-      }
+    /**
+     * @brief Answers the Snippet kind
+     * @return Snippet kind
+     */
+    virtual Kind getKind() { return IsHelperCall; }
 
-   /**
-    * @brief Answers the Snippet kind
-    * @return Snippet kind
-    */
-   virtual Kind getKind() { return IsHelperCall; }
+    /**
+     * @brief Answers the destination
+     * @return destination
+     */
+    TR::SymbolReference *getDestination() { return _destination; }
 
-   /**
-    * @brief Answers the destination
-    * @return destination
-    */
-   TR::SymbolReference *getDestination() { return _destination; }
-   /**
-    * @brief Sets the destination
-    * @return destination
-    */
-   TR::SymbolReference *setDestination(TR::SymbolReference *s) { return (_destination = s); }
+    /**
+     * @brief Sets the destination
+     * @return destination
+     */
+    TR::SymbolReference *setDestination(TR::SymbolReference *s) { return (_destination = s); }
 
-   /**
-    * @brief Answers the restart label
-    * @return restart label
-    */
-   TR::LabelSymbol *getRestartLabel() { return _restartLabel; }
-   /**
-    * @brief Sets the restart label
-    * @return restart label
-    */
-   TR::LabelSymbol *setRestartLabel(TR::LabelSymbol *l) { return (_restartLabel=l); }
+    /**
+     * @brief Answers the restart label
+     * @return restart label
+     */
+    TR::LabelSymbol *getRestartLabel() { return _restartLabel; }
 
-   /**
-    * @brief Emits the Snippet body
-    * @return instruction cursor
-    */
-   virtual uint8_t *emitSnippetBody();
+    /**
+     * @brief Sets the restart label
+     * @return restart label
+     */
+    TR::LabelSymbol *setRestartLabel(TR::LabelSymbol *l) { return (_restartLabel = l); }
 
-   /**
-    * @brief Answers the Snippet length
-    * @return Snippet length
-    */
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
-   };
+    /**
+     * @brief Emits the Snippet body
+     * @return instruction cursor
+     */
+    virtual uint8_t *emitSnippetBody();
 
-}
+    /**
+     * @brief Answers the Snippet length
+     * @return Snippet length
+     */
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
+};
+
+} // namespace TR
 
 #endif

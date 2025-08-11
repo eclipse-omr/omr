@@ -26,23 +26,21 @@
 #include "optimizer/OMROptimizationManager.hpp"
 #include "optimizer/Optimizations.hpp"
 
-
 namespace TR {
 class Optimizer;
 }
 struct OptimizationStrategy;
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE OptimizationManager : public OMR::OptimizationManagerConnector
-   {
-   public:
+class OMR_EXTENSIBLE OptimizationManager : public OMR::OptimizationManagerConnector {
+public:
+    OptimizationManager(TR::Optimizer *o, OptimizationFactory factory, OMR::Optimizations optNum,
+        const OptimizationStrategy *groupOfOpts = NULL)
+        : OMR::OptimizationManagerConnector(o, factory, optNum, groupOfOpts)
+    {}
+};
 
-   OptimizationManager(TR::Optimizer *o, OptimizationFactory factory, OMR::Optimizations optNum, const OptimizationStrategy *groupOfOpts = NULL) :
-      OMR::OptimizationManagerConnector(o, factory, optNum, groupOfOpts) {}
-   };
-
-}
+} // namespace TR
 
 #endif

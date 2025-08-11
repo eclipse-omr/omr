@@ -36,42 +36,37 @@
 #include "env/TRMemory.hpp"
 #include "infra/Array.hpp"
 
-void TR_SingleTimer::initialize(const char *title, TR_Memory * trMemory)
-   {
-   if (title)
-      {
-      _phaseTitle = (char *)trMemory->allocateHeapMemory( strlen(title)+1 );
-      strcpy(_phaseTitle, title);
-      }
-   else
-      _phaseTitle = NULL;
-   _total = 0;
-   _start = 0;
-   _timerRunning = false;
-   }
+void TR_SingleTimer::initialize(const char *title, TR_Memory *trMemory)
+{
+    if (title) {
+        _phaseTitle = (char *)trMemory->allocateHeapMemory(strlen(title) + 1);
+        strcpy(_phaseTitle, title);
+    } else
+        _phaseTitle = NULL;
+    _total = 0;
+    _start = 0;
+    _timerRunning = false;
+}
 
 void TR_SingleTimer::startTiming(TR::Compilation *comp)
-   {
-   if (!_timerRunning)
-      {
-      _start = TR::Compiler->vm.getHighResClock(comp);
-      _timerRunning = true;
-      }
-   }
+{
+    if (!_timerRunning) {
+        _start = TR::Compiler->vm.getHighResClock(comp);
+        _timerRunning = true;
+    }
+}
 
 uint32_t TR_SingleTimer::stopTiming(TR::Compilation *comp)
-   {
-   if (_timerRunning)
-      {
-      _total += TR::Compiler->vm.getHighResClock(comp) - _start;
-      _timerRunning = false;
-      }
-   return (uint32_t) _total;
-   }
-
+{
+    if (_timerRunning) {
+        _total += TR::Compiler->vm.getHighResClock(comp) - _start;
+        _timerRunning = false;
+    }
+    return (uint32_t)_total;
+}
 
 double TR_SingleTimer::secondsTaken()
-   {
-   uint64_t frequency = TR::Compiler->vm.getHighResClockResolution();
-   return frequency ? (double)_total / (double)frequency : 0.0;
-   }
+{
+    uint64_t frequency = TR::Compiler->vm.getHighResClockResolution();
+    return frequency ? (double)_total / (double)frequency : 0.0;
+}

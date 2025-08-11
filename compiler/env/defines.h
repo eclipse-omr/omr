@@ -22,73 +22,73 @@
 #ifndef OMR_DEFINES_H
 #define OMR_DEFINES_H
 
-/* 
+/*
    This is the first file that the OMR code should be including.
    The idea is the define a standard set of C macros based on the
    system configuration. This is the only file (hopefully) needs to
    use system specific macros (e.g. __linux__).
-   
+
    In addition, if there are system-configuration specific feature
    test macros that you want to define, this is probably the file you
    want to define them in. You should also provide documentation of
    what your macro does. As an example see SUPPORTS_THREAD_LOCAL
-   
+
    Note that this file is included is asm code as well. Apart from C
    pre-processor macros, it shouldn't contain anything else.
 */
 
 /* Operating Systems */
 #ifndef OMR_LINUX
-#  define OMR_LINUX   201
+#define OMR_LINUX 201
 #endif
 #ifndef OMR_WINDOWS
-#  define OMR_WINDOWS 202
+#define OMR_WINDOWS 202
 #endif
 #ifndef OMR_AIX
-#  define OMR_AIX     203
+#define OMR_AIX 203
 #endif
 #ifndef OMR_ZOS
-#  define OMR_ZOS     204
+#define OMR_ZOS 204
 #endif
 #ifndef OMR_OSX
-#  define OMR_OSX     205
+#define OMR_OSX 205
 #endif
 #ifndef OMR_BSD
-#  define OMR_BSD     206
+#define OMR_BSD 206
 #endif
 
 /* Architectures */
 #ifndef ARCH_X86
-#  define ARCH_X86     101
+#define ARCH_X86 101
 #endif
 #ifndef ARCH_POWER
-#  define ARCH_POWER   102
+#define ARCH_POWER 102
 #endif
 #ifndef ARCH_ZARCH
-#  define ARCH_ZARCH   103
+#define ARCH_ZARCH 103
 #endif
 #ifndef ARCH_ARM
-#  define ARCH_ARM     104
+#define ARCH_ARM 104
 #endif
 #ifndef ARCH_ARM64
-#  define ARCH_ARM64     105
+#define ARCH_ARM64 105
 #endif
 #ifndef ARCH_RISCV
-#  define ARCH_RISCV     106
+#define ARCH_RISCV 106
 #endif
 
 /* Compilers */
 #ifndef COMPILER_GCC
-#  define COMPILER_GCC 301
+#define COMPILER_GCC 301
 #endif
 #ifndef COMPILER_XLC
-#  define COMPILER_XLC 302
+#define COMPILER_XLC 302
 #endif
 #ifndef COMPILER_MSVC
-#  define COMPILER_MSVC 303
+#define COMPILER_MSVC 303
 #endif
 #ifndef COMPILER_CLANG
-#  define COMPILER_CLANG 304
+#define COMPILER_CLANG 304
 #endif
 
 /* @ddr_namespace: map_to_type=TRBuildFlags */
@@ -99,106 +99,106 @@
   http://sourceforge.net/p/predef/wiki/OperatingSystems/
 */
 #if defined(__linux__)
-#  define HOST_OS OMR_LINUX
+#define HOST_OS OMR_LINUX
 #elif defined(_TPF_SOURCE)
-#  define HOST_OS OMR_LINUX
+#define HOST_OS OMR_LINUX
 #elif defined(_AIX)
-#  define HOST_OS OMR_AIX
+#define HOST_OS OMR_AIX
 #elif defined(OMR_OS_WINDOWS)
-#  define HOST_OS OMR_WINDOWS
+#define HOST_OS OMR_WINDOWS
 #elif defined(__MVS__)
-#  define HOST_OS OMR_ZOS
+#define HOST_OS OMR_ZOS
 #elif defined(__APPLE__) && defined(__MACH__)
-#  define HOST_OS OMR_OSX
+#define HOST_OS OMR_OSX
 #elif defined(OMR_OS_BSD)
-#  define HOST_OS OMR_BSD
+#define HOST_OS OMR_BSD
 #else
-#  error "defines.h: unknown OS"
+#error "defines.h: unknown OS"
 #endif
 
 /* Architecture macros */
 /* As a reference see http://sourceforge.net/p/predef/wiki/Architectures */
 /* FIXME: rename TR_HOST_32BIT and TR_HOST_64BIT */
-#if   defined(__amd64__) || defined(_M_AMD64)
-#  define HOST_ARCH ARCH_X86
-#  define TR_HOST_64BIT 1
+#if defined(__amd64__) || defined(_M_AMD64)
+#define HOST_ARCH ARCH_X86
+#define TR_HOST_64BIT 1
 #elif defined(__i386__) || defined(_M_IX86)
-#  define HOST_ARCH ARCH_X86
-#  define TR_HOST_32BIT 1
+#define HOST_ARCH ARCH_X86
+#define TR_HOST_32BIT 1
 #elif defined(__PPC__) || defined(_ARCH_PPC)
-#  define HOST_ARCH ARCH_POWER
-#  if defined(__PPC64__) || defined(__64BIT__)
-#    define TR_HOST_64BIT 1
-#  else
-#    define TR_HOST_32BIT 1
-#  endif
-#elif defined(__s390x__) || (defined(__370__) && defined(__64BIT__))
-#  define HOST_ARCH ARCH_ZARCH
-#  define TR_HOST_64BIT 1
-#elif defined(__s390__)  || (defined(__370__) && !defined(__64BIT__))
-#  define HOST_ARCH ARCH_ZARCH
-#  define TR_HOST_32BIT 1
-#elif defined(__arm__)
-#  define HOST_ARCH ARCH_ARM
-#  define TR_HOST_32BIT 1
-#elif defined(__aarch64__)
-#  define HOST_ARCH ARCH_ARM64
-# define TR_HOST_64BIT 1
-#elif defined(__riscv)
-#  define HOST_ARCH ARCH_RISCV
-#  if __riscv_xlen == 32
-#    define TR_HOST_32BIT 1
-#  elif __riscv_xlen == 64
-#    define TR_HOST_64BIT 1
-#  else
-#    error "defines.h: unknown word size"
-#  endif
+#define HOST_ARCH ARCH_POWER
+#if defined(__PPC64__) || defined(__64BIT__)
+#define TR_HOST_64BIT 1
 #else
-#  error "defines.h: unknown architecture"
+#define TR_HOST_32BIT 1
+#endif
+#elif defined(__s390x__) || (defined(__370__) && defined(__64BIT__))
+#define HOST_ARCH ARCH_ZARCH
+#define TR_HOST_64BIT 1
+#elif defined(__s390__) || (defined(__370__) && !defined(__64BIT__))
+#define HOST_ARCH ARCH_ZARCH
+#define TR_HOST_32BIT 1
+#elif defined(__arm__)
+#define HOST_ARCH ARCH_ARM
+#define TR_HOST_32BIT 1
+#elif defined(__aarch64__)
+#define HOST_ARCH ARCH_ARM64
+#define TR_HOST_64BIT 1
+#elif defined(__riscv)
+#define HOST_ARCH ARCH_RISCV
+#if __riscv_xlen == 32
+#define TR_HOST_32BIT 1
+#elif __riscv_xlen == 64
+#define TR_HOST_64BIT 1
+#else
+#error "defines.h: unknown word size"
+#endif
+#else
+#error "defines.h: unknown architecture"
 #endif
 
 /* Unless the target arch was specified, we are building the same target as the host. */
 #ifndef TARGET_ARCH
-#  define TARGET_ARCH HOST_ARCH
+#define TARGET_ARCH HOST_ARCH
 #endif
 
 /* Compiler macros */
 #if defined(__GNUC__)
-#  define HOST_COMPILER COMPILER_GCC
+#define HOST_COMPILER COMPILER_GCC
 #elif defined(__IBMC__) || defined(__IBMCPP__) || defined(__open_xl__)
-#  define HOST_COMPILER COMPILER_XLC
+#define HOST_COMPILER COMPILER_XLC
 #elif defined(_MSC_VER)
-#  define HOST_COMPILER COMPILER_MSVC
+#define HOST_COMPILER COMPILER_MSVC
 #elif defined(__clang__)
-#  define HOST_COMPILER COMPILER_CLANG
+#define HOST_COMPILER COMPILER_CLANG
 #else
-#  error "defines.h: unknown compiler"
+#error "defines.h: unknown compiler"
 #endif
 
-/* FIXME: we need to deprecate TR_HOST_* macros and replace them with 
+/* FIXME: we need to deprecate TR_HOST_* macros and replace them with
    code of the form: #if (HOST_ARCH == ARCH_X86) */
 #if (HOST_ARCH == ARCH_X86)
-#  define TR_HOST_X86    1
+#define TR_HOST_X86 1
 #endif
 
 #if (HOST_ARCH == ARCH_ZARCH)
-#  define TR_HOST_S390   1
+#define TR_HOST_S390 1
 #endif
 
 #if (HOST_ARCH == ARCH_POWER)
-#  define TR_HOST_POWER  1
+#define TR_HOST_POWER 1
 #endif
 
 #if (HOST_ARCH == ARCH_ARM)
-#  define TR_HOST_ARM    1
+#define TR_HOST_ARM 1
 #endif
 
 #if (HOST_ARCH == ARCH_ARM64)
-#  define TR_HOST_ARM64    1
+#define TR_HOST_ARM64 1
 #endif
 
 #if (HOST_ARCH == ARCH_RISCV)
-#  define TR_HOST_RISCV    1
+#define TR_HOST_RISCV 1
 #endif
 
 /* @ddr_namespace: default */
@@ -206,6 +206,6 @@
 /* FIXME: we need to document what these ifdefs do
    If these are permanently enabled, the ifdefs should be removed
    and the guarded code permanently enabled */
-#define BITVECTOR_BIT_NUMBERING_MSB   1
+#define BITVECTOR_BIT_NUMBERING_MSB 1
 
 #endif /* OMR_DEFINES_H */

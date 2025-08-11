@@ -27,14 +27,17 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
+
 namespace OMR {
-namespace X86 { class Snippet; }
-typedef OMR::X86::Snippet SnippetConnector;
+namespace X86 {
+class Snippet;
 }
+
+typedef OMR::X86::Snippet SnippetConnector;
+} // namespace OMR
 #else
 #error OMR::X86::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
-
 
 #include "compiler/codegen/OMRSnippet.hpp"
 #include "env/CompilerEnv.hpp"
@@ -44,65 +47,61 @@ class X86GuardedDevirtualSnippet;
 class CodeGenerator;
 class LabelSymbol;
 class Node;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace X86 {
 
-namespace X86
-{
+class OMR_EXTENSIBLE Snippet : public OMR::Snippet {
+public:
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
 
-class OMR_EXTENSIBLE Snippet : public OMR::Snippet
-   {
-   public:
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
 
-   Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
+    enum Kind {
+        IsUnknown,
+        IsCall,
+        IsUnresolvedCall,
+        IsIPicData,
+        IsVPicData,
+        IsUnresolvedVTableSlot,
+        IsVirtualPIC,
+        IsCheckFailure,
+        IsCheckFailureWithResolve,
+        IsBoundCheckWithSpineCheck,
+        IsSpineCheck,
+        IsConstantData,
+        IsData,
+        IsRecompilation,
+        IsRestart,
+        IsDivideCheck,
+        IsForceRecompilation,
+        IsGuardedDevirtual,
+        IsHelperCall,
+        IsFPConversion,
+        IsFPConvertToInt,
+        IsFPConvertToLong,
+        IsUnresolvedDataIA32,
+        IsUnresolvedDataAMD64,
+        numKinds
+    };
 
-   Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
+    virtual Kind getKind() { return IsUnknown; }
+};
 
-   enum Kind
-      {
-      IsUnknown,
-      IsCall,
-         IsUnresolvedCall,
-      IsIPicData,
-      IsVPicData,
-      IsUnresolvedVTableSlot,
-      IsVirtualPIC,
-      IsCheckFailure,
-         IsCheckFailureWithResolve,
-         IsBoundCheckWithSpineCheck,
-      IsSpineCheck,
-      IsConstantData,
-      IsData,
-      IsRecompilation,
-      IsRestart,
-         IsDivideCheck,
-         IsForceRecompilation,
-         IsGuardedDevirtual,
-         IsHelperCall,
-         IsFPConversion,
-            IsFPConvertToInt,
-            IsFPConvertToLong,
-      IsUnresolvedDataIA32,
-      IsUnresolvedDataAMD64,
-      numKinds
-      };
-
-   virtual Kind getKind() { return IsUnknown; }
-   };
-
-}
-
-}
-
+}} // namespace OMR::X86
 
 inline const char *commentString() { return TR::Compiler->target.isLinux() ? "#" : ";"; }
+
 inline const char *hexPrefixString() { return TR::Compiler->target.isLinux() ? "0x" : "0"; }
+
 inline const char *hexSuffixString() { return TR::Compiler->target.isLinux() ? "" : "h"; }
+
 inline const char *dbString() { return TR::Compiler->target.isLinux() ? ".byte" : "db"; }
+
 inline const char *dwString() { return TR::Compiler->target.isLinux() ? ".short" : "dw"; }
+
 inline const char *ddString() { return TR::Compiler->target.isLinux() ? ".int" : "dd"; }
+
 inline const char *dqString() { return TR::Compiler->target.isLinux() ? ".quad" : "dq"; }
 
 #endif

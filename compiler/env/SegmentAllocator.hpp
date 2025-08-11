@@ -28,28 +28,25 @@
 
 namespace TR {
 
-class SegmentAllocator : public SegmentProvider
-   {
+class SegmentAllocator : public SegmentProvider {
 public:
-   virtual size_t regionBytesAllocated() const throw() = 0;
-   virtual size_t systemBytesAllocated() const throw() = 0;
-   virtual size_t allocationLimit() const throw() = 0;
-   virtual void setAllocationLimit(size_t) = 0;
+    virtual size_t regionBytesAllocated() const throw() = 0;
+    virtual size_t systemBytesAllocated() const throw() = 0;
+    virtual size_t allocationLimit() const throw() = 0;
+    virtual void setAllocationLimit(size_t) = 0;
 
 protected:
-   explicit SegmentAllocator(size_t defaultSegmentSize) :
-      SegmentProvider(defaultSegmentSize)
-      {
-      }
+    explicit SegmentAllocator(size_t defaultSegmentSize)
+        : SegmentProvider(defaultSegmentSize)
+    {}
 
-   SegmentAllocator(const SegmentAllocator &other) :
-      SegmentProvider(other)
-      {
-      }
+    SegmentAllocator(const SegmentAllocator &other)
+        : SegmentProvider(other)
+    {}
 
-   virtual ~SegmentAllocator() throw();
-   };
+    virtual ~SegmentAllocator() throw();
+};
 
-}
+} // namespace TR
 
 #endif // OMR_SEGMENT_ALLOCATOR_HPP

@@ -29,34 +29,29 @@
 namespace TR {
 class Node;
 class SymbolReference;
+} // namespace TR
+
+OMR::UnresolvedDataSnippet::UnresolvedDataSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef,
+    bool isStore, bool isGCSafePoint)
+    : Snippet(cg, node, generateLabelSymbol(cg))
+    , _dataSymbolReference(symRef)
+    , _dataReferenceInstruction(NULL)
+    , _addressOfDataReference(0)
+{
+    if (isStore) {
+        setUnresolvedStore();
+    }
+
+    if (isGCSafePoint) {
+        self()->prepareSnippetForGCSafePoint();
+    }
 }
 
-OMR::UnresolvedDataSnippet::UnresolvedDataSnippet(TR::CodeGenerator * cg,
-                                                  TR::Node * node,
-                                                  TR::SymbolReference * symRef,
-                                                  bool isStore,
-                                                  bool isGCSafePoint) :
-   Snippet(cg, node, generateLabelSymbol(cg)),
-      _dataSymbolReference(symRef),
-      _dataReferenceInstruction(NULL),
-      _addressOfDataReference(0)
-   {
-   if (isStore)
-      {
-      setUnresolvedStore();
-      }
-
-   if (isGCSafePoint)
-      {
-      self()->prepareSnippetForGCSafePoint();
-      }
-   }
-
-TR::UnresolvedDataSnippet *
-OMR::UnresolvedDataSnippet::create(TR::CodeGenerator * cg, TR::Node * node, TR::SymbolReference *s, bool isStore, bool canCauseGC)
-   {
-   return new (cg->trHeapMemory()) TR::UnresolvedDataSnippet(cg, node, s, isStore, canCauseGC);
-   }
+TR::UnresolvedDataSnippet *OMR::UnresolvedDataSnippet::create(TR::CodeGenerator *cg, TR::Node *node,
+    TR::SymbolReference *s, bool isStore, bool canCauseGC)
+{
+    return new (cg->trHeapMemory()) TR::UnresolvedDataSnippet(cg, node, s, isStore, canCauseGC);
+}
 
 #ifndef J9_PROJECT_SPECIFIC
 
@@ -68,15 +63,14 @@ OMR::UnresolvedDataSnippet::create(TR::CodeGenerator * cg, TR::Node * node, TR::
  * J9-specific and therefore a simple clean version is needed for non-J9 builds.
  */
 
-void
-TR_Debug::print(TR::FILE *pOutFile, TR::UnresolvedDataSnippet * snippet)
-   {
-   if (pOutFile == NULL)
-      return;
+void TR_Debug::print(TR::FILE *pOutFile, TR::UnresolvedDataSnippet *snippet)
+{
+    if (pOutFile == NULL)
+        return;
 
-   uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-   printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
-   }
+    uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
+    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+}
 
 #endif
 

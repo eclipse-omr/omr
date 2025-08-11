@@ -31,35 +31,40 @@
 namespace TR {
 class CodeGenerator;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
 /**
  * ConstantDataSnippet is used to hold constant data
  */
-class ARM64ConstantDataSnippet : public TR::Snippet
-   {
-   public:
+class ARM64ConstantDataSnippet : public TR::Snippet {
+public:
+    ARM64ConstantDataSnippet(TR::CodeGenerator *cg, TR::Node *n, void *c, size_t size,
+        TR_ExternalRelocationTargetKind reloType = TR_NoRelocation);
 
-   ARM64ConstantDataSnippet(TR::CodeGenerator *cg, TR::Node *n, void *c, size_t size, TR_ExternalRelocationTargetKind reloType = TR_NoRelocation);
+    virtual Kind getKind() { return IsConstantData; }
 
-   virtual Kind                   getKind()                                { return IsConstantData; }
-   uint8_t*                       getRawData()                             { return _data.data(); }
-   virtual size_t                 getDataSize() const                      { return _data.size(); }
-   virtual uint32_t               getLength(int32_t estimatedSnippetStart) { return getDataSize(); }
-   template <typename T> inline T getData()                                { return *(reinterpret_cast<T*>(getRawData())); }
+    uint8_t *getRawData() { return _data.data(); }
 
-   virtual uint8_t*               emitSnippetBody();
-   virtual void                   print(TR::FILE* pOutFile, TR_Debug* debug);
-   void                           addMetaDataForCodeAddress(uint8_t *cursor);
-   TR_ExternalRelocationTargetKind getReloType() { return _reloType; }
-   void                           setReloType(TR_ExternalRelocationTargetKind reloType) { _reloType = reloType; }
+    virtual size_t getDataSize() const { return _data.size(); }
 
-   private:
-   TR::vector<uint8_t>            _data;
-   TR_ExternalRelocationTargetKind _reloType;
-   };
+    virtual uint32_t getLength(int32_t estimatedSnippetStart) { return getDataSize(); }
 
-}
+    template<typename T> inline T getData() { return *(reinterpret_cast<T *>(getRawData())); }
+
+    virtual uint8_t *emitSnippetBody();
+    virtual void print(TR::FILE *pOutFile, TR_Debug *debug);
+    void addMetaDataForCodeAddress(uint8_t *cursor);
+
+    TR_ExternalRelocationTargetKind getReloType() { return _reloType; }
+
+    void setReloType(TR_ExternalRelocationTargetKind reloType) { _reloType = reloType; }
+
+private:
+    TR::vector<uint8_t> _data;
+    TR_ExternalRelocationTargetKind _reloType;
+};
+
+} // namespace TR
 #endif

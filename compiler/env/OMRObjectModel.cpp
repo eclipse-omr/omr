@@ -34,100 +34,74 @@ namespace TR {
 class Node;
 }
 
-OMR::ObjectModel::ObjectModel()
-   {
-   }
+OMR::ObjectModel::ObjectModel() {}
 
-int32_t
-OMR::ObjectModel::sizeofReferenceField()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+int32_t OMR::ObjectModel::sizeofReferenceField()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-intptr_t
-OMR::ObjectModel::sizeofReferenceAddress()
-   {
-   return TR::Compiler->target.is64Bit() ? 8 : 4;
-   }
+intptr_t OMR::ObjectModel::sizeofReferenceAddress() { return TR::Compiler->target.is64Bit() ? 8 : 4; }
 
-uintptr_t
-OMR::ObjectModel::elementSizeOfBooleanArray()
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uintptr_t OMR::ObjectModel::elementSizeOfBooleanArray()
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
+uint32_t OMR::ObjectModel::getSizeOfArrayElement(TR::Node *node)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uint32_t
-OMR::ObjectModel::getSizeOfArrayElement(TR::Node * node)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+int64_t OMR::ObjectModel::maxArraySizeInElementsForAllocation(TR::Node *newArray, TR::Compilation *comp)
+{
+    return LONG_MAX;
+}
 
-int64_t
-OMR::ObjectModel::maxArraySizeInElementsForAllocation(TR::Node *newArray, TR::Compilation *comp)
-   {
-   return LONG_MAX;
-   }
+int64_t OMR::ObjectModel::maxArraySizeInElements(int32_t knownMinElementSize, TR::Compilation *comp)
+{
+    return LONG_MAX;
+}
 
-int64_t
-OMR::ObjectModel::maxArraySizeInElements(int32_t knownMinElementSize, TR::Compilation *comp)
-   {
-   return LONG_MAX;
-   }
+bool OMR::ObjectModel::isDiscontiguousArray(TR::Compilation *comp, uintptr_t objectPointer)
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
 
-bool
-OMR::ObjectModel::isDiscontiguousArray(TR::Compilation* comp, uintptr_t objectPointer)
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+intptr_t OMR::ObjectModel::getArrayLengthInElements(TR::Compilation *comp, uintptr_t objectPointer)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-intptr_t
-OMR::ObjectModel::getArrayLengthInElements(TR::Compilation* comp, uintptr_t objectPointer)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uintptr_t OMR::ObjectModel::getArrayLengthInBytes(TR::Compilation *comp, uintptr_t objectPointer)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uintptr_t
-OMR::ObjectModel::getArrayLengthInBytes(TR::Compilation* comp, uintptr_t objectPointer)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uintptr_t OMR::ObjectModel::getArrayElementWidthInBytes(TR::DataType type)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uintptr_t
-OMR::ObjectModel::getArrayElementWidthInBytes(TR::DataType type)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uintptr_t OMR::ObjectModel::getArrayElementWidthInBytes(TR::Compilation *comp, uintptr_t objectPointer)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uintptr_t
-OMR::ObjectModel::getArrayElementWidthInBytes(TR::Compilation* comp, uintptr_t objectPointer)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uintptr_t OMR::ObjectModel::decompressReference(TR::Compilation *comp, uintptr_t compressedReference)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uintptr_t
-OMR::ObjectModel::decompressReference(TR::Compilation* comp, uintptr_t compressedReference)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+int32_t OMR::ObjectModel::compressedReferenceShiftOffset() { return 0; }
 
-int32_t
-OMR::ObjectModel::compressedReferenceShiftOffset()
-   {
-   return 0;
-   }
-
-int32_t
-OMR::ObjectModel::compressedReferenceShift()
-   {
-   return 0;
-   }
+int32_t OMR::ObjectModel::compressedReferenceShift() { return 0; }

@@ -24,17 +24,15 @@
 
 #include "codegen/OMRPeephole.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE Peephole : public OMR::PeepholeConnector
-   {
-   public:
+class OMR_EXTENSIBLE Peephole : public OMR::PeepholeConnector {
+public:
+    Peephole(TR::Compilation *comp)
+        : OMR::PeepholeConnector(comp)
+    {}
+};
 
-   Peephole(TR::Compilation* comp) :
-      OMR::PeepholeConnector(comp) {}
-   };
-
-}
+} // namespace TR
 
 #endif

@@ -24,22 +24,13 @@
  * definitions are permitted.
  */
 
-   IsNotExtended,
-   IsAdmin,
-   IsLabel,
+IsNotExtended, IsAdmin, IsLabel,
 #ifdef J9_PROJECT_SPECIFIC
-     IsVirtualGuardNOP,
+    IsVirtualGuardNOP,
 #endif
-   IsData,
+    IsData,
 
-   IsRTYPE,
-   IsITYPE,
-   IsSTYPE,
-     IsBTYPE,
-   IsUTYPE,
-     IsJTYPE,
+    IsRTYPE, IsITYPE, IsSTYPE, IsBTYPE, IsUTYPE, IsJTYPE,
 
-   IsLOAD,
-   IsSTORE,
-
+    IsLOAD, IsSTORE,
 

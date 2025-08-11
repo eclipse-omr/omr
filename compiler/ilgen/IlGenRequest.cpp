@@ -31,73 +31,51 @@ namespace TR {
 class Compilation;
 class ResolvedMethodSymbol;
 class SymbolReferenceTable;
-}
+} // namespace TR
 
-namespace TR
+namespace TR {
+
+TR_IlGenerator *CompileIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+    TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
 {
-
-TR_IlGenerator *
-CompileIlGenRequest::getIlGenerator(
-      TR::ResolvedMethodSymbol *methodSymbol,
-      TR_FrontEnd *fe,
-      TR::Compilation *comp,
-      TR::SymbolReferenceTable *symRefTab)
-   {
-   return details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, NULL);
-   }
-
-
-void
-CompileIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
-   {
-   trfprintf(file, "{");
-   details().print(fe, file);
-   trfprintf(file, "}%s", suffix);
-   }
-
-
-TR_IlGenerator *
-InliningIlGenRequest::getIlGenerator(
-      TR::ResolvedMethodSymbol *methodSymbol,
-      TR_FrontEnd *fe,
-      TR::Compilation *comp,
-      TR::SymbolReferenceTable *symRefTab)
-   {
-   TR_IlGenerator *ilgen = details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, 0);
-   ilgen->setCallerMethod(_callerSymbol);
-   return ilgen;
-   }
-
-
-void
-InliningIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
-   {
-   trfprintf(file, "{Inlining ");
-   details().print(fe, file);
-   trfprintf(file, "}%s", suffix);
-   }
-
-
-TR_IlGenerator *
-PartialInliningIlGenRequest::getIlGenerator(
-      TR::ResolvedMethodSymbol *methodSymbol,
-      TR_FrontEnd *fe,
-      TR::Compilation *comp,
-      TR::SymbolReferenceTable *symRefTab)
-   {
-   TR_IlGenerator *ilgen = details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, _inlineBlocks);
-   ilgen->setCallerMethod(_callerSymbol);
-   return ilgen;
-   }
-
-
-void
-PartialInliningIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
-   {
-   trfprintf(file, "{Partial inlining ");
-   details().print(fe, file);
-   trfprintf(file, "}%s", suffix);
-   }
-
-
+    return details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, NULL);
 }
+
+void CompileIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
+{
+    trfprintf(file, "{");
+    details().print(fe, file);
+    trfprintf(file, "}%s", suffix);
+}
+
+TR_IlGenerator *InliningIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+    TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
+{
+    TR_IlGenerator *ilgen = details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, 0);
+    ilgen->setCallerMethod(_callerSymbol);
+    return ilgen;
+}
+
+void InliningIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
+{
+    trfprintf(file, "{Inlining ");
+    details().print(fe, file);
+    trfprintf(file, "}%s", suffix);
+}
+
+TR_IlGenerator *PartialInliningIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+    TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
+{
+    TR_IlGenerator *ilgen = details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, _inlineBlocks);
+    ilgen->setCallerMethod(_callerSymbol);
+    return ilgen;
+}
+
+void PartialInliningIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
+{
+    trfprintf(file, "{Partial inlining ");
+    details().print(fe, file);
+    trfprintf(file, "}%s", suffix);
+}
+
+} // namespace TR

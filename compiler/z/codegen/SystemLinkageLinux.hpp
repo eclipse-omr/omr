@@ -37,6 +37,7 @@
 
 class TR_EntryPoint;
 class TR_zOSGlobalCompilationInfo;
+
 namespace TR {
 class S390ConstantDataSnippet;
 class AutomaticSymbol;
@@ -48,37 +49,40 @@ class ParameterSymbol;
 class RegisterDependencyConditions;
 class ResolvedMethodSymbol;
 class Symbol;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
 namespace TR {
 
-class S390zLinuxSystemLinkage : public TR::SystemLinkage
-   {
-   public:
+class S390zLinuxSystemLinkage : public TR::SystemLinkage {
+public:
+    S390zLinuxSystemLinkage(TR::CodeGenerator *cg);
 
-   S390zLinuxSystemLinkage(TR::CodeGenerator* cg);
+    virtual void createEpilogue(TR::Instruction *cursor);
+    virtual void createPrologue(TR::Instruction *cursor);
+    virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method);
+    virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method,
+        List<TR::ParameterSymbol> &parmList);
 
-   virtual void createEpilogue(TR::Instruction * cursor);
-   virtual void createPrologue(TR::Instruction * cursor);
-   virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol * method);
-   virtual void setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method, List<TR::ParameterSymbol>&parmList);
+    virtual void generateInstructionsForCall(TR::Node *callNode, TR::RegisterDependencyConditions *deps,
+        intptr_t targetAddress, TR::Register *methodAddressReg, TR::Register *javaLitOffsetReg,
+        TR::LabelSymbol *returnFromJNICallLabel, TR::Snippet *callDataSnippet, bool isJNIGCPoint);
+    virtual TR::Register *callNativeFunction(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
+        intptr_t targetAddress, TR::Register *methodAddressReg, TR::Register *javaLitOffsetReg,
+        TR::LabelSymbol *returnFromJNICallLabel, TR::Snippet *callDataSnippet, bool isJNIGCPoint = true);
 
-   virtual void generateInstructionsForCall(TR::Node * callNode, TR::RegisterDependencyConditions * deps, intptr_t targetAddress, TR::Register * methodAddressReg, TR::Register * javaLitOffsetReg, TR::LabelSymbol * returnFromJNICallLabel, TR::Snippet * callDataSnippet, bool isJNIGCPoint);
-   virtual TR::Register* callNativeFunction(TR::Node * callNode, TR::RegisterDependencyConditions * dependencies, intptr_t targetAddress, TR::Register * methodAddressReg, TR::Register * javaLitOffsetReg, TR::LabelSymbol * returnFromJNICallLabel, TR::Snippet * callDataSnippet, bool isJNIGCPoint = true);
+    virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum);
+    virtual void initParamOffset(TR::ResolvedMethodSymbol *method, int32_t stackIndex,
+        List<TR::ParameterSymbol> *parameterList = 0);
 
-   virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum);
-   virtual void initParamOffset(TR::ResolvedMethodSymbol * method, int32_t stackIndex, List<TR::ParameterSymbol> *parameterList=0);
+private:
+    TR::Instruction *fillGPRsInEpilogue(TR::Node *node, TR::Instruction *cursor);
+    TR::Instruction *fillFPRsInEpilogue(TR::Node *node, TR::Instruction *cursor);
 
-   private:
+    TR::Instruction *spillGPRsInPrologue(TR::Node *node, TR::Instruction *cursor);
+    TR::Instruction *spillFPRsInPrologue(TR::Node *node, TR::Instruction *cursor);
+};
 
-   TR::Instruction* fillGPRsInEpilogue(TR::Node* node, TR::Instruction* cursor);
-   TR::Instruction* fillFPRsInEpilogue(TR::Node* node, TR::Instruction* cursor);
-
-   TR::Instruction* spillGPRsInPrologue(TR::Node* node, TR::Instruction* cursor);
-   TR::Instruction* spillFPRsInPrologue(TR::Node* node, TR::Instruction* cursor);
-   };
-
-}
+} // namespace TR
 
 #endif

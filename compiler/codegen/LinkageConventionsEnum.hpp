@@ -32,13 +32,12 @@
 //     X86-64 Linux:             System V AMD64 ABI
 //
 
-enum TR_LinkageConventions
-   {
-   #include "codegen/LinkageConventions.enum"
-   TR_NumLinkages,
+enum TR_LinkageConventions {
+#include "codegen/LinkageConventions.enum"
+    TR_NumLinkages,
 
-   // Force size to be at least 32-bit, as it may be cast to/from integers
-   TR_LinkageForceSize = 0x7fffffff
-   };
+    // Force size to be at least 32-bit, as it may be cast to/from integers
+    TR_LinkageForceSize = 0x7fffffff
+};
 
 #endif

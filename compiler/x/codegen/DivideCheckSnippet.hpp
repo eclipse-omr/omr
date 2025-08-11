@@ -32,49 +32,43 @@ namespace TR {
 class CodeGenerator;
 class ILOpCode;
 class LabelSymbol;
-}
+} // namespace TR
 
 namespace TR {
 
-class X86DivideCheckSnippet  : public TR::X86RestartSnippet
-   {
-   public:
+class X86DivideCheckSnippet : public TR::X86RestartSnippet {
+public:
+    X86DivideCheckSnippet(TR::LabelSymbol *restartLabel, TR::LabelSymbol *snippetLabel, TR::LabelSymbol *divideLabel,
+        TR::ILOpCode &divOp, TR::DataType type, TR::X86RegRegInstruction *divideInstruction, TR::CodeGenerator *cg)
+        : TR::X86RestartSnippet(cg, divideInstruction->getNode(), restartLabel, snippetLabel, true)
+        , _divOp(divOp)
+        , _type(type)
+        , _divideLabel(divideLabel)
+        , _divideInstruction(divideInstruction)
+    {}
 
-   X86DivideCheckSnippet(TR::LabelSymbol           *restartLabel,
-                            TR::LabelSymbol           *snippetLabel,
-                            TR::LabelSymbol           *divideLabel,
-                            TR::ILOpCode               &divOp,
-                            TR::DataType               type,
-                            TR::X86RegRegInstruction  *divideInstruction,
-                            TR::CodeGenerator         *cg)
-      : TR::X86RestartSnippet(cg, divideInstruction->getNode(), restartLabel, snippetLabel, true),
-        _divOp(divOp),
-        _type(type),
-        _divideLabel(divideLabel),
-        _divideInstruction(divideInstruction)
-      {}
+    virtual Kind getKind() { return IsDivideCheck; }
 
-   virtual Kind getKind() { return IsDivideCheck; }
+    TR::ILOpCode &getOpCode() { return _divOp; }
 
-   TR::ILOpCode &getOpCode() {return _divOp;}
-   TR::DataType getType() {return _type;}
+    TR::DataType getType() { return _type; }
 
-   TR::LabelSymbol *getDivideLabel()                  {return _divideLabel;}
-   TR::LabelSymbol *setDivideLabel(TR::LabelSymbol *l) {return (_divideLabel = l);}
+    TR::LabelSymbol *getDivideLabel() { return _divideLabel; }
 
-   TR::X86RegRegInstruction  *getDivideInstruction() {return _divideInstruction;}
+    TR::LabelSymbol *setDivideLabel(TR::LabelSymbol *l) { return (_divideLabel = l); }
 
-   virtual uint8_t *emitSnippetBody();
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
+    TR::X86RegRegInstruction *getDivideInstruction() { return _divideInstruction; }
 
-   private:
+    virtual uint8_t *emitSnippetBody();
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
 
-   TR::LabelSymbol          *_divideLabel;
-   TR::X86RegRegInstruction *_divideInstruction;
-   TR::ILOpCode              &_divOp;
-   TR::DataType              _type;
-   };
+private:
+    TR::LabelSymbol *_divideLabel;
+    TR::X86RegRegInstruction *_divideInstruction;
+    TR::ILOpCode &_divOp;
+    TR::DataType _type;
+};
 
-}
+} // namespace TR
 
 #endif

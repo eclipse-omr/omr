@@ -24,22 +24,21 @@
  * Only valid static methods within CodeGenPhase class should be included.
  */
 
- // The entries in this file must be kept in sync with compiler/codegen/OMRCodeGenPhaseEnum.hpp
-   TR::CodeGenPhase::performReserveCodeCachePhase,                                           //ReserveCodeCachePhase
-   TR::CodeGenPhase::performLowerTreesPhase,                                                 //LowerTreesPhase
-   TR::CodeGenPhase::performUncommonCallConstNodesPhase,                                     //UncommonCallConstNodesPhase
-   TR::CodeGenPhase::performSetupForInstructionSelectionPhase,                               //SetupForInstructionSelectionPhase
-   TR::CodeGenPhase::performInstructionSelectionPhase,                                       //InstructionSelectionPhase
-   TR::CodeGenPhase::performCreateStackAtlasPhase,                                           //CreateStackAtlasPhase
-   TR::CodeGenPhase::performRegisterAssigningPhase,                                          //RegisterAssigningPhase
-   TR::CodeGenPhase::performMapStackPhase,                                                   //MapStackPhase
-   TR::CodeGenPhase::performPeepholePhase,                                                   //PeepholePhase
-   TR::CodeGenPhase::performBinaryEncodingPhase,                                             //BinaryEncodingPhase
-   TR::CodeGenPhase::performEmitSnippetsPhase,                                               //EmitSnippetsPhase
-   TR::CodeGenPhase::performProcessRelocationsPhase,                                         //ProcessRelocationsPhase
-   TR::CodeGenPhase::performFindAndFixCommonedReferencesPhase,                               //FindAndFixCommonedReferencesPhase
-   TR::CodeGenPhase::performRemoveUnusedLocalsPhase,                                         //RemoveUnusedLocalsPhase
-   TR::CodeGenPhase::performInliningReportPhase,                                             //InliningReportPhase
-   TR::CodeGenPhase::performInsertDebugCountersPhase,
-   TR::CodeGenPhase::performCleanUpFlagsPhase,
-   TR::CodeGenPhase::performExpandInstructionsPhase,
+// The entries in this file must be kept in sync with compiler/codegen/OMRCodeGenPhaseEnum.hpp
+TR::CodeGenPhase::performReserveCodeCachePhase, // ReserveCodeCachePhase
+    TR::CodeGenPhase::performLowerTreesPhase, // LowerTreesPhase
+    TR::CodeGenPhase::performUncommonCallConstNodesPhase, // UncommonCallConstNodesPhase
+    TR::CodeGenPhase::performSetupForInstructionSelectionPhase, // SetupForInstructionSelectionPhase
+    TR::CodeGenPhase::performInstructionSelectionPhase, // InstructionSelectionPhase
+    TR::CodeGenPhase::performCreateStackAtlasPhase, // CreateStackAtlasPhase
+    TR::CodeGenPhase::performRegisterAssigningPhase, // RegisterAssigningPhase
+    TR::CodeGenPhase::performMapStackPhase, // MapStackPhase
+    TR::CodeGenPhase::performPeepholePhase, // PeepholePhase
+    TR::CodeGenPhase::performBinaryEncodingPhase, // BinaryEncodingPhase
+    TR::CodeGenPhase::performEmitSnippetsPhase, // EmitSnippetsPhase
+    TR::CodeGenPhase::performProcessRelocationsPhase, // ProcessRelocationsPhase
+    TR::CodeGenPhase::performFindAndFixCommonedReferencesPhase, // FindAndFixCommonedReferencesPhase
+    TR::CodeGenPhase::performRemoveUnusedLocalsPhase, // RemoveUnusedLocalsPhase
+    TR::CodeGenPhase::performInliningReportPhase, // InliningReportPhase
+    TR::CodeGenPhase::performInsertDebugCountersPhase, TR::CodeGenPhase::performCleanUpFlagsPhase,
+    TR::CodeGenPhase::performExpandInstructionsPhase,

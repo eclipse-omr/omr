@@ -27,10 +27,11 @@
  */
 #ifndef OMR_IO_CONNECTOR
 #define OMR_IO_CONNECTOR
+
 namespace OMR {
 class IO;
 typedef OMR::IO IOConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -45,28 +46,28 @@ typedef OMR::IO IOConnector;
  * NOTE: this applies to only those "printf" functions that are handled by the port
  *       library.  If you call a C runtime "printf" or "sprintf", for example, then
  *       that runtime may dictate the format specifiers you may use.
-*/
+ */
 #define INT64_PRINTF_FORMAT "%" OMR_PRId64
 #define INT64_PRINTF_FORMAT_HEX "0x%" OMR_PRIx64
 #define UINT64_PRINTF_FORMAT "%" OMR_PRIu64
 #define UINT64_PRINTF_FORMAT_HEX "0x%" OMR_PRIx64
 
 #ifdef _MSC_VER
-   #define POINTER_PRINTF_FORMAT "0x%p"
+#define POINTER_PRINTF_FORMAT "0x%p"
 #else
-   #if defined(LINUX) || defined(OSX)
-      #ifdef TR_HOST_64BIT
-         #ifdef TR_TARGET_X86
-            #define POINTER_PRINTF_FORMAT "%12p"
-         #else
-            #define POINTER_PRINTF_FORMAT "%18p"
-         #endif
-      #else
-         #define POINTER_PRINTF_FORMAT "%10p"
-      #endif
-   #else /* assume AIX and ZOS */
-      #define POINTER_PRINTF_FORMAT "0x%p"
-   #endif
+#if defined(LINUX) || defined(OSX)
+#ifdef TR_HOST_64BIT
+#ifdef TR_TARGET_X86
+#define POINTER_PRINTF_FORMAT "%12p"
+#else
+#define POINTER_PRINTF_FORMAT "%18p"
+#endif
+#else
+#define POINTER_PRINTF_FORMAT "%10p"
+#endif
+#else /* assume AIX and ZOS */
+#define POINTER_PRINTF_FORMAT "0x%p"
+#endif
 #endif
 
 extern TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt);
@@ -75,39 +76,35 @@ extern void (*trfflush)(TR::FILE *fileId);
 extern int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...);
 extern int32_t (*trprintf)(const char *format, ...);
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE IO
-   {
-   public:
+class OMR_EXTENSIBLE IO {
+public:
+    static TR::FILE *Null;
 
-   static TR::FILE *Null;
+    static TR::FILE *Stdin;
 
-   static TR::FILE *Stdin;
+    static TR::FILE *Stdout;
 
-   static TR::FILE *Stdout;
+    static TR::FILE *Stderr;
 
-   static TR::FILE *Stderr;
+    static TR::FILE *fopen(char *fileName, const char *attrs, bool encrypt);
 
-   static TR::FILE *fopen(char *fileName, const char *attrs, bool encrypt);
+    static void fclose(TR::FILE *fileId);
 
-   static void fclose(TR::FILE *fileId);
+    static void fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
 
-   static void fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
+    static long ftell(TR::FILE *fileId);
 
-   static long ftell(TR::FILE *fileId);
+    static void fflush(TR::FILE *fileId);
 
-   static void fflush(TR::FILE *fileId);
+    static int32_t printf(const char *format, ...);
 
-   static int32_t printf(const char *format, ...);
+    static int32_t fprintf(TR::FILE *fileId, const char *format, ...);
 
-   static int32_t fprintf(TR::FILE *fileId, const char *format, ...);
+    static int32_t vfprintf(TR::FILE *fileId, const char *format, va_list args);
+};
 
-   static int32_t vfprintf(TR::FILE *fileId, const char *format, va_list args);
-
-   };
-
-}
+} // namespace OMR
 
 #endif

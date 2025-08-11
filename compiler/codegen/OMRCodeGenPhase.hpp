@@ -29,120 +29,114 @@
  */
 #ifndef OMR_CODEGEN_PHASE_CONNECTOR
 #define OMR_CODEGEN_PHASE_CONNECTOR
+
 namespace OMR {
 class CodeGenPhase;
 typedef OMR::CodeGenPhase CodeGenPhaseConnector;
-}
+} // namespace OMR
 #endif
 
 namespace TR {
 class CodeGenPhase;
 class CodeGenerator;
-}
+} // namespace TR
 
-typedef void (* CodeGenPhaseFunctionPointer)(TR::CodeGenerator *, TR::CodeGenPhase *);
+typedef void (*CodeGenPhaseFunctionPointer)(TR::CodeGenerator *, TR::CodeGenPhase *);
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE CodeGenPhase
-   {
-   public:
+class OMR_EXTENSIBLE CodeGenPhase {
+public:
+    /*
+     * This enum is extensible
+     */
+    enum PhaseValue {
+#include "codegen/CodeGenPhaseEnum.hpp"
+    };
 
-   /*
-    * This enum is extensible
-    */
-   enum PhaseValue
-      {
-      #include "codegen/CodeGenPhaseEnum.hpp"
-      };
+    TR::CodeGenPhase *self();
 
-   TR::CodeGenPhase * self();
+    /* This method will step through the PhaseList
+     * and call perform on all the phases.
+     */
+    void performAll();
 
-   /* This method will step through the PhaseList
-    * and call perform on all the phases.
-    */
-   void performAll();
+    /*
+     * int operator overload used for comparsion of phases
+     */
+    operator int() const { return static_cast<int>(_currentPhase); }
 
-   /*
-    * int operator overload used for comparsion of phases
-    */
-   operator int() const { return static_cast<int>(_currentPhase); }
+    /*
+     * Used for debugging purposes
+     * Derive class must provide own implementation if more phases are being added to the enums
+     */
+    static const char *getName(PhaseValue phase);
+    const char *getName();
+    static int getNumPhases();
 
-   /*
-    * Used for debugging purposes
-    * Derive class must provide own implementation if more phases are being added to the enums
-    */
-   static const char* getName(PhaseValue phase);
-   const char * getName();
-   static int getNumPhases();
+    void reportPhase(PhaseValue phase);
 
-   void reportPhase(PhaseValue phase);
+    /*
+     * There will also be a list of functions that actually does
+     * what the phases need to do. These will be divided up into
+     * each extensible layer and can call base class if needed.
+     */
+    static void performUncommonCallConstNodesPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performReserveCodeCachePhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performLowerTreesPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performSetupForInstructionSelectionPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performInstructionSelectionPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performCreateStackAtlasPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performRegisterAssigningPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performMapStackPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performPeepholePhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performBinaryEncodingPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performEmitSnippetsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performProcessRelocationsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
 
-   /*
-    * There will also be a list of functions that actually does
-    * what the phases need to do. These will be divided up into
-    * each extensible layer and can call base class if needed.
-    */
-   static void performUncommonCallConstNodesPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performReserveCodeCachePhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performLowerTreesPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performSetupForInstructionSelectionPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performInstructionSelectionPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performCreateStackAtlasPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performRegisterAssigningPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performMapStackPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performPeepholePhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performBinaryEncodingPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performEmitSnippetsPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performProcessRelocationsPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
+    static void performInliningReportPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performFindAndFixCommonedReferencesPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performRemoveUnusedLocalsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *);
+    static void performCleanUpFlagsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *phase);
+    static void performInsertDebugCountersPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *phase);
+    static void performExpandInstructionsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *phase);
 
-   static void performInliningReportPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performFindAndFixCommonedReferencesPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performRemoveUnusedLocalsPhase(TR::CodeGenerator * cg, TR::CodeGenPhase *);
-   static void performCleanUpFlagsPhase(TR::CodeGenerator * cg, TR::CodeGenPhase * phase);
-   static void performInsertDebugCountersPhase(TR::CodeGenerator * cg, TR::CodeGenPhase * phase);
-   static void performExpandInstructionsPhase(TR::CodeGenerator * cg, TR::CodeGenPhase * phase);
+protected:
+    CodeGenPhase(TR::CodeGenerator *cg)
+        : _cg(cg)
+    {}
 
-   protected:
+    /*
+     * Each product/project provide it's own list of phases
+     * to perform. It will not depend on parent layers.
+     *
+     * e.g. J9 will not execute the list in OMR.
+     */
+    static const PhaseValue PhaseList[];
 
-   CodeGenPhase(TR::CodeGenerator * cg): _cg(cg) {}
+    static int getListSize();
 
-   /*
-    * Each product/project provide it's own list of phases
-    * to perform. It will not depend on parent layers.
-    *
-    * e.g. J9 will not execute the list in OMR.
-    */
-   static const PhaseValue PhaseList[];
+    /*
+     * Function pointer table to dispatch method for each phase
+     */
+    static CodeGenPhaseFunctionPointer _phaseToFunctionTable[];
 
-   static int getListSize();
+    /*
+     * Members
+     */
+    TR::CodeGenerator *_cg;
 
-   /*
-    * Function pointer table to dispatch method for each phase
-    */
-   static CodeGenPhaseFunctionPointer _phaseToFunctionTable[];
+    PhaseValue _currentPhase;
+};
 
-   /*
-    * Members
-    */
-   TR::CodeGenerator * _cg;
+} // namespace OMR
 
-   PhaseValue _currentPhase;
+class LexicalXmlTag {
+    TR::CodeGenerator *cg;
 
-   };
-
-}
-
-
-class LexicalXmlTag
-   {
-   TR::CodeGenerator *cg;
-
-   public:
-
-   LexicalXmlTag(TR::CodeGenerator *cg);
-   ~LexicalXmlTag();
-   };
+public:
+    LexicalXmlTag(TR::CodeGenerator *cg);
+    ~LexicalXmlTag();
+};
 
 #endif

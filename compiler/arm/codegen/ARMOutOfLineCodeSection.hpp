@@ -29,27 +29,29 @@
 namespace TR {
 class CodeGenerator;
 class LabelSymbol;
-}
+} // namespace TR
 class TR_ARMRegisterDependencyConditions;
 
-class TR_ARMOutOfLineCodeSection : public TR_OutOfLineCodeSection
-   {
+class TR_ARMOutOfLineCodeSection : public TR_OutOfLineCodeSection {
+public:
+    TR_ARMOutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+        : TR_OutOfLineCodeSection(entryLabel, restartLabel, cg)
+    {}
+
+    TR_ARMOutOfLineCodeSection(TR::LabelSymbol *entryLabel, TR::CodeGenerator *cg)
+        : TR_OutOfLineCodeSection(entryLabel, cg)
+    {}
+
+    // For calls
+    //
+    TR_ARMOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
+        TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg);
+
+    TR_ARMOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
+        TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::InstOpCode::Mnemonic targetRegMovOpcode,
+        TR::CodeGenerator *cg);
 
 public:
-   TR_ARMOutOfLineCodeSection(TR::LabelSymbol * entryLabel, TR::LabelSymbol * restartLabel,
-                               TR::CodeGenerator *cg) : TR_OutOfLineCodeSection(entryLabel, restartLabel, cg)
-                              {}
-
-   TR_ARMOutOfLineCodeSection(TR::LabelSymbol * entryLabel,
-                               TR::CodeGenerator *cg) : TR_OutOfLineCodeSection(entryLabel, cg)
-                              {}
-   // For calls
-   //
-   TR_ARMOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg);
-
-   TR_ARMOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::InstOpCode::Mnemonic targetRegMovOpcode, TR::CodeGenerator *cg);
-
-public:
-   void generateARMOutOfLineCodeSectionDispatch();
-   };
+    void generateARMOutOfLineCodeSectionDispatch();
+};
 #endif

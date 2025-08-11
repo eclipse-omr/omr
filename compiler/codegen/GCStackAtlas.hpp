@@ -28,15 +28,13 @@
 
 class TR_Memory;
 
-namespace TR
-{
-class OMR_EXTENSIBLE GCStackAtlas : public OMR::GCStackAtlasConnector
-   {
-   public:
-
-   GCStackAtlas(uint32_t numParms, uint32_t numSlots, TR_Memory * m) :
-      OMR::GCStackAtlasConnector(numParms, numSlots, m) {}
-   };
-}
+namespace TR {
+class OMR_EXTENSIBLE GCStackAtlas : public OMR::GCStackAtlasConnector {
+public:
+    GCStackAtlas(uint32_t numParms, uint32_t numSlots, TR_Memory *m)
+        : OMR::GCStackAtlasConnector(numParms, numSlots, m)
+    {}
+};
+} // namespace TR
 
 #endif

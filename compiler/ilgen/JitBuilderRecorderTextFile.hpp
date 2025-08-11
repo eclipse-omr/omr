@@ -24,17 +24,15 @@
 
 #include "ilgen/OMRJitBuilderRecorderTextFile.hpp"
 
-namespace TR
-{
-   class JitBuilderRecorderTextFile : public OMR::JitBuilderRecorderTextFile
-      {
-      public:
-         JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
-            : OMR::JitBuilderRecorderTextFile(mb, fileName)
-            { }
-         virtual ~JitBuilderRecorderTextFile()
-            { }
-      };
+namespace TR {
+class JitBuilderRecorderTextFile : public OMR::JitBuilderRecorderTextFile {
+public:
+    JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
+        : OMR::JitBuilderRecorderTextFile(mb, fileName)
+    {}
+
+    virtual ~JitBuilderRecorderTextFile() {}
+};
 
 } // namespace TR
 

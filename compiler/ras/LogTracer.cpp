@@ -27,36 +27,35 @@
 #include "optimizer/Optimization_inlines.hpp"
 #include "ras/Debug.hpp"
 
-TR_LogTracer::TR_LogTracer(TR::Compilation *comp, TR::Optimization *opt) : _comp(comp), _traceLevel(trace_notrace)
-   {
+TR_LogTracer::TR_LogTracer(TR::Compilation *comp, TR::Optimization *opt)
+    : _comp(comp)
+    , _traceLevel(trace_notrace)
+{
+    if (opt) {
+        if (opt->trace())
+            _traceLevel = trace_heuristic;
+        else if (comp->getDebug())
+            _traceLevel = trace_full;
+    }
+    // Class should be extended to take advantage of trace_debug, or maybe more changes to tracing infrastructure
+}
 
-   if(opt)
-      {
-      if(opt->trace())
-         _traceLevel = trace_heuristic;
-      else if (comp->getDebug())
-         _traceLevel = trace_full;
-      }
-   // Class should be extended to take advantage of trace_debug, or maybe more changes to tracing infrastructure
+// This method should never be called directly.  Should be called through Macros defined at top of LogTracer.hpp
+void TR_LogTracer::alwaysTraceM(const char *fmt, ...)
+{
+    if (!comp()->getDebug())
+        return;
+    va_list args;
+    va_start(args, fmt);
 
-   }
+    char buffer[2056];
 
-//This method should never be called directly.  Should be called through Macros defined at top of LogTracer.hpp
-void TR_LogTracer::alwaysTraceM ( const char * fmt, ...)
-   {
-   if( !comp()->getDebug() )
-      return;
-   va_list args;
-   va_start(args,fmt);
+    const char *str = comp()->getDebug()->formattedString(buffer, sizeof(buffer) / sizeof(buffer[0]), fmt, args);
 
-   char buffer[2056];
+    va_end(args);
 
-   const char *str = comp()->getDebug()->formattedString(buffer,sizeof(buffer)/sizeof(buffer[0]),fmt,args);
+    // traceMsg(comp(), "%s\n",str);
+    comp()->getDebug()->traceLnFromLogTracer(str);
 
-   va_end(args);
-
-   //traceMsg(comp(), "%s\n",str);
-   comp()->getDebug()->traceLnFromLogTracer(str);
-
-   return;
-   }
+    return;
+}

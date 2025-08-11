@@ -28,10 +28,9 @@
 #include <infra/Assert.hpp>
 #include "runtime/CodeSync.hpp"
 
-
 extern "C" void _patchVirtualGuard(uint8_t *locationAddr, uint8_t *destinationAddr, int32_t smpFlag)
-   {
-   int64_t distance = (int64_t)destinationAddr - (int64_t)locationAddr;
-   *(uint32_t *)locationAddr = TR_RISCV_UJTYPE(TR::InstOpCode::_jal, TR::RealRegister::zero, distance);
-   riscvCodeSync(locationAddr, RISCV_INSTRUCTION_LENGTH);
-   }
+{
+    int64_t distance = (int64_t)destinationAddr - (int64_t)locationAddr;
+    *(uint32_t *)locationAddr = TR_RISCV_UJTYPE(TR::InstOpCode::_jal, TR::RealRegister::zero, distance);
+    riscvCodeSync(locationAddr, RISCV_INSTRUCTION_LENGTH);
+}

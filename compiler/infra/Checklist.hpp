@@ -30,64 +30,65 @@
 
 class TR_BitVector;
 
-namespace TR
-{
+namespace TR {
 
 class Block;
 class Compilation;
 class Node;
 
-class Checklist
-   {
-   protected:
-   TR::Compilation* const _comp;
-   TR_BitVector* const _v;
+class Checklist {
+protected:
+    TR::Compilation * const _comp;
+    TR_BitVector * const _v;
 
-   // These will make the right thing happen in the implicitly-declared copy
-   // constructors and copy assignment operators of subtypes. Keeping them
-   // protected guards against object slicing.
-   Checklist(const Checklist &other);
-   Checklist &operator=(const Checklist &cl);
+    // These will make the right thing happen in the implicitly-declared copy
+    // constructors and copy assignment operators of subtypes. Keeping them
+    // protected guards against object slicing.
+    Checklist(const Checklist &other);
+    Checklist &operator=(const Checklist &cl);
 
-   private:
-   TR_BitVector* allocBV();
+private:
+    TR_BitVector *allocBV();
 
-   public:
-   explicit Checklist(TR::Compilation* c);
-   ~Checklist();
-   bool isEmpty() const { return _v->isEmpty(); }
-   void clear() { _v->empty(); }
-   void print() const { _v->print(_comp); }
-   };
+public:
+    explicit Checklist(TR::Compilation *c);
+    ~Checklist();
 
-class NodeChecklist : public Checklist
-   {
-   public:
-   explicit NodeChecklist(TR::Compilation* c);
-   bool contains(TR::Node* n) const;
-   void add(TR::Node* n);
-   void remove(TR::Node* n);
-   bool contains(const NodeChecklist &other) const;
-   void add(const NodeChecklist &other);
-   void remove(const NodeChecklist &other);
-   bool operator==(const NodeChecklist &other) const;
-   bool operator!=(const NodeChecklist &other) const { return !operator==(other); }
-   };
+    bool isEmpty() const { return _v->isEmpty(); }
 
-class BlockChecklist : public Checklist
-   {
-   public:
-   explicit BlockChecklist(TR::Compilation* c);
-   bool contains(TR::Block* b) const;
-   void add(TR::Block* b);
-   void remove(TR::Block* b);
-   bool contains(const BlockChecklist &other) const;
-   void add(const BlockChecklist &other);
-   void remove(const BlockChecklist &other);
-   bool operator==(const BlockChecklist &other) const;
-   bool operator!=(const BlockChecklist &other) const { return !operator==(other); }
-   };
+    void clear() { _v->empty(); }
 
-}
+    void print() const { _v->print(_comp); }
+};
+
+class NodeChecklist : public Checklist {
+public:
+    explicit NodeChecklist(TR::Compilation *c);
+    bool contains(TR::Node *n) const;
+    void add(TR::Node *n);
+    void remove(TR::Node *n);
+    bool contains(const NodeChecklist &other) const;
+    void add(const NodeChecklist &other);
+    void remove(const NodeChecklist &other);
+    bool operator==(const NodeChecklist &other) const;
+
+    bool operator!=(const NodeChecklist &other) const { return !operator==(other); }
+};
+
+class BlockChecklist : public Checklist {
+public:
+    explicit BlockChecklist(TR::Compilation *c);
+    bool contains(TR::Block *b) const;
+    void add(TR::Block *b);
+    void remove(TR::Block *b);
+    bool contains(const BlockChecklist &other) const;
+    void add(const BlockChecklist &other);
+    void remove(const BlockChecklist &other);
+    bool operator==(const BlockChecklist &other) const;
+
+    bool operator!=(const BlockChecklist &other) const { return !operator==(other); }
+};
+
+} // namespace TR
 
 #endif

@@ -30,78 +30,70 @@ class TR_ResolvedMethod;
 
 namespace TR {
 
-enum StaticRelocationType
-   {
-   Absolute,
-   Relative,
-   };
+enum StaticRelocationType {
+    Absolute,
+    Relative,
+};
 
-enum StaticRelocationSize
-   {
-   word8,
-   word16,
-   word32,
-   word64,
-   };
+enum StaticRelocationSize {
+    word8,
+    word16,
+    word32,
+    word64,
+};
 
 /**
- * @brief The StaticRelocation class contains the information required to create a static relocation in code generated for use in a statically compiled context.
+ * @brief The StaticRelocation class contains the information required to create a static relocation in code generated
+ * for use in a statically compiled context.
  */
-class StaticRelocation
-   {
+class StaticRelocation {
 public:
+    /**
+     * @brief StaticRelocation Initializes the object.
+     * @param location The address requiring relocation.
+     * @param symbol The name of the symbol to be targetted by the relocation.
+     * @param size The size of the relocation.
+     * @param relocationType The type of the relocation, namely whether that relocation is absolute or relative.
+     */
+    StaticRelocation(uint8_t *location, const char *symbol, StaticRelocationSize size,
+        StaticRelocationType relocationType)
+        : _location(location)
+        , _symbol(symbol)
+        , _size(size)
+        , _type(relocationType)
+    {}
 
-   /**
-    * @brief StaticRelocation Initializes the object.
-    * @param location The address requiring relocation.
-    * @param symbol The name of the symbol to be targetted by the relocation.
-    * @param size The size of the relocation.
-    * @param relocationType The type of the relocation, namely whether that relocation is absolute or relative.
-    */
-   StaticRelocation(
-      uint8_t *location,
-      const char *symbol,
-      StaticRelocationSize size,
-      StaticRelocationType relocationType
-      ) :
-      _location(location),
-      _symbol(symbol),
-      _size(size),
-      _type(relocationType)
-      {
-      }
+    /**
+     * @brief location Returns the address requiring relocation.
+     * @return The address requiring relocation.
+     */
+    uint8_t *location() const { return _location; }
 
-   /**
-    * @brief location Returns the address requiring relocation.
-    * @return The address requiring relocation.
-    */
-   uint8_t * location() const { return _location; }
+    /**
+     * @brief symbol Returns the name of the symbol to be targetted by the relocation.
+     * @return The name of the symbol to be targetted by the relocation.
+     */
+    const char *symbol() const { return _symbol; }
 
-   /**
-    * @brief symbol Returns the name of the symbol to be targetted by the relocation.
-    * @return The name of the symbol to be targetted by the relocation.
-    */
-   const char * symbol() const { return _symbol; }
+    /**
+     * @brief size Returns the size of the relocation.
+     * @return The size of the relocation.
+     */
+    StaticRelocationSize size() const { return _size; }
 
-   /**
-    * @brief size Returns the size of the relocation.
-    * @return The size of the relocation.
-    */
-   StaticRelocationSize size() const { return _size; }
-
-   /**
-    * @brief type Returns the type of the relocation, namely whether that relocation is absolute or relative.
-    * @return The type of the relocation.
-    */
-   StaticRelocationType type() const { return _type; }
+    /**
+     * @brief type Returns the type of the relocation, namely whether that relocation is absolute or relative.
+     * @return The type of the relocation.
+     */
+    StaticRelocationType type() const { return _type; }
 
 private:
-   uint8_t * const _location;
-   const char * _symbol;
-   const StaticRelocationSize _size;
-   const StaticRelocationType _type;
-   };
+    uint8_t * const _location;
+    const char *_symbol;
+    const StaticRelocationSize _size;
+    const StaticRelocationType _type;
+};
 
-}
+} // namespace TR
 
 #endif // STATICRELOCATION_HPP

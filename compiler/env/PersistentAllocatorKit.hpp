@@ -28,6 +28,7 @@
 namespace OMR {
 class PersistentAllocatorKit;
 }
+
 namespace TR {
 using OMR::PersistentAllocatorKit;
 }
@@ -36,22 +37,17 @@ using OMR::PersistentAllocatorKit;
 
 #include "env/RawAllocator.hpp"
 
+namespace OMR {
 
-namespace OMR
-{
+class PersistentAllocatorKit {
+public:
+    PersistentAllocatorKit(TR::RawAllocator rawAllocator)
+        : rawAllocator(rawAllocator)
+    {}
 
-class PersistentAllocatorKit
-   {
-   public:
-   
-   PersistentAllocatorKit(TR::RawAllocator rawAllocator) :
-      rawAllocator(rawAllocator)
-      {
-      }
+    TR::RawAllocator rawAllocator;
+};
 
-   TR::RawAllocator rawAllocator;
-   };
-
-}
+} // namespace OMR
 
 #endif // PERSISTENTALLOCATORKIT_HPP

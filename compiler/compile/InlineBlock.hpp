@@ -28,70 +28,79 @@
 #include "env/TRMemory.hpp"
 
 class TR_FrontEnd;
+
 namespace TR {
 class Block;
 class Compilation;
 class TreeTop;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
-class TR_InlineBlock
-   {
-   public:
+class TR_InlineBlock {
+public:
+    TR_ALLOC(TR_Memory::Inliner);
 
-   TR_ALLOC(TR_Memory::Inliner);
+    TR_InlineBlock(int32_t BCIndex, int32_t originalBlockNum)
+        : _BCIndex(BCIndex)
+        , _originalBlockNum(originalBlockNum) {};
 
-   TR_InlineBlock(int32_t BCIndex, int32_t originalBlockNum) : _BCIndex(BCIndex), _originalBlockNum(originalBlockNum) {};
+    int32_t _BCIndex;
+    int32_t _originalBlockNum;
+};
 
-   int32_t _BCIndex;
-   int32_t _originalBlockNum;
-   };
+class TR_InlineBlocks {
+public:
+    friend class TR_InlinerTracer;
 
-class TR_InlineBlocks
-   {
-   public:
+    TR_ALLOC(TR_Memory::Inliner);
 
-   friend class TR_InlinerTracer;
+    TR_InlineBlocks(TR_FrontEnd *, TR::Compilation *);
+    void addBlock(TR::Block *);
+    void addExceptionBlock(TR::Block *);
+    bool isInList(int32_t);
+    bool isInExceptionList(int32_t);
+    void dump(TR::FILE *);
 
-   TR_ALLOC(TR_Memory::Inliner);
+    int32_t getNumBlocks() { return _numBlocks; }
 
-   TR_InlineBlocks(TR_FrontEnd *, TR::Compilation * );
-   void addBlock(TR::Block *);
-   void addExceptionBlock(TR::Block *);
-   bool isInList(int32_t);
-   bool isInExceptionList(int32_t);
-   void dump(TR::FILE *);
+    int32_t getNumExceptionBlocks() { return _numExceptionBlocks; }
 
-   int32_t getNumBlocks() { return _numBlocks; }
-   int32_t getNumExceptionBlocks() { return _numExceptionBlocks;}
+    void setCallNodeTreeTop(TR::TreeTop *tt) { _callNodeTreeTop = tt; }
 
-   void setCallNodeTreeTop(TR::TreeTop *tt) { _callNodeTreeTop = tt; }
-   TR::TreeTop *getCallNodeTreeTop() { return _callNodeTreeTop; }
+    TR::TreeTop *getCallNodeTreeTop() { return _callNodeTreeTop; }
 
-   bool hasGeneratedRestartTree() { return _generatedRestartTree != NULL;}
-   TR::TreeTop *getGeneratedRestartTree() { return _generatedRestartTree;}
-   TR::TreeTop *setGeneratedRestartTree(TR::TreeTop *tt) { _generatedRestartTree=tt; return tt; }
+    bool hasGeneratedRestartTree() { return _generatedRestartTree != NULL; }
 
-   void setLowestBCIndex(int32_t i) { _lowestBCIndex=i; }
-   void setHighestBCIndex(int32_t i) { _highestBCIndex=i; }
-   int32_t getLowestBCIndex() { return _lowestBCIndex; }
-   int32_t getHighestBCIndex() { return _highestBCIndex; }
+    TR::TreeTop *getGeneratedRestartTree() { return _generatedRestartTree; }
 
-   // Public due to access requirement of Inliner Tracer.
-   List<TR_InlineBlock> *_inlineBlocks;
-   List<TR_InlineBlock> *_exceptionBlocks;
+    TR::TreeTop *setGeneratedRestartTree(TR::TreeTop *tt)
+    {
+        _generatedRestartTree = tt;
+        return tt;
+    }
 
-   private:
+    void setLowestBCIndex(int32_t i) { _lowestBCIndex = i; }
 
-   int32_t _numBlocks;
-   int32_t _numExceptionBlocks;
-   TR::TreeTop *_callNodeTreeTop;
-   TR::TreeTop *_generatedRestartTree;
+    void setHighestBCIndex(int32_t i) { _highestBCIndex = i; }
 
-   int32_t _lowestBCIndex;
-   int32_t _highestBCIndex;
+    int32_t getLowestBCIndex() { return _lowestBCIndex; }
 
-   TR::Compilation *_comp;
-   TR_FrontEnd *fe;
-   };
+    int32_t getHighestBCIndex() { return _highestBCIndex; }
+
+    // Public due to access requirement of Inliner Tracer.
+    List<TR_InlineBlock> *_inlineBlocks;
+    List<TR_InlineBlock> *_exceptionBlocks;
+
+private:
+    int32_t _numBlocks;
+    int32_t _numExceptionBlocks;
+    TR::TreeTop *_callNodeTreeTop;
+    TR::TreeTop *_generatedRestartTree;
+
+    int32_t _lowestBCIndex;
+    int32_t _highestBCIndex;
+
+    TR::Compilation *_comp;
+    TR_FrontEnd *fe;
+};
 #endif

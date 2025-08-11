@@ -31,66 +31,60 @@ class SymbolReference;
 class CodeGenerator;
 class Node;
 class Register;
-}
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector
-   {
-   public:
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
+public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] br : base register
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Register *br, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] br : base register
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Register *br,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] br : base register
+     * @param[in] disp : displacement
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Register *br, int32_t disp, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, disp, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] br : base register
-    * @param[in] disp : displacement
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Register *br,
-      int32_t disp,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, disp, cg) {}
+    /**
+     * @brief Constructor
+     * @param[in] node : load or store node
+     * @param[in] len : length
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Node *node, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, len, cg)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] node : load or store node
-    * @param[in] len : length
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Node *node,
-      uint32_t len,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(node, len, cg) {}
-
-   /**
-    * @brief Constructor
-    * @param[in] node : node
-    * @param[in] symRef : symbol reference
-    * @param[in] len : length
-    * @param[in] cg : CodeGenerator object
-    */
-   MemoryReference(TR::Node *node,
-      TR::SymbolReference *symRef,
-      uint32_t len,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(node, symRef, len, cg) {}
-   };
-} // TR
+    /**
+     * @brief Constructor
+     * @param[in] node : node
+     * @param[in] symRef : symbol reference
+     * @param[in] len : length
+     * @param[in] cg : CodeGenerator object
+     */
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, symRef, len, cg)
+    {}
+};
+} // namespace TR
 
 #endif

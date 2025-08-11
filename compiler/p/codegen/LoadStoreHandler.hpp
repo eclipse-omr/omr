@@ -24,10 +24,10 @@
 
 #include "codegen/OMRLoadStoreHandler.hpp"
 
-namespace TR
-{
+namespace TR {
 class OMR_EXTENSIBLE LoadStoreHandler : public OMR::Power::LoadStoreHandler {};
+
 class OMR_EXTENSIBLE LoadStoreHandlerImpl : public OMR::Power::LoadStoreHandlerImpl {};
-}
+} // namespace TR
 
 #endif

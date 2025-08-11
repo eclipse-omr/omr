@@ -32,97 +32,101 @@ namespace TR {
 class Machine;
 class Node;
 class Register;
-}
+} // namespace TR
 
-#define NUM_FPCOMPARE_ACTION_SETS  128
+#define NUM_FPCOMPARE_ACTION_SETS 128
 
-#define fpEvalChild1               0x01
-#define fpEvalChild2               0x02
-#define fpCmpReg1Reg2              0x04
-#define fpCmpReg2Reg1              0x08
-#define fpCmpReg1Mem2              0x10
-#define fpCmpReg2Mem1              0x20
-#define fpNoOperandSwapping        0x40
+#define fpEvalChild1 0x01
+#define fpEvalChild2 0x02
+#define fpCmpReg1Reg2 0x04
+#define fpCmpReg2Reg1 0x08
+#define fpCmpReg1Mem2 0x10
+#define fpCmpReg2Mem1 0x20
+#define fpNoOperandSwapping 0x40
 
-class TR_X86FPCompareAnalyser
-   {
-   public:
+class TR_X86FPCompareAnalyser {
+public:
+    TR_X86FPCompareAnalyser(TR::CodeGenerator *cg)
+        : _cg(cg)
+        , _machine(cg->machine())
+        , _reversedOperands(false)
+        , _inputs(0)
+    {}
 
-   TR_X86FPCompareAnalyser(TR::CodeGenerator *cg)
-      : _cg(cg), _machine(cg->machine()),
-      _reversedOperands(false),
-      _inputs(0) {}
+    // Possible actions based on the characteristics of the operands.
+    //
+    enum EFPActions {
+        kEvalChild1 = 0x01,
+        kEvalChild2 = 0x02,
+        kCmpReg1Reg2 = 0x04,
+        kCmpReg2Reg1 = 0x08,
+        kCmpReg1Mem2 = 0x10,
+        kCmpReg2Mem1 = 0x20
+    };
 
-   // Possible actions based on the characteristics of the operands.
-   //
-   enum EFPActions
-      {
-      kEvalChild1   = 0x01,
-      kEvalChild2   = 0x02,
-      kCmpReg1Reg2  = 0x04,
-      kCmpReg2Reg1  = 0x08,
-      kCmpReg1Mem2  = 0x10,
-      kCmpReg2Mem1  = 0x20
-      };
+    // Operand characteristics
+    //
+    enum Einputs {
+        kClob2 = 0x01,
+        kMem2 = 0x02,
+        kReg2 = 0x04,
+        kClob1 = 0x08,
+        kMem1 = 0x10,
+        kReg1 = 0x20,
+        kNoOpSwap = 0x40
+    };
 
-   // Operand characteristics
-   //
-   enum Einputs
-      {
-      kClob2    = 0x01,
-      kMem2     = 0x02,
-      kReg2     = 0x04,
-      kClob1    = 0x08,
-      kMem1     = 0x10,
-      kReg1     = 0x20,
-      kNoOpSwap = 0x40
-      };
+    void setReg1() { _inputs |= kReg1; }
 
-   void setReg1()              {_inputs |= kReg1;}
-   void setReg2()              {_inputs |= kReg2;}
-   void setMem1()              {_inputs |= kMem1;}
-   void setMem2()              {_inputs |= kMem2;}
-   void setClob1()             {_inputs |= kClob1;}
-   void setClob2()             {_inputs |= kClob2;}
-   void setNoOperandSwapping() {_inputs |= kNoOpSwap;}
+    void setReg2() { _inputs |= kReg2; }
 
-   bool getEvalChild1()        {return (_actionMap[_inputs] & kEvalChild1)  ? true : false;}
-   bool getEvalChild2()        {return (_actionMap[_inputs] & kEvalChild2)  ? true : false;}
-   bool getCmpReg1Reg2()       {return (_actionMap[_inputs] & kCmpReg1Reg2) ? true : false;}
-   bool getCmpReg2Reg1()       {return (_actionMap[_inputs] & kCmpReg2Reg1) ? true : false;}
-   bool getCmpReg1Mem2()       {return (_actionMap[_inputs] & kCmpReg1Mem2) ? true : false;}
-   bool getCmpReg2Mem1()       {return (_actionMap[_inputs] & kCmpReg2Mem1) ? true : false;}
+    void setMem1() { _inputs |= kMem1; }
 
-   bool getReversedOperands()       {return _reversedOperands;}
-   bool setReversedOperands(bool b) {return (_reversedOperands = b);}
-   bool notReversedOperands()       {return (_reversedOperands = ((_reversedOperands == false) ? true : false));}
+    void setMem2() { _inputs |= kMem2; }
 
-   void setInputs(TR::Node     *firstChild,
-                  TR::Register *firstRegister,
-                  TR::Node     *secondChild,
-                  TR::Register *secondRegister,
-                  bool         disallowMemoryFormInstructions,
-                  bool         disallowOperandSwapping);
+    void setClob1() { _inputs |= kClob1; }
 
-   protected:
+    void setClob2() { _inputs |= kClob2; }
 
-   TR::CodeGenerator *   _cg;
-   bool                 _reversedOperands;
-   uint8_t              _inputs;
-   TR::Machine *_machine;
+    void setNoOperandSwapping() { _inputs |= kNoOpSwap; }
 
-   static const uint8_t _actionMap[NUM_FPCOMPARE_ACTION_SETS];
-   };
+    bool getEvalChild1() { return (_actionMap[_inputs] & kEvalChild1) ? true : false; }
 
-class TR_IA32XMMCompareAnalyser : public TR_X86FPCompareAnalyser
-   {
-   public:
+    bool getEvalChild2() { return (_actionMap[_inputs] & kEvalChild2) ? true : false; }
 
-   TR_IA32XMMCompareAnalyser(TR::CodeGenerator *cg) : TR_X86FPCompareAnalyser(cg) {}
+    bool getCmpReg1Reg2() { return (_actionMap[_inputs] & kCmpReg1Reg2) ? true : false; }
 
-   TR::Register *xmmCompareAnalyser(TR::Node        *root,
-                                   TR::InstOpCode::Mnemonic  cmpRegRegOpCode,
-                                   TR::InstOpCode::Mnemonic  cmpRegMemOpCode);
+    bool getCmpReg2Reg1() { return (_actionMap[_inputs] & kCmpReg2Reg1) ? true : false; }
 
-   };
+    bool getCmpReg1Mem2() { return (_actionMap[_inputs] & kCmpReg1Mem2) ? true : false; }
+
+    bool getCmpReg2Mem1() { return (_actionMap[_inputs] & kCmpReg2Mem1) ? true : false; }
+
+    bool getReversedOperands() { return _reversedOperands; }
+
+    bool setReversedOperands(bool b) { return (_reversedOperands = b); }
+
+    bool notReversedOperands() { return (_reversedOperands = ((_reversedOperands == false) ? true : false)); }
+
+    void setInputs(TR::Node *firstChild, TR::Register *firstRegister, TR::Node *secondChild,
+        TR::Register *secondRegister, bool disallowMemoryFormInstructions, bool disallowOperandSwapping);
+
+protected:
+    TR::CodeGenerator *_cg;
+    bool _reversedOperands;
+    uint8_t _inputs;
+    TR::Machine *_machine;
+
+    static const uint8_t _actionMap[NUM_FPCOMPARE_ACTION_SETS];
+};
+
+class TR_IA32XMMCompareAnalyser : public TR_X86FPCompareAnalyser {
+public:
+    TR_IA32XMMCompareAnalyser(TR::CodeGenerator *cg)
+        : TR_X86FPCompareAnalyser(cg)
+    {}
+
+    TR::Register *xmmCompareAnalyser(TR::Node *root, TR::InstOpCode::Mnemonic cmpRegRegOpCode,
+        TR::InstOpCode::Mnemonic cmpRegMemOpCode);
+};
 #endif

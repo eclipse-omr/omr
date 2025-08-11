@@ -27,10 +27,11 @@
  */
 #ifndef OMR_VMENV_CONNECTOR
 #define OMR_VMENV_CONNECTOR
+
 namespace OMR {
 class VMEnv;
 typedef OMR::VMEnv VMEnvConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stdint.h>
@@ -42,110 +43,128 @@ class VMEnv;
 }
 
 struct OMR_VMThread;
+
 namespace TR {
 class Compilation;
 }
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE VMEnv
-   {
+class OMR_EXTENSIBLE VMEnv {
 public:
+    TR::VMEnv *self();
 
-   TR::VMEnv * self();
+    int64_t maxHeapSizeInBytes() { return -1; }
 
-   int64_t maxHeapSizeInBytes() { return -1; }
+    uintptr_t heapTailPaddingSizeInBytes();
 
-   uintptr_t heapTailPaddingSizeInBytes();
+    // Perhaps 'false' would be a better default
+    bool hasResumableTrapHandler(TR::Compilation *comp) { return true; }
 
-   // Perhaps 'false' would be a better default
-   bool hasResumableTrapHandler(TR::Compilation *comp) { return true; }
-   bool hasResumableTrapHandler(OMR_VMThread *omrVMThread) { return true; }
+    bool hasResumableTrapHandler(OMR_VMThread *omrVMThread) { return true; }
 
-   uint64_t getUSecClock();
-   uint64_t getUSecClock(TR::Compilation *comp);
-   uint64_t getUSecClock(OMR_VMThread *omrVMThread);
+    uint64_t getUSecClock();
+    uint64_t getUSecClock(TR::Compilation *comp);
+    uint64_t getUSecClock(OMR_VMThread *omrVMThread);
 
-   uint64_t getHighResClock(TR::Compilation *comp);
-   uint64_t getHighResClock(OMR_VMThread *omrVMThread);
+    uint64_t getHighResClock(TR::Compilation *comp);
+    uint64_t getHighResClock(OMR_VMThread *omrVMThread);
 
-   uint64_t getHighResClockResolution();
+    uint64_t getHighResClockResolution();
 
-   uintptr_t thisThreadGetPendingExceptionOffset() { return 0; }
+    uintptr_t thisThreadGetPendingExceptionOffset() { return 0; }
 
-   // Is specified thread permitted to access the VM?
-   //
-   bool hasAccess(OMR_VMThread *omrVMThread) { return true; }
-   bool hasAccess(TR::Compilation *comp) { return true; }
+    // Is specified thread permitted to access the VM?
+    //
+    bool hasAccess(OMR_VMThread *omrVMThread) { return true; }
 
-   // Acquire access to the VM
-   //
-   bool acquireVMAccessIfNeeded(OMR_VMThread *omrVMThread) { return true; }
-   bool acquireVMAccessIfNeeded(TR::Compilation *comp) { return true; }
+    bool hasAccess(TR::Compilation *comp) { return true; }
 
-   bool tryToAcquireAccess(OMR_VMThread *omrVMThread, bool *) { return true; }
-   bool tryToAcquireAccess(TR::Compilation *, bool *) { return true; }
+    // Acquire access to the VM
+    //
+    bool acquireVMAccessIfNeeded(OMR_VMThread *omrVMThread) { return true; }
 
-   // Release access to the VM
-   //
-   void releaseVMAccessIfNeeded(TR::Compilation *comp, bool haveAcquiredVMAccess) {}
-   void releaseVMAccessIfNeeded(OMR_VMThread *omrVMThread, bool haveAcquiredVMAccess) {}
+    bool acquireVMAccessIfNeeded(TR::Compilation *comp) { return true; }
 
-   void releaseAccess(TR::Compilation *comp) {}
-   void releaseAccess(OMR_VMThread *omrVMThread) {}
+    bool tryToAcquireAccess(OMR_VMThread *omrVMThread, bool *) { return true; }
 
-   bool canMethodEnterEventBeHooked(TR::Compilation *comp) { return false; }
-   bool canMethodExitEventBeHooked(TR::Compilation *comp) { return false; }
-   bool canAnyMethodEventsBeHooked(TR::Compilation *comp);
+    bool tryToAcquireAccess(TR::Compilation *, bool *) { return true; }
 
-   // Largest object that can be safely allocated without overflowing the heap.
-   //
-   uintptr_t getOverflowSafeAllocSize(TR::Compilation *comp) { return 0; }
+    // Release access to the VM
+    //
+    void releaseVMAccessIfNeeded(TR::Compilation *comp, bool haveAcquiredVMAccess) {}
 
-   int64_t cpuTimeSpentInCompilationThread(TR::Compilation *comp) { return -1; } // -1 means unavailable
+    void releaseVMAccessIfNeeded(OMR_VMThread *omrVMThread, bool haveAcquiredVMAccess) {}
 
-   // On-stack replacement
-   //
-   uintptr_t OSRFrameHeaderSizeInBytes(TR::Compilation *comp) { return 0; }
-   uintptr_t OSRFrameSizeInBytes(TR::Compilation *comp, TR_OpaqueMethodBlock* method) { return 0; }
-   bool ensureOSRBufferSize(TR::Compilation *comp, uintptr_t osrFrameSizeInBytes, uintptr_t osrScratchBufferSizeInBytes, uintptr_t osrStackFrameSizeInBytes) { return false; }
-   uintptr_t thisThreadGetOSRReturnAddressOffset(TR::Compilation *comp) { return 0; }
+    void releaseAccess(TR::Compilation *comp) {}
 
-   /**
-    * @brief Returns offset from the current thread to the intermediate result field.
-    * The field contains intermediate result from the latest guarded load during concurrent scavenge.
-    */
-   uintptr_t thisThreadGetGSIntermediateResultOffset(TR::Compilation *comp) { return 0; }
-   /**
-    * @brief Returns offset from the current thread to the flags to check if concurrent scavenge is active
-    */
-   uintptr_t thisThreadGetConcurrentScavengeActiveByteAddressOffset(TR::Compilation *comp) { return 0; }
-   /**
-    * @brief Returns offset from the current thread to the field with the base address of the evacuate memory region
-    */
-   uintptr_t thisThreadGetEvacuateBaseAddressOffset(TR::Compilation *comp) { return 0; }
-   /**
-    * @brief Returns offset from the current thread to the field with the top address of the evacuate memory region
-    */
-   uintptr_t thisThreadGetEvacuateTopAddressOffset(TR::Compilation *comp) { return 0; }
-   /**
-    * @brief Returns offset from the current thread to the operand address field.
-    * It contains data from the most recent guarded load during concurrent scavenge
-    */
-   uintptr_t thisThreadGetGSOperandAddressOffset(TR::Compilation *comp) { return 0; }
-   /**
-    * @brief Returns offset from the current thread to the filed with the read barrier handler address
-    */
-   uintptr_t thisThreadGetGSHandlerAddressOffset(TR::Compilation *comp) { return 0; }
+    void releaseAccess(OMR_VMThread *omrVMThread) {}
 
-   /**
-    * @brief Returns true in startup phase and false otherwise. This value is
-    * to be used in a purely heuristic way.
-    */
-   bool isVMInStartupPhase(TR::Compilation *comp) { return false; }
-   };
+    bool canMethodEnterEventBeHooked(TR::Compilation *comp) { return false; }
 
-}
+    bool canMethodExitEventBeHooked(TR::Compilation *comp) { return false; }
+
+    bool canAnyMethodEventsBeHooked(TR::Compilation *comp);
+
+    // Largest object that can be safely allocated without overflowing the heap.
+    //
+    uintptr_t getOverflowSafeAllocSize(TR::Compilation *comp) { return 0; }
+
+    int64_t cpuTimeSpentInCompilationThread(TR::Compilation *comp) { return -1; } // -1 means unavailable
+
+    // On-stack replacement
+    //
+    uintptr_t OSRFrameHeaderSizeInBytes(TR::Compilation *comp) { return 0; }
+
+    uintptr_t OSRFrameSizeInBytes(TR::Compilation *comp, TR_OpaqueMethodBlock *method) { return 0; }
+
+    bool ensureOSRBufferSize(TR::Compilation *comp, uintptr_t osrFrameSizeInBytes,
+        uintptr_t osrScratchBufferSizeInBytes, uintptr_t osrStackFrameSizeInBytes)
+    {
+        return false;
+    }
+
+    uintptr_t thisThreadGetOSRReturnAddressOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns offset from the current thread to the intermediate result field.
+     * The field contains intermediate result from the latest guarded load during concurrent scavenge.
+     */
+    uintptr_t thisThreadGetGSIntermediateResultOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns offset from the current thread to the flags to check if concurrent scavenge is active
+     */
+    uintptr_t thisThreadGetConcurrentScavengeActiveByteAddressOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns offset from the current thread to the field with the base address of the evacuate memory region
+     */
+    uintptr_t thisThreadGetEvacuateBaseAddressOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns offset from the current thread to the field with the top address of the evacuate memory region
+     */
+    uintptr_t thisThreadGetEvacuateTopAddressOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns offset from the current thread to the operand address field.
+     * It contains data from the most recent guarded load during concurrent scavenge
+     */
+    uintptr_t thisThreadGetGSOperandAddressOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns offset from the current thread to the filed with the read barrier handler address
+     */
+    uintptr_t thisThreadGetGSHandlerAddressOffset(TR::Compilation *comp) { return 0; }
+
+    /**
+     * @brief Returns true in startup phase and false otherwise. This value is
+     * to be used in a purely heuristic way.
+     */
+    bool isVMInStartupPhase(TR::Compilation *comp) { return false; }
+};
+
+} // namespace OMR
 
 #endif

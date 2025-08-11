@@ -24,24 +24,25 @@
 
 #include "ilgen/OMRMethodBuilder.hpp"
 
-namespace TR
-{
-   class MethodBuilder : public OMR::MethodBuilder
-      {
-      public:
-         MethodBuilder(TR::TypeDictionary *types)
-            : OMR::MethodBuilder(types)
-            { }
-         MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState)
-            : OMR::MethodBuilder(types, vmState)
-            { }
-         MethodBuilder(TR::MethodBuilder *callerMB)
-            : OMR::MethodBuilder(callerMB)
-            { }
-         MethodBuilder(TR::MethodBuilder *callerMB, TR::VirtualMachineState *vmState)
-            : OMR::MethodBuilder(callerMB, vmState)
-            { }
-      };
+namespace TR {
+class MethodBuilder : public OMR::MethodBuilder {
+public:
+    MethodBuilder(TR::TypeDictionary *types)
+        : OMR::MethodBuilder(types)
+    {}
+
+    MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState)
+        : OMR::MethodBuilder(types, vmState)
+    {}
+
+    MethodBuilder(TR::MethodBuilder *callerMB)
+        : OMR::MethodBuilder(callerMB)
+    {}
+
+    MethodBuilder(TR::MethodBuilder *callerMB, TR::VirtualMachineState *vmState)
+        : OMR::MethodBuilder(callerMB, vmState)
+    {}
+};
 
 } // namespace TR
 

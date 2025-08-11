@@ -27,10 +27,14 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
+
 namespace OMR {
-namespace Power { class Instruction; }
-typedef OMR::Power::Instruction InstructionConnector;
+namespace Power {
+class Instruction;
 }
+
+typedef OMR::Power::Instruction InstructionConnector;
+} // namespace OMR
 #else
 #error OMR::Power::Instruction expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -52,149 +56,178 @@ class MemoryReference;
 class Node;
 class Register;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 struct TR_RegisterPressureState;
 
-namespace OMR
-{
+namespace OMR { namespace Power {
 
-namespace Power
-{
+class OMR_EXTENSIBLE Instruction : public OMR::Instruction {
+public:
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::Node *node = 0);
 
-class OMR_EXTENSIBLE Instruction : public OMR::Instruction
-   {
+    virtual const char *description() { return "PPC"; }
 
-   public:
+    virtual Kind getKind() { return IsNotExtended; }
 
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate);
+    virtual uint8_t *generateBinaryEncoding();
 
-   virtual const char *description() { return "PPC"; }
-   virtual Kind getKind() { return IsNotExtended; }
+    TR::InstOpCode::Mnemonic getRecordFormOpCode() { return _opcode.getRecordFormOpCodeValue(); }
 
-   virtual int32_t estimateBinaryLength(int32_t currentEstimate);
-   virtual uint8_t *generateBinaryEncoding();
+    virtual TR::Register *getTrg1Register() { return NULL; }
 
-   TR::InstOpCode::Mnemonic getRecordFormOpCode()             {return _opcode.getRecordFormOpCodeValue();}
+    virtual TR::Register *getTargetRegister(uint32_t i);
+    virtual TR::Register *getSourceRegister(uint32_t i);
 
-   virtual TR::Register *getTrg1Register()                   {return NULL;}
+    virtual TR::MemoryReference *getMemoryReference() { return NULL; }
 
-   virtual TR::Register *getTargetRegister(uint32_t i);
-   virtual TR::Register *getSourceRegister(uint32_t i);
-   virtual TR::MemoryReference *getMemoryReference()      {return NULL;}
-   virtual uint32_t     getSourceImmediate()                {return 0;}
+    virtual uint32_t getSourceImmediate() { return 0; }
 
-   virtual TR::Register *getMemoryBase()                     {return NULL;}
-   virtual TR::Register *getMemoryIndex()                    {return NULL;}
-   virtual int64_t      getOffset()                         {return 0;}
-   virtual bool  usesCountRegister()                        {return _opcode.usesCountRegister();}
-   virtual bool  setsCountRegister();
+    virtual TR::Register *getMemoryBase() { return NULL; }
 
-   virtual TR::RegisterDependencyConditions *getDependencyConditions() {return _conditions;}
-   TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
-      {
-      return (_conditions = cond);
-      }
+    virtual TR::Register *getMemoryIndex() { return NULL; }
 
-   bool     isRecordForm()          {return _opcode.isRecordForm();}
-   bool     hasRecordForm()         {return _opcode.hasRecordForm();}
-   bool     singleFPOp()            {return _opcode.singleFPOp();}
-   bool     doubleFPOp()            {return _opcode.doubleFPOp();}
-   bool     gprOp()                 {return _opcode.gprOp();}
-   bool     fprOp()                 {return _opcode.fprOp();}
-   bool     readsCarryFlag()        {return _opcode.readsCarryFlag();}
-   bool     setsCarryFlag()         {return _opcode.setsCarryFlag();}
-   bool     setsOverflowFlag()      {return _opcode.setsOverflowFlag();}
-   bool     isUpdate()              {return _opcode.isUpdate();}
-   bool     isTrap()                {return _opcode.isTrap();}
-   bool     isTMAbort()             {return _opcode.isTMAbort();}
-   bool     isRegCopy()             {return _opcode.isRegCopy();}
-   bool     isDoubleWord()          {return _opcode.isDoubleWord();}
-   bool     isCompare()             {return _opcode.isCompare();}
-   bool     isLongRunningFPOp()     {return _opcode.isLongRunningFPOp();}
-   bool     isFXMult()              {return _opcode.isFXMult();}
+    virtual int64_t getOffset() { return 0; }
 
-   virtual bool     isLoad()           {return _opcode.isLoad();}
-   virtual bool     isStore()          {return _opcode.isStore();}
-   virtual bool     isBranchOp()       {return _opcode.isBranchOp();}
-   virtual bool     isExceptBranchOp() {return false; }
-   virtual bool     setExceptBranchOp(){TR_ASSERT(0,"shouldn't be here"); return false; }
-   virtual bool     isLabel()          {return _opcode.getOpCodeValue() == TR::InstOpCode::label;}
-   virtual bool     isAdmin()          {return _opcode.isAdmin();}
-   virtual bool     is4ByteLoad();
-   virtual int32_t  getMachineOpCode();
-   virtual bool     isBeginBlock();
-   virtual bool     isFloat()          {return _opcode.isFloat();}
-   virtual bool     isVMX()            {return _opcode.isVMX();}
-   virtual bool     isVSX()            {return _opcode.isVSX();}
-   virtual bool     isSyncSideEffectFree()  {return _opcode.isSyncSideEffectFree();}
-   virtual bool     isCall();
+    virtual bool usesCountRegister() { return _opcode.usesCountRegister(); }
 
-   virtual bool   isAsyncBranch()            { return _asyncBranch;}
-   virtual bool   setAsyncBranch()           { return (_asyncBranch = true);}
+    virtual bool setsCountRegister();
 
-   void    PPCNeedsGCMap(uint32_t mask);
+    virtual TR::RegisterDependencyConditions *getDependencyConditions() { return _conditions; }
 
-   virtual TR::Register *getMemoryDataRegister();
+    TR::RegisterDependencyConditions *setDependencyConditions(TR::RegisterDependencyConditions *cond)
+    {
+        return (_conditions = cond);
+    }
 
-   virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
+    bool isRecordForm() { return _opcode.isRecordForm(); }
 
-   virtual bool refsRegister(TR::Register *reg);
+    bool hasRecordForm() { return _opcode.hasRecordForm(); }
 
-   virtual bool defsRegister(TR::Register *reg);
+    bool singleFPOp() { return _opcode.singleFPOp(); }
 
-   virtual bool defsRealRegister(TR::Register *reg);
+    bool doubleFPOp() { return _opcode.doubleFPOp(); }
 
-   virtual bool usesRegister(TR::Register *reg);
+    bool gprOp() { return _opcode.gprOp(); }
 
-   virtual bool dependencyRefsRegister(TR::Register *reg);
+    bool fprOp() { return _opcode.fprOp(); }
 
-   virtual TR::PPCConditionalBranchInstruction *getPPCConditionalBranchInstruction();
+    bool readsCarryFlag() { return _opcode.readsCarryFlag(); }
 
-   virtual TR::Register *getPrimaryTargetRegister()               {return NULL;}
+    bool setsCarryFlag() { return _opcode.setsCarryFlag(); }
 
-   virtual uint8_t getBinaryLengthLowerBound();
+    bool setsOverflowFlag() { return _opcode.setsOverflowFlag(); }
+
+    bool isUpdate() { return _opcode.isUpdate(); }
+
+    bool isTrap() { return _opcode.isTrap(); }
+
+    bool isTMAbort() { return _opcode.isTMAbort(); }
+
+    bool isRegCopy() { return _opcode.isRegCopy(); }
+
+    bool isDoubleWord() { return _opcode.isDoubleWord(); }
+
+    bool isCompare() { return _opcode.isCompare(); }
+
+    bool isLongRunningFPOp() { return _opcode.isLongRunningFPOp(); }
+
+    bool isFXMult() { return _opcode.isFXMult(); }
+
+    virtual bool isLoad() { return _opcode.isLoad(); }
+
+    virtual bool isStore() { return _opcode.isStore(); }
+
+    virtual bool isBranchOp() { return _opcode.isBranchOp(); }
+
+    virtual bool isExceptBranchOp() { return false; }
+
+    virtual bool setExceptBranchOp()
+    {
+        TR_ASSERT(0, "shouldn't be here");
+        return false;
+    }
+
+    virtual bool isLabel() { return _opcode.getOpCodeValue() == TR::InstOpCode::label; }
+
+    virtual bool isAdmin() { return _opcode.isAdmin(); }
+
+    virtual bool is4ByteLoad();
+    virtual int32_t getMachineOpCode();
+    virtual bool isBeginBlock();
+
+    virtual bool isFloat() { return _opcode.isFloat(); }
+
+    virtual bool isVMX() { return _opcode.isVMX(); }
+
+    virtual bool isVSX() { return _opcode.isVSX(); }
+
+    virtual bool isSyncSideEffectFree() { return _opcode.isSyncSideEffectFree(); }
+
+    virtual bool isCall();
+
+    virtual bool isAsyncBranch() { return _asyncBranch; }
+
+    virtual bool setAsyncBranch() { return (_asyncBranch = true); }
+
+    void PPCNeedsGCMap(uint32_t mask);
+
+    virtual TR::Register *getMemoryDataRegister();
+
+    virtual void assignRegisters(TR_RegisterKinds kindToBeAssigned);
+
+    virtual bool refsRegister(TR::Register *reg);
+
+    virtual bool defsRegister(TR::Register *reg);
+
+    virtual bool defsRealRegister(TR::Register *reg);
+
+    virtual bool usesRegister(TR::Register *reg);
+
+    virtual bool dependencyRefsRegister(TR::Register *reg);
+
+    virtual TR::PPCConditionalBranchInstruction *getPPCConditionalBranchInstruction();
+
+    virtual TR::Register *getPrimaryTargetRegister() { return NULL; }
+
+    virtual uint8_t getBinaryLengthLowerBound();
 
 // The following safe virtual downcast method is used under debug only
 // for assertion checking
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-   virtual TR::PPCImmInstruction *getPPCImmInstruction();
+    virtual TR::PPCImmInstruction *getPPCImmInstruction();
 #endif
 
-   /*
-    * Maps to TIndex in Instruction. Here we set values specific to PPC CodeGen.
-    *
-    * A 32-bit field where the lower 24-bits contain an integer that represents an
-    * approximate ordering of instructions.
-    *
-    * The upper 8 bits are used for flags.
-    * Instruction flags encoded by their bit position.  Subclasses may use any
-    * available bits between LastBaseFlag and MaxBaseFlag inclusive.
-    */
-   enum
-      {
-      WillBePatched        = 0x08000000
-      };
+    /*
+     * Maps to TIndex in Instruction. Here we set values specific to PPC CodeGen.
+     *
+     * A 32-bit field where the lower 24-bits contain an integer that represents an
+     * approximate ordering of instructions.
+     *
+     * The upper 8 bits are used for flags.
+     * Instruction flags encoded by their bit position.  Subclasses may use any
+     * available bits between LastBaseFlag and MaxBaseFlag inclusive.
+     */
+    enum {
+        WillBePatched = 0x08000000
+    };
 
-   bool      willBePatched() {return (_index & WillBePatched) != 0; }
-   void      setWillBePatched(bool v = true) { v? _index |= WillBePatched : _index &= ~WillBePatched; }
+    bool willBePatched() { return (_index & WillBePatched) != 0; }
 
-   protected:
+    void setWillBePatched(bool v = true) { v ? _index |= WillBePatched : _index &= ~WillBePatched; }
 
-   virtual void fillBinaryEncodingFields(uint32_t *cursor);
+protected:
+    virtual void fillBinaryEncodingFields(uint32_t *cursor);
 
-
-   private:
+private:
     //  TR::InstOpCode   _opcode;
-      uint8_t        _estimatedBinaryLength;
-      TR::RegisterDependencyConditions *_conditions;
-      bool        _asyncBranch;
+    uint8_t _estimatedBinaryLength;
+    TR::RegisterDependencyConditions *_conditions;
+    bool _asyncBranch;
+};
 
-
-   };
-
-}
-
-}
+}} // namespace OMR::Power
 
 #endif

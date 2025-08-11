@@ -27,10 +27,14 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
+
 namespace OMR {
-namespace ARM64 { class Machine; }
-typedef OMR::ARM64::Machine MachineConnector;
+namespace ARM64 {
+class Machine;
 }
+
+typedef OMR::ARM64::Machine MachineConnector;
+} // namespace OMR
 #else
 #error OMR::ARM64::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -45,210 +49,187 @@ class CodeGenerator;
 class Instruction;
 class Register;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 
 #define NUM_ARM64_MAXR 32
 
-namespace OMR
-{
+namespace OMR { namespace ARM64 {
 
-namespace ARM64
-{
-
-class OMR_EXTENSIBLE Machine : public OMR::Machine
-   {
-
+class OMR_EXTENSIBLE Machine : public OMR::Machine {
 public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : the TR::CodeGenerator object
+     */
+    Machine(TR::CodeGenerator *cg);
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : the TR::CodeGenerator object
-    */
-   Machine(TR::CodeGenerator *cg);
+    /**
+     * @brief Finds the best free register
+     * @param[in] currentInstruction : current instruction
+     * @param[in] rk : register kind
+     * @param[in] considerUnlatched : consider unlatched state or not
+     * @param[in] virtualReg : virtual register
+     * @return Free RealRegister
+     */
+    TR::RealRegister *findBestFreeRegister(TR::Instruction *currentInstruction, TR_RegisterKinds rk,
+        bool considerUnlatched = false, TR::Register *virtualReg = NULL);
 
-   /**
-    * @brief Finds the best free register
-    * @param[in] currentInstruction : current instruction
-    * @param[in] rk : register kind
-    * @param[in] considerUnlatched : consider unlatched state or not
-    * @param[in] virtualReg : virtual register
-    * @return Free RealRegister
-    */
-   TR::RealRegister *findBestFreeRegister(TR::Instruction *currentInstruction,
-                                            TR_RegisterKinds rk,
-                                            bool considerUnlatched = false,
-                                            TR::Register *virtualReg = NULL);
+    /**
+     * @brief Finds the best free register
+     * @param[in] rk : register kind
+     * @param[in] considerUnlatched : consider unlatched state or not
+     * @return Free RealRegister
+     */
+    TR::RealRegister *findBestFreeRegister(TR_RegisterKinds rk, bool considerUnlatched = false)
+    {
+        return findBestFreeRegister(NULL, rk, considerUnlatched);
+    }
 
-   /**
-    * @brief Finds the best free register
-    * @param[in] rk : register kind
-    * @param[in] considerUnlatched : consider unlatched state or not
-    * @return Free RealRegister
-    */
-   TR::RealRegister *findBestFreeRegister(TR_RegisterKinds rk,
-                                            bool considerUnlatched = false)
-      {
-      return findBestFreeRegister(NULL, rk, considerUnlatched);
-      }
+    /**
+     * @brief Frees the best register
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtualRegister : virtual register
+     * @param[in] forced : register to be freed
+     * @return Freed RealRegister
+     */
+    TR::RealRegister *freeBestRegister(TR::Instruction *currentInstruction, TR::Register *virtualRegister,
+        TR::RealRegister *forced = NULL);
 
-   /**
-    * @brief Frees the best register
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtualRegister : virtual register
-    * @param[in] forced : register to be freed
-    * @return Freed RealRegister
-    */
-   TR::RealRegister *freeBestRegister(TR::Instruction *currentInstruction,
-                                        TR::Register *virtualRegister,
-                                        TR::RealRegister *forced = NULL);
+    /**
+     * @brief Reverses the spill state
+     * @param[in] currentInstruction : current instruction
+     * @param[in] spilledRegister : spilled register
+     * @param[in] targetRegister : target register
+     * @return Target register
+     */
+    TR::RealRegister *reverseSpillState(TR::Instruction *currentInstruction, TR::Register *spilledRegister,
+        TR::RealRegister *targetRegister = NULL);
 
-   /**
-    * @brief Reverses the spill state
-    * @param[in] currentInstruction : current instruction
-    * @param[in] spilledRegister : spilled register
-    * @param[in] targetRegister : target register
-    * @return Target register
-    */
-   TR::RealRegister *reverseSpillState(TR::Instruction *currentInstruction,
-                                         TR::Register *spilledRegister,
-                                         TR::RealRegister *targetRegister = NULL);
+    /**
+     * @brief Assign a RealRegister for specified Register
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtualRegister : virtual register
+     * @return Assigned RealRegister
+     */
+    TR::RealRegister *assignOneRegister(TR::Instruction *currentInstruction, TR::Register *virtualRegister);
 
-   /**
-    * @brief Assign a RealRegister for specified Register
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtualRegister : virtual register
-    * @return Assigned RealRegister
-    */
-   TR::RealRegister *assignOneRegister(TR::Instruction *currentInstruction,
-                                         TR::Register *virtualRegister);
+    /**
+     * @brief Coerce register assignment
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtualRegister : virtual register
+     * @param[in] registerNumber : register number
+     */
+    void coerceRegisterAssignment(TR::Instruction *currentInstruction, TR::Register *virtualRegister,
+        TR::RealRegister::RegNum registerNumber);
 
-   /**
-    * @brief Coerce register assignment
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtualRegister : virtual register
-    * @param[in] registerNumber : register number
-    */
-   void coerceRegisterAssignment(TR::Instruction *currentInstruction,
-                                 TR::Register *virtualRegister,
-                                 TR::RealRegister::RegNum registerNumber);
+    /**
+     * @brief Returns the "killed" state of Link Register
+     * @return true if LR is killed in the method, false otherwise
+     */
+    bool getLinkRegisterKilled() { return _registerFile[TR::RealRegister::lr]->getHasBeenAssignedInMethod(); }
 
-   /**
-    * @brief Returns the "killed" state of Link Register
-    * @return true if LR is killed in the method, false otherwise
-    */
-   bool getLinkRegisterKilled()
-      {
-      return _registerFile[TR::RealRegister::lr]->getHasBeenAssignedInMethod();
-      }
+    /**
+     * @brief Changes the "killed" state of Link Register
+     * @param[in] b : true if LR is killed in the method, false otherwise
+     * @return The "killed" state set by the function
+     */
+    bool setLinkRegisterKilled(bool b) { return _registerFile[TR::RealRegister::lr]->setHasBeenAssignedInMethod(b); }
 
-   /**
-    * @brief Changes the "killed" state of Link Register
-    * @param[in] b : true if LR is killed in the method, false otherwise
-    * @return The "killed" state set by the function
-    */
-   bool setLinkRegisterKilled(bool b)
-      {
-      return _registerFile[TR::RealRegister::lr]->setHasBeenAssignedInMethod(b);
-      }
+    /**
+     * @brief Take snapshot of the register file
+     */
+    void takeRegisterStateSnapShot();
 
-   /**
-    * @brief Take snapshot of the register file
-    */
-   void takeRegisterStateSnapShot();
+    /**
+     * @brief Restore the register file from snapshot
+     */
+    void restoreRegisterStateFromSnapShot();
 
-   /**
-    * @brief Restore the register file from snapshot
-    */
-   void restoreRegisterStateFromSnapShot();
+    /**
+     * @brief Creates register dependency conditions for the entry label of cold path of OutOfLineCodeSection
+     *
+     * @param spilledRegisterList : the list of spilled registers in main line and hot path
+     * @return register dependency conditions
+     */
+    TR::RegisterDependencyConditions *createCondForLiveAndSpilledGPRs(TR::list<TR::Register *> *spilledRegisterList);
 
-   /**
-    * @brief Creates register dependency conditions for the entry label of cold path of OutOfLineCodeSection
-    *
-    * @param spilledRegisterList : the list of spilled registers in main line and hot path
-    * @return register dependency conditions
-    */
-   TR::RegisterDependencyConditions *createCondForLiveAndSpilledGPRs(TR::list<TR::Register*> *spilledRegisterList);
+    /**
+     * @brief Decrease future use count of the register and unlatch it if necessary
+     *
+     * @param currentInstruction     : instruction
+     * @param virtualRegister        : virtual register
+     */
+    void decFutureUseCountAndUnlatch(TR::Instruction *currentInstruction, TR::Register *virtualRegister);
 
-   /**
-    * @brief Decrease future use count of the register and unlatch it if necessary
-    *
-    * @param currentInstruction     : instruction
-    * @param virtualRegister        : virtual register
-    */
-   void decFutureUseCountAndUnlatch(TR::Instruction *currentInstruction, TR::Register *virtualRegister);
+    // Register Association Stuff ///////////////
 
-   // Register Association Stuff ///////////////
+    /**
+     * @brief Sets register weights from register associations
+     *
+     */
+    void setRegisterWeightsFromAssociations();
 
-   /**
-    * @brief Sets register weights from register associations
-    *
-    */
-   void setRegisterWeightsFromAssociations();
+    /**
+     * @brief Creates a regassoc pseudo instruction
+     *
+     */
+    void createRegisterAssociationDirective(TR::Instruction *cursor);
 
-   /**
-    * @brief Creates a regassoc pseudo instruction
-    *
-    */
-   void createRegisterAssociationDirective(TR::Instruction *cursor);
+    /**
+     * @brief Returns a virtual register associted to the passed real register.
+     *
+     * @param regNum                 : real register number
+     */
+    TR::Register *getVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum)
+    {
+        return _registerAssociations[regNum];
+    }
 
-   /**
-    * @brief Returns a virtual register associted to the passed real register.
-    *
-    * @param regNum                 : real register number
-    */
-   TR::Register *getVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum)
-      {
-      return _registerAssociations[regNum];
-      }
+    /**
+     * @brief Associates the virtual register to the real register.
+     *
+     * @param regNum                 : real register number
+     * @param virtReg                : virtual register
+     * @returns virtual register
+     */
+    TR::Register *setVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum, TR::Register *virtReg);
 
-   /**
-    * @brief Associates the virtual register to the real register.
-    *
-    * @param regNum                 : real register number
-    * @param virtReg                : virtual register
-    * @returns virtual register
-    */
-   TR::Register *setVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum, TR::Register *virtReg);
+    /**
+     * @brief Clears register association
+     *
+     */
+    void clearRegisterAssociations()
+    {
+        memset(_registerAssociations, 0, sizeof(TR::Register *) * (TR::RealRegister::NumRegisters));
+    }
 
-
-   /**
-    * @brief Clears register association
-    *
-    */
-   void clearRegisterAssociations()
-      {
-      memset(_registerAssociations, 0, sizeof(TR::Register *) * (TR::RealRegister::NumRegisters));
-      }
-
-   /**
-    * @brief Spills all vector registers
-    *
-    * @param[in] currentInstruction : current instruction
-    */
-   void spillAllVectorRegisters(TR::Instruction  *currentInstruction);
+    /**
+     * @brief Spills all vector registers
+     *
+     * @param[in] currentInstruction : current instruction
+     */
+    void spillAllVectorRegisters(TR::Instruction *currentInstruction);
 
 private:
+    // For register snap shot
+    uint16_t _registerFlagsSnapShot[TR::RealRegister::NumRegisters];
+    TR::RealRegister::RegState _registerStatesSnapShot[TR::RealRegister::NumRegisters];
+    TR::Register *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
+    TR::Register *_registerAssociationsSnapShot[TR::RealRegister::NumRegisters];
+    uint16_t _registerWeightSnapShot[TR::RealRegister::NumRegisters];
 
-   // For register snap shot
-   uint16_t                   _registerFlagsSnapShot[TR::RealRegister::NumRegisters];
-   TR::RealRegister::RegState _registerStatesSnapShot[TR::RealRegister::NumRegisters];
-   TR::Register               *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
-   TR::Register               *_registerAssociationsSnapShot[TR::RealRegister::NumRegisters];
-   uint16_t                   _registerWeightSnapShot[TR::RealRegister::NumRegisters];
+    // register association
+    TR::Register *_registerAssociations[TR::RealRegister::NumRegisters];
 
-   // register association
-   TR::Register               *_registerAssociations[TR::RealRegister::NumRegisters];
+    void initializeRegisterFile();
 
-   void initializeRegisterFile();
-
-   /**
-    * @brief Spills the specified virtual register
-    *
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtReg            : virtual register to spill
-    */
-   void spillRegister(TR::Instruction *currentInstruction, TR::Register *virtReg);
-   };
-}
-}
+    /**
+     * @brief Spills the specified virtual register
+     *
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtReg            : virtual register to spill
+     */
+    void spillRegister(TR::Instruction *currentInstruction, TR::Register *virtReg);
+};
+}} // namespace OMR::ARM64
 #endif

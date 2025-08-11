@@ -43,386 +43,191 @@ class Monitor;
 
 extern size_t mem_round(size_t);
 
-const char * objectName[] =
-   {
-   "Array",
-   "Instruction",
-   "ListElement",
-   "Node",
-   "BitVector",
-   "Register",
-   "MemoryReference",
-   "CFGNode",
-   "Symbol",
-   "SymbolReference",
-   "SymRefUnion",
-   "BackingStore",
-   "StorageReference",
-   "PseudoRegister",
-   "Link",
-   "Machine",
-   "CFGEdge",
-   "TreeTop",
-   "GCStackMap",
-   "IlGenerator",
-   "RegisterDependencyConditions",
-   "Snippet",
-   "Relocation",
-   "VirtualGuard",
-   "RegisterDependencyGroup",
-   "RegisterDependency",
-   "FrontEnd",
-   "VMField",
-   "VMFieldsInfo",
-   "Method",
-   "Pair",
-   "HashTab",
-   "HashTable",
-   "HashTabEntry",
-   "DebugCounter",
-   "JSR292",
-   "Memory",
-   "CS2",
-   "UnknownType",
+const char *objectName[] = { "Array", "Instruction", "ListElement", "Node", "BitVector", "Register", "MemoryReference",
+    "CFGNode", "Symbol", "SymbolReference", "SymRefUnion", "BackingStore", "StorageReference", "PseudoRegister", "Link",
+    "Machine", "CFGEdge", "TreeTop", "GCStackMap", "IlGenerator", "RegisterDependencyConditions", "Snippet",
+    "Relocation", "VirtualGuard", "RegisterDependencyGroup", "RegisterDependency", "FrontEnd", "VMField",
+    "VMFieldsInfo", "Method", "Pair", "HashTab", "HashTable", "HashTabEntry", "DebugCounter", "JSR292", "Memory", "CS2",
+    "UnknownType",
 
-   // Optimizer Types
-   "AVLTree",
-   "CFGChecker",
-   "CFGSimplifier",
-   "CatchBlockRemover",
-   "CompactLocals",
-   "CopyPropagation",
-   "DataFlowAnalysis",
-   "DominatorVerifier",
-   "Dominators",
-   "DominatorsChk",
-   "EscapeAnalysis",
-   "EstimateCodeSize",
-   "ExpressionsSimplification",
-   "GlobalRegisterAllocator",
-   "GlobalRegisterCandidates",
-   "HedgeTree",
-   "Inliner",
-   "InnerPreexistence",
-   "IsolatedStoreElimination",
-   "LocalLiveVariablesForGC",
-   "LocalAnalysis",
-   "LocalCSE",
-   "LocalDeadStoreElimination",
-   "LocalOpts",
-   "LocalReordering",
-   "LocalLiveRangeReduction",
-   "LoopAliasRefiner",
-   "LoopTransformer",
-   "MonitorElimination",
-   "NewInitialization",
-   "Optimization",
-   "OSR",
-   "PartialRedundancy",
-   "RedundantAsycCheckRemoval",
-   "RegionAnalysis",
-   "RightNumberOfNames",
-   "Structure",
-   "SwitchAnalyzer",
-   "UseDefInfo",
-   "ValueNumberInfo",
-   "ValuePropagation",
-   "VirtualGuardTailSplitter",
-   "InterProceduralAnalyzer",
-   "InductionVariableAnalysis",
-   "CoarseningInterProceduralAnalyzer",
+    // Optimizer Types
+    "AVLTree", "CFGChecker", "CFGSimplifier", "CatchBlockRemover", "CompactLocals", "CopyPropagation",
+    "DataFlowAnalysis", "DominatorVerifier", "Dominators", "DominatorsChk", "EscapeAnalysis", "EstimateCodeSize",
+    "ExpressionsSimplification", "GlobalRegisterAllocator", "GlobalRegisterCandidates", "HedgeTree", "Inliner",
+    "InnerPreexistence", "IsolatedStoreElimination", "LocalLiveVariablesForGC", "LocalAnalysis", "LocalCSE",
+    "LocalDeadStoreElimination", "LocalOpts", "LocalReordering", "LocalLiveRangeReduction", "LoopAliasRefiner",
+    "LoopTransformer", "MonitorElimination", "NewInitialization", "Optimization", "OSR", "PartialRedundancy",
+    "RedundantAsycCheckRemoval", "RegionAnalysis", "RightNumberOfNames", "Structure", "SwitchAnalyzer", "UseDefInfo",
+    "ValueNumberInfo", "ValuePropagation", "VirtualGuardTailSplitter", "InterProceduralAnalyzer",
+    "InductionVariableAnalysis", "CoarseningInterProceduralAnalyzer",
 
-   "AheadOfTimeCompile",
-   "HWProfile",
-   "TR_HWProfileCallSiteElem",
-   "TR_HWProfileCallSiteList",
+    "AheadOfTimeCompile", "HWProfile", "TR_HWProfileCallSiteElem", "TR_HWProfileCallSiteList",
 
-   // ARM types
-   "ARMRelocation",
-   "ARMMemoryArgument",
-   "ARMOperand",
-   "ARMFloatConstant",
-   "ARMRegisterDependencyGroup",
-   "ARMRegisterDependencyConditions",
-   "ARMConstant",
-   "ARMConstantDataSnippet",
+    // ARM types
+    "ARMRelocation", "ARMMemoryArgument", "ARMOperand", "ARMFloatConstant", "ARMRegisterDependencyGroup",
+    "ARMRegisterDependencyConditions", "ARMConstant", "ARMConstantDataSnippet",
 
-   // ARM64 types
-   "ARM64Relocation",
-   "ARM64MemoryArgument",
+    // ARM64 types
+    "ARM64Relocation", "ARM64MemoryArgument",
 
-   "BlockCloner",
-   "BlockFrequencyInfo",
-   "ByteCodeIterator",
-   "CallSiteInfo",
-   "CatchBlockExtension",
-   "CatchBlockProfileInfo",
-   "CFG",
-   "CHTable",
-   "ClassLookahead",
-   "CodeGenerator",
-   "Compilation",
-   "ExceptionTableEntry",
-   "ExceptionTableEntryIterator",
-   "ExtendedBlockSuccessorIterator",
-   "ExtraInfoForNew",
-   "GlobalRegister",
-   "GCRegisterMap",
-   "GCStackAtlas",
-   "GRABlockInfo",
-   "IdAddrNodes",
+    "BlockCloner", "BlockFrequencyInfo", "ByteCodeIterator", "CallSiteInfo", "CatchBlockExtension",
+    "CatchBlockProfileInfo", "CFG", "CHTable", "ClassLookahead", "CodeGenerator", "Compilation", "ExceptionTableEntry",
+    "ExceptionTableEntryIterator", "ExtendedBlockSuccessorIterator", "ExtraInfoForNew", "GlobalRegister",
+    "GCRegisterMap", "GCStackAtlas", "GRABlockInfo", "IdAddrNodes",
 
-   // IA32 codegen
-   "BetterSpillPlacement",
-   "ClobberingInstruction",
-   "OutlinedCode",
-   "IA32ProcessorInfo",
-   "X86AllocPrefetchGeometry",
-   "X86TOCHashTable",
+    // IA32 codegen
+    "BetterSpillPlacement", "ClobberingInstruction", "OutlinedCode", "IA32ProcessorInfo", "X86AllocPrefetchGeometry",
+    "X86TOCHashTable",
 
-   "IGBase",
-   "IGNode",
-   "InternalFunctionsBase",
-   "InternalPointerMap",
-   "InternalPointerPair",
-   "LinkHead",
-   "Linkage",
-   "List",
-   "ListAppender",
-   "ListIterator",
-   "LiveReference",
-   "LiveRegisterInfo",
-   "LiveRegisters",
-   "NodeMappings",
-   "Optimizer",
+    "IGBase", "IGNode", "InternalFunctionsBase", "InternalPointerMap", "InternalPointerPair", "LinkHead", "Linkage",
+    "List", "ListAppender", "ListIterator", "LiveReference", "LiveRegisterInfo", "LiveRegisters", "NodeMappings",
+    "Optimizer",
 
-   "Options",
-   "OptionSet",
-   "OrderedExceptionHandlerIterator",
-   "PCMapEntry",
-   "PersistentCHTable",
-   "PersistentInfo",
-   "PersistentMethodInfo",
-   "PersistentJittedBodyInfo",
-   "PersistentProfileInfo",
+    "Options", "OptionSet", "OrderedExceptionHandlerIterator", "PCMapEntry", "PersistentCHTable", "PersistentInfo",
+    "PersistentMethodInfo", "PersistentJittedBodyInfo", "PersistentProfileInfo",
 
-   // PPC objects
-   "PPCFloatConstant",
-   "PPCConstant",
-   "PPCConstantDataSnippet",
-   "PPCCounter",
-   "PPCLoadLabelItem",
-   "PPCRelocation",
-   "PPCMemoryArgument",
+    // PPC objects
+    "PPCFloatConstant", "PPCConstant", "PPCConstantDataSnippet", "PPCCounter", "PPCLoadLabelItem", "PPCRelocation",
+    "PPCMemoryArgument",
 
-   "SnippetHashtable",
-   "RandomGenerator",
-   "Recompilation",
-   "RegisterCandidates",
-   "RematerializationInfo",
+    "SnippetHashtable", "RandomGenerator", "Recompilation", "RegisterCandidates", "RematerializationInfo",
 
-   // S390 types
-   "S390Relocation",
-   "S390ProcessorInfo",
-   "S390MemoryArgument",
-   "S390EncodingRelocation",
-   "BranchPreloadCallData",
+    // S390 types
+    "S390Relocation", "S390ProcessorInfo", "S390MemoryArgument", "S390EncodingRelocation", "BranchPreloadCallData",
 
-   "ScratchRegisterManager",
-   "SimpleRegex",
-   "SimpleRegex::Component",
-   "SimpleRegex::Regex",
-   "SimpleRegex::Simple",
-   "SingleTimer",
-   "SymbolReferenceTable",
-   "TableOfConstants",
-   "Timer",
-   "TwoListIterator",
-   "ValueProfileInfo",
-   "ValueProfileInfoManager",
-   "MethodValueProfileInfo",
-   "MethodBranchProfileInfo",
-   "BranchProfileInfoManager",
-   "VirtualGuardSiteInfo",
-   "WCode",
-   "CallGraph",
-   "CPOController",
-   "RegisterIterator",
-   "TRStats",
-   "TR_OptimizationPlan",
-   "TR_ClassHolder",
-   "SmartBuffer",
-   "TR_ListingInfo",
-   "methodInfoType",
+    "ScratchRegisterManager", "SimpleRegex", "SimpleRegex::Component", "SimpleRegex::Regex", "SimpleRegex::Simple",
+    "SingleTimer", "SymbolReferenceTable", "TableOfConstants", "Timer", "TwoListIterator", "ValueProfileInfo",
+    "ValueProfileInfoManager", "MethodValueProfileInfo", "MethodBranchProfileInfo", "BranchProfileInfoManager",
+    "VirtualGuardSiteInfo", "WCode", "CallGraph", "CPOController", "RegisterIterator", "TRStats", "TR_OptimizationPlan",
+    "TR_ClassHolder", "SmartBuffer", "TR_ListingInfo", "methodInfoType",
 
-   "IProfiler",
-   "TR_IPBytecodeHashTableEntry",
-   "TR_IPBCDataFourBytes",
-   "TR_IPBCDataAllocation",
-   "TR_IPBCDataEightWords",
-   "TR_IPBCDataPointer",
-   "TR_IPBCDataCallGraph",
-   "TR_IPBCDataDirectCall",
-   "TR_ICallingContext",
+    "IProfiler", "TR_IPBytecodeHashTableEntry", "TR_IPBCDataFourBytes", "TR_IPBCDataAllocation",
+    "TR_IPBCDataEightWords", "TR_IPBCDataPointer", "TR_IPBCDataCallGraph", "TR_IPBCDataDirectCall",
+    "TR_ICallingContext",
 
-   "TR_IPMethodTable",
-   "TR_IPCCNode",
-   "IPHashedCallSite",
-   "Assumptions",
-   "PatchSites",
+    "TR_IPMethodTable", "TR_IPCCNode", "IPHashedCallSite", "Assumptions", "PatchSites",
 
-   "TR_ZHWProfiler",
-   "TR_PPCHWProfiler",
-   "TR_ZGuardedStorage",
+    "TR_ZHWProfiler", "TR_PPCHWProfiler", "TR_ZGuardedStorage",
 
-   "CatchTable",
+    "CatchTable",
 
-   "DecimalPrivatization",
-   "DecimalReduction",
+    "DecimalPrivatization", "DecimalReduction",
 
-   "TR_PreviousNodeConversion",
-   "TR::RelocationDebugInfo",
-   "TR::AOTClassInfo",
-   "TR_SharedCache",
-   "SharedCacheRegion",
-   "SharedCacheLayout",
-   "SharedCacheConfig",
+    "TR_PreviousNodeConversion", "TR::RelocationDebugInfo", "TR::AOTClassInfo", "TR_SharedCache", "SharedCacheRegion",
+    "SharedCacheLayout", "SharedCacheConfig",
 
-   "TR::RegisterPair",
-   "TR::Instruction",
+    "TR::RegisterPair", "TR::Instruction",
 
-   "TR_ArtifactManager",
-   "CompilationInfo",
-   "CompilationInfoPerThreadBase",
-   "TR_DebuggingCounters",
-   "TR_Pattern",
-   "TR_UseNodeInfo",
-   "PPSEntry",
-   "GPUHelpers",
-   "TR_ColdVariableOutliner",
+    "TR_ArtifactManager", "CompilationInfo", "CompilationInfoPerThreadBase", "TR_DebuggingCounters", "TR_Pattern",
+    "TR_UseNodeInfo", "PPSEntry", "GPUHelpers", "TR_ColdVariableOutliner",
 
-   "CodeMetaData",
-   "CodeMetaDataAVL",
+    "CodeMetaData", "CodeMetaDataAVL",
 
-   "RegionAllocation",
+    "RegionAllocation",
 
-   "Debug",
+    "Debug",
 
-   // JITServer types
-   "ClientSessionData",
-   "ROMClass",
-   "JITServerAOTCache",
-   "JITServerProfileCache",
+    // JITServer types
+    "ClientSessionData", "ROMClass", "JITServerAOTCache", "JITServerProfileCache",
 
-   "SymbolValidationManager",
+    "SymbolValidationManager",
 
-   "ObjectFormat",
-   "FunctionCallData"
-   };
-
+    "ObjectFormat", "FunctionCallData" };
 
 // **************************************************************************
 //
 // deprecated uses of the global deprecatedTRMemory (not thread safe)
 //
 
-extern TR_PersistentMemory * trPersistentMemory;
+extern TR_PersistentMemory *trPersistentMemory;
 
 // **************************************************************************
 //
 //
 //
 
-TR_Memory::TR_Memory(TR_PersistentMemory &persistentMemory, TR::Region & heapMemoryRegion) :
-   TR_MemoryBase(persistentMemory),
-   _trPersistentMemory(&persistentMemory),
-   _comp(NULL),
-   _heapMemoryRegion(heapMemoryRegion),
-   _stackMemoryRegion(TR::ref(heapMemoryRegion))
-   {
-   TR_ASSERT(sizeof(objectName)/sizeof(char*) == NumObjectTypes, "Mismatch between NumObjectTypes and object names");
-   }
+TR_Memory::TR_Memory(TR_PersistentMemory &persistentMemory, TR::Region &heapMemoryRegion)
+    : TR_MemoryBase(persistentMemory)
+    , _trPersistentMemory(&persistentMemory)
+    , _comp(NULL)
+    , _heapMemoryRegion(heapMemoryRegion)
+    , _stackMemoryRegion(TR::ref(heapMemoryRegion))
+{
+    TR_ASSERT(sizeof(objectName) / sizeof(char *) == NumObjectTypes,
+        "Mismatch between NumObjectTypes and object names");
+}
 
 // **************************************************************************
 //
 // Heap allocation
 //
 
-void *
-TR_Memory::allocateHeapMemory(size_t requestedSize, ObjectType ot)
-   {
-   void *alloc = _heapMemoryRegion.allocate(requestedSize);
-   TR::AllocatedMemoryMeter::update_allocated(requestedSize, heapAlloc);
-   return alloc;
-   }
-void *
-TR_Memory::allocateStackMemory(size_t requestedSize, ObjectType ot)
-   {
-   void * alloc = _stackMemoryRegion.get().allocate(requestedSize);
-   TR::AllocatedMemoryMeter::update_allocated(requestedSize, stackAlloc);
-   return alloc;
-   }
+void *TR_Memory::allocateHeapMemory(size_t requestedSize, ObjectType ot)
+{
+    void *alloc = _heapMemoryRegion.allocate(requestedSize);
+    TR::AllocatedMemoryMeter::update_allocated(requestedSize, heapAlloc);
+    return alloc;
+}
 
-TR::Region &
-TR_Memory::currentStackRegion()
-   {
-   return _stackMemoryRegion.get();
-   }
+void *TR_Memory::allocateStackMemory(size_t requestedSize, ObjectType ot)
+{
+    void *alloc = _stackMemoryRegion.get().allocate(requestedSize);
+    TR::AllocatedMemoryMeter::update_allocated(requestedSize, stackAlloc);
+    return alloc;
+}
 
-TR::Region &
-TR_Memory::registerStackRegion(TR::Region &stackMemoryRegion)
-   {
-   TR::Region &currentRegion = _stackMemoryRegion;
-   _stackMemoryRegion = TR::ref(stackMemoryRegion);
-   return currentRegion;
-   }
+TR::Region &TR_Memory::currentStackRegion() { return _stackMemoryRegion.get(); }
 
-void
-TR_Memory::unregisterStackRegion(TR::Region &current, TR::Region &previous) throw()
-   {
-   TR_ASSERT(current == _stackMemoryRegion.get(), "Mismatched stack regions");
-   _stackMemoryRegion = TR::ref(previous);
-   }
+TR::Region &TR_Memory::registerStackRegion(TR::Region &stackMemoryRegion)
+{
+    TR::Region &currentRegion = _stackMemoryRegion;
+    _stackMemoryRegion = TR::ref(stackMemoryRegion);
+    return currentRegion;
+}
 
-void *
-TR_Memory::allocateMemory(size_t size, TR_AllocationKind kind, ObjectType ot)
-   {
-   switch(kind)
-      {
-      case heapAlloc:       return allocateHeapMemory(size, ot);
-      case stackAlloc:      return allocateStackMemory(size, ot);
-      case persistentAlloc:
-         {
-         void * alloc = _trPersistentMemory->allocatePersistentMemory(size, ot);
-         if (!alloc) throw std::bad_alloc();
-         return alloc;
-         }
-      default:              return allocateHeapMemory(size, ot);
-      }
-   }
+void TR_Memory::unregisterStackRegion(TR::Region &current, TR::Region &previous) throw()
+{
+    TR_ASSERT(current == _stackMemoryRegion.get(), "Mismatched stack regions");
+    _stackMemoryRegion = TR::ref(previous);
+}
 
-void
-TR_Memory::freeMemory(void *p, TR_AllocationKind kind, ObjectType ot)
-   {
-   switch(kind)
-      {
-      case persistentAlloc:
-         _trPersistentMemory->freePersistentMemory(p);
-         break;
-      default:
-         (void) 0;
-         break;
-      }
-   }
+void *TR_Memory::allocateMemory(size_t size, TR_AllocationKind kind, ObjectType ot)
+{
+    switch (kind) {
+        case heapAlloc:
+            return allocateHeapMemory(size, ot);
+        case stackAlloc:
+            return allocateStackMemory(size, ot);
+        case persistentAlloc: {
+            void *alloc = _trPersistentMemory->allocatePersistentMemory(size, ot);
+            if (!alloc)
+                throw std::bad_alloc();
+            return alloc;
+        }
+        default:
+            return allocateHeapMemory(size, ot);
+    }
+}
+
+void TR_Memory::freeMemory(void *p, TR_AllocationKind kind, ObjectType ot)
+{
+    switch (kind) {
+        case persistentAlloc:
+            _trPersistentMemory->freePersistentMemory(p);
+            break;
+        default:
+            (void)0;
+            break;
+    }
+}
 
 // **************************************************************************
 //
 // allocation helpers
 //
 
-namespace TR
-   {
-   AllocatedMemoryMeter::Metric AllocatedMemoryMeter::_currentMemUsage = 0;
-   // profile everything until read options
-   uint8_t AllocatedMemoryMeter::_enabled = heapAlloc | stackAlloc | persistentAlloc;
-   }
+namespace TR {
+AllocatedMemoryMeter::Metric AllocatedMemoryMeter::_currentMemUsage = 0;
+// profile everything until read options
+uint8_t AllocatedMemoryMeter::_enabled = heapAlloc | stackAlloc | persistentAlloc;
+} // namespace TR

@@ -30,22 +30,22 @@ namespace TR {
 class Block;
 }
 
-class TR_VirtualGuardHeadMerger : public TR::Optimization
-   {
-   public:
-   TR_VirtualGuardHeadMerger(TR::OptimizationManager *manager)
-      : TR::Optimization(manager)
-      {}
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_VirtualGuardHeadMerger(manager);
-      }
+class TR_VirtualGuardHeadMerger : public TR::Optimization {
+public:
+    TR_VirtualGuardHeadMerger(TR::OptimizationManager *manager)
+        : TR::Optimization(manager)
+    {}
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_VirtualGuardHeadMerger(manager);
+    }
 
-   private:
-   void tailSplitBlock(TR::Block * block, TR::Block * cold1);
-   };
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
+
+private:
+    void tailSplitBlock(TR::Block *block, TR::Block *cold1);
+};
 
 #endif

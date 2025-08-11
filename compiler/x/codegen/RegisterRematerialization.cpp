@@ -49,244 +49,188 @@ class Instruction;
 // These generateRematerializationInfo() methods return NULL
 // if the necessary discardability conditions are not met.
 //
-static TR_RematerializationInfo *generateRematerializationInfo(TR::Node                  *node,
-      TR::MemoryReference    *mr,
-                                                               TR_RematerializableTypes  type,
-                                                               TR::Instruction           *instr,
-                                                               TR::CodeGenerator         *cg);
+static TR_RematerializationInfo *generateRematerializationInfo(TR::Node *node, TR::MemoryReference *mr,
+    TR_RematerializableTypes type, TR::Instruction *instr, TR::CodeGenerator *cg);
 
-static TR_RematerializationInfo *generateRematerializationInfo(TR::Node                  *node,
-                                                               intptr_t                   constant,
-                                                               TR_RematerializableTypes  type,
-                                                               TR::Instruction           *instr,
-                                                               TR::CodeGenerator         *cg);
+static TR_RematerializationInfo *generateRematerializationInfo(TR::Node *node, intptr_t constant,
+    TR_RematerializableTypes type, TR::Instruction *instr, TR::CodeGenerator *cg);
 
-static TR_RematerializationInfo *generateRematerializationInfo(TR::Node                  *node,
-                                                               TR::SymbolReference       *symRef,
-                                                               TR_RematerializableTypes  type,
-                                                               TR::Instruction           *instr,
-                                                               TR::CodeGenerator         *cg);
+static TR_RematerializationInfo *generateRematerializationInfo(TR::Node *node, TR::SymbolReference *symRef,
+    TR_RematerializableTypes type, TR::Instruction *instr, TR::CodeGenerator *cg);
 
 // Checks if the register associated with a load or a store (of autos,
 // parms, and static and instance fields) is discardable, and if so,
 // records information needed for its rematerialization.
 //
-void setDiscardableIfPossible(TR_RematerializableTypes  type,
-                              TR::Register              *candidate,
-                              TR::Node                  *node,
-                              TR::Instruction           *instr,
-                              TR::MemoryReference    *mr,
-                              TR::CodeGenerator         *cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   TR_RematerializationInfo *info = generateRematerializationInfo(node, mr, type, instr, cg);
+void setDiscardableIfPossible(TR_RematerializableTypes type, TR::Register *candidate, TR::Node *node,
+    TR::Instruction *instr, TR::MemoryReference *mr, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    TR_RematerializationInfo *info = generateRematerializationInfo(node, mr, type, instr, cg);
 
-   if (info)
-      {
-      candidate->setRematerializationInfo(info);
-      cg->addLiveDiscardableRegister(candidate);
-      if (info->isIndirect())
-         {
-         cg->addDependentDiscardableRegister(candidate);
+    if (info) {
+        candidate->setRematerializationInfo(info);
+        cg->addLiveDiscardableRegister(candidate);
+        if (info->isIndirect()) {
+            cg->addDependentDiscardableRegister(candidate);
 
-         if (debug("dumpRemat"))
-            {
-            diagnostic("---> Creating %s discardable register %s (type %d, base %s) "
-                        "for node [%p] at instruction %p in %s\n",
-                        info->toString(comp), candidate->getRegisterName(comp), type,
-                        mr->getBaseRegister()->getRegisterName(comp),
-                        node, instr, comp->signature());
+            if (debug("dumpRemat")) {
+                diagnostic("---> Creating %s discardable register %s (type %d, base %s) "
+                           "for node [%p] at instruction %p in %s\n",
+                    info->toString(comp), candidate->getRegisterName(comp), type,
+                    mr->getBaseRegister()->getRegisterName(comp), node, instr, comp->signature());
             }
-         }
-      else
-         {
-         if (debug("dumpRemat"))
-            {
-            diagnostic("---> Creating %s discardable register %s (type %d) "
-                        "for node [%p] at instruction %p in %s\n",
-                        info->toString(comp), candidate->getRegisterName(comp), type,
-                        node, instr, comp->signature());
+        } else {
+            if (debug("dumpRemat")) {
+                diagnostic("---> Creating %s discardable register %s (type %d) "
+                           "for node [%p] at instruction %p in %s\n",
+                    info->toString(comp), candidate->getRegisterName(comp), type, node, instr, comp->signature());
             }
-         }
-      }
-   }
-
+        }
+    }
+}
 
 // Checks if the register containing a constant is discardable,
 // and if so, records information needed for its rematerialization.
 //
-void setDiscardableIfPossible(TR_RematerializableTypes  type,
-                              TR::Register              *candidate,
-                              TR::Node                  *node,
-                              TR::Instruction           *instr,
-                              intptr_t                 constant,
-                              TR::CodeGenerator         *cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   TR_RematerializationInfo *info = generateRematerializationInfo(node, constant, type, instr, cg);
+void setDiscardableIfPossible(TR_RematerializableTypes type, TR::Register *candidate, TR::Node *node,
+    TR::Instruction *instr, intptr_t constant, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    TR_RematerializationInfo *info = generateRematerializationInfo(node, constant, type, instr, cg);
 
-   if (info)
-      {
-      candidate->setRematerializationInfo(info);
-      cg->addLiveDiscardableRegister(candidate);
-      if (debug("dumpRemat"))
-         {
-         diagnostic("---> Creating %s discardable register %s (type %d) "
-                     "for node [%p] at instruction %p in %s\n",
-                     info->toString(comp), candidate->getRegisterName(comp), type,
-                     node, instr, comp->signature());
-         }
-      }
-   }
-
+    if (info) {
+        candidate->setRematerializationInfo(info);
+        cg->addLiveDiscardableRegister(candidate);
+        if (debug("dumpRemat")) {
+            diagnostic("---> Creating %s discardable register %s (type %d) "
+                       "for node [%p] at instruction %p in %s\n",
+                info->toString(comp), candidate->getRegisterName(comp), type, node, instr, comp->signature());
+        }
+    }
+}
 
 // Checks if the register containing a stack address (of a local object) is
 // discardable, and if so, records information needed for its rematerialization.
 //
-void setDiscardableIfPossible(TR_RematerializableTypes  type,
-                              TR::Register              *candidate,
-                              TR::Node                  *node,
-                              TR::Instruction           *instr,
-                              TR::SymbolReference       *symRef,
-                              TR::CodeGenerator         *cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   TR_RematerializationInfo *info = generateRematerializationInfo(node, symRef, type, instr, cg);
+void setDiscardableIfPossible(TR_RematerializableTypes type, TR::Register *candidate, TR::Node *node,
+    TR::Instruction *instr, TR::SymbolReference *symRef, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    TR_RematerializationInfo *info = generateRematerializationInfo(node, symRef, type, instr, cg);
 
-   if (info)
-      {
-      candidate->setRematerializationInfo(info);
-      cg->addLiveDiscardableRegister(candidate);
-      if (debug("dumpRemat"))
-         {
-         diagnostic("---> Creating %s discardable register %s (type %d) "
-                     "for node [%p] at instruction %p in %s\n",
-                     info->toString(comp), candidate->getRegisterName(comp), type,
-                     node, instr, comp->signature());
-         }
-      }
-   }
+    if (info) {
+        candidate->setRematerializationInfo(info);
+        cg->addLiveDiscardableRegister(candidate);
+        if (debug("dumpRemat")) {
+            diagnostic("---> Creating %s discardable register %s (type %d) "
+                       "for node [%p] at instruction %p in %s\n",
+                info->toString(comp), candidate->getRegisterName(comp), type, node, instr, comp->signature());
+        }
+    }
+}
 
+static TR_RematerializationInfo *generateRematerializationInfo(TR::Node *node, TR::MemoryReference *mr,
+    TR_RematerializableTypes type, TR::Instruction *instr, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    bool isStore = node->getOpCode().isStore();
+    TR::SymbolReference *symRef = &mr->getSymbolReference();
+    TR::Symbol *sym = symRef->getSymbol();
+    TR_RematerializationInfo *info = NULL;
 
-static TR_RematerializationInfo *generateRematerializationInfo(TR::Node                  *node,
-      TR::MemoryReference    *mr,
-                                                               TR_RematerializableTypes  type,
-                                                               TR::Instruction           *instr,
-                                                               TR::CodeGenerator         *cg)
-   {
-   TR::Compilation *comp = cg->comp();
-   bool                      isStore = node->getOpCode().isStore();
-   TR::SymbolReference       *symRef  = &mr->getSymbolReference();
-   TR::Symbol                 *sym     = symRef->getSymbol();
-   TR_RematerializationInfo *info    = NULL;
+    // If a loaded value is going to be used only a couple of times, do not
+    // try to rematerialize it (we are not saving anything). On the other hand,
+    // we always want to try rematerializing from stores (we may be saving one
+    // or more spill stores).
+    //
+    if (!isStore && node->getReferenceCount() <= REMATERIALIZATION_THRESHOLD)
+        return NULL;
 
-   // If a loaded value is going to be used only a couple of times, do not
-   // try to rematerialize it (we are not saving anything). On the other hand,
-   // we always want to try rematerializing from stores (we may be saving one
-   // or more spill stores).
-   //
-   if (!isStore && node->getReferenceCount() <= REMATERIALIZATION_THRESHOLD)
-      return NULL;
+    // We can only rematerialize floating point values if we are using XMMRs.
+    //
+    if ((type == TR_RematerializableFloat || type == TR_RematerializableDouble) && !cg->supportsXMMRRematerialization())
+        return NULL;
 
-   // We can only rematerialize floating point values if we are using XMMRs.
-   //
-   if (  (type == TR_RematerializableFloat || type == TR_RematerializableDouble)
-      && !cg->supportsXMMRRematerialization())
-      return NULL;
+    if (symRef->isUnresolved() || sym->isVolatile())
+        return NULL;
 
-   if (symRef->isUnresolved() || sym->isVolatile())
-      return NULL;
-
-   if (cg->supportsLocalMemoryRematerialization() && sym->isAutoOrParm())
-      {
-      // Conservatively avoid rematerializing autos that are really fields
-      // of local objects.
-      if (node->getOpCode().isIndirect())
-         return NULL;
-      // A dependent discardable register can only depend on a base register.
-      if (mr->getIndexRegister())
-         return NULL;
-      info = new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef, NULL);
-      }
-   else if (cg->supportsStaticMemoryRematerialization() && sym->isStatic())
-      {
-      info = new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef, NULL);
-      }
-   else if (cg->supportsIndirectMemoryRematerialization() && sym->isShadow())
-      {
-      TR::Node     *baseNode = mr->getBaseNode();
-      TR::Register *baseReg  = mr->getBaseRegister();
+    if (cg->supportsLocalMemoryRematerialization() && sym->isAutoOrParm()) {
+        // Conservatively avoid rematerializing autos that are really fields
+        // of local objects.
+        if (node->getOpCode().isIndirect())
+            return NULL;
+        // A dependent discardable register can only depend on a base register.
+        if (mr->getIndexRegister())
+            return NULL;
+        info = new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef, NULL);
+    } else if (cg->supportsStaticMemoryRematerialization() && sym->isStatic()) {
+        info = new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef, NULL);
+    } else if (cg->supportsIndirectMemoryRematerialization() && sym->isShadow()) {
+        TR::Node *baseNode = mr->getBaseNode();
+        TR::Register *baseReg = mr->getBaseRegister();
 
 #ifdef DEBUG
-      TR_ASSERT(!baseReg || baseNode,
-             "base register for memory rematerialization should be associated with a base node\n");
+        TR_ASSERT(!baseReg || baseNode,
+            "base register for memory rematerialization should be associated with a base node\n");
 
-      TR::Register *baseNodeReg = baseNode->getRegister();
+        TR::Register *baseNodeReg = baseNode->getRegister();
 
-      TR_ASSERT(!baseReg || sym->isLocalObject() || baseNodeReg == baseReg,
-             "node register of non-local object base node [%p] is %s; %s expected\n",
-             baseNode, baseNodeReg ? baseNodeReg->getRegisterName(comp) : "null", baseReg->getRegisterName(comp));
+        TR_ASSERT(!baseReg || sym->isLocalObject() || baseNodeReg == baseReg,
+            "node register of non-local object base node [%p] is %s; %s expected\n", baseNode,
+            baseNodeReg ? baseNodeReg->getRegisterName(comp) : "null", baseReg->getRegisterName(comp));
 #endif
 
-      // A dependent discardable register can only depend on a base register.
-      if (mr->getIndexRegister())
-         return NULL;
+        // A dependent discardable register can only depend on a base register.
+        if (mr->getIndexRegister())
+            return NULL;
 
-      // The symbol being referenced must be resolved to avoid having
-      // to insert UnresolvedDataSnippets when rematerializing.
-      if (symRef->isUnresolved())
-         return NULL;
+        // The symbol being referenced must be resolved to avoid having
+        // to insert UnresolvedDataSnippets when rematerializing.
+        if (symRef->isUnresolved())
+            return NULL;
 
-      // The base register must still be live if we are to rematerialize a candidate with it.
-      if (baseReg && baseNode->getReferenceCount() <= 1)
-         return NULL;
+        // The base register must still be live if we are to rematerialize a candidate with it.
+        if (baseReg && baseNode->getReferenceCount() <= 1)
+            return NULL;
 
-      info = new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef, baseReg);
-      }
+        info = new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef, baseReg);
+    }
 
-   if (info && isStore)
-      info->setStore();
+    if (info && isStore)
+        info->setStore();
 
-   return info;
-   }
+    return info;
+}
 
+static TR_RematerializationInfo *generateRematerializationInfo(TR::Node *node, intptr_t constant,
+    TR_RematerializableTypes type, TR::Instruction *instr, TR::CodeGenerator *cg)
+{
+    if (node->getReferenceCount() <= REMATERIALIZATION_THRESHOLD)
+        return NULL;
 
-static TR_RematerializationInfo *generateRematerializationInfo(TR::Node                  *node,
-                                                               intptr_t                 constant,
-                                                               TR_RematerializableTypes  type,
-                                                               TR::Instruction           *instr,
-                                                               TR::CodeGenerator         *cg)
-   {
-   if (node->getReferenceCount() <= REMATERIALIZATION_THRESHOLD)
-      return NULL;
+    if (!cg->supportsConstantRematerialization())
+        return NULL;
 
-   if (!cg->supportsConstantRematerialization())
-      return NULL;
+    if ((type == TR_RematerializableFloat || type == TR_RematerializableDouble) && !cg->supportsXMMRRematerialization())
+        return NULL;
 
-   if (  (type == TR_RematerializableFloat || type == TR_RematerializableDouble)
-      && !cg->supportsXMMRRematerialization())
-      return NULL;
+    return new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, constant);
+}
 
-   return new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, constant);
-   }
+static TR_RematerializationInfo *generateRematerializationInfo(TR::Node *node, TR::SymbolReference *symRef,
+    TR_RematerializableTypes type, TR::Instruction *instr, TR::CodeGenerator *cg)
+{
+    TR::Symbol *sym = symRef->getSymbol();
 
+    if (node->getReferenceCount() <= REMATERIALIZATION_THRESHOLD)
+        return NULL;
 
-static TR_RematerializationInfo *generateRematerializationInfo(TR::Node                  *node,
-                                                               TR::SymbolReference       *symRef,
-                                                               TR_RematerializableTypes  type,
-                                                               TR::Instruction           *instr,
-                                                               TR::CodeGenerator         *cg)
-   {
-   TR::Symbol *sym = symRef->getSymbol();
+    if (!cg->supportsAddressRematerialization())
+        return NULL;
 
-   if (node->getReferenceCount() <= REMATERIALIZATION_THRESHOLD)
-      return NULL;
+    if (sym->isLocalObject() || (sym->isStatic() && !symRef->isUnresolved()))
+        return new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef);
 
-   if (!cg->supportsAddressRematerialization())
-      return NULL;
-
-   if (sym->isLocalObject() || (sym->isStatic() && !symRef->isUnresolved()))
-      return new (cg->trHeapMemory()) TR_RematerializationInfo(instr, type, symRef);
-
-   return NULL;
-   }
+    return NULL;
+}

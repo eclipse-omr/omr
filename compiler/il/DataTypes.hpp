@@ -24,19 +24,20 @@
 
 #include "il/OMRDataTypes.hpp"
 
-namespace TR
-{ 
+namespace TR {
 
-class OMR_EXTENSIBLE DataType : public OMR::DataTypeConnector
-   { 
-
+class OMR_EXTENSIBLE DataType : public OMR::DataTypeConnector {
 public:
-   DataType() : OMR::DataTypeConnector() { }
-   DataType(TR::DataTypes t) : OMR::DataTypeConnector(t) { }
+    DataType()
+        : OMR::DataTypeConnector()
+    {}
 
-   };
+    DataType(TR::DataTypes t)
+        : OMR::DataTypeConnector(t)
+    {}
+};
 
-}
+} // namespace TR
 
 #include "il/DataTypes_inlines.hpp"
 

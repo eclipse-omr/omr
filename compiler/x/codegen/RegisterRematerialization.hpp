@@ -32,10 +32,13 @@ class MemoryReference;
 class Node;
 class Register;
 class SymbolReference;
-}
+} // namespace TR
 
-void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *, TR::MemoryReference  *, TR::CodeGenerator *);
-void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *, intptr_t, TR::CodeGenerator *);
-void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *, TR::SymbolReference*, TR::CodeGenerator *);
+void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *,
+    TR::MemoryReference *, TR::CodeGenerator *);
+void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *, intptr_t,
+    TR::CodeGenerator *);
+void setDiscardableIfPossible(TR_RematerializableTypes, TR::Register *, TR::Node *, TR::Instruction *,
+    TR::SymbolReference *, TR::CodeGenerator *);
 
 #endif

@@ -26,14 +26,10 @@
 
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE IO : public OMR::IOConnector
-   {
+class OMR_EXTENSIBLE IO : public OMR::IOConnector {};
 
-   };
-
-}
+} // namespace TR
 
 #endif

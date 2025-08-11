@@ -24,16 +24,12 @@
 
 namespace TR {
 
-StackMemoryRegion::StackMemoryRegion(TR_Memory &trMemory) :
-   Region(trMemory.currentStackRegion()),
-   _trMemory(trMemory),
-   _previousStackRegion(_trMemory.registerStackRegion(*this))
-   {
-   }
+StackMemoryRegion::StackMemoryRegion(TR_Memory &trMemory)
+    : Region(trMemory.currentStackRegion())
+    , _trMemory(trMemory)
+    , _previousStackRegion(_trMemory.registerStackRegion(*this))
+{}
 
-StackMemoryRegion::~StackMemoryRegion() throw()
-   {
-   _trMemory.unregisterStackRegion(*this, _previousStackRegion);
-   }
+StackMemoryRegion::~StackMemoryRegion() throw() { _trMemory.unregisterStackRegion(*this, _previousStackRegion); }
 
-}
+} // namespace TR

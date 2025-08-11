@@ -27,33 +27,31 @@
 #include "infra/Annotations.hpp"
 
 class TR_Memory;
+
 namespace TR {
 class TreeTop;
 }
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE Block : public OMR::BlockConnector
-{
-   public:
-   Block(TR_Memory * m) :
-      OMR::BlockConnector(m) {};
+class OMR_EXTENSIBLE Block : public OMR::BlockConnector {
+public:
+    Block(TR_Memory *m)
+        : OMR::BlockConnector(m) {};
 
-   Block(TR::CFG & cfg) :
-      OMR::BlockConnector(cfg) {};
+    Block(TR::CFG &cfg)
+        : OMR::BlockConnector(cfg) {};
 
-   Block(TR::TreeTop *entry, TR::TreeTop *exit, TR_Memory * m) :
-      OMR::BlockConnector(entry,exit,m) {};
+    Block(TR::TreeTop *entry, TR::TreeTop *exit, TR_Memory *m)
+        : OMR::BlockConnector(entry, exit, m) {};
 
-   Block(TR::TreeTop *entry, TR::TreeTop *exit, TR::CFG &cfg) :
-      OMR::BlockConnector(entry,exit,cfg) {};
+    Block(TR::TreeTop *entry, TR::TreeTop *exit, TR::CFG &cfg)
+        : OMR::BlockConnector(entry, exit, cfg) {};
 
-   Block(Block &other, TR::TreeTop *entry, TR::TreeTop *exit) :
-      OMR::BlockConnector(other,entry,exit) {};
-
+    Block(Block &other, TR::TreeTop *entry, TR::TreeTop *exit)
+        : OMR::BlockConnector(other, entry, exit) {};
 };
 
-}
+} // namespace TR
 
 #endif

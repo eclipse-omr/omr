@@ -28,17 +28,15 @@ namespace TR {
 class OptimizationManager;
 }
 
-namespace TR
-{
+namespace TR {
 
-class LocalCSE : public OMR::LocalCSE
-   {
-   public:
+class LocalCSE : public OMR::LocalCSE {
+public:
+    LocalCSE(TR::OptimizationManager *manager)
+        : OMR::LocalCSE(manager)
+    {}
+};
 
-   LocalCSE(TR::OptimizationManager *manager) :
-      OMR::LocalCSE(manager) {}
-   };
-
-}
+} // namespace TR
 
 #endif

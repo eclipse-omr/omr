@@ -28,10 +28,14 @@
 #include "objectfmt/OMRObjectFormat.hpp"
 #ifndef OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERWX_OBJECTFORMAT_CONNECTOR
+
 namespace OMR {
-namespace Z { class JitCodeRWXObjectFormat; }
-typedef OMR::Z::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector;
+namespace Z {
+class JitCodeRWXObjectFormat;
 }
+
+typedef OMR::Z::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector;
+} // namespace OMR
 #else
 #error OMR::Z::JitCodeObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -41,31 +45,21 @@ typedef OMR::Z::JitCodeRWXObjectFormat JitCodeRWXObjectFormatConnector;
 namespace TR {
 class Instruction;
 class FunctionCallData;
-}
-namespace OMR
-{
+} // namespace TR
 
-namespace Z
-{
+namespace OMR { namespace Z {
 
-class OMR_EXTENSIBLE JitCodeRWXObjectFormat : public OMR::JitCodeRWXObjectFormat
-   {
+class OMR_EXTENSIBLE JitCodeRWXObjectFormat : public OMR::JitCodeRWXObjectFormat {
 public:
+    virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
 
-   virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
+    virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
 
-   virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
+    virtual int32_t estimateBinaryLength() { return 14; }
 
-   virtual int32_t estimateBinaryLength()
-      {
-      return 14;
-      }
+    virtual uint8_t *printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data);
+};
 
-   virtual uint8_t* printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data);
-   };
-
-}
-
-}
+}} // namespace OMR::Z
 
 #endif

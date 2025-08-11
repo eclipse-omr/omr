@@ -24,38 +24,34 @@
 
 #ifndef OMR_AHEADOFTIMECOMPILE_CONNECTOR
 #define OMR_AHEADOFTIMECOMPILE_CONNECTOR
+
 namespace OMR {
-namespace Power { class AheadOfTimeCompile; }
-typedef OMR::Power::AheadOfTimeCompile AheadOfTimeCompileConnector;
+namespace Power {
+class AheadOfTimeCompile;
 }
+
+typedef OMR::Power::AheadOfTimeCompile AheadOfTimeCompileConnector;
+} // namespace OMR
 #endif // OMR_AHEADOFTIMECOMPILE_CONNECTOR
 
 #include "compiler/codegen/OMRAheadOfTimeCompile.hpp"
 #include "codegen/PPCAOTRelocation.hpp"
 
-namespace OMR
-{
+namespace OMR { namespace Power {
 
-namespace Power
-{
+class OMR_EXTENSIBLE AheadOfTimeCompile : public OMR::AheadOfTimeCompile {
+public:
+    AheadOfTimeCompile(uint32_t *headerSizeMap, TR::Compilation *c)
+        : OMR::AheadOfTimeCompile(headerSizeMap, c)
+        , _relocationList(getTypedAllocator<TR::PPCRelocation *>(c->allocator()))
+    {}
 
-class OMR_EXTENSIBLE AheadOfTimeCompile : public OMR::AheadOfTimeCompile
-   {
-   public:
-   AheadOfTimeCompile(uint32_t *headerSizeMap, TR::Compilation * c)
-       : OMR::AheadOfTimeCompile(headerSizeMap, c),
-        _relocationList(getTypedAllocator<TR::PPCRelocation*>(c->allocator()))
-     {
-     }
+    TR::list<TR::PPCRelocation *> &getRelocationList() { return _relocationList; }
 
-   TR::list<TR::PPCRelocation*>& getRelocationList() {return _relocationList;}
+private:
+    TR::list<TR::PPCRelocation *> _relocationList;
+};
 
-   private:
-   TR::list<TR::PPCRelocation*> _relocationList;
-   };
-
-} // namespace Power
-
-} // namespace OMR
+}} // namespace OMR::Power
 
 #endif

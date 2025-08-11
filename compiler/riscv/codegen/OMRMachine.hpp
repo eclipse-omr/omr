@@ -27,10 +27,14 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
+
 namespace OMR {
-namespace RV { class Machine; }
-typedef OMR::RV::Machine MachineConnector;
+namespace RV {
+class Machine;
 }
+
+typedef OMR::RV::Machine MachineConnector;
+} // namespace OMR
 #else
 #error OMR::RV::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -45,7 +49,7 @@ class CodeGenerator;
 class Instruction;
 class Register;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 
 #define NUM_RV_GPR 32
 #define MAX_RV_GLOBAL_GPRS 27 // excluding IP0, IP1, FP, LR, and SP
@@ -54,136 +58,117 @@ class RegisterDependencyConditions;
 
 #define NUM_RV_MAXR 32
 
-namespace OMR
-{
+namespace OMR { namespace RV {
 
-namespace RV
-{
-
-class OMR_EXTENSIBLE Machine : public OMR::Machine
-   {
-
+class OMR_EXTENSIBLE Machine : public OMR::Machine {
 public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : the TR::CodeGenerator object
+     */
+    Machine(TR::CodeGenerator *cg);
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : the TR::CodeGenerator object
-    */
-   Machine(TR::CodeGenerator *cg);
+    /**
+     * @brief Finds the best free register
+     * @param[in] rk : register kind
+     * @param[in] considerUnlatched : consider unlatched state or not
+     * @return Free RealRegister
+     */
+    TR::RealRegister *findBestFreeRegister(TR_RegisterKinds rk, bool considerUnlatched = false);
 
-   /**
-    * @brief Finds the best free register
-    * @param[in] rk : register kind
-    * @param[in] considerUnlatched : consider unlatched state or not
-    * @return Free RealRegister
-    */
-   TR::RealRegister *findBestFreeRegister(TR_RegisterKinds rk,
-                                            bool considerUnlatched = false);
+    /**
+     * @brief Frees the best register
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtualRegister : virtual register
+     * @param[in] forced : register to be freed
+     * @return Freed RealRegister
+     */
+    TR::RealRegister *freeBestRegister(TR::Instruction *currentInstruction, TR::Register *virtualRegister,
+        TR::RealRegister *forced = NULL);
 
-   /**
-    * @brief Frees the best register
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtualRegister : virtual register
-    * @param[in] forced : register to be freed
-    * @return Freed RealRegister
-    */
-   TR::RealRegister *freeBestRegister(TR::Instruction *currentInstruction,
-                                        TR::Register *virtualRegister,
-                                        TR::RealRegister *forced = NULL);
+    /**
+     * @brief Reverses the spill state
+     * @param[in] currentInstruction : current instruction
+     * @param[in] spilledRegister : spilled register
+     * @param[in] targetRegister : target register
+     * @return Target register
+     */
+    TR::RealRegister *reverseSpillState(TR::Instruction *currentInstruction, TR::Register *spilledRegister,
+        TR::RealRegister *targetRegister = NULL);
 
-   /**
-    * @brief Reverses the spill state
-    * @param[in] currentInstruction : current instruction
-    * @param[in] spilledRegister : spilled register
-    * @param[in] targetRegister : target register
-    * @return Target register
-    */
-   TR::RealRegister *reverseSpillState(TR::Instruction *currentInstruction,
-                                         TR::Register *spilledRegister,
-                                         TR::RealRegister *targetRegister = NULL);
+    /**
+     * @brief Assign a RealRegister for specified Register
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtualRegister : virtual register
+     * @return Assigned RealRegister
+     */
+    TR::RealRegister *assignOneRegister(TR::Instruction *currentInstruction, TR::Register *virtualRegister);
 
-   /**
-    * @brief Assign a RealRegister for specified Register
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtualRegister : virtual register
-    * @return Assigned RealRegister
-    */
-   TR::RealRegister *assignOneRegister(TR::Instruction *currentInstruction,
-                                         TR::Register *virtualRegister);
+    /**
+     * @brief Coerce register assignment
+     * @param[in] currentInstruction : current instruction
+     * @param[in] virtualRegister : virtual register
+     * @param[in] registerNumber : register number
+     */
+    void coerceRegisterAssignment(TR::Instruction *currentInstruction, TR::Register *virtualRegister,
+        TR::RealRegister::RegNum registerNumber);
 
-   /**
-    * @brief Coerce register assignment
-    * @param[in] currentInstruction : current instruction
-    * @param[in] virtualRegister : virtual register
-    * @param[in] registerNumber : register number
-    */
-   void coerceRegisterAssignment(TR::Instruction *currentInstruction,
-                                 TR::Register *virtualRegister,
-                                 TR::RealRegister::RegNum registerNumber);
+    /**
+     * @brief Returns the "killed" state of Link Register
+     * @return true if LR is killed in the method, false otherwise
+     */
+    bool getLinkRegisterKilled() { return _registerFile[TR::RealRegister::ra]->getHasBeenAssignedInMethod(); }
 
-   /**
-    * @brief Returns the "killed" state of Link Register
-    * @return true if LR is killed in the method, false otherwise
-    */
-   bool getLinkRegisterKilled()
-      {
-      return _registerFile[TR::RealRegister::ra]->getHasBeenAssignedInMethod();
-      }
+    /**
+     * @brief Changes the "killed" state of Link Register
+     * @param[in] b : true if LR is killed in the method, false otherwise
+     * @return The "killed" state set by the function
+     */
+    bool setLinkRegisterKilled(bool b) { return _registerFile[TR::RealRegister::ra]->setHasBeenAssignedInMethod(b); }
 
-   /**
-    * @brief Changes the "killed" state of Link Register
-    * @param[in] b : true if LR is killed in the method, false otherwise
-    * @return The "killed" state set by the function
-    */
-   bool setLinkRegisterKilled(bool b)
-      {
-      return _registerFile[TR::RealRegister::ra]->setHasBeenAssignedInMethod(b);
-      }
+    /**
+     * @brief Take snapshot of the register file
+     */
+    void takeRegisterStateSnapShot();
 
-   /**
-    * @brief Take snapshot of the register file
-    */
-   void takeRegisterStateSnapShot();
+    /**
+     * @brief Restore the register file from snapshot
+     */
+    void restoreRegisterStateFromSnapShot();
 
-   /**
-    * @brief Restore the register file from snapshot
-    */
-   void restoreRegisterStateFromSnapShot();
+    /**
+     * @brief Answers global register table
+     * @return global register table
+     */
+    static uint32_t *getGlobalRegisterTable() { return _globalRegisterNumberToRealRegisterMap; }
 
-   /**
-    * @brief Answers global register table
-    * @return global register table
-    */
-   static uint32_t *getGlobalRegisterTable()
-      { return _globalRegisterNumberToRealRegisterMap; }
-   /**
-    * @brief Answers global register number of last GPR
-    * @return global register number
-    */
-   static TR_GlobalRegisterNumber getLastGlobalGPRRegisterNumber()
-      { return MAX_RV_GLOBAL_GPRS - 1; }
-   /**
-    * @brief Answers global register number of last FPR
-    * @return global register number
-    */
-   static TR_GlobalRegisterNumber getLastGlobalFPRRegisterNumber()
-      { return MAX_RV_GLOBAL_GPRS + MAX_RV_GLOBAL_FPRS - 1; }
+    /**
+     * @brief Answers global register number of last GPR
+     * @return global register number
+     */
+    static TR_GlobalRegisterNumber getLastGlobalGPRRegisterNumber() { return MAX_RV_GLOBAL_GPRS - 1; }
 
-   TR::RegisterDependencyConditions * createCondForLiveAndSpilledGPRs(TR::list<TR::Register*> *spilledRegisterList);
+    /**
+     * @brief Answers global register number of last FPR
+     * @return global register number
+     */
+    static TR_GlobalRegisterNumber getLastGlobalFPRRegisterNumber()
+    {
+        return MAX_RV_GLOBAL_GPRS + MAX_RV_GLOBAL_FPRS - 1;
+    }
+
+    TR::RegisterDependencyConditions *createCondForLiveAndSpilledGPRs(TR::list<TR::Register *> *spilledRegisterList);
 
 private:
+    // For register snap shot
+    uint16_t _registerFlagsSnapShot[TR::RealRegister::NumRegisters];
+    TR::RealRegister::RegState _registerStatesSnapShot[TR::RealRegister::NumRegisters];
+    TR::Register *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
 
-   // For register snap shot
-   uint16_t                   _registerFlagsSnapShot[TR::RealRegister::NumRegisters];
-   TR::RealRegister::RegState _registerStatesSnapShot[TR::RealRegister::NumRegisters];
-   TR::Register               *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
+    void initializeRegisterFile();
 
-   void initializeRegisterFile();
-
-   // Tactical GRA
-   static uint32_t _globalRegisterNumberToRealRegisterMap[MAX_RV_GLOBAL_GPRS + MAX_RV_GLOBAL_FPRS];
-
-   };
-}
-}
+    // Tactical GRA
+    static uint32_t _globalRegisterNumberToRealRegisterMap[MAX_RV_GLOBAL_GPRS + MAX_RV_GLOBAL_FPRS];
+};
+}} // namespace OMR::RV
 #endif

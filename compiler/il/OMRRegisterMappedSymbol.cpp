@@ -29,119 +29,106 @@
 #include "infra/Flags.hpp"
 #include "limits.h"
 
-
-template <typename AllocatorType>
-TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(AllocatorType m, int32_t o)
-   {
-   return new (m) TR::RegisterMappedSymbol(o);
-   }
-
-template <typename AllocatorType>
-TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(AllocatorType m, TR::DataType d)
-   {
-   return new (m) TR::RegisterMappedSymbol(d);
-   }
-
-template <typename AllocatorType>
-TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(AllocatorType m, TR::DataType d, uint32_t s)
-   {
-   return new (m) TR::RegisterMappedSymbol(d,s);
-   }
-
-OMR::RegisterMappedSymbol::RegisterMappedSymbol(int32_t o) :
-   TR::Symbol(),
-   _mappedOffset(o),
-   _GCMapIndex(-1)
-   {
-   self()->setLiveLocalIndexUninitialized();
-   }
-
-OMR::RegisterMappedSymbol::RegisterMappedSymbol(TR::DataType d) :
-   TR::Symbol(d),
-   _mappedOffset(0),
-   _GCMapIndex(-1)
-   {
-   self()->setLiveLocalIndexUninitialized();
-   }
-
-OMR::RegisterMappedSymbol::RegisterMappedSymbol(TR::DataType d, uint32_t s) :
-   TR::Symbol(d, s),
-   _mappedOffset(0),
-   _GCMapIndex(-1)
-   {
-   self()->setLiveLocalIndexUninitialized();
-   }
-
-TR::RegisterMappedSymbol *
-OMR::RegisterMappedSymbol::self()
-   {
-   return static_cast<TR::RegisterMappedSymbol*>(this);
-   }
-
-void
-OMR::RegisterMappedSymbol::setLiveLocalIndex(uint16_t i, TR_FrontEnd * fe)
-   {
-   _liveLocalIndex = i;
-   if (self()->isLiveLocalIndexUninitialized())
-      {
-      TR_ASSERT(0, "OMR::RegisterMappedSymbol::_liveLocalIndex == USHRT_MAX");
-      TR::comp()->failCompilation<TR::CompilationException>("OMR::RegisterMappedSymbol::_liveLocalIndex == USHRT_MAX");
-      }
-   }
-
-bool
-OMR::RegisterMappedSymbol::isLiveLocalIndexUninitialized()
-   {
-   return _liveLocalIndex == USHRT_MAX;
-   }
-
-void
-OMR::RegisterMappedSymbol::setLiveLocalIndexUninitialized()
-   {
-   _liveLocalIndex = USHRT_MAX;
-   }
-
-TR_MethodMetaDataType
-OMR::RegisterMappedSymbol::getMethodMetaDataType()
-   {
-   TR_ASSERT(self()->isMethodMetaData(), "should be method metadata!");
-   return _type;
-   }
-
-void
-OMR::RegisterMappedSymbol::setMethodMetaDataType(TR_MethodMetaDataType type)
-   {
-   TR_ASSERT(self()->isMethodMetaData(), "should be method metadata!");
-   _type = type;
+template<typename AllocatorType> TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(AllocatorType m, int32_t o)
+{
+    return new (m) TR::RegisterMappedSymbol(o);
 }
 
-template <typename AllocatorType>
-TR::RegisterMappedSymbol *
-OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(AllocatorType m, const char *name, TR_MethodMetaDataType type)
-   {
-   TR::RegisterMappedSymbol * sym = new (m) TR::RegisterMappedSymbol();
-   sym->_type                     = type;
-   sym->_name                     = name;
-   sym->_flags.setValue(KindMask, IsMethodMetaData);
-   return sym;
-   }
+template<typename AllocatorType>
+TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(AllocatorType m, TR::DataType d)
+{
+    return new (m) TR::RegisterMappedSymbol(d);
+}
+
+template<typename AllocatorType>
+TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(AllocatorType m, TR::DataType d, uint32_t s)
+{
+    return new (m) TR::RegisterMappedSymbol(d, s);
+}
+
+OMR::RegisterMappedSymbol::RegisterMappedSymbol(int32_t o)
+    : TR::Symbol()
+    , _mappedOffset(o)
+    , _GCMapIndex(-1)
+{
+    self()->setLiveLocalIndexUninitialized();
+}
+
+OMR::RegisterMappedSymbol::RegisterMappedSymbol(TR::DataType d)
+    : TR::Symbol(d)
+    , _mappedOffset(0)
+    , _GCMapIndex(-1)
+{
+    self()->setLiveLocalIndexUninitialized();
+}
+
+OMR::RegisterMappedSymbol::RegisterMappedSymbol(TR::DataType d, uint32_t s)
+    : TR::Symbol(d, s)
+    , _mappedOffset(0)
+    , _GCMapIndex(-1)
+{
+    self()->setLiveLocalIndexUninitialized();
+}
+
+TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::self() { return static_cast<TR::RegisterMappedSymbol *>(this); }
+
+void OMR::RegisterMappedSymbol::setLiveLocalIndex(uint16_t i, TR_FrontEnd *fe)
+{
+    _liveLocalIndex = i;
+    if (self()->isLiveLocalIndexUninitialized()) {
+        TR_ASSERT(0, "OMR::RegisterMappedSymbol::_liveLocalIndex == USHRT_MAX");
+        TR::comp()->failCompilation<TR::CompilationException>(
+            "OMR::RegisterMappedSymbol::_liveLocalIndex == USHRT_MAX");
+    }
+}
+
+bool OMR::RegisterMappedSymbol::isLiveLocalIndexUninitialized() { return _liveLocalIndex == USHRT_MAX; }
+
+void OMR::RegisterMappedSymbol::setLiveLocalIndexUninitialized() { _liveLocalIndex = USHRT_MAX; }
+
+TR_MethodMetaDataType OMR::RegisterMappedSymbol::getMethodMetaDataType()
+{
+    TR_ASSERT(self()->isMethodMetaData(), "should be method metadata!");
+    return _type;
+}
+
+void OMR::RegisterMappedSymbol::setMethodMetaDataType(TR_MethodMetaDataType type)
+{
+    TR_ASSERT(self()->isMethodMetaData(), "should be method metadata!");
+    _type = type;
+}
+
+template<typename AllocatorType>
+TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(AllocatorType m, const char *name,
+    TR_MethodMetaDataType type)
+{
+    TR::RegisterMappedSymbol *sym = new (m) TR::RegisterMappedSymbol();
+    sym->_type = type;
+    sym->_name = name;
+    sym->_flags.setValue(KindMask, IsMethodMetaData);
+    return sym;
+}
 
 /**
  * Explicit instantiation
  */
 
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(TR_HeapMemory m, int32_t o);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(TR_HeapMemory m, TR::DataType d);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(TR_HeapMemory m, TR::DataType d, uint32_t s);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(TR_HeapMemory m, int32_t o);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(TR_HeapMemory m, TR::DataType d);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(TR_HeapMemory m, TR::DataType d, uint32_t s);
 
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(TR_StackMemory m, int32_t o);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(TR_StackMemory m, TR::DataType d);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(TR_StackMemory m, TR::DataType d, uint32_t s);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(TR_StackMemory m, int32_t o);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(TR_StackMemory m, TR::DataType d);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(TR_StackMemory m, TR::DataType d, uint32_t s);
 
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(PERSISTENT_NEW_DECLARE m, int32_t o);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(PERSISTENT_NEW_DECLARE m, TR::DataType d);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::create(PERSISTENT_NEW_DECLARE m, TR::DataType d, uint32_t s);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(PERSISTENT_NEW_DECLARE m, int32_t o);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(PERSISTENT_NEW_DECLARE m, TR::DataType d);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::create(PERSISTENT_NEW_DECLARE m, TR::DataType d,
+    uint32_t s);
 
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(TR_HeapMemory m, const char *name, TR_MethodMetaDataType type);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(TR_StackMemory m, const char *name, TR_MethodMetaDataType type);
-template TR::RegisterMappedSymbol * OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(PERSISTENT_NEW_DECLARE m, const char *name, TR_MethodMetaDataType type);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(TR_HeapMemory m,
+    const char *name, TR_MethodMetaDataType type);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(TR_StackMemory m,
+    const char *name, TR_MethodMetaDataType type);
+template TR::RegisterMappedSymbol *OMR::RegisterMappedSymbol::createMethodMetaDataSymbol(PERSISTENT_NEW_DECLARE m,
+    const char *name, TR_MethodMetaDataType type);

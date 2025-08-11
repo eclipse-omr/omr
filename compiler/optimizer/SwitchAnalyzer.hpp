@@ -35,125 +35,140 @@
 
 class TR_BitVector;
 class TR_FrontEnd;
+
 namespace TR {
 class CFG;
 class Block;
 class Node;
 class SymbolReference;
 class TreeTop;
-}
+} // namespace TR
 
 namespace TR {
 
-class SwitchAnalyzer : public TR::Optimization
-   {
-   public:
-   SwitchAnalyzer(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR::SwitchAnalyzer(manager);
-      }
+class SwitchAnalyzer : public TR::Optimization {
+public:
+    SwitchAnalyzer(TR::OptimizationManager *manager);
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR::SwitchAnalyzer(manager);
+    }
 
-   void analyze(TR::Node *node, TR::Block *block);
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   enum NodeKind { Unique, Range, Dense };
+    void analyze(TR::Node *node, TR::Block *block);
 
-   class SwitchInfo : public TR_Link<SwitchInfo>
-      {
-      public:
+    enum NodeKind {
+        Unique,
+        Range,
+        Dense
+    };
 
-      SwitchInfo(TR_Memory * m)
-	 : _kind(Dense), _count(0), _freq(0), _cost(0), _min(INT_MAX), _max(INT_MIN)
-	    { _chain = new (m->trHeapMemory()) TR_LinkHead<SwitchInfo>(); }
+    class SwitchInfo : public TR_Link<SwitchInfo> {
+    public:
+        SwitchInfo(TR_Memory *m)
+            : _kind(Dense)
+            , _count(0)
+            , _freq(0)
+            , _cost(0)
+            , _min(INT_MAX)
+            , _max(INT_MIN)
+        {
+            _chain = new (m->trHeapMemory()) TR_LinkHead<SwitchInfo>();
+        }
 
-      SwitchInfo(CASECONST_TYPE value, TR::TreeTop *target, int32_t cost)
-	 : _kind(Unique), _count(1), _freq(0), _min(value), _max(value), _target(target),
-	   _cost(cost) {}
+        SwitchInfo(CASECONST_TYPE value, TR::TreeTop *target, int32_t cost)
+            : _kind(Unique)
+            , _count(1)
+            , _freq(0)
+            , _min(value)
+            , _max(value)
+            , _target(target)
+            , _cost(cost)
+        {}
 
-      bool operator >(SwitchInfo &other);
-      void print(TR_FrontEnd *, TR::FILE *pOutFile, int32_t indent);
+        bool operator>(SwitchInfo &other);
+        void print(TR_FrontEnd *, TR::FILE *pOutFile, int32_t indent);
 
-      NodeKind _kind;
-      float    _freq;
-      int32_t  _count;
-      int32_t  _cost;
-      CASECONST_TYPE  _min;
-      CASECONST_TYPE  _max;
-      union
-	 {
-	 TR::TreeTop              *_target; // range and unique
-	 TR_LinkHead<SwitchInfo> *_chain;  // dense
-	 };
-      };
+        NodeKind _kind;
+        float _freq;
+        int32_t _count;
+        int32_t _cost;
+        CASECONST_TYPE _min;
+        CASECONST_TYPE _max;
 
-   void print(TR_FrontEnd *, TR::FILE *pOutFile);
-   void chainInsert(TR_LinkHead<SwitchInfo> *chain, SwitchInfo *info);
-   void denseInsert(SwitchInfo *dense, SwitchInfo *info);
-   void denseMerge (SwitchInfo *to, SwitchInfo *from);
+        union {
+            TR::TreeTop *_target; // range and unique
+            TR_LinkHead<SwitchInfo> *_chain; // dense
+        };
+    };
 
-   SwitchInfo *getConsecutiveUniques(SwitchInfo *start);
+    void print(TR_FrontEnd *, TR::FILE *pOutFile);
+    void chainInsert(TR_LinkHead<SwitchInfo> *chain, SwitchInfo *info);
+    void denseInsert(SwitchInfo *dense, SwitchInfo *info);
+    void denseMerge(SwitchInfo *to, SwitchInfo *from);
 
-   void findDenseSets(TR_LinkHead<SwitchInfo> *chain);
-   bool mergeDenseSets(TR_LinkHead<SwitchInfo> *chain);
-   TR_LinkHead<SwitchInfo> *gather(TR_LinkHead<SwitchInfo> *chain);
+    SwitchInfo *getConsecutiveUniques(SwitchInfo *start);
 
-   int32_t countMajorsInChain(TR_LinkHead<SwitchInfo> *chain);
-   SwitchInfo *getLastInChain(TR_LinkHead<SwitchInfo> *chain);
+    void findDenseSets(TR_LinkHead<SwitchInfo> *chain);
+    bool mergeDenseSets(TR_LinkHead<SwitchInfo> *chain);
+    TR_LinkHead<SwitchInfo> *gather(TR_LinkHead<SwitchInfo> *chain);
 
-   void emit(TR_LinkHead<SwitchInfo> *chain, TR_LinkHead<SwitchInfo> *bound, TR_LinkHead<SwitchInfo> *earlyUniques);
+    int32_t countMajorsInChain(TR_LinkHead<SwitchInfo> *chain);
+    SwitchInfo *getLastInChain(TR_LinkHead<SwitchInfo> *chain);
 
-   TR::Block *binSearch(SwitchInfo *startNode, SwitchInfo *endNode, int32_t numMajors,
-		       CASECONST_TYPE rangeLeft, CASECONST_TYPE rangeRight);
-   TR::Block *addIfBlock(TR::ILOpCodes opCode, CASECONST_TYPE val, TR::TreeTop *dest);
-   TR::Block *linearSearch(SwitchInfo *start);
-   SwitchInfo *sortedListByFrequency(SwitchInfo *start);
+    void emit(TR_LinkHead<SwitchInfo> *chain, TR_LinkHead<SwitchInfo> *bound, TR_LinkHead<SwitchInfo> *earlyUniques);
 
-   TR::Block *addGotoBlock(TR::TreeTop *dest);
+    TR::Block *binSearch(SwitchInfo *startNode, SwitchInfo *endNode, int32_t numMajors, CASECONST_TYPE rangeLeft,
+        CASECONST_TYPE rangeRight);
+    TR::Block *addIfBlock(TR::ILOpCodes opCode, CASECONST_TYPE val, TR::TreeTop *dest);
+    TR::Block *linearSearch(SwitchInfo *start);
+    SwitchInfo *sortedListByFrequency(SwitchInfo *start);
 
-   TR::Block *addTableBlock(SwitchInfo *info);
+    TR::Block *addGotoBlock(TR::TreeTop *dest);
 
-   int32_t *setupFrequencies(TR::Node *node);
-   TR::Block *checkIfDefaultIsDominant(SwitchInfo *start);
-   TR::Block *peelOffTheHottestValue(TR_LinkHead<SwitchInfo> *chain);
+    TR::Block *addTableBlock(SwitchInfo *info);
 
-   bool keepAsUnique(SwitchInfo *info, int32_t itemNumber);
+    int32_t *setupFrequencies(TR::Node *node);
+    TR::Block *checkIfDefaultIsDominant(SwitchInfo *start);
+    TR::Block *peelOffTheHottestValue(TR_LinkHead<SwitchInfo> *chain);
 
-   void printInfo(TR_FrontEnd *, TR::FILE *pOutFile, TR_LinkHead<SwitchInfo> *head);
-   private:
-   void fixUpUnsigned(TR_LinkHead<SwitchInfo> *chain);
-   TR::CFG *_cfg;
+    bool keepAsUnique(SwitchInfo *info, int32_t itemNumber);
 
+    void printInfo(TR_FrontEnd *, TR::FILE *pOutFile, TR_LinkHead<SwitchInfo> *head);
 
-   // These variables must be zero-initialized in analyze
-   TR::Node  *_switch;
-   TR::TreeTop *_switchTree;
-   TR::TreeTop *_defaultDest;
-   TR::Block *_block;
-   TR::Block *_nextBlock;
-   TR::SymbolReference *_temp;
-   bool  _signed;
-   bool  _isInt64;
+private:
+    void fixUpUnsigned(TR_LinkHead<SwitchInfo> *chain);
+    TR::CFG *_cfg;
 
-   TR_BitVector *_blocksGeneratedByMe;
+    // These variables must be zero-initialized in analyze
+    TR::Node *_switch;
+    TR::TreeTop *_switchTree;
+    TR::TreeTop *_defaultDest;
+    TR::Block *_block;
+    TR::Block *_nextBlock;
+    TR::SymbolReference *_temp;
+    bool _signed;
+    bool _isInt64;
 
+    TR_BitVector *_blocksGeneratedByMe;
 
-   int32_t _costMem;
-   //int32_t _costRelative;
+    int32_t _costMem;
+    // int32_t _costRelative;
 
-   float   _minDensity;
-   int32_t _binarySearchBound;
-   int32_t _smallDense;
+    float _minDensity;
+    int32_t _binarySearchBound;
+    int32_t _smallDense;
 
-   int32_t _costRange;
-   int32_t _costUnique;
-   int32_t _costDense;
+    int32_t _costRange;
+    int32_t _costUnique;
+    int32_t _costDense;
 
-   bool    _haveProfilingInfo;
-   };
+    bool _haveProfilingInfo;
+};
 
-}
+} // namespace TR
 
 #endif

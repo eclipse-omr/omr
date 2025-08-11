@@ -27,10 +27,11 @@
  */
 #ifndef OMR_OPTIMIZER_CONNECTOR
 #define OMR_OPTIMIZER_CONNECTOR
+
 namespace OMR {
 class Optimizer;
 typedef OMR::Optimizer OptimizerConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -50,6 +51,7 @@ class TR_Debug;
 class TR_Structure;
 class TR_UseDefInfo;
 class TR_ValueNumberInfo;
+
 namespace TR {
 class Block;
 class CodeGenerator;
@@ -57,25 +59,21 @@ class Compilation;
 class OptimizationManager;
 class Optimizer;
 class ResolvedMethodSymbol;
-}
+} // namespace TR
 struct OptimizationStrategy;
 class OMR_InlinerPolicy;
 class OMR_InlinerUtil;
 
-
 // ValueNumberInfo Build type
 //
-enum ValueNumberInfoBuildType
-   {
-        PrePartitionVN,
-        HashVN
-   };
-
-
+enum ValueNumberInfoBuildType {
+    PrePartitionVN,
+    HashVN
+};
 
 // Define OPT_TIMING to collect statistics on the time taken by individual optimizations.
 // Also use -Xjit:timing to collect statistics.
-//#undef OPT_TIMING
+// #undef OPT_TIMING
 
 #ifdef OPT_TIMING
 #include "infra/Statistics.hpp"
@@ -85,8 +83,7 @@ extern TR_Stats statUseDefsTiming;
 extern TR_Stats statGlobalValNumTiming;
 #endif
 
-namespace OMR
-{
+namespace OMR {
 
 #define HIGH_BASIC_BLOCK_COUNT 2500
 #define HIGH_LOOP_COUNT 65
@@ -94,322 +91,350 @@ namespace OMR
 
 // Optimization Options
 //
-enum
-   {
-   Always = 0,
-   IfLoops,
-   IfNoLoops,
-   IfProfiling,
-   IfNotProfiling,
-   IfJitProfiling,
-   IfNotJitProfiling,
-   IfNews,
-   IfEnabledAndOptServer,
-   IfOptServer,
-   IfNotClassLoadPhase,
-   IfNotClassLoadPhaseAndNotProfiling,
-   IfEnabledAndLoops,
-   IfEnabledAndNoLoops,
-   IfNoLoopsOREnabledAndLoops, // ie. do this opt if no loops; if loops, it must be enabled
-   IfEnabledAndProfiling,
-   IfEnabledAndNotProfiling,
-   IfEnabledAndNotJitProfiling,
-   IfLoopsAndNotProfiling,
-   MustBeDone,
-   IfEnabled,
-   IfLoopsMarkLastRun,
-   IfEnabledMarkLastRun,
-   IfMoreThanOneBlock,
-   IfOneBlock,
-   IfEnabledAndMoreThanOneBlock,
-   IfEnabledAndMoreThanOneBlockMarkLastRun,
-   IfAOTAndEnabled,
-   IfMethodHandleInvokes, // JSR292: Extra analysis required to optimize MethodHandle.invoke
-   IfNotQuickStart,
-   IfFullInliningUnderOSRDebug,
-   IfNotFullInliningUnderOSRDebug,
-   IfOSR,
-   IfVoluntaryOSR,
-   IfInvoluntaryOSR,
-   IfMonitors,
-   IfEnabledAndMonitors,
-   IfEAOpportunities,
-   IfEAOpportunitiesMarkLastRun,
-   IfEAOpportunitiesAndNotOptServer,
-   IfAggressiveLiveness,
-   IfVectorAPI,  // JEP414: Extra analysis required to optimize Vector API
-   IfExceptionHandlers,
-   IfLoopsAndNotCompileTimeSensitive, // If loops and compile time is not that important
-   MarkLastRun
-   };
+enum {
+    Always = 0,
+    IfLoops,
+    IfNoLoops,
+    IfProfiling,
+    IfNotProfiling,
+    IfJitProfiling,
+    IfNotJitProfiling,
+    IfNews,
+    IfEnabledAndOptServer,
+    IfOptServer,
+    IfNotClassLoadPhase,
+    IfNotClassLoadPhaseAndNotProfiling,
+    IfEnabledAndLoops,
+    IfEnabledAndNoLoops,
+    IfNoLoopsOREnabledAndLoops, // ie. do this opt if no loops; if loops, it must be enabled
+    IfEnabledAndProfiling,
+    IfEnabledAndNotProfiling,
+    IfEnabledAndNotJitProfiling,
+    IfLoopsAndNotProfiling,
+    MustBeDone,
+    IfEnabled,
+    IfLoopsMarkLastRun,
+    IfEnabledMarkLastRun,
+    IfMoreThanOneBlock,
+    IfOneBlock,
+    IfEnabledAndMoreThanOneBlock,
+    IfEnabledAndMoreThanOneBlockMarkLastRun,
+    IfAOTAndEnabled,
+    IfMethodHandleInvokes, // JSR292: Extra analysis required to optimize MethodHandle.invoke
+    IfNotQuickStart,
+    IfFullInliningUnderOSRDebug,
+    IfNotFullInliningUnderOSRDebug,
+    IfOSR,
+    IfVoluntaryOSR,
+    IfInvoluntaryOSR,
+    IfMonitors,
+    IfEnabledAndMonitors,
+    IfEAOpportunities,
+    IfEAOpportunitiesMarkLastRun,
+    IfEAOpportunitiesAndNotOptServer,
+    IfAggressiveLiveness,
+    IfVectorAPI, // JEP414: Extra analysis required to optimize Vector API
+    IfExceptionHandlers,
+    IfLoopsAndNotCompileTimeSensitive, // If loops and compile time is not that important
+    MarkLastRun
+};
 
-class Optimizer
-   {
-   public:
+class Optimizer {
+public:
+    TR_ALLOC(TR_Memory::Machine)
 
-   TR_ALLOC(TR_Memory::Machine)
+    // Create an optimizer object.
+    static TR::Optimizer *createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen);
 
-   // Create an optimizer object.
-   static TR::Optimizer *createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen);
+    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
+        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0);
 
-   Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
-         const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0);
+    // Optimize the current method
+    void optimize();
 
-   // Optimize the current method
-   void optimize();
+    // Get the method symbol
+    TR::ResolvedMethodSymbol *getMethodSymbol() { return _methodSymbol; }
 
-   // Get the method symbol
-   TR::ResolvedMethodSymbol *getMethodSymbol()  { return _methodSymbol; }
+    // The IL optimizer, performs tree-to-tree optimizing transformations.
+    bool isIlGenOpt() { return _isIlGen; }
 
-   // The IL optimizer, performs tree-to-tree optimizing transformations.
-   bool isIlGenOpt() { return _isIlGen; }
+    TR::Compilation *comp() { return _compilation; }
 
-   TR::Compilation *      comp()           { return _compilation; }
-   TR::CodeGenerator *    cg()             { return _cg; }
-   TR_Debug *          getDebug();
+    TR::CodeGenerator *cg() { return _cg; }
 
-   TR_Memory *               trMemory()                    { return _trMemory; }
-   TR_StackMemory            trStackMemory()               { return _trMemory; }
-   TR_HeapMemory             trHeapMemory()                { return _trMemory; }
-   TR_PersistentMemory *     trPersistentMemory()          { return _trMemory->trPersistentMemory(); }
+    TR_Debug *getDebug();
 
-   static const char * getOptimizationName(OMR::Optimizations opt);
+    TR_Memory *trMemory() { return _trMemory; }
 
-   static const OptimizationStrategy *optimizationStrategy( TR::Compilation *c);
+    TR_StackMemory trStackMemory() { return _trMemory; }
 
-   /**
-    * Override what #OptimizationStrategy to use. While this has the same
-    * functionality as the `optTest=` parameter, it does not require
-    * reinitializing the JIT, nor manually changing the optFile.
-    *
-    * If _mockStrategy is NULL, has no effect on the optimizer.
-    *
-    * @param strategy The #OptimizationStrategy to return when requested.
-    */
-   static void setMockStrategy(const OptimizationStrategy *strategy) { _mockStrategy = strategy; };
+    TR_HeapMemory trHeapMemory() { return _trMemory; }
 
+    TR_PersistentMemory *trPersistentMemory() { return _trMemory->trPersistentMemory(); }
 
-   static ValueNumberInfoBuildType valueNumberInfoBuildType();
+    static const char *getOptimizationName(OMR::Optimizations opt);
 
-   void enableAllLocalOpts();
+    static const OptimizationStrategy *optimizationStrategy(TR::Compilation *c);
 
-   bool getAliasSetsAreValid()       { return _aliasSetsAreValid; }
-   void setAliasSetsAreValid(bool b, bool setForWCode = false);
+    /**
+     * Override what #OptimizationStrategy to use. While this has the same
+     * functionality as the `optTest=` parameter, it does not require
+     * reinitializing the JIT, nor manually changing the optFile.
+     *
+     * If _mockStrategy is NULL, has no effect on the optimizer.
+     *
+     * @param strategy The #OptimizationStrategy to return when requested.
+     */
+    static void setMockStrategy(const OptimizationStrategy *strategy) { _mockStrategy = strategy; };
 
-   bool getInlineSynchronized()       { return _inlineSynchronized; }
-   void setInlineSynchronized(bool b) { _inlineSynchronized = b; }
+    static ValueNumberInfoBuildType valueNumberInfoBuildType();
 
-   int32_t *getSymReferencesTable();
-   void setSymReferencesTable(int32_t *symReferencesTable) { _symReferencesTable = symReferencesTable; }
+    void enableAllLocalOpts();
 
-   TR_UseDefInfo *getUseDefInfo()             { return _useDefInfo; }
-   TR_UseDefInfo *setUseDefInfo(TR_UseDefInfo *u);
+    bool getAliasSetsAreValid() { return _aliasSetsAreValid; }
 
-   bool cantBuildGlobalsUseDefInfo()          { return _cantBuildGlobalsUseDefInfo; }
-   bool cantBuildLocalsUseDefInfo()           { return _cantBuildLocalsUseDefInfo; }
-   void setCantBuildGlobalsUseDefInfo(bool v) { _cantBuildGlobalsUseDefInfo = v; }
-   void setCantBuildLocalsUseDefInfo(bool v)  { _cantBuildLocalsUseDefInfo = v; }
+    void setAliasSetsAreValid(bool b, bool setForWCode = false);
 
-  /**
-   * Constructs a TR_UseDefInfo instance with appropriate flags enabled.
-   *
-   * @param comp                   The compilation instance
-   * @param cfg                    The CFG being analysed
-   * @param opt                    The optimizer instance
-   * @param requiresGlobals
-   * @param prefersGlobals
-   * @param loadsShouldBeDefs
-   * @param cannotOmitTrivialDefs
-   * @param conversionRegsOnly
-   * @param doCompletion
-   */
-  TR_UseDefInfo* createUseDefInfo(TR::Compilation* comp,
-      bool requiresGlobals = true, bool prefersGlobals = true, bool loadsShouldBeDefs = true, bool cannotOmitTrivialDefs = false,
-      bool conversionRegsOnly = false, bool doCompletion = true);
+    bool getInlineSynchronized() { return _inlineSynchronized; }
 
-   // Get value number information
-   TR_ValueNumberInfo * getValueNumberInfo()   { return _valueNumberInfo; }
-   TR_ValueNumberInfo *createValueNumberInfo(bool requiresGlobals = false, bool preferGlobals = true, bool noUseDefInfo = false );
-   TR_ValueNumberInfo *setValueNumberInfo(TR_ValueNumberInfo *v);
+    void setInlineSynchronized(bool b) { _inlineSynchronized = b; }
 
-   bool cantBuildGlobalsValueNumberInfo()          { return _cantBuildGlobalsValueNumberInfo; }
-   bool cantBuildLocalsValueNumberInfo()           { return _cantBuildLocalsValueNumberInfo; }
-   void setCantBuildGlobalsValueNumberInfo(bool v) { _cantBuildGlobalsValueNumberInfo = v; }
-   void setCantBuildLocalsValueNumberInfo(bool v)  { _cantBuildLocalsValueNumberInfo = v; }
+    int32_t *getSymReferencesTable();
 
-   bool canRunBlockByBlockOptimizations()          { return _canRunBlockByBlockOptimizations; }
-   void setCanRunBlockByBlockOptimizations(bool v) { _canRunBlockByBlockOptimizations = v; }
+    void setSymReferencesTable(int32_t *symReferencesTable) { _symReferencesTable = symReferencesTable; }
 
-   /**
-    * Controls inclusion of calls as uses so that the alias analysis can detect
-    * when local (stack) variable has been aliased by a function call.
-    * This defaults to false which is fine for Java like languages where
-    * local (stack) variables cannot be passed by reference to function calls
-    * and hence cannot be aliased. However for C like languages this flag should be
-    * over-ridden by the optimizer in the front-end.
-    *
-    * This parameter is passed to the TR_UseDefInfo constructor.
-    * See createUseDefInfo().
-    */
-   virtual bool getCallsAsUses() { return false; }
+    TR_UseDefInfo *getUseDefInfo() { return _useDefInfo; }
 
-   bool prepareForNodeRemoval(TR::Node *node , bool deferInvalidatingUseDefInfo = false);
-   void prepareForTreeRemoval(TR::TreeTop *treeTop) { prepareForNodeRemoval(treeTop->getNode()); }
+    TR_UseDefInfo *setUseDefInfo(TR_UseDefInfo *u);
 
-   bool cachedExtendedBBInfoValid()                { return _cachedExtendedBBInfoValid; }
-   void setCachedExtendedBBInfoValid(bool b);
+    bool cantBuildGlobalsUseDefInfo() { return _cantBuildGlobalsUseDefInfo; }
 
-   TR::Block *getEnclosingFinallyBlock()           { return _enclosingFinallyBlock; }
-   void setEnclosingFinallyBlock(TR::Block *block) { _enclosingFinallyBlock = block; }
+    bool cantBuildLocalsUseDefInfo() { return _cantBuildLocalsUseDefInfo; }
 
-   void getStaticFrequency(TR::Block *, int32_t *);
+    void setCantBuildGlobalsUseDefInfo(bool v) { _cantBuildGlobalsUseDefInfo = v; }
 
-   int32_t doStructuralAnalysis();
+    void setCantBuildLocalsUseDefInfo(bool v) { _cantBuildLocalsUseDefInfo = v; }
 
-   bool switchToProfiling(uint32_t f, uint32_t c) { return false; }
-   bool switchToProfiling() { return false; }
-   int32_t changeContinueLoopsToNestedLoops();
+    /**
+     * Constructs a TR_UseDefInfo instance with appropriate flags enabled.
+     *
+     * @param comp                   The compilation instance
+     * @param cfg                    The CFG being analysed
+     * @param opt                    The optimizer instance
+     * @param requiresGlobals
+     * @param prefersGlobals
+     * @param loadsShouldBeDefs
+     * @param cannotOmitTrivialDefs
+     * @param conversionRegsOnly
+     * @param doCompletion
+     */
+    TR_UseDefInfo *createUseDefInfo(TR::Compilation *comp, bool requiresGlobals = true, bool prefersGlobals = true,
+        bool loadsShouldBeDefs = true, bool cannotOmitTrivialDefs = false, bool conversionRegsOnly = false,
+        bool doCompletion = true);
 
-   List<TR::Node>& getEliminatedCheckcastNodes() { return _eliminatedCheckcastNodes; }
-   List<TR::Node>& getClassPointerNodes() { return _classPointerNodes; }
+    // Get value number information
+    TR_ValueNumberInfo *getValueNumberInfo() { return _valueNumberInfo; }
 
-   void dumpPostOptTrees();
+    TR_ValueNumberInfo *createValueNumberInfo(bool requiresGlobals = false, bool preferGlobals = true,
+        bool noUseDefInfo = false);
+    TR_ValueNumberInfo *setValueNumberInfo(TR_ValueNumberInfo *v);
+
+    bool cantBuildGlobalsValueNumberInfo() { return _cantBuildGlobalsValueNumberInfo; }
+
+    bool cantBuildLocalsValueNumberInfo() { return _cantBuildLocalsValueNumberInfo; }
+
+    void setCantBuildGlobalsValueNumberInfo(bool v) { _cantBuildGlobalsValueNumberInfo = v; }
+
+    void setCantBuildLocalsValueNumberInfo(bool v) { _cantBuildLocalsValueNumberInfo = v; }
+
+    bool canRunBlockByBlockOptimizations() { return _canRunBlockByBlockOptimizations; }
+
+    void setCanRunBlockByBlockOptimizations(bool v) { _canRunBlockByBlockOptimizations = v; }
+
+    /**
+     * Controls inclusion of calls as uses so that the alias analysis can detect
+     * when local (stack) variable has been aliased by a function call.
+     * This defaults to false which is fine for Java like languages where
+     * local (stack) variables cannot be passed by reference to function calls
+     * and hence cannot be aliased. However for C like languages this flag should be
+     * over-ridden by the optimizer in the front-end.
+     *
+     * This parameter is passed to the TR_UseDefInfo constructor.
+     * See createUseDefInfo().
+     */
+    virtual bool getCallsAsUses() { return false; }
+
+    bool prepareForNodeRemoval(TR::Node *node, bool deferInvalidatingUseDefInfo = false);
+
+    void prepareForTreeRemoval(TR::TreeTop *treeTop) { prepareForNodeRemoval(treeTop->getNode()); }
+
+    bool cachedExtendedBBInfoValid() { return _cachedExtendedBBInfoValid; }
+
+    void setCachedExtendedBBInfoValid(bool b);
+
+    TR::Block *getEnclosingFinallyBlock() { return _enclosingFinallyBlock; }
+
+    void setEnclosingFinallyBlock(TR::Block *block) { _enclosingFinallyBlock = block; }
+
+    void getStaticFrequency(TR::Block *, int32_t *);
+
+    int32_t doStructuralAnalysis();
+
+    bool switchToProfiling(uint32_t f, uint32_t c) { return false; }
+
+    bool switchToProfiling() { return false; }
+
+    int32_t changeContinueLoopsToNestedLoops();
+
+    List<TR::Node> &getEliminatedCheckcastNodes() { return _eliminatedCheckcastNodes; }
+
+    List<TR::Node> &getClassPointerNodes() { return _classPointerNodes; }
+
+    void dumpPostOptTrees();
 
 #ifdef DEBUG
-   int32_t     getDumpGraphsIndex() { return _dumpGraphsIndex; }
-   void        doStructureChecks();
+    int32_t getDumpGraphsIndex() { return _dumpGraphsIndex; }
+
+    void doStructureChecks();
 #else
-   void        doStructureChecks() { }
+    void doStructureChecks() {}
 #endif
 
-   TR_Hotness checkMaxHotnessOfInlinedMethods(TR::Compilation *comp);
+    TR_Hotness checkMaxHotnessOfInlinedMethods(TR::Compilation *comp);
 
-   bool checkNumberOfLoopsAndBasicBlocks(TR::Compilation *, TR_Structure *);
-   void countNumberOfLoops(TR_Structure *);
+    bool checkNumberOfLoopsAndBasicBlocks(TR::Compilation *, TR_Structure *);
+    void countNumberOfLoops(TR_Structure *);
 
-   bool getLastRun(OMR::Optimizations opt);
+    bool getLastRun(OMR::Optimizations opt);
 
-   void setRequestOptimization(OMR::Optimizations optNum, bool value = true, TR::Block *block = NULL);
+    void setRequestOptimization(OMR::Optimizations optNum, bool value = true, TR::Block *block = NULL);
 
-   int32_t getOptMessageIndex() { return _optMessageIndex; }
-   int32_t incOptMessageIndex() { return ++_optMessageIndex; }
+    int32_t getOptMessageIndex() { return _optMessageIndex; }
 
-   bool optsThatCanCreateLoopsDisabled() { return _disableLoopOptsThatCanCreateLoops; }
+    int32_t incOptMessageIndex() { return ++_optMessageIndex; }
 
-   // allowBCDSignPromotion -- if true and node1 has conservatively 'better' sign state then node2 then also consider
-   // nodes equivalent (used only by certain optimizations such as CSE)
-   static bool areNodesEquivalent(TR::Node *, TR::Node *, TR::Compilation *, bool allowBCDSignPromotion=false);
-   static bool areBCDAggrConstantNodesEquivalent(TR::Node *, TR::Node *, TR::Compilation *);
-   bool areNodesEquivalent(TR::Node * node1, TR::Node * node2, bool allowBCDSignPromotion=false)
-      {
-      return areNodesEquivalent(node1, node2, comp(), allowBCDSignPromotion);
-      // WCodeLinkageFixup runs a version of LocalCSE that is not owned by
-      // an optimizer, so it has to pass in a TR::Compilation
-      }
+    bool optsThatCanCreateLoopsDisabled() { return _disableLoopOptsThatCanCreateLoops; }
 
-   bool areSyntacticallyEquivalent(TR::Node *, TR::Node *, vcount_t);
+    // allowBCDSignPromotion -- if true and node1 has conservatively 'better' sign state then node2 then also consider
+    // nodes equivalent (used only by certain optimizations such as CSE)
+    static bool areNodesEquivalent(TR::Node *, TR::Node *, TR::Compilation *, bool allowBCDSignPromotion = false);
+    static bool areBCDAggrConstantNodesEquivalent(TR::Node *, TR::Node *, TR::Compilation *);
 
-   TR_BitVector *getSeenBlocksGRA()                        { return _seenBlocksGRA; }
-   void setSeenBlocksGRA(TR_BitVector *bv)                 { _seenBlocksGRA = bv; }
-   TR_BitVector *getResetExitsGRA()                        { return _resetExitsGRA; }
-   void setResetExitsGRA(TR_BitVector *bv)                 { _resetExitsGRA = bv; }
-   TR_BitVector *getSuccessorBitsGRA()                     { return _successorBitsGRA; }
-   void setSuccessorBitsGRA(TR_BitVector *bv)              { _successorBitsGRA = bv; }
+    bool areNodesEquivalent(TR::Node *node1, TR::Node *node2, bool allowBCDSignPromotion = false)
+    {
+        return areNodesEquivalent(node1, node2, comp(), allowBCDSignPromotion);
+        // WCodeLinkageFixup runs a version of LocalCSE that is not owned by
+        // an optimizer, so it has to pass in a TR::Compilation
+    }
 
-   OMR_InlinerPolicy *getInlinerPolicy();
-   OMR_InlinerUtil *getInlinerUtil();
-   TR::OptimizationManager *getOptimization(OMR::Optimizations i)
-      {
-      TR_ASSERT(i < OMR::numGroups, "Optimization index should be less than %d", OMR::numGroups);
-      return _opts[i];
-      }
+    bool areSyntacticallyEquivalent(TR::Node *, TR::Node *, vcount_t);
 
-   bool isEnabled(OMR::Optimizations i);
+    TR_BitVector *getSeenBlocksGRA() { return _seenBlocksGRA; }
+
+    void setSeenBlocksGRA(TR_BitVector *bv) { _seenBlocksGRA = bv; }
+
+    TR_BitVector *getResetExitsGRA() { return _resetExitsGRA; }
+
+    void setResetExitsGRA(TR_BitVector *bv) { _resetExitsGRA = bv; }
+
+    TR_BitVector *getSuccessorBitsGRA() { return _successorBitsGRA; }
+
+    void setSuccessorBitsGRA(TR_BitVector *bv) { _successorBitsGRA = bv; }
+
+    OMR_InlinerPolicy *getInlinerPolicy();
+    OMR_InlinerUtil *getInlinerUtil();
+
+    TR::OptimizationManager *getOptimization(OMR::Optimizations i)
+    {
+        TR_ASSERT(i < OMR::numGroups, "Optimization index should be less than %d", OMR::numGroups);
+        return _opts[i];
+    }
+
+    bool isEnabled(OMR::Optimizations i);
 
 #include "optimizer/OptimizerAnalysisPhasesEnum.hpp"
 
-   /**
-    * Given a \ref Optimizer::AnalysisPhase value, returns a descriptive name
-    * for the phase.  This method is intended to be used for RAS purposes.
-    *
-    * \parm[in] phaseId An optimizer \ref Optimizer::AnalysisPhases value
-    *
-    * \returns A NUL-terminated character string giving the name of the phase,
-    *          or the string "Unknown analysis phase" if the phase id value is
-    *          not recognized.
-    */
-   static const char *getAnalysisPhaseName(Optimizer::AnalysisPhases phaseId);
+    /**
+     * Given a \ref Optimizer::AnalysisPhase value, returns a descriptive name
+     * for the phase.  This method is intended to be used for RAS purposes.
+     *
+     * \parm[in] phaseId An optimizer \ref Optimizer::AnalysisPhases value
+     *
+     * \returns A NUL-terminated character string giving the name of the phase,
+     *          or the string "Unknown analysis phase" if the phase id value is
+     *          not recognized.
+     */
+    static const char *getAnalysisPhaseName(Optimizer::AnalysisPhases phaseId);
 
-   protected:
-   TR::OptimizationManager *      _opts[OMR::numGroups];
+protected:
+    TR::OptimizationManager *_opts[OMR::numGroups];
 
-   TR::Optimizer *self();
+    TR::Optimizer *self();
 
-   private:
+private:
+    int32_t performOptimization(const OptimizationStrategy *, int32_t firstOptIndex, int32_t lastOptIndex,
+        int32_t doTiming);
 
-   int32_t performOptimization(const OptimizationStrategy *, int32_t firstOptIndex, int32_t lastOptIndex, int32_t doTiming);
+    void dumpStrategy(const OptimizationStrategy *);
 
-   void dumpStrategy(const OptimizationStrategy *);
+    TR::Compilation *_compilation;
+    TR_Memory *_trMemory;
+    TR::CodeGenerator *_cg;
 
+    TR::ResolvedMethodSymbol *_methodSymbol;
+    bool _isIlGen;
 
-   TR::Compilation *            _compilation;
-   TR_Memory *                   _trMemory;
-   TR::CodeGenerator *          _cg;
+    const OptimizationStrategy *_strategy;
 
-   TR::ResolvedMethodSymbol *   _methodSymbol;
-   bool                          _isIlGen;
+    /*
+     * Since mock strategies are only used in testing right now, we make this
+     * static to ease implementation.
+     *
+     * This is currently not a thread-safe implementation beause doing a
+     * thread-safe implementation would require a more invasive compilation
+     * control modification (since the strategy would need to be injected into
+     * the Compilation object, but due to where it's created, there's little
+     * opportunity for this.)
+     */
+    static const OptimizationStrategy *_mockStrategy;
 
-   const OptimizationStrategy *          _strategy;
+    int32_t *_symReferencesTable;
+    TR_UseDefInfo *_useDefInfo;
+    TR_ValueNumberInfo *_valueNumberInfo;
+    uint16_t _vnInfoType;
 
-   /*
-    * Since mock strategies are only used in testing right now, we make this
-    * static to ease implementation.
-    *
-    * This is currently not a thread-safe implementation beause doing a
-    * thread-safe implementation would require a more invasive compilation
-    * control modification (since the strategy would need to be injected into
-    * the Compilation object, but due to where it's created, there's little
-    * opportunity for this.)
-    */
-   static const OptimizationStrategy *_mockStrategy;
+    TR::Block *_enclosingFinallyBlock;
 
-   int32_t *                     _symReferencesTable;
-   TR_UseDefInfo *               _useDefInfo;
-   TR_ValueNumberInfo *          _valueNumberInfo;
-   uint16_t                      _vnInfoType;
+    List<TR::Node> _eliminatedCheckcastNodes;
+    List<TR::Node> _classPointerNodes;
 
-   TR::Block *                   _enclosingFinallyBlock;
+    int32_t _dumpGraphsIndex;
+    int32_t _firstDumpOptPhaseTrees;
+    int32_t _lastDumpOptPhaseTrees;
+    int32_t _optMessageIndex;
 
-   List<TR::Node>               _eliminatedCheckcastNodes;
-   List<TR::Node>               _classPointerNodes;
+    bool _aliasSetsAreValid;
+    bool _cantBuildGlobalsUseDefInfo;
+    bool _cantBuildLocalsUseDefInfo;
+    bool _cantBuildGlobalsValueNumberInfo;
+    bool _cantBuildLocalsValueNumberInfo;
+    bool _canRunBlockByBlockOptimizations;
+    bool _inlineSynchronized;
+    bool _dumpGraphs;
+    bool _stackedOptimizer;
+    bool _cachedExtendedBBInfoValid;
 
-   int32_t                       _dumpGraphsIndex;
-   int32_t                       _firstDumpOptPhaseTrees;
-   int32_t                       _lastDumpOptPhaseTrees;
-   int32_t                       _optMessageIndex;
+    int32_t _numBasicBlocksInMethod;
+    int32_t _numLoopsInMethod;
 
-   bool                          _aliasSetsAreValid;
-   bool                          _cantBuildGlobalsUseDefInfo;
-   bool                          _cantBuildLocalsUseDefInfo;
-   bool                          _cantBuildGlobalsValueNumberInfo;
-   bool                          _cantBuildLocalsValueNumberInfo;
-   bool                          _canRunBlockByBlockOptimizations;
-   bool                          _inlineSynchronized;
-   bool                          _dumpGraphs;
-   bool                          _stackedOptimizer;
-   bool                          _cachedExtendedBBInfoValid;
+    bool _firstTimeStructureIsBuilt;
+    bool _disableLoopOptsThatCanCreateLoops;
 
-   int32_t                       _numBasicBlocksInMethod;
-   int32_t                       _numLoopsInMethod;
+    TR_BitVector *_seenBlocksGRA; // used during the GRA as a global
+    TR_BitVector *_resetExitsGRA; // used during the GRA as a global
+    TR_BitVector *_successorBitsGRA; // used during the GRA as a global
+};
 
-   bool                          _firstTimeStructureIsBuilt;
-   bool                          _disableLoopOptsThatCanCreateLoops;
-
-   TR_BitVector *                _seenBlocksGRA; // used during the GRA as a global
-   TR_BitVector *                _resetExitsGRA; // used during the GRA as a global
-   TR_BitVector *                _successorBitsGRA; // used during the GRA as a global
-   };
-
-}
+} // namespace OMR
 
 #endif

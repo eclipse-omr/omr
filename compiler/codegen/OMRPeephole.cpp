@@ -25,57 +25,38 @@
 #include "codegen/CodeGenerator_inlines.hpp"
 #include "codegen/Instruction.hpp"
 
-OMR::Peephole::Peephole(TR::Compilation* comp) :
-   _comp(comp), _cg(comp->cg()), prevInst(NULL)
-   {}
+OMR::Peephole::Peephole(TR::Compilation *comp)
+    : _comp(comp)
+    , _cg(comp->cg())
+    , prevInst(NULL)
+{}
 
-TR::Peephole*
-OMR::Peephole::self()
-   {
-   return static_cast<TR::Peephole*>(this);
-   }
+TR::Peephole *OMR::Peephole::self() { return static_cast<TR::Peephole *>(this); }
 
-TR::Compilation*
-OMR::Peephole::comp() const
-   {
-   return _comp;
-   }
+TR::Compilation *OMR::Peephole::comp() const { return _comp; }
 
-TR::CodeGenerator*
-OMR::Peephole::cg() const
-   {
-   return _cg;
-   }
+TR::CodeGenerator *OMR::Peephole::cg() const { return _cg; }
 
-bool
-OMR::Peephole::perform()
-   {
-   bool performed = false;
+bool OMR::Peephole::perform()
+{
+    bool performed = false;
 
-   TR::Instruction* currInst = self()->cg()->getFirstInstruction();
+    TR::Instruction *currInst = self()->cg()->getFirstInstruction();
 
-   while (currInst != NULL)
-      {
-      performed |= self()->performOnInstruction(currInst);
+    while (currInst != NULL) {
+        performed |= self()->performOnInstruction(currInst);
 
-      // The current instruction being processed may have been removed, moved, or altered in some way by the peephole
-      // optimization. In such cases we need to ensure we resume processing instructions from a valid point.
-      if (currInst->getPrev() == prevInst)
-         {
-         prevInst = currInst;
-         currInst = currInst->getNext();
-         }
-      else
-         {
-         currInst = prevInst->getNext();
-         }
-      }
+        // The current instruction being processed may have been removed, moved, or altered in some way by the peephole
+        // optimization. In such cases we need to ensure we resume processing instructions from a valid point.
+        if (currInst->getPrev() == prevInst) {
+            prevInst = currInst;
+            currInst = currInst->getNext();
+        } else {
+            currInst = prevInst->getNext();
+        }
+    }
 
-   return performed;
-   }
+    return performed;
+}
 
-bool
-OMR::Peephole::performOnInstruction(TR::Instruction* cursor)
-   {
-   return false;
-   }
+bool OMR::Peephole::performOnInstruction(TR::Instruction *cursor) { return false; }

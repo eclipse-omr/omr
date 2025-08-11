@@ -43,25 +43,23 @@ namespace TR {
  *  The class is not intented to be extended, ValuePropagation is the core
  *  engine and home to extension points of language specific optimizations
  */
-class LocalValuePropagation : public TR::ValuePropagation
-   {
-   public:
+class LocalValuePropagation : public TR::ValuePropagation {
+public:
+    LocalValuePropagation(TR::OptimizationManager *manager);
 
-   LocalValuePropagation(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR::LocalValuePropagation(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR::LocalValuePropagation(manager);
+    }
 
-   virtual int32_t perform();
-   virtual int32_t performOnBlock(TR::Block *);
-   virtual void prePerformOnBlocks();
-   virtual void postPerformOnBlocks();
-   virtual const char * optDetailString() const throw();
+    virtual int32_t perform();
+    virtual int32_t performOnBlock(TR::Block *);
+    virtual void prePerformOnBlocks();
+    virtual void postPerformOnBlocks();
+    virtual const char *optDetailString() const throw();
 
-   private:
-
-   TR::TreeTop *processBlock(TR::TreeTop *start);
-   };
-}
+private:
+    TR::TreeTop *processBlock(TR::TreeTop *start);
+};
+} // namespace TR
 #endif

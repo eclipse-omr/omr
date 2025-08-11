@@ -33,272 +33,239 @@
 class TR_InnerAssumption;
 class TR_OpaqueClassBlock;
 class TR_VirtualGuardSite;
+
 namespace TR {
 class Compilation;
 class Node;
 class ResolvedMethodSymbol;
 class SymbolReference;
 class TreeTop;
-}
+} // namespace TR
 
-enum TR_VirtualGuardKind
-   {
-   TR_NoGuard,
-   TR_ProfiledGuard,
-   TR_InterfaceGuard,
-   TR_AbstractGuard,
-   TR_HierarchyGuard,
-   TR_NonoverriddenGuard,
-   TR_SideEffectGuard,
-   TR_DummyGuard,
-   TR_HCRGuard,
-   TR_MutableCallSiteTargetGuard,
-   TR_MethodEnterExitGuard,
-   TR_DirectMethodGuard,
-   TR_InnerGuard,
-   TR_ArrayStoreCheckGuard,
-   TR_OSRGuard,
-   TR_BreakpointGuard
-   };
+enum TR_VirtualGuardKind {
+    TR_NoGuard,
+    TR_ProfiledGuard,
+    TR_InterfaceGuard,
+    TR_AbstractGuard,
+    TR_HierarchyGuard,
+    TR_NonoverriddenGuard,
+    TR_SideEffectGuard,
+    TR_DummyGuard,
+    TR_HCRGuard,
+    TR_MutableCallSiteTargetGuard,
+    TR_MethodEnterExitGuard,
+    TR_DirectMethodGuard,
+    TR_InnerGuard,
+    TR_ArrayStoreCheckGuard,
+    TR_OSRGuard,
+    TR_BreakpointGuard
+};
 
-enum TR_VirtualGuardTestType
-   {
-   TR_DummyTest,
-   TR_VftTest,
-   TR_MethodTest,
-   TR_NonoverriddenTest,
-   TR_FSDTest /**< used in debugging mode to test if a breakpoint is set for the inlined callee */
-   };
+enum TR_VirtualGuardTestType {
+    TR_DummyTest,
+    TR_VftTest,
+    TR_MethodTest,
+    TR_NonoverriddenTest,
+    TR_FSDTest /**< used in debugging mode to test if a breakpoint is set for the inlined callee */
+};
 
+class TR_VirtualGuard {
+public:
+    TR_ALLOC(TR_Memory::VirtualGuard)
 
+    TR_VirtualGuard(TR_VirtualGuardTestType test, TR_VirtualGuardKind kind, TR::Compilation *comp, TR::Node *callNode,
+        TR::Node *guardNode, int16_t calleeIndex, int32_t currentSiteIndex, TR_OpaqueClassBlock *thisClass = 0);
 
-class TR_VirtualGuard
-   {
-   public:
+    // Used for guarded devirtualizations
+    TR_VirtualGuard(TR_VirtualGuardTestType test, TR_VirtualGuardKind kind, TR::Compilation *comp, TR::Node *callNode,
+        TR::Node *guardNode = NULL, int32_t currentSiteIndex = -2);
 
-   TR_ALLOC(TR_Memory::VirtualGuard)
+    TR_VirtualGuard(TR_VirtualGuard *orig, TR::Node *newGuardNode, TR::Compilation *comp);
 
-   TR_VirtualGuard(
-         TR_VirtualGuardTestType test,
-         TR_VirtualGuardKind kind,
-         TR::Compilation *comp,
-         TR::Node *callNode,
-         TR::Node *guardNode,
-         int16_t calleeIndex,
-         int32_t currentSiteIndex,
-         TR_OpaqueClassBlock *thisClass = 0);
+    static TR::Node *createVftGuard(TR_VirtualGuardKind, TR::Compilation *, int16_t calleeIndex, TR::Node *,
+        TR::TreeTop *, TR_OpaqueClassBlock *);
 
-   // Used for guarded devirtualizations
-   TR_VirtualGuard(
-         TR_VirtualGuardTestType test,
-         TR_VirtualGuardKind kind,
-         TR::Compilation *comp,
-         TR::Node *callNode,
-         TR::Node *guardNode=NULL,
-         int32_t currentSiteIndex=-2);
+    static TR::Node *createVftGuardWithReceiver(TR_VirtualGuardKind, TR::Compilation *, int16_t calleeIndex, TR::Node *,
+        TR::TreeTop *, TR_OpaqueClassBlock *, TR::Node *receiverNode);
 
-   TR_VirtualGuard(
-      TR_VirtualGuard *orig, TR::Node *newGuardNode, TR::Compilation *comp);
+    static TR::Node *createMethodGuard(TR_VirtualGuardKind, TR::Compilation *, int16_t calleeIndex, TR::Node *,
+        TR::TreeTop *, TR::ResolvedMethodSymbol *, TR_OpaqueClassBlock *thisClass);
 
-   static TR::Node *createVftGuard(
-         TR_VirtualGuardKind,
-         TR::Compilation *,
-         int16_t calleeIndex,
-         TR::Node *,
-         TR::TreeTop *,
-         TR_OpaqueClassBlock *);
+    static TR::Node *createMethodGuardWithReceiver(TR_VirtualGuardKind, TR::Compilation *, int16_t calleeIndex,
+        TR::Node *, TR::TreeTop *, TR::ResolvedMethodSymbol *, TR_OpaqueClassBlock *thisClass, TR::Node *receiverNode);
 
-   static TR::Node *createVftGuardWithReceiver(
-         TR_VirtualGuardKind,
-         TR::Compilation *,
-         int16_t calleeIndex,
-         TR::Node *,
-         TR::TreeTop *,
-         TR_OpaqueClassBlock *,
-         TR::Node* receiverNode);
+    static TR::Node *createNonoverriddenGuard(TR_VirtualGuardKind, TR::Compilation *, int16_t calleeIndex, TR::Node *,
+        TR::TreeTop *, TR::ResolvedMethodSymbol *, bool forInling = true);
 
-   static TR::Node *createMethodGuard(
-         TR_VirtualGuardKind,
-         TR::Compilation *,
-         int16_t calleeIndex,
-         TR::Node *,
-         TR::TreeTop *,
-         TR::ResolvedMethodSymbol *,
-         TR_OpaqueClassBlock *thisClass);
+    static TR::Node *createMutableCallSiteTargetGuard(TR::Compilation *comp, int16_t calleeIndex, TR::Node *node,
+        TR::TreeTop *destination, TR::KnownObjectTable::Index mcsObject, TR::KnownObjectTable::Index mcsEpoch);
 
-   static TR::Node *createMethodGuardWithReceiver(
-         TR_VirtualGuardKind,
-         TR::Compilation *,
-         int16_t calleeIndex,
-         TR::Node *,
-         TR::TreeTop *,
-         TR::ResolvedMethodSymbol *,
-         TR_OpaqueClassBlock *thisClass,
-         TR::Node* receiverNode);
+    static TR::Node *createDummyOrSideEffectGuard(TR::Compilation *, TR::Node *, TR::TreeTop *);
 
-   static TR::Node *createNonoverriddenGuard(
-         TR_VirtualGuardKind,
-         TR::Compilation *,
-         int16_t calleeIndex,
-         TR::Node *,
-         TR::TreeTop *,
-         TR::ResolvedMethodSymbol *,
-         bool forInling = true);
+    static TR::Node *createSideEffectGuard(TR::Compilation *, TR::Node *, TR::TreeTop *);
 
-   static TR::Node *createMutableCallSiteTargetGuard(
-         TR::Compilation * comp,
-         int16_t calleeIndex,
-         TR::Node * node,
-         TR::TreeTop * destination,
-         TR::KnownObjectTable::Index mcsObject,
-         TR::KnownObjectTable::Index mcsEpoch);
+    static TR::Node *createAOTInliningGuard(TR::Compilation *, int16_t, TR::Node *, TR::TreeTop *, TR_VirtualGuardKind);
 
-   static TR::Node *createDummyOrSideEffectGuard(TR::Compilation *, TR::Node *, TR::TreeTop *);
+    static TR::Node *createAOTGuard(TR::Compilation *, int16_t, TR::Node *, TR::TreeTop *, TR_VirtualGuardKind);
 
-   static TR::Node *createSideEffectGuard(TR::Compilation *, TR::Node *, TR::TreeTop *);
+    static TR::Node *createDummyGuard(TR::Compilation *, int16_t, TR::Node *, TR::TreeTop *);
 
-   static TR::Node *createAOTInliningGuard(TR::Compilation *, int16_t, TR::Node *, TR::TreeTop *, TR_VirtualGuardKind);
+    static TR_VirtualGuard *createGuardedDevirtualizationGuard(TR_VirtualGuardKind, TR::Compilation *,
+        TR::Node *callNode);
 
-   static TR::Node *createAOTGuard(TR::Compilation *, int16_t, TR::Node *, TR::TreeTop *, TR_VirtualGuardKind);
+    static TR_VirtualGuard *createArrayStoreCheckGuard(TR::Compilation *, TR::Node *node, TR_OpaqueClassBlock *clazz);
 
-   static TR::Node *createDummyGuard(TR::Compilation *, int16_t, TR::Node *, TR::TreeTop *);
+    static TR::Node *createOSRGuard(TR::Compilation *, TR::TreeTop *destination);
 
-   static TR_VirtualGuard *createGuardedDevirtualizationGuard(TR_VirtualGuardKind, TR::Compilation *, TR::Node *callNode);
+    static TR::Node *createHCRGuard(TR::Compilation *comp, int16_t calleeIndex, TR::Node *node,
+        TR::TreeTop *destination, TR::ResolvedMethodSymbol *symbol, TR_OpaqueClassBlock *thisClass);
 
-   static TR_VirtualGuard *createArrayStoreCheckGuard(TR::Compilation *, TR::Node *node, TR_OpaqueClassBlock *clazz);
+    static TR::Node *createBreakpointGuard(TR::Compilation *comp, int16_t calleeIndex, TR::Node *callNode,
+        TR::TreeTop *destination, TR::ResolvedMethodSymbol *calleeSymbol);
+    static TR::Node *createBreakpointGuardNode(TR::Compilation *comp, int16_t calleeIndex, TR::Node *callNode,
+        TR::TreeTop *destination, TR::ResolvedMethodSymbol *calleeSymbol);
 
-   static TR::Node *createOSRGuard(TR::Compilation *, TR::TreeTop *destination);
+    bool isNopable()
+    {
+        switch (_kind) {
+            case TR_ProfiledGuard:
+                return false;
+            default:
+                return true;
+        }
+    }
 
-   static TR::Node *createHCRGuard(
-         TR::Compilation *comp,
-         int16_t calleeIndex,
-         TR::Node *node,
-         TR::TreeTop *destination,
-         TR::ResolvedMethodSymbol * symbol,
-         TR_OpaqueClassBlock *thisClass);
+    bool mustBeNoped()
+    {
+        switch (_kind) {
+            case TR_MutableCallSiteTargetGuard:
+            case TR_InterfaceGuard:
+                return true;
+            default:
+                return false;
+        }
+    }
 
-   static TR::Node *createBreakpointGuard(TR::Compilation * comp, int16_t calleeIndex, TR::Node* callNode, TR::TreeTop * destination, TR::ResolvedMethodSymbol * calleeSymbol);
-   static TR::Node *createBreakpointGuardNode(TR::Compilation * comp, int16_t calleeIndex, TR::Node* callNode, TR::TreeTop * destination, TR::ResolvedMethodSymbol * calleeSymbol);
-
-   bool isNopable()
-      {
-      switch (_kind)
-         {
-         case TR_ProfiledGuard:
+    bool indirectsTheThisPointer()
+    {
+        if (_kind == TR_HCRGuard)
             return false;
-         default:
-            return true;
-         }
-      }
 
-   bool mustBeNoped()
-      {
-      switch (_kind)
-         {
-         case TR_MutableCallSiteTargetGuard:
-         case TR_InterfaceGuard:
-            return true;
-         default:
-            return false;
-         }
-      }
+        switch (_test) {
+            case TR_DummyTest:
+            case TR_NonoverriddenTest:
+            case TR_FSDTest:
+                return false;
+            default:
+                return true;
+        }
+    }
 
-   bool indirectsTheThisPointer()
-      {
-      if (_kind == TR_HCRGuard)
-         return false;
+    int16_t getCalleeIndex() { return _calleeIndex; }
 
-      switch (_test)
-         {
-         case TR_DummyTest:
-         case TR_NonoverriddenTest:
-         case TR_FSDTest:
-            return false;
-         default:
-            return true;
-         }
-      }
+    int32_t getByteCodeIndex() { return _byteCodeIndex; }
 
-   int16_t                 getCalleeIndex() { return _calleeIndex; }
-   int32_t                 getByteCodeIndex() { return _byteCodeIndex; }
-   TR_VirtualGuardTestType getTestType()    { return _test; }
-   TR_VirtualGuardKind     getKind()        { return _kind; }
-   TR_OpaqueClassBlock    *getThisClass()   { return _thisClass; }
-   void                    setThisClass(TR_OpaqueClassBlock *thisClass)   { _thisClass = thisClass; }
+    TR_VirtualGuardTestType getTestType() { return _test; }
 
-   TR::KnownObjectTable::Index mutableCallSiteObject()
-      {
-      TR_ASSERT(_kind == TR_MutableCallSiteTargetGuard, "mutableCallSiteObject only defined for TR_MutableCallSiteTargetGuard");
-      return _mutableCallSiteObject;
-      }
+    TR_VirtualGuardKind getKind() { return _kind; }
 
-   TR::KnownObjectTable::Index mutableCallSiteEpoch()
-      {
-      TR_ASSERT(_kind == TR_MutableCallSiteTargetGuard, "mutableCallSiteEpoch only defined for TR_MutableCallSiteTargetGuard");
-      return _mutableCallSiteEpoch;
-      }
+    TR_OpaqueClassBlock *getThisClass() { return _thisClass; }
 
-   bool                    isInlineGuard()  { return _callNode == NULL; }
-   TR::Node                *getCallNode()    { TR_ASSERT(!isInlineGuard(), "assertion failure"); return _callNode; }
-   TR_ByteCodeInfo         &getByteCodeInfo() { return _bcInfo; }
-   void                    setCannotBeRemoved() { _cannotBeRemoved = true; }
-   bool                    canBeRemoved(bool ignoreMerged=false)   { return ignoreMerged ? !_cannotBeRemoved : !(_cannotBeRemoved || _mergedWithHCRGuard || _mergedWithOSRGuard); }
+    void setThisClass(TR_OpaqueClassBlock *thisClass) { _thisClass = thisClass; }
+
+    TR::KnownObjectTable::Index mutableCallSiteObject()
+    {
+        TR_ASSERT(_kind == TR_MutableCallSiteTargetGuard,
+            "mutableCallSiteObject only defined for TR_MutableCallSiteTargetGuard");
+        return _mutableCallSiteObject;
+    }
+
+    TR::KnownObjectTable::Index mutableCallSiteEpoch()
+    {
+        TR_ASSERT(_kind == TR_MutableCallSiteTargetGuard,
+            "mutableCallSiteEpoch only defined for TR_MutableCallSiteTargetGuard");
+        return _mutableCallSiteEpoch;
+    }
+
+    bool isInlineGuard() { return _callNode == NULL; }
+
+    TR::Node *getCallNode()
+    {
+        TR_ASSERT(!isInlineGuard(), "assertion failure");
+        return _callNode;
+    }
+
+    TR_ByteCodeInfo &getByteCodeInfo() { return _bcInfo; }
+
+    void setCannotBeRemoved() { _cannotBeRemoved = true; }
+
+    bool canBeRemoved(bool ignoreMerged = false)
+    {
+        return ignoreMerged ? !_cannotBeRemoved : !(_cannotBeRemoved || _mergedWithHCRGuard || _mergedWithOSRGuard);
+    }
 
 #ifdef J9_PROJECT_SPECIFIC
-   TR_VirtualGuardSite *addNOPSite();
-   List<TR_VirtualGuardSite> &getNOPSites()   { return _sites; }
+    TR_VirtualGuardSite *addNOPSite();
+
+    List<TR_VirtualGuardSite> &getNOPSites() { return _sites; }
 #endif
 
-   TR::SymbolReference *getSymbolReference() { return _guardedMethod; }
-   void setSymbolReference(TR::SymbolReference* sr) { _guardedMethod = sr; }
+    TR::SymbolReference *getSymbolReference() { return _guardedMethod; }
 
-   void addInnerAssumption(TR_InnerAssumption *a);
-   void addInnerAssumption(TR::Compilation *comp, int32_t ordinal, TR_VirtualGuard *guard);
-   List<TR_InnerAssumption> &getInnerAssumptions() { return _innerAssumptions; }
+    void setSymbolReference(TR::SymbolReference *sr) { _guardedMethod = sr; }
 
-   bool                    shouldGenerateChildrenCode() { return _evalChildren; }
-   void                    dontGenerateChildrenCode()   { _evalChildren = false; }
-   void                    setMergedWithHCRGuard(bool merged=true) { _mergedWithHCRGuard=merged; }
-   bool                    mergedWithHCRGuard() { return _mergedWithHCRGuard; }
+    void addInnerAssumption(TR_InnerAssumption *a);
+    void addInnerAssumption(TR::Compilation *comp, int32_t ordinal, TR_VirtualGuard *guard);
 
-   void                    setMergedWithOSRGuard(bool merged=true) { _mergedWithOSRGuard=merged; }
-   bool                    mergedWithOSRGuard() { return _mergedWithOSRGuard; }
+    List<TR_InnerAssumption> &getInnerAssumptions() { return _innerAssumptions; }
 
-   int32_t                 getCurrentInlinedSiteIndex() { return _currentInlinedSiteIndex; }
-   void                    setCurrentInlinedSiteIndex(int32_t index) { _currentInlinedSiteIndex = index; }
+    bool shouldGenerateChildrenCode() { return _evalChildren; }
 
-   TR::Node *getGuardNode() { return _guardNode; }
+    void dontGenerateChildrenCode() { _evalChildren = false; }
 
-   private:
+    void setMergedWithHCRGuard(bool merged = true) { _mergedWithHCRGuard = merged; }
 
+    bool mergedWithHCRGuard() { return _mergedWithHCRGuard; }
+
+    void setMergedWithOSRGuard(bool merged = true) { _mergedWithOSRGuard = merged; }
+
+    bool mergedWithOSRGuard() { return _mergedWithOSRGuard; }
+
+    int32_t getCurrentInlinedSiteIndex() { return _currentInlinedSiteIndex; }
+
+    void setCurrentInlinedSiteIndex(int32_t index) { _currentInlinedSiteIndex = index; }
+
+    TR::Node *getGuardNode() { return _guardNode; }
+
+private:
 #ifdef J9_PROJECT_SPECIFIC
-   List<TR_VirtualGuardSite> _sites;
+    List<TR_VirtualGuardSite> _sites;
 #endif
-   TR_VirtualGuardTestType   _test;
-   TR_VirtualGuardKind       _kind;
-   int16_t                   _calleeIndex;
-   int32_t                   _byteCodeIndex;
-   TR::SymbolReference       *_guardedMethod;
+    TR_VirtualGuardTestType _test;
+    TR_VirtualGuardKind _kind;
+    int16_t _calleeIndex;
+    int32_t _byteCodeIndex;
+    TR::SymbolReference *_guardedMethod;
 
-   TR::Node                  *_guardNode;
+    TR::Node *_guardNode;
 
-   // Non-null for guarded-devirtualizations only
-   TR::Node                  *_callNode;
-   int32_t                   _currentInlinedSiteIndex; // used for AOT
+    // Non-null for guarded-devirtualizations only
+    TR::Node *_callNode;
+    int32_t _currentInlinedSiteIndex; // used for AOT
 
-   // used for Interface/Method, Abstract/Method, Hierarchy/Method
-   TR_OpaqueClassBlock      *_thisClass;
+    // used for Interface/Method, Abstract/Method, Hierarchy/Method
+    TR_OpaqueClassBlock *_thisClass;
 
-   bool                      _cannotBeRemoved;
-   List<TR_InnerAssumption>  _innerAssumptions;
-   bool                      _evalChildren;
-   bool                      _mergedWithHCRGuard;
-   bool                      _mergedWithOSRGuard;
+    bool _cannotBeRemoved;
+    List<TR_InnerAssumption> _innerAssumptions;
+    bool _evalChildren;
+    bool _mergedWithHCRGuard;
+    bool _mergedWithOSRGuard;
 
-   // These reference locations are non-null only for MutableCallSiteGuards
-   TR::KnownObjectTable::Index _mutableCallSiteObject;
-   TR::KnownObjectTable::Index _mutableCallSiteEpoch;
-   TR_ByteCodeInfo           _bcInfo;
-   };
+    // These reference locations are non-null only for MutableCallSiteGuards
+    TR::KnownObjectTable::Index _mutableCallSiteObject;
+    TR::KnownObjectTable::Index _mutableCallSiteEpoch;
+    TR_ByteCodeInfo _bcInfo;
+};
 
 #endif

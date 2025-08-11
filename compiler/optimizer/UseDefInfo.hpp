@@ -38,13 +38,15 @@
 
 class TR_ReachingDefinitions;
 class TR_ValueNumberInfo;
+
 namespace TR {
 class Block;
 class CFG;
 class ILOpCode;
 class Optimizer;
 class TreeTop;
-}
+} // namespace TR
+
 namespace OMR {
 class Optimizer;
 }
@@ -64,364 +66,433 @@ class Optimizer;
  * This means that there are a total of Z index values.
  * The bit vectors that hold use information are of size (Z-X).
  */
-class TR_UseDefInfo
-   {
-   TR::Region _region;
-   public:
+class TR_UseDefInfo {
+    TR::Region _region;
 
-   static void *operator new(size_t size, TR::Allocator a)
-      { return a.allocate(size); }
-   static void  operator delete(void *ptr, TR::Allocator a)
-      {
-      // If there is an exception thrown during construction, the compilation
-      // will be aborted, and all memory associated with that compilation will get freed.
-      }
-   static void  operator delete(void *ptr, size_t size)
-      { ((TR_UseDefInfo*)ptr)->allocator().deallocate(ptr, size); } /* t->allocator() better return the same allocator as used for new */
+public:
+    static void *operator new(size_t size, TR::Allocator a) { return a.allocate(size); }
 
-   /* Virtual destructor is necessary for the above delete operator to work
-    * See "Modern C++ Design" section 4.7
-    */
-   virtual ~TR_UseDefInfo() {}
+    static void operator delete(void *ptr, TR::Allocator a)
+    {
+        // If there is an exception thrown during construction, the compilation
+        // will be aborted, and all memory associated with that compilation will get freed.
+    }
 
-   // Construct use def info for the current method's trees. This also assigns
-   // use/def index values to the relevant nodes.
-   //
+    static void operator delete(void *ptr, size_t size)
+    {
+        ((TR_UseDefInfo *)ptr)->allocator().deallocate(ptr, size);
+    } /* t->allocator() better return the same allocator as used for new */
+
+    /* Virtual destructor is necessary for the above delete operator to work
+     * See "Modern C++ Design" section 4.7
+     */
+    virtual ~TR_UseDefInfo() {}
+
+    // Construct use def info for the current method's trees. This also assigns
+    // use/def index values to the relevant nodes.
+    //
 #if defined(NEW_USEDEF_INFO_SPARSE_INTERFACE)
-   typedef TR::SparseBitVector BitVector;
+    typedef TR::SparseBitVector BitVector;
 #else
-   typedef TR::BitVector BitVector;
+    typedef TR::BitVector BitVector;
 #endif
 
-   /**
-    * Data that can be freed when TR_UseDefInfo is no longer needed
-    * Data that used to be stack allocated
-    */
-   class AuxiliaryData
-      {
-      private:
-         AuxiliaryData(int32_t numSymRefs, ncount_t nodeCount, TR::Region &region, TR::Allocator allocator) :
-             _region(region),
-             _onceReadSymbols(numSymRefs, static_cast<TR_BitVector*>(NULL), _region),
-             _onceWrittenSymbols(numSymRefs, static_cast<TR_BitVector*>(NULL), _region),
-             _defsForSymbol(0, static_cast<TR_BitVector*>(NULL), _region),
-             _neverReadSymbols(numSymRefs, _region),
-             _neverReferencedSymbols(numSymRefs, _region),
-             _neverWrittenSymbols(numSymRefs, _region),
-             _volatileOrAliasedToVolatileSymbols(numSymRefs, _region),
-             _onceWrittenSymbolsIndices(numSymRefs, TR::SparseBitVector(allocator), _region),
-             _onceReadSymbolsIndices(numSymRefs, TR::SparseBitVector(allocator), _region),
-             _expandedAtoms(0, std::make_pair<TR::Node *, TR::TreeTop *>(NULL, NULL), _region),
-             _sideTableToUseDefMap(_region),
-             _numAliases(numSymRefs, _region),
-             _loadsBySymRefNum(numSymRefs, _region),
-             _defsForOSR(0, static_cast<TR_BitVector*>(NULL), _region),
-             _workBitVector(_region),
-             _doneTrivialNode(_region),
-             _isTrivialNode(_region)
-            {}
-      TR::Region _region;
+    /**
+     * Data that can be freed when TR_UseDefInfo is no longer needed
+     * Data that used to be stack allocated
+     */
+    class AuxiliaryData {
+    private:
+        AuxiliaryData(int32_t numSymRefs, ncount_t nodeCount, TR::Region &region, TR::Allocator allocator)
+            : _region(region)
+            , _onceReadSymbols(numSymRefs, static_cast<TR_BitVector *>(NULL), _region)
+            , _onceWrittenSymbols(numSymRefs, static_cast<TR_BitVector *>(NULL), _region)
+            , _defsForSymbol(0, static_cast<TR_BitVector *>(NULL), _region)
+            , _neverReadSymbols(numSymRefs, _region)
+            , _neverReferencedSymbols(numSymRefs, _region)
+            , _neverWrittenSymbols(numSymRefs, _region)
+            , _volatileOrAliasedToVolatileSymbols(numSymRefs, _region)
+            , _onceWrittenSymbolsIndices(numSymRefs, TR::SparseBitVector(allocator), _region)
+            , _onceReadSymbolsIndices(numSymRefs, TR::SparseBitVector(allocator), _region)
+            , _expandedAtoms(0, std::make_pair<TR::Node *, TR::TreeTop *>(NULL, NULL), _region)
+            , _sideTableToUseDefMap(_region)
+            , _numAliases(numSymRefs, _region)
+            , _loadsBySymRefNum(numSymRefs, _region)
+            , _defsForOSR(0, static_cast<TR_BitVector *>(NULL), _region)
+            , _workBitVector(_region)
+            , _doneTrivialNode(_region)
+            , _isTrivialNode(_region)
+        {}
 
-      // BitVector for temporary work. Used in buildUseDefs.
-      TR_BitVector _workBitVector;
+        TR::Region _region;
 
-      // Cache results from isTrivialNode
-      TR_BitVector _doneTrivialNode;
-      TR_BitVector _isTrivialNode;
+        // BitVector for temporary work. Used in buildUseDefs.
+        TR_BitVector _workBitVector;
 
-      TR::vector<TR_BitVector *, TR::Region&> _onceReadSymbols;
-      TR::vector<TR_BitVector *, TR::Region&> _onceWrittenSymbols;
-      // defsForSymbol are known definitions of the symbol
-      TR::vector<TR_BitVector *, TR::Region&> _defsForSymbol;
-      TR_BitVector _neverReadSymbols;
-      TR_BitVector _neverReferencedSymbols;
-      TR_BitVector _neverWrittenSymbols;
-      TR_BitVector _volatileOrAliasedToVolatileSymbols;
-      TR::vector<TR::SparseBitVector, TR::Region&> _onceWrittenSymbolsIndices;
-      TR::vector<TR::SparseBitVector, TR::Region&> _onceReadSymbolsIndices;
+        // Cache results from isTrivialNode
+        TR_BitVector _doneTrivialNode;
+        TR_BitVector _isTrivialNode;
 
-      TR::vector<std::pair<TR::Node *, TR::TreeTop *>, TR::Region&> _expandedAtoms;
+        TR::vector<TR_BitVector *, TR::Region &> _onceReadSymbols;
+        TR::vector<TR_BitVector *, TR::Region &> _onceWrittenSymbols;
+        // defsForSymbol are known definitions of the symbol
+        TR::vector<TR_BitVector *, TR::Region &> _defsForSymbol;
+        TR_BitVector _neverReadSymbols;
+        TR_BitVector _neverReferencedSymbols;
+        TR_BitVector _neverWrittenSymbols;
+        TR_BitVector _volatileOrAliasedToVolatileSymbols;
+        TR::vector<TR::SparseBitVector, TR::Region &> _onceWrittenSymbolsIndices;
+        TR::vector<TR::SparseBitVector, TR::Region &> _onceReadSymbolsIndices;
 
+        TR::vector<std::pair<TR::Node *, TR::TreeTop *>, TR::Region &> _expandedAtoms;
 
-      protected:
-      TR::deque<uint32_t, TR::Region&> _sideTableToUseDefMap;
-      private:
-      TR::deque<uint32_t, TR::Region&> _numAliases;
-      TR::deque<TR::Node *, TR::Region&> _loadsBySymRefNum;
+    protected:
+        TR::deque<uint32_t, TR::Region &> _sideTableToUseDefMap;
 
-      protected:
-      // used only in TR_OSRDefInfo - should extend AuxiliaryData really:
-      TR::vector<TR_BitVector *, TR::Region&> _defsForOSR;
+    private:
+        TR::deque<uint32_t, TR::Region &> _numAliases;
+        TR::deque<TR::Node *, TR::Region &> _loadsBySymRefNum;
 
-      friend class TR_UseDefInfo;
-      friend class TR_ReachingDefinitions;
-      friend class TR_OSRDefInfo;
-      };
+    protected:
+        // used only in TR_OSRDefInfo - should extend AuxiliaryData really:
+        TR::vector<TR_BitVector *, TR::Region &> _defsForOSR;
 
-   friend class OMR::Optimizer;
+        friend class TR_UseDefInfo;
+        friend class TR_ReachingDefinitions;
+        friend class TR_OSRDefInfo;
+    };
 
-   protected:
-   /**
-    * Constructs TR_UseDefInfo instance. Note that this should not be called directly.
-    * Instead construction is handled by OMR::Optimizer::createUseDefInfo() method.
-    *
-    * @param cfg                        The compilation instance
-    * @param requiresGlobals
-    * @param prefersGlobals
-    * @param loadsShouldBeDefs
-    * @param cannotOmitTrivialDefs
-    * @param conversionRegsOnly
-    * @param doCompletion
-    * @param callsShouldBeUses          Enables inclusion of calls as uses so that the alias analysis can detect
-    *                                   when local (stack) variable has been aliased by a function call.
-    *                                   A value of false is fine for Java like languages where
-    *                                   local (stack) variables cannot be passed by reference to function calls
-    *                                   and hence cannot be aliased. However for C like languages this flag should be
-    *                                   set to true.
-    */
-   TR_UseDefInfo(TR::Compilation *, TR::CFG * cfg, TR::Optimizer *,
-         bool requiresGlobals = true, bool prefersGlobals = true, bool loadsShouldBeDefs = true, bool cannotOmitTrivialDefs = false,
-         bool conversionRegsOnly = false, bool doCompletion = true, bool callsShouldBeUses = false);
+    friend class OMR::Optimizer;
 
-   void prepareUseDefInfo(bool requiresGlobals, bool prefersGlobals, bool cannotOmitTrivialDefs, bool conversionRegsOnly);
-   void invalidateUseDefInfo();
-   virtual bool performAnalysis(AuxiliaryData &aux);
-   virtual void processReachingDefinition(void* vblockInfo, AuxiliaryData &aux);
-   private:
-   bool _runReachingDefinitions(TR_ReachingDefinitions &reachingDefinitions, AuxiliaryData &aux);
+protected:
+    /**
+     * Constructs TR_UseDefInfo instance. Note that this should not be called directly.
+     * Instead construction is handled by OMR::Optimizer::createUseDefInfo() method.
+     *
+     * @param cfg                        The compilation instance
+     * @param requiresGlobals
+     * @param prefersGlobals
+     * @param loadsShouldBeDefs
+     * @param cannotOmitTrivialDefs
+     * @param conversionRegsOnly
+     * @param doCompletion
+     * @param callsShouldBeUses          Enables inclusion of calls as uses so that the alias analysis can detect
+     *                                   when local (stack) variable has been aliased by a function call.
+     *                                   A value of false is fine for Java like languages where
+     *                                   local (stack) variables cannot be passed by reference to function calls
+     *                                   and hence cannot be aliased. However for C like languages this flag should be
+     *                                   set to true.
+     */
+    TR_UseDefInfo(TR::Compilation *, TR::CFG *cfg, TR::Optimizer *, bool requiresGlobals = true,
+        bool prefersGlobals = true, bool loadsShouldBeDefs = true, bool cannotOmitTrivialDefs = false,
+        bool conversionRegsOnly = false, bool doCompletion = true, bool callsShouldBeUses = false);
 
-   protected:
-   TR::Compilation *comp() { return _compilation; }
-   TR::Optimizer *optimizer() { return _optimizer; }
+    void prepareUseDefInfo(bool requiresGlobals, bool prefersGlobals, bool cannotOmitTrivialDefs,
+        bool conversionRegsOnly);
+    void invalidateUseDefInfo();
+    virtual bool performAnalysis(AuxiliaryData &aux);
+    virtual void processReachingDefinition(void *vblockInfo, AuxiliaryData &aux);
 
-   TR_Memory *    trMemory()      { TR_ASSERT(false, "trMemory is prohibited in TR_UseDefInfo. Use comp->allocator()"); return NULL; }
-   TR_StackMemory trStackMemory() { TR_ASSERT(false, "trMemory is prohibited in TR_UseDefInfo. Use comp->allocator()"); return NULL; }
-   TR_HeapMemory  trHeapMemory()  { TR_ASSERT(false, "trMemory is prohibited in TR_UseDefInfo. Use comp->allocator()"); return NULL; }
+private:
+    bool _runReachingDefinitions(TR_ReachingDefinitions &reachingDefinitions, AuxiliaryData &aux);
 
-   bool trace()       {return _trace;}
+protected:
+    TR::Compilation *comp() { return _compilation; }
 
-   public:
-   TR::Allocator allocator() { return comp()->allocator(); }
-   bool infoIsValid() {return _isUseDefInfoValid;}
-   TR::Node *getNode(int32_t index);
-   TR::TreeTop *getTreeTop(int32_t index);
-   void clearNode(int32_t index) { _useDefs[index] = TR_UseDef(); }
-   bool getUsesFromDefIsZero(int32_t defIndex, bool loadAsDef = false);
-   bool getUsesFromDef(BitVector &usesFromDef, int32_t defIndex, bool loadAsDef = false);
+    TR::Optimizer *optimizer() { return _optimizer; }
 
-   private:
-   const BitVector &getUsesFromDef_ref(int32_t defIndex, bool loadAsDef = false);
-   public:
+    TR_Memory *trMemory()
+    {
+        TR_ASSERT(false, "trMemory is prohibited in TR_UseDefInfo. Use comp->allocator()");
+        return NULL;
+    }
 
-   bool getUseDefIsZero(int32_t useIndex);
-   bool getUseDef(BitVector &useDef, int32_t useIndex);
-   private:
-   const BitVector &getUseDef_ref(int32_t useIndex, BitVector *defs = NULL);
-   const BitVector &getUseDef_ref_body(int32_t useIndex, TR_BitVector *visitedDefs, TR_UseDefInfo::BitVector *defs = NULL);
-   public:
+    TR_StackMemory trStackMemory()
+    {
+        TR_ASSERT(false, "trMemory is prohibited in TR_UseDefInfo. Use comp->allocator()");
+        return NULL;
+    }
 
-   void          setUseDef(int32_t useIndex, int32_t defIndex);
-   void          resetUseDef(int32_t useIndex, int32_t defIndex);
-   void          clearUseDef(int32_t useIndex);
-   private:
-   bool          isLoadAddrUse(TR::Node * node);
+    TR_HeapMemory trHeapMemory()
+    {
+        TR_ASSERT(false, "trMemory is prohibited in TR_UseDefInfo. Use comp->allocator()");
+        return NULL;
+    }
 
-   public:
-   bool getDefiningLoads(BitVector &definingLoads, TR::Node *node);
-   private:
-   const BitVector &getDefiningLoads_ref(TR::Node *node);
-   public:
+    bool trace() { return _trace; }
 
-   TR::Node      *getSingleDefiningLoad(TR::Node *node);
-   void          resetDefUseInfo() {_defUseInfo.clear();}
+public:
+    TR::Allocator allocator() { return comp()->allocator(); }
 
-   bool          skipAnalyzingForCompileTime(TR::Node *node, TR::Block *block, TR::Compilation *comp, AuxiliaryData &aux);
+    bool infoIsValid() { return _isUseDefInfoValid; }
 
-   private:
+    TR::Node *getNode(int32_t index);
+    TR::TreeTop *getTreeTop(int32_t index);
 
-   void    findTrivialSymbolsToExclude(TR::Node *node, TR::TreeTop *treeTop, AuxiliaryData &aux);
-   bool    isTrivialUseDefNode(TR::Node *node, AuxiliaryData &aux);
-   bool    isTrivialUseDefNodeImpl(TR::Node *node, AuxiliaryData &aux);
-   bool    isTrivialUseDefSymRef(TR::SymbolReference *symRef, AuxiliaryData &aux);
+    void clearNode(int32_t index) { _useDefs[index] = TR_UseDef(); }
 
-   public:
-   int32_t getNumIrrelevantStores() { return _numIrrelevantStores; }
-   int32_t getNumUseNodes() {return _numUseOnlyNodes+_numDefUseNodes;}
-   int32_t getNumDefNodes() {return _numDefOnlyNodes+_numDefUseNodes;}
-   int32_t getNumDefOnlyNodes() {return _numDefOnlyNodes;}
-   int32_t getNumDefsOnEntry() { return (_uniqueIndexForDefsOnEntry ? _numDefsOnEntry : 1); }
-   int32_t getTotalNodes()  {return _numDefOnlyNodes+_numDefUseNodes+_numUseOnlyNodes;}
-   int32_t getFirstUseIndex() {return _numDefOnlyNodes;}
-   int32_t getLastUseIndex() {return getTotalNodes()-1;}
-   int32_t getFirstDefIndex() {return 0;}
-   int32_t getFirstRealDefIndex() { return getFirstDefIndex()+getNumDefsOnEntry();}
-   int32_t getLastDefIndex() {return getNumDefNodes()-1;}
+    bool getUsesFromDefIsZero(int32_t defIndex, bool loadAsDef = false);
+    bool getUsesFromDef(BitVector &usesFromDef, int32_t defIndex, bool loadAsDef = false);
 
-   bool    isDefIndex(uint32_t index) { return index && index <= unsigned(getLastDefIndex()); }
-   bool    isUseIndex(uint32_t index)  { return index >= unsigned(getFirstUseIndex()) && index <= unsigned(getLastUseIndex()); }
+private:
+    const BitVector &getUsesFromDef_ref(int32_t defIndex, bool loadAsDef = false);
 
-   bool    hasGlobalsUseDefs() {return _indexFields && _indexStatics;}
-   bool    canComputeReachingDefs();
-   // Information used by the reaching def analysis
-   //
-   int32_t getNumExpandedUseNodes()
-               {return _numExpandedUseOnlyNodes+_numExpandedDefUseNodes;}
-   int32_t getNumExpandedDefNodes()
-               {return _numExpandedDefOnlyNodes+_numExpandedDefUseNodes;}
-   int32_t getNumExpandedDefsOnEntry() {return _numDefsOnEntry;}
-   int32_t getExpandedTotalNodes()
-               {return _numExpandedDefOnlyNodes+_numExpandedDefUseNodes+_numExpandedUseOnlyNodes;}
-   uint32_t getNumAliases (TR::SymbolReference * symRef, AuxiliaryData &aux)
-               {return aux._numAliases[symRef->getReferenceNumber()];}
+public:
+    bool getUseDefIsZero(int32_t useIndex);
+    bool getUseDef(BitVector &useDef, int32_t useIndex);
 
-   protected:
-   uint32_t getBitVectorSize() {return getNumExpandedDefNodes(); }
+private:
+    const BitVector &getUseDef_ref(int32_t useIndex, BitVector *defs = NULL);
+    const BitVector &getUseDef_ref_body(int32_t useIndex, TR_BitVector *visitedDefs,
+        TR_UseDefInfo::BitVector *defs = NULL);
 
-   private:
+public:
+    void setUseDef(int32_t useIndex, int32_t defIndex);
+    void resetUseDef(int32_t useIndex, int32_t defIndex);
+    void clearUseDef(int32_t useIndex);
 
-   bool    excludedGlobals(TR::Symbol *);
-   bool    isValidAutoOrParm(TR::SymbolReference *);
+private:
+    bool isLoadAddrUse(TR::Node *node);
 
-   public:
-   bool    isExpandedDefIndex(uint32_t index)
-               { return index && index < unsigned(getNumExpandedDefNodes()); }
-   bool    isExpandedUseIndex(uint32_t index)
-               { return index >= unsigned(_numExpandedDefOnlyNodes) && index < unsigned(getExpandedTotalNodes()); }
-   bool    isExpandedUseDefIndex(uint32_t index)
-               { return index >= unsigned(_numExpandedDefOnlyNodes) && index < unsigned(getNumExpandedDefNodes()); }
+public:
+    bool getDefiningLoads(BitVector &definingLoads, TR::Node *node);
 
-   bool getDefsForSymbol(TR_BitVector &defs, int32_t symIndex, AuxiliaryData &aux)
-      {
-      defs |= *(aux._defsForSymbol[symIndex]);
-      return !defs.isEmpty();
-      }
+private:
+    const BitVector &getDefiningLoads_ref(TR::Node *node);
 
-   bool getDefsForSymbolIsZero(int32_t symIndex, AuxiliaryData &aux)
-      {
-      return aux._defsForSymbol[symIndex]->isEmpty();
-      }
+public:
+    TR::Node *getSingleDefiningLoad(TR::Node *node);
 
-   bool hasLoadsAsDefs() { return _hasLoadsAsDefs; }
-   private:
+    void resetDefUseInfo() { _defUseInfo.clear(); }
 
-   void dereferenceDefs(int32_t useIndex, BitVector &nodesLookedAt, BitVector &loadDefs);
+    bool skipAnalyzingForCompileTime(TR::Node *node, TR::Block *block, TR::Compilation *comp, AuxiliaryData &aux);
 
-   public:
-   void dereferenceDef(BitVector &useDefInfo, int32_t defIndex, BitVector &nodesLookedAt);
-   void buildDefUseInfo(bool loadAsDef = false);
-   int32_t getSymRefIndexFromUseDefIndex(int32_t udIndex);
+private:
+    void findTrivialSymbolsToExclude(TR::Node *node, TR::TreeTop *treeTop, AuxiliaryData &aux);
+    bool isTrivialUseDefNode(TR::Node *node, AuxiliaryData &aux);
+    bool isTrivialUseDefNodeImpl(TR::Node *node, AuxiliaryData &aux);
+    bool isTrivialUseDefSymRef(TR::SymbolReference *symRef, AuxiliaryData &aux);
 
-   public:
-   int32_t getNumSymbols() { return _numSymbols; }
-   int32_t getMemorySymbolIndex (TR::Node *);
+public:
+    int32_t getNumIrrelevantStores() { return _numIrrelevantStores; }
 
-   public:
-   bool     _useDefForRegs;
-   private:
-   bool     _useDefForMemorySymbols;
+    int32_t getNumUseNodes() { return _numUseOnlyNodes + _numDefUseNodes; }
 
-   void buildValueNumbersToMemorySymbolsMap();
-   void findMemorySymbols(TR::Node *node);
-   void fillInDataStructures(AuxiliaryData &aux);
+    int32_t getNumDefNodes() { return _numDefOnlyNodes + _numDefUseNodes; }
 
-   bool indexSymbolsAndNodes(AuxiliaryData &aux);
-   bool findUseDefNodes(
-      TR::Block *block,
-      TR::Node *node,
-      TR::Node *parent,
-      TR::TreeTop *treeTop,
-      AuxiliaryData &aux,
-      TR::deque<uint32_t, TR::Region&> &symRefToLocalIndexMap,
-      bool considerImplicitStores = false
-      );
-   bool assignAdjustedNodeIndex(TR::Block *, TR::Node *node, TR::Node *parent, TR::TreeTop *treeTop, AuxiliaryData &aux, bool considerImplicitStores = false);
-   bool childIndexIndicatesImplicitStore(TR::Node * node, int32_t childIndex);
-   void insertData(TR::Block *, TR::Node *node, TR::Node *parent, TR::TreeTop *treeTop, AuxiliaryData &aux, TR::SparseBitVector &, bool considerImplicitStores = false);
-   void buildUseDefs(void *vblockInfo, AuxiliaryData &aux);
-   void buildUseDefs(TR::Node *node, void *vanalysisInfo, TR_BitVector &nodesToBeDereferenced, TR::Node *parent, AuxiliaryData &aux);
-   int32_t setSingleDefiningLoad(int32_t useIndex, BitVector &nodesLookedAt, BitVector &loadDefs);
+    int32_t getNumDefOnlyNodes() { return _numDefOnlyNodes; }
 
-   protected:
+    int32_t getNumDefsOnEntry() { return (_uniqueIndexForDefsOnEntry ? _numDefsOnEntry : 1); }
 
-   TR::Compilation *      _compilation;
-   TR::Optimizer *      _optimizer;
+    int32_t getTotalNodes() { return _numDefOnlyNodes + _numDefUseNodes + _numUseOnlyNodes; }
 
-   private:
+    int32_t getFirstUseIndex() { return _numDefOnlyNodes; }
 
-   TR::vector<std::pair<TR::Node *, TR::TreeTop *>, TR::Region&> _atoms;
+    int32_t getLastUseIndex() { return getTotalNodes() - 1; }
 
-   private:
-   TR::vector<BitVector, TR::Region&> _useDefInfo;
-   bool _isUseDefInfoValid;
+    int32_t getFirstDefIndex() { return 0; }
 
-   TR::list<BitVector, TR::Region&> _infoCache;                    ///< initially empty bit vectors that are used for caching
-   const BitVector _EMPTY;                                         ///< the empty bit vector
-   TR::vector<const BitVector *,TR::Region&> _useDerefDefInfo; ///< all load defs are dereferenced
-   TR::vector<BitVector, TR::Region&> _defUseInfo;
-   TR::vector<BitVector, TR::Region&> _loadDefUseInfo;
-   TR::vector<int32_t, TR::Region&> _sideTableToSymRefNumMap;
+    int32_t getFirstRealDefIndex() { return getFirstDefIndex() + getNumDefsOnEntry(); }
 
-   // Checklist used in getUseDef_ref
-   TR_BitVector        *_defsChecklist;
+    int32_t getLastDefIndex() { return getNumDefNodes() - 1; }
 
-   int32_t             _numDefOnlyNodes;
-   int32_t             _numDefUseNodes;
-   int32_t             _numUseOnlyNodes;
-   int32_t             _numIrrelevantStores;
-   int32_t             _numExpandedDefOnlyNodes;
-   int32_t             _numExpandedDefUseNodes;
-   int32_t             _numExpandedUseOnlyNodes;
-   int32_t             _numDefsOnEntry;
-   int32_t             _numSymbols;
-   int32_t             _numNonTrivialSymbols;
-   int32_t             _numStaticsAndFields;
+    bool isDefIndex(uint32_t index) { return index && index <= unsigned(getLastDefIndex()); }
 
-   bool                _indexFields;
-   bool                _indexStatics;
-   bool                _tempsOnly;
-   bool                _trace;
-   bool                _hasLoadsAsDefs;
-   bool                _hasCallsAsUses;
-   bool                _uniqueIndexForDefsOnEntry;
+    bool isUseIndex(uint32_t index)
+    {
+        return index >= unsigned(getFirstUseIndex()) && index <= unsigned(getLastUseIndex());
+    }
 
-   class TR_UseDef
-      {
-      public:
-      TR_UseDef() :_useDef(NULL) {}
-      TR_UseDef(TR::TreeTop *tt) : _def((TR::TreeTop *)((intptr_t)tt|1)) {}
-      TR_UseDef(TR::Node  *node) : _useDef(node) {}
-      bool        isDef()     { return ((intptr_t)_def & 1) != 0; }
-      TR::TreeTop *getDef()    { TR_ASSERT( isDef(), "assertion failure"); return (TR::TreeTop*)((intptr_t)_def & ~1); }
-      TR::Node    *getUseDef() { TR_ASSERT(!isDef(), "assertion failure"); return _useDef;   }
+    bool hasGlobalsUseDefs() { return _indexFields && _indexStatics; }
 
-      private:
-      /** Tagged bottom bit means def */
-      union
-         {
-         TR::Node    *_useDef;
-         TR::TreeTop *_def;
-         };
-      };
+    bool canComputeReachingDefs();
 
+    // Information used by the reaching def analysis
+    //
+    int32_t getNumExpandedUseNodes() { return _numExpandedUseOnlyNodes + _numExpandedDefUseNodes; }
 
-   TR::vector<TR_UseDef, TR::Region &> _useDefs;
+    int32_t getNumExpandedDefNodes() { return _numExpandedDefOnlyNodes + _numExpandedDefUseNodes; }
 
-   class MemorySymbol
-      {
-      uint32_t         _size;
-      uint32_t         _offset;
-      int32_t          _localIndex;
+    int32_t getNumExpandedDefsOnEntry() { return _numDefsOnEntry; }
 
-      MemorySymbol(uint32_t size, uint32_t offset, int32_t localIndex) : _size(size), _offset(offset), _localIndex(localIndex) {}
+    int32_t getExpandedTotalNodes()
+    {
+        return _numExpandedDefOnlyNodes + _numExpandedDefUseNodes + _numExpandedUseOnlyNodes;
+    }
 
-      friend class TR_UseDefInfo;
-      };
-   typedef TR::list<MemorySymbol, TR::Region&> MemorySymbolList;
+    uint32_t getNumAliases(TR::SymbolReference *symRef, AuxiliaryData &aux)
+    {
+        return aux._numAliases[symRef->getReferenceNumber()];
+    }
 
-   int32_t                 _numMemorySymbols;
-   TR::vector<MemorySymbolList *, TR::Region&> _valueNumbersToMemorySymbolsMap;
-   TR_ValueNumberInfo *_valueNumberInfo;
-   TR::CFG                   *_cfg;
-   };
+protected:
+    uint32_t getBitVectorSize() { return getNumExpandedDefNodes(); }
+
+private:
+    bool excludedGlobals(TR::Symbol *);
+    bool isValidAutoOrParm(TR::SymbolReference *);
+
+public:
+    bool isExpandedDefIndex(uint32_t index) { return index && index < unsigned(getNumExpandedDefNodes()); }
+
+    bool isExpandedUseIndex(uint32_t index)
+    {
+        return index >= unsigned(_numExpandedDefOnlyNodes) && index < unsigned(getExpandedTotalNodes());
+    }
+
+    bool isExpandedUseDefIndex(uint32_t index)
+    {
+        return index >= unsigned(_numExpandedDefOnlyNodes) && index < unsigned(getNumExpandedDefNodes());
+    }
+
+    bool getDefsForSymbol(TR_BitVector &defs, int32_t symIndex, AuxiliaryData &aux)
+    {
+        defs |= *(aux._defsForSymbol[symIndex]);
+        return !defs.isEmpty();
+    }
+
+    bool getDefsForSymbolIsZero(int32_t symIndex, AuxiliaryData &aux)
+    {
+        return aux._defsForSymbol[symIndex]->isEmpty();
+    }
+
+    bool hasLoadsAsDefs() { return _hasLoadsAsDefs; }
+
+private:
+    void dereferenceDefs(int32_t useIndex, BitVector &nodesLookedAt, BitVector &loadDefs);
+
+public:
+    void dereferenceDef(BitVector &useDefInfo, int32_t defIndex, BitVector &nodesLookedAt);
+    void buildDefUseInfo(bool loadAsDef = false);
+    int32_t getSymRefIndexFromUseDefIndex(int32_t udIndex);
+
+public:
+    int32_t getNumSymbols() { return _numSymbols; }
+
+    int32_t getMemorySymbolIndex(TR::Node *);
+
+public:
+    bool _useDefForRegs;
+
+private:
+    bool _useDefForMemorySymbols;
+
+    void buildValueNumbersToMemorySymbolsMap();
+    void findMemorySymbols(TR::Node *node);
+    void fillInDataStructures(AuxiliaryData &aux);
+
+    bool indexSymbolsAndNodes(AuxiliaryData &aux);
+    bool findUseDefNodes(TR::Block *block, TR::Node *node, TR::Node *parent, TR::TreeTop *treeTop, AuxiliaryData &aux,
+        TR::deque<uint32_t, TR::Region &> &symRefToLocalIndexMap, bool considerImplicitStores = false);
+    bool assignAdjustedNodeIndex(TR::Block *, TR::Node *node, TR::Node *parent, TR::TreeTop *treeTop,
+        AuxiliaryData &aux, bool considerImplicitStores = false);
+    bool childIndexIndicatesImplicitStore(TR::Node *node, int32_t childIndex);
+    void insertData(TR::Block *, TR::Node *node, TR::Node *parent, TR::TreeTop *treeTop, AuxiliaryData &aux,
+        TR::SparseBitVector &, bool considerImplicitStores = false);
+    void buildUseDefs(void *vblockInfo, AuxiliaryData &aux);
+    void buildUseDefs(TR::Node *node, void *vanalysisInfo, TR_BitVector &nodesToBeDereferenced, TR::Node *parent,
+        AuxiliaryData &aux);
+    int32_t setSingleDefiningLoad(int32_t useIndex, BitVector &nodesLookedAt, BitVector &loadDefs);
+
+protected:
+    TR::Compilation *_compilation;
+    TR::Optimizer *_optimizer;
+
+private:
+    TR::vector<std::pair<TR::Node *, TR::TreeTop *>, TR::Region &> _atoms;
+
+private:
+    TR::vector<BitVector, TR::Region &> _useDefInfo;
+    bool _isUseDefInfoValid;
+
+    TR::list<BitVector, TR::Region &> _infoCache; ///< initially empty bit vectors that are used for caching
+    const BitVector _EMPTY; ///< the empty bit vector
+    TR::vector<const BitVector *, TR::Region &> _useDerefDefInfo; ///< all load defs are dereferenced
+    TR::vector<BitVector, TR::Region &> _defUseInfo;
+    TR::vector<BitVector, TR::Region &> _loadDefUseInfo;
+    TR::vector<int32_t, TR::Region &> _sideTableToSymRefNumMap;
+
+    // Checklist used in getUseDef_ref
+    TR_BitVector *_defsChecklist;
+
+    int32_t _numDefOnlyNodes;
+    int32_t _numDefUseNodes;
+    int32_t _numUseOnlyNodes;
+    int32_t _numIrrelevantStores;
+    int32_t _numExpandedDefOnlyNodes;
+    int32_t _numExpandedDefUseNodes;
+    int32_t _numExpandedUseOnlyNodes;
+    int32_t _numDefsOnEntry;
+    int32_t _numSymbols;
+    int32_t _numNonTrivialSymbols;
+    int32_t _numStaticsAndFields;
+
+    bool _indexFields;
+    bool _indexStatics;
+    bool _tempsOnly;
+    bool _trace;
+    bool _hasLoadsAsDefs;
+    bool _hasCallsAsUses;
+    bool _uniqueIndexForDefsOnEntry;
+
+    class TR_UseDef {
+    public:
+        TR_UseDef()
+            : _useDef(NULL)
+        {}
+
+        TR_UseDef(TR::TreeTop *tt)
+            : _def((TR::TreeTop *)((intptr_t)tt | 1))
+        {}
+
+        TR_UseDef(TR::Node *node)
+            : _useDef(node)
+        {}
+
+        bool isDef() { return ((intptr_t)_def & 1) != 0; }
+
+        TR::TreeTop *getDef()
+        {
+            TR_ASSERT(isDef(), "assertion failure");
+            return (TR::TreeTop *)((intptr_t)_def & ~1);
+        }
+
+        TR::Node *getUseDef()
+        {
+            TR_ASSERT(!isDef(), "assertion failure");
+            return _useDef;
+        }
+
+    private:
+        /** Tagged bottom bit means def */
+        union {
+            TR::Node *_useDef;
+            TR::TreeTop *_def;
+        };
+    };
+
+    TR::vector<TR_UseDef, TR::Region &> _useDefs;
+
+    class MemorySymbol {
+        uint32_t _size;
+        uint32_t _offset;
+        int32_t _localIndex;
+
+        MemorySymbol(uint32_t size, uint32_t offset, int32_t localIndex)
+            : _size(size)
+            , _offset(offset)
+            , _localIndex(localIndex)
+        {}
+
+        friend class TR_UseDefInfo;
+    };
+
+    typedef TR::list<MemorySymbol, TR::Region &> MemorySymbolList;
+
+    int32_t _numMemorySymbols;
+    TR::vector<MemorySymbolList *, TR::Region &> _valueNumbersToMemorySymbolsMap;
+    TR_ValueNumberInfo *_valueNumberInfo;
+    TR::CFG *_cfg;
+};
 
 #endif

@@ -32,113 +32,121 @@
 #include "runtime/Runtime.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 
-TR::Instruction *
-OMR::Z::JitCodeRXObjectFormat::emitFunctionCall(TR::FunctionCallData &data)
-   {
-   TR::SymbolReference *callSymRef = data.methodSymRef;
-   TR::CodeGenerator *cg = data.cg;
-   TR::Node *callNode = data.callNode;
-   
+TR::Instruction *OMR::Z::JitCodeRXObjectFormat::emitFunctionCall(TR::FunctionCallData &data)
+{
+    TR::SymbolReference *callSymRef = data.methodSymRef;
+    TR::CodeGenerator *cg = data.cg;
+    TR::Node *callNode = data.callNode;
 
-   if (callSymRef == NULL)
-      {
-      TR_ASSERT_FATAL_WITH_NODE(callNode, data.runtimeHelperIndex > 0, "GlobalFunctionCallData does not contain symbol reference for call or valid TR_RuntimeHelper.");
-      callSymRef = cg->symRefTab()->findOrCreateRuntimeHelper(data.runtimeHelperIndex, false, false, false);
-      }
-   
-   uintptr_t targetAddress = data.targetAddress ? data.targetAddress : reinterpret_cast<uintptr_t>(callSymRef->getMethodAddress());
+    if (callSymRef == NULL) {
+        TR_ASSERT_FATAL_WITH_NODE(callNode, data.runtimeHelperIndex > 0,
+            "GlobalFunctionCallData does not contain symbol reference for call or valid TR_RuntimeHelper.");
+        callSymRef = cg->symRefTab()->findOrCreateRuntimeHelper(data.runtimeHelperIndex, false, false, false);
+    }
 
-   TR_ASSERT_FATAL_WITH_NODE(callNode, targetAddress != NULL, "Unable to make a call as targetAddress for the Call is not found.");
+    uintptr_t targetAddress
+        = data.targetAddress ? data.targetAddress : reinterpret_cast<uintptr_t>(callSymRef->getMethodAddress());
 
-   ccGlobalFunctionData *ccGlobalFunctionDataAddress = reinterpret_cast<ccGlobalFunctionData *>(cg->allocateCodeMemory(sizeof(ccGlobalFunctionData), false));
+    TR_ASSERT_FATAL_WITH_NODE(callNode, targetAddress != NULL,
+        "Unable to make a call as targetAddress for the Call is not found.");
 
-   if (ccGlobalFunctionDataAddress == NULL)
-      {
-      cg->comp()->failCompilation<TR::CompilationException>("Could not allocate global function data");
-      }
-	
-   TR_ASSERT_FATAL_WITH_NODE(callNode, cg->canUseRelativeLongInstructions(reinterpret_cast<int64_t>(ccGlobalFunctionDataAddress)), "ccGlobalFunctionDataAddress is outside relative immediate range.");
-   ccGlobalFunctionDataAddress->address = targetAddress;
+    ccGlobalFunctionData *ccGlobalFunctionDataAddress
+        = reinterpret_cast<ccGlobalFunctionData *>(cg->allocateCodeMemory(sizeof(ccGlobalFunctionData), false));
 
-   TR::StaticSymbol *globalFunctionDataSymbol =
-      TR::StaticSymbol::createWithAddress(cg->trHeapMemory(), TR::Address, reinterpret_cast<void *>(ccGlobalFunctionDataAddress));
-   globalFunctionDataSymbol->setNotDataAddress();
+    if (ccGlobalFunctionDataAddress == NULL) {
+        cg->comp()->failCompilation<TR::CompilationException>("Could not allocate global function data");
+    }
 
-   TR_ASSERT_FATAL_WITH_NODE(callNode, data.returnAddressReg != NULL, "returnAddressReg should be set to make a call.");
+    TR_ASSERT_FATAL_WITH_NODE(callNode,
+        cg->canUseRelativeLongInstructions(reinterpret_cast<int64_t>(ccGlobalFunctionDataAddress)),
+        "ccGlobalFunctionDataAddress is outside relative immediate range.");
+    ccGlobalFunctionDataAddress->address = targetAddress;
 
-   if (data.entryPointReg == NULL)
-      data.entryPointReg = data.returnAddressReg;
-   
-   data.out_loadInstr = generateRILInstruction(cg, TR::InstOpCode::LGRL, callNode, data.entryPointReg, reinterpret_cast<void *>(ccGlobalFunctionDataAddress), data.prevInstr);   
+    TR::StaticSymbol *globalFunctionDataSymbol = TR::StaticSymbol::createWithAddress(cg->trHeapMemory(), TR::Address,
+        reinterpret_cast<void *>(ccGlobalFunctionDataAddress));
+    globalFunctionDataSymbol->setNotDataAddress();
 
-   data.out_callInstr = generateRRInstruction(cg, TR::InstOpCode::BASR, callNode, data.returnAddressReg, data.entryPointReg, data.out_loadInstr);
+    TR_ASSERT_FATAL_WITH_NODE(callNode, data.returnAddressReg != NULL,
+        "returnAddressReg should be set to make a call.");
 
-   if (data.regDeps != NULL)
-      {
-      data.out_callInstr->setDependencyConditions(data.regDeps);
-      }
+    if (data.entryPointReg == NULL)
+        data.entryPointReg = data.returnAddressReg;
 
-   return data.out_callInstr;
-   }
+    data.out_loadInstr = generateRILInstruction(cg, TR::InstOpCode::LGRL, callNode, data.entryPointReg,
+        reinterpret_cast<void *>(ccGlobalFunctionDataAddress), data.prevInstr);
 
+    data.out_callInstr = generateRRInstruction(cg, TR::InstOpCode::BASR, callNode, data.returnAddressReg,
+        data.entryPointReg, data.out_loadInstr);
 
-uint8_t *
-OMR::Z::JitCodeRXObjectFormat::encodeFunctionCall(TR::FunctionCallData &data)
-   {
-   TR::SymbolReference *callSymRef = data.methodSymRef;
-   TR::CodeGenerator *cg = data.cg;
-   TR::Node *callNode = data.callNode;
+    if (data.regDeps != NULL) {
+        data.out_callInstr->setDependencyConditions(data.regDeps);
+    }
 
-   if (callSymRef == NULL)
-      {
-      TR_ASSERT_FATAL_WITH_NODE(callNode, data.runtimeHelperIndex > 0, "GlobalFunctionCallData does not contain symbol reference for call or valid TR_RuntimeHelper");
-      callSymRef = cg->symRefTab()->findOrCreateRuntimeHelper(data.runtimeHelperIndex, false, false, false);
-      }
-   
-   uintptr_t targetAddress = data.targetAddress != NULL ? data.targetAddress : reinterpret_cast<uintptr_t>(callSymRef->getMethodAddress());
+    return data.out_callInstr;
+}
 
-   uint8_t *cursor = data.bufferAddress;
+uint8_t *OMR::Z::JitCodeRXObjectFormat::encodeFunctionCall(TR::FunctionCallData &data)
+{
+    TR::SymbolReference *callSymRef = data.methodSymRef;
+    TR::CodeGenerator *cg = data.cg;
+    TR::Node *callNode = data.callNode;
 
-   TR_ASSERT_FATAL_WITH_NODE(callNode, targetAddress != NULL, "Unable to make a call as targetAddress for the Call is not found.");
+    if (callSymRef == NULL) {
+        TR_ASSERT_FATAL_WITH_NODE(callNode, data.runtimeHelperIndex > 0,
+            "GlobalFunctionCallData does not contain symbol reference for call or valid TR_RuntimeHelper");
+        callSymRef = cg->symRefTab()->findOrCreateRuntimeHelper(data.runtimeHelperIndex, false, false, false);
+    }
 
-   ccGlobalFunctionData *ccGlobalFunctionDataAddress = reinterpret_cast<ccGlobalFunctionData *>(cg->allocateCodeMemory(sizeof(ccGlobalFunctionData), false));
+    uintptr_t targetAddress
+        = data.targetAddress != NULL ? data.targetAddress : reinterpret_cast<uintptr_t>(callSymRef->getMethodAddress());
 
-   if (ccGlobalFunctionDataAddress == NULL)
-      {
-      cg->comp()->failCompilation<TR::CompilationException>("Could not allocate global function data");
-      }
+    uint8_t *cursor = data.bufferAddress;
 
-	TR_ASSERT_FATAL_WITH_NODE(callNode, cg->canUseRelativeLongInstructions(reinterpret_cast<int64_t>(ccGlobalFunctionDataAddress)), "ccGlobalFunctionDataAddress is outside relative immediate range.");
-   ccGlobalFunctionDataAddress->address = targetAddress;
+    TR_ASSERT_FATAL_WITH_NODE(callNode, targetAddress != NULL,
+        "Unable to make a call as targetAddress for the Call is not found.");
 
-   // LGRL R14,<displacementForMemoryReferencePointingToCCGlobalFunctionCallData>
-   // BASR R14,R14
+    ccGlobalFunctionData *ccGlobalFunctionDataAddress
+        = reinterpret_cast<ccGlobalFunctionData *>(cg->allocateCodeMemory(sizeof(ccGlobalFunctionData), false));
 
-   *reinterpret_cast<int16_t *>(cursor) = 0xC4E8;
-   cursor += sizeof(int16_t);
-   *reinterpret_cast<int32_t *>(cursor) = static_cast<int32_t>((reinterpret_cast<intptr_t>(ccGlobalFunctionDataAddress) - (intptr_t)cursor + 2) / 2);
-   cursor += sizeof(int32_t);
-   *reinterpret_cast<int16_t *>(cursor) = 0x0DEE;
-   cursor += sizeof(int16_t);
-   data.bufferAddress = cursor;
-   return data.bufferAddress;
-   }
+    if (ccGlobalFunctionDataAddress == NULL) {
+        cg->comp()->failCompilation<TR::CompilationException>("Could not allocate global function data");
+    }
 
-uint8_t *
-OMR::Z::JitCodeRXObjectFormat::printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data)
-   {
-   uint8_t *bufferPos = data.bufferAddress;
-   TR_Debug *debug = data.cg->getDebug();
+    TR_ASSERT_FATAL_WITH_NODE(callNode,
+        cg->canUseRelativeLongInstructions(reinterpret_cast<int64_t>(ccGlobalFunctionDataAddress)),
+        "ccGlobalFunctionDataAddress is outside relative immediate range.");
+    ccGlobalFunctionDataAddress->address = targetAddress;
 
-   uintptr_t ccFunctionCallDataAddress = static_cast<uintptr_t>(*(reinterpret_cast<int32_t*>(bufferPos + sizeof(int16_t))) * 2) + reinterpret_cast<uintptr_t>(bufferPos);
-   debug->printPrefix(pOutFile, NULL, bufferPos, 6);
-   trfprintf(pOutFile, "LGRL \tGPR14, <%p>\t# Target Address = <%p>.",
-                        ccFunctionCallDataAddress, *reinterpret_cast<uint8_t *>(ccFunctionCallDataAddress));
-   bufferPos += 6;
+    // LGRL R14,<displacementForMemoryReferencePointingToCCGlobalFunctionCallData>
+    // BASR R14,R14
 
-   debug->printPrefix(pOutFile, NULL, bufferPos, 2);
-   trfprintf(pOutFile, "BASR \tGPR_14, GPR14");
-   bufferPos += 2;
+    *reinterpret_cast<int16_t *>(cursor) = 0xC4E8;
+    cursor += sizeof(int16_t);
+    *reinterpret_cast<int32_t *>(cursor)
+        = static_cast<int32_t>((reinterpret_cast<intptr_t>(ccGlobalFunctionDataAddress) - (intptr_t)cursor + 2) / 2);
+    cursor += sizeof(int32_t);
+    *reinterpret_cast<int16_t *>(cursor) = 0x0DEE;
+    cursor += sizeof(int16_t);
+    data.bufferAddress = cursor;
+    return data.bufferAddress;
+}
 
-   return bufferPos;
-   }
+uint8_t *OMR::Z::JitCodeRXObjectFormat::printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data)
+{
+    uint8_t *bufferPos = data.bufferAddress;
+    TR_Debug *debug = data.cg->getDebug();
+
+    uintptr_t ccFunctionCallDataAddress
+        = static_cast<uintptr_t>(*(reinterpret_cast<int32_t *>(bufferPos + sizeof(int16_t))) * 2)
+        + reinterpret_cast<uintptr_t>(bufferPos);
+    debug->printPrefix(pOutFile, NULL, bufferPos, 6);
+    trfprintf(pOutFile, "LGRL \tGPR14, <%p>\t# Target Address = <%p>.", ccFunctionCallDataAddress,
+        *reinterpret_cast<uint8_t *>(ccFunctionCallDataAddress));
+    bufferPos += 6;
+
+    debug->printPrefix(pOutFile, NULL, bufferPos, 2);
+    trfprintf(pOutFile, "BASR \tGPR_14, GPR14");
+    bufferPos += 2;
+
+    return bufferPos;
+}

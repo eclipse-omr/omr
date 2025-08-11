@@ -27,10 +27,11 @@
  */
 #ifndef OMR_REGISTER_PAIR_CONNECTOR
 #define OMR_REGISTER_PAIR_CONNECTOR
+
 namespace OMR {
 class RegisterPair;
 typedef OMR::RegisterPair RegisterPairConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -41,44 +42,51 @@ typedef OMR::RegisterPair RegisterPairConnector;
 namespace TR {
 class CodeGenerator;
 class RegisterPair;
-}
+} // namespace TR
 
 template<typename QueueKind> class TR_Queue;
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE RegisterPair : public TR::Register
-   {
-   protected:
+class OMR_EXTENSIBLE RegisterPair : public TR::Register {
+protected:
+    RegisterPair()
+        : _lowOrder(NULL)
+        , _highOrder(NULL)
+    {}
 
-   RegisterPair() : _lowOrder(NULL), _highOrder(NULL) {}
-   RegisterPair(TR_RegisterKinds rk) : TR::Register(rk), _lowOrder(NULL), _highOrder(NULL) {}
-   RegisterPair(TR::Register *lo, TR::Register *ho) : _lowOrder(lo), _highOrder(ho) {}
+    RegisterPair(TR_RegisterKinds rk)
+        : TR::Register(rk)
+        , _lowOrder(NULL)
+        , _highOrder(NULL)
+    {}
 
-   public:
+    RegisterPair(TR::Register *lo, TR::Register *ho)
+        : _lowOrder(lo)
+        , _highOrder(ho)
+    {}
 
-   virtual void block();
-   virtual void unblock();
-   virtual bool usesRegister(TR::Register* reg);
+public:
+    virtual void block();
+    virtual void unblock();
+    virtual bool usesRegister(TR::Register *reg);
 
-   virtual TR::Register     *getLowOrder();
-   virtual TR::Register     *getHighOrder();
+    virtual TR::Register *getLowOrder();
+    virtual TR::Register *getHighOrder();
 
-   TR::Register     *setLowOrder(TR::Register *lo, TR::CodeGenerator *cg);
-   TR::Register     *setHighOrder(TR::Register *ho, TR::CodeGenerator *cg);
+    TR::Register *setLowOrder(TR::Register *lo, TR::CodeGenerator *cg);
+    TR::Register *setHighOrder(TR::Register *ho, TR::CodeGenerator *cg);
 
-   virtual TR::Register     *getRegister();
-   virtual TR::RegisterPair *getRegisterPair();
+    virtual TR::Register *getRegister();
+    virtual TR::RegisterPair *getRegisterPair();
 
+private:
+    TR::Register *_lowOrder;
+    TR::Register *_highOrder;
 
-   private:
-   TR::Register *_lowOrder;
-   TR::Register *_highOrder;
+    TR::RegisterPair *self();
+};
 
-   TR::RegisterPair *self();
-   };
-
-}
+} // namespace OMR
 
 #endif

@@ -27,10 +27,14 @@
  */
 #ifndef OMR_SNIPPET_CONNECTOR
 #define OMR_SNIPPET_CONNECTOR
+
 namespace OMR {
-namespace RV { class Snippet; }
-typedef OMR::RV::Snippet SnippetConnector;
+namespace RV {
+class Snippet;
 }
+
+typedef OMR::RV::Snippet SnippetConnector;
+} // namespace OMR
 #else
 #error OMR::RV::Snippet expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -41,56 +45,48 @@ namespace TR {
 class CodeGenerator;
 class LabelSymbol;
 class Node;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace RV {
 
-namespace RV
-{
+class OMR_EXTENSIBLE Snippet : public OMR::Snippet {
+public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] node : Node
+     * @param[in] label : LabelSymbol
+     * @param[in] isGCSafePoint : true if GC-safe point
+     */
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
 
-class OMR_EXTENSIBLE Snippet : public OMR::Snippet
-   {
-   public:
+    /**
+     * @brief Constructor
+     * @param[in] cg : CodeGenerator
+     * @param[in] node : Node
+     * @param[in] label : LabelSymbol
+     */
+    Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] node : Node
-    * @param[in] label : LabelSymbol
-    * @param[in] isGCSafePoint : true if GC-safe point
-    */
-   Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
+    enum Kind {
+        IsUnknown,
+        IsCall,
+        IsUnresolvedCall,
+        IsVirtual,
+        IsVirtualUnresolved,
+        IsInterfaceCall,
+        IsHelperCall,
+        IsMonitorEnter,
+        IsMonitorExit,
+        IsRecompilation,
+        IsStackCheckFailure,
+        IsUnresolvedData,
+        numKinds
+    };
 
-   /**
-    * @brief Constructor
-    * @param[in] cg : CodeGenerator
-    * @param[in] node : Node
-    * @param[in] label : LabelSymbol
-    */
-   Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label);
+    virtual Kind getKind() { return IsUnknown; }
+};
 
-   enum Kind
-      {
-      IsUnknown,
-      IsCall,
-         IsUnresolvedCall,
-      IsVirtual,
-         IsVirtualUnresolved,
-         IsInterfaceCall,
-      IsHelperCall,
-         IsMonitorEnter,
-         IsMonitorExit,
-      IsRecompilation,
-      IsStackCheckFailure,
-      IsUnresolvedData,
-      numKinds
-      };
-
-   virtual Kind getKind() { return IsUnknown; }
-   };
-
-} // RV
-} // OMR
+}} // namespace OMR::RV
 
 #endif

@@ -27,10 +27,11 @@
  */
 #ifndef OMR_REGISTERMAPPEDSYMBOL_CONNECTOR
 #define OMR_REGISTERMAPPEDSYMBOL_CONNECTOR
+
 namespace OMR {
 class RegisterMappedSymbol;
 typedef OMR::RegisterMappedSymbol RegisterMappedSymbolConnector;
-}
+} // namespace OMR
 #endif
 
 #include "il/Symbol.hpp"
@@ -40,106 +41,97 @@ typedef OMR::RegisterMappedSymbol RegisterMappedSymbolConnector;
 #include "infra/Assert.hpp"
 
 class TR_FrontEnd;
+
 namespace TR {
 class RegisterMappedSymbol;
 class SymbolReference;
-}
+} // namespace TR
 
 /**
  * Selects a register to be used
  */
-enum TR_MethodMetaDataType
-   {
-   TR_MethodMetaDataType_Default,
-   TR_MethodMetaDataType_GPR,
-   TR_MethodMetaDataType_FPR,
-   TR_MethodMetaDataType_AR,
-   TR_MethodMetaDataType_CR,
-   TR_MethodMetaDataType_SegR,
-   };
+enum TR_MethodMetaDataType {
+    TR_MethodMetaDataType_Default,
+    TR_MethodMetaDataType_GPR,
+    TR_MethodMetaDataType_FPR,
+    TR_MethodMetaDataType_AR,
+    TR_MethodMetaDataType_CR,
+    TR_MethodMetaDataType_SegR,
+};
 
-
-namespace OMR
-{
+namespace OMR {
 /**
  * RegisterMappedSymbols are those that may reside in a register
  *
  * \todo Concept doesn't have the best name, and should likely be renamed
  */
-class OMR_EXTENSIBLE RegisterMappedSymbol : public TR::Symbol
-   {
-
+class OMR_EXTENSIBLE RegisterMappedSymbol : public TR::Symbol {
 protected:
+    RegisterMappedSymbol(int32_t o = 0);
 
-   RegisterMappedSymbol(int32_t o = 0);
+    RegisterMappedSymbol(TR::DataType d);
 
-   RegisterMappedSymbol(TR::DataType d);
+    RegisterMappedSymbol(TR::DataType d, uint32_t s);
 
-   RegisterMappedSymbol(TR::DataType d, uint32_t s);
-
-   TR::RegisterMappedSymbol * self();
+    TR::RegisterMappedSymbol *self();
 
 public:
+    template<typename AllocatorType> static TR::RegisterMappedSymbol *create(AllocatorType t, int32_t o = 0);
 
-   template <typename AllocatorType>
-   static TR::RegisterMappedSymbol * create(AllocatorType t, int32_t o = 0);
+    template<typename AllocatorType> static TR::RegisterMappedSymbol *create(AllocatorType m, TR::DataType d);
 
-   template <typename AllocatorType>
-   static TR::RegisterMappedSymbol * create(AllocatorType m, TR::DataType d);
+    template<typename AllocatorType>
+    static TR::RegisterMappedSymbol *create(AllocatorType m, TR::DataType d, uint32_t s);
 
-   template <typename AllocatorType>
-   static TR::RegisterMappedSymbol * create(AllocatorType m, TR::DataType d, uint32_t s);
+    int32_t getOffset() { return _mappedOffset; }
 
-   int32_t getOffset()          {return _mappedOffset;}
-   void    setOffset(int32_t o) {_mappedOffset = o;}
+    void setOffset(int32_t o) { _mappedOffset = o; }
 
-   int32_t getGCMapIndex()          {return _GCMapIndex;}
-   void    setGCMapIndex(int32_t i) {_GCMapIndex = i;}
+    int32_t getGCMapIndex() { return _GCMapIndex; }
 
-   uint16_t getLiveLocalIndex()     {return _liveLocalIndex;}
-   void     setLiveLocalIndex(uint16_t i, TR_FrontEnd * fe);
+    void setGCMapIndex(int32_t i) { _GCMapIndex = i; }
 
-   bool isLiveLocalIndexUninitialized();
-   void setLiveLocalIndexUninitialized();
+    uint16_t getLiveLocalIndex() { return _liveLocalIndex; }
+
+    void setLiveLocalIndex(uint16_t i, TR_FrontEnd *fe);
+
+    bool isLiveLocalIndexUninitialized();
+    void setLiveLocalIndexUninitialized();
 
 protected:
-
-   int32_t  _mappedOffset;
-   int32_t  _GCMapIndex;
+    int32_t _mappedOffset;
+    int32_t _GCMapIndex;
 
 private:
+    uint16_t _liveLocalIndex;
 
-   uint16_t _liveLocalIndex;
-
-/**
- * TR_MethodMetaDataSymbol
- *
- * Doesn't contain data about methods, surprisingly enough. Is used for data
- * that is thread-local, stored on the VMThread for example.
- *
- * @{
- */
+    /**
+     * TR_MethodMetaDataSymbol
+     *
+     * Doesn't contain data about methods, surprisingly enough. Is used for data
+     * that is thread-local, stored on the VMThread for example.
+     *
+     * @{
+     */
 public:
+    /**
+     * Create a 'method metadata' symbol.
+     *
+     * \todo Rename this concept, as the current name is terrible.
+     */
+    template<typename AllocatorType>
+    static TR::RegisterMappedSymbol *createMethodMetaDataSymbol(AllocatorType m, const char *name,
+        TR_MethodMetaDataType type = TR_MethodMetaDataType_Default);
 
-  /**
-   * Create a 'method metadata' symbol.
-   *
-   * \todo Rename this concept, as the current name is terrible.
-   */
-   template <typename AllocatorType>
-   static TR::RegisterMappedSymbol * createMethodMetaDataSymbol(AllocatorType m, const char *name, TR_MethodMetaDataType type = TR_MethodMetaDataType_Default);
-
-   TR_MethodMetaDataType getMethodMetaDataType();
-   void                  setMethodMetaDataType(TR_MethodMetaDataType type);
+    TR_MethodMetaDataType getMethodMetaDataType();
+    void setMethodMetaDataType(TR_MethodMetaDataType type);
 
 protected:
+    TR_MethodMetaDataType _type;
 
-   TR_MethodMetaDataType  _type;
+    /** @} */
+};
 
-   /** @} */
-
-   };
-
-}
+} // namespace OMR
 
 #endif

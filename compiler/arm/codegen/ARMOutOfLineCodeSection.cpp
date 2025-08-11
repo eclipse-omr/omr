@@ -26,44 +26,39 @@
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
 
-TR_ARMOutOfLineCodeSection::TR_ARMOutOfLineCodeSection(TR::Node  *callNode,
-                            TR::ILOpCodes      callOp,
-                            TR::Register      *targetReg,
-                            TR::LabelSymbol    *entryLabel,
-                            TR::LabelSymbol    *restartLabel,
-                            TR::CodeGenerator *cg) :
-                            TR_OutOfLineCodeSection(callNode,callOp,targetReg,entryLabel,restartLabel,cg)
-   {
-   generateARMOutOfLineCodeSectionDispatch();
-   }
+TR_ARMOutOfLineCodeSection::TR_ARMOutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp,
+    TR::Register *targetReg, TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
+    : TR_OutOfLineCodeSection(callNode, callOp, targetReg, entryLabel, restartLabel, cg)
+{
+    generateARMOutOfLineCodeSectionDispatch();
+}
 
 void TR_ARMOutOfLineCodeSection::generateARMOutOfLineCodeSectionDispatch()
-   {
-   // Switch to cold helper instruction stream.
-   //
-   swapInstructionListsWithCompilation();
+{
+    // Switch to cold helper instruction stream.
+    //
+    swapInstructionListsWithCompilation();
 
-   generateLabelInstruction(_cg, TR::InstOpCode::label, _callNode, _entryLabel);
+    generateLabelInstruction(_cg, TR::InstOpCode::label, _callNode, _entryLabel);
 
-   TR::Register *resultReg = NULL;
-   if (_callNode->getOpCode().isCallIndirect())
-      resultReg = TR::TreeEvaluator::performCall(_callNode, true, _cg);
-   else
-      resultReg = TR::TreeEvaluator::performCall(_callNode, false, _cg);
+    TR::Register *resultReg = NULL;
+    if (_callNode->getOpCode().isCallIndirect())
+        resultReg = TR::TreeEvaluator::performCall(_callNode, true, _cg);
+    else
+        resultReg = TR::TreeEvaluator::performCall(_callNode, false, _cg);
 
-   if (_targetReg)
-      {
-      TR_ASSERT(resultReg, "assertion failure");
-      generateTrg1Src1Instruction(_cg, TR::InstOpCode::mov, _callNode, _targetReg, resultReg);
-      }
-   _cg->decReferenceCount(_callNode);
+    if (_targetReg) {
+        TR_ASSERT(resultReg, "assertion failure");
+        generateTrg1Src1Instruction(_cg, TR::InstOpCode::mov, _callNode, _targetReg, resultReg);
+    }
+    _cg->decReferenceCount(_callNode);
 
-   if (_restartLabel)
-      generateLabelInstruction(_cg, TR::InstOpCode::b, _callNode, _restartLabel);
+    if (_restartLabel)
+        generateLabelInstruction(_cg, TR::InstOpCode::b, _callNode, _restartLabel);
 
-   generateLabelInstruction(_cg, TR::InstOpCode::label, _callNode, generateLabelSymbol(_cg));
+    generateLabelInstruction(_cg, TR::InstOpCode::label, _callNode, generateLabelSymbol(_cg));
 
-   // Switch from cold helper instruction stream.
-   //
-   swapInstructionListsWithCompilation();
-   }
+    // Switch from cold helper instruction stream.
+    //
+    swapInstructionListsWithCompilation();
+}

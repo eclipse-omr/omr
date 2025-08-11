@@ -46,74 +46,57 @@ class Optimizer;
 // point as computed by Morel and Renvoise's PRE algorithm.
 //
 //
-TR_DataFlowAnalysis::Kind TR_Earliestness::getKind()
-   {
-   return Earliestness;
-   }
+TR_DataFlowAnalysis::Kind TR_Earliestness::getKind() { return Earliestness; }
 
-TR_Earliestness *TR_Earliestness::asEarliestness()
-   {
-   return this;
-   }
+TR_Earliestness *TR_Earliestness::asEarliestness() { return this; }
 
+int32_t TR_Earliestness::getNumberOfBits() { return _globalAnticipatability->_numberOfBits; }
 
-int32_t TR_Earliestness::getNumberOfBits()
-   {
-   return _globalAnticipatability->_numberOfBits;
-   }
+void TR_Earliestness::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, TR_BitVector *) {}
 
+TR_Earliestness::TR_Earliestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure,
+    bool trace)
+    : TR_UnionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
+{
+    _globalAnticipatability = new (comp->allocator()) TR_GlobalAnticipatability(comp, optimizer, rootStructure, trace);
 
-void TR_Earliestness::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, TR_BitVector *)
-   {
-   }
+    if (trace)
+        traceMsg(comp, "Starting Earliestness\n");
 
+    _supportedNodesAsArray = _globalAnticipatability->_supportedNodesAsArray;
 
+    _temp = NULL;
+    performAnalysis(rootStructure, false);
+    if (trace)
+        traceMsg(comp, "Earl # bits %d, %d\n", _numberOfBits, _globalAnticipatability->_numberOfBits);
+    if (trace) {
+        int32_t i;
+        for (i = 0; i < _numberOfNodes; i++) {
+            traceMsg(comp, "Block number : %d has solution : ", i);
+            _inSetInfo[i]->print(comp);
+            traceMsg(comp, "\n");
+        }
+        traceMsg(comp, "\nEnding Earliestness\n");
+    }
 
-TR_Earliestness::TR_Earliestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure, bool trace)
-   : TR_UnionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
-   {
-   _globalAnticipatability = new (comp->allocator()) TR_GlobalAnticipatability(comp, optimizer, rootStructure, trace);
-
-   if (trace)
-      traceMsg(comp, "Starting Earliestness\n");
-
-   _supportedNodesAsArray = _globalAnticipatability->_supportedNodesAsArray;
-
-   _temp = NULL;
-   performAnalysis(rootStructure, false);
-   if (trace)
-      traceMsg(comp, "Earl # bits %d, %d\n", _numberOfBits, _globalAnticipatability->_numberOfBits);
-   if (trace)
-      {
-      int32_t i;
-      for (i = 0; i < _numberOfNodes; i++)
-         {
-         traceMsg(comp, "Block number : %d has solution : ", i);
-         _inSetInfo[i]->print(comp);
-         traceMsg(comp, "\n");
-         }
-      traceMsg(comp, "\nEnding Earliestness\n");
-      }
-
-   // Null out info not used by callers
-   _blockAnalysisInfo = NULL;
-   }
+    // Null out info not used by callers
+    _blockAnalysisInfo = NULL;
+}
 
 bool TR_Earliestness::postInitializationProcessing()
-   {
-   int32_t i;
-   _inSetInfo = (ContainerType **)trMemory()->allocateStackMemory(_numberOfNodes*sizeof(ContainerType *));
+{
+    int32_t i;
+    _inSetInfo = (ContainerType **)trMemory()->allocateStackMemory(_numberOfNodes * sizeof(ContainerType *));
 
-   for (i = 0; i < _numberOfNodes; i++)
-      allocateContainer(_inSetInfo + i);
+    for (i = 0; i < _numberOfNodes; i++)
+        allocateContainer(_inSetInfo + i);
 
-   // Start Node has all bits set even though its a UnionBitVectorAnalysis
-   //
-   _currentInSetInfo->setAll(_numberOfBits);
-   copyFromInto(_currentInSetInfo, _originalInSetInfo);
-   return true;
-   }
-
+    // Start Node has all bits set even though its a UnionBitVectorAnalysis
+    //
+    _currentInSetInfo->setAll(_numberOfBits);
+    copyFromInto(_currentInSetInfo, _originalInSetInfo);
+    return true;
+}
 
 // Overrides the implementation in the superclass as this analysis
 // is slightly different from conventional bit vector analyses.
@@ -123,55 +106,50 @@ bool TR_Earliestness::postInitializationProcessing()
 //
 //
 void TR_Earliestness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStructure)
-   {
-   copyFromInto(_currentInSetInfo, _inSetInfo[blockStructure->getNumber()]);
-   copyFromInto(_currentInSetInfo, _blockAnalysisInfo[blockStructure->getNumber()]);
+{
+    copyFromInto(_currentInSetInfo, _inSetInfo[blockStructure->getNumber()]);
+    copyFromInto(_currentInSetInfo, _blockAnalysisInfo[blockStructure->getNumber()]);
 
-   // Block info is local to this analysis, so allocate from there
-   if (_temp == NULL)
-      allocateBlockInfoContainer(&_temp);
-   _temp->setAll(_numberOfBits);
-   *_temp -= *(_globalAnticipatability->_blockAnalysisInfo[blockStructure->getNumber()]);
-   *(_blockAnalysisInfo[blockStructure->getNumber()]) &= *_temp;
+    // Block info is local to this analysis, so allocate from there
+    if (_temp == NULL)
+        allocateBlockInfoContainer(&_temp);
+    _temp->setAll(_numberOfBits);
+    *_temp -= *(_globalAnticipatability->_blockAnalysisInfo[blockStructure->getNumber()]);
+    *(_blockAnalysisInfo[blockStructure->getNumber()]) &= *_temp;
 
-   _temp->setAll(_numberOfBits);
-   *_temp -= *(_globalAnticipatability->_localTransparency.getAnalysisInfo(blockStructure->getBlock()->getNumber()));
+    _temp->setAll(_numberOfBits);
+    *_temp -= *(_globalAnticipatability->_localTransparency.getAnalysisInfo(blockStructure->getBlock()->getNumber()));
 
-   *(_blockAnalysisInfo[blockStructure->getNumber()]) |= *_temp;
-   copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
+    *(_blockAnalysisInfo[blockStructure->getNumber()]) |= *_temp;
+    copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
 
-   if (trace())
-      {
-      /////traceMsg(comp(), "\nIn Set of Block : %d\n", blockStructure->getNumber());
-      /////_inSetInfo[blockStructure->getNumber()]->print(comp()->getOutFile());
-      /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
-      /////_blockAnalysisInfo[blockStructure->getNumber()]->print(comp()->getOutFile());
-      }
+    if (trace()) {
+        /////traceMsg(comp(), "\nIn Set of Block : %d\n", blockStructure->getNumber());
+        /////_inSetInfo[blockStructure->getNumber()]->print(comp()->getOutFile());
+        /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
+        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(comp()->getOutFile());
+    }
 
-   TR::Block *block = blockStructure->getBlock();
-   TR::TreeTop *currentTree = block->getEntry();
-   TR::TreeTop *exitTree = block->getExit();
-   bool notSeenTreeWithChecks = true;
+    TR::Block *block = blockStructure->getBlock();
+    TR::TreeTop *currentTree = block->getEntry();
+    TR::TreeTop *exitTree = block->getExit();
+    bool notSeenTreeWithChecks = true;
 
-   _containsExceptionTreeTop = false;
-   while (!(currentTree == exitTree))
-      {
-      if (notSeenTreeWithChecks)
-         {
-         bool currentTreeHasChecks = treeHasChecks(currentTree);
-         if (currentTreeHasChecks)
-            {
-            notSeenTreeWithChecks = false;
-            _containsExceptionTreeTop = true;
-            copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _exceptionInfo);
+    _containsExceptionTreeTop = false;
+    while (!(currentTree == exitTree)) {
+        if (notSeenTreeWithChecks) {
+            bool currentTreeHasChecks = treeHasChecks(currentTree);
+            if (currentTreeHasChecks) {
+                notSeenTreeWithChecks = false;
+                _containsExceptionTreeTop = true;
+                copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _exceptionInfo);
             }
-         }
-      else
-         break;
+        } else
+            break;
 
-      if (!(currentTree == exitTree))
-         currentTree = currentTree->getNextTreeTop();
-      }
+        if (!(currentTree == exitTree))
+            currentTree = currentTree->getNextTreeTop();
+    }
 
-   getAnalysisInfo(blockStructure)->_containsExceptionTreeTop = _containsExceptionTreeTop;
-   }
+    getAnalysisInfo(blockStructure)->_containsExceptionTreeTop = _containsExceptionTreeTop;
+}

@@ -30,6 +30,7 @@
 namespace OMR {
 class PersistentAllocator;
 }
+
 namespace TR {
 using OMR::PersistentAllocator;
 }
@@ -44,72 +45,61 @@ using OMR::PersistentAllocator;
 
 namespace OMR {
 
-class PersistentAllocator
-   {
+class PersistentAllocator {
 public:
-   PersistentAllocator(const TR::PersistentAllocatorKit &allocatorKit);
+    PersistentAllocator(const TR::PersistentAllocatorKit &allocatorKit);
 
-   void *allocate(size_t size, const std::nothrow_t tag, void * hint = 0) throw();
-   void * allocate(size_t size, void * hint = 0);
-   void deallocate(void * p, const size_t sizeHint = 0) throw();
+    void *allocate(size_t size, const std::nothrow_t tag, void *hint = 0) throw();
+    void *allocate(size_t size, void *hint = 0);
+    void deallocate(void *p, const size_t sizeHint = 0) throw();
 
-   friend bool operator ==(const PersistentAllocator &left, const PersistentAllocator &right)
-      {
-      return left._rawAllocator == right._rawAllocator;
-      }
+    friend bool operator==(const PersistentAllocator &left, const PersistentAllocator &right)
+    {
+        return left._rawAllocator == right._rawAllocator;
+    }
 
-   friend bool operator !=(const PersistentAllocator &left, const PersistentAllocator &right)
-      {
-      return !operator ==(left, right);
-      }
+    friend bool operator!=(const PersistentAllocator &left, const PersistentAllocator &right)
+    {
+        return !operator==(left, right);
+    }
 
 private:
-   PersistentAllocator(const PersistentAllocator &);
+    PersistentAllocator(const PersistentAllocator &);
 
-   TR::RawAllocator _rawAllocator;
+    TR::RawAllocator _rawAllocator;
+};
 
-   };
+} // namespace OMR
 
+inline void *operator new(size_t size, OMR::PersistentAllocator &allocator) { return allocator.allocate(size); }
+
+inline void *operator new(size_t size, OMR::PersistentAllocator &allocator, const std::nothrow_t &tag) throw()
+{
+    return allocator.allocate(size, tag);
 }
 
-inline void * operator new(size_t size, OMR::PersistentAllocator &allocator)
-   {
-   return allocator.allocate(size);
-   }
+inline void *operator new[](size_t size, OMR::PersistentAllocator &allocator) { return operator new(size, allocator); }
 
-inline void * operator new(size_t size, OMR::PersistentAllocator &allocator, const std::nothrow_t& tag) throw()
-   {
-   return allocator.allocate(size, tag);
-   }
+inline void *operator new[](size_t size, OMR::PersistentAllocator &allocator, const std::nothrow_t &tag) throw()
+{
+    return operator new(size, allocator, tag);
+}
 
-inline void * operator new[](size_t size, OMR::PersistentAllocator &allocator)
-   {
-   return operator new(size, allocator);
-   }
+inline void operator delete(void *ptr, OMR::PersistentAllocator &allocator) throw() { allocator.deallocate(ptr); }
 
-inline void * operator new[](size_t size, OMR::PersistentAllocator &allocator, const std::nothrow_t& tag) throw()
-   {
-   return operator new(size, allocator, tag);
-   }
-
-inline void operator delete(void *ptr, OMR::PersistentAllocator &allocator) throw()
-   {
-   allocator.deallocate(ptr);
-   }
-
-inline void operator delete(void *ptr, OMR::PersistentAllocator &allocator, const std::nothrow_t& tag) throw()
-   {
-   allocator.deallocate(ptr);
-   }
+inline void operator delete(void *ptr, OMR::PersistentAllocator &allocator, const std::nothrow_t &tag) throw()
+{
+    allocator.deallocate(ptr);
+}
 
 inline void operator delete[](void *ptr, OMR::PersistentAllocator &allocator) throw()
-   {
-   operator delete(ptr, allocator);
-   }
+{
+    operator delete(ptr, allocator);
+}
 
-inline void operator delete[](void *ptr, OMR::PersistentAllocator &allocator, const std::nothrow_t& tag) throw()
-   {
-   operator delete(ptr, allocator, tag);
-   }
+inline void operator delete[](void *ptr, OMR::PersistentAllocator &allocator, const std::nothrow_t &tag) throw()
+{
+    operator delete(ptr, allocator, tag);
+}
 
 #endif // OMR_PERSISTENT_ALLOCATOR

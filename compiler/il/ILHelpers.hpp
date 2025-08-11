@@ -26,14 +26,13 @@
 #include "il/DataTypes.hpp"
 #include "il/ILOpCodes.hpp"
 
-enum TR_ComparisonTypes
-   {
-   TR_cmpEQ,
-   TR_cmpNE,
-   TR_cmpLT,
-   TR_cmpLE,
-   TR_cmpGT,
-   TR_cmpGE
-   };
+enum TR_ComparisonTypes {
+    TR_cmpEQ,
+    TR_cmpNE,
+    TR_cmpLT,
+    TR_cmpLE,
+    TR_cmpGT,
+    TR_cmpGE
+};
 
 #endif // !defined(OMR_ILHELPERS_INCL)

@@ -29,30 +29,31 @@
 
 class TR_PrimaryInductionVariable;
 class TR_Structure;
+
 namespace TR {
 class Node;
 }
 
-class TR_IndexExprManipulator: public TR::Optimization
-   {
-   public:
-   TR_IndexExprManipulator(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_IndexExprManipulator(manager);
-      }
+class TR_IndexExprManipulator : public TR::Optimization {
+public:
+    TR_IndexExprManipulator(TR::OptimizationManager *manager);
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_IndexExprManipulator(manager);
+    }
 
-   void rewriteIndexExpression(TR_Structure *);
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   private:
-   void rewriteIndexExpression(TR_PrimaryInductionVariable *primeIV,TR::Node *parent,TR::Node *node,bool parentIsAiadd);
-   vcount_t _visitCount;
-   bool    _somethingChanged;
-   bool    _debug;
+    void rewriteIndexExpression(TR_Structure *);
 
+private:
+    void rewriteIndexExpression(TR_PrimaryInductionVariable *primeIV, TR::Node *parent, TR::Node *node,
+        bool parentIsAiadd);
+    vcount_t _visitCount;
+    bool _somethingChanged;
+    bool _debug;
 };
 
 #endif

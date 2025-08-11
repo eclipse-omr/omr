@@ -28,4 +28,4 @@
  */
 void riscvCodeSync(void *codeStart, size_t codeSize);
 
-#endif//CODESYNC_HPP_
+#endif // CODESYNC_HPP_

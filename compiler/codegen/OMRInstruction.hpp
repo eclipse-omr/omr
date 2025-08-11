@@ -27,10 +27,11 @@
  */
 #ifndef OMR_INSTRUCTION_CONNECTOR
 #define OMR_INSTRUCTION_CONNECTOR
+
 namespace OMR {
 class Instruction;
 typedef OMR::Instruction InstructionConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -43,6 +44,7 @@ typedef OMR::Instruction InstructionConnector;
 
 class TR_BitVector;
 class TR_GCStackMap;
+
 namespace TR {
 class CodeGenerator;
 class Instruction;
@@ -51,274 +53,297 @@ class Register;
 class LabelSymbol;
 class RealRegister;
 class Snippet;
-}
+} // namespace TR
 
 #ifndef TO_MASK
-#define TO_MASK(b) (1<<(uint16_t)b)
+#define TO_MASK(b) (1 << (uint16_t)b)
 #endif
 #define INSTRUCTION_INDEX_INCREMENT 32
 
-namespace OMR
-{
+namespace OMR {
 /**
  * Instruction class
  *
  * OMR_EXTENSIBLE
-*/
-class OMR_EXTENSIBLE Instruction
-   {
-   protected:
+ */
+class OMR_EXTENSIBLE Instruction {
+protected:
+    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+        TR::Node *node = 0);
 
-   Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
-   Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node *node = 0);
+public:
+    typedef uint32_t TCollectableReferenceMask;
 
-   public:
-   typedef uint32_t TCollectableReferenceMask;
+    inline TR::Instruction *self();
 
-   inline TR::Instruction* self();
+    /*
+     * Need to move them to FE specific files once more clean up is done.
+     */
+    virtual TR::Snippet *getSnippetForGC() { return 0; }
 
-   /*
-    * Need to move them to FE specific files once more clean up is done.
-    */
-   virtual TR::Snippet *getSnippetForGC() { return 0; }
-   virtual bool isVirtualGuardNOPInstruction() { return false; }
+    virtual bool isVirtualGuardNOPInstruction() { return false; }
 
-   virtual TR::LabelSymbol *getLabelSymbol() { return NULL; }
+    virtual TR::LabelSymbol *getLabelSymbol() { return NULL; }
 
-   typedef uint32_t TIndex;
-   TR_ALLOC(TR_Memory::Instruction)
+    typedef uint32_t TIndex;
+    TR_ALLOC(TR_Memory::Instruction)
 
-   /*
-    * Instruction OpCodes
-    */
-   TR::InstOpCode& getOpCode()                       { return _opcode; }
-   TR::InstOpCode::Mnemonic getOpCodeValue()                  { return _opcode.getMnemonic(); }
-   void setOpCodeValue(TR::InstOpCode::Mnemonic op) { _opcode.setMnemonic(op); }
+    /*
+     * Instruction OpCodes
+     */
+    TR::InstOpCode &getOpCode() { return _opcode; }
 
-   /*
-    * Instruction stream links.
-    */
-   TR::Instruction *getNext() { return _next; }
-   void setNext(TR::Instruction *n) { _next = n; }
+    TR::InstOpCode::Mnemonic getOpCodeValue() { return _opcode.getMnemonic(); }
 
-   TR::Instruction *getPrev() { return _prev; }
-   void setPrev(TR::Instruction *p) { _prev = p; }
+    void setOpCodeValue(TR::InstOpCode::Mnemonic op) { _opcode.setMnemonic(op); }
 
-   void remove();
-   TR::Instruction *move(TR::Instruction *newLocation);
+    /*
+     * Instruction stream links.
+     */
+    TR::Instruction *getNext() { return _next; }
 
-   /*
-    * Address of binary buffer where this instruction was encoded.  The binary buffer
-    * is NULL if this instruction has not been encoded yet.
-    */
-   uint8_t *getBinaryEncoding() { return _binaryEncodingBuffer; }
-   void setBinaryEncoding(uint8_t *be) { _binaryEncodingBuffer = be; }
+    void setNext(TR::Instruction *n) { _next = n; }
 
-   uint8_t getBinaryLength() { return _binaryLength; }
-   void setBinaryLength(uint8_t length) { _binaryLength = length; }
+    TR::Instruction *getPrev() { return _prev; }
 
-   /*
-    * Cached estimate of an instruction's worst case length in bytes.
-    * Assumes that estimateBinaryLength() has been run before.
-    */
-   uint8_t getEstimatedBinaryLength() { return _estimatedBinaryLength; }
-   void setEstimatedBinaryLength(uint8_t e) { _estimatedBinaryLength = e; }
+    void setPrev(TR::Instruction *p) { _prev = p; }
 
-   /*
-    * Action to estimate the generated binary length of this instruction.
-    */
-   virtual int32_t estimateBinaryLength(int32_t currentEstimate) = 0;
+    void remove();
+    TR::Instruction *move(TR::Instruction *newLocation);
 
-   /*
-    * The minimum length in bytes this instruction could be when encoded.
-    */
-   virtual uint8_t getBinaryLengthLowerBound() { return 0; }
+    /*
+     * Address of binary buffer where this instruction was encoded.  The binary buffer
+     * is NULL if this instruction has not been encoded yet.
+     */
+    uint8_t *getBinaryEncoding() { return _binaryEncodingBuffer; }
 
-   /*
-    * Action to generate the binary representation of this instruction at
-    * the current buffer cursor.
-    */
-   virtual uint8_t *generateBinaryEncoding() = 0;
+    void setBinaryEncoding(uint8_t *be) { _binaryEncodingBuffer = be; }
 
-   /**
-    * @brief Expand this instruction prior to binary encoding.
-    *
-    * @returns the last instruction in the expansion or this instruction if no expansion was
-    *          performed.
-    */
-   virtual TR::Instruction *expandInstruction() { return self(); }
+    uint8_t getBinaryLength() { return _binaryLength; }
 
-   /*
-    * Assign the specified register kind(s) on this instruction to real registers.
-    */
-   virtual void assignRegisters(TR_RegisterKinds kindsToBeAssigned) { return; }
+    void setBinaryLength(uint8_t length) { _binaryLength = length; }
 
-   /*
-    * Answers whether this instruction references the given virtual register.
-    */
-   virtual bool refsRegister(TR::Register *reg) { return false; }
+    /*
+     * Cached estimate of an instruction's worst case length in bytes.
+     * Assumes that estimateBinaryLength() has been run before.
+     */
+    uint8_t getEstimatedBinaryLength() { return _estimatedBinaryLength; }
 
-   /*
-    * Answers whether this instruction defines the given virtual register.
-    */
-   virtual bool defsRegister(TR::Register *reg) { return false; }
+    void setEstimatedBinaryLength(uint8_t e) { _estimatedBinaryLength = e; }
 
-   /*
-    * Answers whether this instruction uses the given virtual register.
-    */
-   virtual bool usesRegister(TR::Register *reg) { return false; }
+    /*
+     * Action to estimate the generated binary length of this instruction.
+     */
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate) = 0;
 
-   /*
-    * Answers whether a dependency condition associated with this instruction
-    * references the given virtual register.
-    */
-   virtual bool dependencyRefsRegister(TR::Register *reg) { return false; }
+    /*
+     * The minimum length in bytes this instruction could be when encoded.
+     */
+    virtual uint8_t getBinaryLengthLowerBound() { return 0; }
 
-   /*
-    * The IR node whence this instruction was created.
-    */
-   TR::Node *getNode() { return _node; }
-   void setNode(TR::Node * n) { _node = n; }
+    /*
+     * Action to generate the binary representation of this instruction at
+     * the current buffer cursor.
+     */
+    virtual uint8_t *generateBinaryEncoding() = 0;
 
-   /*
-    * Answers whether the instruction can be included in a guard patch point
-    *
-    * @param[in] cg : CodeGenerator object
-    */
-   virtual bool isPatchBarrier(TR::CodeGenerator *cg) { return false; }
+    /**
+     * @brief Expand this instruction prior to binary encoding.
+     *
+     * @returns the last instruction in the expansion or this instruction if no expansion was
+     *          performed.
+     */
+    virtual TR::Instruction *expandInstruction() { return self(); }
 
-   /*
-    * A 24-bit value indicating an approximate ordering of instructions.  Note that for an
-    * instruction 'I1' followed by an instruction 'I2' it is not guaranteed that
-    * I2.index > I1.index, though it is usually true.
-    */
-   TIndex getIndex() { return _index & ~FlagsMask; }
-   void setIndex(TIndex i) { TR_ASSERT((i & FlagsMask) == 0, "instruction flags overwrite"); _index = i | (_index & FlagsMask); }
+    /*
+     * Assign the specified register kind(s) on this instruction to real registers.
+     */
+    virtual void assignRegisters(TR_RegisterKinds kindsToBeAssigned) { return; }
 
-   /*
-    * Instruction kind.
-    */
-   enum Kind
-      {
-      #include "codegen/InstructionKindEnum.hpp"
-      };
+    /*
+     * Answers whether this instruction references the given virtual register.
+     */
+    virtual bool refsRegister(TR::Register *reg) { return false; }
 
-   virtual Kind getKind() = 0;
+    /*
+     * Answers whether this instruction defines the given virtual register.
+     */
+    virtual bool defsRegister(TR::Register *reg) { return false; }
 
-   /*
-    * OMRTODO: TR specific?
-    */
-   void useRegister(TR::Register *reg);
+    /*
+     * Answers whether this instruction uses the given virtual register.
+     */
+    virtual bool usesRegister(TR::Register *reg) { return false; }
 
-   /*
-    * Cached code generator object.
-    * OMRTODO: should be retrievable from TLS.
-    */
-   TR::CodeGenerator *cg() { return _cg; }
+    /*
+     * Answers whether a dependency condition associated with this instruction
+     * references the given virtual register.
+     */
+    virtual bool dependencyRefsRegister(TR::Register *reg) { return false; }
 
+    /*
+     * The IR node whence this instruction was created.
+     */
+    TR::Node *getNode() { return _node; }
 
-   bool needsGCMap() { return (_index & TO_MASK(NeedsGCMapBit)) != 0; }
-   void setNeedsGCMap(TCollectableReferenceMask regMask = 0xFFFFFFFF) { _gc._GCRegisterMask = regMask; _index |= TO_MASK(NeedsGCMapBit); }
-   bool needsAOTRelocation() { return (_index & TO_MASK(NeedsAOTRelocation)) != 0; }
-   void setNeedsAOTRelocation(bool v = true) { v ? _index |= TO_MASK(NeedsAOTRelocation) : _index &= ~TO_MASK(NeedsAOTRelocation); }
+    void setNode(TR::Node *n) { _node = n; }
 
-   /**
-    * @brief Indicates instruction after which binary encoding should switch to a cold cache
-    *
-    * @returns true iff instruction is a last warm instruction
-    */
-   bool isLastWarmInstruction() { return (_index & TO_MASK(LastWarmInstruction)) != 0; }
+    /*
+     * Answers whether the instruction can be included in a guard patch point
+     *
+     * @param[in] cg : CodeGenerator object
+     */
+    virtual bool isPatchBarrier(TR::CodeGenerator *cg) { return false; }
 
-   /**
-    * @brief Identifies instruction as a last warm instruction.
-    *        Instructions after that will be placed into a cold cache.
-    *        Code that sets it is responsible for maintaining the correct value
-    *        in case the instruction is removed or a new instruction is appended
-    */
-   void setLastWarmInstruction(bool v = true) { v ? _index |= TO_MASK(LastWarmInstruction) : _index &= ~TO_MASK(LastWarmInstruction); }
+    /*
+     * A 24-bit value indicating an approximate ordering of instructions.  Note that for an
+     * instruction 'I1' followed by an instruction 'I2' it is not guaranteed that
+     * I2.index > I1.index, though it is usually true.
+     */
+    TIndex getIndex() { return _index & ~FlagsMask; }
 
-   TR_GCStackMap *getGCMap() { return _gc._GCMap; }
-   TR_GCStackMap *setGCMap(TR_GCStackMap *map) { return (_gc._GCMap = map); }
-   TCollectableReferenceMask getGCRegisterMask() { return _gc._GCRegisterMask; }
+    void setIndex(TIndex i)
+    {
+        TR_ASSERT((i & FlagsMask) == 0, "instruction flags overwrite");
+        _index = i | (_index & FlagsMask);
+    }
 
-   TR_BitVector *getLiveLocals() { return _liveLocals; }
-   TR_BitVector *setLiveLocals(TR_BitVector *v) { return (_liveLocals = v); }
-   TR_BitVector *getLiveMonitors() { return _liveMonitors; }
-   TR_BitVector *setLiveMonitors(TR_BitVector *v) { return (_liveMonitors = v); }
+    /*
+     * Instruction kind.
+     */
+    enum Kind {
+#include "codegen/InstructionKindEnum.hpp"
+    };
 
-   bool    requiresAtomicPatching();
+    virtual Kind getKind() = 0;
 
-   int32_t getMaxPatchableInstructionLength() { return 0; }
+    /*
+     * OMRTODO: TR specific?
+     */
+    void useRegister(TR::Register *reg);
 
-   bool isMergeableGuard();
+    /*
+     * Cached code generator object.
+     * OMRTODO: should be retrievable from TLS.
+     */
+    TR::CodeGenerator *cg() { return _cg; }
 
-   protected:
+    bool needsGCMap() { return (_index & TO_MASK(NeedsGCMapBit)) != 0; }
 
-   uint8_t *_binaryEncodingBuffer;
-   uint8_t _binaryLength;
-   uint8_t _estimatedBinaryLength;
+    void setNeedsGCMap(TCollectableReferenceMask regMask = 0xFFFFFFFF)
+    {
+        _gc._GCRegisterMask = regMask;
+        _index |= TO_MASK(NeedsGCMapBit);
+    }
 
-   TR::InstOpCode _opcode;
+    bool needsAOTRelocation() { return (_index & TO_MASK(NeedsAOTRelocation)) != 0; }
 
-   /*
-    * A 32-bit field where the lower 24-bits contain an integer that represents an
-    * approximate ordering of instructions.
-    *
-    * The upper 8 bits are available for use for flags.
-    */
-   TIndex _index;
+    void setNeedsAOTRelocation(bool v = true)
+    {
+        v ? _index |= TO_MASK(NeedsAOTRelocation) : _index &= ~TO_MASK(NeedsAOTRelocation);
+    }
 
-   /*
-    * Instruction flags encoded by their bit position.  Subclasses may use any
-    * available bits between FirstBaseFlag and MaxBaseFlag-1 inclusive.
-    */
-   enum
-      {
-      // First possible bit for flags
-      //
-      FirstBaseFlag = 24,
+    /**
+     * @brief Indicates instruction after which binary encoding should switch to a cold cache
+     *
+     * @returns true iff instruction is a last warm instruction
+     */
+    bool isLastWarmInstruction() { return (_index & TO_MASK(LastWarmInstruction)) != 0; }
 
-      // Last possible bit for flags
-      //
-      MaxBaseFlag = 31,
-      FlagsMask = 0xff000000,
+    /**
+     * @brief Identifies instruction as a last warm instruction.
+     *        Instructions after that will be placed into a cold cache.
+     *        Code that sets it is responsible for maintaining the correct value
+     *        in case the instruction is removed or a new instruction is appended
+     */
+    void setLastWarmInstruction(bool v = true)
+    {
+        v ? _index |= TO_MASK(LastWarmInstruction) : _index &= ~TO_MASK(LastWarmInstruction);
+    }
 
-      BeforeFirstBaseFlag = FirstBaseFlag-1,
+    TR_GCStackMap *getGCMap() { return _gc._GCMap; }
 
-      #include "codegen/InstructionFlagEnum.hpp"
+    TR_GCStackMap *setGCMap(TR_GCStackMap *map) { return (_gc._GCMap = map); }
 
-      LastBaseFlag
-      };
+    TCollectableReferenceMask getGCRegisterMask() { return _gc._GCRegisterMask; }
 
-   static_assert(LastBaseFlag <= MaxBaseFlag+1, "OMR::Instruction too many flag bits for flag width");
+    TR_BitVector *getLiveLocals() { return _liveLocals; }
 
-   private:
+    TR_BitVector *setLiveLocals(TR_BitVector *v) { return (_liveLocals = v); }
 
-   Instruction() {}
+    TR_BitVector *getLiveMonitors() { return _liveMonitors; }
 
-   TR::Instruction *_next;
-   TR::Instruction *_prev;
-   TR::Node *_node;
-   TR::CodeGenerator *_cg;
+    TR_BitVector *setLiveMonitors(TR_BitVector *v) { return (_liveMonitors = v); }
 
-   protected:
-   TR_BitVector *_liveLocals;
-   TR_BitVector *_liveMonitors;
+    bool requiresAtomicPatching();
 
-   union TR_GCInfo
-      {
-      TCollectableReferenceMask _GCRegisterMask;
-      TR_GCStackMap *_GCMap;
-      TR_GCInfo()
-         {
-         _GCRegisterMask = 0;
-         _GCMap = 0;
-         }
-      } _gc;
+    int32_t getMaxPatchableInstructionLength() { return 0; }
 
+    bool isMergeableGuard();
 
-   };
+protected:
+    uint8_t *_binaryEncodingBuffer;
+    uint8_t _binaryLength;
+    uint8_t _estimatedBinaryLength;
 
-}
+    TR::InstOpCode _opcode;
+
+    /*
+     * A 32-bit field where the lower 24-bits contain an integer that represents an
+     * approximate ordering of instructions.
+     *
+     * The upper 8 bits are available for use for flags.
+     */
+    TIndex _index;
+
+    /*
+     * Instruction flags encoded by their bit position.  Subclasses may use any
+     * available bits between FirstBaseFlag and MaxBaseFlag-1 inclusive.
+     */
+    enum {
+        // First possible bit for flags
+        //
+        FirstBaseFlag = 24,
+
+        // Last possible bit for flags
+        //
+        MaxBaseFlag = 31,
+        FlagsMask = 0xff000000,
+
+        BeforeFirstBaseFlag = FirstBaseFlag - 1,
+
+#include "codegen/InstructionFlagEnum.hpp"
+
+        LastBaseFlag
+    };
+
+    static_assert(LastBaseFlag <= MaxBaseFlag + 1, "OMR::Instruction too many flag bits for flag width");
+
+private:
+    Instruction() {}
+
+    TR::Instruction *_next;
+    TR::Instruction *_prev;
+    TR::Node *_node;
+    TR::CodeGenerator *_cg;
+
+protected:
+    TR_BitVector *_liveLocals;
+    TR_BitVector *_liveMonitors;
+
+    union TR_GCInfo {
+        TCollectableReferenceMask _GCRegisterMask;
+        TR_GCStackMap *_GCMap;
+
+        TR_GCInfo()
+        {
+            _GCRegisterMask = 0;
+            _GCMap = 0;
+        }
+    } _gc;
+};
+
+} // namespace OMR
 
 #endif

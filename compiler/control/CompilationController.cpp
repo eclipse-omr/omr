@@ -34,47 +34,44 @@
 #include "infra/Monitor.hpp"
 #include "infra/ThreadLocal.hpp"
 
-int32_t                  TR::CompilationController::_verbose = 0;
+int32_t TR::CompilationController::_verbose = 0;
 TR::CompilationStrategy *TR::CompilationController::_compilationStrategy = NULL;
-TR::CompilationInfo *    TR::CompilationController::_compInfo = 0;
-bool                     TR::CompilationController::_useController = false;
-bool                     TR::CompilationController::_tlsCompObjCreated = false;
-
+TR::CompilationInfo *TR::CompilationController::_compInfo = 0;
+bool TR::CompilationController::_useController = false;
+bool TR::CompilationController::_tlsCompObjCreated = false;
 
 bool TR::CompilationController::init(TR::CompilationInfo *compInfo)
-   {
-   _compInfo = compInfo;
-   _compilationStrategy = new (PERSISTENT_NEW) TR::CompilationStrategy();
+{
+    _compInfo = compInfo;
+    _compilationStrategy = new (PERSISTENT_NEW) TR::CompilationStrategy();
 
-   TR_OptimizationPlan::_optimizationPlanMonitor = TR::Monitor::create("OptimizationPlanMonitor");
-   _useController = (TR_OptimizationPlan::_optimizationPlanMonitor != 0);
-   if (_useController)
-      {
-      static char *verboseController = feGetEnv("TR_VerboseController");
-      if (verboseController)
-         setVerbose(atoi(verboseController));
-      }
+    TR_OptimizationPlan::_optimizationPlanMonitor = TR::Monitor::create("OptimizationPlanMonitor");
+    _useController = (TR_OptimizationPlan::_optimizationPlanMonitor != 0);
+    if (_useController) {
+        static char *verboseController = feGetEnv("TR_VerboseController");
+        if (verboseController)
+            setVerbose(atoi(verboseController));
+    }
 #ifdef J9_PROJECT_SPECIFIC
-   if (TR::Options::getCmdLineOptions() && TR::Options::getCmdLineOptions()->getOption(TR_EnableCompYieldStats))
-      TR::Compilation::allocateCompYieldStatsMatrix();
+    if (TR::Options::getCmdLineOptions() && TR::Options::getCmdLineOptions()->getOption(TR_EnableCompYieldStats))
+        TR::Compilation::allocateCompYieldStatsMatrix();
 #endif
-   TR_TLS_ALLOC(OMR::compilation);
-   _tlsCompObjCreated = true;
-   return _useController;
-   }
+    TR_TLS_ALLOC(OMR::compilation);
+    _tlsCompObjCreated = true;
+    return _useController;
+}
 
 void TR::CompilationController::shutdown()
-   {
-   if (_tlsCompObjCreated)
-      {
-      TR_TLS_FREE(OMR::compilation);
-      }
-      
-   if (!_useController)
-      return;
+{
+    if (_tlsCompObjCreated) {
+        TR_TLS_FREE(OMR::compilation);
+    }
 
-   // would like to free all entries in the pool of compilation plans
-   int32_t remainingPlans = TR_OptimizationPlan::freeEntirePool();
+    if (!_useController)
+        return;
 
-   _compilationStrategy->shutdown();
-   }
+    // would like to free all entries in the pool of compilation plans
+    int32_t remainingPlans = TR_OptimizationPlan::freeEntirePool();
+
+    _compilationStrategy->shutdown();
+}

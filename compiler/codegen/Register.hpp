@@ -29,19 +29,23 @@
 #include <stdint.h>
 #include "codegen/RegisterConstants.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE Register: public OMR::RegisterConnector
-   {
-   public:
+class OMR_EXTENSIBLE Register : public OMR::RegisterConnector {
+public:
+    Register(uint32_t f = 0)
+        : OMR::RegisterConnector(f)
+    {}
 
-   Register(uint32_t f=0): OMR::RegisterConnector(f) {}
-   Register(TR_RegisterKinds rk): OMR::RegisterConnector(rk) {}
-   Register(TR_RegisterKinds rk, uint16_t ar): OMR::RegisterConnector(rk, ar) {}
+    Register(TR_RegisterKinds rk)
+        : OMR::RegisterConnector(rk)
+    {}
 
-   };
+    Register(TR_RegisterKinds rk, uint16_t ar)
+        : OMR::RegisterConnector(rk, ar)
+    {}
+};
 
-}
+} // namespace TR
 
 #endif /* TR_REGISTER_INCL */

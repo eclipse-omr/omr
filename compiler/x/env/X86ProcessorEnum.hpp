@@ -24,13 +24,5 @@
  * definitions are permitted.
  */
 
-   UnknownX86Processor,
-   IntelPentium,
-   IntelP6,
-   IntelPentium4,
-   IntelCore2,
-   IntelTulsa,
-   AMDK5,
-   AMDK6,
-   AMDAthlonDuron,
-   AMDOpteron,
+UnknownX86Processor, IntelPentium, IntelP6, IntelPentium4, IntelCore2, IntelTulsa, AMDK5, AMDK6, AMDAthlonDuron,
+    AMDOpteron,

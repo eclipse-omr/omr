@@ -28,17 +28,15 @@ namespace TR {
 class OptimizationManager;
 }
 
-namespace TR
-{
+namespace TR {
 
-class CFGSimplifier : public OMR::CFGSimplifier
-   {
-   public:
+class CFGSimplifier : public OMR::CFGSimplifier {
+public:
+    CFGSimplifier(TR::OptimizationManager *manager)
+        : OMR::CFGSimplifier(manager)
+    {}
+};
 
-   CFGSimplifier(TR::OptimizationManager *manager) :
-      OMR::CFGSimplifier(manager) {}
-   };
-
-}
+} // namespace TR
 
 #endif

@@ -29,12 +29,13 @@
 #include "infra/Cfg.hpp"
 
 class TR_Debug;
+
 namespace TR {
 class Block;
 class Node;
 class ResolvedMethodSymbol;
 class TreeTop;
-}
+} // namespace TR
 
 /// This class can be used to check if the CFG is correct. The check is
 /// performed in two distinct steps.
@@ -51,37 +52,38 @@ class TreeTop;
 /// Note that these two checks together are sufficient to show that the CFG
 /// is correct or otherwise.
 ///
-class TR_CFGChecker
-   {
-   public:
-   TR_ALLOC(TR_Memory::CFGChecker)
+class TR_CFGChecker {
+public:
+    TR_ALLOC(TR_Memory::CFGChecker)
 
-   TR_CFGChecker(TR::ResolvedMethodSymbol *, TR_Debug *);
-   TR_CFGChecker(TR::CFG *cfg, TR::FILE *pOutFile) : _cfg(cfg), _fe(cfg->comp()->fe()), _outFile(pOutFile) { };
+    TR_CFGChecker(TR::ResolvedMethodSymbol *, TR_Debug *);
+    TR_CFGChecker(TR::CFG *cfg, TR::FILE *pOutFile)
+        : _cfg(cfg)
+        , _fe(cfg->comp()->fe())
+        , _outFile(pOutFile) {};
 
-   void check();
+    void check();
 
-   protected:
+protected:
+    void markCFGNodes();
+    bool arrangeBlocksInProgramOrder();
+    bool areSuccessorsCorrect(int32_t);
+    bool equalsAnyChildOf(TR::TreeTop *, TR::Node *);
+    int32_t getNumUniqueCases(TR::Node *);
+    void performCorrectnessCheck();
+    void performConsistencyCheck();
+    bool isConsistent(TR::Block *);
+    bool checkForUnreachableCycles();
 
-   void markCFGNodes();
-   bool arrangeBlocksInProgramOrder();
-   bool areSuccessorsCorrect(int32_t);
-   bool equalsAnyChildOf(TR::TreeTop *, TR::Node *);
-   int32_t getNumUniqueCases(TR::Node *);
-   void performCorrectnessCheck();
-   void performConsistencyCheck();
-   bool isConsistent(TR::Block *);
-   bool checkForUnreachableCycles();
-
-   TR::CFG    *_cfg;
-   TR::Block **_blocksInProgramOrder;
-   int32_t    _numBlocks;
-   int32_t    _numRealBlocks;
-   bool       _successorsCorrect;
-   bool       _isCFGConsistent;
-   TR_BitVector _blockChecklist;
-   TR::FILE *_outFile;
-   TR_FrontEnd *_fe;
-   };
+    TR::CFG *_cfg;
+    TR::Block **_blocksInProgramOrder;
+    int32_t _numBlocks;
+    int32_t _numRealBlocks;
+    bool _successorsCorrect;
+    bool _isCFGConsistent;
+    TR_BitVector _blockChecklist;
+    TR::FILE *_outFile;
+    TR_FrontEnd *_fe;
+};
 
 #endif

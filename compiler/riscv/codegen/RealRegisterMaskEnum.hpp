@@ -24,4 +24,4 @@
  * definitions are permitted.
  */
 
-      noRegMask = 0x00000000,
+noRegMask = 0x00000000,

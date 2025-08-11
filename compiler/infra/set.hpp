@@ -31,25 +31,24 @@
 
 namespace TR {
 
-template <
-   typename T,
-   typename Cmp = std::less<T>,
-   typename Alloc = TR::Region&
->
-class set : public std::set<T, Cmp, TR::typed_allocator<T, Alloc> >
-   {
-   private:
-   typedef std::set<T, Cmp, TR::typed_allocator<T, Alloc> > Base;
+template<typename T, typename Cmp = std::less<T>, typename Alloc = TR::Region &>
+class set : public std::set<T, Cmp, TR::typed_allocator<T, Alloc> > {
+private:
+    typedef std::set<T, Cmp, TR::typed_allocator<T, Alloc> > Base;
 
-   public:
-   typedef typename Base::value_compare value_compare;
-   typedef typename Base::allocator_type allocator_type;
+public:
+    typedef typename Base::value_compare value_compare;
+    typedef typename Base::allocator_type allocator_type;
 
-   set(const value_compare &cmp, const allocator_type &alloc) : Base(cmp, alloc) {}
+    set(const value_compare &cmp, const allocator_type &alloc)
+        : Base(cmp, alloc)
+    {}
 
-   // This constructor is available when the comparison is default-constructible.
-   set(const allocator_type &alloc) : Base(value_compare(), alloc) {}
-   };
+    // This constructor is available when the comparison is default-constructible.
+    set(const allocator_type &alloc)
+        : Base(value_compare(), alloc)
+    {}
+};
 
 } // namespace TR
 

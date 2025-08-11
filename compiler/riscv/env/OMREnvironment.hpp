@@ -27,38 +27,32 @@
  */
 #ifndef OMR_ENVIRONMENT_CONNECTOR
 #define OMR_ENVIRONMENT_CONNECTOR
+
 namespace OMR {
-namespace RV { class Environment; }
-typedef OMR::RV::Environment EnvironmentConnector;
+namespace RV {
+class Environment;
 }
+
+typedef OMR::RV::Environment EnvironmentConnector;
+} // namespace OMR
 #else
 #error OMR::RV::Environment expected to be a primary connector, but an OMR connector is already defined
 #endif
 
 #include "compiler/env/OMREnvironment.hpp"
 
+namespace OMR { namespace RV {
 
-namespace OMR
-{
-
-namespace RV
-{
-
-class Environment : public OMR::Environment
-   {
+class Environment : public OMR::Environment {
 public:
+    Environment()
+        : OMR::Environment()
+    {}
 
-   Environment() :
-      OMR::Environment()
-      {}
+    Environment(TR::MajorOperatingSystem o, TR::Bitness b)
+        : OMR::Environment(o, b)
+    {}
+};
 
-   Environment(TR::MajorOperatingSystem o, TR::Bitness b) :
-      OMR::Environment(o, b)
-      {}
-      
-   };
-
-}
-
-}
-#endif //OMR_RV_ENVIRONMENT_INCL
+}} // namespace OMR::RV
+#endif // OMR_RV_ENVIRONMENT_INCL

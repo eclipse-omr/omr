@@ -32,77 +32,55 @@ namespace TR {
 class SymbolReference;
 }
 
-void TR_Analyser::setInputs(TR::Node     *firstChild,
-                            TR::Register *firstRegister,
-                            TR::Node     *secondChild,
-                            TR::Register *secondRegister,
-                            bool         nonClobberingDestination,
-                            bool         dontClobberAnything,
-                            TR::Compilation *comp,
-                            bool         lockedIntoRegister1,
-                            bool         lockedIntoRegister2)
-   {
-   _inputs = 0;
+void TR_Analyser::setInputs(TR::Node *firstChild, TR::Register *firstRegister, TR::Node *secondChild,
+    TR::Register *secondRegister, bool nonClobberingDestination, bool dontClobberAnything, TR::Compilation *comp,
+    bool lockedIntoRegister1, bool lockedIntoRegister2)
+{
+    _inputs = 0;
 
-   if (firstRegister)
-      {
-      setReg1();
-      }
+    if (firstRegister) {
+        setReg1();
+    }
 
-   if (secondRegister)
-      {
-      setReg2();
-      }
+    if (secondRegister) {
+        setReg2();
+    }
 
-   // The VFT pointer can be low-tagged, so generally we can't operate on it
-   // directly in memory.
-   //
-   TR::SymbolReference *vftPointerSymRef = TR::comp()->getSymRefTab()->element(TR::SymbolReferenceTable::vftSymbol);
+    // The VFT pointer can be low-tagged, so generally we can't operate on it
+    // directly in memory.
+    //
+    TR::SymbolReference *vftPointerSymRef = TR::comp()->getSymRefTab()->element(TR::SymbolReferenceTable::vftSymbol);
 
-   if (  firstChild->getOpCode().isMemoryReference()
-      && firstChild->getSymbolReference() != vftPointerSymRef
-      && firstChild->getReferenceCount() == 1
-      && !lockedIntoRegister1)
-      {
-      setMem1();
-      }
+    if (firstChild->getOpCode().isMemoryReference() && firstChild->getSymbolReference() != vftPointerSymRef
+        && firstChild->getReferenceCount() == 1 && !lockedIntoRegister1) {
+        setMem1();
+    }
 
-   if (  secondChild->getOpCode().isMemoryReference()
-      && secondChild->getSymbolReference() != vftPointerSymRef
-      && secondChild->getReferenceCount() == 1
-      && !lockedIntoRegister2)
-      {
-      setMem2();
-      }
+    if (secondChild->getOpCode().isMemoryReference() && secondChild->getSymbolReference() != vftPointerSymRef
+        && secondChild->getReferenceCount() == 1 && !lockedIntoRegister2) {
+        setMem2();
+    }
 
-   if (!dontClobberAnything)
-      {
+    if (!dontClobberAnything) {
+        if (!nonClobberingDestination) {
+            if (firstChild == secondChild && firstChild->getReferenceCount() == 2) {
+                setClob1();
+                setClob2();
+            }
 
-      if (!nonClobberingDestination)
-         {
-         if (firstChild == secondChild && firstChild->getReferenceCount() == 2)
-            {
+            if (firstChild->getReferenceCount() == 1) {
+                setClob1();
+            }
+
+            if (secondChild->getReferenceCount() == 1) {
+                setClob2();
+            }
+        } else {
+            // set both operands to be clobberable because know that instruction doesn't
+            // actually clobber destination operand so want to make either one a possible
+            // no-cost destination operand.
             setClob1();
             setClob2();
-            }
-
-         if (firstChild->getReferenceCount() == 1)
-            {
-            setClob1();
-            }
-
-         if (secondChild->getReferenceCount() == 1)
-            {
-            setClob2();
-            }
-         }
-      else
-         {
-         // set both operands to be clobberable because know that instruction doesn't
-         // actually clobber destination operand so want to make either one a possible
-         // no-cost destination operand.
-         setClob1();
-         setClob2();
-         }
-      }
-   }
+        }
+    }
+}

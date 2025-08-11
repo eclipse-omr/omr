@@ -24,65 +24,60 @@
 
 #include "codegen/OMRInstruction.hpp"
 
-namespace TR
-{
+namespace TR {
 class Instruction;
 
-class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector
-   {
-   public:
+class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector {
+public:
+    /**
+     * @brief Constructor
+     * @param[in] op : opcode
+     * @param[in] node : node
+     * @param[in] precedingInstruction : preceding instruction
+     * @param[in] cg : CodeGenerator
+     */
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(cg, precedingInstruction, op, node)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] op : opcode
-    * @param[in] node : node
-    * @param[in] precedingInstruction : preceding instruction
-    * @param[in] cg : CodeGenerator
-    */
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg) :
-      OMR::InstructionConnector(cg, precedingInstruction, op, node)
-      {
-      }
+    /**
+     * @brief Constructor
+     * @param[in] op : opcode
+     * @param[in] node : node
+     * @param[in] cg : CodeGenerator
+     */
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(cg, op, node)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] op : opcode
-    * @param[in] node : node
-    * @param[in] cg : CodeGenerator
-    */
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg) :
-      OMR::InstructionConnector(cg, op, node)
-      {
-      }
+    /**
+     * @brief Constructor
+     * @param[in] op : opcode
+     * @param[in] node : node
+     * @param[in] cond : register dependency conditions
+     * @param[in] precedingInstruction : preceding instruction
+     * @param[in] cg : CodeGenerator
+     */
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::RegisterDependencyConditions *cond,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(cg, precedingInstruction, op, cond, node)
+    {}
 
-   /**
-    * @brief Constructor
-    * @param[in] op : opcode
-    * @param[in] node : node
-    * @param[in] cond : register dependency conditions
-    * @param[in] precedingInstruction : preceding instruction
-    * @param[in] cg : CodeGenerator
-    */
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::RegisterDependencyConditions *cond,
-               TR::Instruction *precedingInstruction, TR::CodeGenerator *cg) :
-      OMR::InstructionConnector(cg, precedingInstruction, op, cond, node)
-      {}
+    /**
+     * @brief Constructor
+     * @param[in] op : opcode
+     * @param[in] node : node
+     * @param[in] cond : register dependency conditions
+     * @param[in] cg : CodeGenerator
+     */
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::RegisterDependencyConditions *cond,
+        TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(cg, op, cond, node)
+    {}
+};
 
-   /**
-    * @brief Constructor
-    * @param[in] op : opcode
-    * @param[in] node : node
-    * @param[in] cond : register dependency conditions
-    * @param[in] cg : CodeGenerator
-    */
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::RegisterDependencyConditions *cond,
-               TR::CodeGenerator *cg) :
-      OMR::InstructionConnector(cg, op, cond, node)
-      {}
-
-   };
-
-} // TR
+} // namespace TR
 
 #include "codegen/OMRInstruction_inlines.hpp"
 

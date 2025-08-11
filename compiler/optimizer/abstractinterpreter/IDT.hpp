@@ -38,63 +38,63 @@ namespace TR {
  *
  * The parent-child relationship in the IDT corresponds to the caller-callee relationship.
  */
-class IDT
-   {
-   public:
-   IDT(TR::Region& region, TR_CallTarget*, TR::ResolvedMethodSymbol* symbol, uint32_t budget, TR::Compilation* comp);
+class IDT {
+public:
+    IDT(TR::Region &region, TR_CallTarget *, TR::ResolvedMethodSymbol *symbol, uint32_t budget, TR::Compilation *comp);
 
-   TR::IDTNode* getRoot() { return _root; }
+    TR::IDTNode *getRoot() { return _root; }
 
-   TR::Region& getRegion() { return _region; }
+    TR::Region &getRegion() { return _region; }
 
-   void addCost(uint32_t cost) { _totalCost += cost; }
-   uint32_t getTotalCost() { return _totalCost; }
+    void addCost(uint32_t cost) { _totalCost += cost; }
 
-   /**
-    * @brief Get the total number of nodes in this IDT.
-    *
-    * @return the total number of node
-    */
-   uint32_t getNumNodes() { return _nextIdx + 1; }
+    uint32_t getTotalCost() { return _totalCost; }
 
-   /**
-    * @brief Get the next avaible IDTNode index.
-    *
-    * @return the next index
-    */
-   int32_t getNextGlobalIDTNodeIndex() { return _nextIdx; }
+    /**
+     * @brief Get the total number of nodes in this IDT.
+     *
+     * @return the total number of node
+     */
+    uint32_t getNumNodes() { return _nextIdx + 1; }
 
-   /**
-    * @brief Increase the next available IDTNode index by 1.
-    * This should only be called when successfully adding an IDTNode to the IDT
-    */
-   void increaseGlobalIDTNodeIndex()  { _nextIdx ++; }
+    /**
+     * @brief Get the next avaible IDTNode index.
+     *
+     * @return the next index
+     */
+    int32_t getNextGlobalIDTNodeIndex() { return _nextIdx; }
 
-   /**
-    * @brief Get the IDTNode using index.
-    * Before using this method for accessing IDTNode, flattenIDT() must be called.
-    *
-    * @return the IDT node
-    */
-   TR::IDTNode *getNodeByGlobalIndex(int32_t index);
+    /**
+     * @brief Increase the next available IDTNode index by 1.
+     * This should only be called when successfully adding an IDTNode to the IDT
+     */
+    void increaseGlobalIDTNodeIndex() { _nextIdx++; }
 
-   /**
-    * @brief Flatten all the IDTNodes into a list.
-    */
-   void flattenIDT();
+    /**
+     * @brief Get the IDTNode using index.
+     * Before using this method for accessing IDTNode, flattenIDT() must be called.
+     *
+     * @return the IDT node
+     */
+    TR::IDTNode *getNodeByGlobalIndex(int32_t index);
 
-   void print();
+    /**
+     * @brief Flatten all the IDTNodes into a list.
+     */
+    void flattenIDT();
 
-   private:
-   TR::Compilation* comp() { return _comp; }
+    void print();
 
-   TR::Compilation *_comp;
-   TR::Region&  _region;
-   int32_t _nextIdx;
-   uint32_t _totalCost;
-   TR::IDTNode* _root;
-   TR::IDTNode** _indices;
-   };
+private:
+    TR::Compilation *comp() { return _comp; }
+
+    TR::Compilation *_comp;
+    TR::Region &_region;
+    int32_t _nextIdx;
+    uint32_t _totalCost;
+    TR::IDTNode *_root;
+    TR::IDTNode **_indices;
+};
 
 /**
  * A topological sort of the IDT in which the lowest-benefit node is listed first and lowest cost used to
@@ -111,32 +111,33 @@ class IDT
  * of all intermediate solutions at a given cost budget to simplify backtracking in subsequent iterations
  * of the algorithm".
  */
-class IDTPriorityQueue
-   {
-   public:
-   IDTPriorityQueue(TR::IDT* idt, TR::Region& region);
-   uint32_t size() { return _idt->getNumNodes(); }
+class IDTPriorityQueue {
+public:
+    IDTPriorityQueue(TR::IDT *idt, TR::Region &region);
 
-   TR::IDTNode* get(uint32_t index);
+    uint32_t size() { return _idt->getNumNodes(); }
 
-   private:
-   struct IDTNodeCompare
-      {
-      bool operator()(TR::IDTNode *left, TR::IDTNode *right)
-         {
-         TR_ASSERT_FATAL(left && right, "Comparing against null");
-         if (left->getBenefit() == right->getBenefit()) return left->getCost() > right->getCost();
-         else return left->getBenefit() > right->getBenefit();
-         }
-      };
+    TR::IDTNode *get(uint32_t index);
 
-   typedef TR::vector<IDTNode*, TR::Region&> IDTNodeVector;
-   typedef std::priority_queue<IDTNode*, IDTNodeVector, IDTNodeCompare> IDTNodePriorityQueue;
+private:
+    struct IDTNodeCompare {
+        bool operator()(TR::IDTNode *left, TR::IDTNode *right)
+        {
+            TR_ASSERT_FATAL(left && right, "Comparing against null");
+            if (left->getBenefit() == right->getBenefit())
+                return left->getCost() > right->getCost();
+            else
+                return left->getBenefit() > right->getBenefit();
+        }
+    };
 
-   TR::IDT* _idt;
-   IDTNodePriorityQueue _pQueue;
-   IDTNodeVector _entries;
-   };
-}
+    typedef TR::vector<IDTNode *, TR::Region &> IDTNodeVector;
+    typedef std::priority_queue<IDTNode *, IDTNodeVector, IDTNodeCompare> IDTNodePriorityQueue;
+
+    TR::IDT *_idt;
+    IDTNodePriorityQueue _pQueue;
+    IDTNodeVector _entries;
+};
+} // namespace TR
 
 #endif

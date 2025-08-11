@@ -54,70 +54,65 @@ class SymbolReference;
 /**
  *   Linked list of named counter infos.
  */
-NamedCounterInfo * TR_DebuggingCounters::namedCounterInfos = NULL;
+NamedCounterInfo *TR_DebuggingCounters::namedCounterInfos = NULL;
 
 /**
  *   Return the counter info for the name provided.   Create if missing
  */
-NamedCounterInfo* TR_DebuggingCounters::getOrCreateNamedCounter(TR::Compilation *comp, const char * name, int32_t d, int32_t bucketSize)
-   {
-   const char *hotnessName = comp->getHotnessName(comp->getMethodHotness());
+NamedCounterInfo *TR_DebuggingCounters::getOrCreateNamedCounter(TR::Compilation *comp, const char *name, int32_t d,
+    int32_t bucketSize)
+{
+    const char *hotnessName = comp->getHotnessName(comp->getMethodHotness());
 
-   char appendedName[100];
-   strcpy(appendedName, hotnessName);
-   strcpy(appendedName + strlen(hotnessName)," : ");
-   strcpy(appendedName + strlen(hotnessName) + 3, name);
-   // Do a linear search for the counter of this name
-   // If performance becomes a problem this can become a binary search,
-   // but if used for debugging counters only this is probably not
-   // necessary.
-   //
-   NamedCounterInfo *prevSimilarCounter = NULL;
-   for (NamedCounterInfo * counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next)
-      {
-      if (0 == strcmp(counterInfo->counterName,appendedName))
-         {
-         if (0 == (d/counterInfo->bucketSize - counterInfo->delta))
-            {
-            // Found it existing
-            return counterInfo;
+    char appendedName[100];
+    strcpy(appendedName, hotnessName);
+    strcpy(appendedName + strlen(hotnessName), " : ");
+    strcpy(appendedName + strlen(hotnessName) + 3, name);
+    // Do a linear search for the counter of this name
+    // If performance becomes a problem this can become a binary search,
+    // but if used for debugging counters only this is probably not
+    // necessary.
+    //
+    NamedCounterInfo *prevSimilarCounter = NULL;
+    for (NamedCounterInfo *counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next) {
+        if (0 == strcmp(counterInfo->counterName, appendedName)) {
+            if (0 == (d / counterInfo->bucketSize - counterInfo->delta)) {
+                // Found it existing
+                return counterInfo;
             }
-         prevSimilarCounter = counterInfo;
-         }
-      }
+            prevSimilarCounter = counterInfo;
+        }
+    }
 
-   // Named counter not found.   Create a new one.
-   NamedCounterInfo * newCounterInfo = (NamedCounterInfo *)jitPersistentAlloc(sizeof(NamedCounterInfo));
+    // Named counter not found.   Create a new one.
+    NamedCounterInfo *newCounterInfo = (NamedCounterInfo *)jitPersistentAlloc(sizeof(NamedCounterInfo));
 
-   // Initialize the counter info with the name, and zero counts
-   newCounterInfo->counterName = (char*)jitPersistentAlloc((strlen(hotnessName) + 3 + strlen(name)) * sizeof(char) + 1);
-   strcpy(newCounterInfo->counterName,hotnessName);
-   strcpy(newCounterInfo->counterName + strlen(hotnessName)," : ");
-   strcpy(newCounterInfo->counterName + strlen(hotnessName) + 3,name);
-   newCounterInfo->smallCount = 0;
-   newCounterInfo->totalCount = 0;
-   newCounterInfo->compilationCount = 0;
-   newCounterInfo->bucketSize = bucketSize;
-   newCounterInfo->delta = d/bucketSize;
+    // Initialize the counter info with the name, and zero counts
+    newCounterInfo->counterName
+        = (char *)jitPersistentAlloc((strlen(hotnessName) + 3 + strlen(name)) * sizeof(char) + 1);
+    strcpy(newCounterInfo->counterName, hotnessName);
+    strcpy(newCounterInfo->counterName + strlen(hotnessName), " : ");
+    strcpy(newCounterInfo->counterName + strlen(hotnessName) + 3, name);
+    newCounterInfo->smallCount = 0;
+    newCounterInfo->totalCount = 0;
+    newCounterInfo->compilationCount = 0;
+    newCounterInfo->bucketSize = bucketSize;
+    newCounterInfo->delta = d / bucketSize;
 
-   if (!prevSimilarCounter)
-      {
-      //
-      // Insert it in the list of infos by making it the new head of the list
-      //
-      newCounterInfo->_next = namedCounterInfos;
-      namedCounterInfos = newCounterInfo;
-      }
-   else
-      {
-      NamedCounterInfo *nextCounter = prevSimilarCounter->_next;
-      newCounterInfo->_next = nextCounter;
-      prevSimilarCounter->_next = newCounterInfo;
-      }
+    if (!prevSimilarCounter) {
+        //
+        // Insert it in the list of infos by making it the new head of the list
+        //
+        newCounterInfo->_next = namedCounterInfos;
+        namedCounterInfos = newCounterInfo;
+    } else {
+        NamedCounterInfo *nextCounter = prevSimilarCounter->_next;
+        newCounterInfo->_next = nextCounter;
+        prevSimilarCounter->_next = newCounterInfo;
+    }
 
-   return newCounterInfo;
-   }
-
+    return newCounterInfo;
+}
 
 /**
  *   Insert a counter after the given tree top:
@@ -125,166 +120,152 @@ NamedCounterInfo* TR_DebuggingCounters::getOrCreateNamedCounter(TR::Compilation 
  * @name:   the name of the counter
  * @tt:   the treetop to insert the counter before
  */
-void TR_DebuggingCounters::insertCounter(const char * name, TR::Compilation * comp, TR::TreeTop * tt, int32_t d)
-   {
-   // If we're given a null instruction to insert before, we can't do anything
-   //
-   if (!tt)
-      return;
+void TR_DebuggingCounters::insertCounter(const char *name, TR::Compilation *comp, TR::TreeTop *tt, int32_t d)
+{
+    // If we're given a null instruction to insert before, we can't do anything
+    //
+    if (!tt)
+        return;
 
-   int32_t bucketSize = comp->getOptions()->getInlineCntrAllBucketSize();
+    int32_t bucketSize = comp->getOptions()->getInlineCntrAllBucketSize();
 
-   if (comp->getOptions()->insertDebuggingCounters())
-      {
-      if (!strncmp(name, "callee has too many bytecodes", 29))
-         bucketSize = comp->getOptions()->getInlineCntrCalleeTooBigBucketSize();
-      else if (!strncmp(name, "cold callee has too many bytecodes", 34))
-         bucketSize = comp->getOptions()->getInlineCntrColdAndNotTinyBucketSize();
-      else if (!strncmp(name, "warm callee has too many bytecodes", 34))
-         bucketSize = comp->getOptions()->getInlineCntrWarmCalleeTooBigBucketSize();
-      else if (!strncmp(name, "caller exceeded inline budget", 29))
-         bucketSize = comp->getOptions()->getInlineCntrRanOutOfBudgetBucketSize();
-      else if (!strncmp(name, "callee graph has too many bytecodes", 35))
-         bucketSize = comp->getOptions()->getInlineCntrCalleeTooDeepBucketSize();
-      else if (!strncmp(name, "callee has too many nodes", 25))
-         bucketSize = comp->getOptions()->getInlineCntrWarmCalleeHasTooManyNodesBucketSize();
-      else if (!strncmp(name, "caller has too many nodes", 25))
-         bucketSize = comp->getOptions()->getInlineCntrWarmCallerHasTooManyNodesBucketSize();
-      else if (!strncmp(name, "inline depth exceeded", 21))
-         bucketSize = comp->getOptions()->getInlineCntrDepthExceededBucketSize();
-      }
+    if (comp->getOptions()->insertDebuggingCounters()) {
+        if (!strncmp(name, "callee has too many bytecodes", 29))
+            bucketSize = comp->getOptions()->getInlineCntrCalleeTooBigBucketSize();
+        else if (!strncmp(name, "cold callee has too many bytecodes", 34))
+            bucketSize = comp->getOptions()->getInlineCntrColdAndNotTinyBucketSize();
+        else if (!strncmp(name, "warm callee has too many bytecodes", 34))
+            bucketSize = comp->getOptions()->getInlineCntrWarmCalleeTooBigBucketSize();
+        else if (!strncmp(name, "caller exceeded inline budget", 29))
+            bucketSize = comp->getOptions()->getInlineCntrRanOutOfBudgetBucketSize();
+        else if (!strncmp(name, "callee graph has too many bytecodes", 35))
+            bucketSize = comp->getOptions()->getInlineCntrCalleeTooDeepBucketSize();
+        else if (!strncmp(name, "callee has too many nodes", 25))
+            bucketSize = comp->getOptions()->getInlineCntrWarmCalleeHasTooManyNodesBucketSize();
+        else if (!strncmp(name, "caller has too many nodes", 25))
+            bucketSize = comp->getOptions()->getInlineCntrWarmCallerHasTooManyNodesBucketSize();
+        else if (!strncmp(name, "inline depth exceeded", 21))
+            bucketSize = comp->getOptions()->getInlineCntrDepthExceededBucketSize();
+    }
 
-   // Get (or create) the named counter info for the name passed.
-   NamedCounterInfo* counterInfo = getOrCreateNamedCounter(comp, name, d, bucketSize);
+    // Get (or create) the named counter info for the name passed.
+    NamedCounterInfo *counterInfo = getOrCreateNamedCounter(comp, name, d, bucketSize);
 
-   // Record the number of times saw this counter during compilation
-   //
-   counterInfo->compilationCount++;
+    // Record the number of times saw this counter during compilation
+    //
+    counterInfo->compilationCount++;
 
-   // Insert the instrumentation only if the command line option is
-   // used
-   if (comp->getOptions()->insertDebuggingCounters())
-      {
-      // Insert instrumentation to increment the counter
+    // Insert the instrumentation only if the command line option is
+    // used
+    if (comp->getOptions()->insertDebuggingCounters()) {
+        // Insert instrumentation to increment the counter
 
-      // The instrumentation in the code increments the small count
-      SMALL_COUNTER_TYPE * ctrAddress = &(counterInfo->smallCount);
-      TR::SymbolReference* counterRef = comp->getSymRefTab()->createKnownStaticDataSymbolRef(ctrAddress, TR::Int32);
+        // The instrumentation in the code increments the small count
+        SMALL_COUNTER_TYPE *ctrAddress = &(counterInfo->smallCount);
+        TR::SymbolReference *counterRef = comp->getSymRefTab()->createKnownStaticDataSymbolRef(ctrAddress, TR::Int32);
 
-      // Treetops for counterRef = counterRef + 1;
+        // Treetops for counterRef = counterRef + 1;
 
-      TR::Node * node = tt->getNode();
-      TR::Node* loadNode = TR::Node::createWithSymRef(node, TR::iload, 0, counterRef);
+        TR::Node *node = tt->getNode();
+        TR::Node *loadNode = TR::Node::createWithSymRef(node, TR::iload, 0, counterRef);
 
-      TR::Node* addNode =
+        TR::Node *addNode =
 
-         TR::Node::create(TR::iadd, 2, loadNode,
-		         TR::Node::create(node, TR::iconst, 0, 1));
+            TR::Node::create(TR::iadd, 2, loadNode, TR::Node::create(node, TR::iconst, 0, 1));
 
+        TR::TreeTop *incrementTree
+            = TR::TreeTop::create(comp, TR::Node::createWithSymRef(TR::istore, 1, 1, addNode, counterRef));
 
-      TR::TreeTop* incrementTree =
-         TR::TreeTop::create(comp, TR::Node::createWithSymRef(TR::istore, 1, 1,
-					          addNode, counterRef));
-
-      tt->getPrevTreeTop()->insertAfter(incrementTree);
-      }
-   }
-
+        tt->getPrevTreeTop()->insertAfter(incrementTree);
+    }
+}
 
 /**
  * Dump the counters
  */
 void TR_DebuggingCounters::report()
-   {
-   NamedCounterInfo * counterInfo;
-   if (output)
-      fflush(output);
-   else
-      output = stdout;
+{
+    NamedCounterInfo *counterInfo;
+    if (output)
+        fflush(output);
+    else
+        output = stdout;
 
-   // Make sure large counts are updated with the recent info
-   //
-   transferSmallCountsToTotalCounts();
+    // Make sure large counts are updated with the recent info
+    //
+    transferSmallCountsToTotalCounts();
 
-   LARGE_COUNTER_TYPE dynamicSum = 0;
-   SMALL_COUNTER_TYPE compilationSum = 0;
+    LARGE_COUNTER_TYPE dynamicSum = 0;
+    SMALL_COUNTER_TYPE compilationSum = 0;
 
-   // Iterate through to compute the sum
-   //
-   for (counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next)
-      {
-      dynamicSum += counterInfo->totalCount;
-      compilationSum += counterInfo->compilationCount;
-      }
+    // Iterate through to compute the sum
+    //
+    for (counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next) {
+        dynamicSum += counterInfo->totalCount;
+        compilationSum += counterInfo->compilationCount;
+    }
 
-   if (dynamicSum == 0)
-      {
-      //fprintf(output, "\nDEBUGGING COUNTERS REPORT: NO DYNAMIC COUNTS\n\n");
-      return;
-      }
+    if (dynamicSum == 0) {
+        // fprintf(output, "\nDEBUGGING COUNTERS REPORT: NO DYNAMIC COUNTS\n\n");
+        return;
+    }
 
-   fprintf(output, "\nDEBUGGING COUNTERS REPORT: \n\n");
-   fprintf(output, "\nName: [                    counterName (delta)] dynamic : (  %% ) static : (  %% )  \n\n");
+    fprintf(output, "\nDEBUGGING COUNTERS REPORT: \n\n");
+    fprintf(output, "\nName: [                    counterName (delta)] dynamic : (  %% ) static : (  %% )  \n\n");
 
-   // Now go through and print them all
-   //
-   for (counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next)
-      {
-      // Only print if there is actually a non-zero count to avoid noisy report
-      if (counterInfo->totalCount > 0)
-         {
-         int32_t deviation = ((counterInfo->delta + 1)*counterInfo->bucketSize);
+    // Now go through and print them all
+    //
+    for (counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next) {
+        // Only print if there is actually a non-zero count to avoid noisy report
+        if (counterInfo->totalCount > 0) {
+            int32_t deviation = ((counterInfo->delta + 1) * counterInfo->bucketSize);
 
-         if (deviation != INT_MAX)
-            fprintf(output, "Name: [%31s (%5d)] dynamic : (%5.2lf ) static : (%5.2lf ) [%" OMR_PRIu64 "]\n",
-	   	             counterInfo->counterName,
-                   ((counterInfo->delta + 1)*counterInfo->bucketSize),
-                   //(uint32_t) counterInfo->totalCount,
-                   (double) (((double) (counterInfo->totalCount*100)/((double) dynamicSum))),
-                   //counterInfo->compilationCount,
-                   (double) ((double) (counterInfo->compilationCount*100)/((double) compilationSum)),
-                   counterInfo->totalCount);
-//            fprintf(output, "DEBUG: totalCount = %x\n",counterInfo->totalCount);
-         else
-            fprintf(output, "Name: [%38s ] dynamic : (%5.2lf ) static : (%5.2lf )\n",
-	   	             counterInfo->counterName,
-                   //(uint32_t) counterInfo->totalCount,
-                   (double) (((double) (counterInfo->totalCount*100)/((double) dynamicSum))),
-                   //counterInfo->compilationCount,
-                   (double) ((double) (counterInfo->compilationCount*100)/((double) compilationSum)));
-//            fprintf(output, "DEBUG: totalCount = %x\n",counterInfo->totalCount);
-	       }
-      }
+            if (deviation != INT_MAX)
+                fprintf(output, "Name: [%31s (%5d)] dynamic : (%5.2lf ) static : (%5.2lf ) [%" OMR_PRIu64 "]\n",
+                    counterInfo->counterName, ((counterInfo->delta + 1) * counterInfo->bucketSize),
+                    //(uint32_t) counterInfo->totalCount,
+                    (double)(((double)(counterInfo->totalCount * 100) / ((double)dynamicSum))),
+                    // counterInfo->compilationCount,
+                    (double)((double)(counterInfo->compilationCount * 100) / ((double)compilationSum)),
+                    counterInfo->totalCount);
+            //            fprintf(output, "DEBUG: totalCount = %x\n",counterInfo->totalCount);
+            else
+                fprintf(output, "Name: [%38s ] dynamic : (%5.2lf ) static : (%5.2lf )\n", counterInfo->counterName,
+                    //(uint32_t) counterInfo->totalCount,
+                    (double)(((double)(counterInfo->totalCount * 100) / ((double)dynamicSum))),
+                    // counterInfo->compilationCount,
+                    (double)((double)(counterInfo->compilationCount * 100) / ((double)compilationSum)));
+            //            fprintf(output, "DEBUG: totalCount = %x\n",counterInfo->totalCount);
+        }
+    }
 
-   fprintf(output, "Compilation sum %d Dynamic sum %" OMR_PRIu64 " \n\n", (int32_t) compilationSum, dynamicSum);
+    fprintf(output, "Compilation sum %d Dynamic sum %" OMR_PRIu64 " \n\n", (int32_t)compilationSum, dynamicSum);
 
-   if (output != stdout)
-      fclose(output);
+    if (output != stdout)
+        fclose(output);
 
-   fflush(output);
-   }
+    fflush(output);
+}
 
 /**
  *   Go through the int counters and move the counts into the large counters (to avoid overflow)
  */
 void TR_DebuggingCounters::transferSmallCountsToTotalCounts()
-   {
-   for (NamedCounterInfo * counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next)
-      {
-      counterInfo->totalCount += counterInfo->smallCount;
-      counterInfo->smallCount = 0;
-      }
-   }
+{
+    for (NamedCounterInfo *counterInfo = namedCounterInfos; counterInfo != NULL; counterInfo = counterInfo->_next) {
+        counterInfo->totalCount += counterInfo->smallCount;
+        counterInfo->smallCount = 0;
+    }
+}
 
 /**
  *   Called at the beginning of compilation
  */
 void TR_DebuggingCounters::initializeCompilation()
-   {
-   // Clear the list of counted call sites
-   countedCallSiteList = NULL;
-   }
-
+{
+    // Clear the list of counted call sites
+    countedCallSiteList = NULL;
+}
 
 /****************
  *
@@ -293,156 +274,147 @@ void TR_DebuggingCounters::initializeCompilation()
  *
  ******************/
 
-::FILE* TR_DebuggingCounters::output = NULL;
+::FILE *TR_DebuggingCounters::output = NULL;
 
 /**
  *   name:   the name of the counter
  *   tt:   the treetop to insert the counter before
  */
-void TR_DebuggingCounters::insertInliningCounter(const char * name, TR::Compilation * comp, TR::TreeTop * callTreeTop, int32_t size, int32_t d, int32_t numLocals)
-   {
-   if (!comp->getOptions()->insertDebuggingCounters())
-      return;
-   // If we're given a null instruction to insert before, we can't do anything
-   if (!callTreeTop)
-      return;
+void TR_DebuggingCounters::insertInliningCounter(const char *name, TR::Compilation *comp, TR::TreeTop *callTreeTop,
+    int32_t size, int32_t d, int32_t numLocals)
+{
+    if (!comp->getOptions()->insertDebuggingCounters())
+        return;
+    // If we're given a null instruction to insert before, we can't do anything
+    if (!callTreeTop)
+        return;
 
-   bool siteIsNew = insertIfMissing(comp, name, false, callTreeTop, size, numLocals);
+    bool siteIsNew = insertIfMissing(comp, name, false, callTreeTop, size, numLocals);
 
-   if (siteIsNew)
-      {
-      insertCounter(name,comp,callTreeTop, d);
-      }
-   }
+    if (siteIsNew) {
+        insertCounter(name, comp, callTreeTop, d);
+    }
+}
 
-void TR_DebuggingCounters::insertInliningCounterOK(const char * name, TR::Compilation * comp, TR::TreeTop *origTT, TR::TreeTop * callTreeTop, int32_t size, int32_t numLocals)
-   {
-   if (!comp->getOptions()->insertDebuggingCounters())
-      return;
-   // If we're given a null instruction to insert before, we can't do anything
-   if (!callTreeTop)
-      return;
+void TR_DebuggingCounters::insertInliningCounterOK(const char *name, TR::Compilation *comp, TR::TreeTop *origTT,
+    TR::TreeTop *callTreeTop, int32_t size, int32_t numLocals)
+{
+    if (!comp->getOptions()->insertDebuggingCounters())
+        return;
+    // If we're given a null instruction to insert before, we can't do anything
+    if (!callTreeTop)
+        return;
 
-   bool siteIsNew = insertIfMissing(comp, name, true, origTT, size, numLocals);
-   if (siteIsNew)
-      {
-      insertCounter(name,comp,callTreeTop, 0);
-      }
-   }
+    bool siteIsNew = insertIfMissing(comp, name, true, origTT, size, numLocals);
+    if (siteIsNew) {
+        insertCounter(name, comp, callTreeTop, 0);
+    }
+}
 
 void TR_DebuggingCounters::inliningReportForMethod(TR::Compilation *comp)
-   {
-   CountedCallSite * curSite = countedCallSiteList;
+{
+    CountedCallSite *curSite = countedCallSiteList;
 
-   if (output == NULL)
-      output = fopen("inlinereport.txt", "wt");
+    if (output == NULL)
+        output = fopen("inlinereport.txt", "wt");
 
-   fprintf(output,"------------------------------------------------------------------------------------------------------------------\n");
-   fprintf(output,"%s\n", comp->signature());
-   while (curSite != NULL)
-      {
-      if (!curSite->method && !curSite->opaque_method)
-         {
-         fprintf(output, "\t%d %d %d %d %d %s \t%s\n", curSite->flag, -1,
-                  curSite->frequency, curSite->size,
-                  curSite->numLocals, curSite->name, "Unknown");
+    fprintf(output,
+        "--------------------------------------------------------------------------------------------------------------"
+        "----\n");
+    fprintf(output, "%s\n", comp->signature());
+    while (curSite != NULL) {
+        if (!curSite->method && !curSite->opaque_method) {
+            fprintf(output, "\t%d %d %d %d %d %s \t%s\n", curSite->flag, -1, curSite->frequency, curSite->size,
+                curSite->numLocals, curSite->name, "Unknown");
 
-         curSite = curSite->_next;
-         continue;
-         }
-      else if (curSite->bcInfo.getCallerIndex() < 0)
-         {
+            curSite = curSite->_next;
+            continue;
+        } else if (curSite->bcInfo.getCallerIndex() < 0) {
 #ifdef J9_PROJECT_SPECIFIC
-         char buffer[512];
+            char buffer[512];
 
-         if (curSite->opaque_method)
-            fprintf(output, "\t%d %d %d %d %s \t%s\n", curSite->flag, curSite->frequency, curSite->size,
-                  curSite->numLocals, curSite->name, comp->fe()->sampleSignature(curSite->opaque_method, buffer, 512, comp->trMemory()));
-         else
-            fprintf(output, "\t%d %d %d %d %s \t%s\n", curSite->flag, curSite->frequency, curSite->size,
-                  curSite->numLocals, curSite->name, curSite->method->signature(comp->trMemory()));
+            if (curSite->opaque_method)
+                fprintf(output, "\t%d %d %d %d %s \t%s\n", curSite->flag, curSite->frequency, curSite->size,
+                    curSite->numLocals, curSite->name,
+                    comp->fe()->sampleSignature(curSite->opaque_method, buffer, 512, comp->trMemory()));
+            else
+                fprintf(output, "\t%d %d %d %d %s \t%s\n", curSite->flag, curSite->frequency, curSite->size,
+                    curSite->numLocals, curSite->name, curSite->method->signature(comp->trMemory()));
 #endif
-         }
+        }
 
+        curSite = curSite->_next;
+    }
 
-       curSite = curSite->_next;
-       }
-
-   fprintf(output,"------------------------------------------------------------------------------------------------------------------\n");
-   }
-
+    fprintf(output,
+        "--------------------------------------------------------------------------------------------------------------"
+        "----\n");
+}
 
 /**
  *   This list is used to avoid instrumenting the same call site twice.
  */
-CountedCallSite * TR_DebuggingCounters::countedCallSiteList = NULL;
-
+CountedCallSite *TR_DebuggingCounters::countedCallSiteList = NULL;
 
 /**
  *   Returns true if was missing and inserted, false if it already existed
  */
-bool TR_DebuggingCounters::insertIfMissing(TR::Compilation * comp, const char * name, bool flag, TR::TreeTop * tt, int32_t size, int32_t numLocals)
-   {
-   CountedCallSite * curSite = countedCallSiteList;
-   while (curSite != NULL)
-      {
-      if (curSite->callTreeTop == tt)
-         {
-         return false;   // already existed
-         }
-      curSite = curSite->_next;
-      }
+bool TR_DebuggingCounters::insertIfMissing(TR::Compilation *comp, const char *name, bool flag, TR::TreeTop *tt,
+    int32_t size, int32_t numLocals)
+{
+    CountedCallSite *curSite = countedCallSiteList;
+    while (curSite != NULL) {
+        if (curSite->callTreeTop == tt) {
+            return false; // already existed
+        }
+        curSite = curSite->_next;
+    }
 
-   CountedCallSite * newHead = (CountedCallSite *) comp->trMemory()->allocateHeapMemory(sizeof(CountedCallSite));
-   newHead->_next = countedCallSiteList;
-   newHead->callTreeTop = tt;
-   strcpy(newHead->name, name);
-   newHead->flag = flag;
-   newHead->size = size;
-   newHead->numLocals = numLocals;
+    CountedCallSite *newHead = (CountedCallSite *)comp->trMemory()->allocateHeapMemory(sizeof(CountedCallSite));
+    newHead->_next = countedCallSiteList;
+    newHead->callTreeTop = tt;
+    strcpy(newHead->name, name);
+    newHead->flag = flag;
+    newHead->size = size;
+    newHead->numLocals = numLocals;
 
-   newHead->frequency = -1;
-   while (tt && (newHead->frequency == -1))
-      {
-      while (tt->getNode()->getOpCodeValue() != TR::BBStart) tt = tt->getPrevTreeTop();
+    newHead->frequency = -1;
+    while (tt && (newHead->frequency == -1)) {
+        while (tt->getNode()->getOpCodeValue() != TR::BBStart)
+            tt = tt->getPrevTreeTop();
 
-      TR::Block *block = NULL;
-      if (tt) block = tt->getNode()->getBlock();
-      if (block && tt->getNode()->getInlinedSiteIndex()<0) newHead->frequency = block->getFrequency();
+        TR::Block *block = NULL;
+        if (tt)
+            block = tt->getNode()->getBlock();
+        if (block && tt->getNode()->getInlinedSiteIndex() < 0)
+            newHead->frequency = block->getFrequency();
 
-      tt = tt->getPrevTreeTop();
-      }
+        tt = tt->getPrevTreeTop();
+    }
 
-   if (!newHead->callTreeTop->getNode() || newHead->callTreeTop->getNode()->getNumChildren()<=0)
-      {
-      newHead->method        = NULL;
-      newHead->opaque_method = NULL;
+    if (!newHead->callTreeTop->getNode() || newHead->callTreeTop->getNode()->getNumChildren() <= 0) {
+        newHead->method = NULL;
+        newHead->opaque_method = NULL;
 
-      if (newHead->callTreeTop->getNode())
-         {
-         TR::Node * callNode = newHead->callTreeTop->getNode();
-         memcpy((void *)&newHead->bcInfo, (void *)&callNode->getByteCodeInfo(), sizeof(struct TR_ByteCodeInfo));
-   	     newHead->opaque_method = callNode->getOwningMethod();
-         }
-      }
-   else
-      {
-      TR::Node * callNode = newHead->callTreeTop->getNode()->getFirstChild();
-      memcpy((void *)&newHead->bcInfo, (void *)&callNode->getByteCodeInfo(), sizeof(struct TR_ByteCodeInfo));
+        if (newHead->callTreeTop->getNode()) {
+            TR::Node *callNode = newHead->callTreeTop->getNode();
+            memcpy((void *)&newHead->bcInfo, (void *)&callNode->getByteCodeInfo(), sizeof(struct TR_ByteCodeInfo));
+            newHead->opaque_method = callNode->getOwningMethod();
+        }
+    } else {
+        TR::Node *callNode = newHead->callTreeTop->getNode()->getFirstChild();
+        memcpy((void *)&newHead->bcInfo, (void *)&callNode->getByteCodeInfo(), sizeof(struct TR_ByteCodeInfo));
 
-      if (callNode->getSymbolReference() && callNode->getOpCode().isCall())
-         {
-         newHead->method = callNode->getSymbol()->castToMethodSymbol()->getMethod();
-         newHead->opaque_method = NULL;
-         }
-      else
-         {
-   	     newHead->opaque_method = callNode->getOwningMethod();
-   	     newHead->method = NULL;
-   	     }
-      }
+        if (callNode->getSymbolReference() && callNode->getOpCode().isCall()) {
+            newHead->method = callNode->getSymbol()->castToMethodSymbol()->getMethod();
+            newHead->opaque_method = NULL;
+        } else {
+            newHead->opaque_method = callNode->getOwningMethod();
+            newHead->method = NULL;
+        }
+    }
 
-   countedCallSiteList = newHead;
+    countedCallSiteList = newHead;
 
-   return true;
-   }
+    return true;
+}

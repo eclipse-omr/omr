@@ -27,10 +27,14 @@
  */
 #ifndef OMR_SNIPPETDELEGATE_CONNECTOR
 #define OMR_SNIPPETDELEGATE_CONNECTOR
+
 namespace OMR {
-namespace ARM { class SnippetDelegate; }
-typedef OMR::ARM::SnippetDelegate SnippetDelegateConnector;
+namespace ARM {
+class SnippetDelegate;
 }
+
+typedef OMR::ARM::SnippetDelegate SnippetDelegateConnector;
+} // namespace OMR
 #else
 #error OMR::ARM::SnippetDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -38,22 +42,13 @@ typedef OMR::ARM::SnippetDelegate SnippetDelegateConnector;
 #include "compiler/codegen/OMRSnippetDelegate.hpp"
 #include "infra/Annotations.hpp"
 
-namespace OMR
-{
+namespace OMR { namespace ARM {
 
-namespace ARM
-{
-
-class OMR_EXTENSIBLE SnippetDelegate : public OMR::SnippetDelegate
-   {
+class OMR_EXTENSIBLE SnippetDelegate : public OMR::SnippetDelegate {
 protected:
+    SnippetDelegate() {}
+};
 
-   SnippetDelegate() {}
-
-   };
-
-}
-
-}
+}} // namespace OMR::ARM
 
 #endif

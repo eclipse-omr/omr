@@ -35,71 +35,61 @@ namespace TR {
 class CodeGenerator;
 class LabelSymbol;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
-class PPCHelperCallSnippet : public TR::Snippet
-   {
-   TR::SymbolReference      *_destination;
-   TR::LabelSymbol          *_restartLabel;
+class PPCHelperCallSnippet : public TR::Snippet {
+    TR::SymbolReference *_destination;
+    TR::LabelSymbol *_restartLabel;
 
-   public:
+public:
+    PPCHelperCallSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *snippetlab,
+        TR::SymbolReference *helper, TR::LabelSymbol *restartLabel = NULL)
+        : TR::Snippet(cg, node, snippetlab, (restartLabel != NULL && helper->canCauseGC()))
+        , _destination(helper)
+        , _restartLabel(restartLabel)
+    {}
 
-   PPCHelperCallSnippet(TR::CodeGenerator    *cg,
-                        TR::Node             *node,
-                        TR::LabelSymbol      *snippetlab,
-                        TR::SymbolReference  *helper,
-                        TR::LabelSymbol      *restartLabel=NULL)
-      : TR::Snippet(cg, node, snippetlab, (restartLabel!=NULL && helper->canCauseGC())),
-        _destination(helper),
-        _restartLabel(restartLabel)
-      {
-      }
+    virtual Kind getKind() { return IsHelperCall; }
 
-   virtual Kind getKind() { return IsHelperCall; }
+    TR::SymbolReference *getDestination() { return _destination; }
 
-   TR::SymbolReference *getDestination()             {return _destination;}
-   TR::SymbolReference *setDestination(TR::SymbolReference *s) {return (_destination = s);}
+    TR::SymbolReference *setDestination(TR::SymbolReference *s) { return (_destination = s); }
 
-   TR::LabelSymbol     *getRestartLabel() {return _restartLabel;}
-   TR::LabelSymbol     *setRestartLabel(TR::LabelSymbol *l) {return (_restartLabel=l);}
+    TR::LabelSymbol *getRestartLabel() { return _restartLabel; }
 
-   uint8_t *genHelperCall(uint8_t *cursor);
-   uint32_t getHelperCallLength();
+    TR::LabelSymbol *setRestartLabel(TR::LabelSymbol *l) { return (_restartLabel = l); }
 
-   virtual uint8_t *emitSnippetBody();
+    uint8_t *genHelperCall(uint8_t *cursor);
+    uint32_t getHelperCallLength();
 
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
-   };
+    virtual uint8_t *emitSnippetBody();
 
-class PPCArrayCopyCallSnippet : public TR::PPCHelperCallSnippet
-   {
-   TR::RealRegister::RegNum _lengthRegNum;
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
+};
 
-   public:
+class PPCArrayCopyCallSnippet : public TR::PPCHelperCallSnippet {
+    TR::RealRegister::RegNum _lengthRegNum;
 
-   PPCArrayCopyCallSnippet(TR::CodeGenerator    *cg,
-                           TR::Node             *node,
-                           TR::LabelSymbol      *snippetlab,
-                           TR::SymbolReference  *helper,
-                           TR::RealRegister::RegNum lengthRegNum,
-                           TR::LabelSymbol      *restartLabel=NULL)
-      : TR::PPCHelperCallSnippet(cg, node, snippetlab, helper, restartLabel),
-        _lengthRegNum(lengthRegNum)
-      {
-      }
-   virtual Kind getKind() { return IsArrayCopyCall; }
+public:
+    PPCArrayCopyCallSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *snippetlab,
+        TR::SymbolReference *helper, TR::RealRegister::RegNum lengthRegNum, TR::LabelSymbol *restartLabel = NULL)
+        : TR::PPCHelperCallSnippet(cg, node, snippetlab, helper, restartLabel)
+        , _lengthRegNum(lengthRegNum)
+    {}
 
-   TR::RealRegister::RegNum getLengthRegNum() {return _lengthRegNum;}
-   TR::RealRegister::RegNum
-      setLengthRegNum(TR::RealRegister::RegNum r) {return (_lengthRegNum = r);}
+    virtual Kind getKind() { return IsArrayCopyCall; }
 
-   virtual uint8_t *emitSnippetBody();
+    TR::RealRegister::RegNum getLengthRegNum() { return _lengthRegNum; }
 
-   virtual uint32_t getLength(int32_t estimatedSnippetStart);
-   };
+    TR::RealRegister::RegNum setLengthRegNum(TR::RealRegister::RegNum r) { return (_lengthRegNum = r); }
 
-}
+    virtual uint8_t *emitSnippetBody();
+
+    virtual uint32_t getLength(int32_t estimatedSnippetStart);
+};
+
+} // namespace TR
 
 #endif

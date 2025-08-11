@@ -29,105 +29,93 @@ namespace TR {
 class CodeGenerator;
 class Node;
 class Register;
-}
+} // namespace TR
 
-class TR_X86IntegerMultiplyDecomposer
-   {
+class TR_X86IntegerMultiplyDecomposer {
+public:
+    TR_ALLOC(TR_Memory::CodeGenerator)
 
-   public:
-   TR_ALLOC(TR_Memory::CodeGenerator)
+    enum {
+        MAX_NUM_REGISTERS = 4,
+        MAX_NUM_COMPONENTS = 10,
+        NUM_CONSTS_DECOMPOSED = 100
+    };
 
-   enum {MAX_NUM_REGISTERS     =   4,
-         MAX_NUM_COMPONENTS    =  10,
-         NUM_CONSTS_DECOMPOSED = 100};
+    TR_X86IntegerMultiplyDecomposer(int64_t multiplier, TR::Register *sreg, TR::Node *node, TR::CodeGenerator *cg,
+        bool ccs = false, bool sf = false)
+        : _multiplier(multiplier)
+        , _sourceRegister(sreg)
+        , _node(node)
+        , _cg(cg)
+        , _canClobberSource(ccs)
+        , _shiftFollows(sf)
+    {}
 
-   TR_X86IntegerMultiplyDecomposer(int64_t           multiplier,
-                                   TR::Register      *sreg,
-                                   TR::Node          *node,
-                                   TR::CodeGenerator *cg,
-                                   bool              ccs = false,
-                                   bool              sf  = false)
-      : _multiplier(multiplier),
-        _sourceRegister(sreg),
-        _node(node),
-        _cg(cg),
-        _canClobberSource(ccs),
-        _shiftFollows(sf)
-      {}
+    TR::Register *decomposeIntegerMultiplier(int32_t &tempRegArraySize, TR::Register **tempRegArray);
 
-   TR::Register *decomposeIntegerMultiplier(int32_t &tempRegArraySize, TR::Register **tempRegArray);
+    TR::Register *getSourceRegister() const { return _sourceRegister; }
 
-   TR::Register *getSourceRegister() const {return _sourceRegister;}
+    TR::Node *getNode() const { return _node; }
 
-   TR::Node *getNode() const {return _node;}
+    int64_t getConstantMultiplier() const { return _multiplier; }
 
-   int64_t getConstantMultiplier() const {return _multiplier;}
+    bool canClobberSource() const { return _canClobberSource; }
 
-   bool canClobberSource() const {return _canClobberSource;}
+    TR::CodeGenerator *cg() const { return _cg; }
 
-   TR::CodeGenerator *cg()               const {return _cg;}
+    static bool hasDecomposition(int64_t multiplier);
 
-   static bool hasDecomposition(int64_t multiplier);
+protected:
+private:
+    int32_t findDecomposition(int64_t multiplier);
 
-   protected:
+    TR::Register *generateDecompositionInstructions(int32_t index, int32_t &tempRegArraySize,
+        TR::Register **tempRegArray);
 
-   private:
+    enum {
+        shlRegImm = 0,
+        addRegReg = 1,
+        subRegReg = 2,
+        movRegReg = 3,
+        leaRegReg2 = 4,
+        leaRegReg4 = 5,
+        leaRegReg8 = 6,
+        leaRegRegReg = 7,
+        leaRegRegReg2 = 8,
+        leaRegRegReg4 = 9,
+        leaRegRegReg8 = 10,
+        done = 11
+    };
 
+    typedef struct {
+        uint8_t _operation;
+        uint8_t _target;
+        uint8_t _baseOrImmed;
+        uint8_t _index;
+    } componentOperation;
 
-   int32_t findDecomposition(int64_t multiplier);
+    typedef struct {
+        int64_t _multiplier;
+        bool _sourceDisjointWithFirstRegister; // means that if the source register can be clobbered
+                                               // will the register assigner be able to use the same
+                                               // real register to assign both source and register 1
+        bool _mustClobberSource; // means that the decomposition
+                                 // requires a clobberable input register
+        bool _subsequentShiftTooExpensive; // used to indicate that
+                                           // decomposition is faster than imul
+                                           // but not when a subsequent shift is added
+        uint8_t _numAdditionalRegistersNeeded;
+        componentOperation _components[MAX_NUM_COMPONENTS];
+    } integerMultiplyComposition;
 
-   TR::Register *generateDecompositionInstructions(int32_t index,
-              int32_t &tempRegArraySize, TR::Register **tempRegArray);
+    static const integerMultiplyComposition _integerMultiplySolutions[NUM_CONSTS_DECOMPOSED];
 
-   enum
-      {
-      shlRegImm     =  0,
-      addRegReg     =  1,
-      subRegReg     =  2,
-      movRegReg     =  3,
-      leaRegReg2    =  4,
-      leaRegReg4    =  5,
-      leaRegReg8    =  6,
-      leaRegRegReg  =  7,
-      leaRegRegReg2 =  8,
-      leaRegRegReg4 =  9,
-      leaRegRegReg8 = 10,
-      done          = 11
-      };
-
-   typedef struct
-      {
-      uint8_t _operation;
-      uint8_t _target;
-      uint8_t _baseOrImmed;
-      uint8_t _index;
-      } componentOperation;
-
-
-   typedef struct
-      {
-      int64_t            _multiplier;
-      bool               _sourceDisjointWithFirstRegister; // means that if the source register can be clobbered
-                                                          // will the register assigner be able to use the same
-                                                          // real register to assign both source and register 1
-      bool               _mustClobberSource;               // means that the decomposition
-                                                          // requires a clobberable input register
-      bool               _subsequentShiftTooExpensive;     // used to indicate that
-                                                          // decomposition is faster than imul
-                                                          // but not when a subsequent shift is added
-      uint8_t            _numAdditionalRegistersNeeded;
-      componentOperation _components[MAX_NUM_COMPONENTS];
-      } integerMultiplyComposition;
-
-   static const integerMultiplyComposition _integerMultiplySolutions[NUM_CONSTS_DECOMPOSED];
-
-   int64_t           _multiplier;
-   TR::Register      *_sourceRegister;
-   TR::Node          *_node;
-   TR::CodeGenerator *_cg;
-   bool              _canClobberSource;
-   bool              _shiftFollows;
-
+    int64_t _multiplier;
+    TR::Register *_sourceRegister;
+    TR::Node *_node;
+    TR::CodeGenerator *_cg;
+    bool _canClobberSource;
+    bool _shiftFollows;
 };
 
 #endif

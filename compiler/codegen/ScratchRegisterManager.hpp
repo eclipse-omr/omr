@@ -31,31 +31,27 @@ namespace TR {
 class CodeGenerator;
 class Register;
 class RegisterDependencyConditions;
-}
+} // namespace TR
 
-enum TR_ManagedScratchRegisterStates
-   {
-   msrUnassigned = 0x00,    // no register associated
-   msrAllocated  = 0x01,    // register has been allocated
-   msrDonated    = 0x02     // register was donated to the list (not allocated)
-   };
+enum TR_ManagedScratchRegisterStates {
+    msrUnassigned = 0x00, // no register associated
+    msrAllocated = 0x01, // register has been allocated
+    msrDonated = 0x02 // register was donated to the list (not allocated)
+};
 
-class TR_ManagedScratchRegister
-   {
+class TR_ManagedScratchRegister {
 public:
+    TR_ALLOC(TR_Memory::ScratchRegisterManager)
 
-   TR_ALLOC(TR_Memory::ScratchRegisterManager)
+    TR::Register *_reg;
+    int32_t _state;
 
-   TR::Register *_reg;
-   int32_t      _state;
-
-   TR_ManagedScratchRegister(TR::Register *preg, TR_ManagedScratchRegisterStates pstate)
-      {
-      _reg = preg;
-      _state = pstate;
-      }
-   };
-
+    TR_ManagedScratchRegister(TR::Register *preg, TR_ManagedScratchRegisterStates pstate)
+    {
+        _reg = preg;
+        _state = pstate;
+    }
+};
 
 /**
  * The scratch register manager addresses a peculiarity of internal control flow
@@ -64,12 +60,12 @@ public:
  * assigner to behave properly. Before the scratch register manager, If you had
  * complex logic in your internal control flow, requiring many short-lived
  * virtual registers, you had only two choices:
- * 
+ *
  * A. Add all these registers to the end-of-control-flow label. This causes all
  *    the registers to be live at the same time, increasing register pressure and
  *    causing unnecessary spills. It also stops working as soon as you need more
  *    virtuals than you have real registers in the processor.
- * 
+ *
  * B. Re-use virtuals. This is a very awkward ad-hoc approach that had a terrible
  *    effect on the tree evaluator code. Often, the logic for a particular evaluator
  *    (like checkcast or write barriers) is split among several functions, so to
@@ -77,14 +73,14 @@ public:
  *    another as parameters. Some functions ended up with three or four such
  *    parameters with increasingly obscure names, and it became hard to tell
  *    when register reuse decisions were for correctness or for efficiency.
- * 
+ *
  * Neither of these choices is very appealing. B has the potential for generating
  * good code, but the functions that implement B quickly become very hard to
  * maintain.
- * 
+ *
  * What the scratch register manager (SRM) does is to keep track of which virtuals
  * are available for reuse. The steps look like this:
- * 
+ *
  * 1. The code that creates an internal control flow region also creates an SRM The
  * 2. SRM is passed around to all the tree evaluator code implementing the internal
  *    control flow.
@@ -99,43 +95,39 @@ public:
  * outside an internal control flow region (where you'd just use allocateRegister
  * and stopUsingRegister).
  */
-class TR_ScratchRegisterManager
-   {
-
+class TR_ScratchRegisterManager {
 protected:
+    TR::CodeGenerator *_cg;
 
-   TR::CodeGenerator *_cg;
+    /// No more than '_capacity' scratch registers will be allowed to be created.
+    ///
+    int32_t _capacity;
 
-   /// No more than '_capacity' scratch registers will be allowed to be created.
-   ///
-   int32_t _capacity;
+    /// Number of scratch registers available so far.
+    ///
+    int32_t _cursor;
 
-   /// Number of scratch registers available so far.
-   ///
-   int32_t _cursor;
-
-   List<TR_ManagedScratchRegister> _msrList;
+    List<TR_ManagedScratchRegister> _msrList;
 
 public:
+    TR_ALLOC(TR_Memory::ScratchRegisterManager)
 
-   TR_ALLOC(TR_Memory::ScratchRegisterManager)
+    TR_ScratchRegisterManager(int32_t capacity, TR::CodeGenerator *cg);
 
-   TR_ScratchRegisterManager(int32_t capacity, TR::CodeGenerator *cg);
+    TR::Register *findOrCreateScratchRegister(TR_RegisterKinds rk = TR_GPR);
+    bool donateScratchRegister(TR::Register *reg);
+    bool reclaimScratchRegister(TR::Register *reg);
 
-   TR::Register *findOrCreateScratchRegister(TR_RegisterKinds rk = TR_GPR);
-   bool donateScratchRegister(TR::Register *reg);
-   bool reclaimScratchRegister(TR::Register *reg);
+    int32_t getCapacity() { return _capacity; }
 
-   int32_t getCapacity()          { return _capacity; }
-   void    setCapacity(int32_t c) { _capacity = c; }
+    void setCapacity(int32_t c) { _capacity = c; }
 
-   int32_t numAvailableRegisters() { return _cursor; }
+    int32_t numAvailableRegisters() { return _cursor; }
 
-   void addScratchRegistersToDependencyList(TR::RegisterDependencyConditions *deps);
-   void stopUsingRegisters();
+    void addScratchRegistersToDependencyList(TR::RegisterDependencyConditions *deps);
+    void stopUsingRegisters();
 
-   List<TR_ManagedScratchRegister>& getManagedScratchRegisterList() { return _msrList; }
-
-   };
+    List<TR_ManagedScratchRegister> &getManagedScratchRegisterList() { return _msrList; }
+};
 
 #endif

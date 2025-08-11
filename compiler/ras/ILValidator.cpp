@@ -29,7 +29,6 @@
 #include "ras/ILValidationRules.hpp"
 #include "ras/ILValidationStrategies.hpp"
 
-
 /**************************************************************************
  *
  * OMR ILValidation Strategies
@@ -37,37 +36,20 @@
  **************************************************************************/
 
 /* Do not perform any Validation under this Strategy. */
-const OMR::ILValidationStrategy OMR::emptyStrategy[] =
-   {
-   { OMR::endRules }
-   };
+const OMR::ILValidationStrategy OMR::emptyStrategy[] = { { OMR::endRules } };
 
 /* Strategy used to Validate right after ILGeneration. */
-const OMR::ILValidationStrategy OMR::postILgenValidatonStrategy[] =
-   {
-   { OMR::soundnessRule                   },
-   { OMR::validateChildCount              },
-   { OMR::validateChildTypes              },
-   { OMR::validateLivenessBoundaries      },
-   { OMR::validateNodeRefCountWithinBlock },
-   { OMR::validate_axaddEnvironment       },
-   { OMR::endRules                        }
-   };
+const OMR::ILValidationStrategy OMR::postILgenValidatonStrategy[] = { { OMR::soundnessRule },
+    { OMR::validateChildCount }, { OMR::validateChildTypes }, { OMR::validateLivenessBoundaries },
+    { OMR::validateNodeRefCountWithinBlock }, { OMR::validate_axaddEnvironment }, { OMR::endRules } };
 
 /**
  * Strategy used to Validate right before Codegen.
  * At this point the IL is expected to uphold almost all the Validation Rules.
  */
-const OMR::ILValidationStrategy OMR::preCodegenValidationStrategy[] =
-   {
-   { OMR::soundnessRule                             },
-   { OMR::validateChildCount                        },
-   { OMR::validateChildTypes                        },
-   { OMR::validateLivenessBoundaries                },
-   { OMR::validateNodeRefCountWithinBlock           },
-   { OMR::validate_ireturnReturnType                },
-   { OMR::endRules                                  }
-   };
+const OMR::ILValidationStrategy OMR::preCodegenValidationStrategy[] = { { OMR::soundnessRule },
+    { OMR::validateChildCount }, { OMR::validateChildTypes }, { OMR::validateLivenessBoundaries },
+    { OMR::validateNodeRefCountWithinBlock }, { OMR::validate_ireturnReturnType }, { OMR::endRules } };
 
 /**************************************************************************
  * The following array of ILValidationStrategy pointers, help provide a
@@ -84,179 +66,143 @@ const OMR::ILValidationStrategy OMR::preCodegenValidationStrategy[] =
  * `TR::ILValidationContext` used to index `TR::omrValidationStrategies`.
  *
  **************************************************************************/
-const OMR::ILValidationStrategy* TR::omrValidationStrategies[] =
-   {
-   OMR::emptyStrategy,
-   OMR::preCodegenValidationStrategy,
-   OMR::postILgenValidatonStrategy
-   };
+const OMR::ILValidationStrategy *TR::omrValidationStrategies[]
+    = { OMR::emptyStrategy, OMR::preCodegenValidationStrategy, OMR::postILgenValidatonStrategy };
 
 /**************************************************************************
  *
  * Implementation of TR::ILValidator
  *
  **************************************************************************/
-template <typename T, size_t N> static
-T* begin(T(&reqArray)[N])
-  {
-  return &reqArray[0];
-  }
-template <typename T, size_t N> static
-T* end(T(&reqArray)[N])
-   {
-   return &reqArray[0]+N;
-   }
+template<typename T, size_t N> static T *begin(T (&reqArray)[N]) { return &reqArray[0]; }
+
+template<typename T, size_t N> static T *end(T (&reqArray)[N]) { return &reqArray[0] + N; }
 
 TR::ILValidator::ILValidator(TR::Compilation *comp)
-   :_comp(comp)
-   {
-     /**
-      * All available `*ValidationRule`s are initialized during the creation of
-      * ILValidator and they have the same lifetime as the ILValidator itself.
-      * It is during the call to `validate` where we decide which subset
-      * of the available ones we should use for Validation.
-      * This also removes the need to initialize a particular set of `Rule` objects
-      * every time a new Strategy is created, or a call to `validate` is made.
-      */
-     TR::MethodValidationRule* temp_method_rules[] =
-        {
-          new  (comp->trHeapMemory()) TR::SoundnessRule(_comp),
-          new  (comp->trHeapMemory()) TR::ValidateLivenessBoundaries(_comp)
-        };
+    : _comp(comp)
+{
+    /**
+     * All available `*ValidationRule`s are initialized during the creation of
+     * ILValidator and they have the same lifetime as the ILValidator itself.
+     * It is during the call to `validate` where we decide which subset
+     * of the available ones we should use for Validation.
+     * This also removes the need to initialize a particular set of `Rule` objects
+     * every time a new Strategy is created, or a call to `validate` is made.
+     */
+    TR::MethodValidationRule *temp_method_rules[] = { new (comp->trHeapMemory()) TR::SoundnessRule(_comp),
+        new (comp->trHeapMemory()) TR::ValidateLivenessBoundaries(_comp) };
 
-     TR::BlockValidationRule* temp_block_rules[] =
-        { new  (comp->trHeapMemory()) TR::ValidateNodeRefCountWithinBlock(_comp) };
+    TR::BlockValidationRule *temp_block_rules[]
+        = { new (comp->trHeapMemory()) TR::ValidateNodeRefCountWithinBlock(_comp) };
 
-     TR::NodeValidationRule* temp_node_rules[] =
-        { 
-          new  (comp->trHeapMemory()) TR::ValidateChildCount(_comp),
-          new  (comp->trHeapMemory()) TR::ValidateChildTypes(_comp),
-          new  (comp->trHeapMemory()) TR::Validate_ireturnReturnType(_comp),
-          new  (comp->trHeapMemory()) TR::Validate_axaddEnvironment(_comp)
-        };
-     /**
-      * NOTE: Please initialize any new *ValidationRule here!
-      *
-      * Also, ILValidationRules.hpp and ILValidationStrategies.hpp
-      * need to be updated everytime a new ILValidation Rule
-      * is added.
-      */
+    TR::NodeValidationRule *temp_node_rules[] = { new (comp->trHeapMemory()) TR::ValidateChildCount(_comp),
+        new (comp->trHeapMemory()) TR::ValidateChildTypes(_comp),
+        new (comp->trHeapMemory()) TR::Validate_ireturnReturnType(_comp),
+        new (comp->trHeapMemory()) TR::Validate_axaddEnvironment(_comp) };
+    /**
+     * NOTE: Please initialize any new *ValidationRule here!
+     *
+     * Also, ILValidationRules.hpp and ILValidationStrategies.hpp
+     * need to be updated everytime a new ILValidation Rule
+     * is added.
+     */
 
-     _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
-     _blockValidationRules.assign(begin(temp_block_rules), end(temp_block_rules));
-     _nodeValidationRules.assign(begin(temp_node_rules), end(temp_node_rules));
-   }
+    _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
+    _blockValidationRules.assign(begin(temp_block_rules), end(temp_block_rules));
+    _nodeValidationRules.assign(begin(temp_node_rules), end(temp_node_rules));
+}
 
-std::vector<TR::MethodValidationRule *>
-TR::ILValidator::getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy)
-   {
-   std::vector<TR::MethodValidationRule *> reqMethodValidationRules;
-   while (strategy->id != OMR::endRules)
-      {
-      for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
-         {
-         /**
-          * Each *ValidationRule has a unique `id`. These ids are defined in
-          * ILValidationStrategies.hpp and they are assigned in ILValidationRules.cpp. 
-          */
-         if (strategy->id == (*it)->id())
-            {
-            reqMethodValidationRules.push_back((*it));
+std::vector<TR::MethodValidationRule *> TR::ILValidator::getRequiredMethodValidationRules(
+    const OMR::ILValidationStrategy *strategy)
+{
+    std::vector<TR::MethodValidationRule *> reqMethodValidationRules;
+    while (strategy->id != OMR::endRules) {
+        for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it) {
+            /**
+             * Each *ValidationRule has a unique `id`. These ids are defined in
+             * ILValidationStrategies.hpp and they are assigned in ILValidationRules.cpp.
+             */
+            if (strategy->id == (*it)->id()) {
+                reqMethodValidationRules.push_back((*it));
             }
-         }
-      strategy++;
-      }
-   return reqMethodValidationRules;
-   }
+        }
+        strategy++;
+    }
+    return reqMethodValidationRules;
+}
 
-std::vector<TR::BlockValidationRule *>
-TR::ILValidator::getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy)
-   {
-   std::vector<TR::BlockValidationRule *> reqBlockValidationRules;
-   while (strategy->id != OMR::endRules)
-      {
-      for (auto it = _blockValidationRules.begin(); it != _blockValidationRules.end(); ++it)
-         {
-         if (strategy->id == (*it)->id())
-            {
-            reqBlockValidationRules.push_back((*it));
+std::vector<TR::BlockValidationRule *> TR::ILValidator::getRequiredBlockValidationRules(
+    const OMR::ILValidationStrategy *strategy)
+{
+    std::vector<TR::BlockValidationRule *> reqBlockValidationRules;
+    while (strategy->id != OMR::endRules) {
+        for (auto it = _blockValidationRules.begin(); it != _blockValidationRules.end(); ++it) {
+            if (strategy->id == (*it)->id()) {
+                reqBlockValidationRules.push_back((*it));
             }
-         }
-      strategy++;
-      }
-   return reqBlockValidationRules;
-   }
+        }
+        strategy++;
+    }
+    return reqBlockValidationRules;
+}
 
-std::vector<TR::NodeValidationRule *>
-TR::ILValidator::getRequiredNodeValidationRules(const OMR::ILValidationStrategy *strategy)
-   {
-   std::vector<TR::NodeValidationRule *> reqNodeValidationRules;
-   while (strategy->id != OMR::endRules)
-      {
-      for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it)
-         {
-         if (strategy->id == (*it)->id())
-            {
-            reqNodeValidationRules.push_back((*it));
+std::vector<TR::NodeValidationRule *> TR::ILValidator::getRequiredNodeValidationRules(
+    const OMR::ILValidationStrategy *strategy)
+{
+    std::vector<TR::NodeValidationRule *> reqNodeValidationRules;
+    while (strategy->id != OMR::endRules) {
+        for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it) {
+            if (strategy->id == (*it)->id()) {
+                reqNodeValidationRules.push_back((*it));
             }
-         }
-      strategy++;
-      }
-   return reqNodeValidationRules;
-   }
-
+        }
+        strategy++;
+    }
+    return reqNodeValidationRules;
+}
 
 void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
-   {
-   /**
-    * Selection Phase:
-    *    From all the available `ILValidationRule`s, only select the ones
-    *    corresponding to the given `OMR::ILValidationStrategy`.
-    */
-   std::vector<TR::MethodValidationRule *> reqMethodValidationRules =
-      getRequiredMethodValidationRules(strategy);
-   std::vector<TR::BlockValidationRule *> reqBlockValidationRules =
-      getRequiredBlockValidationRules(strategy);
-   std::vector<TR::NodeValidationRule *> reqNodeValidationRules =
-      getRequiredNodeValidationRules(strategy);
+{
+    /**
+     * Selection Phase:
+     *    From all the available `ILValidationRule`s, only select the ones
+     *    corresponding to the given `OMR::ILValidationStrategy`.
+     */
+    std::vector<TR::MethodValidationRule *> reqMethodValidationRules = getRequiredMethodValidationRules(strategy);
+    std::vector<TR::BlockValidationRule *> reqBlockValidationRules = getRequiredBlockValidationRules(strategy);
+    std::vector<TR::NodeValidationRule *> reqNodeValidationRules = getRequiredNodeValidationRules(strategy);
 
+    /**
+     * Validation Phase:
+     *    Validate against the required set of `ILValidationRule`s.
+     */
 
-   /**
-    * Validation Phase:
-    *    Validate against the required set of `ILValidationRule`s.
-    */
+    /* Rules that are veriified over the entire method. */
+    TR::ResolvedMethodSymbol *methodSymbol = comp()->getMethodSymbol();
+    for (auto it = reqMethodValidationRules.begin(); it != reqMethodValidationRules.end(); ++it) {
+        (*it)->validate(methodSymbol);
+    }
 
-   /* Rules that are veriified over the entire method. */
-   TR::ResolvedMethodSymbol* methodSymbol = comp()->getMethodSymbol();
-   for (auto it = reqMethodValidationRules.begin(); it != reqMethodValidationRules.end(); ++it)
-      {
-      (*it)->validate(methodSymbol);
-      }
+    /* Checks performed across an extended blocks. */
+    for (auto it = reqBlockValidationRules.begin(); it != reqBlockValidationRules.end(); ++it) {
+        TR::TreeTop *tt, *exitTreeTop;
+        for (tt = methodSymbol->getFirstTreeTop(); tt; tt = exitTreeTop->getNextTreeTop()) {
+            TR::TreeTop *firstTreeTop = tt;
+            exitTreeTop = tt->getExtendedBlockExitTreeTop();
+            (*it)->validate(firstTreeTop, exitTreeTop);
+        }
+    }
 
-   /* Checks performed across an extended blocks. */
-   for (auto it = reqBlockValidationRules.begin(); it != reqBlockValidationRules.end(); ++it)
-      {
-      TR::TreeTop *tt, *exitTreeTop;
-      for (tt = methodSymbol->getFirstTreeTop(); tt; tt = exitTreeTop->getNextTreeTop())
-         {
-         TR::TreeTop *firstTreeTop = tt;
-         exitTreeTop = tt->getExtendedBlockExitTreeTop();
-         (*it)->validate(firstTreeTop, exitTreeTop);
-         }
-      }
+    /* NodeValidationRules only check per node for a specific property. */
+    for (auto it = reqNodeValidationRules.begin(); it != reqNodeValidationRules.end(); ++it) {
+        for (TR::PreorderNodeIterator nodeIter(methodSymbol->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
+             nodeIter.currentTree(); ++nodeIter) {
+            (*it)->validate(nodeIter.currentNode());
+        }
+    }
+}
 
-   /* NodeValidationRules only check per node for a specific property. */
-   for (auto it = reqNodeValidationRules.begin(); it != reqNodeValidationRules.end(); ++it)
-      {
-      for (TR::PreorderNodeIterator nodeIter(methodSymbol->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
-           nodeIter.currentTree(); ++nodeIter)
-         {
-         (*it)->validate(nodeIter.currentNode());
-         }
-      }
-   }
-
-TR::ILValidator* TR::createILValidatorObject(TR::Compilation *comp)
-   {
-   return new (comp->trHeapMemory()) TR::ILValidator(comp);
-   }
+TR::ILValidator *TR::createILValidatorObject(TR::Compilation *comp)
+{
+    return new (comp->trHeapMemory()) TR::ILValidator(comp);
+}

@@ -27,10 +27,14 @@
  */
 #ifndef OMR_MACHINE_CONNECTOR
 #define OMR_MACHINE_CONNECTOR
+
 namespace OMR {
-namespace Power { class Machine; }
-typedef OMR::Power::Machine MachineConnector;
+namespace Power {
+class Machine;
 }
+
+typedef OMR::Power::Machine MachineConnector;
+} // namespace OMR
 #else
 #error OMR::Power::Machine expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -47,8 +51,8 @@ class Instruction;
 class Node;
 class Register;
 class RegisterDependencyConditions;
-}
-template <typename ListKind> class List;
+} // namespace TR
+template<typename ListKind> class List;
 
 #define NUM_PPC_GPR 32
 #define NUM_PPC_FPR 32
@@ -60,85 +64,70 @@ template <typename ListKind> class List;
 #define UPPER_IMMED_34 ((1LL << 33) - 1)
 #define LOWER_IMMED_34 (-(1LL << 33))
 
-namespace OMR
-{
+namespace OMR { namespace Power {
 
-namespace Power
-{
+class OMR_EXTENSIBLE Machine : public OMR::Machine {
+    TR::Register *_registerAssociations[TR::RealRegister::NumRegisters];
 
-class OMR_EXTENSIBLE Machine : public OMR::Machine
-   {
-   TR::Register          *_registerAssociations[TR::RealRegister::NumRegisters];
+    void initializeRegisterFile();
 
-   void initializeRegisterFile();
+    int _4thLastGPRAssigned;
+    int _3rdLastGPRAssigned;
+    int _2ndLastGPRAssigned;
+    int _lastGPRAssigned;
 
-   int _4thLastGPRAssigned;
-   int _3rdLastGPRAssigned;
-   int _2ndLastGPRAssigned;
-   int _lastGPRAssigned;
+    uint16_t _lastPreservedFPRAvail, _lastPreservedVRFAvail;
+    uint16_t _inUseFPREnd, _inUseVFREnd, _lastFPRAlloc, _lastVRFAlloc;
 
-   uint16_t _lastPreservedFPRAvail, _lastPreservedVRFAvail;
-   uint16_t _inUseFPREnd, _inUseVFREnd, _lastFPRAlloc, _lastVRFAlloc;
+    uint16_t _registerAllocationFPR[TR::RealRegister::LastAssignableVSR - TR::RealRegister::FirstVSR + 1]; // 64
 
-   uint16_t _registerAllocationFPR[TR::RealRegister::LastAssignableVSR - TR::RealRegister::FirstVSR + 1]; // 64
+    // For register snap shot
+    uint16_t _registerFlagsSnapShot[TR::RealRegister::NumRegisters];
+    TR::RealRegister::RegState _registerStatesSnapShot[TR::RealRegister::NumRegisters];
+    TR::Register *_registerAssociationsSnapShot[TR::RealRegister::NumRegisters];
+    TR::Register *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
 
-   // For register snap shot
-   uint16_t                    _registerFlagsSnapShot[TR::RealRegister::NumRegisters];
-   TR::RealRegister::RegState  _registerStatesSnapShot[TR::RealRegister::NumRegisters];
-   TR::Register                *_registerAssociationsSnapShot[TR::RealRegister::NumRegisters];
-   TR::Register                *_assignedRegisterSnapShot[TR::RealRegister::NumRegisters];
+public:
+    Machine(TR::CodeGenerator *cg);
 
-   public:
+    void initREGAssociations();
 
-   Machine(TR::CodeGenerator *cg);
+    TR::Register *setVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum, TR::Register *virtReg);
+    TR::Register *getVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum);
 
-   void initREGAssociations();
+    TR::RealRegister *findBestFreeRegister(TR::Instruction *currentInstruction, TR_RegisterKinds rk,
+        bool excludeGPR0 = false, bool considerUnlatched = false, TR::Register *virtualReg = NULL);
 
-   TR::Register *setVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum, TR::Register * virtReg);
-   TR::Register *getVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum);
+    TR::RealRegister *freeBestRegister(TR::Instruction *currentInstruction, TR::Register *virtReg,
+        TR::RealRegister *forced = NULL, bool excludeGPR0 = false);
 
-   TR::RealRegister *findBestFreeRegister(TR::Instruction *currentInstruction,
-                                            TR_RegisterKinds rk,
-					    bool excludeGPR0 = false,
-                                            bool considerUnlatched = false,
-                                            TR::Register *virtualReg = NULL);
+    TR::RealRegister *reverseSpillState(TR::Instruction *currentInstruction, TR::Register *spilledRegister,
+        TR::RealRegister *targetRegister = NULL, bool excludeGPR0 = false);
 
-   TR::RealRegister *freeBestRegister(TR::Instruction  *currentInstruction,
-                                        TR::Register     *virtReg,
-					TR::RealRegister *forced = NULL,
-					bool excludeGPR0 = false);
+    TR::RealRegister *assignOneRegister(TR::Instruction *currentInstruction, TR::Register *virtReg, bool excludeGPR0);
 
-   TR::RealRegister *reverseSpillState(TR::Instruction     *currentInstruction,
-                                         TR::Register        *spilledRegister,
-                                         TR::RealRegister *targetRegister = NULL,
-					 bool excludeGPR0 = false);
+    void coerceRegisterAssignment(TR::Instruction *currentInstruction, TR::Register *virtualRegister,
+        TR::RealRegister::RegNum registerNumber);
 
-   TR::RealRegister *assignOneRegister(TR::Instruction     *currentInstruction,
-                                         TR::Register        *virtReg,
-                                         bool                excludeGPR0);
+    bool getLinkRegisterKilled() { return _registerFile[TR::RealRegister::lr]->getHasBeenAssignedInMethod(); }
 
-   void coerceRegisterAssignment(TR::Instruction                           *currentInstruction,
-                                 TR::Register                              *virtualRegister,
-                                 TR::RealRegister::RegNum registerNumber);
+    bool setLinkRegisterKilled(bool b);
 
-   bool getLinkRegisterKilled()
-      {return _registerFile[TR::RealRegister::lr]->getHasBeenAssignedInMethod();}
+    static uint8_t getGlobalGPRPartitionLimit() { return 12; }
 
-   bool setLinkRegisterKilled(bool b);
+    static uint8_t getGlobalFPRPartitionLimit() { return 12; }
 
-   static uint8_t getGlobalGPRPartitionLimit() {return 12;}
-   static uint8_t getGlobalFPRPartitionLimit() {return 12;}
-   static uint8_t getGlobalCCRPartitionLimit() {return 3;}
+    static uint8_t getGlobalCCRPartitionLimit() { return 3; }
 
-   // Snap shot methods
-   void takeRegisterStateSnapShot();
-   void restoreRegisterStateFromSnapShot();
+    // Snap shot methods
+    void takeRegisterStateSnapShot();
+    void restoreRegisterStateFromSnapShot();
 
-   TR::RegisterDependencyConditions  *createCondForLiveAndSpilledGPRs(TR::list<TR::Register*> *spilledRegisterList = NULL);
+    TR::RegisterDependencyConditions *createCondForLiveAndSpilledGPRs(
+        TR::list<TR::Register *> *spilledRegisterList = NULL);
 
-   void decFutureUseCountAndUnlatch(TR::Register *virtualRegister);
-   void disassociateUnspilledBackingStorage();
-   };
-}
-}
+    void decFutureUseCountAndUnlatch(TR::Register *virtualRegister);
+    void disassociateUnspilledBackingStorage();
+};
+}} // namespace OMR::Power
 #endif

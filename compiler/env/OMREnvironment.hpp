@@ -27,106 +27,107 @@
  */
 #ifndef OMR_ENVIRONMENT_CONNECTOR
 #define OMR_ENVIRONMENT_CONNECTOR
+
 namespace OMR {
 class Environment;
 typedef OMR::Environment EnvironmentConnector;
-}
+} // namespace OMR
 #endif
 
 #include "env/CPU.hpp"
 #include <stdint.h>
 
-
-namespace TR
-{
+namespace TR {
 
 // Address bitness of the process in this environment
 //
-enum Bitness
-   {
-   bits_32,
-   bits_64,
-   bits_unknown
-   };
-
+enum Bitness {
+    bits_32,
+    bits_64,
+    bits_unknown
+};
 
 // Major operating system
 //
-enum MajorOperatingSystem
-   {
-   os_linux,
-   os_aix,
-   os_unix,
-   os_windows,
-   os_zos,
-   os_osx,
-   os_bsd,
-   os_unknown
-   };
+enum MajorOperatingSystem {
+    os_linux,
+    os_aix,
+    os_unix,
+    os_windows,
+    os_zos,
+    os_osx,
+    os_bsd,
+    os_unknown
+};
 
-}
+} // namespace TR
 
+namespace OMR {
 
-
-
-namespace OMR
-{
-
-class Environment
-   {
-
+class Environment {
 public:
+    Environment()
+        : _majorOS(TR::os_unknown)
+        , _bitness(TR::bits_unknown)
+        , _isSMP(false)
+        , _numberOfProcessors(1)
+        , cpu()
+    {}
 
-   Environment() :
-         _majorOS(TR::os_unknown),
-         _bitness(TR::bits_unknown),
-         _isSMP(false),
-         _numberOfProcessors(1),
-         cpu()
-      {}
+    Environment(TR::MajorOperatingSystem o, TR::Bitness b)
+        : _majorOS(o)
+        , _bitness(b)
+        , _isSMP(false)
+        , _numberOfProcessors(1)
+        , cpu()
+    {}
 
-   Environment(TR::MajorOperatingSystem o, TR::Bitness b) :
-         _majorOS(o),
-         _bitness(b),
-         _isSMP(false),
-         _numberOfProcessors(1),
-         cpu()
-      {}
+    TR::CPU cpu;
 
-   TR::CPU cpu;
+    TR::MajorOperatingSystem majorOS() { return _majorOS; }
 
-   TR::MajorOperatingSystem majorOS() { return _majorOS; }
-   void setMajorOS(TR::MajorOperatingSystem os) { _majorOS = os; }
-   bool isWindows() { return _majorOS == TR::os_windows; }
-   bool isLinux() { return _majorOS == TR::os_linux; }
-   bool isAIX() { return _majorOS == TR::os_aix; }
-   bool isUnix() { return _majorOS == TR::os_unix; }
-   bool isZOS() { return _majorOS == TR::os_zos; }
-   bool isOSX() { return _majorOS == TR::os_osx; }
-   bool isBSD() { return _majorOS == TR::os_bsd; }
+    void setMajorOS(TR::MajorOperatingSystem os) { _majorOS = os; }
 
-   TR::Bitness bitness() { return _bitness; }
-   void setBitness(TR::Bitness b) { _bitness = b; }
-   bool is32Bit() { return _bitness == TR::bits_32; }
-   bool is64Bit() { return _bitness == TR::bits_64; }
+    bool isWindows() { return _majorOS == TR::os_windows; }
 
-   bool isSMP() { return _isSMP; }
-   void setSMP(bool s) { _isSMP = s; }
+    bool isLinux() { return _majorOS == TR::os_linux; }
 
-   uint32_t numberOfProcessors() { return _numberOfProcessors; }
-   void setNumberOfProcessors(uint32_t p) { _numberOfProcessors = p; }
+    bool isAIX() { return _majorOS == TR::os_aix; }
+
+    bool isUnix() { return _majorOS == TR::os_unix; }
+
+    bool isZOS() { return _majorOS == TR::os_zos; }
+
+    bool isOSX() { return _majorOS == TR::os_osx; }
+
+    bool isBSD() { return _majorOS == TR::os_bsd; }
+
+    TR::Bitness bitness() { return _bitness; }
+
+    void setBitness(TR::Bitness b) { _bitness = b; }
+
+    bool is32Bit() { return _bitness == TR::bits_32; }
+
+    bool is64Bit() { return _bitness == TR::bits_64; }
+
+    bool isSMP() { return _isSMP; }
+
+    void setSMP(bool s) { _isSMP = s; }
+
+    uint32_t numberOfProcessors() { return _numberOfProcessors; }
+
+    void setNumberOfProcessors(uint32_t p) { _numberOfProcessors = p; }
 
 private:
+    TR::MajorOperatingSystem _majorOS;
 
-   TR::MajorOperatingSystem _majorOS;
+    TR::Bitness _bitness;
 
-   TR::Bitness _bitness;
+    bool _isSMP;
 
-   bool _isSMP;
+    uint32_t _numberOfProcessors;
+};
 
-   uint32_t _numberOfProcessors;
-   };
-
-}
+} // namespace OMR
 
 #endif

@@ -24,18 +24,17 @@
 
 #include "ilgen/OMRIlType.hpp"
 
-namespace TR
-{
-class IlType : public OMR::IlType
-   {
-   public:
-      IlType(const char *name)
-         : OMR::IlType(name)
-         { }
-      IlType()
-         : OMR::IlType()
-         { }
-   };
+namespace TR {
+class IlType : public OMR::IlType {
+public:
+    IlType(const char *name)
+        : OMR::IlType(name)
+    {}
+
+    IlType()
+        : OMR::IlType()
+    {}
+};
 } // namespace TR
 
 #endif // !defined(TR_ILTYPE_INCL)

@@ -25,17 +25,15 @@
 #include "env/OMRVMEnv.hpp"
 #include "infra/Annotations.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE VMEnv : public OMR::VMEnvConnector
-   {
+class OMR_EXTENSIBLE VMEnv : public OMR::VMEnvConnector {
 public:
+    VMEnv()
+        : OMR::VMEnvConnector()
+    {}
+};
 
-   VMEnv() : OMR::VMEnvConnector() {}
-
-   };
-
-}
+} // namespace TR
 
 #endif

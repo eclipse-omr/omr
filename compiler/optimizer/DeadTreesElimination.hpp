@@ -31,84 +31,72 @@ namespace TR {
 class Block;
 class OptimizationManager;
 class TreeTop;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class TreeInfo
-   {
-   public:
-   TR_ALLOC(TR_Memory::LocalOpts)
+class TreeInfo {
+public:
+    TR_ALLOC(TR_Memory::LocalOpts)
 
-   TreeInfo(TR::TreeTop *treeTop, int32_t height)
-      : _tree(treeTop),
-        _height(height)
-      {
-      }
+    TreeInfo(TR::TreeTop *treeTop, int32_t height)
+        : _tree(treeTop)
+        , _height(height)
+    {}
 
-   TR::TreeTop *getTreeTop()  {return _tree;}
-   void setTreeTop(TR::TreeTop *tree)  {_tree = tree;}
+    TR::TreeTop *getTreeTop() { return _tree; }
 
-   int32_t getHeight()    {return _height;}
-   void setHeight(int32_t height) {_height = height;}
+    void setTreeTop(TR::TreeTop *tree) { _tree = tree; }
 
-   private:
+    int32_t getHeight() { return _height; }
 
-   int32_t _height;
-   TR::TreeTop *_tree;
-   };
+    void setHeight(int32_t height) { _height = height; }
 
-}
+private:
+    int32_t _height;
+    TR::TreeTop *_tree;
+};
 
+} // namespace OMR
 
-namespace TR
-{
+namespace TR {
 
 /*
  * Class DeadTreesElimination
  * ==========================
  *
- * Expressions that are evaluated and not used for a few instructions can 
- * actually be evaluated exactly where required (subject to the constraint 
- * that their values should be the same if evaluated later). This optimization 
- * attempts to simply delay evaluation of expressions and has the effect of 
- * reducing register pressure by shortening live ranges. It has the effect 
- * of removing some IL trees that are simply anchors for (already) evaluated 
+ * Expressions that are evaluated and not used for a few instructions can
+ * actually be evaluated exactly where required (subject to the constraint
+ * that their values should be the same if evaluated later). This optimization
+ * attempts to simply delay evaluation of expressions and has the effect of
+ * reducing register pressure by shortening live ranges. It has the effect
+ * of removing some IL trees that are simply anchors for (already) evaluated
  * expressions and making the trees more compact.
  */
 
-class DeadTreesElimination : public TR::Optimization
-   {
-   public:
+class DeadTreesElimination : public TR::Optimization {
+public:
+    DeadTreesElimination(TR::OptimizationManager *manager);
+    static TR::Optimization *create(TR::OptimizationManager *manager);
 
-   DeadTreesElimination(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager);
+    virtual int32_t perform();
+    virtual int32_t performOnBlock(TR::Block *);
+    virtual void prePerformOnBlocks();
+    virtual bool fixUpTree(TR::Node *node, TR::TreeTop *treeTop, TR::NodeChecklist &visited, bool &highGlobalIndex,
+        vcount_t evaluatedVisitCount);
 
-   virtual int32_t perform();
-   virtual int32_t performOnBlock(TR::Block *);
-   virtual void prePerformOnBlocks();
-   virtual bool fixUpTree(
-		TR::Node *node,
-		TR::TreeTop *treeTop,
-		TR::NodeChecklist &visited,
-		bool &highGlobalIndex,
-		vcount_t evaluatedVisitCount);
+    virtual const char *optDetailString() const throw();
 
-   virtual const char * optDetailString() const throw();
+protected:
+    virtual TR::TreeTop *findLastTreetop(TR::Block *block, TR::TreeTop *prevTree);
 
-   protected:
+private:
+    int32_t process(TR::TreeTop *, TR::TreeTop *);
 
-   virtual TR::TreeTop *findLastTreetop(TR::Block *block, TR::TreeTop *prevTree);
+    bool _cannotBeEliminated;
+    bool _delayedRegStores;
+};
 
-   private:
-
-   int32_t process(TR::TreeTop *, TR::TreeTop *);
-
-   bool _cannotBeEliminated;
-   bool _delayedRegStores;
-   };
-
-}
+} // namespace TR
 
 #endif

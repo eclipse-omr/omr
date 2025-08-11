@@ -31,52 +31,55 @@ class SymbolReference;
 class CodeGenerator;
 class Node;
 class Register;
-}
+} // namespace TR
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector
-   {
-   private:
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
+private:
+    MemoryReference(TR::Register *br, int64_t disp, uint8_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, disp, len, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      int64_t disp,
-      uint8_t len,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, disp, len, cg) {}
+    MemoryReference(TR::LabelSymbol *label, int64_t disp, int8_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(label, disp, len, cg)
+    {}
 
-   MemoryReference(TR::LabelSymbol *label, int64_t disp, int8_t len, TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(label, disp, len, cg) {}
+    MemoryReference(TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(cg)
+    {}
 
-   MemoryReference(TR::CodeGenerator *cg) :
-      OMR::MemoryReferenceConnector(cg) {}
+    MemoryReference(TR::Register *br, TR::Register *ir, uint8_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(br, ir, len, cg)
+    {}
 
-   MemoryReference(TR::Register *br,
-      TR::Register *ir,
-      uint8_t len,
-      TR::CodeGenerator *cg) :
-         OMR::MemoryReferenceConnector(br, ir, len, cg) {}
+    MemoryReference(TR::Node *rootLoadOrStore, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(rootLoadOrStore, len, cg)
+    {}
 
-   MemoryReference(TR::Node *rootLoadOrStore, uint32_t len, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(rootLoadOrStore, len, cg) {}
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, symRef, len, cg)
+    {}
 
-   MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(node, symRef, len, cg) {}
+    MemoryReference(TR::Node *node, MemoryReference &mr, int32_t n, uint32_t len, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, mr, n, len, cg)
+    {}
 
-   MemoryReference(TR::Node *node, MemoryReference& mr, int32_t n, uint32_t len, TR::CodeGenerator *cg):
-      OMR::MemoryReferenceConnector(node, mr, n, len, cg) {}
-
-   public:
-
-   static TR::MemoryReference *create(TR::CodeGenerator *cg);
-   static TR::MemoryReference *createWithLabel(TR::CodeGenerator *cg, TR::LabelSymbol *label, int64_t offset, int8_t length);
-   static TR::MemoryReference *createWithIndexReg(TR::CodeGenerator *cg, TR::Register *baseReg, TR::Register *indexReg, uint8_t length);
-   static TR::MemoryReference *createWithDisplacement(TR::CodeGenerator *cg, TR::Register *baseReg, int64_t displacement, int8_t length);
-   static TR::MemoryReference *createWithRootLoadOrStore(TR::CodeGenerator *cg, TR::Node *rootLoadOrStore, uint32_t length);
-   static TR::MemoryReference *createWithSymRef(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef, uint32_t length);
-   static TR::MemoryReference *createWithMemRef(TR::CodeGenerator *cg, TR::Node *node, TR::MemoryReference& memRef, int32_t displacement, uint32_t length);
-   };
-}
+public:
+    static TR::MemoryReference *create(TR::CodeGenerator *cg);
+    static TR::MemoryReference *createWithLabel(TR::CodeGenerator *cg, TR::LabelSymbol *label, int64_t offset,
+        int8_t length);
+    static TR::MemoryReference *createWithIndexReg(TR::CodeGenerator *cg, TR::Register *baseReg, TR::Register *indexReg,
+        uint8_t length);
+    static TR::MemoryReference *createWithDisplacement(TR::CodeGenerator *cg, TR::Register *baseReg,
+        int64_t displacement, int8_t length);
+    static TR::MemoryReference *createWithRootLoadOrStore(TR::CodeGenerator *cg, TR::Node *rootLoadOrStore,
+        uint32_t length);
+    static TR::MemoryReference *createWithSymRef(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef,
+        uint32_t length);
+    static TR::MemoryReference *createWithMemRef(TR::CodeGenerator *cg, TR::Node *node, TR::MemoryReference &memRef,
+        int32_t displacement, uint32_t length);
+};
+} // namespace TR
 
 #endif

@@ -39,31 +39,27 @@ namespace TR {
  * TR::CompilationException is sufficient. However, it is good practice to
  * define somewhat general subtypes for RAS purposes.
  */
-struct CompilationException : public virtual std::exception
-   {
-   virtual const char* what() const throw() { return "Compilation Exception"; }
-   };
-
+struct CompilationException : public virtual std::exception {
+    virtual const char *what() const throw() { return "Compilation Exception"; }
+};
 
 /**
  * IL Validation Failure exception type.
  *
  * Thrown on an IL Validation Failure condition.
  */
-struct ILValidationFailure : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "IL Validation Failure"; }
-   };
+struct ILValidationFailure : public virtual CompilationException {
+    virtual const char *what() const throw() { return "IL Validation Failure"; }
+};
 
 /**
  * IL Generation Failure exception type.
  *
  * Thrown on an IL Generation Failure condition.
  */
-struct ILGenFailure : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "IL Gen Failure"; }
-   };
+struct ILGenFailure : public virtual CompilationException {
+    virtual const char *what() const throw() { return "IL Gen Failure"; }
+};
 
 /**
  * Recoverable IL Generation Failure exception type.
@@ -73,10 +69,9 @@ struct ILGenFailure : public virtual CompilationException
  * 1. continuing the compilation of the caller method if the failing method is an inlined callee
  * 2. allowing a recompilation to occur for the failing method if it's the outermost method
  */
-struct RecoverableILGenException : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "Recoverable IL Gen Exception"; }
-   };
+struct RecoverableILGenException : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Recoverable IL Gen Exception"; }
+};
 
 /**
  * Special recoverable IL Generation Failure exception type.
@@ -84,10 +79,12 @@ struct RecoverableILGenException : public virtual CompilationException
  * Different from general RecoverableILGenException in that
  * recompilation is not allowed when the failing method is the outermost method.
  */
-struct NoRecompilationRecoverableILGenException: public RecoverableILGenException
-   {
-   virtual const char* what() const throw() { return "Recoverable IL Gen Exception with no recompilation if failing method is outermost"; }
-   };
+struct NoRecompilationRecoverableILGenException : public RecoverableILGenException {
+    virtual const char *what() const throw()
+    {
+        return "Recoverable IL Gen Exception with no recompilation if failing method is outermost";
+    }
+};
 
 /**
  * Unsupported value type operation exception type.
@@ -95,10 +92,9 @@ struct NoRecompilationRecoverableILGenException: public RecoverableILGenExceptio
  * Thrown if an unsupported value type operation is encountered that requires
  * compilation to be aborted.
  */
-struct UnsupportedValueTypeOperation : public virtual RecoverableILGenException
-   {
-   virtual const char* what() const throw() { return "Unsupported value type operation"; }
-   };
+struct UnsupportedValueTypeOperation : public virtual RecoverableILGenException {
+    virtual const char *what() const throw() { return "Unsupported value type operation"; }
+};
 
 /**
  * Excessive Complexity exception type.
@@ -107,10 +103,9 @@ struct UnsupportedValueTypeOperation : public virtual RecoverableILGenException
  * threshold to sucessfully finish compilation, for example, if the
  * compilation created more TR::Node objects than is supported.
  */
-struct ExcessiveComplexity : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "Excessive Complexity"; }
-   };
+struct ExcessiveComplexity : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Excessive Complexity"; }
+};
 
 /**
  * Max Caller Index Exceeded exception type.
@@ -118,10 +113,9 @@ struct ExcessiveComplexity : public virtual CompilationException
  * Thrown when the number of calls to other methods from the method being
  * compiled exceeds the compiler's threshold.
  */
-struct MaxCallerIndexExceeded : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "Max Caller Index Exceeded"; }
-   };
+struct MaxCallerIndexExceeded : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Max Caller Index Exceeded"; }
+};
 
 /**
  * Compilation Interrupted exception type.
@@ -129,20 +123,18 @@ struct MaxCallerIndexExceeded : public virtual CompilationException
  * Thrown when the compilation has to be interrupted, for example, if a runtime
  * is going into its shutdown phase.
  */
-struct CompilationInterrupted : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "Compilation Interrupted"; }
-   };
+struct CompilationInterrupted : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Compilation Interrupted"; }
+};
 
 /**
  * Unimplemented Op Code exception type.
  *
  * Thrown when the compiler encounters an unimplemented opt code.
  */
-struct UnimplementedOpCode : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "Unimplemented Op Code"; }
-   };
+struct UnimplementedOpCode : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Unimplemented Op Code"; }
+};
 
 /**
  * Insufficiently Aggressive Compilation exception type.
@@ -150,10 +142,9 @@ struct UnimplementedOpCode : public virtual CompilationException
  * Thrown when the compiler determines that optimization level of the current
  * compilation is not aggressive enough.
  */
-struct InsufficientlyAggressiveCompilation : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "Insufficiently Aggressive Compilation"; }
-   };
+struct InsufficientlyAggressiveCompilation : public virtual CompilationException {
+    virtual const char *what() const throw() { return "Insufficiently Aggressive Compilation"; }
+};
 
 /**
  * GCR Patch Failure exception type.
@@ -161,11 +152,10 @@ struct InsufficientlyAggressiveCompilation : public virtual CompilationException
  * Only thrown from J9_PROJECT_SPECIFIC guarded code. Thrown when address of
  * the GCR Patch Point is not known at Binary Encoding.
  */
-struct GCRPatchFailure : public virtual CompilationException
-   {
-   virtual const char* what() const throw() { return "GCR Patch Failure"; }
-   };
+struct GCRPatchFailure : public virtual CompilationException {
+    virtual const char *what() const throw() { return "GCR Patch Failure"; }
+};
 
-}
+} // namespace TR
 
 #endif // COMPILATIONEXCEPTION_HPP

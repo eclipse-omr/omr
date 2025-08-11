@@ -24,7 +24,6 @@
 
 #include "il/OMRILOpCodesEnum.hpp"
 
-   FirstTROp = FirstOMROp,
-   LastTROp = LastScalarOMROp,
+FirstTROp = FirstOMROp, LastTROp = LastScalarOMROp,
 
 #endif

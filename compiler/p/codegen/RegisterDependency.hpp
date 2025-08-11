@@ -24,30 +24,30 @@
 
 #include "codegen/OMRRegisterDependency.hpp"
 
-namespace TR
-{
+namespace TR {
 class OMR_EXTENSIBLE RegisterDependencyGroup : public OMR::RegisterDependencyGroupConnector {};
 
-class RegisterDependencyConditions : public OMR::RegisterDependencyConditionsConnector
-   {
-   public:
+class RegisterDependencyConditions : public OMR::RegisterDependencyConditionsConnector {
+public:
+    RegisterDependencyConditions()
+        : OMR::RegisterDependencyConditionsConnector()
+    {}
 
-   RegisterDependencyConditions() : OMR::RegisterDependencyConditionsConnector () {}
+    RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds, TR_Memory *m)
+        : OMR::RegisterDependencyConditionsConnector(numPreConds, numPostConds, m)
+    {}
 
-   RegisterDependencyConditions(uint16_t numPreConds, uint16_t numPostConds, TR_Memory * m) :
-      OMR::RegisterDependencyConditionsConnector(numPreConds, numPostConds, m) {}
+    RegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node, uint32_t extranum,
+        TR::Instruction **cursorPtr = NULL)
+        : OMR::RegisterDependencyConditionsConnector(cg, node, extranum, cursorPtr)
+    {}
+};
+} // namespace TR
 
-   RegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node, uint32_t extranum, TR::Instruction **cursorPtr=NULL) :
-      OMR::RegisterDependencyConditionsConnector(cg, node, extranum, cursorPtr) {}
-
-   };
+inline TR::RegisterDependencyConditions *generateRegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node,
+    uint32_t extranum, TR::Instruction **cursorPtr = NULL)
+{
+    return new (cg->trHeapMemory()) TR::RegisterDependencyConditions(cg, node, extranum, cursorPtr);
 }
-
-inline TR::RegisterDependencyConditions *
-generateRegisterDependencyConditions(TR::CodeGenerator *cg, TR::Node *node, uint32_t extranum, TR::Instruction **cursorPtr=NULL)
-   {
-   return new (cg->trHeapMemory()) TR::RegisterDependencyConditions(cg, node, extranum, cursorPtr);
-   }
-
 
 #endif

@@ -26,100 +26,48 @@
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 
 OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
-   : TR::JitBuilderRecorder(mb, fileName)
-   {
-   }
+    : TR::JitBuilderRecorder(mb, fileName)
+{}
 
-void
-OMR::JitBuilderRecorderTextFile::Close()
-   {
-   TR::JitBuilderRecorder::Close();
-   _file.close();
-   }
+void OMR::JitBuilderRecorderTextFile::Close()
+{
+    TR::JitBuilderRecorder::Close();
+    _file.close();
+}
 
-void
-OMR::JitBuilderRecorderTextFile::String(const char * const string)
-   {
-   _file << "\"" << strlen(string) << " [" << string << "]\" ";
-   }
+void OMR::JitBuilderRecorderTextFile::String(const char * const string)
+{
+    _file << "\"" << strlen(string) << " [" << string << "]\" ";
+}
 
-void
-OMR::JitBuilderRecorderTextFile::Number(int8_t num)
-   {
-   _file << (int32_t) num << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Number(int8_t num) { _file << (int32_t)num << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Number(int16_t num)
-   {
-   _file << num << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Number(int16_t num) { _file << num << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Number(int32_t num)
-   {
-   _file << num << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Number(int32_t num) { _file << num << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Number(int64_t num)
-   {
-   _file << num << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Number(int64_t num) { _file << num << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Number(float num)
-   {
-   _file << num << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Number(float num) { _file << num << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Number(double num)
-   {
-   _file << num << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Number(double num) { _file << num << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::ID(TypeID id)
-   {
-   _file << "ID" << id << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::ID(TypeID id) { _file << "ID" << id << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Statement(const char *s)
-   {
-   _file << "S" << lookupID(s) << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Statement(const char *s) { _file << "S" << lookupID(s) << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Type(const TR::IlType *type)
-   {
-   _file << "T" << lookupID(type) << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Type(const TR::IlType *type) { _file << "T" << lookupID(type) << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Value(const TR::IlValue *v)
-   {
-   _file << "V" << lookupID(v) << " ";
-   }
+void OMR::JitBuilderRecorderTextFile::Value(const TR::IlValue *v) { _file << "V" << lookupID(v) << " "; }
 
-void
-OMR::JitBuilderRecorderTextFile::Builder(const TR::IlBuilder *b)
-   {
-   if (b)
-      _file << "B" << lookupID(b) << " ";
-   else
-      _file << "Def ";
-   }
+void OMR::JitBuilderRecorderTextFile::Builder(const TR::IlBuilder *b)
+{
+    if (b)
+        _file << "B" << lookupID(b) << " ";
+    else
+        _file << "Def ";
+}
 
-void
-OMR::JitBuilderRecorderTextFile::Location(const void *location)
-   {
-   _file << "{" << location << "} ";
-   }
+void OMR::JitBuilderRecorderTextFile::Location(const void *location) { _file << "{" << location << "} "; }
 
-void
-OMR::JitBuilderRecorderTextFile::EndStatement()
-   {
-   _file << "\n";
-   }
+void OMR::JitBuilderRecorderTextFile::EndStatement() { _file << "\n"; }

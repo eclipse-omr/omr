@@ -34,7 +34,7 @@
 namespace TR {
 class Node;
 class Optimizer;
-}
+} // namespace TR
 
 // #define MAX_BLOCKS_FOR_STACK_ALLOCATION 16
 
@@ -45,58 +45,42 @@ class Optimizer;
 //
 //
 
-TR_DataFlowAnalysis::Kind TR_Isolatedness::getKind()
-   {
-   return Isolatedness;
-   }
+TR_DataFlowAnalysis::Kind TR_Isolatedness::getKind() { return Isolatedness; }
 
-TR_Isolatedness *TR_Isolatedness::asIsolatedness()
-   {
-   return this;
-   }
+TR_Isolatedness *TR_Isolatedness::asIsolatedness() { return this; }
 
+int32_t TR_Isolatedness::getNumberOfBits() { return _latestness->getNumberOfBits(); }
 
-int32_t TR_Isolatedness::getNumberOfBits()
-   {
-   return _latestness->getNumberOfBits();
-   }
+TR_Isolatedness::TR_Isolatedness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure,
+    bool trace)
+    : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
+{
+    _latestness = new (comp->allocator()) TR_Latestness(comp, optimizer, rootStructure, trace);
+    _supportedNodesAsArray = _latestness->_supportedNodesAsArray;
+    //_temp = NULL;
 
+    /*
+    if (trace())
+       traceMsg("Starting Isolatedness\n");
 
+    performAnalysis(rootStructure, false);
 
-
-
-TR_Isolatedness::TR_Isolatedness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure, bool trace)
-   : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
-   {
-   _latestness = new (comp->allocator()) TR_Latestness(comp, optimizer, rootStructure, trace);
-   _supportedNodesAsArray = _latestness->_supportedNodesAsArray;
-   //_temp = NULL;
-
-   /*
-   if (trace())
-      traceMsg("Starting Isolatedness\n");
-
-   performAnalysis(rootStructure, false);
-
-   if (trace())
-      traceMsg("\nEnding Isolatedness\n");
-   */
-   }
+    if (trace())
+       traceMsg("\nEnding Isolatedness\n");
+    */
+}
 
 bool TR_Isolatedness::postInitializationProcessing()
-   {
-/*
-   _outSetInfo = (TR_BitVector **)jitStackAlloc(_numberOfNodes*sizeof(TR_BitVector *));
-   memset(_outSetInfo, 0, _numberOfNodes*sizeof(TR_BitVector *));
+{
+    /*
+       _outSetInfo = (TR_BitVector **)jitStackAlloc(_numberOfNodes*sizeof(TR_BitVector *));
+       memset(_outSetInfo, 0, _numberOfNodes*sizeof(TR_BitVector *));
 
-   for (int32_t i = 0; i<_numberOfNodes; i++)
-      _outSetInfo[i] = new (trStackMemory()) TR_BitVector(_numberOfBits, stackAlloc, trMemory());
-*/
-   return true;
-   }
-
-
-
+       for (int32_t i = 0; i<_numberOfNodes; i++)
+          _outSetInfo[i] = new (trStackMemory()) TR_BitVector(_numberOfBits, stackAlloc, trMemory());
+    */
+    return true;
+}
 
 #if 0
 // Overrides the implementation in the superclass as this analysis

@@ -28,27 +28,28 @@
 #include "il/Node.hpp"
 #include "infra/Annotations.hpp"
 
-namespace OMR
-{
-
-namespace Power
-{
+namespace OMR { namespace Power {
 
 /**
  * \brief A memory reference alongside information about operations to perform when its lifetime
  *        is complete.
  */
-class NodeMemoryReference
-    {
+class NodeMemoryReference {
     TR::MemoryReference *_memRef;
 
-    public:
-    NodeMemoryReference() : _memRef(NULL) {}
-    explicit NodeMemoryReference(TR::MemoryReference *memRef) : _memRef(memRef) {}
+public:
+    NodeMemoryReference()
+        : _memRef(NULL)
+    {}
+
+    explicit NodeMemoryReference(TR::MemoryReference *memRef)
+        : _memRef(memRef)
+    {}
 
     TR::MemoryReference *getMemoryReference() { return _memRef; }
+
     void decReferenceCounts(TR::CodeGenerator *cg) { return _memRef->decNodeReferenceCounts(cg); }
-    };
+};
 
 /**
  * \brief An extensible class containing static methods for evaluating loads and stores.
@@ -63,10 +64,8 @@ class NodeMemoryReference
  * \warning Unless otherwise mentioned, methods on this class are free to emit arbitrary instructions at the append
  *          cursor, and so should never be called during internal control flow.
  */
-class OMR_EXTENSIBLE LoadStoreHandler
-    {
-    public:
-
+class OMR_EXTENSIBLE LoadStoreHandler {
+public:
     /**
      * \brief Generate a sequence of instructions to compute the effective address of a load, store, or loadaddr.
      *
@@ -88,7 +87,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param node The load, store, or loadaddr node whose effective address should be computed
      * \param extraOffset An extra offset in bytes to add to the effective address
      */
-    static void generateComputeAddressSequence(TR::CodeGenerator *cg, TR::Register *addrReg, TR::Node *node, int64_t extraOffset=0);
+    static void generateComputeAddressSequence(TR::CodeGenerator *cg, TR::Register *addrReg, TR::Node *node,
+        int64_t extraOffset = 0);
 
     /**
      * \brief Generate a sequence of instructions to execute a load whose effective address has already been computed.
@@ -104,7 +104,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param length The length of the data being loaded in bytes
      * \param requireIndexForm true if an indexed-form instruction must be used; false otherwise
      */
-    static void generateLoadAddressSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node, TR::Register *addrReg, TR::InstOpCode::Mnemonic loadOp, uint32_t length, bool requireIndexForm=false);
+    static void generateLoadAddressSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node,
+        TR::Register *addrReg, TR::InstOpCode::Mnemonic loadOp, uint32_t length, bool requireIndexForm = false);
 
     /**
      * \brief Generate a sequence of instructions to execute a paired load whose effective address has already been
@@ -119,7 +120,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param node The load node to emit a load for
      * \param addrReg The register containing the effective address of the load
      */
-    static void generatePairedLoadAddressSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node, TR::Register *addrReg);
+    static void generatePairedLoadAddressSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node,
+        TR::Register *addrReg);
 
     /**
      * \brief Generate a sequence of instructions to execute a store whose effective address has already been computed.
@@ -135,7 +137,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param length The length of the data being stored in bytes
      * \param requireIndexForm true if an indexed-form instruction must be used; false otherwise
      */
-    static void generateStoreAddressSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node, TR::Register *addrReg, TR::InstOpCode::Mnemonic storeOp, uint32_t length, bool requireIndexForm=false);
+    static void generateStoreAddressSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node,
+        TR::Register *addrReg, TR::InstOpCode::Mnemonic storeOp, uint32_t length, bool requireIndexForm = false);
 
     /**
      * \brief Generate a sequence of instructions to execute a paired store whose effective address has already been
@@ -150,7 +153,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param node The store node to emit a store for
      * \param addrReg The register containing the effective address of the store
      */
-    static void generatePairedStoreAddressSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node, TR::Register *addrReg);
+    static void generatePairedStoreAddressSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node,
+        TR::Register *addrReg);
 
     /**
      * \brief Generate a sequence of instructions to execute a load for a given node.
@@ -166,7 +170,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param requireIndexForm true if an indexed-form instruction must be used; false otherwise
      * \param extraOffset An extra offset in bytes to add to the effective address of the load
      */
-    static void generateLoadNodeSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node, TR::InstOpCode::Mnemonic loadOp, uint32_t length, bool requireIndexForm=false, int64_t extraOffset=0);
+    static void generateLoadNodeSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node,
+        TR::InstOpCode::Mnemonic loadOp, uint32_t length, bool requireIndexForm = false, int64_t extraOffset = 0);
 
     /**
      * \brief Generate a sequence of instructions to execute a paired load for a given node.
@@ -194,7 +199,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param requireIndexForm true if an indexed-form instruction must be used; false otherwise
      * \param extraOffset An extra offset in bytes to add to the effective address of the store
      */
-    static void generateStoreNodeSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node, TR::InstOpCode::Mnemonic storeOp, uint32_t length, bool requireIndexForm=false, int64_t extraOffset=0);
+    static void generateStoreNodeSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node,
+        TR::InstOpCode::Mnemonic storeOp, uint32_t length, bool requireIndexForm = false, int64_t extraOffset = 0);
 
     /**
      * \brief Generate a sequence of instructions to execute a paired store for a given node.
@@ -240,8 +246,9 @@ class OMR_EXTENSIBLE LoadStoreHandler
      * \param requireIndexForm true if the returned memory reference must be indexed-form; false otherwise
      * \param extraOffset An extra offset in bytes to add to the effective address of the store
      */
-    static NodeMemoryReference generateSimpleLoadMemoryReference(TR::CodeGenerator *cg, TR::Node *node, uint32_t length, bool requireIndexForm=false, int64_t extraOffset=0);
-    };
+    static NodeMemoryReference generateSimpleLoadMemoryReference(TR::CodeGenerator *cg, TR::Node *node, uint32_t length,
+        bool requireIndexForm = false, int64_t extraOffset = 0);
+};
 
 /**
  * \brief An extensible class containing implementation methods for evaluating loads and stores.
@@ -253,10 +260,8 @@ class OMR_EXTENSIBLE LoadStoreHandler
  *          Downstream projects are free to add extra functionality to LoadStoreHandler that may not work correctly if
  *          LoadStoreHandlerImpl is used directly.
  */
-class OMR_EXTENSIBLE LoadStoreHandlerImpl
-    {
-    public:
-
+class OMR_EXTENSIBLE LoadStoreHandlerImpl {
+public:
     /**
      * \brief Generate a memory reference corresponding to the effective address of a given load, store, or loadaddr
      *        node.
@@ -267,7 +272,8 @@ class OMR_EXTENSIBLE LoadStoreHandlerImpl
      * \param requireIndexForm true if the returned memory reference must be indexed-form; false otherwise
      * \param extraOffset An extra offset in bytes to add to the effective address
      */
-    static NodeMemoryReference generateMemoryReference(TR::CodeGenerator *cg, TR::Node *node, uint32_t length, bool requireIndexForm, int64_t extraOffset);
+    static NodeMemoryReference generateMemoryReference(TR::CodeGenerator *cg, TR::Node *node, uint32_t length,
+        bool requireIndexForm, int64_t extraOffset);
 
     /**
      * \brief Generate a sequence of instructions for performing a load given a load node and memory reference.
@@ -278,7 +284,8 @@ class OMR_EXTENSIBLE LoadStoreHandlerImpl
      * \param memRef The memory reference for the effective address of the load
      * \param loadOp The opcode to use to perform the load
      */
-    static void generateLoadSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node, TR::MemoryReference *memRef, TR::InstOpCode::Mnemonic loadOp);
+    static void generateLoadSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node,
+        TR::MemoryReference *memRef, TR::InstOpCode::Mnemonic loadOp);
 
     /**
      * \brief Generate a sequence of instructions for performing a paired load given a load node and memory reference.
@@ -288,7 +295,8 @@ class OMR_EXTENSIBLE LoadStoreHandlerImpl
      * \param node The load node to emit a load for
      * \param memRef The memory reference for the effective address of the load
      */
-    static void generatePairedLoadSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node, TR::MemoryReference *memRef);
+    static void generatePairedLoadSequence(TR::CodeGenerator *cg, TR::Register *trgReg, TR::Node *node,
+        TR::MemoryReference *memRef);
 
     /**
      * \brief Generate a sequence of instructions for performing a store given a store node and memory reference.
@@ -299,7 +307,8 @@ class OMR_EXTENSIBLE LoadStoreHandlerImpl
      * \param memRef The memory reference for the effective address of the store
      * \param storeOp The opcode to use to perform the store
      */
-    static void generateStoreSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node, TR::MemoryReference *memRef, TR::InstOpCode::Mnemonic storeOp);
+    static void generateStoreSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node,
+        TR::MemoryReference *memRef, TR::InstOpCode::Mnemonic storeOp);
 
     /**
      * \brief Generate a sequence of instructions for performing a paired store given a store node and memory
@@ -310,10 +319,9 @@ class OMR_EXTENSIBLE LoadStoreHandlerImpl
      * \param node The store node to emit a store for
      * \param memRef The memory reference for the effective address of the store
      */
-    static void generatePairedStoreSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node, TR::MemoryReference *memRef);
-    };
-}
-
-}
+    static void generatePairedStoreSequence(TR::CodeGenerator *cg, TR::Register *srcReg, TR::Node *node,
+        TR::MemoryReference *memRef);
+};
+}} // namespace OMR::Power
 
 #endif

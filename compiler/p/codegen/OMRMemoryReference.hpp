@@ -27,10 +27,14 @@
  */
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
+
 namespace OMR {
-namespace Power { class MemoryReference; }
-typedef OMR::Power::MemoryReference MemoryReferenceConnector;
+namespace Power {
+class MemoryReference;
 }
+
+typedef OMR::Power::MemoryReference MemoryReferenceConnector;
+} // namespace OMR
 #else
 #error OMR::Power::MemoryReference expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -55,279 +59,256 @@ class MemoryReference;
 class Node;
 class RegisterDependencyConditions;
 class UnresolvedDataSnippet;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace Power {
 
-namespace Power
-{
+class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReference {
+    TR::Register *_baseRegister;
+    TR::Node *_baseNode;
+    TR::Register *_indexRegister;
+    TR::Node *_indexNode;
+    TR::Register *_modBase;
+    TR::LabelSymbol *_label;
+    int64_t _offset;
 
-class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReference
-   {
-   TR::Register *_baseRegister;
-   TR::Node *_baseNode;
-   TR::Register *_indexRegister;
-   TR::Node *_indexNode;
-   TR::Register *_modBase;
-   TR::LabelSymbol *_label;
-   int64_t _offset;
+    TR::UnresolvedDataSnippet *_unresolvedSnippet;
+    TR::PPCPairedRelocation *_staticRelocation;
+    TR::SymbolReference *_symbolReference;
+    TR::RegisterDependencyConditions *_conditions;
 
-   TR::UnresolvedDataSnippet *_unresolvedSnippet;
-   TR::PPCPairedRelocation *_staticRelocation;
-   TR::SymbolReference *_symbolReference;
-   TR::RegisterDependencyConditions *_conditions;
+    uint8_t _flag;
+    uint8_t _length;
 
-   uint8_t _flag;
-   uint8_t _length;
+protected:
+    MemoryReference(TR::Register *br, int64_t disp, uint8_t len, TR::CodeGenerator *cg);
 
-   protected:
+    MemoryReference(TR::LabelSymbol *label, int64_t disp, uint8_t len, TR::CodeGenerator *cg);
 
-   MemoryReference(
-         TR::Register *br,
-         int64_t disp,
-         uint8_t len,
-         TR::CodeGenerator *cg);
+    MemoryReference(TR::CodeGenerator *cg);
 
-   MemoryReference(
-         TR::LabelSymbol *label,
-         int64_t disp,
-         uint8_t len,
-         TR::CodeGenerator *cg);
+    MemoryReference(TR::Register *br, TR::Register *ir, uint8_t len, TR::CodeGenerator *cg);
 
-   MemoryReference(TR::CodeGenerator *cg);
+    MemoryReference(TR::Node *rootLoadOrStore, uint32_t len, TR::CodeGenerator *cg);
 
-   MemoryReference(
-         TR::Register *br,
-         TR::Register *ir,
-         uint8_t len,
-         TR::CodeGenerator *cg);
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg);
 
-   MemoryReference(TR::Node *rootLoadOrStore, uint32_t len, TR::CodeGenerator *cg);
+    MemoryReference(TR::Node *node, TR::MemoryReference &mr, int32_t n, uint32_t len, TR::CodeGenerator *cg);
 
-   MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg);
+public:
+    TR_ALLOC(TR_Memory::MemoryReference)
 
-   MemoryReference(TR::Node *node, TR::MemoryReference& mr, int32_t n, uint32_t len, TR::CodeGenerator *cg);
+    typedef enum {
+        TR_PPCMemoryReferenceControl_Base_Modifiable = 0x01,
+        TR_PPCMemoryReferenceControl_Index_Modifiable = 0x02,
+        TR_PPCMemoryReferenceControl_Static_TOC = 0x04,
+        TR_PPCMemoryReferenceControl_Late_Xform = 0x08,
+        TR_PPCMemoryReferenceControl_OffsetRequiresWordAlignment = 0x10,
+        TR_PPCMemoryReferenceControl_DelayedOffsetDone = 0x20
+    } TR_PPCMemoryReferenceControl;
 
-   public:
+    virtual TR::RegisterDependencyConditions *getConditions() { return _conditions; }
 
-   TR_ALLOC(TR_Memory::MemoryReference)
+    TR::SymbolReference *getSymbolReference() { return _symbolReference; }
 
-   typedef enum
-      {
-      TR_PPCMemoryReferenceControl_Base_Modifiable             = 0x01,
-      TR_PPCMemoryReferenceControl_Index_Modifiable            = 0x02,
-      TR_PPCMemoryReferenceControl_Static_TOC                  = 0x04,
-      TR_PPCMemoryReferenceControl_Late_Xform                  = 0x08,
-      TR_PPCMemoryReferenceControl_OffsetRequiresWordAlignment = 0x10,
-      TR_PPCMemoryReferenceControl_DelayedOffsetDone           = 0x20
-      } TR_PPCMemoryReferenceControl;
+    TR::SymbolReference *setSymbolReference(TR::SymbolReference *symRef) { return (_symbolReference = symRef); }
 
-   virtual TR::RegisterDependencyConditions *getConditions() { return _conditions; }
+    TR::Register *getBaseRegister() { return _baseRegister; }
 
-   TR::SymbolReference *getSymbolReference() {return _symbolReference;}
-   TR::SymbolReference *setSymbolReference(TR::SymbolReference *symRef) {return (_symbolReference = symRef);}
+    TR::Register *setBaseRegister(TR::Register *br) { return (_baseRegister = br); }
 
-   TR::Register *getBaseRegister() {return _baseRegister;}
-   TR::Register *setBaseRegister(TR::Register *br) {return (_baseRegister = br);}
+    TR::Node *getBaseNode() { return _baseNode; }
 
-   TR::Node *getBaseNode() {return _baseNode;}
-   TR::Node *setBaseNode(TR::Node *bn) {return (_baseNode = bn);}
+    TR::Node *setBaseNode(TR::Node *bn) { return (_baseNode = bn); }
 
-   TR::Register *getIndexRegister() {return _indexRegister;}
-   TR::Register *setIndexRegister(TR::Register *ir) {return (_indexRegister = ir);}
+    TR::Register *getIndexRegister() { return _indexRegister; }
 
-   TR::Node *getIndexNode() {return _indexNode;}
-   TR::Node *setIndexNode(TR::Node *in) {return (_indexNode = in);}
+    TR::Register *setIndexRegister(TR::Register *ir) { return (_indexRegister = ir); }
 
-   TR::Register *getModBase() {return _modBase;}
-   TR::Register *setModBase(TR::Register *r) {return (_modBase=r);}
+    TR::Node *getIndexNode() { return _indexNode; }
 
-   uint32_t getLength() {return _length;}
-   uint32_t setLength(uint32_t len) {return (_length = len);}
+    TR::Node *setIndexNode(TR::Node *in) { return (_indexNode = in); }
 
-   TR::LabelSymbol *getLabel() {return _label;}
-   TR::LabelSymbol *setLabel(TR::LabelSymbol *label) {return (_label = label);}
+    TR::Register *getModBase() { return _modBase; }
 
-   bool useIndexedForm();
+    TR::Register *setModBase(TR::Register *r) { return (_modBase = r); }
 
-   bool hasDelayedOffset()
-      {
-      if (_symbolReference->getSymbol() != NULL &&
-         _symbolReference->getSymbol()->isRegisterMappedSymbol())
-         {
-         return true;
-         }
+    uint32_t getLength() { return _length; }
 
-      return false;
-      }
+    uint32_t setLength(uint32_t len) { return (_length = len); }
 
-   /**
-    * \brief Gets the flag indicating whether the delayed offset has already been applied.
-    *
-    * When this flag is set, the delayed offset of this MemoryReference from its register-mapped
-    * symbol has already been applied to this MemoryReference's internal offset and should not be
-    * applied again. When true, getOffset() and getOffset(TR::Compilation&) are guaranteed to
-    * return the same value.
-    *
-    * \see setDelayedOffsetDone()
-    */
-   bool isDelayedOffsetDone() { return (_flag & TR_PPCMemoryReferenceControl_DelayedOffsetDone) != 0; }
+    TR::LabelSymbol *getLabel() { return _label; }
 
-   /**
-    * \brief Sets the flag to indicate that the delayed offset has been applied.
-    *
-    * \see isDelayedOffsetDone()
-    */
-   void setDelayedOffsetDone() { _flag |= TR_PPCMemoryReferenceControl_DelayedOffsetDone; }
+    TR::LabelSymbol *setLabel(TR::LabelSymbol *label) { return (_label = label); }
 
-   int64_t setOffset(int64_t o) {return _offset = o;}
-   int64_t getOffset() {return _offset;}
+    bool useIndexedForm();
 
-   int64_t getOffset(TR::Compilation& comp);
-
-   bool isBaseModifiable()
-      {
-      if ((_flag&TR_PPCMemoryReferenceControl_Base_Modifiable) != 0)
-         {
-         return true;
-         }
-
-      return false;
-      }
-   void setBaseModifiable() {_flag |= TR_PPCMemoryReferenceControl_Base_Modifiable;}
-   void clearBaseModifiable() {_flag &= ~TR_PPCMemoryReferenceControl_Base_Modifiable;}
-
-   bool isIndexModifiable()
-      {
-      if ((_flag&TR_PPCMemoryReferenceControl_Index_Modifiable) != 0)
-         {
-         return true;
-         }
-
-      return false;
-      }
-   void setIndexModifiable() {_flag |= TR_PPCMemoryReferenceControl_Index_Modifiable;}
-   void clearIndexModifiable() {_flag &= ~TR_PPCMemoryReferenceControl_Index_Modifiable;}
-
-   bool offsetRequireWordAlignment()
-         {
-         if ((_flag&TR_PPCMemoryReferenceControl_OffsetRequiresWordAlignment) != 0)
+    bool hasDelayedOffset()
+    {
+        if (_symbolReference->getSymbol() != NULL && _symbolReference->getSymbol()->isRegisterMappedSymbol()) {
             return true;
-         return false;
-         }
-   void setOffsetRequiresWordAlignment(TR::Node *node, TR::CodeGenerator *cg, TR::Instruction *cursor);
+        }
 
-   bool isUsingStaticTOC()
-      {
-      if ((_flag&TR_PPCMemoryReferenceControl_Static_TOC) != 0)
-         {
-         return true;
-         }
-      return false;
-      }
-   void setUsingStaticTOC() {_flag |= TR_PPCMemoryReferenceControl_Static_TOC;}
-   void clearUingStaticTOC() {_flag &= ~TR_PPCMemoryReferenceControl_Static_TOC;}
+        return false;
+    }
 
-   bool isTOCAccess();
+    /**
+     * \brief Gets the flag indicating whether the delayed offset has already been applied.
+     *
+     * When this flag is set, the delayed offset of this MemoryReference from its register-mapped
+     * symbol has already been applied to this MemoryReference's internal offset and should not be
+     * applied again. When true, getOffset() and getOffset(TR::Compilation&) are guaranteed to
+     * return the same value.
+     *
+     * \see setDelayedOffsetDone()
+     */
+    bool isDelayedOffsetDone() { return (_flag & TR_PPCMemoryReferenceControl_DelayedOffsetDone) != 0; }
 
-   int32_t getTOCOffset();
+    /**
+     * \brief Sets the flag to indicate that the delayed offset has been applied.
+     *
+     * \see isDelayedOffsetDone()
+     */
+    void setDelayedOffsetDone() { _flag |= TR_PPCMemoryReferenceControl_DelayedOffsetDone; }
 
-   bool isUsingDelayedIndexedForm()
-      {
-      if ((_flag&TR_PPCMemoryReferenceControl_Late_Xform) != 0)
-         {
-         return true ;
-         }
+    int64_t setOffset(int64_t o) { return _offset = o; }
 
-      return false ;
-      }
-   void setUsingDelayedIndexedForm() {_flag |= TR_PPCMemoryReferenceControl_Late_Xform;}
-   void clearUingDelayedIndexedForm() {_flag &= ~TR_PPCMemoryReferenceControl_Late_Xform;}
+    int64_t getOffset() { return _offset; }
 
-   TR::UnresolvedDataSnippet *getUnresolvedSnippet() {return _unresolvedSnippet;}
-   TR::UnresolvedDataSnippet *setUnresolvedSnippet(TR::UnresolvedDataSnippet *s)
-      {
-      return (_unresolvedSnippet = s);
-      }
+    int64_t getOffset(TR::Compilation &comp);
 
-   TR::PPCPairedRelocation *getStaticRelocation() {return _staticRelocation;}
-   TR::PPCPairedRelocation *setStaticRelocation(TR::PPCPairedRelocation *r)
-      {
-      return (_staticRelocation = r);
-      }
+    bool isBaseModifiable()
+    {
+        if ((_flag & TR_PPCMemoryReferenceControl_Base_Modifiable) != 0) {
+            return true;
+        }
 
-   bool refsRegister(TR::Register *reg)
-      {
-      if (reg == _baseRegister ||
-          reg == _indexRegister ||
-          reg == _modBase)
-         {
-         return true;
-         }
-      return false;
-      }
+        return false;
+    }
 
-   void blockRegisters()
-      {
-      if (_baseRegister != NULL)
-         {
-         _baseRegister->block();
-         }
-      if (_indexRegister != NULL)
-         {
-         _indexRegister->block();
-         }
-      if (_modBase != NULL)
-         {
-         _modBase->block();
-         }
-      }
+    void setBaseModifiable() { _flag |= TR_PPCMemoryReferenceControl_Base_Modifiable; }
 
-   void unblockRegisters()
-      {
-      if (_baseRegister != NULL)
-         {
-         _baseRegister->unblock();
-         }
-      if (_indexRegister != NULL)
-         {
-         _indexRegister->unblock();
-         }
-      if (_modBase != NULL)
-         {
-         _modBase->unblock();
-         }
-      }
+    void clearBaseModifiable() { _flag &= ~TR_PPCMemoryReferenceControl_Base_Modifiable; }
 
-   void setSymbol(TR::Symbol *symbol, TR::CodeGenerator *cg);
+    bool isIndexModifiable()
+    {
+        if ((_flag & TR_PPCMemoryReferenceControl_Index_Modifiable) != 0) {
+            return true;
+        }
 
-   void checkRegisters(TR::CodeGenerator *cg);
+        return false;
+    }
 
-   void accessStaticItem(TR::Node *node, TR::SymbolReference *ref, bool isStore, TR::CodeGenerator *cg);
+    void setIndexModifiable() { _flag |= TR_PPCMemoryReferenceControl_Index_Modifiable; }
 
-   void addToOffset(TR::Node * node, int64_t amount, TR::CodeGenerator *cg);
+    void clearIndexModifiable() { _flag &= ~TR_PPCMemoryReferenceControl_Index_Modifiable; }
 
-   void forceIndexedForm(TR::Node * node, TR::CodeGenerator *cg, TR::Instruction *cursor = 0);
+    bool offsetRequireWordAlignment()
+    {
+        if ((_flag & TR_PPCMemoryReferenceControl_OffsetRequiresWordAlignment) != 0)
+            return true;
+        return false;
+    }
 
-   void adjustForResolution(TR::CodeGenerator *cg);
+    void setOffsetRequiresWordAlignment(TR::Node *node, TR::CodeGenerator *cg, TR::Instruction *cursor);
 
-   void decNodeReferenceCounts(TR::CodeGenerator *cg);
+    bool isUsingStaticTOC()
+    {
+        if ((_flag & TR_PPCMemoryReferenceControl_Static_TOC) != 0) {
+            return true;
+        }
+        return false;
+    }
 
-   void bookKeepingRegisterUses(TR::Instruction *instr, TR::CodeGenerator *cg);
+    void setUsingStaticTOC() { _flag |= TR_PPCMemoryReferenceControl_Static_TOC; }
 
-   void populateMemoryReference(TR::Node *subTree, TR::CodeGenerator *cg);
+    void clearUingStaticTOC() { _flag &= ~TR_PPCMemoryReferenceControl_Static_TOC; }
 
-   void consolidateRegisters(TR::Register *reg, TR::Node *subTree, bool m, TR::CodeGenerator *cg);
+    bool isTOCAccess();
 
-   void assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
+    int32_t getTOCOffset();
 
-   void mapOpCode(TR::Instruction *currentInstruction);
+    bool isUsingDelayedIndexedForm()
+    {
+        if ((_flag & TR_PPCMemoryReferenceControl_Late_Xform) != 0) {
+            return true;
+        }
 
-   TR::Instruction *expandInstruction(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
-   TR::Instruction *expandForUnresolvedSnippet(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
+        return false;
+    }
 
-   };
-}
-}
+    void setUsingDelayedIndexedForm() { _flag |= TR_PPCMemoryReferenceControl_Late_Xform; }
+
+    void clearUingDelayedIndexedForm() { _flag &= ~TR_PPCMemoryReferenceControl_Late_Xform; }
+
+    TR::UnresolvedDataSnippet *getUnresolvedSnippet() { return _unresolvedSnippet; }
+
+    TR::UnresolvedDataSnippet *setUnresolvedSnippet(TR::UnresolvedDataSnippet *s) { return (_unresolvedSnippet = s); }
+
+    TR::PPCPairedRelocation *getStaticRelocation() { return _staticRelocation; }
+
+    TR::PPCPairedRelocation *setStaticRelocation(TR::PPCPairedRelocation *r) { return (_staticRelocation = r); }
+
+    bool refsRegister(TR::Register *reg)
+    {
+        if (reg == _baseRegister || reg == _indexRegister || reg == _modBase) {
+            return true;
+        }
+        return false;
+    }
+
+    void blockRegisters()
+    {
+        if (_baseRegister != NULL) {
+            _baseRegister->block();
+        }
+        if (_indexRegister != NULL) {
+            _indexRegister->block();
+        }
+        if (_modBase != NULL) {
+            _modBase->block();
+        }
+    }
+
+    void unblockRegisters()
+    {
+        if (_baseRegister != NULL) {
+            _baseRegister->unblock();
+        }
+        if (_indexRegister != NULL) {
+            _indexRegister->unblock();
+        }
+        if (_modBase != NULL) {
+            _modBase->unblock();
+        }
+    }
+
+    void setSymbol(TR::Symbol *symbol, TR::CodeGenerator *cg);
+
+    void checkRegisters(TR::CodeGenerator *cg);
+
+    void accessStaticItem(TR::Node *node, TR::SymbolReference *ref, bool isStore, TR::CodeGenerator *cg);
+
+    void addToOffset(TR::Node *node, int64_t amount, TR::CodeGenerator *cg);
+
+    void forceIndexedForm(TR::Node *node, TR::CodeGenerator *cg, TR::Instruction *cursor = 0);
+
+    void adjustForResolution(TR::CodeGenerator *cg);
+
+    void decNodeReferenceCounts(TR::CodeGenerator *cg);
+
+    void bookKeepingRegisterUses(TR::Instruction *instr, TR::CodeGenerator *cg);
+
+    void populateMemoryReference(TR::Node *subTree, TR::CodeGenerator *cg);
+
+    void consolidateRegisters(TR::Register *reg, TR::Node *subTree, bool m, TR::CodeGenerator *cg);
+
+    void assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
+
+    void mapOpCode(TR::Instruction *currentInstruction);
+
+    TR::Instruction *expandInstruction(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
+    TR::Instruction *expandForUnresolvedSnippet(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
+};
+}} // namespace OMR::Power
 #endif

@@ -22,18 +22,12 @@
 #ifndef OMR_OPTIMIZER_ANALYSIS_PHASES_ENUM_INCL
 #define OMR_OPTIMIZER_ANALYSIS_PHASES_ENUM_INCL
 
-#define OPTIMIZER_ANALYSIS_PHASES_MACRO(\
-   analysis_phase, \
-   name, \
-   id, \
-   ...) analysis_phase = id,
+#define OPTIMIZER_ANALYSIS_PHASES_MACRO(analysis_phase, name, id, ...) analysis_phase = id,
 
 enum AnalysisPhases {
-
 #include "optimizer/OptimizerAnalysisPhases.enum"
 
-   unknownAnalysisPhase = 0
-
+    unknownAnalysisPhase = 0
 };
 
 #undef OPTIMIZER_ANALYSIS_PHASES_MACRO

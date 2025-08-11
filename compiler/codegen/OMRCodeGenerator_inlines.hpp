@@ -24,19 +24,16 @@
 
 #include "codegen/CodeGenerator.hpp"
 
-inline TR::CodeGenerator* OMR::CodeGenerator::self()
-   {
-   return static_cast<TR::CodeGenerator*>(this);
-   }
+inline TR::CodeGenerator *OMR::CodeGenerator::self() { return static_cast<TR::CodeGenerator *>(this); }
 
 inline bool OMR::CodeGenerator::isIntrinsicMethodSupported(TR::RecognizedMethod m)
-   {
-   return TR::CodeGenerator::isILOpCodeSupported(TR::CodeGenerator::ilOpCodeForIntrinsicMethod(m));
-   }
+{
+    return TR::CodeGenerator::isILOpCodeSupported(TR::CodeGenerator::ilOpCodeForIntrinsicMethod(m));
+}
 
 inline bool OMR::CodeGenerator::suppressInliningOfRecognizedMethod(TR::RecognizedMethod method)
-   {
-   return TR::CodeGenerator::isIntrinsicMethodSupported(method);
-   }
+{
+    return TR::CodeGenerator::isIntrinsicMethodSupported(method);
+}
 
 #endif

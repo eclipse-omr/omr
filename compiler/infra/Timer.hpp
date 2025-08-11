@@ -33,27 +33,27 @@ namespace TR {
 class Compilation;
 }
 
-class TR_SingleTimer
-   {
-   public:
-   TR_ALLOC(TR_Memory::SingleTimer);
+class TR_SingleTimer {
+public:
+    TR_ALLOC(TR_Memory::SingleTimer);
 
-   void     startTiming(TR::Compilation *);
-   void     initialize(const char *title, TR_Memory *);
+    void startTiming(TR::Compilation *);
+    void initialize(const char *title, TR_Memory *);
 
-   uint32_t stopTiming(TR::Compilation *);
+    uint32_t stopTiming(TR::Compilation *);
 
-   char    *title()                       { return _phaseTitle; }
-   uint64_t timeTaken()                   { return _total; }
-   double   secondsTaken();
-   bool isTimerRunning() const            { return _timerRunning; }
+    char *title() { return _phaseTitle; }
 
-   private:
+    uint64_t timeTaken() { return _total; }
 
-   char    *_phaseTitle;
-   uint64_t _start,
-            _total;
-   bool     _timerRunning;
-   };
+    double secondsTaken();
+
+    bool isTimerRunning() const { return _timerRunning; }
+
+private:
+    char *_phaseTitle;
+    uint64_t _start, _total;
+    bool _timerRunning;
+};
 
 #endif

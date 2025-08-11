@@ -27,12 +27,12 @@
  */
 #ifndef OMR_COMPILER_ENV_CONNECTOR
 #define OMR_COMPILER_ENV_CONNECTOR
+
 namespace OMR {
 class CompilerEnv;
 typedef OMR::CompilerEnv CompilerEnvConnector;
-}
+} // namespace OMR
 #endif
-
 
 #include "infra/Annotations.hpp"
 #include "env/RawAllocator.hpp"
@@ -50,104 +50,97 @@ namespace TR {
 class CompilerEnv;
 }
 
+namespace OMR {
 
-namespace OMR
-{
-
-class OMR_EXTENSIBLE CompilerEnv
-   {
-
+class OMR_EXTENSIBLE CompilerEnv {
 public:
+    CompilerEnv(TR::RawAllocator raw, const TR::PersistentAllocatorKit &persistentAllocatorKit,
+        OMRPortLibrary * const omrPortLib = NULL);
 
-   CompilerEnv(TR::RawAllocator raw, const TR::PersistentAllocatorKit &persistentAllocatorKit, OMRPortLibrary* const omrPortLib=NULL);
+    TR::CompilerEnv *self();
 
-   TR::CompilerEnv *self();
+    /// Primordial raw allocator.  This is guaranteed to be thread safe.
+    ///
+    TR::RawAllocator rawAllocator;
 
-   /// Primordial raw allocator.  This is guaranteed to be thread safe.
-   ///
-   TR::RawAllocator rawAllocator;
+    // Compilation host environment
+    //
+    TR::Environment host;
 
-   // Compilation host environment
-   //
-   TR::Environment host;
+    // Compilation target environment
+    //
+    TR::Environment target;
 
-   // Compilation target environment
-   //
-   TR::Environment target;
+    // Compilation relocatable target environment
+    //
+    TR::Environment relocatableTarget;
 
-   // Compilation relocatable target environment
-   //
-   TR::Environment relocatableTarget;
+    // Class information in this compilation environment.
+    //
+    TR::ClassEnv cls;
 
-   // Class information in this compilation environment.
-   //
-   TR::ClassEnv cls;
+    // Information about the VM environment.
+    //
+    TR::VMEnv vm;
 
-   // Information about the VM environment.
-   //
-   TR::VMEnv vm;
+    // Information about methods in this compilation environment
+    //
+    TR::VMMethodEnv mtd;
 
-   // Information about methods in this compilation environment
-   //
-   TR::VMMethodEnv mtd;
+    // Object model in this compilation environment
+    //
+    TR::ObjectModel om;
 
-   // Object model in this compilation environment
-   //
-   TR::ObjectModel om;
+    // Arithmetic semantics in this compilation environment
+    //
+    TR::ArithEnv arith;
 
-   // Arithmetic semantics in this compilation environment
-   //
-   TR::ArithEnv arith;
+    // Debug environment for the compiler.  This is not thread safe.
+    //
+    TR::DebugEnv debug;
 
-   // Debug environment for the compiler.  This is not thread safe.
-   //
-   TR::DebugEnv debug;
+    bool isInitialized() { return _initialized; }
 
-   bool isInitialized() { return _initialized; }
+    // --------------------------------------------------------------------------
 
-   // --------------------------------------------------------------------------
+    // Initialize a CompilerEnv.  This should only be executed after a CompilerEnv
+    // object has been allocated and its constructor run.  Its intent is to
+    // execute initialization logic that may require a completely initialized
+    // object beforehand.
+    //
+    void initialize();
 
-   // Initialize a CompilerEnv.  This should only be executed after a CompilerEnv
-   // object has been allocated and its constructor run.  Its intent is to
-   // execute initialization logic that may require a completely initialized
-   // object beforehand.
-   //
-   void initialize();
+    TR::PersistentAllocator &persistentAllocator() { return _persistentAllocator; }
 
-   TR::PersistentAllocator &persistentAllocator() { return _persistentAllocator; }
+    TR_PersistentMemory *persistentMemory() { return ::trPersistentMemory; }
 
-   TR_PersistentMemory *persistentMemory() { return ::trPersistentMemory; }
-
-   OMRPortLibrary * const omrPortLib;
+    OMRPortLibrary * const omrPortLib;
 
 protected:
-   // Initialize 'target' environment for this compiler
-   //
-   void initializeTargetEnvironment();
+    // Initialize 'target' environment for this compiler
+    //
+    void initializeTargetEnvironment();
 
-   // Initialize 'relocatableTarget' environment for this compiler
-   //
-   void initializeRelocatableTargetEnvironment();
+    // Initialize 'relocatableTarget' environment for this compiler
+    //
+    void initializeRelocatableTargetEnvironment();
 
-   // Initialize 'host' environment for this compiler
-   //
-   void initializeHostEnvironment();
+    // Initialize 'host' environment for this compiler
+    //
+    void initializeHostEnvironment();
 
 private:
+    bool _initialized;
 
-   bool _initialized;
-
-   TR::PersistentAllocator _persistentAllocator;
+    TR::PersistentAllocator _persistentAllocator;
 
 public:
+    /// Compiler-lifetime region allocator.
+    /// NOTE: its a raw allocator until the region allocation work is completed.
+    ///
+    TR::PersistentAllocator &regionAllocator;
+};
 
-   /// Compiler-lifetime region allocator.
-   /// NOTE: its a raw allocator until the region allocation work is completed.
-   ///
-   TR::PersistentAllocator &regionAllocator;
-
-   };
-
-}
+} // namespace OMR
 
 #endif

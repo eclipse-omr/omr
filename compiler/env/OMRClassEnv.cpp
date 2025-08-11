@@ -27,57 +27,48 @@
 #include "infra/Assert.hpp"
 #include "compile/Compilation.hpp"
 
-TR::ClassEnv *
-OMR::ClassEnv::self()
-   {
-   return static_cast<TR::ClassEnv *>(this);
-   }
+TR::ClassEnv *OMR::ClassEnv::self() { return static_cast<TR::ClassEnv *>(this); }
 
-const char *
-OMR::ClassEnv::classNameChars(TR::Compilation *comp, TR::SymbolReference *symRef, int32_t &len)
-   {
-   const char *name = "<no class name>";
-   len = static_cast<int32_t>(strlen(name));
-   return name;
-   }
+const char *OMR::ClassEnv::classNameChars(TR::Compilation *comp, TR::SymbolReference *symRef, int32_t &len)
+{
+    const char *name = "<no class name>";
+    len = static_cast<int32_t>(strlen(name));
+    return name;
+}
 
-uintptr_t
-OMR::ClassEnv::getArrayElementWidthInBytes(TR::Compilation *comp, TR_OpaqueClassBlock *arrayClass)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uintptr_t OMR::ClassEnv::getArrayElementWidthInBytes(TR::Compilation *comp, TR_OpaqueClassBlock *arrayClass)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-intptr_t
-OMR::ClassEnv::getVFTEntry(TR::Compilation *comp, TR_OpaqueClassBlock *clazz, int32_t offset)
-   {
-   // There is no project-agnostic way to determine whether or not offset is a
-   // valid VFT offset for clazz, so return 0 to be safe. If offset were valid,
-   // the result would be:
-   //
-   //    *(intptr_t*) (((uint8_t *)clazz) + offset)
-   //
-   return 0;
-   }
+intptr_t OMR::ClassEnv::getVFTEntry(TR::Compilation *comp, TR_OpaqueClassBlock *clazz, int32_t offset)
+{
+    // There is no project-agnostic way to determine whether or not offset is a
+    // valid VFT offset for clazz, so return 0 to be safe. If offset were valid,
+    // the result would be:
+    //
+    //    *(intptr_t*) (((uint8_t *)clazz) + offset)
+    //
+    return 0;
+}
 
-bool
-OMR::ClassEnv::classUnloadAssumptionNeedsRelocation(TR::Compilation *comp)
-   {
-   return comp->compileRelocatableCode();
-   }
+bool OMR::ClassEnv::classUnloadAssumptionNeedsRelocation(TR::Compilation *comp)
+{
+    return comp->compileRelocatableCode();
+}
 
-bool
-OMR::ClassEnv::containsZeroOrOneConcreteClass(TR::Compilation *comp, List<TR_PersistentClassInfo>* subClasses)
-   {
-   TR_UNIMPLEMENTED();
-   return false;
-   }
+bool OMR::ClassEnv::containsZeroOrOneConcreteClass(TR::Compilation *comp, List<TR_PersistentClassInfo> *subClasses)
+{
+    TR_UNIMPLEMENTED();
+    return false;
+}
 
-char *
-OMR::ClassEnv::classNameToSignature(const char *name, int32_t &len, TR::Compilation *comp, TR_AllocationKind allocKind, TR_OpaqueClassBlock *clazz)
-   {
-   char *sig = (char *)comp->trMemory()->allocateMemory(len+1, allocKind);
-   memcpy(sig,name,len);
-   sig[len] = '\0';
-   return sig;
-   }
+char *OMR::ClassEnv::classNameToSignature(const char *name, int32_t &len, TR::Compilation *comp,
+    TR_AllocationKind allocKind, TR_OpaqueClassBlock *clazz)
+{
+    char *sig = (char *)comp->trMemory()->allocateMemory(len + 1, allocKind);
+    memcpy(sig, name, len);
+    sig[len] = '\0';
+    return sig;
+}

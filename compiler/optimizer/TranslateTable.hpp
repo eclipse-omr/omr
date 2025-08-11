@@ -29,78 +29,87 @@
 namespace TR {
 class SymbolReference;
 class Compilation;
-}
+} // namespace TR
 
-class TR_TranslateTable
-   {
-   public:
-      TR_ALLOC(TR_Memory::LoopTransformer)
-      TR_TranslateTable(TR::Compilation* comp) : _comp(comp), _table(NULL), _symRef(NULL) {}
+class TR_TranslateTable {
+public:
+    TR_ALLOC(TR_Memory::LoopTransformer)
 
-      TR::Compilation * comp() { return _comp; }
+    TR_TranslateTable(TR::Compilation *comp)
+        : _comp(comp)
+        , _table(NULL)
+        , _symRef(NULL)
+    {}
 
-      uint8_t* data();
-      TR::SymbolReference * createSymbolRef();
-      void dumpTable();
-      static int tableSize(uint8_t inputSize, uint8_t outputSize);
+    TR::Compilation *comp() { return _comp; }
 
-   protected:
+    uint8_t *data();
+    TR::SymbolReference *createSymbolRef();
+    void dumpTable();
+    static int tableSize(uint8_t inputSize, uint8_t outputSize);
 
-      struct TR_TranslateTableData
-         {
-         TR_ALLOC(TR_Memory::LoopTransformer)
+protected:
+    struct TR_TranslateTableData {
+        TR_ALLOC(TR_Memory::LoopTransformer)
 
-         TR_TranslateTableData() {}
-         
-         TR_TranslateTableData* next;  // next table in linked list
-         uint8_t* data;                // pointer to data table
-         uint32_t defaultValue;        // default value
-         uint32_t startA;              // only applicable if a range
-         uint32_t endA;                // only applicable if a range
-         uint32_t startB;              // only applicable if a range
-         uint32_t endB;                // only applicable if a range
-         uint8_t inSize;               // number of bits for input size (8 or 16)
-         uint8_t outSize;              // number of bits for output size (8 or 16)
-         };
-      TR_TranslateTable::TR_TranslateTableData* table();
-      void setTable(TR_TranslateTableData* match);
+        TR_TranslateTableData() {}
 
+        TR_TranslateTableData *next; // next table in linked list
+        uint8_t *data; // pointer to data table
+        uint32_t defaultValue; // default value
+        uint32_t startA; // only applicable if a range
+        uint32_t endA; // only applicable if a range
+        uint32_t startB; // only applicable if a range
+        uint32_t endB; // only applicable if a range
+        uint8_t inSize; // number of bits for input size (8 or 16)
+        uint8_t outSize; // number of bits for output size (8 or 16)
+    };
 
-      TR_TranslateTableData* createTable(uint32_t startA, uint32_t endA, uint32_t startB, uint32_t endB, uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
-      TR_TranslateTableData* createTable(uint32_t startA, uint32_t endA, uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
-      TR_TranslateTableData* createTable(uint16_t startA, uint16_t endA, uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
-      TR_TranslateTableData* createTable(uint16_t startA, uint16_t endA, uint16_t startB, uint16_t endB, uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
+    TR_TranslateTable::TR_TranslateTableData *table();
+    void setTable(TR_TranslateTableData *match);
 
-      TR_TranslateTableData * matchTable(uint8_t inputSize, uint8_t outputSize, void *array);
+    TR_TranslateTableData *createTable(uint32_t startA, uint32_t endA, uint32_t startB, uint32_t endB,
+        uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
+    TR_TranslateTableData *createTable(uint32_t startA, uint32_t endA, uint8_t inputSize, uint8_t outputSize,
+        uint16_t defaultValue);
+    TR_TranslateTableData *createTable(uint16_t startA, uint16_t endA, uint8_t inputSize, uint8_t outputSize,
+        uint16_t defaultValue);
+    TR_TranslateTableData *createTable(uint16_t startA, uint16_t endA, uint16_t startB, uint16_t endB,
+        uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
 
-   private:
-      // msf - methods that update head will need a lock when we move to an async compilation model
-      static TR_TranslateTableData* _head;
-      TR_TranslateTableData* _table;
-      TR::SymbolReference * _symRef;
-      TR::Compilation * _comp;
+    TR_TranslateTableData *matchTable(uint8_t inputSize, uint8_t outputSize, void *array);
 
-      void updateTable();
+private:
+    // msf - methods that update head will need a lock when we move to an async compilation model
+    static TR_TranslateTableData *_head;
+    TR_TranslateTableData *_table;
+    TR::SymbolReference *_symRef;
+    TR::Compilation *_comp;
 
-      // can do something smarter if number of tables gets big - expected to be quite small (1 or 2 tables in practice)
-      TR_TranslateTableData * matchTable(uint32_t startA, uint32_t endA, uint32_t startB, uint32_t endB, uint8_t inputSize, uint8_t outputSize, uint16_t defaultValue);
-   };
+    void updateTable();
 
-class TR_RangeTranslateTable : public TR_TranslateTable     // range of rare values stop translation
-   {
-   public:
-      TR_RangeTranslateTable(TR::Compilation*, uint8_t, uint8_t, uint32_t, uint32_t, uint16_t);
-      TR_RangeTranslateTable(TR::Compilation*, uint8_t, uint8_t, uint32_t, uint32_t, uint32_t, uint32_t, uint16_t);
-      TR_RangeTranslateTable(TR::Compilation*, uint8_t, uint8_t, uint16_t, uint16_t, uint16_t);
-      TR_RangeTranslateTable(TR::Compilation*, uint8_t, uint8_t, uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
-   };
+    // can do something smarter if number of tables gets big - expected to be quite small (1 or 2 tables in practice)
+    TR_TranslateTableData *matchTable(uint32_t startA, uint32_t endA, uint32_t startB, uint32_t endB, uint8_t inputSize,
+        uint8_t outputSize, uint16_t defaultValue);
+};
 
-class TR_SetTranslateTable : public TR_TranslateTable       // set of rare values stop translation
-   {
-   public:
-      TR_SetTranslateTable(TR::Compilation* , uint8_t, uint8_t, uint8_t set[]);  // input and output size in bits
-      TR_SetTranslateTable(TR::Compilation* , uint8_t, uint8_t, uint16_t set[]); // input and output size in bits
-      TR_SetTranslateTable(TR::Compilation* , uint8_t, uint8_t, void *set, int copySize);  // input and output size in bits
-   };
+class TR_RangeTranslateTable
+    : public TR_TranslateTable // range of rare values stop translation
+{
+public:
+    TR_RangeTranslateTable(TR::Compilation *, uint8_t, uint8_t, uint32_t, uint32_t, uint16_t);
+    TR_RangeTranslateTable(TR::Compilation *, uint8_t, uint8_t, uint32_t, uint32_t, uint32_t, uint32_t, uint16_t);
+    TR_RangeTranslateTable(TR::Compilation *, uint8_t, uint8_t, uint16_t, uint16_t, uint16_t);
+    TR_RangeTranslateTable(TR::Compilation *, uint8_t, uint8_t, uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
+};
+
+class TR_SetTranslateTable
+    : public TR_TranslateTable // set of rare values stop translation
+{
+public:
+    TR_SetTranslateTable(TR::Compilation *, uint8_t, uint8_t, uint8_t set[]); // input and output size in bits
+    TR_SetTranslateTable(TR::Compilation *, uint8_t, uint8_t, uint16_t set[]); // input and output size in bits
+    TR_SetTranslateTable(TR::Compilation *, uint8_t, uint8_t, void *set, int copySize); // input and output size in bits
+};
 
 #endif

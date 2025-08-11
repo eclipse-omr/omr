@@ -24,8 +24,8 @@
 // a different name to the codesection (csect) for this file so that it
 // doesn't conflict with another file with the same name.
 //
-#pragma csect(CODE,"OMRZInstDel#C")
-#pragma csect(STATIC,"OMRZInstDel#S")
-#pragma csect(TEST,"OMRZInstDel#T")
+#pragma csect(CODE, "OMRZInstDel#C")
+#pragma csect(STATIC, "OMRZInstDel#S")
+#pragma csect(TEST, "OMRZInstDel#T")
 
 #include "codegen/InstructionDelegate.hpp"

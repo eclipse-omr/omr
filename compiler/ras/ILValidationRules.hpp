@@ -35,7 +35,7 @@
  *       2. ILValidationStrategies.hpp must also be updated
  *          for a newly added `Rule` to become part of a particular
  *          Validation Strategy.
- *     
+ *
  *       3. Finally, the ILValidator is responsible for validating
  *          the IL based on a certain ILValidationStrategy.
  *          So please instantiate the said `*ValidationRule` object
@@ -53,13 +53,12 @@
 #include "infra/SideTable.hpp"
 #include "ras/ILValidationUtils.hpp"
 
-
 namespace TR {
 class Compilation;
 class NodeChecklist;
 class ResolvedMethodSymbol;
 class TreeTop;
-}
+} // namespace TR
 
 namespace TR {
 
@@ -69,169 +68,151 @@ namespace TR {
  * Verify that the IL of a method (ResolvedMethodSymbol) has certain properties.
  *
  */
-class MethodValidationRule
-   {
-   TR::Compilation*      _comp;
-   OMR::ILValidationRule _id;
-   public:
-   MethodValidationRule(TR::Compilation *comp, OMR::ILValidationRule id)
-   : _comp(comp)
-   , _id(id)
-   {
-   }
-   /**
-    * @return returns on success.
-    */
-   virtual void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
+class MethodValidationRule {
+    TR::Compilation *_comp;
+    OMR::ILValidationRule _id;
 
-   TR::Compilation*      comp() { return _comp; }
-   OMR::ILValidationRule id()   { return _id; }
-   };
+public:
+    MethodValidationRule(TR::Compilation *comp, OMR::ILValidationRule id)
+        : _comp(comp)
+        , _id(id)
+    {}
 
+    /**
+     * @return returns on success.
+     */
+    virtual void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
 
-class SoundnessRule : public MethodValidationRule
-   {
-   public:
-   SoundnessRule(TR::Compilation *comp);
-   void validate(TR::ResolvedMethodSymbol *methodSymbol);
+    TR::Compilation *comp() { return _comp; }
 
-   private:
-   void checkNodeSoundness(TR::TreeTop *location, TR::Node *node,
-                           TR::NodeChecklist &ancestorNodes,
-                           TR::NodeChecklist &visitedNodes);
+    OMR::ILValidationRule id() { return _id; }
+};
 
-   void checkSoundnessCondition(TR::TreeTop *location, bool condition,
-                                const char *formatStr, ...);
-   };
+class SoundnessRule : public MethodValidationRule {
+public:
+    SoundnessRule(TR::Compilation *comp);
+    void validate(TR::ResolvedMethodSymbol *methodSymbol);
 
-class ValidateLivenessBoundaries : public MethodValidationRule
-   {
-   public:
-   ValidateLivenessBoundaries(TR::Compilation *comp);
-   void validate(TR::ResolvedMethodSymbol *methodSymbol);
+private:
+    void checkNodeSoundness(TR::TreeTop *location, TR::Node *node, TR::NodeChecklist &ancestorNodes,
+        TR::NodeChecklist &visitedNodes);
 
-   private:
-   void validateEndOfExtendedBlockBoundary(TR::Node *node,
-                                           LiveNodeWindow &liveNodes);
+    void checkSoundnessCondition(TR::TreeTop *location, bool condition, const char *formatStr, ...);
+};
 
-   void updateNodeState(TR::Node *node,
-                        TR::NodeSideTable<TR::NodeState>  &nodeStates,
-                        TR::LiveNodeWindow &liveNodes);
-   };
+class ValidateLivenessBoundaries : public MethodValidationRule {
+public:
+    ValidateLivenessBoundaries(TR::Compilation *comp);
+    void validate(TR::ResolvedMethodSymbol *methodSymbol);
+
+private:
+    void validateEndOfExtendedBlockBoundary(TR::Node *node, LiveNodeWindow &liveNodes);
+
+    void updateNodeState(TR::Node *node, TR::NodeSideTable<TR::NodeState> &nodeStates, TR::LiveNodeWindow &liveNodes);
+};
 
 /* NOTE: Please add any new MethodValidationRules here */
 
-
-
 /**
- * BlockValidationRule: 
- * 
+ * BlockValidationRule:
+ *
  * Verify that the IL for a particular extended block has certain properties.
  */
 
-class BlockValidationRule
-   {
-   TR::Compilation*      _comp;
-   OMR::ILValidationRule _id;
-   public:
-   BlockValidationRule(TR::Compilation *comp, OMR::ILValidationRule id)
-   : _comp(comp)
-   , _id(id)
-   {
-   }
-   /**
-    * @return returns on success.
-    */
-   virtual void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop) = 0;
+class BlockValidationRule {
+    TR::Compilation *_comp;
+    OMR::ILValidationRule _id;
 
-   TR::Compilation*      comp() { return _comp; }
-   OMR::ILValidationRule id()   { return _id; }
-   };
+public:
+    BlockValidationRule(TR::Compilation *comp, OMR::ILValidationRule id)
+        : _comp(comp)
+        , _id(id)
+    {}
 
+    /**
+     * @return returns on success.
+     */
+    virtual void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop) = 0;
 
-class ValidateNodeRefCountWithinBlock : public BlockValidationRule
-   {
-   TR_BitVector  _nodeChecklist;
+    TR::Compilation *comp() { return _comp; }
 
-   public:
-   ValidateNodeRefCountWithinBlock(TR::Compilation *comp);
-   void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop);
+    OMR::ILValidationRule id() { return _id; }
+};
 
-   private:
-   void validateRefCountPass1(TR::Node *node);
-   void validateRefCountPass2(TR::Node *node);
-   };
+class ValidateNodeRefCountWithinBlock : public BlockValidationRule {
+    TR_BitVector _nodeChecklist;
+
+public:
+    ValidateNodeRefCountWithinBlock(TR::Compilation *comp);
+    void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop);
+
+private:
+    void validateRefCountPass1(TR::Node *node);
+    void validateRefCountPass2(TR::Node *node);
+};
 
 /* NOTE: Please add any new BlockValidationRules here */
 
-
-
 /**
- * NodeValidationRule: 
- * 
+ * NodeValidationRule:
+ *
  * Verify that the IL for a particular TR::Node has certain properties.
  */
-class NodeValidationRule
-   {
-   TR::Compilation*      _comp;
-   OMR::ILValidationRule _id;
-   public:
-   NodeValidationRule(TR::Compilation *comp, OMR::ILValidationRule id)
-   : _comp(comp)
-   , _id(id)
-   {
-   }
-   /**
-    * @return returns on success.
-    */
-   virtual void validate(TR::Node *node) = 0;
+class NodeValidationRule {
+    TR::Compilation *_comp;
+    OMR::ILValidationRule _id;
 
-   TR::Compilation*      comp() { return _comp; }
-   OMR::ILValidationRule id()   { return _id; }
-   };
+public:
+    NodeValidationRule(TR::Compilation *comp, OMR::ILValidationRule id)
+        : _comp(comp)
+        , _id(id)
+    {}
 
+    /**
+     * @return returns on success.
+     */
+    virtual void validate(TR::Node *node) = 0;
 
+    TR::Compilation *comp() { return _comp; }
 
-class ValidateChildCount : public NodeValidationRule
-   {
-   public:
-   ValidateChildCount(TR::Compilation *comp);
+    OMR::ILValidationRule id() { return _id; }
+};
 
-   void validate(TR::Node *node);
-   };
+class ValidateChildCount : public NodeValidationRule {
+public:
+    ValidateChildCount(TR::Compilation *comp);
 
+    void validate(TR::Node *node);
+};
 
-class ValidateChildTypes : public NodeValidationRule
-   {
-   public:
-   ValidateChildTypes(TR::Compilation *comp);
+class ValidateChildTypes : public NodeValidationRule {
+public:
+    ValidateChildTypes(TR::Compilation *comp);
 
-   void validate(TR::Node *node);
-   };
+    void validate(TR::Node *node);
+};
 
 /**
  * NOTE: As things stand, the expected child type for `ireturn` is
  *       one of Int{8,16,32}.
  *       See Issue #1901 for more details.
  */
-class Validate_ireturnReturnType : public NodeValidationRule
-   {
-   public:
-   Validate_ireturnReturnType(TR::Compilation *comp);
+class Validate_ireturnReturnType : public NodeValidationRule {
+public:
+    Validate_ireturnReturnType(TR::Compilation *comp);
 
-   void validate(TR::Node *node);
-   };
+    void validate(TR::Node *node);
+};
 
-class Validate_axaddEnvironment : public NodeValidationRule
-   {
-   public:
-   Validate_axaddEnvironment(TR::Compilation *comp);
+class Validate_axaddEnvironment : public NodeValidationRule {
+public:
+    Validate_axaddEnvironment(TR::Compilation *comp);
 
-   void validate(TR::Node *node);
-   };
+    void validate(TR::Node *node);
+};
+
 /* NOTE: Please add any new NodeValidationRules here */
 
-} //namespace TR
-
+} // namespace TR
 
 #endif

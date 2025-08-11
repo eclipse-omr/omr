@@ -27,10 +27,11 @@
  */
 #ifndef OMR_ILGENERATORMETHODDETAILS_CONNECTOR
 #define OMR_ILGENERATORMETHODDETAILS_CONNECTOR
+
 namespace OMR {
 class IlGeneratorMethodDetails;
 typedef OMR::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector;
-}
+} // namespace OMR
 #endif
 
 #include <stddef.h>
@@ -39,50 +40,57 @@ typedef OMR::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector;
 
 class TR_FrontEnd;
 class TR_ResolvedMethod;
+
 namespace TR {
 class IlGeneratorMethodDetails;
 class IlVerifier;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
 /**
  * Accessing ANY language-specific API/data in common code is prohibited.
  *
  * IlGeneratorMethodDetails defines the IlGenRequest API.
  */
-class OMR_EXTENSIBLE IlGeneratorMethodDetails
-   {
-
+class OMR_EXTENSIBLE IlGeneratorMethodDetails {
 public:
+    inline TR::IlGeneratorMethodDetails *self();
+    inline const TR::IlGeneratorMethodDetails *self() const;
 
-   inline TR::IlGeneratorMethodDetails *self();
-   inline const TR::IlGeneratorMethodDetails *self() const;
+    virtual bool isMethodInProgress() const { return false; }
 
-   virtual bool isMethodInProgress() const { return false; }
-   bool supportsInvalidation() { return false; }
-   bool sameAs(TR::IlGeneratorMethodDetails & other) { return false; }
-   void print(TR_FrontEnd *fe, TR::FILE *file) { }
+    bool supportsInvalidation() { return false; }
 
-   inline static TR::IlGeneratorMethodDetails & create(TR::IlGeneratorMethodDetails & target, TR_ResolvedMethod *method);
+    bool sameAs(TR::IlGeneratorMethodDetails &other) { return false; }
 
-   TR::IlVerifier * getIlVerifier()                     { return _ilVerifier; }
-   void setIlVerifier(TR::IlVerifier * ilVerifier)      { _ilVerifier = ilVerifier; }
+    void print(TR_FrontEnd *fe, TR::FILE *file) {}
+
+    inline static TR::IlGeneratorMethodDetails &create(TR::IlGeneratorMethodDetails &target, TR_ResolvedMethod *method);
+
+    TR::IlVerifier *getIlVerifier() { return _ilVerifier; }
+
+    void setIlVerifier(TR::IlVerifier *ilVerifier) { _ilVerifier = ilVerifier; }
 
 protected:
-   IlGeneratorMethodDetails() : _ilVerifier(NULL) { }
-   virtual ~IlGeneratorMethodDetails() {}
+    IlGeneratorMethodDetails()
+        : _ilVerifier(NULL)
+    {}
 
-   void *operator new(size_t size, TR::IlGeneratorMethodDetails *p){ return (void*) p; }
-   void *operator new(size_t size, TR::IlGeneratorMethodDetails &p){ return (void*)&p; }
-   void operator delete(void *pMem, TR::IlGeneratorMethodDetails *p) {};
-   void operator delete(void *pMem, TR::IlGeneratorMethodDetails &p) {};
-   void operator delete(void *pMem, size_t size) { ::operator delete(pMem); };
+    virtual ~IlGeneratorMethodDetails() {}
 
-   TR::IlVerifier     * _ilVerifier;
-   };
+    void *operator new(size_t size, TR::IlGeneratorMethodDetails *p) { return (void *)p; }
 
-}
+    void *operator new(size_t size, TR::IlGeneratorMethodDetails &p) { return (void *)&p; }
+
+    void operator delete(void *pMem, TR::IlGeneratorMethodDetails *p) {};
+    void operator delete(void *pMem, TR::IlGeneratorMethodDetails &p) {};
+
+    void operator delete(void *pMem, size_t size) { ::operator delete(pMem); };
+
+    TR::IlVerifier *_ilVerifier;
+};
+
+} // namespace OMR
 
 #endif

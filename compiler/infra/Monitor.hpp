@@ -24,17 +24,15 @@
 
 #include "infra/OMRMonitor.hpp"
 
-namespace TR
-{
+namespace TR {
 
-   class Monitor : public OMR::MonitorConnector
-   {
-   public:
+class Monitor : public OMR::MonitorConnector {
+public:
+    Monitor()
+        : OMR::MonitorConnector()
+    {}
+};
 
-   Monitor() :
-      OMR::MonitorConnector() {}
-   };
-
-}
+} // namespace TR
 
 #endif

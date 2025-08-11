@@ -27,12 +27,12 @@
  */
 #ifndef OMR_KNOWN_OBJECT_TABLE_CONNECTOR
 #define OMR_KNOWN_OBJECT_TABLE_CONNECTOR
+
 namespace OMR {
 class KnownObjectTable;
 typedef OMR::KnownObjectTable KnownObjectTableConnector;
-}
+} // namespace OMR
 #endif
-
 
 #include <stdint.h>
 #include "env/FilePointerDecl.hpp"
@@ -41,70 +41,68 @@ typedef OMR::KnownObjectTable KnownObjectTableConnector;
 #include "infra/BitVector.hpp"
 
 class TR_FrontEnd;
+
 namespace TR {
 class Compilation;
 class KnownObjectTable;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
- /**
-  * Table of known objects.
-  *
-  * These are cases where language properties allows the compiler to know
-  * statically not just the type of the object, but the identity of the object.
-  */
-class OMR_EXTENSIBLE KnownObjectTable
-   {
-   TR_FrontEnd *_fe;
+/**
+ * Table of known objects.
+ *
+ * These are cases where language properties allows the compiler to know
+ * statically not just the type of the object, but the identity of the object.
+ */
+class OMR_EXTENSIBLE KnownObjectTable {
+    TR_FrontEnd *_fe;
 
 protected:
-
-   KnownObjectTable(TR::Compilation *comp);
-   TR::Compilation *_comp;
-   TR_BitVector* _arrayWithConstantElements;
+    KnownObjectTable(TR::Compilation *comp);
+    TR::Compilation *_comp;
+    TR_BitVector *_arrayWithConstantElements;
 
 public:
+    TR::KnownObjectTable *self();
 
-   TR::KnownObjectTable * self();
+    typedef int32_t Index;
+    static const Index UNKNOWN = -1;
 
-   typedef int32_t Index;
-   static const Index UNKNOWN = -1;
+    TR_FrontEnd *fe() const { return _fe; }
 
-   TR_FrontEnd *fe() const { return _fe; }
-   void setFe(TR_FrontEnd *fe) { _fe = fe; }
+    void setFe(TR_FrontEnd *fe) { _fe = fe; }
 
-   TR::Compilation *comp() const { return _comp; }
-   void setComp(TR::Compilation *comp) { _comp = comp; }
+    TR::Compilation *comp() const { return _comp; }
 
-   Index getEndIndex();                      // Highest index assigned so far + 1
-   Index getOrCreateIndex(uintptr_t objectPointer); // Must hold vm access for this
-   Index getOrCreateIndex(uintptr_t objectPointer, bool isArrayWithConstantElements); // Must hold vm access for this
-   uintptr_t *getPointerLocation(Index index);
-   bool isNull(Index index);
+    void setComp(TR::Compilation *comp) { _comp = comp; }
 
-   void dumpTo(TR::FILE *file, TR::Compilation *comp);
+    Index getEndIndex(); // Highest index assigned so far + 1
+    Index getOrCreateIndex(uintptr_t objectPointer); // Must hold vm access for this
+    Index getOrCreateIndex(uintptr_t objectPointer, bool isArrayWithConstantElements); // Must hold vm access for this
+    uintptr_t *getPointerLocation(Index index);
+    bool isNull(Index index);
 
-   // Handy wrappers
+    void dumpTo(TR::FILE *file, TR::Compilation *comp);
 
-   // API for checking if an known object is an array with immutable elements
-   bool isArrayWithConstantElements(Index index);
+    // Handy wrappers
 
-   // API for checking if an known object is an array whose elements are immutable
-   // unless they are zero
-   bool isArrayWithStableElements(Index index);
+    // API for checking if an known object is an array with immutable elements
+    bool isArrayWithConstantElements(Index index);
 
-   Index getOrCreateIndexAt(uintptr_t *objectReferenceLocation);
-   Index getOrCreateIndexAt(uintptr_t *objectReferenceLocation, bool isArrayWithConstantElements);
-   Index getExistingIndexAt(uintptr_t *objectReferenceLocation);
+    // API for checking if an known object is an array whose elements are immutable
+    // unless they are zero
+    bool isArrayWithStableElements(Index index);
 
-   uintptr_t getPointer(Index index);
+    Index getOrCreateIndexAt(uintptr_t *objectReferenceLocation);
+    Index getOrCreateIndexAt(uintptr_t *objectReferenceLocation, bool isArrayWithConstantElements);
+    Index getExistingIndexAt(uintptr_t *objectReferenceLocation);
+
+    uintptr_t getPointer(Index index);
 
 protected:
-   void addArrayWithConstantElements(Index index);
-
-   };
-}
+    void addArrayWithConstantElements(Index index);
+};
+} // namespace OMR
 
 #endif

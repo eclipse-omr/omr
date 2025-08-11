@@ -76,39 +76,38 @@
 
 #include "env/TypedAllocator.hpp"
 
-enum TR_AllocationKind { heapAlloc = 1, stackAlloc = 2, persistentAlloc = 4};
+enum TR_AllocationKind {
+    heapAlloc = 1,
+    stackAlloc = 2,
+    persistentAlloc = 4
+};
 class TR_PersistentMemory;
 class TR_Memory;
 
-namespace TR
-   {
+namespace TR { namespace Internal {
+/**
+ * This class exists to allow a different operator new to be called for
+ * placement new calls of the form
+ *
+ * \verbatim
+ * new (PERSISTENT_NEW) Object();
+ * \endverbatim
+ *
+ */
+class PersistentNewType {};
 
-   namespace Internal
-      {
-      /**
-       * This class exists to allow a different operator new to be called for
-       * placement new calls of the form
-       *
-       * \verbatim
-       * new (PERSISTENT_NEW) Object();
-       * \endverbatim
-       *
-       */
-      class PersistentNewType { };
+/**
+ * This object is a dummy to allow existing new (PERSISTENT_NEW) code to
+ * work.
+ */
+extern PersistentNewType persistent_new_object;
 
-      /**
-       * This object is a dummy to allow existing new (PERSISTENT_NEW) code to
-       * work.
-       */
-      extern PersistentNewType persistent_new_object;
-
-      }
-   }
+}} // namespace TR::Internal
 
 /**
  * The macro to access the dummy global object.
  */
-#define PERSISTENT_NEW         TR::Internal::persistent_new_object
+#define PERSISTENT_NEW TR::Internal::persistent_new_object
 
 /**
  * Allows a user to define their own operator new such that you can do
@@ -123,571 +122,556 @@ namespace TR
 // Round the requested size
 //
 inline size_t mem_round(size_t size)
-   {
+{
 #if defined(TR_HOST_64BIT) || defined(FIXUP_UNALIGNED)
-   return (size+7) & (~7);
+    return (size + 7) & (~7);
 #else
-   return (size+3) & (~3);
+    return (size + 3) & (~3);
 #endif
-   }
+}
 
 namespace TR {
 
-   template <size_t alignment, typename T>
-   T round_t(T currentValue, size_t remainder, bool roundDown)
-      {
-      if (roundDown) { return currentValue - remainder; }
-      else { return currentValue + (alignment - remainder); }
-      }
-
-   template <size_t alignment>
-   size_t alignmentRemainder(uintptr_t allocationSize)
-      {
-      static_assert(alignment && !(alignment & (alignment - 1) ), "Must align to a power of 2" );
-      return allocationSize & (alignment - 1);
-      }
-
-   template <size_t alignment>
-   size_t alignmentRemainder(void* allocation)
-      {
-      return alignmentRemainder<alignment>( reinterpret_cast<uintptr_t>( allocation ) );
-      }
-
-   template <size_t alignment>
-   size_t alignAllocationSize(size_t allocationSize, bool alignDown = false)
-      {
-      return round_t<alignment, decltype(allocationSize) >(allocationSize, alignmentRemainder<alignment>(allocationSize), alignDown );
-      }
-
-   template <size_t alignment>
-   void * alignAllocation(void * p, bool alignDown = false)
-      {
-      uint8_t * cursor = static_cast<uint8_t *>(p);
-      return static_cast<void *>( round_t<alignment, decltype(cursor) >( cursor, alignmentRemainder<alignment>(cursor), alignDown ) );
-      }
-
+template<size_t alignment, typename T> T round_t(T currentValue, size_t remainder, bool roundDown)
+{
+    if (roundDown) {
+        return currentValue - remainder;
+    } else {
+        return currentValue + (alignment - remainder);
+    }
 }
 
-class TR_MemoryBase
-   {
+template<size_t alignment> size_t alignmentRemainder(uintptr_t allocationSize)
+{
+    static_assert(alignment && !(alignment & (alignment - 1)), "Must align to a power of 2");
+    return allocationSize & (alignment - 1);
+}
+
+template<size_t alignment> size_t alignmentRemainder(void *allocation)
+{
+    return alignmentRemainder<alignment>(reinterpret_cast<uintptr_t>(allocation));
+}
+
+template<size_t alignment> size_t alignAllocationSize(size_t allocationSize, bool alignDown = false)
+{
+    return round_t<alignment, decltype(allocationSize)>(allocationSize, alignmentRemainder<alignment>(allocationSize),
+        alignDown);
+}
+
+template<size_t alignment> void *alignAllocation(void *p, bool alignDown = false)
+{
+    uint8_t *cursor = static_cast<uint8_t *>(p);
+    return static_cast<void *>(
+        round_t<alignment, decltype(cursor)>(cursor, alignmentRemainder<alignment>(cursor), alignDown));
+}
+
+} // namespace TR
+
+class TR_MemoryBase {
 protected:
+    TR_MemoryBase() {}
 
-   TR_MemoryBase()
-      {}
-
-   TR_MemoryBase(void * jitConfig)
-      {}
+    TR_MemoryBase(void *jitConfig) {}
 
 public:
-   /**
-    * If adding new object types below, add the corresponding names
-    * to objectName[] array defined in TRMemory.cpp
-    */
-   enum ObjectType
-      {
-      // big storage hogs first
-      Array,
-      Instruction,
-      LLListElement,
-      Node,
-      BitVector,
-      Register,
-      MemoryReference,
-      CFGNode,
-      Symbol,
-      SymbolReference,
-      SymRefUnion,
-      BackingStore,
-      StorageReference,
-      PseudoRegister,
-      LLLink,
-      Machine,
-      CFGEdge,
-      TreeTop,
-      GCStackMap,
-      IlGenerator,
-      RegisterDependencyConditions,
-      Snippet,
-      Relocation,
-      VirtualGuard,
-      RegisterDependencyGroup,
-      RegisterDependency,
-      FrontEnd,
-      VMField,
-      VMFieldsInfo,
-      Method,
-      Pair,
-      HashTab,
-      HashTable,
-      HashTableEntry,
-      DebugCounter,
-      JSR292,
-      Memory,
-      CS2,
-      UnknownType,
+    /**
+     * If adding new object types below, add the corresponding names
+     * to objectName[] array defined in TRMemory.cpp
+     */
+    enum ObjectType {
+        // big storage hogs first
+        Array,
+        Instruction,
+        LLListElement,
+        Node,
+        BitVector,
+        Register,
+        MemoryReference,
+        CFGNode,
+        Symbol,
+        SymbolReference,
+        SymRefUnion,
+        BackingStore,
+        StorageReference,
+        PseudoRegister,
+        LLLink,
+        Machine,
+        CFGEdge,
+        TreeTop,
+        GCStackMap,
+        IlGenerator,
+        RegisterDependencyConditions,
+        Snippet,
+        Relocation,
+        VirtualGuard,
+        RegisterDependencyGroup,
+        RegisterDependency,
+        FrontEnd,
+        VMField,
+        VMFieldsInfo,
+        Method,
+        Pair,
+        HashTab,
+        HashTable,
+        HashTableEntry,
+        DebugCounter,
+        JSR292,
+        Memory,
+        CS2,
+        UnknownType,
 
-      // Optimizer Types
-      AVLTree,
-      CFGChecker,
-      CFGSimplifier,
-      CatchBlockRemover,
-      CompactLocals,
-      CopyPropagation,
-      DataFlowAnalysis,
-      DominatorVerifier,
-      Dominators,
-      DominatorsChk,
-      EscapeAnalysis,
-      EstimateCodeSize,
-      ExpressionsSimplification,
-      GlobalRegisterAllocator,
-      GlobalRegisterCandidates,
-      HedgeTree,
-      Inliner,
-      InnerPreexistence,
-      IsolatedStoreElimination,
-      LocalLiveVariablesForGC,
-      LocalAnalysis,
-      LocalCSE,
-      LocalDeadStoreElimination,
-      LocalOpts,
-      LocalReordering,
-      LocalLiveRangeReduction,
-      LoopAliasRefiner,
-      LoopTransformer,
-      MonitorElimination,
-      NewInitialization,
-      Optimization,
-      OSR,
-      PartialRedundancy,
-      RedundantAsycCheckRemoval,
-      RegionAnalysis,
-      RightNumberOfNames,
-      Structure,
-      SwitchAnalyzer,
-      UseDefInfo,
-      ValueNumberInfo,
-      ValuePropagation,
-      VirtualGuardTailSplitter,
-      InterProceduralAnalyzer,
-      InductionVariableAnalysis,
-      CoarseningInterProceduralAnalyzer,
+        // Optimizer Types
+        AVLTree,
+        CFGChecker,
+        CFGSimplifier,
+        CatchBlockRemover,
+        CompactLocals,
+        CopyPropagation,
+        DataFlowAnalysis,
+        DominatorVerifier,
+        Dominators,
+        DominatorsChk,
+        EscapeAnalysis,
+        EstimateCodeSize,
+        ExpressionsSimplification,
+        GlobalRegisterAllocator,
+        GlobalRegisterCandidates,
+        HedgeTree,
+        Inliner,
+        InnerPreexistence,
+        IsolatedStoreElimination,
+        LocalLiveVariablesForGC,
+        LocalAnalysis,
+        LocalCSE,
+        LocalDeadStoreElimination,
+        LocalOpts,
+        LocalReordering,
+        LocalLiveRangeReduction,
+        LoopAliasRefiner,
+        LoopTransformer,
+        MonitorElimination,
+        NewInitialization,
+        Optimization,
+        OSR,
+        PartialRedundancy,
+        RedundantAsycCheckRemoval,
+        RegionAnalysis,
+        RightNumberOfNames,
+        Structure,
+        SwitchAnalyzer,
+        UseDefInfo,
+        ValueNumberInfo,
+        ValuePropagation,
+        VirtualGuardTailSplitter,
+        InterProceduralAnalyzer,
+        InductionVariableAnalysis,
+        CoarseningInterProceduralAnalyzer,
 
-      AheadOfTimeCompile,
+        AheadOfTimeCompile,
 
-      HWProfile,
-      TR_HWProfileCallSiteElem,
-      TR_HWProfileCallSiteList,
+        HWProfile,
+        TR_HWProfileCallSiteElem,
+        TR_HWProfileCallSiteList,
 
-      // ARM types
-      ARMRelocation,
-      ARMMemoryArgument,
-      ARMOperand,
-      ARMFloatConstant,
-      ARMRegisterDependencyGroup,
-      ARMRegisterDependencyConditions,
-      ARMConstant,
-      ARMConstantDataSnippet,
+        // ARM types
+        ARMRelocation,
+        ARMMemoryArgument,
+        ARMOperand,
+        ARMFloatConstant,
+        ARMRegisterDependencyGroup,
+        ARMRegisterDependencyConditions,
+        ARMConstant,
+        ARMConstantDataSnippet,
 
-      // ARM64 types
-      ARM64Relocation,
-      ARM64MemoryArgument,
+        // ARM64 types
+        ARM64Relocation,
+        ARM64MemoryArgument,
 
-      BlockCloner,
-      BlockFrequencyInfo,
-      ByteCodeIterator,
-      CallSiteInfo,
-      CatchBlockExtension,
-      CatchBlockProfileInfo,
-      CFG,
-      CHTable,
-      ClassLookahead,
-      CodeGenerator,
-      Compilation,
-      ExceptionTableEntry,
-      ExceptionTableEntryIterator,
-      ExtendedBlockSuccessorIterator,
-      ExtraInfoForNew,
-      GlobalRegister,
-      GCRegisterMap,
-      GCStackAtlas,
-      GRABlockInfo,
-      IdAddrNodes,
+        BlockCloner,
+        BlockFrequencyInfo,
+        ByteCodeIterator,
+        CallSiteInfo,
+        CatchBlockExtension,
+        CatchBlockProfileInfo,
+        CFG,
+        CHTable,
+        ClassLookahead,
+        CodeGenerator,
+        Compilation,
+        ExceptionTableEntry,
+        ExceptionTableEntryIterator,
+        ExtendedBlockSuccessorIterator,
+        ExtraInfoForNew,
+        GlobalRegister,
+        GCRegisterMap,
+        GCStackAtlas,
+        GRABlockInfo,
+        IdAddrNodes,
 
-      // IA32 codegen
-      BetterSpillPlacement,
-      ClobberingInstruction,
-      OutlinedCode,
-      IA32ProcessorInfo,
-      X86AllocPrefetchGeometry,
-      X86TOCHashTable,
+        // IA32 codegen
+        BetterSpillPlacement,
+        ClobberingInstruction,
+        OutlinedCode,
+        IA32ProcessorInfo,
+        X86AllocPrefetchGeometry,
+        X86TOCHashTable,
 
-      IGBase,
-      IGNode,
-      InternalFunctionsBase,
-      InternalPointerMap,
-      InternalPointerPair,
-      LLLinkHead,
-      Linkage,
-      LLList,
-      LLListAppender,
-      LLListIterator,
-      LiveReference,
-      LiveRegisterInfo,
-      LiveRegisters,
-      NodeMappings,
-      Optimizer,
+        IGBase,
+        IGNode,
+        InternalFunctionsBase,
+        InternalPointerMap,
+        InternalPointerPair,
+        LLLinkHead,
+        Linkage,
+        LLList,
+        LLListAppender,
+        LLListIterator,
+        LiveReference,
+        LiveRegisterInfo,
+        LiveRegisters,
+        NodeMappings,
+        Optimizer,
 
-      Options,
-      OptionSet,
-      OrderedExceptionHandlerIterator,
-      PCMapEntry,
-      PersistentCHTable,
-      PersistentInfo,
-      PersistentMethodInfo,
-      PersistentJittedBodyInfo,
-      PersistentProfileInfo,
+        Options,
+        OptionSet,
+        OrderedExceptionHandlerIterator,
+        PCMapEntry,
+        PersistentCHTable,
+        PersistentInfo,
+        PersistentMethodInfo,
+        PersistentJittedBodyInfo,
+        PersistentProfileInfo,
 
-      // PPC objects
-      PPCFloatConstant,
-      PPCConstant,
-      PPCConstantDataSnippet,
-      PPCCounter,
-      PPCLoadLabelItem,
-      PPCRelocation,
-      PPCMemoryArgument,
+        // PPC objects
+        PPCFloatConstant,
+        PPCConstant,
+        PPCConstantDataSnippet,
+        PPCCounter,
+        PPCLoadLabelItem,
+        PPCRelocation,
+        PPCMemoryArgument,
 
-      SnippetHashtable,
-      RandomGenerator,
-      Recompilation,
-      RegisterCandidates,
-      RematerializationInfo,
+        SnippetHashtable,
+        RandomGenerator,
+        Recompilation,
+        RegisterCandidates,
+        RematerializationInfo,
 
-      // S390 types
-      S390Relocation,
-      S390ProcessorInfo,
-      S390MemoryArgument,
-      S390EncodingRelocation,
-      BranchPreloadCallData,
+        // S390 types
+        S390Relocation,
+        S390ProcessorInfo,
+        S390MemoryArgument,
+        S390EncodingRelocation,
+        BranchPreloadCallData,
 
-      ScratchRegisterManager,
-      SimpleRegex,
-      SimpleRegexComponent,
-      SimpleRegexRegex,
-      SimpleRegexSimple,
-      SingleTimer,
-      SymbolReferenceTable,
-      TableOfConstants,
-      Timer,
-      TwoListIterator,
-      ValueProfileInfo,
-      ValueProfileInfoManager,
-      ExternalValueProfileInfo,
-      MethodBranchProfileInfo,
-      BranchProfileInfoManager,
-      VirtualGuardSiteInfo,
-      WCode,
-      CallGraph,
-      CPOController,
-      RegisterIterator,
-      TRStats,
-      OptimizationPlan,
-      ClassHolder,
-      SmartBuffer,
-      TR_ListingInfo,
-      methodInfoType,
+        ScratchRegisterManager,
+        SimpleRegex,
+        SimpleRegexComponent,
+        SimpleRegexRegex,
+        SimpleRegexSimple,
+        SingleTimer,
+        SymbolReferenceTable,
+        TableOfConstants,
+        Timer,
+        TwoListIterator,
+        ValueProfileInfo,
+        ValueProfileInfoManager,
+        ExternalValueProfileInfo,
+        MethodBranchProfileInfo,
+        BranchProfileInfoManager,
+        VirtualGuardSiteInfo,
+        WCode,
+        CallGraph,
+        CPOController,
+        RegisterIterator,
+        TRStats,
+        OptimizationPlan,
+        ClassHolder,
+        SmartBuffer,
+        TR_ListingInfo,
+        methodInfoType,
 
-      IProfiler,
-      IPBytecodeHashTableEntry,
-      IPBCDataFourBytes,
-      IPBCDataAllocation,
-      IPBCDataEightWords,
-      IPBCDataPointer,
-      IPBCDataCallGraph,
-      IPBCDataDirectCall,
-      IPCallingContext,
-      IPMethodTable,
-      IPCCNode,
-      IPHashedCallSite,
-      Assumption,
-      PatchSites,
+        IProfiler,
+        IPBytecodeHashTableEntry,
+        IPBCDataFourBytes,
+        IPBCDataAllocation,
+        IPBCDataEightWords,
+        IPBCDataPointer,
+        IPBCDataCallGraph,
+        IPBCDataDirectCall,
+        IPCallingContext,
+        IPMethodTable,
+        IPCCNode,
+        IPHashedCallSite,
+        Assumption,
+        PatchSites,
 
-      ZHWProfiler,
-      PPCHWProfiler,
-      ZGuardedStorage,
+        ZHWProfiler,
+        PPCHWProfiler,
+        ZGuardedStorage,
 
-      CatchTable,
+        CatchTable,
 
-      DecimalPrivatization,
-      DecimalReduction,
+        DecimalPrivatization,
+        DecimalReduction,
 
-      PreviousNodeConversion,
-      RelocationDebugInfo,
-      AOTClassInfo,
-      SharedCache,
-      SharedCacheRegion,
-      SharedCacheLayout,
-      SharedCacheConfig,
+        PreviousNodeConversion,
+        RelocationDebugInfo,
+        AOTClassInfo,
+        SharedCache,
+        SharedCacheRegion,
+        SharedCacheLayout,
+        SharedCacheConfig,
 
-      RegisterPair,
-      S390Instruction,
+        RegisterPair,
+        S390Instruction,
 
-      ArtifactManager,
-      CompilationInfo,
-      CompilationInfoPerThreadBase,
-      TR_DebuggingCounters,
-      TR_Pattern,
-      TR_UseNodeInfo,
-      PPSEntry,
-      GPUHelpers,
-      ColdVariableOutliner,
+        ArtifactManager,
+        CompilationInfo,
+        CompilationInfoPerThreadBase,
+        TR_DebuggingCounters,
+        TR_Pattern,
+        TR_UseNodeInfo,
+        PPSEntry,
+        GPUHelpers,
+        ColdVariableOutliner,
 
-      CodeMetaData,
-      CodeMetaDataAVL,
+        CodeMetaData,
+        CodeMetaDataAVL,
 
-      RegionAllocation,
+        RegionAllocation,
 
-      Debug,
+        Debug,
 
-      // JITServer types
-      ClientSessionData,
-      ROMClass,
-      JITServerAOTCache,
-      JITServerProfileCache,
+        // JITServer types
+        ClientSessionData,
+        ROMClass,
+        JITServerAOTCache,
+        JITServerProfileCache,
 
-      SymbolValidationManager,
+        SymbolValidationManager,
 
-      ObjectFormat,
-      FunctionCallData,
+        ObjectFormat,
+        FunctionCallData,
 
-      NumObjectTypes,
-      // If adding new object types above, add the corresponding names
-      // to objectName[] array defined in TRMemory.cpp
-      //
-      };
+        NumObjectTypes,
+        // If adding new object types above, add the corresponding names
+        // to objectName[] array defined in TRMemory.cpp
+        //
+    };
 
-   static void *  jitPersistentAlloc(size_t size, ObjectType = UnknownType);
-   static void    jitPersistentFree(void *mem);
+    static void *jitPersistentAlloc(size_t size, ObjectType = UnknownType);
+    static void jitPersistentFree(void *mem);
+};
 
-   };
-
-class TR_PersistentMemory : public TR_MemoryBase
-   {
+class TR_PersistentMemory : public TR_MemoryBase {
 public:
-   static const uintptr_t MEMINFO_SIGNATURE = 0x1CEDD1CE;
+    static const uintptr_t MEMINFO_SIGNATURE = 0x1CEDD1CE;
 
-   TR_PersistentMemory (
-      TR::PersistentAllocator &persistentAllocator
-      );
+    TR_PersistentMemory(TR::PersistentAllocator &persistentAllocator);
 
-   TR_PersistentMemory (
-      void * jitConfig,
-      TR::PersistentAllocator &persistentAllocator
-      );
+    TR_PersistentMemory(void *jitConfig, TR::PersistentAllocator &persistentAllocator);
 
-   void * allocatePersistentMemory(size_t const size, ObjectType const ot = UnknownType) throw()
-      {
-      _totalPersistentAllocations[ot] += size;
-      void * persistentMemory = _persistentAllocator.get().allocate(size, std::nothrow);
-      return persistentMemory;
-      }
+    void *allocatePersistentMemory(size_t const size, ObjectType const ot = UnknownType) throw()
+    {
+        _totalPersistentAllocations[ot] += size;
+        void *persistentMemory = _persistentAllocator.get().allocate(size, std::nothrow);
+        return persistentMemory;
+    }
 
-   void freePersistentMemory(void *mem) throw()
-      {
-      _persistentAllocator.get().deallocate(mem);
-      }
+    void freePersistentMemory(void *mem) throw() { _persistentAllocator.get().deallocate(mem); }
 
-   TR::PersistentInfo * getPersistentInfo() { return &_persistentInfo; }
+    TR::PersistentInfo *getPersistentInfo() { return &_persistentInfo; }
 
-   void printMemStats();
-   void printMemStatsToVlog();
+    void printMemStats();
+    void printMemStatsToVlog();
 
-   uintptr_t _signature;        // eyecatcher
+    uintptr_t _signature; // eyecatcher
 
-   friend class TR_Memory;
+    friend class TR_Memory;
 
-   /** Used by TR_PPCTableOfCnstants */
-   static TR::PersistentInfo * getNonThreadSafePersistentInfo();
+    /** Used by TR_PPCTableOfCnstants */
+    static TR::PersistentInfo *getNonThreadSafePersistentInfo();
 
-   TR::PersistentInfo _persistentInfo;
-   TR::reference_wrapper<TR::PersistentAllocator> _persistentAllocator;
-   size_t _totalPersistentAllocations[TR_MemoryBase::NumObjectTypes];
-   };
+    TR::PersistentInfo _persistentInfo;
+    TR::reference_wrapper<TR::PersistentAllocator> _persistentAllocator;
+    size_t _totalPersistentAllocations[TR_MemoryBase::NumObjectTypes];
+};
 
-extern TR_PersistentMemory * trPersistentMemory;
+extern TR_PersistentMemory *trPersistentMemory;
 
-class TR_TypedPersistentAllocatorBase
-   {
+class TR_TypedPersistentAllocatorBase {
 public:
+    void *allocate(size_t size, void *hint = 0)
+    {
+        return trPersistentMemory->allocatePersistentMemory(size, TR_MemoryBase::UnknownType);
+    }
 
-   void *allocate(size_t size, void * hint = 0)
-      {
-      return trPersistentMemory->allocatePersistentMemory(size, TR_MemoryBase::UnknownType);
-      }
-   void deallocate(void * p, size_t sizeHint = 0) throw()
-      {
-      trPersistentMemory->freePersistentMemory(p);
-      }
+    void deallocate(void *p, size_t sizeHint = 0) throw() { trPersistentMemory->freePersistentMemory(p); }
 
-   friend bool operator ==(const TR_TypedPersistentAllocatorBase &left, const TR_TypedPersistentAllocatorBase &right)
-      {
-      return &left == &right;
-      }
-   friend bool operator !=(const TR_TypedPersistentAllocatorBase &left, const TR_TypedPersistentAllocatorBase &right)
-      {
-      return !operator ==(left, right);
-      }
+    friend bool operator==(const TR_TypedPersistentAllocatorBase &left, const TR_TypedPersistentAllocatorBase &right)
+    {
+        return &left == &right;
+    }
 
-   // Enable automatic conversion into a form compatible with C++ standard library containers
-   template<typename T> operator TR::typed_allocator<T, TR_TypedPersistentAllocatorBase& >()
-      {
-      return TR::typed_allocator<T, TR_TypedPersistentAllocatorBase& >(*this);
-      }
-   };
+    friend bool operator!=(const TR_TypedPersistentAllocatorBase &left, const TR_TypedPersistentAllocatorBase &right)
+    {
+        return !operator==(left, right);
+    }
 
-template <TR_MemoryBase::ObjectType O>
-class TR_TypedPersistentAllocator : public TR_TypedPersistentAllocatorBase
-   {
+    // Enable automatic conversion into a form compatible with C++ standard library containers
+    template<typename T> operator TR::typed_allocator<T, TR_TypedPersistentAllocatorBase &>()
+    {
+        return TR::typed_allocator<T, TR_TypedPersistentAllocatorBase &>(*this);
+    }
+};
+
+template<TR_MemoryBase::ObjectType O> class TR_TypedPersistentAllocator : public TR_TypedPersistentAllocatorBase {
 public:
+    void *allocate(size_t size, void *hint = 0) { return trPersistentMemory->allocatePersistentMemory(size, O); }
 
-   void *allocate(size_t size, void * hint = 0)
-      {
-      return trPersistentMemory->allocatePersistentMemory(size, O);
-      }
-   void deallocate(void * p, size_t sizeHint = 0) throw()
-      {
-      trPersistentMemory->freePersistentMemory(p);
-      }
+    void deallocate(void *p, size_t sizeHint = 0) throw() { trPersistentMemory->freePersistentMemory(p); }
 
-   friend bool operator ==(const TR_TypedPersistentAllocator<O> &left, const TR_TypedPersistentAllocator<O> &right)
-      {
-      return &left == &right;
-      }
-   friend bool operator !=(const TR_TypedPersistentAllocator<O> &left, const TR_TypedPersistentAllocator<O> &right)
-      {
-      return !operator ==(left, right);
-      }
+    friend bool operator==(const TR_TypedPersistentAllocator<O> &left, const TR_TypedPersistentAllocator<O> &right)
+    {
+        return &left == &right;
+    }
 
-   // Enable automatic conversion into a form compatible with C++ standard library containers
-   template<typename T> operator TR::typed_allocator<T, TR_TypedPersistentAllocator<O>& >()
-      {
-      return TR::typed_allocator<T, TR_TypedPersistentAllocator<O>& >(*this);
-      }
-   };
+    friend bool operator!=(const TR_TypedPersistentAllocator<O> &left, const TR_TypedPersistentAllocator<O> &right)
+    {
+        return !operator==(left, right);
+    }
 
-class TR_MemoryAllocationType
-   {
+    // Enable automatic conversion into a form compatible with C++ standard library containers
+    template<typename T> operator TR::typed_allocator<T, TR_TypedPersistentAllocator<O> &>()
+    {
+        return TR::typed_allocator<T, TR_TypedPersistentAllocator<O> &>(*this);
+    }
+};
+
+class TR_MemoryAllocationType {
 protected:
-   TR_MemoryAllocationType(TR_Memory &m) :
-      _trMemory(m)
-      {}
-   TR_Memory & trMemory() { return _trMemory; }
-   TR_Memory & _trMemory;
-   };
+    TR_MemoryAllocationType(TR_Memory &m)
+        : _trMemory(m)
+    {}
 
-class TR_StackMemory : public TR_MemoryAllocationType
-   {
-public:
-   TR_StackMemory(TR_Memory * m) : TR_MemoryAllocationType(*m) { }
-   inline void *allocate(size_t, TR_MemoryBase::ObjectType = TR_MemoryBase::UnknownType);
-   void deallocate(void *p) {}
-   friend bool operator ==(const TR_StackMemory &left, const TR_StackMemory &right) { return &left._trMemory == &right._trMemory; }
-   friend bool operator !=(const TR_StackMemory &left, const TR_StackMemory &right) { return !( left == right); }
-   };
+    TR_Memory &trMemory() { return _trMemory; }
 
-class TR_HeapMemory : public TR_MemoryAllocationType
-   {
+    TR_Memory &_trMemory;
+};
+
+class TR_StackMemory : public TR_MemoryAllocationType {
 public:
-   TR_HeapMemory(TR_Memory * m) : TR_MemoryAllocationType(*m) { }
-   inline void *allocate(size_t, TR_MemoryBase::ObjectType = TR_MemoryBase::UnknownType);
-   void deallocate(void *p) {}
-   friend bool operator ==(const TR_HeapMemory &left, const TR_HeapMemory &right) { return &left._trMemory == &right._trMemory; }
-   friend bool operator !=(const TR_HeapMemory &left, const TR_HeapMemory &right) { return !( left == right); }
-   };
+    TR_StackMemory(TR_Memory *m)
+        : TR_MemoryAllocationType(*m)
+    {}
+
+    inline void *allocate(size_t, TR_MemoryBase::ObjectType = TR_MemoryBase::UnknownType);
+
+    void deallocate(void *p) {}
+
+    friend bool operator==(const TR_StackMemory &left, const TR_StackMemory &right)
+    {
+        return &left._trMemory == &right._trMemory;
+    }
+
+    friend bool operator!=(const TR_StackMemory &left, const TR_StackMemory &right) { return !(left == right); }
+};
+
+class TR_HeapMemory : public TR_MemoryAllocationType {
+public:
+    TR_HeapMemory(TR_Memory *m)
+        : TR_MemoryAllocationType(*m)
+    {}
+
+    inline void *allocate(size_t, TR_MemoryBase::ObjectType = TR_MemoryBase::UnknownType);
+
+    void deallocate(void *p) {}
+
+    friend bool operator==(const TR_HeapMemory &left, const TR_HeapMemory &right)
+    {
+        return &left._trMemory == &right._trMemory;
+    }
+
+    friend bool operator!=(const TR_HeapMemory &left, const TR_HeapMemory &right) { return !(left == right); }
+};
 
 namespace TR {
 class Region;
 class StackMemoryRegion;
-}
+} // namespace TR
 
-class TR_Memory : public TR_MemoryBase
-   {
+class TR_Memory : public TR_MemoryBase {
 public:
-   TR_HeapMemory  trHeapMemory()  { return this; }
-   TR_StackMemory trStackMemory() { return this; }
-   TR_PersistentMemory * trPersistentMemory() { return _trPersistentMemory; }
+    TR_HeapMemory trHeapMemory() { return this; }
 
-   TR_Memory(
-      TR_PersistentMemory &,
-      TR::Region &heapMemoryRegion
-   );
+    TR_StackMemory trStackMemory() { return this; }
 
-   void setCompilation(TR::Compilation *compilation) { _comp = compilation; }
+    TR_PersistentMemory *trPersistentMemory() { return _trPersistentMemory; }
 
-   void * allocateHeapMemory(size_t requestedSize, ObjectType = UnknownType);
-   void * allocateStackMemory(size_t, ObjectType = UnknownType);
-   void * allocateMemory(size_t size, TR_AllocationKind kind, ObjectType ot = UnknownType);
-   void freeMemory(void *p, TR_AllocationKind kind, ObjectType ot = UnknownType);
-   TR::PersistentInfo * getPersistentInfo() { return _trPersistentMemory->getPersistentInfo(); }
-   TR::Region& currentStackRegion();
-   TR::Region& heapMemoryRegion() { return _heapMemoryRegion; }
+    TR_Memory(TR_PersistentMemory &, TR::Region &heapMemoryRegion);
+
+    void setCompilation(TR::Compilation *compilation) { _comp = compilation; }
+
+    void *allocateHeapMemory(size_t requestedSize, ObjectType = UnknownType);
+    void *allocateStackMemory(size_t, ObjectType = UnknownType);
+    void *allocateMemory(size_t size, TR_AllocationKind kind, ObjectType ot = UnknownType);
+    void freeMemory(void *p, TR_AllocationKind kind, ObjectType ot = UnknownType);
+
+    TR::PersistentInfo *getPersistentInfo() { return _trPersistentMemory->getPersistentInfo(); }
+
+    TR::Region &currentStackRegion();
+
+    TR::Region &heapMemoryRegion() { return _heapMemoryRegion; }
 
 private:
+    friend class TR::StackMemoryRegion;
+    friend class TR::Region;
 
-   friend class TR::StackMemoryRegion;
-   friend class TR::Region;
+    /* These are intended to be used exclusively by TR::StackMemoryRegion. */
+    TR::Region &registerStackRegion(TR::Region &stackRegion);
+    void unregisterStackRegion(TR::Region &current, TR::Region &previous) throw();
 
-   /* These are intended to be used exclusively by TR::StackMemoryRegion. */
-   TR::Region& registerStackRegion(TR::Region &stackRegion);
-   void unregisterStackRegion(TR::Region &current, TR::Region &previous) throw();
+    TR_PersistentMemory *_trPersistentMemory;
+    TR::Compilation *_comp;
 
-   TR_PersistentMemory * _trPersistentMemory;
-   TR::Compilation *         _comp;
-
-   TR::Region &_heapMemoryRegion;
-   TR::reference_wrapper<TR::Region> _stackMemoryRegion;
-   };
+    TR::Region &_heapMemoryRegion;
+    TR::reference_wrapper<TR::Region> _stackMemoryRegion;
+};
 
 /*
  * Added the following operator overloads for the dynamic allocation of
  * objects such as a stl list
-*/
-inline void
-operator delete(void* p, TR_HeapMemory heapMemory) { }
+ */
+inline void operator delete(void *p, TR_HeapMemory heapMemory) {}
 
-inline void
-operator delete(void* p, TR_StackMemory heapMemory) { }
+inline void operator delete(void *p, TR_StackMemory heapMemory) {}
 
-inline void
-operator delete(void* p, PERSISTENT_NEW_DECLARE) throw() {  }
+inline void operator delete(void *p, PERSISTENT_NEW_DECLARE) throw() {}
 
-inline void
-operator delete[](void* p, TR_HeapMemory heapMemory) { }
+inline void operator delete[](void *p, TR_HeapMemory heapMemory) {}
 
-inline void
-operator delete[](void* p, TR_StackMemory heapMemory) { }
+inline void operator delete[](void *p, TR_StackMemory heapMemory) {}
 
-inline void
-operator delete[](void* p, PERSISTENT_NEW_DECLARE) { }
+inline void operator delete[](void *p, PERSISTENT_NEW_DECLARE) {}
 
-inline void *
-operator new(size_t size, PERSISTENT_NEW_DECLARE) throw() { return TR_Memory::jitPersistentAlloc(size, TR_MemoryBase::UnknownType); }
+inline void *operator new(size_t size, PERSISTENT_NEW_DECLARE) throw()
+{
+    return TR_Memory::jitPersistentAlloc(size, TR_MemoryBase::UnknownType);
+}
 
-inline void *
-operator new(size_t size, TR_HeapMemory heapMemory) { return heapMemory.allocate(size); }
+inline void *operator new(size_t size, TR_HeapMemory heapMemory) { return heapMemory.allocate(size); }
 
-inline void *
-operator new(size_t size, TR_StackMemory stackMemory) { return stackMemory.allocate(size); }
+inline void *operator new(size_t size, TR_StackMemory stackMemory) { return stackMemory.allocate(size); }
 
-inline void *
-operator new[](size_t size, TR_HeapMemory heapMemory) { return heapMemory.allocate(size); }
+inline void *operator new[](size_t size, TR_HeapMemory heapMemory) { return heapMemory.allocate(size); }
 
-inline void *
-operator new[](size_t size, TR_StackMemory stackMemory) { return stackMemory.allocate(size); }
+inline void *operator new[](size_t size, TR_StackMemory stackMemory) { return stackMemory.allocate(size); }
 
-inline void *
-operator new[](size_t size, PERSISTENT_NEW_DECLARE) { return TR_Memory::jitPersistentAlloc(size, TR_MemoryBase::UnknownType); }
-
+inline void *operator new[](size_t size, PERSISTENT_NEW_DECLARE)
+{
+    return TR_Memory::jitPersistentAlloc(size, TR_MemoryBase::UnknownType);
+}
 
 /*
  * TR_ByteCodeInfo exists in an awkward situation where it seems TR_ALLOC()
@@ -696,491 +680,516 @@ operator new[](size_t size, PERSISTENT_NEW_DECLARE) { return TR_Memory::jitPersi
  * implementation defined prefix size for which there is no portable way to discover.
  * Thus theese operators. :(
  */
-inline void *
-operator new(size_t size, TR_Memory * m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
-   {
-   return m->allocateMemory(size, allocKind, ot);
-   }
+inline void *operator new(size_t size, TR_Memory *m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
+{
+    return m->allocateMemory(size, allocKind, ot);
+}
 
-inline void
-operator delete(void *mem, TR_Memory * m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
-   {
-   return m->freeMemory(mem, allocKind, ot);
-   }
+inline void operator delete(void *mem, TR_Memory *m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
+{
+    return m->freeMemory(mem, allocKind, ot);
+}
 
-inline void *
-operator new[](size_t size, TR_Memory * m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
-   {
-   return m->allocateMemory(size, allocKind, ot);
-   }
+inline void *operator new[](size_t size, TR_Memory *m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
+{
+    return m->allocateMemory(size, allocKind, ot);
+}
 
-inline void
-operator delete[](void *mem, TR_Memory * m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
-   {
-   m->freeMemory(mem, allocKind, ot);
-   }
+inline void operator delete[](void *mem, TR_Memory *m, TR_AllocationKind allocKind, TR_MemoryBase::ObjectType ot)
+{
+    m->freeMemory(mem, allocKind, ot);
+}
 
-inline void *
-TR_StackMemory::allocate(size_t size, TR_MemoryBase::ObjectType ot)
-   {
-   return trMemory().allocateStackMemory(size, ot);
-   }
+inline void *TR_StackMemory::allocate(size_t size, TR_MemoryBase::ObjectType ot)
+{
+    return trMemory().allocateStackMemory(size, ot);
+}
 
-inline void *
-TR_HeapMemory::allocate(size_t size, TR_MemoryBase::ObjectType ot)
-   {
-   return trMemory().allocateHeapMemory(size, ot);
-   }
+inline void *TR_HeapMemory::allocate(size_t size, TR_MemoryBase::ObjectType ot)
+{
+    return trMemory().allocateHeapMemory(size, ot);
+}
 
-//On global gc end if not in compilation, and heap memory is available, return all to vm if total is larger than SIZE_OF_HEAP_SEGMENTS_TO_FLUSH_BY_GC. Now set to 4M. For 64bit platform 8M as they have more memory.
+// On global gc end if not in compilation, and heap memory is available, return all to vm if total is larger than
+// SIZE_OF_HEAP_SEGMENTS_TO_FLUSH_BY_GC. Now set to 4M. For 64bit platform 8M as they have more memory.
 #if defined(TR_HOST_64BIT)
-#define SIZE_OF_HEAP_SEGMENTS_TO_FLUSH_BY_GC 8388608 //8M
+#define SIZE_OF_HEAP_SEGMENTS_TO_FLUSH_BY_GC 8388608 // 8M
 #else
-#define SIZE_OF_HEAP_SEGMENTS_TO_FLUSH_BY_GC 4194304 //4M
+#define SIZE_OF_HEAP_SEGMENTS_TO_FLUSH_BY_GC 4194304 // 4M
 #endif
 
 #define DEFAULT_LIST_SIZE_LIMIT 10
 #define SEGMENT_FRAGMENTATION_SIZE 32
 #define MAX_SEGMENT_SIZE_MULTIPLIER 64
 
-#define TR_PERSISTENT_ALLOC_WITHOUT_NEW(a) \
-   static void * jitPersistentAlloc(size_t s)                                {return TR_Memory::jitPersistentAlloc(s, a); } \
-   static void   jitPersistentFree(void *mem)                                 {TR_Memory::jitPersistentFree(mem); }
+#define TR_PERSISTENT_ALLOC_WITHOUT_NEW(a)                                                    \
+    static void *jitPersistentAlloc(size_t s) { return TR_Memory::jitPersistentAlloc(s, a); } \
+    static void jitPersistentFree(void *mem) { TR_Memory::jitPersistentFree(mem); }
 
-#define TR_PERSISTENT_NEW(a) \
-   void * operator new    (size_t s, PERSISTENT_NEW_DECLARE)   throw()   { return TR_Memory::jitPersistentAlloc(s, a); } \
-   void operator delete   (void *p, PERSISTENT_NEW_DECLARE)    throw()   { TR_Memory::jitPersistentFree(p); } \
-   void * operator new[]  (size_t s, PERSISTENT_NEW_DECLARE)   throw()   { return TR_Memory::jitPersistentAlloc(s, a); } \
-   void operator delete[] (void *p, PERSISTENT_NEW_DECLARE)    throw()   { TR_Memory::jitPersistentFree(p); } \
-   void * operator new    (size_t s, TR_PersistentMemory * m)  throw()   { return m->allocatePersistentMemory(s, a); } \
-   void operator delete   (void *p, TR_PersistentMemory *m)    throw()   { m->freePersistentMemory(p); } \
-   void * operator new[]  (size_t s, TR_PersistentMemory * m)  throw()   { return m->allocatePersistentMemory(s, a); } \
-   void operator delete[] (void *p, TR_PersistentMemory *m)    throw()   { m->freePersistentMemory(p); } \
-   void operator delete  (void *p, size_t s) throw() { TR_ASSERT(false, "Invalid use of operator delete"); }
+#define TR_PERSISTENT_NEW(a)                                                                                       \
+    void *operator new(size_t s, PERSISTENT_NEW_DECLARE) throw() { return TR_Memory::jitPersistentAlloc(s, a); }   \
+    void operator delete(void *p, PERSISTENT_NEW_DECLARE) throw() { TR_Memory::jitPersistentFree(p); }             \
+    void *operator new[](size_t s, PERSISTENT_NEW_DECLARE) throw() { return TR_Memory::jitPersistentAlloc(s, a); } \
+    void operator delete[](void *p, PERSISTENT_NEW_DECLARE) throw() { TR_Memory::jitPersistentFree(p); }           \
+    void *operator new(size_t s, TR_PersistentMemory *m) throw() { return m->allocatePersistentMemory(s, a); }     \
+    void operator delete(void *p, TR_PersistentMemory *m) throw() { m->freePersistentMemory(p); }                  \
+    void *operator new[](size_t s, TR_PersistentMemory *m) throw() { return m->allocatePersistentMemory(s, a); }   \
+    void operator delete[](void *p, TR_PersistentMemory *m) throw() { m->freePersistentMemory(p); }                \
+    void operator delete(void *p, size_t s) throw() { TR_ASSERT(false, "Invalid use of operator delete"); }
 
-#define TR_ALLOC_WITHOUT_NEW(a) \
-   TR_PERSISTENT_ALLOC_WITHOUT_NEW(a) \
+#define TR_ALLOC_WITHOUT_NEW(a) TR_PERSISTENT_ALLOC_WITHOUT_NEW(a)
 
-#define TR_PERSISTENT_ALLOC_THROW(a) \
-   TR_PERSISTENT_ALLOC_WITHOUT_NEW(a) \
-   void * operator new   (size_t s, PERSISTENT_NEW_DECLARE) { void * alloc = TR_Memory::jitPersistentAlloc(s, a); if(!alloc) throw std::bad_alloc(); return alloc; } \
-   void operator delete (void *p, PERSISTENT_NEW_DECLARE)   { TR_Memory::jitPersistentFree(p); } \
-   void * operator new[] (size_t s, PERSISTENT_NEW_DECLARE m) { return operator new(s, m); } \
-   void operator delete[] (void *p, PERSISTENT_NEW_DECLARE m) { operator delete (p, m); } \
-   void * operator new (size_t s, TR_PersistentMemory * m) { void * alloc = m->allocatePersistentMemory(s, a); if(!alloc) throw std::bad_alloc(); return alloc; } \
-   void operator delete (void *p, TR_PersistentMemory * m) { m->freePersistentMemory(p); } \
-   void * operator new[] (size_t s, TR_PersistentMemory * m) { return operator new(s, m); } \
-   void operator delete[] (void *p, TR_PersistentMemory * m) { operator delete(p, m); }
+#define TR_PERSISTENT_ALLOC_THROW(a)                                                           \
+    TR_PERSISTENT_ALLOC_WITHOUT_NEW(a)                                                         \
+    void *operator new(size_t s, PERSISTENT_NEW_DECLARE)                                       \
+    {                                                                                          \
+        void *alloc = TR_Memory::jitPersistentAlloc(s, a);                                     \
+        if (!alloc)                                                                            \
+            throw std::bad_alloc();                                                            \
+        return alloc;                                                                          \
+    }                                                                                          \
+    void operator delete(void *p, PERSISTENT_NEW_DECLARE) { TR_Memory::jitPersistentFree(p); } \
+    void *operator new[](size_t s, PERSISTENT_NEW_DECLARE m) { return operator new(s, m); }    \
+    void operator delete[](void *p, PERSISTENT_NEW_DECLARE m) { operator delete(p, m); }       \
+    void *operator new(size_t s, TR_PersistentMemory *m)                                       \
+    {                                                                                          \
+        void *alloc = m->allocatePersistentMemory(s, a);                                       \
+        if (!alloc)                                                                            \
+            throw std::bad_alloc();                                                            \
+        return alloc;                                                                          \
+    }                                                                                          \
+    void operator delete(void *p, TR_PersistentMemory *m) { m->freePersistentMemory(p); }      \
+    void *operator new[](size_t s, TR_PersistentMemory *m) { return operator new(s, m); }      \
+    void operator delete[](void *p, TR_PersistentMemory *m) { operator delete(p, m); }
 
-#define TR_PERSISTENT_ALLOC(a) \
-   TR_PERSISTENT_ALLOC_WITHOUT_NEW(a) \
-   TR_PERSISTENT_NEW(a)
+#define TR_PERSISTENT_ALLOC(a)         \
+    TR_PERSISTENT_ALLOC_WITHOUT_NEW(a) \
+    TR_PERSISTENT_NEW(a)
 
-#define TR_ALLOC_IMPL(a) \
-   TR_ALLOC_WITHOUT_NEW(a) \
-   TR_PERSISTENT_NEW(a) \
-   void * operator new (size_t s, TR_ArenaAllocator *m) { return m->allocate(s); } \
-   void operator delete(void *p, TR_ArenaAllocator *m) { /* TR_ArenaAllocator contains an empty deallocator */ } \
-   void * operator new (size_t s, TR_HeapMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s,ot); } \
-   void operator delete(void *p, TR_HeapMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); } \
-   void * operator new[] (size_t s, TR_HeapMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s,ot); } \
-   void operator delete[] (void *p, TR_HeapMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); } \
-   void * operator new (size_t s, TR_StackMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s,ot); } \
-   void operator delete (void *p, TR_StackMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); } \
-   void * operator new[] (size_t s, TR_StackMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s,ot); } \
-   void operator delete[] (void *p, TR_StackMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); } \
-   void * operator new (size_t s, TR_Memory * m, TR_AllocationKind k) \
-      { void *alloc = m->allocateMemory(s, k, a); return alloc; } \
-   void operator delete (void *p, TR_Memory * m, TR_AllocationKind k) { m->freeMemory(p, k, a); } \
-   void * operator new[] (size_t s, TR_Memory * m, TR_AllocationKind k) \
-      {void *alloc = m->allocateMemory(s, k, a); return alloc; } \
-   void operator delete[] (void *p, TR_Memory * m, TR_AllocationKind k) { m->freeMemory(p, k, a); } \
-   void * operator new(size_t size, TR::Region &region) { return region.allocate(size); } \
-   void operator delete(void * p, TR::Region &region) { region.deallocate(p); } \
-   void * operator new[](size_t size, TR::Region &region) { return region.allocate(size); } \
-   void operator delete[](void * p, TR::Region &region) { region.deallocate(p); } \
-   static TrackedPersistentAllocator getPersistentAllocator() { return TrackedPersistentAllocator(); }
+#define TR_ALLOC_IMPL(a)                                                                                             \
+    TR_ALLOC_WITHOUT_NEW(a)                                                                                          \
+    TR_PERSISTENT_NEW(a)                                                                                             \
+    void *operator new(size_t s, TR_ArenaAllocator *m) { return m->allocate(s); }                                    \
+    void operator delete(void *p, TR_ArenaAllocator *m) { /* TR_ArenaAllocator contains an empty deallocator */ }    \
+    void *operator new(size_t s, TR_HeapMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s, ot); }    \
+    void operator delete(void *p, TR_HeapMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); }         \
+    void *operator new[](size_t s, TR_HeapMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s, ot); }  \
+    void operator delete[](void *p, TR_HeapMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); }       \
+    void *operator new(size_t s, TR_StackMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s, ot); }   \
+    void operator delete(void *p, TR_StackMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); }        \
+    void *operator new[](size_t s, TR_StackMemory m, TR_MemoryBase::ObjectType ot = a) { return m.allocate(s, ot); } \
+    void operator delete[](void *p, TR_StackMemory m, TR_MemoryBase::ObjectType ot) { return m.deallocate(p); }      \
+    void *operator new(size_t s, TR_Memory *m, TR_AllocationKind k)                                                  \
+    {                                                                                                                \
+        void *alloc = m->allocateMemory(s, k, a);                                                                    \
+        return alloc;                                                                                                \
+    }                                                                                                                \
+    void operator delete(void *p, TR_Memory *m, TR_AllocationKind k) { m->freeMemory(p, k, a); }                     \
+    void *operator new[](size_t s, TR_Memory *m, TR_AllocationKind k)                                                \
+    {                                                                                                                \
+        void *alloc = m->allocateMemory(s, k, a);                                                                    \
+        return alloc;                                                                                                \
+    }                                                                                                                \
+    void operator delete[](void *p, TR_Memory *m, TR_AllocationKind k) { m->freeMemory(p, k, a); }                   \
+    void *operator new(size_t size, TR::Region &region) { return region.allocate(size); }                            \
+    void operator delete(void *p, TR::Region &region) { region.deallocate(p); }                                      \
+    void *operator new[](size_t size, TR::Region &region) { return region.allocate(size); }                          \
+    void operator delete[](void *p, TR::Region &region) { region.deallocate(p); }                                    \
+    static TrackedPersistentAllocator getPersistentAllocator() { return TrackedPersistentAllocator(); }
 
-#define TR_ALLOC(a) \
-   typedef TR_TypedPersistentAllocatorBase TrackedPersistentAllocator; \
-   TR_ALLOC_IMPL(a) \
+#define TR_ALLOC(a)                                                     \
+    typedef TR_TypedPersistentAllocatorBase TrackedPersistentAllocator; \
+    TR_ALLOC_IMPL(a)
 
-#define TR_ALLOC_SPECIALIZED(a) \
-   typedef TR_TypedPersistentAllocator<a> TrackedPersistentAllocator; \
-   TR_ALLOC_IMPL(a) \
+#define TR_ALLOC_SPECIALIZED(a)                                        \
+    typedef TR_TypedPersistentAllocator<a> TrackedPersistentAllocator; \
+    TR_ALLOC_IMPL(a)
 
-class TRPersistentMemoryAllocator
-   {
-   TR_PersistentMemory *memory;
-public:
-   TRPersistentMemoryAllocator(TR_Memory *m) : memory(m->trPersistentMemory()) { }
-   TRPersistentMemoryAllocator(TR_PersistentMemory *m) : memory(m) { }
-
-   TRPersistentMemoryAllocator(const TRPersistentMemoryAllocator &a) : memory(a.memory) { }
-
-   void *allocate(size_t size, const char *name=NULL, int ignore=0)
-      {
-      return memory->allocatePersistentMemory(size, TR_Memory::CS2);
-      }
-
-   void deallocate(void *pointer, size_t size, const char *name=NULL, int ignore=0)
-      {
-      memory->freePersistentMemory(pointer);
-      }
-
-   void *reallocate(size_t newsize, void *ptr, size_t size, const char *name=NULL, int ignore=0)
-      {
-      if (newsize == size) return ptr;
-
-      void *ret = allocate(newsize, name);
-      memcpy(ret, ptr, size<newsize?size:newsize);
-      deallocate(ptr, size, name);
-      return ret;
-      }
-   };
-
-template <TR_AllocationKind kind, uint32_t minbits, uint32_t maxbits = sizeof(void *)*4>
-class TRMemoryAllocator {
-  TR_Memory *memory;
-  bool  scavenge;
-  void *(freelist[maxbits - minbits]);
-
-  static uint32_t bucket(size_t size) {
-    uint32_t i=minbits;
-
-    while (i<maxbits && bucketsize(i) < size) i+=1;
-    return i;
-  }
-
-  static size_t bucketsize(uint32_t b) {
-    return size_t(1)<<b;
-  }
+class TRPersistentMemoryAllocator {
+    TR_PersistentMemory *memory;
 
 public:
-  TRMemoryAllocator(const TRMemoryAllocator<kind,minbits,maxbits> &a) : memory(a.memory), scavenge(a.scavenge) {
-    memset(&freelist, 0, sizeof(freelist));
-  }
+    TRPersistentMemoryAllocator(TR_Memory *m)
+        : memory(m->trPersistentMemory())
+    {}
 
-  TRMemoryAllocator<kind,minbits,maxbits> &operator= (const TRMemoryAllocator &a) {
-    scavenge = a.scavenge;
-    memset(&freelist, 0, sizeof(freelist));
-  }
+    TRPersistentMemoryAllocator(TR_PersistentMemory *m)
+        : memory(m)
+    {}
 
-  TRMemoryAllocator(TR_Memory *m) : memory(m), scavenge(true) {
-    memset(&freelist, 0, sizeof(freelist));
+    TRPersistentMemoryAllocator(const TRPersistentMemoryAllocator &a)
+        : memory(a.memory)
+    {}
 
-  }
-
-  template <uint32_t mi, uint32_t ma>
-  TRMemoryAllocator(const TRMemoryAllocator<kind, mi, ma> &a) : memory(a.memory),
-            scavenge(true) {
-    memset(&freelist, 0, sizeof(freelist));
-  }
-
-  static TRMemoryAllocator &instance()
-     {
-     TR_ASSERT(0, "no default constructor for TRMemoryAllocator");
-     TRMemoryAllocator *instance = NULL;
-     return *instance;
-     }
-
-  void set_scavange()   { scavenge=true; }
-  void unset_scavange() { scavenge=false;}
-
-  void *allocate(size_t size, const char *name=NULL, int ignore=0) {
-    uint32_t b = bucket(size);
-
-    if (b>=maxbits) {
-      return  memory->allocateMemory(size, kind, TR_Memory::CS2);
+    void *allocate(size_t size, const char *name = NULL, int ignore = 0)
+    {
+        return memory->allocatePersistentMemory(size, TR_Memory::CS2);
     }
 
-    if (freelist[b-minbits]) {
-      void *ret = freelist[b-minbits];
-      memcpy(&freelist[b-minbits],freelist[b-minbits], sizeof(void *));
-
-      return ret;
+    void deallocate(void *pointer, size_t size, const char *name = NULL, int ignore = 0)
+    {
+        memory->freePersistentMemory(pointer);
     }
 
-    // See if we have segments in the freelists of the larger segments.
-    // Get a free segment from the fist available larger size and
-    // add it to the freelist of the current bucket.
+    void *reallocate(size_t newsize, void *ptr, size_t size, const char *name = NULL, int ignore = 0)
+    {
+        if (newsize == size)
+            return ptr;
 
-    if (scavenge) {
-      for (uint32_t i=b+1; i < maxbits; i++) {
-        uint32_t elements=0;
-        if (freelist[i-minbits]) {
-          elements = (1 << (i-b)); // (2^i / 2^b)
+        void *ret = allocate(newsize, name);
+        memcpy(ret, ptr, size < newsize ? size : newsize);
+        deallocate(ptr, size, name);
+        return ret;
+    }
+};
 
-          // remove this segment from its freelist
-          char *freechunk = (char *) freelist[i-minbits];
-          memcpy(&freelist[i-minbits],freelist[i-minbits], sizeof(void *));
+template<TR_AllocationKind kind, uint32_t minbits, uint32_t maxbits = sizeof(void *) * 4> class TRMemoryAllocator {
+    TR_Memory *memory;
+    bool scavenge;
+    void *(freelist[maxbits - minbits]);
 
-          // set the link on the last element to NULL
-          memset(freechunk+bucketsize(b)*(elements-1), 0, sizeof(void *));
+    static uint32_t bucket(size_t size)
+    {
+        uint32_t i = minbits;
 
-          // Set the head of the new freelist
-          freelist[b-minbits] = freechunk+bucketsize(b);
+        while (i < maxbits && bucketsize(i) < size)
+            i += 1;
+        return i;
+    }
 
-          // Now link up remaining elements to form the freelist
-          for (int i=elements-2; i > 0; i--) {
-            void *target = freechunk+bucketsize(b)*i;
-            void *source = freechunk+(bucketsize(b)*(i+1));
-            memcpy(target, &source, sizeof(void *));
-          }
+    static size_t bucketsize(uint32_t b) { return size_t(1) << b; }
 
-          return ((void *)freechunk);
+public:
+    TRMemoryAllocator(const TRMemoryAllocator<kind, minbits, maxbits> &a)
+        : memory(a.memory)
+        , scavenge(a.scavenge)
+    {
+        memset(&freelist, 0, sizeof(freelist));
+    }
+
+    TRMemoryAllocator<kind, minbits, maxbits> &operator=(const TRMemoryAllocator &a)
+    {
+        scavenge = a.scavenge;
+        memset(&freelist, 0, sizeof(freelist));
+    }
+
+    TRMemoryAllocator(TR_Memory *m)
+        : memory(m)
+        , scavenge(true)
+    {
+        memset(&freelist, 0, sizeof(freelist));
+    }
+
+    template<uint32_t mi, uint32_t ma>
+    TRMemoryAllocator(const TRMemoryAllocator<kind, mi, ma> &a)
+        : memory(a.memory)
+        , scavenge(true)
+    {
+        memset(&freelist, 0, sizeof(freelist));
+    }
+
+    static TRMemoryAllocator &instance()
+    {
+        TR_ASSERT(0, "no default constructor for TRMemoryAllocator");
+        TRMemoryAllocator *instance = NULL;
+        return *instance;
+    }
+
+    void set_scavange() { scavenge = true; }
+
+    void unset_scavange() { scavenge = false; }
+
+    void *allocate(size_t size, const char *name = NULL, int ignore = 0)
+    {
+        uint32_t b = bucket(size);
+
+        if (b >= maxbits) {
+            return memory->allocateMemory(size, kind, TR_Memory::CS2);
         }
-      }
+
+        if (freelist[b - minbits]) {
+            void *ret = freelist[b - minbits];
+            memcpy(&freelist[b - minbits], freelist[b - minbits], sizeof(void *));
+
+            return ret;
+        }
+
+        // See if we have segments in the freelists of the larger segments.
+        // Get a free segment from the fist available larger size and
+        // add it to the freelist of the current bucket.
+
+        if (scavenge) {
+            for (uint32_t i = b + 1; i < maxbits; i++) {
+                uint32_t elements = 0;
+                if (freelist[i - minbits]) {
+                    elements = (1 << (i - b)); // (2^i / 2^b)
+
+                    // remove this segment from its freelist
+                    char *freechunk = (char *)freelist[i - minbits];
+                    memcpy(&freelist[i - minbits], freelist[i - minbits], sizeof(void *));
+
+                    // set the link on the last element to NULL
+                    memset(freechunk + bucketsize(b) * (elements - 1), 0, sizeof(void *));
+
+                    // Set the head of the new freelist
+                    freelist[b - minbits] = freechunk + bucketsize(b);
+
+                    // Now link up remaining elements to form the freelist
+                    for (int i = elements - 2; i > 0; i--) {
+                        void *target = freechunk + bucketsize(b) * i;
+                        void *source = freechunk + (bucketsize(b) * (i + 1));
+                        memcpy(target, &source, sizeof(void *));
+                    }
+
+                    return ((void *)freechunk);
+                }
+            }
+        }
+
+        return memory->allocateMemory(bucketsize(b), kind, TR_Memory::CS2);
     }
 
-    return memory->allocateMemory(bucketsize(b), kind, TR_Memory::CS2);
-  }
+    void deallocate(void *pointer, size_t size, const char *name = NULL, int ignore = 0)
+    {
+        uint32_t b = bucket(size);
 
-  void deallocate(void *pointer, size_t size, const char *name=NULL, int ignore=0) {
-    uint32_t b = bucket(size);
-
-    if (b<maxbits) {
-      memcpy(pointer,&freelist[b-minbits], sizeof(void *));
-      freelist[b-minbits]=pointer;
+        if (b < maxbits) {
+            memcpy(pointer, &freelist[b - minbits], sizeof(void *));
+            freelist[b - minbits] = pointer;
+        }
     }
-  }
 
-  void *reallocate(size_t newsize, void *ptr, size_t size, const char *name=NULL, int ignore=0) {
-    uint32_t b1 = bucket(newsize);
-    uint32_t b2 = bucket(size);
+    void *reallocate(size_t newsize, void *ptr, size_t size, const char *name = NULL, int ignore = 0)
+    {
+        uint32_t b1 = bucket(newsize);
+        uint32_t b2 = bucket(size);
 
-    if (b1==b2 && b1!=maxbits) return ptr;
+        if (b1 == b2 && b1 != maxbits)
+            return ptr;
 
-    void *ret = allocate(newsize, name);
-    memcpy(ret, ptr, size<newsize?size:newsize);
-    deallocate(ptr, size, name);
-    return ret;
-  }
-
+        void *ret = allocate(newsize, name);
+        memcpy(ret, ptr, size < newsize ? size : newsize);
+        deallocate(ptr, size, name);
+        return ret;
+    }
 };
 
 typedef TRMemoryAllocator<heapAlloc, 12, 28> TRCS2MemoryAllocator;
 
-namespace TR
-   {
-   typedef CS2::heap_allocator< 65536, 12, TRCS2MemoryAllocator > ThreadLocalAllocator;
-   typedef CS2::shared_allocator < ThreadLocalAllocator > Allocator;
+namespace TR {
+typedef CS2::heap_allocator<65536, 12, TRCS2MemoryAllocator> ThreadLocalAllocator;
+typedef CS2::shared_allocator<ThreadLocalAllocator> Allocator;
 
-   /*
-    * some common CS2 datatypes
-    */
-   typedef CS2::ASparseBitVector<TR::Allocator> SparseBitVector;
-   typedef CS2::ABitVector<TR::Allocator>       BitVector;
+/*
+ * some common CS2 datatypes
+ */
+typedef CS2::ASparseBitVector<TR::Allocator> SparseBitVector;
+typedef CS2::ABitVector<TR::Allocator> BitVector;
 
-   class AllocatedMemoryMeter
-      {
-      private:
-      static const bool isWithFreed = true;
-      static const bool isWithHWM = true;
+class AllocatedMemoryMeter {
+private:
+    static const bool isWithFreed = true;
+    static const bool isWithHWM = true;
 
-      public:
-      class Metric {
-         private:
-         uint64_t _allocated;           // allocated bytes
-         uint64_t _freed;               // freed bytes
-         uint64_t _maxLive;             // high water mark for live bytes
+public:
+    class Metric {
+    private:
+        uint64_t _allocated; // allocated bytes
+        uint64_t _freed; // freed bytes
+        uint64_t _maxLive; // high water mark for live bytes
 
-         public:
-         uint64_t live() { return _allocated - _freed; }
+    public:
+        uint64_t live() { return _allocated - _freed; }
 
-         void update_allocated(uint64_t allocated)
-            {
+        void update_allocated(uint64_t allocated)
+        {
             _allocated += allocated;
             if (live() > _maxLive)
-               _maxLive = live();
-            }
+                _maxLive = live();
+        }
 
-         void update_freed(uint64_t freed)
-            {
-            _freed += freed;
-            }
+        void update_freed(uint64_t freed) { _freed += freed; }
 
-         public:
+    public:
+        Metric() {} // default constructor of Metric is to be uninitialized
 
-
-         Metric() {} // default constructor of Metric is to be uninitialized
-
-         // only allow conversion construction Metric m = 0; ie v must be zero
-         Metric(const uint64_t v) : _allocated(v), _freed(v), _maxLive(v)
-            {
+        // only allow conversion construction Metric m = 0; ie v must be zero
+        Metric(const uint64_t v)
+            : _allocated(v)
+            , _freed(v)
+            , _maxLive(v)
+        {
             TR_ASSERT(v == 0, "conversion constructor is valid only when converting from zero");
-            }
+        }
 
-         Metric operator- (const Metric operand) const
-            {
+        Metric operator-(const Metric operand) const
+        {
             Metric result = *this;
             result -= operand;
             return result;
-            }
+        }
 
-         // this is used for accumulated differences only
-         Metric & operator+= (const Metric &increment)
-            {
+        // this is used for accumulated differences only
+        Metric &operator+=(const Metric &increment)
+        {
             _allocated += increment._allocated;
             _freed += increment._freed;
             _maxLive += increment._maxLive;
 
             return *this;
-            }
+        }
 
-         // this is used for differences only
-         Metric & operator-= (const Metric &increment)
-            {
+        // this is used for differences only
+        Metric &operator-=(const Metric &increment)
+        {
             _allocated -= increment._allocated;
             _freed -= increment._freed;
             _maxLive -= increment._maxLive;
 
             return *this;
-            }
+        }
 
-         // basic printf
-         void _printf()
-            {
-            printf("%11llu %11llu %11llu %11llu", (long long unsigned int)_allocated, (long long unsigned int)_freed, (long long unsigned int)_maxLive, (long long unsigned int)live());
-            }
+        // basic printf
+        void _printf()
+        {
+            printf("%11llu %11llu %11llu %11llu", (long long unsigned int)_allocated, (long long unsigned int)_freed,
+                (long long unsigned int)_maxLive, (long long unsigned int)live());
+        }
 
+        friend class AllocatedMemoryMeter;
+    };
 
-         friend class AllocatedMemoryMeter;
-      };
-      public:
+public:
+    // TODO: make private once removing tracing code
+    static Metric _currentMemUsage; // current statistics across all alloc types and memory, persistent, stack, heap and
+                                    // CS2 allocators
+    static uint8_t _enabled; // which memory types will be profiled from TR_AllocationKind
 
-      // TODO: make private once removing tracing code
-      static Metric _currentMemUsage;          // current statistics across all alloc types and memory, persistent, stack, heap and CS2 allocators
-      static uint8_t _enabled;                 // which memory types will be profiled from TR_AllocationKind
-
-      public:
-      static void update_allocated(uint64_t allocated, TR_AllocationKind allocationKind)
-         {
-         if (_enabled & allocationKind)
+public:
+    static void update_allocated(uint64_t allocated, TR_AllocationKind allocationKind)
+    {
+        if (_enabled & allocationKind)
             _currentMemUsage.update_allocated(allocated);
-         }
-      static void update_freed(uint64_t freed, TR_AllocationKind allocationKind)
-         {
-         if (_enabled & allocationKind)
+    }
+
+    static void update_freed(uint64_t freed, TR_AllocationKind allocationKind)
+    {
+        if (_enabled & allocationKind)
             _currentMemUsage.update_freed(freed);
-         }
-      static void check(TR_Memory *trMemory, const char * file, int line);
+    }
 
-      /**
-       * \brief Starts the meter from the currently allocated bytes.
-       */
-      void Start(void)
-         {
-         _reading = _currentMemUsage;
-         // _reading._printf(); printf("\n");
-         }
+    static void check(TR_Memory *trMemory, const char *file, int line);
 
-      /**
-       * \brief Stops the meter. The allocated bytes counted so far is kept and resuming the
-       * meter with Start() will resume counting from this point. Call Reset() to
-       * reset the count to 0.
-       */
-      void Stop(void)
-         {
-         Metric current = _currentMemUsage;
-         if ((current._allocated >= _reading._allocated) && (current._freed >= _reading._freed))
+    /**
+     * \brief Starts the meter from the currently allocated bytes.
+     */
+    void Start(void)
+    {
+        _reading = _currentMemUsage;
+        // _reading._printf(); printf("\n");
+    }
+
+    /**
+     * \brief Stops the meter. The allocated bytes counted so far is kept and resuming the
+     * meter with Start() will resume counting from this point. Call Reset() to
+     * reset the count to 0.
+     */
+    void Stop(void)
+    {
+        Metric current = _currentMemUsage;
+        if ((current._allocated >= _reading._allocated) && (current._freed >= _reading._freed))
             _reading = current - _reading;
-         else
+        else
             _reading = 0;
-         // _currentMemUsage._printf();  printf("\n");
-         // printf("%40.40s ", "diff = "); _reading._printf(); printf("\n");
-         }
+        // _currentMemUsage._printf();  printf("\n");
+        // printf("%40.40s ", "diff = "); _reading._printf(); printf("\n");
+    }
 
-      /**
-       * \brief Resets the meter to a count of 0. Stops the meter if it was running.
-       */
-      void Reset(void)
-         {
-         _reading = 0;
-         }
+    /**
+     * \brief Resets the meter to a count of 0. Stops the meter if it was running.
+     */
+    void Reset(void) { _reading = 0; }
 
-      /**
-       * \brief Returns the metric of this meter
-       */
-      Metric Read(void) const { return _reading; }
+    /**
+     * \brief Returns the metric of this meter
+     */
+    Metric Read(void) const { return _reading; }
 
-      static const char* Name(bool csv = false)
-         {
-         if (csv)
+    static const char *Name(bool csv = false)
+    {
+        if (csv)
             return "Allocs";
-         else
+        else
             return "Memory Usage (bytes)";
-         }
+    }
 
-      static const char *UnitsText(bool alternativeFormat = false /* ignored */)
-         {
-            return "allocated (% total)  freed (% total)  maxLive (% total)";
-         }
+    static const char *UnitsText(bool alternativeFormat = false /* ignored */)
+    {
+        return "allocated (% total)  freed (% total)  maxLive (% total)";
+    }
 
-      static uint32_t sprintf_part(char *line, uint64_t bytes, uint64_t total)
-         {
-         uint32_t offset = 0;
+    static uint32_t sprintf_part(char *line, uint64_t bytes, uint64_t total)
+    {
+        uint32_t offset = 0;
 
-         float ratio = total?(float(bytes)/float(total))*100:0;
+        float ratio = total ? (float(bytes) / float(total)) * 100 : 0;
 
-         offset += sprintf(line+offset, "%12llu ", (long long unsigned int)bytes);
-         offset += sprintf(line+offset, " (%5.1f%%)", ratio);
-         return offset;
-         }
+        offset += sprintf(line + offset, "%12llu ", (long long unsigned int)bytes);
+        offset += sprintf(line + offset, " (%5.1f%%)", ratio);
+        return offset;
+    }
 
-      static uint32_t sprintfMetric(char *line, Metric value, Metric total, bool alternativeFormat = false /* ignored */, bool csv = false)
-         {
-         uint32_t offset = 0;
-         if (csv)
-            {
+    static uint32_t sprintfMetric(char *line, Metric value, Metric total, bool alternativeFormat = false /* ignored */,
+        bool csv = false)
+    {
+        uint32_t offset = 0;
+        if (csv) {
             offset += sprintf(line, "\"%llu", (long long unsigned int)value._allocated);
-            if (isWithFreed) offset += sprintf(line+offset, "%llu", (long long unsigned int)value._freed);
-            if (isWithHWM) offset += sprintf(line+offset, "%llu", (long long unsigned int)value._maxLive);
-            offset += sprintf(line+offset, "\"");
-            }
-         else
-            {
-            offset += sprintf_part(line+offset, value._allocated, total._allocated);
             if (isWithFreed)
-               {
-               offset += sprintf(line+offset, " ");
-               offset += sprintf_part(line+offset, value._freed, total._freed);
-               }
+                offset += sprintf(line + offset, "%llu", (long long unsigned int)value._freed);
             if (isWithHWM)
-               {
-               offset += sprintf(line+offset, " ");
-               offset += sprintf_part(line+offset, value._maxLive, total._maxLive);
-               }
+                offset += sprintf(line + offset, "%llu", (long long unsigned int)value._maxLive);
+            offset += sprintf(line + offset, "\"");
+        } else {
+            offset += sprintf_part(line + offset, value._allocated, total._allocated);
+            if (isWithFreed) {
+                offset += sprintf(line + offset, " ");
+                offset += sprintf_part(line + offset, value._freed, total._freed);
             }
-         return offset;
-         }
-   private:
-      Metric _reading;     // meter reading while metering, uninitialized on construction
-   };
+            if (isWithHWM) {
+                offset += sprintf(line + offset, " ");
+                offset += sprintf_part(line + offset, value._maxLive, total._maxLive);
+            }
+        }
+        return offset;
+    }
 
-   typedef CS2::RunnableMeter<AllocatedMemoryMeter> MemoryMeter;
-   typedef CS2::LexicalBlockProfiler<MemoryMeter, Allocator>  LexicalMemProfiler;
-   typedef CS2::PhaseMeasuringSummary<MemoryMeter, Allocator> PhaseMemSummary;
-   }
-typedef CS2::arena_allocator  <65536, TR::Allocator> TR_ArenaAllocator;
+private:
+    Metric _reading; // meter reading while metering, uninitialized on construction
+};
+
+typedef CS2::RunnableMeter<AllocatedMemoryMeter> MemoryMeter;
+typedef CS2::LexicalBlockProfiler<MemoryMeter, Allocator> LexicalMemProfiler;
+typedef CS2::PhaseMeasuringSummary<MemoryMeter, Allocator> PhaseMemSummary;
+} // namespace TR
+
+typedef CS2::arena_allocator<65536, TR::Allocator> TR_ArenaAllocator;
 
 /*
  * Added the following static function to
  * reduce the verbosity involved in declaring a typed_allocator
  * everytime we need an stl object.
  */
-template <typename T, class Alloc>
-static inline TR::typed_allocator<T, Alloc> getTypedAllocator(Alloc al)
+template<typename T, class Alloc> static inline TR::typed_allocator<T, Alloc> getTypedAllocator(Alloc al)
 {
-   TR::typed_allocator<T, Alloc> ta(al);
-   return ta;
+    TR::typed_allocator<T, Alloc> ta(al);
+    return ta;
 }
 
-template <typename T>
-static inline TR::typed_allocator<T, TR::Allocator> getTypedAllocator(TR::Allocator al)
+template<typename T> static inline TR::typed_allocator<T, TR::Allocator> getTypedAllocator(TR::Allocator al)
 {
-	TR::typed_allocator<T, TR::Allocator> ta(al);
-	return ta;
+    TR::typed_allocator<T, TR::Allocator> ta(al);
+    return ta;
 }
 
 #endif

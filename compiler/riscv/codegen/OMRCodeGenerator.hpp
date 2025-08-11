@@ -27,10 +27,14 @@
  */
 #ifndef OMR_CODEGENERATOR_CONNECTOR
 #define OMR_CODEGENERATOR_CONNECTOR
+
 namespace OMR {
-namespace RV { class CodeGenerator; }
-typedef OMR::RV::CodeGenerator CodeGeneratorConnector;
+namespace RV {
+class CodeGenerator;
 }
+
+typedef OMR::RV::CodeGenerator CodeGeneratorConnector;
+} // namespace OMR
 #else
 #error OMR::RV::CodeGenerator expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -41,10 +45,11 @@ typedef OMR::RV::CodeGenerator CodeGeneratorConnector;
 #include "infra/Annotations.hpp"
 
 class TR_RVOutOfLineCodeSection;
+
 namespace TR {
 class RVLinkageProperties;
 class ConstantDataSnippet;
-}
+} // namespace TR
 
 /**
  * @brief Generates instructions for loading 32-bit integer value to a register
@@ -54,7 +59,8 @@ class ConstantDataSnippet;
  * @param[in] trgReg : target register
  * @param[in] cursor : instruction cursor
  */
-extern TR::Instruction *loadConstant32(TR::CodeGenerator *cg, TR::Node *node, int32_t value, TR::Register *trgReg, TR::Instruction *cursor = NULL);
+extern TR::Instruction *loadConstant32(TR::CodeGenerator *cg, TR::Node *node, int32_t value, TR::Register *trgReg,
+    TR::Instruction *cursor = NULL);
 /**
  * @brief Generates instructions for loading 64-bit integer value to a register
  * @param[in] cg : CodeGenerator
@@ -63,235 +69,237 @@ extern TR::Instruction *loadConstant32(TR::CodeGenerator *cg, TR::Node *node, in
  * @param[in] trgReg : target register
  * @param[in] cursor : instruction cursor
  */
-extern TR::Instruction *loadConstant64(TR::CodeGenerator *cg, TR::Node *node, int64_t value, TR::Register *trgReg, TR::Instruction *cursor = NULL);
+extern TR::Instruction *loadConstant64(TR::CodeGenerator *cg, TR::Node *node, int64_t value, TR::Register *trgReg,
+    TR::Instruction *cursor = NULL);
 
-struct TR_RVBinaryEncodingData : public TR_BinaryEncodingData
-   {
-   int32_t estimate;
-   TR::Instruction *cursorInstruction;
-   TR::Instruction *i2jEntryInstruction;
-   TR::Recompilation *recomp;
-   };
+struct TR_RVBinaryEncodingData : public TR_BinaryEncodingData {
+    int32_t estimate;
+    TR::Instruction *cursorInstruction;
+    TR::Instruction *i2jEntryInstruction;
+    TR::Recompilation *recomp;
+};
 
-namespace OMR
-{
+namespace OMR { namespace RV {
 
-namespace RV
-{
-
-class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
-   {
-
+class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator {
 protected:
-
-   CodeGenerator(TR::Compilation *comp);
+    CodeGenerator(TR::Compilation *comp);
 
 public:
+    void initialize();
 
-   void initialize();
+    /**
+     * @brief AArch64 hook to begin instruction selection
+     */
+    void beginInstructionSelection();
 
-   /**
-    * @brief AArch64 hook to begin instruction selection
-    */
-   void beginInstructionSelection();
+    /**
+     * @brief AArch64 hook to end instruction selection
+     */
+    void endInstructionSelection();
 
-   /**
-    * @brief AArch64 hook to end instruction selection
-    */
-   void endInstructionSelection();
+    /**
+     * @brief AArch64 binary encoding pass
+     */
+    void doBinaryEncoding();
 
-   /**
-    * @brief AArch64 binary encoding pass
-    */
-   void doBinaryEncoding();
+    /**
+     * @brief Creates linkage
+     * @param[in] lc : linkage convention
+     * @return created linkage
+     */
+    TR::Linkage *createLinkage(TR_LinkageConventions lc);
 
-   /**
-    * @brief Creates linkage
-    * @param[in] lc : linkage convention
-    * @return created linkage
-    */
-   TR::Linkage *createLinkage(TR_LinkageConventions lc);
+    /**
+     * @brief Emits data snippets
+     */
+    void emitDataSnippets();
 
-   /**
-    * @brief Emits data snippets
-    */
-   void emitDataSnippets();
+    /**
+     * @brief Has data snippets or not
+     * @return true if it has data snippets, false otherwise
+     */
+    bool hasDataSnippets();
 
-   /**
-    * @brief Has data snippets or not
-    * @return true if it has data snippets, false otherwise
-    */
-   bool hasDataSnippets();
-
-   /**
-    * @brief Sets estimated locations for data snippet labels
-    * @param[in] estimatedSnippetStart : estimated snippet start
-    * @return estimated location
-    */
-   int32_t setEstimatedLocationsForDataSnippetLabels(int32_t estimatedSnippetStart);
+    /**
+     * @brief Sets estimated locations for data snippet labels
+     * @param[in] estimatedSnippetStart : estimated snippet start
+     * @return estimated location
+     */
+    int32_t setEstimatedLocationsForDataSnippetLabels(int32_t estimatedSnippetStart);
 
 #ifdef DEBUG
-   /**
-    * @brief Dumps data snippets
-    * @param[in] outFile : FILE for output
-    */
-   void dumpDataSnippets(TR::FILE *outFile);
+    /**
+     * @brief Dumps data snippets
+     * @param[in] outFile : FILE for output
+     */
+    void dumpDataSnippets(TR::FILE *outFile);
 #endif
 
-   /**
-    * @brief Generates switch-to-interpreter pre-prologue
-    * @param[in] cursor : instruction cursor
-    * @param[in] node : node
-    * @return instruction cursor
-    */
-   TR::Instruction *generateSwitchToInterpreterPrePrologue(TR::Instruction *cursor, TR::Node *node);
+    /**
+     * @brief Generates switch-to-interpreter pre-prologue
+     * @param[in] cursor : instruction cursor
+     * @param[in] node : node
+     * @return instruction cursor
+     */
+    TR::Instruction *generateSwitchToInterpreterPrePrologue(TR::Instruction *cursor, TR::Node *node);
 
-   /**
-    * @brief Clobber evaluate
-    * @param[in] node : node to be evaluated
-    * @return Register for evaluated result
-    */
-   TR::Register *gprClobberEvaluate(TR::Node *node);
-   // different from evaluateNode in that it returns a clobberable register
+    /**
+     * @brief Clobber evaluate
+     * @param[in] node : node to be evaluated
+     * @return Register for evaluated result
+     */
+    TR::Register *gprClobberEvaluate(TR::Node *node);
 
-   /**
-    * @brief Returns the linkage properties
-    * @return Linkage properties
-    */
-   const TR::RVLinkageProperties &getProperties() { return *_linkageProperties; }
+    // different from evaluateNode in that it returns a clobberable register
 
-   /**
-    * @brief Returns the stack pointer register
-    * @return stack pointer register
-    */
-   TR::RealRegister *getStackPointerRegister() { return _stackPtrRegister; }
-   /**
-    * @brief Sets the stack pointer register
-    * @param[in] r : stack pointer register
-    * @return stack pointer register
-    */
-   TR::RealRegister *setStackPointerRegister(TR::RealRegister *r) { return (_stackPtrRegister = r); }
+    /**
+     * @brief Returns the linkage properties
+     * @return Linkage properties
+     */
+    const TR::RVLinkageProperties &getProperties() { return *_linkageProperties; }
 
-   /**
-    * @brief Returns the method meta-data register
-    * @return meta-data register
-    */
-   TR::RealRegister *getMethodMetaDataRegister() { return _methodMetaDataRegister; }
-   /**
-    * @brief Sets the method meta-data register
-    * @param[in] r : method meta-data register
-    * @return meta-data register
-    */
-   TR::RealRegister *setMethodMetaDataRegister(TR::RealRegister *r) { return (_methodMetaDataRegister = r); }
+    /**
+     * @brief Returns the stack pointer register
+     * @return stack pointer register
+     */
+    TR::RealRegister *getStackPointerRegister() { return _stackPtrRegister; }
 
-   /**
-    * @brief Applies 16-bit Label relative relocation (for conditional branch)
-    * @param[in] cursor : instruction cursor
-    * @param[in] label : label
-    */
-   void apply16BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label);
+    /**
+     * @brief Sets the stack pointer register
+     * @param[in] r : stack pointer register
+     * @return stack pointer register
+     */
+    TR::RealRegister *setStackPointerRegister(TR::RealRegister *r) { return (_stackPtrRegister = r); }
 
-   /**
-    * @brief Applies 16-bit Label relative relocation (for conditional branch)
-    * @param[in] cursor : instruction cursor
-    * @param[in] label : label
-    * @param[in] d : FIXME
-    * @param[in] isInstrOffset : FIXME
-    */
-   void apply16BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label, int8_t d, bool isInstrOffset);
+    /**
+     * @brief Returns the method meta-data register
+     * @return meta-data register
+     */
+    TR::RealRegister *getMethodMetaDataRegister() { return _methodMetaDataRegister; }
 
-   /**
-    * @brief Applies 24-bit Label relative relocation (for conditional branch)
-    * @param[in] cursor : instruction cursor
-    * @param[in] label : label
-    */
-   void apply24BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label);
+    /**
+     * @brief Sets the method meta-data register
+     * @param[in] r : method meta-data register
+     * @return meta-data register
+     */
+    TR::RealRegister *setMethodMetaDataRegister(TR::RealRegister *r) { return (_methodMetaDataRegister = r); }
 
-   /**
-    * @brief Applies 32-bit Label relative relocation (for unconditional branch)
-    * @param[in] cursor : instruction cursor
-    * @param[in] label : label
-    */
-   void apply32BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label);
+    /**
+     * @brief Applies 16-bit Label relative relocation (for conditional branch)
+     * @param[in] cursor : instruction cursor
+     * @param[in] label : label
+     */
+    void apply16BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label);
 
-   /**
-    * @brief Status of IsOutOfLineHotPath flag
-    * @return IsOutOfLineHotPath flag
-    */
-   bool isOutOfLineHotPath() { return _flags.testAny(IsOutOfLineHotPath); }
-   /**
-    * @brief Sets IsOutOfLineHotPath flag
-    * @param[in] v : IsOutOfLineHotPath flag
-    */
-   void setIsOutOfLineHotPath(bool v) { _flags.set(IsOutOfLineHotPath, v);}
+    /**
+     * @brief Applies 16-bit Label relative relocation (for conditional branch)
+     * @param[in] cursor : instruction cursor
+     * @param[in] label : label
+     * @param[in] d : FIXME
+     * @param[in] isInstrOffset : FIXME
+     */
+    void apply16BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label, int8_t d, bool isInstrOffset);
 
-   /**
-    * @brief Picks register
-    * @param[in] regCan : register candidate
-    * @param[in] barr : array of blocks
-    * @param[in] availableRegisters : available registers
-    * @param[out] highRegisterNumber : high register number
-    * @param[in] candidates : candidates already assigned
-    * @return register number
-    */
-   TR_GlobalRegisterNumber pickRegister(TR::RegisterCandidate *regCan, TR::Block **barr, TR_BitVector &availableRegisters, TR_GlobalRegisterNumber &highRegisterNumber, TR_LinkHead<TR::RegisterCandidate> *candidates);
-   /**
-    * @brief Allows global register across branch or not
-    * @param[in] regCan : register candidate
-    * @param[in] branchNode : branch node
-    * @return true when allowed, false otherwise
-    */
-   bool allowGlobalRegisterAcrossBranch(TR::RegisterCandidate *regCan, TR::Node * branchNode);
-   /**
-    * @brief Gets the maximum number of GPRs allowed across edge
-    * @param[in] node : node
-    * @return maximum number of GPRs allowed across edge
-    */
-   using OMR::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge;
-   int32_t getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Node *node);
-   /**
-    * @brief Gets the maximum number of FPRs allowed across edge
-    * @param[in] node : node
-    * @return maximum number of FPRs allowed across edge
-    */
-   int32_t getMaximumNumberOfFPRsAllowedAcrossEdge(TR::Node *node);
-   /**
-    * @brief Specified global register is available or not
-    * @param[in] i : global register number
-    * @param[in] dt : data type
-    * @return true if the specified global register is available, false otherwise
-    */
-   bool isGlobalRegisterAvailable(TR_GlobalRegisterNumber i, TR::DataType dt);
+    /**
+     * @brief Applies 24-bit Label relative relocation (for conditional branch)
+     * @param[in] cursor : instruction cursor
+     * @param[in] label : label
+     */
+    void apply24BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label);
 
-   TR_BitVector _globalRegisterBitVectors[TR_numSpillKinds];
-   /**
-    * @brief Gets global registers
-    * @param[in] kind : kind of spill
-    * @param[in] lc : linkage convention
-    * @return BitVector of global registers
-    */
-   virtual TR_BitVector *getGlobalRegisters(TR_SpillKinds kind, TR_LinkageConventions lc) { return &_globalRegisterBitVectors[kind]; }
+    /**
+     * @brief Applies 32-bit Label relative relocation (for unconditional branch)
+     * @param[in] cursor : instruction cursor
+     * @param[in] label : label
+     */
+    void apply32BitLabelRelativeRelocation(int32_t *cursor, TR::LabelSymbol *label);
 
-   /**
-    * @brief Gets linkage global register number
-    * @param[in] linkageRegisterIndex : register index
-    * @param[in] type : data type
-    * @return register number for specified index, -1 if index is too large for datat type
-    */
-   TR_GlobalRegisterNumber getLinkageGlobalRegisterNumber(int8_t linkageRegisterIndex, TR::DataType type);
+    /**
+     * @brief Status of IsOutOfLineHotPath flag
+     * @return IsOutOfLineHotPath flag
+     */
+    bool isOutOfLineHotPath() { return _flags.testAny(IsOutOfLineHotPath); }
 
-   /**
-    * @brief Gets the maximum number of assignable GPRs
-    * @return the maximum number of assignable GPRs
-    */
-   int32_t getMaximumNumbersOfAssignableGPRs();
-   /**
-    * @brief Gets the maximum number of assignable FPRs
-    * @return the maximum number of assignable FPRs
-    */
-   int32_t getMaximumNumbersOfAssignableFPRs();
+    /**
+     * @brief Sets IsOutOfLineHotPath flag
+     * @param[in] v : IsOutOfLineHotPath flag
+     */
+    void setIsOutOfLineHotPath(bool v) { _flags.set(IsOutOfLineHotPath, v); }
 
-   /**
+    /**
+     * @brief Picks register
+     * @param[in] regCan : register candidate
+     * @param[in] barr : array of blocks
+     * @param[in] availableRegisters : available registers
+     * @param[out] highRegisterNumber : high register number
+     * @param[in] candidates : candidates already assigned
+     * @return register number
+     */
+    TR_GlobalRegisterNumber pickRegister(TR::RegisterCandidate *regCan, TR::Block **barr,
+        TR_BitVector &availableRegisters, TR_GlobalRegisterNumber &highRegisterNumber,
+        TR_LinkHead<TR::RegisterCandidate> *candidates);
+    /**
+     * @brief Allows global register across branch or not
+     * @param[in] regCan : register candidate
+     * @param[in] branchNode : branch node
+     * @return true when allowed, false otherwise
+     */
+    bool allowGlobalRegisterAcrossBranch(TR::RegisterCandidate *regCan, TR::Node *branchNode);
+    /**
+     * @brief Gets the maximum number of GPRs allowed across edge
+     * @param[in] node : node
+     * @return maximum number of GPRs allowed across edge
+     */
+    using OMR::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge;
+    int32_t getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Node *node);
+    /**
+     * @brief Gets the maximum number of FPRs allowed across edge
+     * @param[in] node : node
+     * @return maximum number of FPRs allowed across edge
+     */
+    int32_t getMaximumNumberOfFPRsAllowedAcrossEdge(TR::Node *node);
+    /**
+     * @brief Specified global register is available or not
+     * @param[in] i : global register number
+     * @param[in] dt : data type
+     * @return true if the specified global register is available, false otherwise
+     */
+    bool isGlobalRegisterAvailable(TR_GlobalRegisterNumber i, TR::DataType dt);
+
+    TR_BitVector _globalRegisterBitVectors[TR_numSpillKinds];
+
+    /**
+     * @brief Gets global registers
+     * @param[in] kind : kind of spill
+     * @param[in] lc : linkage convention
+     * @return BitVector of global registers
+     */
+    virtual TR_BitVector *getGlobalRegisters(TR_SpillKinds kind, TR_LinkageConventions lc)
+    {
+        return &_globalRegisterBitVectors[kind];
+    }
+
+    /**
+     * @brief Gets linkage global register number
+     * @param[in] linkageRegisterIndex : register index
+     * @param[in] type : data type
+     * @return register number for specified index, -1 if index is too large for datat type
+     */
+    TR_GlobalRegisterNumber getLinkageGlobalRegisterNumber(int8_t linkageRegisterIndex, TR::DataType type);
+
+    /**
+     * @brief Gets the maximum number of assignable GPRs
+     * @return the maximum number of assignable GPRs
+     */
+    int32_t getMaximumNumbersOfAssignableGPRs();
+    /**
+     * @brief Gets the maximum number of assignable FPRs
+     * @return the maximum number of assignable FPRs
+     */
+    int32_t getMaximumNumbersOfAssignableFPRs();
+
+    /**
      * @brief give the largest negative constant that must be materialized
      * @return the largest negative constant that must be materialized
      */
@@ -303,69 +311,59 @@ public:
      */
     int64_t getSmallestPosConstThatMustBeMaterialized();
 
-   /**
-    * @brief Builds register map
-    * @param[in] map : GC stack map
-    */
-   void buildRegisterMapForInstruction(TR_GCStackMap *map);
+    /**
+     * @brief Builds register map
+     * @param[in] map : GC stack map
+     */
+    void buildRegisterMapForInstruction(TR_GCStackMap *map);
 
-   TR_GlobalRegisterNumber _gprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters]; // could be smaller
-   TR_GlobalRegisterNumber _fprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters]; // could be smaller
+    TR_GlobalRegisterNumber _gprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters]; // could be smaller
+    TR_GlobalRegisterNumber _fprLinkageGlobalRegisterNumbers[TR::RealRegister::NumRegisters]; // could be smaller
 
-   /**
-    * @brief Answers whether a trampoline is required for a direct call instruction to
-    *           reach a target address.
-    *
-    * @param[in] targetAddress : the absolute address of the call target
-    * @param[in] sourceAddress : the absolute address of the call instruction
-    *
-    * @return : true if a trampoline is required; false otherwise.
-    */
-   bool directCallRequiresTrampoline(intptr_t targetAddress, intptr_t sourceAddress);
+    /**
+     * @brief Answers whether a trampoline is required for a direct call instruction to
+     *           reach a target address.
+     *
+     * @param[in] targetAddress : the absolute address of the call target
+     * @param[in] sourceAddress : the absolute address of the call instruction
+     *
+     * @return : true if a trampoline is required; false otherwise.
+     */
+    bool directCallRequiresTrampoline(intptr_t targetAddress, intptr_t sourceAddress);
 
-   /**
-    * @return Retrieves the cached returnTypeInfo instruction
-    */
-   TR::DataInstruction* getReturnTypeInfoInstruction()
-      {
-      return _returnTypeInfoInstruction;
-      }
+    /**
+     * @return Retrieves the cached returnTypeInfo instruction
+     */
+    TR::DataInstruction *getReturnTypeInfoInstruction() { return _returnTypeInfoInstruction; }
 
-   /**
-    * @brief Caches the returnTypeInfo instruction
-    * @param[in] rtii : the returnTypeInfo instruction
-    */
-   void setReturnTypeInfoInstruction(TR::DataInstruction *rtii)
-      {
-      _returnTypeInfoInstruction = rtii;
-      }
+    /**
+     * @brief Caches the returnTypeInfo instruction
+     * @param[in] rtii : the returnTypeInfo instruction
+     */
+    void setReturnTypeInfoInstruction(TR::DataInstruction *rtii) { _returnTypeInfoInstruction = rtii; }
 
-   static bool isILOpCodeSupported(TR::ILOpCodes);
+    static bool isILOpCodeSupported(TR::ILOpCodes);
 
-   private:
+private:
+    enum // flags
+    {
+        IsOutOfLineHotPath = 0x00000200,
+        DummyLastFlag
+    };
 
-   enum // flags
-      {
-      IsOutOfLineHotPath    = 0x00000200,
-      DummyLastFlag
-      };
+    flags32_t _flags;
 
-   flags32_t _flags;
+    uint32_t _numGPR;
+    uint32_t _numFPR;
 
-   uint32_t _numGPR;
-   uint32_t _numFPR;
+    TR::RealRegister *_stackPtrRegister;
+    TR::RealRegister *_methodMetaDataRegister;
+    TR::DataInstruction *_returnTypeInfoInstruction;
+    TR::ConstantDataSnippet *_constantData;
+    const TR::RVLinkageProperties *_linkageProperties;
+    TR::list<TR_RVOutOfLineCodeSection *> _outOfLineCodeSectionList;
+};
 
-   TR::RealRegister *_stackPtrRegister;
-   TR::RealRegister *_methodMetaDataRegister;
-   TR::DataInstruction *_returnTypeInfoInstruction;
-   TR::ConstantDataSnippet *_constantData;
-   const TR::RVLinkageProperties *_linkageProperties;
-   TR::list<TR_RVOutOfLineCodeSection*> _outOfLineCodeSectionList;
-
-   };
-
-} // RV
-
-} // TR
+}} // namespace OMR::RV
 
 #endif

@@ -40,272 +40,250 @@
 #include "stdarg.h"
 
 void OMR_NORETURN TR::trap()
-   {
-   static char * noDebug = feGetEnv("TR_NoDebuggerBreakPoint");
-   if (!noDebug)
-      {
+{
+    static char *noDebug = feGetEnv("TR_NoDebuggerBreakPoint");
+    if (!noDebug) {
 #ifdef _MSC_VER
 #ifdef DEBUG
-      DebugBreak();
+        DebugBreak();
 #else
-      static char *revertToDebugbreakWin = feGetEnv("TR_revertToDebugbreakWin");
-      if(revertToDebugbreakWin)
-         {
-         DebugBreak();
-         }
-      else
-         {
-         *(volatile int*)(0) = 1;
-         }
-#endif //ifdef DEBUG
+        static char *revertToDebugbreakWin = feGetEnv("TR_revertToDebugbreakWin");
+        if (revertToDebugbreakWin) {
+            DebugBreak();
+        } else {
+            *(volatile int *)(0) = 1;
+        }
+#endif // ifdef DEBUG
 #else // of _MSC_VER
 
-      // SIGABRT only has one global signal handler, so we cannot guard function calls against SIGABRT using the port
-      // library APIs. Raising a SIGTRAP is useful for downstream projects who may want to catch such signals for 
-      // compilation thread crashes and requeue such compilations (for another attempt, or perhaps to generate
-      // additional diagnostic data).
-      raise(SIGTRAP);
+        // SIGABRT only has one global signal handler, so we cannot guard function calls against SIGABRT using the port
+        // library APIs. Raising a SIGTRAP is useful for downstream projects who may want to catch such signals for
+        // compilation thread crashes and requeue such compilations (for another attempt, or perhaps to generate
+        // additional diagnostic data).
+        raise(SIGTRAP);
 #endif // ifdef _MSC_VER
-      }
-   exit(1337);
-   }
+    }
+    exit(1337);
+}
 
-static void traceAssertionFailure(const char * file, int32_t line, const char *condition, const char *s, va_list ap)
-   {
-   TR::Compilation *comp = TR::comp();
+static void traceAssertionFailure(const char *file, int32_t line, const char *condition, const char *s, va_list ap)
+{
+    TR::Compilation *comp = TR::comp();
 
-   if (!condition) condition = "";
+    if (!condition)
+        condition = "";
 
-   // Default is to always print to screen
-   bool printOnscreen = true;
+    // Default is to always print to screen
+    bool printOnscreen = true;
 
-   if (printOnscreen)
-      {
-      fprintf(stderr, "Assertion failed at %s:%d: %s\n", file, line, condition);
+    if (printOnscreen) {
+        fprintf(stderr, "Assertion failed at %s:%d: %s\n", file, line, condition);
 
-      if (comp && TR::isJ9())
-        fprintf(stderr, "%s\n", TR::Compiler->debug.extraAssertMessage(comp));
+        if (comp && TR::isJ9())
+            fprintf(stderr, "%s\n", TR::Compiler->debug.extraAssertMessage(comp));
 
-      if (s)
-         {
-         fprintf(stderr, "\t");
-         va_list copy;
-         va_copy(copy, ap);
-         vfprintf(stderr, s, copy);
-         va_end(copy);
-         fprintf(stderr, "\n");
-         }
+        if (s) {
+            fprintf(stderr, "\t");
+            va_list copy;
+            va_copy(copy, ap);
+            vfprintf(stderr, s, copy);
+            va_end(copy);
+            fprintf(stderr, "\n");
+        }
 
-      if (comp)
-         {
-         const char *methodName =
-               comp->signature();
-         const char *hotness = comp->getHotnessName();
-         bool profiling = false;
-         if (comp->getRecompilationInfo() && comp->getRecompilationInfo()->isProfilingCompilation())
-            profiling = true;
+        if (comp) {
+            const char *methodName = comp->signature();
+            const char *hotness = comp->getHotnessName();
+            bool profiling = false;
+            if (comp->getRecompilationInfo() && comp->getRecompilationInfo()->isProfilingCompilation())
+                profiling = true;
 
-         fprintf(stderr, "compiling %s at level: %s%s\n", methodName, hotness, profiling?" (profiling)":"");
-         }
+            fprintf(stderr, "compiling %s at level: %s%s\n", methodName, hotness, profiling ? " (profiling)" : "");
+        }
 
-      TR_Debug::printStackBacktrace();
+        TR_Debug::printStackBacktrace();
 
-      fprintf(stderr, "\n");
+        fprintf(stderr, "\n");
 
-      fflush(stderr);
-      }
+        fflush(stderr);
+    }
 
-   // this diagnostic call adds useful info to log file and flushes it, if we're tracing the current method
-   if (comp)
-      {
-      comp->diagnosticImpl("Assertion failed at %s:%d:%s", file, line, condition);
-      if (s)
-         {
-         comp->diagnosticImpl(":\n");
-         va_list copy;
-         va_copy(copy, ap);
-         comp->diagnosticImplVA(s, copy);
-         va_end(copy);
-         }
-      comp->diagnosticImpl("\n");
-      }
-   }
+    // this diagnostic call adds useful info to log file and flushes it, if we're tracing the current method
+    if (comp) {
+        comp->diagnosticImpl("Assertion failed at %s:%d:%s", file, line, condition);
+        if (s) {
+            comp->diagnosticImpl(":\n");
+            va_list copy;
+            va_copy(copy, ap);
+            comp->diagnosticImplVA(s, copy);
+            va_end(copy);
+        }
+        comp->diagnosticImpl("\n");
+    }
+}
 
-namespace TR
-   {
-   static void OMR_NORETURN va_fatal_assertion(const char *file, int line, const char *condition, const char *format, va_list ap)
-      {
-      traceAssertionFailure(file, line, condition, format, ap);
-      TR::trap();
-      }
+namespace TR {
+static void OMR_NORETURN va_fatal_assertion(const char *file, int line, const char *condition, const char *format,
+    va_list ap)
+{
+    traceAssertionFailure(file, line, condition, format, ap);
+    TR::trap();
+}
 
-   void assertion(const char *file, int line, const char *condition, const char *format, ...)
-      {
-      TR::Compilation *comp = TR::comp();
-      if (comp)
-         {
-         // TR_IgnoreAssert: ignore nonfatal assertion failures.
-         if (comp->getOption(TR_IgnoreAssert))
+void assertion(const char *file, int line, const char *condition, const char *format, ...)
+{
+    TR::Compilation *comp = TR::comp();
+    if (comp) {
+        // TR_IgnoreAssert: ignore nonfatal assertion failures.
+        if (comp->getOption(TR_IgnoreAssert))
             return;
-         // TR_SoftFailOnAssume: on nonfatal assertion failure, cancel the compilation without crashing the process.
-         if (comp->getOption(TR_SoftFailOnAssume))
+        // TR_SoftFailOnAssume: on nonfatal assertion failure, cancel the compilation without crashing the process.
+        if (comp->getOption(TR_SoftFailOnAssume))
             comp->failCompilation<TR::AssertionFailure>("Assertion Failure");
-         }
-      va_list ap;
-      va_start(ap, format);
-      va_fatal_assertion(file, line, condition, format, ap);
-      va_end(ap);
-      }
+    }
+    va_list ap;
+    va_start(ap, format);
+    va_fatal_assertion(file, line, condition, format, ap);
+    va_end(ap);
+}
 
-   void OMR_NORETURN fatal_assertion(const char *file, int line, const char *condition, const char *format, ...)
-      {
-      va_list ap;
-      va_start(ap, format);
-      va_fatal_assertion(file, line, condition, format, ap);
-      va_end(ap);
-      }
+void OMR_NORETURN fatal_assertion(const char *file, int line, const char *condition, const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    va_fatal_assertion(file, line, condition, format, ap);
+    va_end(ap);
+}
 
-   static bool containsNode(TR::Node *node, TR::Node *target, TR::NodeChecklist& nodeChecklist)
-      {
-      if (node == target)
-         return true;
+static bool containsNode(TR::Node *node, TR::Node *target, TR::NodeChecklist &nodeChecklist)
+{
+    if (node == target)
+        return true;
 
-      if (nodeChecklist.contains(node))
-         return false;
+    if (nodeChecklist.contains(node))
+        return false;
 
-      nodeChecklist.add(node);
+    nodeChecklist.add(node);
 
-      for (int i = 0; i < node->getNumChildren(); i++)
-         {
-         if (containsNode(node->getChild(i), target, nodeChecklist))
+    for (int i = 0; i < node->getNumChildren(); i++) {
+        if (containsNode(node->getChild(i), target, nodeChecklist))
             return true;
-         }
+    }
 
-      return false;
-      }
+    return false;
+}
 
-   static void markInChecklist(TR::Node *node, TR_BitVector &nodeChecklist)
-      {
-      if (nodeChecklist.isSet(node->getGlobalIndex()))
-         return;
+static void markInChecklist(TR::Node *node, TR_BitVector &nodeChecklist)
+{
+    if (nodeChecklist.isSet(node->getGlobalIndex()))
+        return;
 
-      nodeChecklist.set(node->getGlobalIndex());
+    nodeChecklist.set(node->getGlobalIndex());
 
-      for (int i = 0; i < node->getNumChildren(); i++)
-         markInChecklist(node->getChild(i), nodeChecklist);
-      }
+    for (int i = 0; i < node->getNumChildren(); i++)
+        markInChecklist(node->getChild(i), nodeChecklist);
+}
 
-   void NodeAssertionContext::printContext() const
-      {
-      if (!_node) return;
+void NodeAssertionContext::printContext() const
+{
+    if (!_node)
+        return;
 
-      static bool printFullContext = feGetEnv("TR_AssertFullContext") != NULL;
-      TR::Compilation *comp = TR::comp();
-      TR_Debug *debug = comp->findOrCreateDebug();
+    static bool printFullContext = feGetEnv("TR_AssertFullContext") != NULL;
+    TR::Compilation *comp = TR::comp();
+    TR_Debug *debug = comp->findOrCreateDebug();
 
-      fprintf(stderr, "\nNode context:\n\n");
+    fprintf(stderr, "\nNode context:\n\n");
 
-      if (printFullContext)
-         {
-         debug->printIRTrees(TR::IO::Stderr, "Assertion Context", comp->getMethodSymbol());
-         debug->print(TR::IO::Stderr, comp->getMethodSymbol()->getFlowGraph());
-         if (comp->getKnownObjectTable())
+    if (printFullContext) {
+        debug->printIRTrees(TR::IO::Stderr, "Assertion Context", comp->getMethodSymbol());
+        debug->print(TR::IO::Stderr, comp->getMethodSymbol()->getFlowGraph());
+        if (comp->getKnownObjectTable())
             comp->getKnownObjectTable()->dumpTo(TR::IO::Stderr, comp);
-         }
-      else
-         {
-         fprintf(stderr, "...\n");
+    } else {
+        fprintf(stderr, "...\n");
 
-         TR::NodeChecklist checkedNodeChecklist(comp);
+        TR::NodeChecklist checkedNodeChecklist(comp);
 
-         TR_BitVector commonedNodeChecklist;
-         commonedNodeChecklist.init(0, comp->trMemory(), heapAlloc, growable);
+        TR_BitVector commonedNodeChecklist;
+        commonedNodeChecklist.init(0, comp->trMemory(), heapAlloc, growable);
 
-         bool foundNode = false;
-         for (TR::TreeTopIterator it(comp->getStartTree(), comp); it != NULL; ++it)
-            {
-            if (containsNode(it.currentNode(), _node, checkedNodeChecklist))
-               {
-               foundNode = true;
-               debug->restoreNodeChecklist(commonedNodeChecklist);
-               debug->print(TR::IO::Stderr, it.currentTree());
-               break;
-               }
-            else
-               {
-               markInChecklist(it.currentNode(), commonedNodeChecklist);
-               }
+        bool foundNode = false;
+        for (TR::TreeTopIterator it(comp->getStartTree(), comp); it != NULL; ++it) {
+            if (containsNode(it.currentNode(), _node, checkedNodeChecklist)) {
+                foundNode = true;
+                debug->restoreNodeChecklist(commonedNodeChecklist);
+                debug->print(TR::IO::Stderr, it.currentTree());
+                break;
+            } else {
+                markInChecklist(it.currentNode(), commonedNodeChecklist);
             }
+        }
 
-         if (!foundNode)
+        if (!foundNode)
             fprintf(stderr, "!!! Treetop for node %p was not found !!!\n", _node);
 
-         fprintf(stderr, "...\n(Set env var TR_AssertFullContext for full context)\n");
-         }
+        fprintf(stderr, "...\n(Set env var TR_AssertFullContext for full context)\n");
+    }
 
-      fflush(stderr);
-      }
+    fflush(stderr);
+}
 
-   void InstructionAssertionContext::printContext() const
-      {
-      if (!_instruction) return;
+void InstructionAssertionContext::printContext() const
+{
+    if (!_instruction)
+        return;
 
-      static bool printFullContext = feGetEnv("TR_AssertFullContext") != NULL;
-      static int numInstructionsInContext = feGetEnv("TR_AssertNumInstructionsInContext") ?
-         atoi(feGetEnv("TR_AssertNumInstructionsInContext")) : 11;
-      TR_Debug *debug = TR::comp()->findOrCreateDebug();
+    static bool printFullContext = feGetEnv("TR_AssertFullContext") != NULL;
+    static int numInstructionsInContext
+        = feGetEnv("TR_AssertNumInstructionsInContext") ? atoi(feGetEnv("TR_AssertNumInstructionsInContext")) : 11;
+    TR_Debug *debug = TR::comp()->findOrCreateDebug();
 
-      fprintf(stderr, "\nInstruction context:\n");
+    fprintf(stderr, "\nInstruction context:\n");
 
-      if (printFullContext)
-         {
-         fprintf(stderr, "\n");
-         debug->dumpMethodInstrs(TR::IO::Stderr, "Assertion Context", false, false);
-         }
-      else
-         {
-         TR::Instruction *cursor = _instruction;
-         for (int i = 0; i < (numInstructionsInContext - 1) / 2 && cursor->getPrev(); i++)
+    if (printFullContext) {
+        fprintf(stderr, "\n");
+        debug->dumpMethodInstrs(TR::IO::Stderr, "Assertion Context", false, false);
+    } else {
+        TR::Instruction *cursor = _instruction;
+        for (int i = 0; i < (numInstructionsInContext - 1) / 2 && cursor->getPrev(); i++)
             cursor = cursor->getPrev();
 
-         if (cursor->getPrev())
+        if (cursor->getPrev())
             fprintf(stderr, "\n...");
 
-         for (int i = 0; i < numInstructionsInContext && cursor; i++)
-            {
+        for (int i = 0; i < numInstructionsInContext && cursor; i++) {
             debug->print(TR::IO::Stderr, cursor);
             cursor = cursor->getNext();
-            }
+        }
 
-         if (cursor)
+        if (cursor)
             fprintf(stderr, "\n...");
 
-         fprintf(stderr, "\n(Set env var TR_AssertFullContext for full context)\n");
-         }
+        fprintf(stderr, "\n(Set env var TR_AssertFullContext for full context)\n");
+    }
 
-      fflush(stderr);
-      NodeAssertionContext(_instruction->getNode()).printContext();
-      }
+    fflush(stderr);
+    NodeAssertionContext(_instruction->getNode()).printContext();
+}
 
-   void OMR_NORETURN fatal_assertion_with_detail(const AssertionContext& ctx, const char *file, int line, const char *condition, const char *format, ...)
-      {
-      static bool alreadyAsserting = false;
+void OMR_NORETURN fatal_assertion_with_detail(const AssertionContext &ctx, const char *file, int line,
+    const char *condition, const char *format, ...)
+{
+    static bool alreadyAsserting = false;
 
-      va_list ap;
-      va_start(ap, format);
-      traceAssertionFailure(file, line, condition, format, ap);
-      va_end(ap);
+    va_list ap;
+    va_start(ap, format);
+    traceAssertionFailure(file, line, condition, format, ap);
+    va_end(ap);
 
-      if (!alreadyAsserting)
-         {
-         alreadyAsserting = true;
-         ctx.printContext();
-         }
-      else
-         {
-         fprintf(stderr, "(Detected potential recursive assert, not printing context)\n");
-         }
+    if (!alreadyAsserting) {
+        alreadyAsserting = true;
+        ctx.printContext();
+    } else {
+        fprintf(stderr, "(Detected potential recursive assert, not printing context)\n");
+    }
 
-      TR::trap();
-      }
-   }
+    TR::trap();
+}
+} // namespace TR

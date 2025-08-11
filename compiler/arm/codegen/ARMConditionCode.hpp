@@ -23,22 +23,22 @@
 #define ARMCONDITIONCODE_INCL
 
 typedef enum {
-   ARMConditionCodeEQ,
-   ARMConditionCodeNE,
-   ARMConditionCodeCS,
-   ARMConditionCodeCC,
-   ARMConditionCodeMI,
-   ARMConditionCodePL,
-   ARMConditionCodeVS,
-   ARMConditionCodeVC,
-   ARMConditionCodeHI,
-   ARMConditionCodeLS,
-   ARMConditionCodeGE,
-   ARMConditionCodeLT,
-   ARMConditionCodeGT,
-   ARMConditionCodeLE,
-   ARMConditionCodeAL,
-   ARMConditionCodeIllegal
+    ARMConditionCodeEQ,
+    ARMConditionCodeNE,
+    ARMConditionCodeCS,
+    ARMConditionCodeCC,
+    ARMConditionCodeMI,
+    ARMConditionCodePL,
+    ARMConditionCodeVS,
+    ARMConditionCodeVC,
+    ARMConditionCodeHI,
+    ARMConditionCodeLS,
+    ARMConditionCodeGE,
+    ARMConditionCodeLT,
+    ARMConditionCodeGT,
+    ARMConditionCodeLE,
+    ARMConditionCodeAL,
+    ARMConditionCodeIllegal
 } TR_ARMConditionCode;
 
 #endif

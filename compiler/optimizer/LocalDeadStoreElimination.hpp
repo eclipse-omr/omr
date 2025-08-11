@@ -33,11 +33,10 @@ namespace TR {
 class Block;
 class NodeChecklist;
 class TreeTop;
-}
-template <class T> class List;
+} // namespace TR
+template<class T> class List;
 
-namespace TR
-{
+namespace TR {
 
 /**
  * Class LocalDeadStoreElimination
@@ -54,64 +53,63 @@ namespace TR
  * use it implicitly (through aliases).
  */
 
-class LocalDeadStoreElimination : public TR::Optimization
-   {
-   public:
-   // Performs local dead store elimination within
-   // a basic block.
-   //
-   LocalDeadStoreElimination(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager);
+class LocalDeadStoreElimination : public TR::Optimization {
+public:
+    // Performs local dead store elimination within
+    // a basic block.
+    //
+    LocalDeadStoreElimination(TR::OptimizationManager *manager);
+    static TR::Optimization *create(TR::OptimizationManager *manager);
 
-   virtual int32_t perform();
-   virtual int32_t performOnBlock(TR::Block *);
-   virtual void prePerformOnBlocks();
-   virtual void postPerformOnBlocks();
-   virtual const char * optDetailString() const throw();
+    virtual int32_t perform();
+    virtual int32_t performOnBlock(TR::Block *);
+    virtual void prePerformOnBlocks();
+    virtual void postPerformOnBlocks();
+    virtual const char *optDetailString() const throw();
 
-   protected:
+protected:
+    virtual bool isNonRemovableStore(TR::Node *storeNode, bool &seenIdentityStore);
 
-   virtual bool isNonRemovableStore(TR::Node *storeNode, bool &seenIdentityStore);
+    typedef TR::Node *StoreNode;
 
-   typedef TR::Node *StoreNode;
+    typedef TR::deque<StoreNode, TR::Region &> StoreNodeTable;
+    typedef TR_BitVector LDSBitVector;
 
-   typedef TR::deque<StoreNode, TR::Region&> StoreNodeTable;
-   typedef TR_BitVector LDSBitVector;
+    inline TR::LocalDeadStoreElimination *self();
 
-   inline TR::LocalDeadStoreElimination *self();
-
-   bool isIdentityStore(TR::Node *);
-   void examineNode(TR::Node *, int32_t, TR::Node *, TR_BitVector &);
-   void transformBlock(TR::TreeTop *, TR::TreeTop *);
-   bool isEntireNodeRemovable(TR::Node *);
-   void setExternalReferenceCountToTree(TR::Node *node, rcount_t *externalReferenceCount);
+    bool isIdentityStore(TR::Node *);
+    void examineNode(TR::Node *, int32_t, TR::Node *, TR_BitVector &);
+    void transformBlock(TR::TreeTop *, TR::TreeTop *);
+    bool isEntireNodeRemovable(TR::Node *);
+    void setExternalReferenceCountToTree(TR::Node *node, rcount_t *externalReferenceCount);
     bool seenIdenticalStore(TR::Node *);
-   virtual bool areLhsOfStoresSyntacticallyEquivalent(TR::Node *, TR::Node *);
-   virtual void adjustStoresInfo(TR::Node *, TR_BitVector &);
-   TR::Node *getAnchorNode(TR::Node *parentNode, int32_t nodeIndex, TR::Node *, TR::TreeTop *, TR::NodeChecklist& visited);
+    virtual bool areLhsOfStoresSyntacticallyEquivalent(TR::Node *, TR::Node *);
+    virtual void adjustStoresInfo(TR::Node *, TR_BitVector &);
+    TR::Node *getAnchorNode(TR::Node *parentNode, int32_t nodeIndex, TR::Node *, TR::TreeTop *,
+        TR::NodeChecklist &visited);
 
-   void setupReferenceCounts(TR::Node *);
-   void eliminateDeadObjectInitializations();
-   void findLocallyAllocatedObjectUses(LDSBitVector &, TR::Node *, int32_t, TR::Node *, vcount_t);
-   bool examineNewUsesForKill(TR::Node *, TR::Node *, List<TR::Node> *, List<TR::Node> *, TR::Node *, int32_t, vcount_t);
-   void killStoreNodes(TR::Node *);
+    void setupReferenceCounts(TR::Node *);
+    void eliminateDeadObjectInitializations();
+    void findLocallyAllocatedObjectUses(LDSBitVector &, TR::Node *, int32_t, TR::Node *, vcount_t);
+    bool examineNewUsesForKill(TR::Node *, TR::Node *, List<TR::Node> *, List<TR::Node> *, TR::Node *, int32_t,
+        vcount_t);
+    void killStoreNodes(TR::Node *);
 
-   TR::TreeTop *removeStoreTree(TR::TreeTop *treeTop);
+    TR::TreeTop *removeStoreTree(TR::TreeTop *treeTop);
 
-   bool isFirstReferenceToNode(TR::Node *parent, int32_t index, TR::Node *node);
-   void setIsFirstReferenceToNode(TR::Node *parent, int32_t index, TR::Node *node);
+    bool isFirstReferenceToNode(TR::Node *parent, int32_t index, TR::Node *node);
+    void setIsFirstReferenceToNode(TR::Node *parent, int32_t index, TR::Node *node);
 
-   protected:
+protected:
+    TR::TreeTop *_curTree;
 
-   TR::TreeTop                      *_curTree;
+    StoreNodeTable *_storeNodes;
 
-   StoreNodeTable                   *_storeNodes;
+    bool _blockContainsReturn;
+    bool _treesChanged;
+    bool _treesAnchored;
+};
 
-   bool                              _blockContainsReturn;
-   bool                              _treesChanged;
-   bool                              _treesAnchored;
-   };
-
-}
+} // namespace TR
 
 #endif

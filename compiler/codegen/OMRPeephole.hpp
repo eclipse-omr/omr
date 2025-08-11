@@ -27,10 +27,11 @@
  */
 #ifndef OMR_PEEPHOLE_CONNECTOR
 #define OMR_PEEPHOLE_CONNECTOR
+
 namespace OMR {
 class Peephole;
 typedef OMR::Peephole PeepholeConnector;
-}
+} // namespace OMR
 #endif
 
 #include "env/TRMemory.hpp"
@@ -41,60 +42,54 @@ namespace TR {
 class CodeGenerator;
 class Instruction;
 class Peephole;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR {
 
-class OMR_EXTENSIBLE Peephole
-   {
-   public:
+class OMR_EXTENSIBLE Peephole {
+public:
+    TR_ALLOC(TR_Memory::UnknownType)
 
-   TR_ALLOC(TR_Memory::UnknownType)
+    Peephole(TR::Compilation *comp);
 
-   Peephole(TR::Compilation* comp);
-   
-   TR::Peephole* self();
+    TR::Peephole *self();
 
-   TR::CodeGenerator* cg() const;
-   TR::Compilation* comp() const;
+    TR::CodeGenerator *cg() const;
+    TR::Compilation *comp() const;
 
-   public:
+public:
+    /** \brief
+     *     Performs peephole optimizations on the entire instruction stream by traversing instructions from start until
+     *     the end of the method and repeatedly calling performOnInstruction API for each instruction. If the result of
+     *     the API call performOnInstruction indicates that a transformation was performed, the peephole window restarts
+     *     on the previous instruction.
+     *
+     *  \return
+     *     true if any transformation was performed; false otherwise.
+     */
+    virtual bool perform();
 
-   /** \brief
-    *     Performs peephole optimizations on the entire instruction stream by traversing instructions from start until
-    *     the end of the method and repeatedly calling performOnInstruction API for each instruction. If the result of
-    *     the API call performOnInstruction indicates that a transformation was performed, the peephole window restarts
-    *     on the previous instruction.
-    *
-    *  \return
-    *     true if any transformation was performed; false otherwise.
-    */
-   virtual bool perform();
+    /** \brief
+     *     Performs peephole optimizations on an instruction cursor.
+     *
+     *  \param cursor
+     *     The instruction cursor currently being processed.
+     *
+     *  \return
+     *     true if any transformation was performed; false otherwise.
+     */
+    virtual bool performOnInstruction(TR::Instruction *cursor);
 
-   /** \brief
-    *     Performs peephole optimizations on an instruction cursor.
-    *
-    *  \param cursor
-    *     The instruction cursor currently being processed.
-    *
-    *  \return
-    *     true if any transformation was performed; false otherwise.
-    */
-   virtual bool performOnInstruction(TR::Instruction* cursor);
+private:
+    TR::Compilation *_comp;
+    TR::CodeGenerator *_cg;
 
-   private:
+protected:
+    /// Represents the previous instruction on which peepholes were performed, which is also the restart point in case a
+    /// transformation was performed on the current instruction being processed
+    TR::Instruction *prevInst;
+};
 
-   TR::Compilation* _comp;
-   TR::CodeGenerator* _cg;
-
-   protected:
-
-   /// Represents the previous instruction on which peepholes were performed, which is also the restart point in case a
-   /// transformation was performed on the current instruction being processed
-   TR::Instruction* prevInst;
-   };
-
-}
+} // namespace OMR
 
 #endif

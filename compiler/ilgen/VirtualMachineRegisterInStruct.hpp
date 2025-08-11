@@ -24,28 +24,21 @@
 
 #include "ilgen/OMRVirtualMachineRegisterInStruct.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class VirtualMachineRegisterInStruct : public OMR::VirtualMachineRegisterInStruct
-   {
-   public:
-   VirtualMachineRegisterInStruct(TR::IlBuilder *b,
-                                  const char * const structName,
-                                  const char * const localNameHoldingStructAddress,
-                                  const char * const fieldName,
-                                  const char * const localName) :
-      OMR::VirtualMachineRegisterInStruct(b, structName, localNameHoldingStructAddress, fieldName, localName)
-      { }
+class VirtualMachineRegisterInStruct : public OMR::VirtualMachineRegisterInStruct {
+public:
+    VirtualMachineRegisterInStruct(TR::IlBuilder *b, const char * const structName,
+        const char * const localNameHoldingStructAddress, const char * const fieldName, const char * const localName)
+        : OMR::VirtualMachineRegisterInStruct(b, structName, localNameHoldingStructAddress, fieldName, localName)
+    {}
 
-   VirtualMachineRegisterInStruct(const char * const structName,
-                                  const char * const localNameHoldingStructAddress,
-                                  const char * const fieldName,
-                                  const char * const localName) :
-      OMR::VirtualMachineRegisterInStruct(structName, localNameHoldingStructAddress, fieldName, localName)
-      { }
-   };
+    VirtualMachineRegisterInStruct(const char * const structName, const char * const localNameHoldingStructAddress,
+        const char * const fieldName, const char * const localName)
+        : OMR::VirtualMachineRegisterInStruct(structName, localNameHoldingStructAddress, fieldName, localName)
+    {}
+};
 
-}
+} // namespace TR
 
 #endif // !defined(TR_VIRTUALMACHINEREGISTERINSTRUCT_INCL)

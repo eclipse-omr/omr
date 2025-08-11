@@ -30,6 +30,7 @@
 #include "il/Node.hpp"
 
 class TR_BitVector;
+
 namespace TR {
 class Block;
 }
@@ -47,58 +48,52 @@ class Block;
 // in the array is a dummy node that is used as the root for the forest.
 //
 
-class TR_DominatorsChk
-   {
-   public:
-   TR_ALLOC(TR_Memory::DominatorsChk)
+class TR_DominatorsChk {
+public:
+    TR_ALLOC(TR_Memory::DominatorsChk)
 
-   TR_DominatorsChk(TR::Compilation *);
+    TR_DominatorsChk(TR::Compilation *);
 
-   struct BBInfoChk
-      {
-      TR_ALLOC(TR_Memory::DominatorsChk)
+    struct BBInfoChk {
+        TR_ALLOC(TR_Memory::DominatorsChk)
 
-      TR::Block     *_block;     // The block whose info this is
-      BBInfoChk    *_idom;      // The immediate dominator for this block
-      TR_BitVector *_bucket;    // The blocks that dominate this node
-      TR_BitVector *_tmpbucket; // The Tmp set used in Muchnick's algorithm
-                                // to compute immediate dominators
-      };
+        TR::Block *_block; // The block whose info this is
+        BBInfoChk *_idom; // The immediate dominator for this block
+        TR_BitVector *_bucket; // The blocks that dominate this node
+        TR_BitVector *_tmpbucket; // The Tmp set used in Muchnick's algorithm
+                                  // to compute immediate dominators
+    };
 
-   private :
+private:
+    TR::Compilation *comp() { return _compilation; }
 
-   TR::Compilation * comp()          {return _compilation;}
-   TR_Memory *      trMemory()      { return comp()->trMemory(); }
-   TR_StackMemory   trStackMemory() { return trMemory(); }
+    TR_Memory *trMemory() { return comp()->trMemory(); }
 
-   void    findDominators(TR::Block *start);
-   void    initialize(TR::Block *block, TR::Block *parent);
-   void    findImmediateDominators();
-   void    initialize();
+    TR_StackMemory trStackMemory() { return trMemory(); }
 
-   TR::Compilation *_compilation;
-   BBInfoChk      *_info;
-   int32_t         _numBlocks;
-   int32_t         _topDfNum;
-   vcount_t         _visitCount;
+    void findDominators(TR::Block *start);
+    void initialize(TR::Block *block, TR::Block *parent);
+    void findImmediateDominators();
+    void initialize();
 
-   public :
-   int32_t      *_dfNumbers;
+    TR::Compilation *_compilation;
+    BBInfoChk *_info;
+    int32_t _numBlocks;
+    int32_t _topDfNum;
+    vcount_t _visitCount;
 
-   BBInfoChk* getDominatorsChkInfo()
-      {
-      return _info;
-      }
+public:
+    int32_t *_dfNumbers;
 
-   class StackInfo
-      {
-      public:
-      TR::CFGEdgeList::iterator curIterator;
-      TR::CFGEdgeList * list;
-      int32_t                  parent;
-      };
+    BBInfoChk *getDominatorsChkInfo() { return _info; }
 
-   };
+    class StackInfo {
+    public:
+        TR::CFGEdgeList::iterator curIterator;
+        TR::CFGEdgeList *list;
+        int32_t parent;
+    };
+};
 
 #endif
 

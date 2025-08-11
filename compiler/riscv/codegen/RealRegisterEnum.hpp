@@ -23,25 +23,15 @@
  * This file will be included within an enum.  Only comments and enumerator
  * definitions are permitted.
  */
-      NoReg             = 0,
+NoReg = 0,
 
-#define DECLARE_GPR(regname, abiname, encoding) \
-      abiname           = NoReg + 1 + encoding, \
-      regname           = NoReg + 1 + encoding,
+#define DECLARE_GPR(regname, abiname, encoding) abiname = NoReg + 1 + encoding, regname = NoReg + 1 + encoding,
 #include "codegen/riscv-regs.h"
 #undef DECLARE_GPR
 
-#define DECLARE_FPR(regname, abiname, encoding) \
-      abiname           = x31 + 1 + encoding, \
-      regname           = x31 + 1 + encoding,
+#define DECLARE_FPR(regname, abiname, encoding) abiname = x31 + 1 + encoding, regname = x31 + 1 + encoding,
 #include "codegen/riscv-regs.h"
 #undef DECLARE_FPR
-      FirstGPR          = x0,
-      LastGPR           = x31,
-      LastAssignableGPR = x31,
+    FirstGPR = x0, LastGPR = x31, LastAssignableGPR = x31,
 
-      FirstFPR          = f0,
-      LastFPR           = f31,
-      LastAssignableFPR = f31,
-      SpilledReg        = f31 + 1,
-      NumRegisters      = SpilledReg + 1,
+    FirstFPR = f0, LastFPR = f31, LastAssignableFPR = f31, SpilledReg = f31 + 1, NumRegisters = SpilledReg + 1,

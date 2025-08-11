@@ -27,22 +27,28 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace TR
-{
+namespace TR {
 
 #ifndef TR_CODECACHEMEMORYSEGMENT_CONNECTOR
 #define TR_CODECACHEMEMORYSEGMENT_CONNECTOR
 
-class OMR_EXTENSIBLE CodeCacheMemorySegment : public OMR::CodeCacheMemorySegmentConnector
-   {
-   public:
-   CodeCacheMemorySegment()                              : OMR::CodeCacheMemorySegmentConnector()             { }
-   CodeCacheMemorySegment(uint8_t *memory, size_t size)  : OMR::CodeCacheMemorySegmentConnector(memory, size) { }
-   CodeCacheMemorySegment(uint8_t *memory, uint8_t *top) : OMR::CodeCacheMemorySegmentConnector(memory, top)  { }
-   };
+class OMR_EXTENSIBLE CodeCacheMemorySegment : public OMR::CodeCacheMemorySegmentConnector {
+public:
+    CodeCacheMemorySegment()
+        : OMR::CodeCacheMemorySegmentConnector()
+    {}
+
+    CodeCacheMemorySegment(uint8_t *memory, size_t size)
+        : OMR::CodeCacheMemorySegmentConnector(memory, size)
+    {}
+
+    CodeCacheMemorySegment(uint8_t *memory, uint8_t *top)
+        : OMR::CodeCacheMemorySegmentConnector(memory, top)
+    {}
+};
 
 #endif
 
-}
+} // namespace TR
 
 #endif

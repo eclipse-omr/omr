@@ -27,10 +27,14 @@
  */
 #ifndef OMR_INSTRUCTIONDELEGATE_CONNECTOR
 #define OMR_INSTRUCTIONDELEGATE_CONNECTOR
+
 namespace OMR {
-namespace X86 { class InstructionDelegate; }
-typedef OMR::X86::InstructionDelegate InstructionDelegateConnector;
+namespace X86 {
+class InstructionDelegate;
 }
+
+typedef OMR::X86::InstructionDelegate InstructionDelegateConnector;
+} // namespace OMR
 #else
 #error OMR::X86::InstructionDelegate expected to be a primary connector, but an OMR connector is already defined
 #endif
@@ -38,22 +42,13 @@ typedef OMR::X86::InstructionDelegate InstructionDelegateConnector;
 #include "compiler/codegen/OMRInstructionDelegate.hpp"
 #include "infra/Annotations.hpp"
 
-namespace OMR
-{
+namespace OMR { namespace X86 {
 
-namespace X86
-{
-
-class OMR_EXTENSIBLE InstructionDelegate : public OMR::InstructionDelegate
-   {
+class OMR_EXTENSIBLE InstructionDelegate : public OMR::InstructionDelegate {
 protected:
+    InstructionDelegate() {}
+};
 
-   InstructionDelegate() {}
-
-   };
-
-}
-
-}
+}} // namespace OMR::X86
 
 #endif

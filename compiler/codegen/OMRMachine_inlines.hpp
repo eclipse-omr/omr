@@ -24,10 +24,6 @@
 
 #include "codegen/Machine.hpp"
 
-TR::Machine *
-OMR::Machine::self()
-   {
-   return static_cast<TR::Machine *>(this);
-   }
+TR::Machine *OMR::Machine::self() { return static_cast<TR::Machine *>(this); }
 
 #endif

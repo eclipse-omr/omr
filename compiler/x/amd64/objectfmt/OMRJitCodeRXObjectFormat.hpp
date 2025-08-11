@@ -27,10 +27,14 @@
  */
 #ifndef OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
 #define OMR_JITCODERX_OBJECTFORMAT_CONNECTOR
+
 namespace OMR {
-namespace X86 { namespace AMD64 { class JitCodeRXObjectFormat; } }
+namespace X86 { namespace AMD64 {
+class JitCodeRXObjectFormat;
+}} // namespace X86::AMD64
+
 typedef OMR::X86::AMD64::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
-}
+} // namespace OMR
 #else
 #error OMR::X86::AMD64::JitCodeRXObjectFormat expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -40,48 +44,33 @@ typedef OMR::X86::AMD64::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
 namespace TR {
 class Instruction;
 class FunctionCallData;
-}
+} // namespace TR
 
-namespace OMR
-{
+namespace OMR { namespace X86 { namespace AMD64 {
 
-namespace X86
-{
-
-namespace AMD64
-{
-
-class OMR_EXTENSIBLE JitCodeRXObjectFormat : public OMR::X86::JitCodeRXObjectFormat
-   {
+class OMR_EXTENSIBLE JitCodeRXObjectFormat : public OMR::X86::JitCodeRXObjectFormat {
 public:
+    virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
 
-   virtual TR::Instruction *emitFunctionCall(TR::FunctionCallData &data);
+    virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
 
-   virtual uint8_t *encodeFunctionCall(TR::FunctionCallData &data);
+    virtual int32_t estimateBinaryLength()
+    {
+        return 6; // CALL [RIP+disp32]
+    }
 
-   virtual int32_t estimateBinaryLength()
-      {
-      return 6;  // CALL [RIP+disp32]
-      }
+    virtual void printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data, uint8_t *bufferPos);
 
-   virtual void printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data, uint8_t *bufferPos);
-
-   /**
-    * @struct ccFunctionData
-    *
-    * @brief Describes the metadata to be stored in a writable data area for
-    *        each function call site.
-    */
-   struct ccFunctionData
-      {
-      uintptr_t address; /** target function address */
-      };
-
-   };
-}
-
-}
-
-}
+    /**
+     * @struct ccFunctionData
+     *
+     * @brief Describes the metadata to be stored in a writable data area for
+     *        each function call site.
+     */
+    struct ccFunctionData {
+        uintptr_t address; /** target function address */
+    };
+};
+}}} // namespace OMR::X86::AMD64
 
 #endif

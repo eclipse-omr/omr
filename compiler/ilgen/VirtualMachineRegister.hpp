@@ -22,35 +22,27 @@
 #ifndef TR_VIRTUALMACHINEREGISTER_INCL
 #define TR_VIRTUALMACHINEREGISTER_INCL
 
-
 #include "ilgen/OMRVirtualMachineRegister.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class VirtualMachineRegister : public OMR::VirtualMachineRegister
-   {
-   public:
-   VirtualMachineRegister(TR::IlBuilder *b,
-                          const char * const localName,
-                          TR::IlType * pointerToRegisterType,
-                          uint32_t adjustByStep,
-                          TR::IlValue * addressOfRegister)
-      : OMR::VirtualMachineRegister(b, localName, pointerToRegisterType, adjustByStep, addressOfRegister)
-      { }
+class VirtualMachineRegister : public OMR::VirtualMachineRegister {
+public:
+    VirtualMachineRegister(TR::IlBuilder *b, const char * const localName, TR::IlType *pointerToRegisterType,
+        uint32_t adjustByStep, TR::IlValue *addressOfRegister)
+        : OMR::VirtualMachineRegister(b, localName, pointerToRegisterType, adjustByStep, addressOfRegister)
+    {}
 
-   VirtualMachineRegister(const char * const localName,
-                          TR::IlType * pointerToRegisterType,
-                          uint32_t adjustByStep,
-                          TR::IlValue * addressOfRegister)
-      : OMR::VirtualMachineRegister(localName, pointerToRegisterType, adjustByStep, addressOfRegister)
-      { }
+    VirtualMachineRegister(const char * const localName, TR::IlType *pointerToRegisterType, uint32_t adjustByStep,
+        TR::IlValue *addressOfRegister)
+        : OMR::VirtualMachineRegister(localName, pointerToRegisterType, adjustByStep, addressOfRegister)
+    {}
 
-   protected:
-   VirtualMachineRegister(const char * const localName)
-      : OMR::VirtualMachineRegister(localName)
-      { }
-   };
-}
+protected:
+    VirtualMachineRegister(const char * const localName)
+        : OMR::VirtualMachineRegister(localName)
+    {}
+};
+} // namespace TR
 
 #endif // !defined(TR_VIRTUALMACHINEREGISTER_INCL)

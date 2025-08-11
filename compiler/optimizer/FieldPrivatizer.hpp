@@ -35,16 +35,18 @@
 class TR_BitVector;
 class TR_OpaqueClassBlock;
 class TR_PostDominators;
+
 namespace TR {
 class RegisterCandidate;
 }
 class TR_Structure;
 class TR_ValueNumberInfo;
+
 namespace TR {
 class Block;
 class Optimization;
 class TreeTop;
-}
+} // namespace TR
 
 /*
  * Class TR_FieldPrivatizer
@@ -108,96 +110,96 @@ class TreeTop;
  * the loop. So it's more general in that sense.
  */
 
-class TR_FieldPrivatizer : public TR_LoopTransformer
-   {
-   class TR_RemovedNode
-      {
-      public:
-      TR_RemovedNode(TR::Node *storeNode, TR::Node *removedSign) :
-                    _storeNode(storeNode), _removedSign(removedSign) {}
+class TR_FieldPrivatizer : public TR_LoopTransformer {
+    class TR_RemovedNode {
+    public:
+        TR_RemovedNode(TR::Node *storeNode, TR::Node *removedSign)
+            : _storeNode(storeNode)
+            , _removedSign(removedSign)
+        {}
 
-      TR::Node *_storeNode;
-      TR::Node *_removedSign;
-      };
+        TR::Node *_storeNode;
+        TR::Node *_removedSign;
+    };
 
-   public:
+public:
+    TR_FieldPrivatizer(TR::OptimizationManager *manager);
 
-   TR_FieldPrivatizer(TR::OptimizationManager *manager);
-   static TR::Optimization *create(TR::OptimizationManager *manager)
-      {
-      return new (manager->allocator()) TR_FieldPrivatizer(manager);
-      }
+    static TR::Optimization *create(TR::OptimizationManager *manager)
+    {
+        return new (manager->allocator()) TR_FieldPrivatizer(manager);
+    }
 
-   virtual int32_t perform();
-   virtual const char * optDetailString() const throw();
+    virtual int32_t perform();
+    virtual const char *optDetailString() const throw();
 
-   virtual int32_t detectCanonicalizedPredictableLoops(TR_Structure *, TR_BitVector **, int32_t);
-   bool storesBackMustBePlacedInExitBlock(TR::Block *, TR::Block *, TR_BitVector *);
-   void placeStoresBackInExits(List<TR::Block> *, List<TR::Block> *);
-   void placeStoresBackInExit(TR::Block *, bool);
-   void placeInitializersInLoopInvariantBlock(TR::Block *);
-   bool subtreeIsInvariantInLoop(TR::Node *);
-   bool bothSubtreesMatch(TR::Node *, TR::Node *);
-   TR::SymbolReference *getPrivatizedFieldAutoSymRef(TR::Node *);
-   void privatizeFields(TR::Node *, bool, vcount_t);
-   void privatizeNonEscapingLoop(TR_Structure *, TR::Block *, vcount_t);
-   void detectFieldsThatCannotBePrivatized(TR::Node *, vcount_t);
-   void detectFieldsThatCannotBePrivatized(TR_Structure *, vcount_t);
-   bool canPrivatizeFieldSymRef(TR::Node *);
+    virtual int32_t detectCanonicalizedPredictableLoops(TR_Structure *, TR_BitVector **, int32_t);
+    bool storesBackMustBePlacedInExitBlock(TR::Block *, TR::Block *, TR_BitVector *);
+    void placeStoresBackInExits(List<TR::Block> *, List<TR::Block> *);
+    void placeStoresBackInExit(TR::Block *, bool);
+    void placeInitializersInLoopInvariantBlock(TR::Block *);
+    bool subtreeIsInvariantInLoop(TR::Node *);
+    bool bothSubtreesMatch(TR::Node *, TR::Node *);
+    TR::SymbolReference *getPrivatizedFieldAutoSymRef(TR::Node *);
+    void privatizeFields(TR::Node *, bool, vcount_t);
+    void privatizeNonEscapingLoop(TR_Structure *, TR::Block *, vcount_t);
+    void detectFieldsThatCannotBePrivatized(TR::Node *, vcount_t);
+    void detectFieldsThatCannotBePrivatized(TR_Structure *, vcount_t);
+    bool canPrivatizeFieldSymRef(TR::Node *);
 
-   /**
-    * Checks whether \c currentNode represents a \ref TR::instanceof
-    * operation or whether any of its subtrees do.
-    *
-    * @param currentNode the node to check
-    * @return \c true if the subtree contains a \c TR::instanceof
-    * operation; \c false, otherwise.
-    */
-   bool subtreeHasSpecialCondition(TR::Node *currentNode);
-   bool containsEscapePoints(TR_Structure *, bool &);
-   void addPrivatizedRegisterCandidates(TR_Structure *);
-   bool isStringPeephole(TR::Node *, TR::TreeTop *);
-   void cleanupStringPeephole();
-   void placeStringEpiloguesBackInExit(TR::Block *, bool);
-   void placeStringEpilogueInExits(List<TR::Block> *, List<TR::Block> *);
-   void addStringInitialization(TR::Block *);
-   bool isFieldAliasAccessed(TR::SymbolReference * symRef);
+    /**
+     * Checks whether \c currentNode represents a \ref TR::instanceof
+     * operation or whether any of its subtrees do.
+     *
+     * @param currentNode the node to check
+     * @return \c true if the subtree contains a \c TR::instanceof
+     * operation; \c false, otherwise.
+     */
+    bool subtreeHasSpecialCondition(TR::Node *currentNode);
+    bool containsEscapePoints(TR_Structure *, bool &);
+    void addPrivatizedRegisterCandidates(TR_Structure *);
+    bool isStringPeephole(TR::Node *, TR::TreeTop *);
+    void cleanupStringPeephole();
+    void placeStringEpiloguesBackInExit(TR::Block *, bool);
+    void placeStringEpilogueInExits(List<TR::Block> *, List<TR::Block> *);
+    void addStringInitialization(TR::Block *);
+    bool isFieldAliasAccessed(TR::SymbolReference *symRef);
 
-   TR_BitVector *_privatizedFields, *_fieldsThatCannotBePrivatized;
-   TR_BitVector *_needToStoreBack;
-   List<TR::Node> _privatizedFieldNodes;
-   TR_HashTabInt              _privatizedFieldSymRefs;
-   List<TR::RegisterCandidate> _privatizedRegCandidates;
-   TR::Block *_criticalEdgeBlock;
-   TR::SymbolReference *_stringSymRef, *_valueOfSymRef, *_tempStringSymRef, *_appendSymRef, *_toStringSymRef, *_initSymRef;
-   TR::TreeTop *_stringPeepholeTree;
-   TR_OpaqueClassBlock *_stringBufferClass;
-   TR_Structure *_currLoopStructure;
-   int32_t _counter;
-   List<TR::TreeTop> _appendCalls;
+    TR_BitVector *_privatizedFields, *_fieldsThatCannotBePrivatized;
+    TR_BitVector *_needToStoreBack;
+    List<TR::Node> _privatizedFieldNodes;
+    TR_HashTabInt _privatizedFieldSymRefs;
+    List<TR::RegisterCandidate> _privatizedRegCandidates;
+    TR::Block *_criticalEdgeBlock;
+    TR::SymbolReference *_stringSymRef, *_valueOfSymRef, *_tempStringSymRef, *_appendSymRef, *_toStringSymRef,
+        *_initSymRef;
+    TR::TreeTop *_stringPeepholeTree;
+    TR_OpaqueClassBlock *_stringBufferClass;
+    TR_Structure *_currLoopStructure;
+    int32_t _counter;
+    List<TR::TreeTop> _appendCalls;
 
-   TR_PostDominators *_postDominators;
+    TR_PostDominators *_postDominators;
 
-   /**
-    * Tracks whether the subtree rooted at a node has been
-    * checked via a call to \ref subtreeHasSpecialCondition(TR::Node*)
-    * to see whether it contains any "special conditions".
-    *
-    * If this checklist does not contain the node, that
-    * method must be called to perform the checking;
-    * if it does contain the node, the node is present in
-    * \ref _subtreeHasSpecialCondition if and only if the
-    * subtree rooted at the node contains any of those special
-    * conditions.
-    */
-   TR::NodeChecklist _subtreeCheckedForSpecialConditions;
+    /**
+     * Tracks whether the subtree rooted at a node has been
+     * checked via a call to \ref subtreeHasSpecialCondition(TR::Node*)
+     * to see whether it contains any "special conditions".
+     *
+     * If this checklist does not contain the node, that
+     * method must be called to perform the checking;
+     * if it does contain the node, the node is present in
+     * \ref _subtreeHasSpecialCondition if and only if the
+     * subtree rooted at the node contains any of those special
+     * conditions.
+     */
+    TR::NodeChecklist _subtreeCheckedForSpecialConditions;
 
-   /**
-    * Tracks whether a node or one or its subtrees performs a
-    * \ref TR::instanceof operation or a comparison to \c null.
-    */
-   TR::NodeChecklist _subtreeHasSpecialCondition;
-   };
-
+    /**
+     * Tracks whether a node or one or its subtrees performs a
+     * \ref TR::instanceof operation or a comparison to \c null.
+     */
+    TR::NodeChecklist _subtreeHasSpecialCondition;
+};
 
 #endif

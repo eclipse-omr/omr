@@ -31,26 +31,23 @@
 
 #include <stdint.h>
 
-namespace OMR
-{
+namespace OMR {
 
-class TableOfConstants
-   {
+class TableOfConstants {
+public:
+    TableOfConstants(uint32_t size)
+        : _sizeInBytes(size)
+    {}
 
-   public:
+    uint32_t getTOCSize() { return _sizeInBytes; }
 
-   TableOfConstants(uint32_t size)
-      : _sizeInBytes(size) {}
+    void setTOCSize(uint32_t s) { _sizeInBytes = s; }
 
-   uint32_t getTOCSize() {return _sizeInBytes;}
-   void setTOCSize(uint32_t s) {_sizeInBytes = s;}
+private:
+    uint32_t _sizeInBytes;
+};
 
-   private:
-
-   uint32_t _sizeInBytes;
-   };
-
-}
+} // namespace OMR
 
 using OMR::TableOfConstants;
 

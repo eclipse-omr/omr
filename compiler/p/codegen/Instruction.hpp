@@ -24,32 +24,25 @@
 
 #include "codegen/OMRInstruction.hpp"
 
-namespace TR
-{
+namespace TR {
 class Instruction;
 
-class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector
-   {
-   public:
+class OMR_EXTENSIBLE Instruction : public OMR::InstructionConnector {
+public:
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(cg, precedingInstruction, op, n)
+    {}
 
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node * n, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg):
-      OMR::InstructionConnector(cg, precedingInstruction, op, n)
-      {
-      }
+    Instruction(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::CodeGenerator *cg)
+        : OMR::InstructionConnector(cg, op, n)
+    {}
+};
 
-   Instruction(TR::InstOpCode::Mnemonic op, TR::Node * n, TR::CodeGenerator *cg):
-      OMR::InstructionConnector(cg, op, n)
-      {
-      }
-
-   };
-
-}
+} // namespace TR
 
 #include "codegen/OMRInstruction_inlines.hpp"
 
-
-//TODO: these downcasts everywhere need to be removed
-inline uint32_t        * toPPCCursor(uint8_t *i) { return (uint32_t *)i; }
+// TODO: these downcasts everywhere need to be removed
+inline uint32_t *toPPCCursor(uint8_t *i) { return (uint32_t *)i; }
 
 #endif

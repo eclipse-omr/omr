@@ -49,7 +49,7 @@
 namespace TR {
 class SymbolReference;
 class MemoryReference;
-}
+} // namespace TR
 
 ////////////////////////////////////////////////
 //
@@ -58,400 +58,364 @@ class MemoryReference;
 // These are only here to make the rest of the code below somewhat
 // self-documenting.
 //
-enum
-   {
-   RETURN_ADDRESS_SIZE=4,
-   GPR_REG_WIDTH=4,
-   IA32_STACK_SLOT_SIZE=4,
-   IA32_DEFAULT_STACK_ALIGNMENT=4
-   };
+enum {
+    RETURN_ADDRESS_SIZE = 4,
+    GPR_REG_WIDTH = 4,
+    IA32_STACK_SLOT_SIZE = 4,
+    IA32_DEFAULT_STACK_ALIGNMENT = 4
+};
 
-TR::IA32SystemLinkage::IA32SystemLinkage(
-      TR::CodeGenerator *cg) :
-   TR::X86SystemLinkage(cg)
-   {
-   _properties._properties = CallerCleanup;
-   _properties._properties |= UsesPushesForPreservedRegs;
+TR::IA32SystemLinkage::IA32SystemLinkage(TR::CodeGenerator *cg)
+    : TR::X86SystemLinkage(cg)
+{
+    _properties._properties = CallerCleanup;
+    _properties._properties |= UsesPushesForPreservedRegs;
 
-   // if OmitFramePointer specified, don't use one
-   if (!cg->comp()->getOption(TR_OmitFramePointer))
-      _properties._properties |= AlwaysDedicateFramePointerRegister;
+    // if OmitFramePointer specified, don't use one
+    if (!cg->comp()->getOption(TR_OmitFramePointer))
+        _properties._properties |= AlwaysDedicateFramePointerRegister;
 
-   _properties._registerFlags[TR::RealRegister::NoReg] = 0;
-   _properties._registerFlags[TR::RealRegister::eax]   = IntegerReturn;
-   _properties._registerFlags[TR::RealRegister::ebx]   = Preserved;
-   _properties._registerFlags[TR::RealRegister::ecx]   = 0;
-   _properties._registerFlags[TR::RealRegister::edx]   = IntegerReturn;
-   _properties._registerFlags[TR::RealRegister::edi]   = Preserved;
-   _properties._registerFlags[TR::RealRegister::esi]   = Preserved;
-   _properties._registerFlags[TR::RealRegister::ebp]   = Preserved;
-   _properties._registerFlags[TR::RealRegister::esp]   = Preserved;
-   _properties._registerFlags[TR::RealRegister::st0]   = FloatReturn;
+    _properties._registerFlags[TR::RealRegister::NoReg] = 0;
+    _properties._registerFlags[TR::RealRegister::eax] = IntegerReturn;
+    _properties._registerFlags[TR::RealRegister::ebx] = Preserved;
+    _properties._registerFlags[TR::RealRegister::ecx] = 0;
+    _properties._registerFlags[TR::RealRegister::edx] = IntegerReturn;
+    _properties._registerFlags[TR::RealRegister::edi] = Preserved;
+    _properties._registerFlags[TR::RealRegister::esi] = Preserved;
+    _properties._registerFlags[TR::RealRegister::ebp] = Preserved;
+    _properties._registerFlags[TR::RealRegister::esp] = Preserved;
+    _properties._registerFlags[TR::RealRegister::st0] = FloatReturn;
 
-   _properties._preservedRegisters[0] = TR::RealRegister::ebx;
-   _properties._preservedRegisters[1] = TR::RealRegister::edi;
-   _properties._preservedRegisters[2] = TR::RealRegister::esi;
-   _properties._maxRegistersPreservedInPrologue = 3;
-   _properties._preservedRegisters[3] = TR::RealRegister::ebp;
-   _properties._preservedRegisters[4] = TR::RealRegister::esp;
+    _properties._preservedRegisters[0] = TR::RealRegister::ebx;
+    _properties._preservedRegisters[1] = TR::RealRegister::edi;
+    _properties._preservedRegisters[2] = TR::RealRegister::esi;
+    _properties._maxRegistersPreservedInPrologue = 3;
+    _properties._preservedRegisters[3] = TR::RealRegister::ebp;
+    _properties._preservedRegisters[4] = TR::RealRegister::esp;
 
-   _properties._argumentRegisters[0] = TR::RealRegister::NoReg;
+    _properties._argumentRegisters[0] = TR::RealRegister::NoReg;
 
-   _properties._returnRegisters[0] = TR::RealRegister::eax; // IntegerReturnRegiste
-   _properties._returnRegisters[1] = TR::RealRegister::st0; // Float/Double ReturnReg
-   _properties._returnRegisters[2] = TR::RealRegister::edx; // LongHighReturnRegister
+    _properties._returnRegisters[0] = TR::RealRegister::eax; // IntegerReturnRegiste
+    _properties._returnRegisters[1] = TR::RealRegister::st0; // Float/Double ReturnReg
+    _properties._returnRegisters[2] = TR::RealRegister::edx; // LongHighReturnRegister
 
-   _properties._numIntegerArgumentRegisters = 0;
-   _properties._firstIntegerArgumentRegister = 0;
-   _properties._numFloatArgumentRegisters    = 0;
-   _properties._firstFloatArgumentRegister   = 0;
+    _properties._numIntegerArgumentRegisters = 0;
+    _properties._firstIntegerArgumentRegister = 0;
+    _properties._numFloatArgumentRegisters = 0;
+    _properties._firstFloatArgumentRegister = 0;
 
-   _properties._framePointerRegister = TR::RealRegister::ebp;
-   _properties._methodMetaDataRegister = TR::RealRegister::NoReg;
+    _properties._framePointerRegister = TR::RealRegister::ebp;
+    _properties._methodMetaDataRegister = TR::RealRegister::NoReg;
 
-   _properties._preservedRegisterMapForGC =
-      (  (1 << (TR::RealRegister::ebx-1)) |
-         (1 << (TR::RealRegister::esi-1)) |
-         (1 << (TR::RealRegister::edi-1)) |
-         (1 << (TR::RealRegister::ebp-1)) |
-         (1 << (TR::RealRegister::esp-1)));
+    _properties._preservedRegisterMapForGC = ((1 << (TR::RealRegister::ebx - 1)) | (1 << (TR::RealRegister::esi - 1))
+        | (1 << (TR::RealRegister::edi - 1)) | (1 << (TR::RealRegister::ebp - 1)) | (1 << (TR::RealRegister::esp - 1)));
 
-   uint32_t p = 0;
-   _properties._volatileRegisters[p++] = TR::RealRegister::eax;
-   _properties._volatileRegisters[p++] = TR::RealRegister::ecx;
-   _properties._volatileRegisters[p++] = TR::RealRegister::edx;
-   _properties._numberOfVolatileGPRegisters = p;
+    uint32_t p = 0;
+    _properties._volatileRegisters[p++] = TR::RealRegister::eax;
+    _properties._volatileRegisters[p++] = TR::RealRegister::ecx;
+    _properties._volatileRegisters[p++] = TR::RealRegister::edx;
+    _properties._numberOfVolatileGPRegisters = p;
 
-   for (int32_t r=0; r<=7; r++)
-      {
-      _properties._volatileRegisters[p++] = TR::RealRegister::xmmIndex(r);
-      }
-   _properties._numberOfVolatileXMMRegisters = p - _properties._numberOfVolatileGPRegisters;
+    for (int32_t r = 0; r <= 7; r++) {
+        _properties._volatileRegisters[p++] = TR::RealRegister::xmmIndex(r);
+    }
+    _properties._numberOfVolatileXMMRegisters = p - _properties._numberOfVolatileGPRegisters;
 
-   if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F))
-      {
-      _properties._volatileRegisters[p++] = TR::RealRegister::k0;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k1;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k2;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k3;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k4;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k5;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k6;
-      _properties._volatileRegisters[p++] = TR::RealRegister::k7;
-      }
+    if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F)) {
+        _properties._volatileRegisters[p++] = TR::RealRegister::k0;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k1;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k2;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k3;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k4;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k5;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k6;
+        _properties._volatileRegisters[p++] = TR::RealRegister::k7;
+    }
 
-   _properties._numVolatileRegisters = p;
+    _properties._numVolatileRegisters = p;
 
-   setOffsetToFirstParm(RETURN_ADDRESS_SIZE);
-   _properties._offsetToFirstLocal = _properties.getAlwaysDedicateFramePointerRegister() ? -GPR_REG_WIDTH : 0;
-   _properties._OutgoingArgAlignment = IA32_DEFAULT_STACK_ALIGNMENT;
+    setOffsetToFirstParm(RETURN_ADDRESS_SIZE);
+    _properties._offsetToFirstLocal = _properties.getAlwaysDedicateFramePointerRegister() ? -GPR_REG_WIDTH : 0;
+    _properties._OutgoingArgAlignment = IA32_DEFAULT_STACK_ALIGNMENT;
 
-   p = 0;
-   // Volatiles that aren't linkage regs
-   _properties._allocationOrder[p++] = TR::RealRegister::ecx;
+    p = 0;
+    // Volatiles that aren't linkage regs
+    _properties._allocationOrder[p++] = TR::RealRegister::ecx;
 
-   // Linkage regis
-   _properties._allocationOrder[p++] = TR::RealRegister::edx;
-   _properties._allocationOrder[p++] = TR::RealRegister::eax;
+    // Linkage regis
+    _properties._allocationOrder[p++] = TR::RealRegister::edx;
+    _properties._allocationOrder[p++] = TR::RealRegister::eax;
 
-   // preserved register
-   _properties._allocationOrder[p++] = TR::RealRegister::esi;
-   _properties._allocationOrder[p++] = TR::RealRegister::edi;
-   _properties._allocationOrder[p++] = TR::RealRegister::ebx;
-   _properties._allocationOrder[p++] = TR::RealRegister::ebp;
+    // preserved register
+    _properties._allocationOrder[p++] = TR::RealRegister::esi;
+    _properties._allocationOrder[p++] = TR::RealRegister::edi;
+    _properties._allocationOrder[p++] = TR::RealRegister::ebx;
+    _properties._allocationOrder[p++] = TR::RealRegister::ebp;
 
-   // floating point
-   _properties._allocationOrder[p++] = TR::RealRegister::st0;
-   _properties._allocationOrder[p++] = TR::RealRegister::st1;
-   _properties._allocationOrder[p++] = TR::RealRegister::st2;
-   _properties._allocationOrder[p++] = TR::RealRegister::st3;
-   _properties._allocationOrder[p++] = TR::RealRegister::st4;
-   _properties._allocationOrder[p++] = TR::RealRegister::st5;
-   _properties._allocationOrder[p++] = TR::RealRegister::st6;
-   _properties._allocationOrder[p++] = TR::RealRegister::st7;
+    // floating point
+    _properties._allocationOrder[p++] = TR::RealRegister::st0;
+    _properties._allocationOrder[p++] = TR::RealRegister::st1;
+    _properties._allocationOrder[p++] = TR::RealRegister::st2;
+    _properties._allocationOrder[p++] = TR::RealRegister::st3;
+    _properties._allocationOrder[p++] = TR::RealRegister::st4;
+    _properties._allocationOrder[p++] = TR::RealRegister::st5;
+    _properties._allocationOrder[p++] = TR::RealRegister::st6;
+    _properties._allocationOrder[p++] = TR::RealRegister::st7;
 
-   if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F))
-      {
-      _properties._allocationOrder[p++] = TR::RealRegister::k0;
-      _properties._allocationOrder[p++] = TR::RealRegister::k1;
-      _properties._allocationOrder[p++] = TR::RealRegister::k2;
-      _properties._allocationOrder[p++] = TR::RealRegister::k3;
-      _properties._allocationOrder[p++] = TR::RealRegister::k4;
-      _properties._allocationOrder[p++] = TR::RealRegister::k5;
-      _properties._allocationOrder[p++] = TR::RealRegister::k6;
-      _properties._allocationOrder[p++] = TR::RealRegister::k7;
-      }
-   }
+    if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F)) {
+        _properties._allocationOrder[p++] = TR::RealRegister::k0;
+        _properties._allocationOrder[p++] = TR::RealRegister::k1;
+        _properties._allocationOrder[p++] = TR::RealRegister::k2;
+        _properties._allocationOrder[p++] = TR::RealRegister::k3;
+        _properties._allocationOrder[p++] = TR::RealRegister::k4;
+        _properties._allocationOrder[p++] = TR::RealRegister::k5;
+        _properties._allocationOrder[p++] = TR::RealRegister::k6;
+        _properties._allocationOrder[p++] = TR::RealRegister::k7;
+    }
+}
 
-uint32_t
-TR::IA32SystemLinkage::getAlignment(TR::DataType type)
-   {
-   switch(type)
-      {
-      case TR::Float:
-         return 4;
-      case TR::Double:
-         return 4;
-      case TR::Int8:
-         return 1;
-      case TR::Int16:
-         return 2;
-      case TR::Int32:
-         return 4;
-      case TR::Address:
-      case TR::Int64:
-         return 4;
-      // TODO: struct/union support should be added as a case branch.
-      case TR::Aggregate:
-      default:
-         TR_ASSERT(false, "types still not support in layout\n");
-         return 0;
-      }
-   }
+uint32_t TR::IA32SystemLinkage::getAlignment(TR::DataType type)
+{
+    switch (type) {
+        case TR::Float:
+            return 4;
+        case TR::Double:
+            return 4;
+        case TR::Int8:
+            return 1;
+        case TR::Int16:
+            return 2;
+        case TR::Int32:
+            return 4;
+        case TR::Address:
+        case TR::Int64:
+            return 4;
+        // TODO: struct/union support should be added as a case branch.
+        case TR::Aggregate:
+        default:
+            TR_ASSERT(false, "types still not support in layout\n");
+            return 0;
+    }
+}
 
+int32_t TR::IA32SystemLinkage::layoutParm(TR::Node *parmNode, int32_t &dataCursor, uint16_t &intReg, uint16_t &floatReg,
+    TR::parmLayoutResult &layoutResult)
+{
+    layoutResult.abstract |= TR::parmLayoutResult::ON_STACK;
+    int32_t align = layoutTypeOnStack(parmNode->getDataType(), dataCursor, layoutResult);
+    if (comp()->getOption(TR_TraceCG))
+        traceMsg(comp(), "layout param node %p on stack\n", parmNode);
+    return align;
+}
 
-int32_t
-TR::IA32SystemLinkage::layoutParm(TR::Node *parmNode, int32_t &dataCursor, uint16_t &intReg, uint16_t &floatReg, TR::parmLayoutResult &layoutResult)
-   {
-   layoutResult.abstract |= TR::parmLayoutResult::ON_STACK;
-   int32_t align = layoutTypeOnStack(parmNode->getDataType(), dataCursor, layoutResult);
-   if (comp()->getOption(TR_TraceCG))
-      traceMsg(comp(), "layout param node %p on stack\n", parmNode);
-   return align;
-   }
+int32_t TR::IA32SystemLinkage::layoutParm(TR::ParameterSymbol *parmSymbol, int32_t &dataCursor, uint16_t &intReg,
+    uint16_t &floatReg, TR::parmLayoutResult &layoutResult)
+{
+    layoutResult.abstract |= TR::parmLayoutResult::ON_STACK;
+    int32_t align = layoutTypeOnStack(parmSymbol->getDataType(), dataCursor, layoutResult);
+    if (comp()->getOption(TR_TraceCG))
+        traceMsg(comp(), "layout param symbol %p on stack\n", parmSymbol);
+    return align;
+}
 
-int32_t
-TR::IA32SystemLinkage::layoutParm(TR::ParameterSymbol *parmSymbol, int32_t &dataCursor, uint16_t &intReg, uint16_t &floatReg, TR::parmLayoutResult &layoutResult)
-   {
-   layoutResult.abstract |= TR::parmLayoutResult::ON_STACK;
-   int32_t align = layoutTypeOnStack(parmSymbol->getDataType(), dataCursor, layoutResult);
-   if (comp()->getOption(TR_TraceCG))
-      traceMsg(comp(), "layout param symbol %p on stack\n", parmSymbol);
-   return align;
-   }
+void TR::IA32SystemLinkage::setUpStackSizeForCallNode(TR::Node *node)
+{
+    const TR::X86LinkageProperties &properties = getProperties();
+    int32_t sizeOfOutGoingArgs = 0;
+    uint16_t intReg = 0, floatReg = 0;
+    for (int32_t i = node->getFirstArgumentIndex(); i < node->getNumChildren(); ++i) {
+        TR::parmLayoutResult fakeParm;
+        TR::Node *parmNode = node->getChild(i);
+        layoutParm(parmNode, sizeOfOutGoingArgs, intReg, floatReg, fakeParm);
+    }
 
+    if (sizeOfOutGoingArgs > cg()->getLargestOutgoingArgSize()) {
+        cg()->setLargestOutgoingArgSize(sizeOfOutGoingArgs);
+        if (comp()->getOption(TR_TraceCG))
+            traceMsg(comp(), "setUpStackSizeForCallNode setLargestOutgoingArgSize %d(for call node %p)\n",
+                sizeOfOutGoingArgs, node);
+    }
+}
 
-void
-TR::IA32SystemLinkage::setUpStackSizeForCallNode(TR::Node* node)
-   {
-   const TR::X86LinkageProperties     &properties = getProperties();
-   int32_t  sizeOfOutGoingArgs= 0;
-   uint16_t intReg = 0, floatReg = 0;
-   for (int32_t i= node->getFirstArgumentIndex(); i<node->getNumChildren(); ++i)
-      {
-      TR::parmLayoutResult fakeParm;
-      TR::Node *parmNode = node->getChild(i);
-      layoutParm(parmNode, sizeOfOutGoingArgs, intReg, floatReg, fakeParm);
-      }
+TR::Register *TR::IA32SystemLinkage::buildIndirectDispatch(TR::Node *callNode)
+{
+    TR_ASSERT(false, "TR::IA32SystemLinkage::buildIndirectDispatch is not supported.\n");
+    return NULL;
+}
 
-   if (sizeOfOutGoingArgs > cg()->getLargestOutgoingArgSize())
-      {
-      cg()->setLargestOutgoingArgSize(sizeOfOutGoingArgs);
-      if (comp()->getOption(TR_TraceCG))
-         traceMsg(comp(), "setUpStackSizeForCallNode setLargestOutgoingArgSize %d(for call node %p)\n", sizeOfOutGoingArgs, node);
-      }
-
-   }
-
-TR::Register *
-TR::IA32SystemLinkage::buildIndirectDispatch(TR::Node *callNode)
-   {
-   TR_ASSERT(false, "TR::IA32SystemLinkage::buildIndirectDispatch is not supported.\n");
-   return NULL;
-   }
-
-TR::Register *
-TR::IA32SystemLinkage::buildVolatileAndReturnDependencies(
-    TR::Node *callNode,
+TR::Register *TR::IA32SystemLinkage::buildVolatileAndReturnDependencies(TR::Node *callNode,
     TR::RegisterDependencyConditions *deps)
-   {
-   TR_ASSERT(deps != NULL, "expected register dependencies");
+{
+    TR_ASSERT(deps != NULL, "expected register dependencies");
 
-   // Allocate virtual register for return value
-   //
-   TR::Register     *integerReturnReg = NULL;
-   TR::Register     *longReturnReg    = NULL;
-   TR::Register     *fpReturnReg      = NULL;
-   TR::Register     *returnReg        = NULL; // An alias for one of the above
-   switch (callNode->getDataType())
-      {
-      case TR::NoType:
-         break;
-      case TR::Int8:
-      case TR::Int16:
-      case TR::Int32:
-         returnReg = integerReturnReg = cg()->allocateRegister();
-         break;
-      case TR::Address:
-         returnReg = integerReturnReg = cg()->allocateCollectedReferenceRegister();
-         break;
-      case TR::Float:
-      case TR::Double:
-         /**
-          * x87 registers can no longer be added to register dependencies because
-          * the x87 register assigner has been removed.  Instead, the dispatch code
-          * must insert code to shuffle from ST0 to XMM0 manually.  The floating
-          * point result register will therefore be XMM0.
-          */
-         returnReg = fpReturnReg = cg()->allocateRegister(TR_FPR);
-         if (callNode->getDataType() == TR::Float)
-            {
-            fpReturnReg->setIsSinglePrecision();
+    // Allocate virtual register for return value
+    //
+    TR::Register *integerReturnReg = NULL;
+    TR::Register *longReturnReg = NULL;
+    TR::Register *fpReturnReg = NULL;
+    TR::Register *returnReg = NULL; // An alias for one of the above
+    switch (callNode->getDataType()) {
+        case TR::NoType:
+            break;
+        case TR::Int8:
+        case TR::Int16:
+        case TR::Int32:
+            returnReg = integerReturnReg = cg()->allocateRegister();
+            break;
+        case TR::Address:
+            returnReg = integerReturnReg = cg()->allocateCollectedReferenceRegister();
+            break;
+        case TR::Float:
+        case TR::Double:
+            /**
+             * x87 registers can no longer be added to register dependencies because
+             * the x87 register assigner has been removed.  Instead, the dispatch code
+             * must insert code to shuffle from ST0 to XMM0 manually.  The floating
+             * point result register will therefore be XMM0.
+             */
+            returnReg = fpReturnReg = cg()->allocateRegister(TR_FPR);
+            if (callNode->getDataType() == TR::Float) {
+                fpReturnReg->setIsSinglePrecision();
             }
-         break;
-      case TR::Int64:
-         returnReg = longReturnReg = (TR::Register*)cg()->allocateRegisterPair(cg()->allocateRegister(), cg()->allocateRegister());
-         break;
-      case TR::Aggregate:
-      default:
-         TR_ASSERT(false, "return type still not supported");
-      }
-
-   // Deps for volatile regs
-   //
-
-   // TODO: This should be less dependent on the real registers, but the way
-   // _properties is set up makes that very hard.
-   TR_ASSERT(_properties.getIntegerReturnRegister()  == TR::RealRegister::eax, "assertion failure");
-   TR_ASSERT(_properties.getLongLowReturnRegister()  == TR::RealRegister::eax, "assertion failure");
-   TR_ASSERT(_properties.getLongHighReturnRegister() == TR::RealRegister::edx, "assertion failure");
-
-   if (longReturnReg)
-      {
-      deps->addPostCondition(returnReg->getLowOrder(), TR::RealRegister::eax, cg());
-      deps->addPostCondition(returnReg->getHighOrder(), TR::RealRegister::edx, cg());
-      }
-   else if (integerReturnReg)
-      {
-      deps->addPostCondition(returnReg, TR::RealRegister::eax, cg());
-      deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::edx, cg());
-      }
-   else
-      {
-      deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::eax, cg());
-      deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::edx, cg());
-      }
-
-   deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::ecx, cg());
-
-   // st0 -> xmm0
-   if (fpReturnReg)
-      {
-      deps->addPostCondition(returnReg, TR::RealRegister::xmm0, cg());
-      }
-
- // The reg dependency is left open intentionally, and need to be closed by
- // the caller. The reason is because, child class might call this method, while
- // adding more register dependecies;  if we close the reg dependency here,
- // the child class could add NO more register dependencies.
-
-   return returnReg;
-   }
-
-int32_t TR::IA32SystemLinkage::buildArgs(
-      TR::Node *callNode,
-      TR::RegisterDependencyConditions *deps)
-   {
-   // Push args in reverse order for a system call
-   //
-   int32_t argSize = 0;
-   int32_t firstArg = callNode->getFirstArgumentIndex();
-   for (int i = callNode->getNumChildren() - 1; i >= firstArg; i--)
-      {
-      TR::Node *child = callNode->getChild(i);
-      switch (child->getDataType())
-         {
-         case TR::Int8:
-         case TR::Int16:
-         case TR::Address:
-         case TR::Int32:
-            TR::IA32LinkageUtils::pushIntegerWordArg(child, cg());
-            argSize += 4;
             break;
-         case TR::Float:
-            TR::IA32LinkageUtils::pushFloatArg(child,cg());
-            argSize += 4;
+        case TR::Int64:
+            returnReg = longReturnReg
+                = (TR::Register *)cg()->allocateRegisterPair(cg()->allocateRegister(), cg()->allocateRegister());
             break;
-         case TR::Double:
-            TR::IA32LinkageUtils::pushDoubleArg(child, cg());
-            argSize += 8;
-            break;
-         case TR::Int64:
-            TR::IA32LinkageUtils::pushLongArg(child, cg());
-            argSize += 8;
-            break;
-         case TR::Aggregate:
-         default:
-            TR_ASSERT(0, "Attempted to push unknown type");
-            break;
-         }
-      }
-   return argSize;
-   }
+        case TR::Aggregate:
+        default:
+            TR_ASSERT(false, "return type still not supported");
+    }
+
+    // Deps for volatile regs
+    //
+
+    // TODO: This should be less dependent on the real registers, but the way
+    // _properties is set up makes that very hard.
+    TR_ASSERT(_properties.getIntegerReturnRegister() == TR::RealRegister::eax, "assertion failure");
+    TR_ASSERT(_properties.getLongLowReturnRegister() == TR::RealRegister::eax, "assertion failure");
+    TR_ASSERT(_properties.getLongHighReturnRegister() == TR::RealRegister::edx, "assertion failure");
+
+    if (longReturnReg) {
+        deps->addPostCondition(returnReg->getLowOrder(), TR::RealRegister::eax, cg());
+        deps->addPostCondition(returnReg->getHighOrder(), TR::RealRegister::edx, cg());
+    } else if (integerReturnReg) {
+        deps->addPostCondition(returnReg, TR::RealRegister::eax, cg());
+        deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::edx, cg());
+    } else {
+        deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::eax, cg());
+        deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::edx, cg());
+    }
+
+    deps->addPostCondition(cg()->allocateRegister(), TR::RealRegister::ecx, cg());
+
+    // st0 -> xmm0
+    if (fpReturnReg) {
+        deps->addPostCondition(returnReg, TR::RealRegister::xmm0, cg());
+    }
+
+    // The reg dependency is left open intentionally, and need to be closed by
+    // the caller. The reason is because, child class might call this method, while
+    // adding more register dependecies;  if we close the reg dependency here,
+    // the child class could add NO more register dependencies.
+
+    return returnReg;
+}
+
+int32_t TR::IA32SystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *deps)
+{
+    // Push args in reverse order for a system call
+    //
+    int32_t argSize = 0;
+    int32_t firstArg = callNode->getFirstArgumentIndex();
+    for (int i = callNode->getNumChildren() - 1; i >= firstArg; i--) {
+        TR::Node *child = callNode->getChild(i);
+        switch (child->getDataType()) {
+            case TR::Int8:
+            case TR::Int16:
+            case TR::Address:
+            case TR::Int32:
+                TR::IA32LinkageUtils::pushIntegerWordArg(child, cg());
+                argSize += 4;
+                break;
+            case TR::Float:
+                TR::IA32LinkageUtils::pushFloatArg(child, cg());
+                argSize += 4;
+                break;
+            case TR::Double:
+                TR::IA32LinkageUtils::pushDoubleArg(child, cg());
+                argSize += 8;
+                break;
+            case TR::Int64:
+                TR::IA32LinkageUtils::pushLongArg(child, cg());
+                argSize += 8;
+                break;
+            case TR::Aggregate:
+            default:
+                TR_ASSERT(0, "Attempted to push unknown type");
+                break;
+        }
+    }
+    return argSize;
+}
 
 TR::Register *TR::IA32SystemLinkage::buildDirectDispatch(TR::Node *callNode, bool spillFPRegs)
-   {
-   TR::RealRegister    *stackPointerReg = machine()->getRealRegister(TR::RealRegister::esp);
-   TR::SymbolReference *methodSymRef    = callNode->getSymbolReference();
-   TR::MethodSymbol    *methodSymbol    = callNode->getSymbol()->castToMethodSymbol();
-   TR::ILOpCodes        callOpCodeValue = callNode->getOpCodeValue();
+{
+    TR::RealRegister *stackPointerReg = machine()->getRealRegister(TR::RealRegister::esp);
+    TR::SymbolReference *methodSymRef = callNode->getSymbolReference();
+    TR::MethodSymbol *methodSymbol = callNode->getSymbol()->castToMethodSymbol();
+    TR::ILOpCodes callOpCodeValue = callNode->getOpCodeValue();
 
-   if (!methodSymbol->isHelper())
-      diagnostic("Building call site for %s\n", methodSymbol->getMethod()->signature(trMemory()));
+    if (!methodSymbol->isHelper())
+        diagnostic("Building call site for %s\n", methodSymbol->getMethod()->signature(trMemory()));
 
-   TR::RegisterDependencyConditions  *deps;
-   deps = generateRegisterDependencyConditions((uint8_t)0, (uint8_t)6, cg());
-   TR::Register *returnReg = buildVolatileAndReturnDependencies(callNode, deps);
-   deps->stopAddingConditions();
+    TR::RegisterDependencyConditions *deps;
+    deps = generateRegisterDependencyConditions((uint8_t)0, (uint8_t)6, cg());
+    TR::Register *returnReg = buildVolatileAndReturnDependencies(callNode, deps);
+    deps->stopAddingConditions();
 
-   TR::RegisterDependencyConditions  *dummy = generateRegisterDependencyConditions((uint8_t)0, (uint8_t)0, cg());
+    TR::RegisterDependencyConditions *dummy = generateRegisterDependencyConditions((uint8_t)0, (uint8_t)0, cg());
 
-   uint32_t  argSize = buildArgs(callNode, dummy);
+    uint32_t argSize = buildArgs(callNode, dummy);
 
-   TR::Register* targetAddressReg = NULL;
-   TR::MemoryReference* targetAddressMem = NULL;
+    TR::Register *targetAddressReg = NULL;
+    TR::MemoryReference *targetAddressMem = NULL;
 
-   // Call-out
-   int32_t stackAdjustment = cg()->getProperties().getCallerCleanup() ? 0 : -argSize;
-   cg()->resetIsLeafMethod();
-   TR::X86ImmInstruction* instr = generateImmSymInstruction(TR::InstOpCode::CALLImm4, callNode, (uintptr_t)methodSymbol->getMethodAddress(), methodSymRef, cg());
-   instr->setAdjustsFramePointerBy(stackAdjustment);
+    // Call-out
+    int32_t stackAdjustment = cg()->getProperties().getCallerCleanup() ? 0 : -argSize;
+    cg()->resetIsLeafMethod();
+    TR::X86ImmInstruction *instr = generateImmSymInstruction(TR::InstOpCode::CALLImm4, callNode,
+        (uintptr_t)methodSymbol->getMethodAddress(), methodSymRef, cg());
+    instr->setAdjustsFramePointerBy(stackAdjustment);
 
-   if (cg()->getProperties().getCallerCleanup() && argSize > 0)
-      {
-      // Clean up arguments
-      //
-      generateRegImmInstruction(
-         (argSize <= 127) ? TR::InstOpCode::ADD4RegImms : TR::InstOpCode::ADD4RegImm4,
-         callNode,
-         stackPointerReg,
-         argSize,
-         cg()
-         );
-      }
+    if (cg()->getProperties().getCallerCleanup() && argSize > 0) {
+        // Clean up arguments
+        //
+        generateRegImmInstruction((argSize <= 127) ? TR::InstOpCode::ADD4RegImms : TR::InstOpCode::ADD4RegImm4,
+            callNode, stackPointerReg, argSize, cg());
+    }
 
-   /**
-    * For floating point return values, move the value passed in ST0 to an XMM register.
-    * The x87 stack will be popped.
-    */
-   if (callNode->getDataType() == TR::Float || callNode->getDataType() == TR::Double)
-      {
-      TR::TreeEvaluator::coerceST0ToFPR(callNode, callNode->getDataType(), cg(), returnReg);
-      }
+    /**
+     * For floating point return values, move the value passed in ST0 to an XMM register.
+     * The x87 stack will be popped.
+     */
+    if (callNode->getDataType() == TR::Float || callNode->getDataType() == TR::Double) {
+        TR::TreeEvaluator::coerceST0ToFPR(callNode, callNode->getDataType(), cg(), returnReg);
+    }
 
-   // Label denoting end of dispatch code sequence; dependencies are on
-   // this label rather than on the call
-   //
-   TR::LabelSymbol *endSystemCallSequence = generateLabelSymbol(cg());
-   generateLabelInstruction(TR::InstOpCode::label, callNode, endSystemCallSequence, deps, cg());
+    // Label denoting end of dispatch code sequence; dependencies are on
+    // this label rather than on the call
+    //
+    TR::LabelSymbol *endSystemCallSequence = generateLabelSymbol(cg());
+    generateLabelInstruction(TR::InstOpCode::label, callNode, endSystemCallSequence, deps, cg());
 
-   // Stop using the killed registers that are not going to persist
-   //
-   if (deps)
-      stopUsingKilledRegisters(deps, returnReg);
+    // Stop using the killed registers that are not going to persist
+    //
+    if (deps)
+        stopUsingKilledRegisters(deps, returnReg);
 
-   if (cg()->enableRegisterAssociations())
-      associatePreservedRegisters(deps, returnReg);
+    if (cg()->enableRegisterAssociations())
+        associatePreservedRegisters(deps, returnReg);
 
-   return returnReg;
-   }
+    return returnReg;
+}

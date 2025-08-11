@@ -22,18 +22,16 @@
 #ifndef TR_VIRTUALMACHINESTATE_INCL
 #define TR_VIRTUALMACHINESTATE_INCL
 
-
 #include "ilgen/OMRVirtualMachineState.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class VirtualMachineState : public OMR::VirtualMachineState
-   {
-   public:
-   VirtualMachineState() : OMR::VirtualMachineState()
-      { }
-   };
+class VirtualMachineState : public OMR::VirtualMachineState {
+public:
+    VirtualMachineState()
+        : OMR::VirtualMachineState()
+    {}
+};
 
 } // namespace TR
 

@@ -24,64 +24,30 @@
 
 #include "optimizer/OptimizationManager.hpp"
 
-inline
-TR::OptimizationManager *OMR::OptimizationManager::self()
-   {
-   return (static_cast<TR::OptimizationManager *>(this));
-   }
+inline TR::OptimizationManager *OMR::OptimizationManager::self()
+{
+    return (static_cast<TR::OptimizationManager *>(this));
+}
 
-inline
-TR::CodeGenerator *OMR::OptimizationManager::cg()
-   {
-   return self()->comp()->cg();
-   }
+inline TR::CodeGenerator *OMR::OptimizationManager::cg() { return self()->comp()->cg(); }
 
-inline
-TR_FrontEnd *OMR::OptimizationManager::fe()
-   {
-   return self()->comp()->fe();
-   }
+inline TR_FrontEnd *OMR::OptimizationManager::fe() { return self()->comp()->fe(); }
 
-inline
-TR_Debug *OMR::OptimizationManager::getDebug()
-   {
-   return self()->comp()->getDebug();
-   }
+inline TR_Debug *OMR::OptimizationManager::getDebug() { return self()->comp()->getDebug(); }
 
-inline
-TR::SymbolReferenceTable *OMR::OptimizationManager::getSymRefTab()
-   {
-   return self()->comp()->getSymRefTab();
-   }
+inline TR::SymbolReferenceTable *OMR::OptimizationManager::getSymRefTab() { return self()->comp()->getSymRefTab(); }
 
-inline
-TR_Memory *OMR::OptimizationManager::trMemory()
-   {
-   return self()->comp()->trMemory();
-   }
+inline TR_Memory *OMR::OptimizationManager::trMemory() { return self()->comp()->trMemory(); }
 
-inline
-TR_StackMemory OMR::OptimizationManager::trStackMemory()
-   {
-   return self()->comp()->trStackMemory();
-   }
+inline TR_StackMemory OMR::OptimizationManager::trStackMemory() { return self()->comp()->trStackMemory(); }
 
-inline
-TR_HeapMemory OMR::OptimizationManager::trHeapMemory()
-   {
-   return self()->comp()->trHeapMemory();
-   }
+inline TR_HeapMemory OMR::OptimizationManager::trHeapMemory() { return self()->comp()->trHeapMemory(); }
 
-inline
-TR_PersistentMemory *OMR::OptimizationManager::trPersistentMemory()
-   {
-   return self()->comp()->trPersistentMemory();
-   }
+inline TR_PersistentMemory *OMR::OptimizationManager::trPersistentMemory()
+{
+    return self()->comp()->trPersistentMemory();
+}
 
-inline
-TR::Allocator OMR::OptimizationManager::allocator()
-   {
-   return self()->comp()->allocator();
-   }
+inline TR::Allocator OMR::OptimizationManager::allocator() { return self()->comp()->allocator(); }
 
 #endif

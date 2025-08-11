@@ -27,31 +27,27 @@
  */
 #ifndef OMR_CODECACHECONFIG_CONNECTOR
 #define OMR_CODECACHECONFIG_CONNECTOR
+
 namespace OMR {
-namespace Power { class CodeCacheConfig; }
-typedef Power::CodeCacheConfig CodeCacheConfigConnector;
+namespace Power {
+class CodeCacheConfig;
 }
+
+typedef Power::CodeCacheConfig CodeCacheConfigConnector;
+} // namespace OMR
 #else
 #error OMR::Power::CodeCacheConfig expected to be a primary connector, but an OMR connector is already defined
 #endif
 
-
 #include "compiler/runtime/OMRCodeCacheConfig.hpp"
 
-namespace OMR
-{
-namespace Power
-{
+namespace OMR { namespace Power {
 
-class OMR_EXTENSIBLE CodeCacheConfig : public OMR::CodeCacheConfig
-   {
-   public:
+class OMR_EXTENSIBLE CodeCacheConfig : public OMR::CodeCacheConfig {
+public:
+    CodeCacheConfig();
+};
 
-   CodeCacheConfig();
-   };
-
-
-} // namespace POWER
-} // namespace OMR
+}} // namespace OMR::Power
 
 #endif

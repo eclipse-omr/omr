@@ -31,13 +31,12 @@
 namespace TR {
 
 /**
- * @brief The ELFRelocationResolver class translates between a TR::StaticRelocation and the ELF relocation type required for the platform.
+ * @brief The ELFRelocationResolver class translates between a TR::StaticRelocation and the ELF relocation type required
+ * for the platform.
  */
-class OMR_EXTENSIBLE ELFRelocationResolver : public ::OMR::ELFRelocationResolverConnector
-   {
-   };
+class OMR_EXTENSIBLE ELFRelocationResolver : public ::OMR::ELFRelocationResolverConnector {};
 
-}
+} // namespace TR
 
 #endif /* defined(LINUX) */
 

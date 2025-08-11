@@ -34,26 +34,25 @@ namespace TR {
 class CodeGenerator;
 }
 
-namespace TR
-{
+namespace TR {
 
-class OMR_EXTENSIBLE RealRegister : public OMR::RealRegisterConnector
-   {
-   public:
+class OMR_EXTENSIBLE RealRegister : public OMR::RealRegisterConnector {
+public:
+    RealRegister(TR::CodeGenerator *cg)
+        : OMR::RealRegisterConnector(cg)
+    {}
 
-   RealRegister(TR::CodeGenerator *cg): OMR::RealRegisterConnector(cg) {}
+    RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, RegNum rn, RegMask m, TR::CodeGenerator *cg)
+        : OMR::RealRegisterConnector(rk, w, s, rn, m, cg)
+    {}
+};
 
-   RealRegister(TR_RegisterKinds rk, uint16_t w, RegState s, RegNum rn, RegMask m, TR::CodeGenerator * cg):
-      OMR::RealRegisterConnector(rk, w, s, rn, m, cg) {}
-
-   };
-
-}
+} // namespace TR
 
 inline TR::RealRegister *toRealRegister(TR::Register *r)
-   {
-   TR_ASSERT(r == NULL || r->getRealRegister() != NULL, "trying to convert a non-real register to a real register");
-   return static_cast<TR::RealRegister *>(r);
-   }
+{
+    TR_ASSERT(r == NULL || r->getRealRegister() != NULL, "trying to convert a non-real register to a real register");
+    return static_cast<TR::RealRegister *>(r);
+}
 
 #endif

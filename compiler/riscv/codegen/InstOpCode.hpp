@@ -25,58 +25,58 @@
 #include "codegen/OMRInstOpCode.hpp"
 #include "infra/Assert.hpp"
 
-namespace TR
-{
+namespace TR {
 
-class InstOpCode: public OMR::InstOpCodeConnector
-   {
-   public:
+class InstOpCode : public OMR::InstOpCodeConnector {
+public:
+    /**
+     * @brief Constructor
+     */
+    InstOpCode()
+        : OMR::InstOpCodeConnector(bad)
+    {}
 
-   /**
-    * @brief Constructor
-    */
-   InstOpCode() : OMR::InstOpCodeConnector(bad) {}
-   /**
-    * @brief Constructor
-    * @param[in] m : mnemonic
-    */
-   InstOpCode(TR::InstOpCode::Mnemonic m) : OMR::InstOpCodeConnector(m)
-      {
+    /**
+     * @brief Constructor
+     * @param[in] m : mnemonic
+     */
+    InstOpCode(TR::InstOpCode::Mnemonic m)
+        : OMR::InstOpCodeConnector(m)
+    {
 #ifdef TR_RISCV_RV_SOURCE_COMPAT
-      TR_ASSERT((uint32_t)m < (uint32_t)TR::InstOpCode::cbzw || (uint32_t)m >= (uint32_t)TR::InstOpCode::proc,
-               "Invalid RISC-V opcode (AArch64 opcode, perhaps?)");
+        TR_ASSERT((uint32_t)m < (uint32_t)TR::InstOpCode::cbzw || (uint32_t)m >= (uint32_t)TR::InstOpCode::proc,
+            "Invalid RISC-V opcode (AArch64 opcode, perhaps?)");
 #endif
-      }
+    }
 
-   /**
-    * @brief For given branch opcode, return 'reversed' opcode. For example, for BEQ return
-    * BNE, for BLT return BGE and so on. Assumes passed opcode is a branch opcode.
-    *
-    * @param[in] opcode : opcode to be reversed
-    * @return Reversed opcode
-    */
-   static TR::InstOpCode::Mnemonic reversedBranchOpCode(TR::InstOpCode::Mnemonic opcode)
-      {
-      switch (opcode)
-         {
-         case TR::InstOpCode::_beq:
-            return TR::InstOpCode::_bne;
-         case TR::InstOpCode::_bne:
-            return TR::InstOpCode::_beq;
-         case TR::InstOpCode::_blt:
-            return TR::InstOpCode::_bge;
-         case TR::InstOpCode::_bltu:
-            return TR::InstOpCode::_bgeu;
-         case TR::InstOpCode::_bge:
-            return TR::InstOpCode::_blt;
-         case TR::InstOpCode::_bgeu:
-            return TR::InstOpCode::_bltu;
-         default:
-            TR_ASSERT_FATAL(false, "Not a branch opcode: %d", opcode);
-            return TR::InstOpCode::bad;
-         }
-      }
-   };
+    /**
+     * @brief For given branch opcode, return 'reversed' opcode. For example, for BEQ return
+     * BNE, for BLT return BGE and so on. Assumes passed opcode is a branch opcode.
+     *
+     * @param[in] opcode : opcode to be reversed
+     * @return Reversed opcode
+     */
+    static TR::InstOpCode::Mnemonic reversedBranchOpCode(TR::InstOpCode::Mnemonic opcode)
+    {
+        switch (opcode) {
+            case TR::InstOpCode::_beq:
+                return TR::InstOpCode::_bne;
+            case TR::InstOpCode::_bne:
+                return TR::InstOpCode::_beq;
+            case TR::InstOpCode::_blt:
+                return TR::InstOpCode::_bge;
+            case TR::InstOpCode::_bltu:
+                return TR::InstOpCode::_bgeu;
+            case TR::InstOpCode::_bge:
+                return TR::InstOpCode::_blt;
+            case TR::InstOpCode::_bgeu:
+                return TR::InstOpCode::_bltu;
+            default:
+                TR_ASSERT_FATAL(false, "Not a branch opcode: %d", opcode);
+                return TR::InstOpCode::bad;
+        }
+    }
+};
 
-}
+} // namespace TR
 #endif

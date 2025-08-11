@@ -32,58 +32,61 @@ class CodeGenerator;
 class Instruction;
 class LabelSymbol;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
-class PPCRelocation
-   {
-   public:
-   TR_ALLOC(TR_Memory::PPCRelocation)
+class PPCRelocation {
+public:
+    TR_ALLOC(TR_Memory::PPCRelocation)
 
-   PPCRelocation(TR::Instruction *src,
-                 uint8_t           *trg,
-       TR_ExternalRelocationTargetKind k):
-      _srcInstruction(src), _relTarget(trg), _kind(k)
-      {}
+    PPCRelocation(TR::Instruction *src, uint8_t *trg, TR_ExternalRelocationTargetKind k)
+        : _srcInstruction(src)
+        , _relTarget(trg)
+        , _kind(k)
+    {}
 
-   TR::Instruction *getSourceInstruction() {return _srcInstruction;}
-   void setSourceInstruction(TR::Instruction *i) {_srcInstruction = i;}
+    TR::Instruction *getSourceInstruction() { return _srcInstruction; }
 
-   uint8_t *getRelocationTarget() {return _relTarget;}
-   void setRelocationTarget(uint8_t *t) {_relTarget = t;}
+    void setSourceInstruction(TR::Instruction *i) { _srcInstruction = i; }
 
-   TR_ExternalRelocationTargetKind getKind() {return _kind;}
-   void setKind(TR_ExternalRelocationTargetKind k) {_kind = k;}
+    uint8_t *getRelocationTarget() { return _relTarget; }
 
-   virtual void mapRelocation(TR::CodeGenerator *cg) = 0;
+    void setRelocationTarget(uint8_t *t) { _relTarget = t; }
 
-   private:
-   TR::Instruction               *_srcInstruction;
-   uint8_t                         *_relTarget;
-   TR_ExternalRelocationTargetKind  _kind;
-   };
+    TR_ExternalRelocationTargetKind getKind() { return _kind; }
 
-class PPCPairedRelocation: public TR::PPCRelocation
-   {
-   public:
-   PPCPairedRelocation(TR::Instruction *src1,
-                       TR::Instruction *src2,
-                       uint8_t           *trg,
-                       TR_ExternalRelocationTargetKind k,
-                       TR::Node *node) :
-      TR::PPCRelocation(src1, trg, k), _src2Instruction(src2), _node(node)
-      {}
+    void setKind(TR_ExternalRelocationTargetKind k) { _kind = k; }
 
-   TR::Instruction *getSource2Instruction() {return _src2Instruction;}
-   void setSource2Instruction(TR::Instruction *src) {_src2Instruction = src;}
-   TR::Node* getNode(){return _node;}
-   virtual void mapRelocation(TR::CodeGenerator *cg);
+    virtual void mapRelocation(TR::CodeGenerator *cg) = 0;
 
-   private:
-   TR::Instruction               *_src2Instruction;
-   TR::Node                         *_node;
-   };
+private:
+    TR::Instruction *_srcInstruction;
+    uint8_t *_relTarget;
+    TR_ExternalRelocationTargetKind _kind;
+};
+
+class PPCPairedRelocation : public TR::PPCRelocation {
+public:
+    PPCPairedRelocation(TR::Instruction *src1, TR::Instruction *src2, uint8_t *trg, TR_ExternalRelocationTargetKind k,
+        TR::Node *node)
+        : TR::PPCRelocation(src1, trg, k)
+        , _src2Instruction(src2)
+        , _node(node)
+    {}
+
+    TR::Instruction *getSource2Instruction() { return _src2Instruction; }
+
+    void setSource2Instruction(TR::Instruction *src) { _src2Instruction = src; }
+
+    TR::Node *getNode() { return _node; }
+
+    virtual void mapRelocation(TR::CodeGenerator *cg);
+
+private:
+    TR::Instruction *_src2Instruction;
+    TR::Node *_node;
+};
 
 // TODO(#5404): The classes defined below here are specific to Power, but are not actually AOT
 //              relocations. They are only here for lack of a better place to put them.
@@ -93,60 +96,63 @@ class PPCPairedRelocation: public TR::PPCRelocation
 //   lis  gr3, addr_hi
 //   addi gr3, gr3, addr_lo
 //
-class PPCPairedLabelAbsoluteRelocation : public TR::LabelRelocation
-   {
-   public:
-   PPCPairedLabelAbsoluteRelocation(TR::Instruction *src1,
-                                    TR::Instruction *src2,
-                                    TR::Instruction *src3,
-                                    TR::Instruction *src4,
-                                    TR::LabelSymbol *label)
-      : TR::LabelRelocation(0, label), _instr1(src1), _instr2(src2), _instr3(src3), _instr4(src4) {}
-   virtual void apply(TR::CodeGenerator *cg);
+class PPCPairedLabelAbsoluteRelocation : public TR::LabelRelocation {
+public:
+    PPCPairedLabelAbsoluteRelocation(TR::Instruction *src1, TR::Instruction *src2, TR::Instruction *src3,
+        TR::Instruction *src4, TR::LabelSymbol *label)
+        : TR::LabelRelocation(0, label)
+        , _instr1(src1)
+        , _instr2(src2)
+        , _instr3(src3)
+        , _instr4(src4)
+    {}
 
-   private:
-   TR::Instruction *_instr1;
-   TR::Instruction *_instr2;
-   TR::Instruction *_instr3;
-   TR::Instruction *_instr4;
-   };
+    virtual void apply(TR::CodeGenerator *cg);
+
+private:
+    TR::Instruction *_instr1;
+    TR::Instruction *_instr2;
+    TR::Instruction *_instr3;
+    TR::Instruction *_instr4;
+};
 
 /**
  * \brief Represents a relocation on the D34 field of a PC-relative prefixed load/store instruction
  *        that should use an offset from a TR::LabelSymbol.
  */
-class PPCD34LabelRelocation : public TR::LabelRelocation
-   {
-   public:
+class PPCD34LabelRelocation : public TR::LabelRelocation {
+public:
+    /**
+     * \brief
+     *   Creates a new PPCD34LabelRelocation.
+     *
+     * \param instr
+     *   The TR::Instruction for which this relocation was created, or \c NULL if this relocation is
+     *   not associated with an instruction object.
+     *
+     * \param cursor
+     *   The start of the prefixed load/store instruction to relocate.
+     *
+     * \param label
+     *   The label relative to which the load/store should occur.
+     *
+     * \param offset
+     *   The byte offset from the label at which the load/store should occur.
+     */
+    PPCD34LabelRelocation(TR::Instruction *instr, uint32_t *cursor, TR::LabelSymbol *label, int64_t offset)
+        : TR::LabelRelocation(reinterpret_cast<uint8_t *>(cursor), label)
+        , _instr(instr)
+        , _offset(offset)
+    {}
 
-   /**
-    * \brief
-    *   Creates a new PPCD34LabelRelocation.
-    *
-    * \param instr
-    *   The TR::Instruction for which this relocation was created, or \c NULL if this relocation is
-    *   not associated with an instruction object.
-    *
-    * \param cursor
-    *   The start of the prefixed load/store instruction to relocate.
-    *
-    * \param label
-    *   The label relative to which the load/store should occur.
-    *
-    * \param offset
-    *   The byte offset from the label at which the load/store should occur.
-    */
-   PPCD34LabelRelocation(TR::Instruction *instr, uint32_t *cursor, TR::LabelSymbol *label, int64_t offset)
-      : TR::LabelRelocation(reinterpret_cast<uint8_t*>(cursor), label), _instr(instr), _offset(offset) {}
+    virtual void apply(TR::CodeGenerator *cg);
 
-   virtual void apply(TR::CodeGenerator *cg);
+private:
+    TR::Instruction *_instr;
+    int64_t _offset;
+};
 
-   private:
-   TR::Instruction *_instr;
-   int64_t _offset;
-   };
-
-}
+} // namespace TR
 
 typedef TR::PPCRelocation TR_PPCRelocation;
 typedef TR::PPCPairedRelocation TR_PPCPairedRelocation;

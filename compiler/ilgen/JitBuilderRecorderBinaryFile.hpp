@@ -24,17 +24,15 @@
 
 #include "ilgen/OMRJitBuilderRecorderBinaryFile.hpp"
 
-namespace TR
-{
-   class JitBuilderRecorderBinaryFile : public OMR::JitBuilderRecorderBinaryFile
-      {
-      public:
-         JitBuilderRecorderBinaryFile(const TR::MethodBuilder *mb, const char *fileName)
-            : OMR::JitBuilderRecorderBinaryFile(mb, fileName)
-            { }
-         virtual ~JitBuilderRecorderBinaryFile()
-            { }
-      };
+namespace TR {
+class JitBuilderRecorderBinaryFile : public OMR::JitBuilderRecorderBinaryFile {
+public:
+    JitBuilderRecorderBinaryFile(const TR::MethodBuilder *mb, const char *fileName)
+        : OMR::JitBuilderRecorderBinaryFile(mb, fileName)
+    {}
+
+    virtual ~JitBuilderRecorderBinaryFile() {}
+};
 
 } // namespace TR
 

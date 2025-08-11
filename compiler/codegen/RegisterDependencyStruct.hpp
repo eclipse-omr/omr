@@ -24,11 +24,10 @@
 
 #include "codegen/OMRRegisterDependencyStruct.hpp"
 
-namespace TR
-{
+namespace TR {
 
 class RegisterDependency : public OMR::RegisterDependencyConnector {};
 
-}
+} // namespace TR
 
 #endif
