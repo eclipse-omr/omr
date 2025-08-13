@@ -1019,7 +1019,8 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
                                 convertedOptimalNode, newSymbolReference);
 
 #ifdef J9_PROJECT_SPECIFIC
-                            correctDecimalPrecision(storeForCommonedNode, convertedOptimalNode, comp());
+                            if (convertedOptimalNode->getType().isBCD())
+                                storeForCommonedNode->setDecimalPrecision(convertedOptimalNode->getDecimalPrecision());
 #endif
 
                             TR::TreeTop *duplicateOptimalTree = TR::TreeTop::create(comp(), storeForCommonedNode);
