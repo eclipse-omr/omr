@@ -2611,7 +2611,7 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
       {
       arrayTranslateNode->setTermCharNodeIsHint(false);
       arrayTranslateNode->setSourceCellIsTermChar(false);
-      arrayTranslateNode->setTableBackedByRawStorage(true);
+      arrayTranslateNode->setTableBackedByRawStorage(!isEncodeFromLatin1);
       termCharNode = TR::Node::create(callNode,TR::iconst, 0, 0);
       TR::Node *tableNodeAddr = tableRef? TR::Node::createLoad(callNode, tableRef):callNode->getChild(childId++)->duplicateTree();
       tableNode = TR::Node::create(is64BitTarget? TR::aladd : TR::aiadd, 2, tableNodeAddr, hdrSize);
