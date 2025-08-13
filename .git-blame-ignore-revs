@@ -1,0 +1,7 @@
+# .git-blame-ignore-revs
+
+# Merge namespace declaration in class forward declaration
+bcfecedcb9c4cc49daaaeb9e33e96c63c1afdc7c
+
+# Format Compiler component
+d7f9acaf980f9fb85858694f647bfbd6990f3586
