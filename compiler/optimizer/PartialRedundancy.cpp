@@ -106,21 +106,12 @@ static void resetChildrensVisitCounts(TR::Node *node, vcount_t count)
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-static void correctDecimalPrecision(TR::Node *store, TR::Node *child, TR::Compilation *comp)
+static void fixDecimalPrecision(TR::Node *store, TR::Node *child, TR::Compilation *comp)
 {
-    if (child->getType().isBCD() && child->getDecimalPrecision() != store->getDecimalPrecision()) {
-        TR::ILOpCodes modPrecOp = TR::ILOpCode::modifyPrecisionOpCode(child->getDataType());
-        TR_ASSERT(modPrecOp != TR::BadILOp, "no bcd modify precision opcode found\n");
-        TR::Node *modPrecNode = TR::Node::create(child, modPrecOp, 1);
-        bool isTruncation = store->getDecimalPrecision() < child->getDecimalPrecision();
+    if (child->getType().isBCD()) {
+        store->setDecimalPrecision(child->getDecimalPrecision());
         if (comp->cg()->traceBCDCodeGen())
-            traceMsg(comp, "%screating %s (%p) to correctDecimalPrecision (%d->%d : isTruncation=%s) on node %s (%p)\n",
-                OPT_DETAILS, modPrecNode->getOpCode().getName(), modPrecNode, child->getDecimalPrecision(),
-                store->getDecimalPrecision(), isTruncation ? "yes" : "no", child->getOpCode().getName(), child);
-        modPrecNode->setChild(0, child);
-        modPrecNode->setDecimalPrecision(store->getDecimalPrecision());
-        modPrecNode->transferSignState(child, isTruncation);
-        store->setAndIncValueChild(modPrecNode);
+            traceMsg(comp, "%s setting precision on node:%p to be equal to node:%p\n", OPT_DETAILS, store, child);
     }
 }
 #endif
@@ -1019,7 +1010,7 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
                                 convertedOptimalNode, newSymbolReference);
 
 #ifdef J9_PROJECT_SPECIFIC
-                            correctDecimalPrecision(storeForCommonedNode, convertedOptimalNode, comp());
+                            fixDecimalPrecision(storeForCommonedNode, convertedOptimalNode, comp());
 #endif
 
                             TR::TreeTop *duplicateOptimalTree = TR::TreeTop::create(comp(), storeForCommonedNode);
@@ -1356,7 +1347,7 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
                 = TR::Node::createWithSymRef(storeOp, 1, 1, convertedOptimalNode, newSymbolReference);
             convertedOptimalNode->setReferenceCount(1);
 #ifdef J9_PROJECT_SPECIFIC
-            correctDecimalPrecision(storeForCommonedNode, convertedOptimalNode, comp());
+            fixDecimalPrecision(storeForCommonedNode, convertedOptimalNode, comp());
 #endif
 
             TR::TreeTop *duplicateOptimalTree = TR::TreeTop::create(comp(), storeForCommonedNode);
@@ -1624,8 +1615,7 @@ void TR_PartialRedundancy::eliminateRedundantComputations(TR::Block *block, TR::
                                 storeForCommonedNode = TR::Node::createWithSymRef(opCodeValue, 1, 1,
                                     currentTree->getNode()->getFirstChild(), newSymbolReference);
 #ifdef J9_PROJECT_SPECIFIC
-                            correctDecimalPrecision(storeForCommonedNode, storeForCommonedNode->getFirstChild(),
-                                comp());
+                            fixDecimalPrecision(storeForCommonedNode, storeForCommonedNode->getFirstChild(), comp());
 #endif
 
                             TR::TreeTop *duplicateOptimalTree = TR::TreeTop::create(comp(), storeForCommonedNode);
@@ -1678,7 +1668,7 @@ void TR_PartialRedundancy::eliminateRedundantComputations(TR::Block *block, TR::
                             storeForCommonedNode = TR::Node::createWithSymRef(opCodeValue, 1, 1,
                                 currentTree->getNode()->getFirstChild()->getFirstChild(), newSymbolReference);
 #ifdef J9_PROJECT_SPECIFIC
-                        correctDecimalPrecision(storeForCommonedNode, storeForCommonedNode->getFirstChild(), comp());
+                        fixDecimalPrecision(storeForCommonedNode, storeForCommonedNode->getFirstChild(), comp());
 #endif
 
                         TR::TreeTop *duplicateOptimalTree = TR::TreeTop::create(comp(), storeForCommonedNode);
