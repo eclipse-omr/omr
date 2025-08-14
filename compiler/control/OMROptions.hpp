@@ -2177,7 +2177,7 @@ public:
 
     static int32_t _trampolineSpacePercentage;
 
-    static int32_t _traceFileLength;
+    static int32_t _traceFileLengthInMiB;
 
     static size_t _scratchSpaceLimit;
     static size_t _scratchSpaceLowerBound;

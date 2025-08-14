@@ -365,6 +365,73 @@ private:
     TR::FILE *_stream;
 };
 
+/**
+ * A Logger class that implements circular logging functionality by rewinding
+ * after a certain threshold of chars have been logged. Logging output is not
+ * strictly bound to be within the size threshold but will be enforced on a
+ * best-effort basis.
+ */
+class CircularLogger : public Logger {
+public:
+    /**
+     * @brief The \c CircularLogger factory function
+     *
+     * @param[in] innerLogger : the underlying Logger managed with circular
+     *     logging functionality. The inner Logger must already be created.
+     *
+     * @param[in] rewindThresholdInChars : the threshold number of chars after
+     *     which the Logger will rewind and resuming logging. This is not a
+     *     guaranteed threshold, but an aspirational one. Some chars may be written
+     *     to the Logger past the threshold.
+     *
+     * @return A new \c CircularLogger object
+     */
+    static CircularLogger *create(OMR::Logger *innerLogger, int64_t rewindThresholdInChars);
+
+    virtual int32_t printf(const char *format, ...);
+
+    virtual int32_t prints(const char *string);
+
+    virtual int32_t printc(char c);
+
+    virtual int32_t println();
+
+    virtual int32_t vprintf(const char *format, va_list args);
+
+    virtual int64_t tell();
+
+    virtual void rewind();
+
+    virtual int32_t flush();
+
+    virtual int32_t close();
+
+    virtual bool supportsRewinding() { return true; }
+
+    /**
+     * @return The underlying Logger used within this CircularLogger framework
+     */
+    OMR::Logger *getInnerLogger() { return _innerLogger; }
+
+    void setInnerLogger(OMR::Logger *il) { _innerLogger = il; }
+
+    /**
+     * @return The threshold number of chars after which the Logger will rewind
+     *     and resume logging. This is not a guaranteed threshold, but an
+     *     aspirational one. Some chars may be written to the Logger past the
+     *     threshold.
+     */
+    int64_t getRewindThresholdInChars() { return _rewindThresholdInChars; }
+
+    void setRewindThresholdInChars(int64_t r) { _rewindThresholdInChars = r; }
+
+private:
+    CircularLogger(OMR::Logger *innerLogger, int64_t rewindThresholdInChars);
+
+    OMR::Logger *_innerLogger;
+    int64_t _rewindThresholdInChars;
+};
+
 } // namespace OMR
 
 #endif
