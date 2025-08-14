@@ -419,16 +419,20 @@ public:
 
     // RAS methods.
 
-    TR::FILE *getOutFile() { return _options->getLogFile(); }
+    TR::FILE *getOutFile()
+    {
+        TR_ASSERT_FATAL(_logFile == _options->getLogFile(), "Log must be same");
+        return _logFile;
+    }
 
-    void setOutFile(TR::FILE *pf) { _options->setLogFile(pf); }
+    void setOutFile(TR::FILE *pf) { _logFile = pf; }
 
-    /**
-     *  @returns Currently active logger on this compilation thread
+    /*
+     * @returns Currently active logger on this compilation thread
      */
-    OMR::Logger *log() { return _options->getLogger(); }
+    OMR::Logger *log() { return _logger; }
 
-    void setLogger(OMR::Logger *log) { _options->setLogger(log); }
+    void setLogger(OMR::Logger *log) { _logger = log; }
 
     // --------------------------------------------------------------------------
 
@@ -1429,6 +1433,16 @@ protected:
     TR::ResolvedMethodSymbol *_methodSymbol;
 
 private:
+    /** @var   TR::FILE *_logFile
+     *  @brief Log file pointer, or NULL if none
+     */
+    TR::FILE *_logFile;
+
+    /** @var   OMR::Logger *_logger
+     *  @brief Logger object for this compilation
+     */
+    OMR::Logger *_logger;
+
     TR_ResolvedMethod *_method; // must be declared before _flowGraph
     TR_ArenaAllocator _arenaAllocator;
     TR::Region _aliasRegion;

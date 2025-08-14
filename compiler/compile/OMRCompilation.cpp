@@ -200,6 +200,8 @@ OMR::Compilation::Compilation(int32_t id, OMR_VMThread *omrVMThread, TR_FrontEnd
     , // The transformation index within the current opt
     _lastPerformedOptSubIndex(0)
     , _debug(0)
+    , _logFile(options.getLogFile())
+    , _logger(options.getLogger())
     , _knownObjectTable(NULL)
     , _omrVMThread(omrVMThread)
     , _allocator(TRCS2MemoryAllocator(m))
