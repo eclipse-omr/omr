@@ -510,10 +510,10 @@ enum TR_CompilationOptions {
     // Available                                             = 0x00010000 + 13,
     // Available                                             = 0x00020000 + 13,
     TR_EnableMonitorCacheLookup                              = 0x00040000 + 13,
-    // Available                                             = 0x00080000 + 13,
-    // Available                                             = 0x00100000 + 13,
-    // Available                                             = 0x00200000 + 13,
-    // Available                                             = 0x00400000 + 13,
+    TR_TraceTreeVerification                                 = 0x00080000 + 13,
+    TR_TraceNodeRefCountVerification                         = 0x00100000 + 13,
+    TR_TraceCFGVerification                                  = 0x00200000 + 13,
+    TR_TraceBlockVerification                                = 0x00400000 + 13,
     // Available                                             = 0x00800000 + 13,
     TR_PaintAllocatedFrameSlotsDead                          = 0x01000000 + 13, // x86 Only
     TR_PaintAllocatedFrameSlotsFauxObject                    = 0x02000000 + 13, // x86 Only
