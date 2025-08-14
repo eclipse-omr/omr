@@ -182,7 +182,7 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
 
         reg = _nodeToInstrEvaluators[opcode](node, self());
 
-        if (comp->getOption(TR_TraceRegisterPressureDetails) && comp->getLoggingEnabled()) {
+        if (comp->getOption(TR_TraceRegisterPressureDetails)) {
             log->printf("  evaluated %s", self()->getDebug()->getName(node));
             self()->getDebug()->dumpLiveRegisters(log);
             log->println();

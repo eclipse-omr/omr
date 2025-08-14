@@ -1483,7 +1483,7 @@ void TR_InlinerBase::rematerializeCallArguments(TR_TransformInlinedFunction &tif
             if (argStore->chkIsPrivatizedInlinerArg()) {
                 debugTrace(tracer(), "  considering priv arg store node [%p] - %d - for remat", argStore,
                     argStore->getGlobalIndex());
-                if (dumpRematTrees && comp()->getLoggingEnabled()) {
+                if (dumpRematTrees) {
                     comp()->getDebug()->print(comp()->log(), argStoreTree);
                 }
 

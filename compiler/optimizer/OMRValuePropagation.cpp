@@ -6962,9 +6962,8 @@ void OMR::ValuePropagation::doDelayedTransformations()
                             "\tDo not inline call at [%p]: TR_DisableInliningDuringVPAtWarm\n", callNode);
                     } else if (ci->_block->getFrequency() < minInliningFreqDuringVP) {
                         tryToInline = false;
-                        trprintf(trace(), comp()->log(),
-                            "\tDo not inline call at [%p]: block frequency %d < %d\n", callNode,
-                            ci->_block->getFrequency(), minInliningFreqDuringVP);
+                        trprintf(trace(), comp()->log(), "\tDo not inline call at [%p]: block frequency %d < %d\n",
+                            callNode, ci->_block->getFrequency(), minInliningFreqDuringVP);
                     }
 
                     if (tryToInline) {
@@ -7064,7 +7063,7 @@ void OMR::ValuePropagation::doDelayedTransformations()
         invalidateUseDefInfo();
         invalidateValueNumberInfo();
 
-        if (debug("traceThrowToGoto") && comp()->getLoggingEnabled()) {
+        if (debug("traceThrowToGoto")) {
             comp()->log()->printf("\nthrow converted to goto in %s ", comp()->signature());
         }
         TR::Block *gotoDestination = predictedCatchBlock->split(firstTT, cfg);

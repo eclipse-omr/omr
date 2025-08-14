@@ -56,7 +56,7 @@ public:
         , _stackTemps(comp->trMemory(), 20)
         , _tryCatchInfo(comp->allocator("IlGen"))
     {
-        _printByteCodes = (comp->getLoggingEnabled() && comp->getOption(TR_TraceBC)
+        _printByteCodes = (comp->getOption(TR_TraceBC)
             && (comp->isOutermostMethod() || comp->getOption(TR_DebugInliner) || comp->trace(OMR::inlining)));
         _cannotAttemptOSR = comp->getOption(TR_EnableOSR) && !comp->isPeekingMethod()
             && methodSym->cannotAttemptOSRDuring(comp->getCurrentInlinedSiteIndex(), comp);

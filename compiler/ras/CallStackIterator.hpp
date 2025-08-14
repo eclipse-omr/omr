@@ -27,7 +27,8 @@
 
 namespace TR {
 class Compilation;
-}
+class Logger;
+} // namespace TR
 
 class TR_CallStackIterator {
 public:
@@ -80,7 +81,7 @@ public:
     virtual void printStackBacktrace(TR::Compilation *comp);
 
 private:
-    void printSymbol(int32_t frame, char *sig, TR::Compilation *comp);
+    void printSymbol(int32_t frame, char *sig, TR::Logger *log);
     friend class TR_CallStackIterator;
 };
 

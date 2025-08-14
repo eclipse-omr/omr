@@ -63,7 +63,7 @@ public:
 
     TR::Logger *getLogger() { return _logger; }
 
-    bool getLoggingEnabled() { return _loggingEnabled; }
+    bool trace() { return _trace; }
 
 protected:
     void markCFGNodes();
@@ -82,7 +82,7 @@ protected:
     int32_t _numRealBlocks;
     bool _successorsCorrect;
     bool _isCFGConsistent;
-    bool _loggingEnabled;
+    bool _trace;
     TR_BitVector _blockChecklist;
     TR::Logger *_logger;
     TR_FrontEnd *_fe;
