@@ -44,6 +44,7 @@
 #include "il/Symbol.hpp"
 #include "il/SymbolReference.hpp"
 #include "infra/List.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 #include "z/codegen/S390OutOfLineCodeSection.hpp"
@@ -1872,7 +1873,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateSTXLoop(int32_t strideSize, TR::In
 {
     TR::Compilation *comp = _cg->comp();
     if (_trace)
-        traceMsg(comp, "MemCpyAtomicMacroOp: generateSTX\n");
+        comp->getLogger()->prints("MemCpyAtomicMacroOp: generateSTX\n");
 
     TR::Instruction *cursor;
     // update _startReg to _endReg
@@ -1970,7 +1971,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateSTXLoopLabel(TR::LabelSymbol *oolS
 {
     TR::Compilation *comp = _cg->comp();
     if (_trace)
-        traceMsg(comp, "MemCpyAtomicMacroOp: generateSTXLoopLabel\n");
+        comp->getLogger()->prints("MemCpyAtomicMacroOp: generateSTXLoopLabel\n");
     TR::Instruction *cursor;
 
     TR_S390OutOfLineCodeSection *oolPath
@@ -1998,7 +1999,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateOneSTXthenSTYLoopLabel(TR::LabelSy
 {
     TR::Compilation *comp = _cg->comp();
     if (_trace)
-        traceMsg(comp, "MemCpyAtomicMacroOp: generateOneSTXthenSTYLoopLabel\n");
+        comp->getLogger()->prints("MemCpyAtomicMacroOp: generateOneSTXthenSTYLoopLabel\n");
     TR::Instruction *cursor;
 
     TR_S390OutOfLineCodeSection *oolPath
@@ -2103,7 +2104,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateLoop()
 {
     TR::Compilation *comp = _cg->comp();
     if (_trace)
-        traceMsg(comp, "MemCpyAtomicMacroOp: generateLoop\n");
+        comp->getLogger()->prints("MemCpyAtomicMacroOp: generateLoop\n");
     TR::Instruction *cursor;
 
     static char *traceACM = feGetEnv("TR_ArrayCopyMethods");
@@ -2152,7 +2153,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateLoop()
     bool generateRemainder = false;
 
     if (_trace)
-        traceMsg(comp, "MemCpyAtomicMacroOp: strideSize: %d\n", strideSize());
+        comp->getLogger()->printf("MemCpyAtomicMacroOp: strideSize: %d\n", strideSize());
     switch (strideSize()) {
         case 1:
             unalignedLoadOp = TR::InstOpCode::IC;
@@ -2189,7 +2190,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateLoop()
         TR::LabelSymbol *twoByteLoop = generateLabelSymbol(_cg);
         TR::LabelSymbol *oneByteLoop = generateLabelSymbol(_cg);
         if (_trace)
-            traceMsg(comp, "MemCpyAtomicMacroOp: unknown type routine\n");
+            comp->getLogger()->prints("MemCpyAtomicMacroOp: unknown type routine\n");
 
         if (comp->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z196)) {
             auto mnemonic = comp->target().is64Bit() ? TR::InstOpCode::OGRK : TR::InstOpCode::ORK;
@@ -2229,17 +2230,17 @@ TR::Instruction *MemCpyAtomicMacroOp::generateLoop()
         cursor = generateSTXLoop(1, TR::InstOpCode::IC, TR::InstOpCode::STC, false);
     } else if (_constLength > 0 && _constLength <= strideSize() * 8) {
         if (_trace)
-            traceMsg(comp, "MemCpyAtomicMacroOp: const loop\n");
+            comp->getLogger()->prints("MemCpyAtomicMacroOp: const loop\n");
         cursor = generateConstLoop(unalignedLoadOp, unalignedStoreOp);
     } else if (strideSize() == 8) {
         if (_trace)
-            traceMsg(comp, "MemCpyAtomicMacroOp: STG loop\n");
+            comp->getLogger()->prints("MemCpyAtomicMacroOp: STG loop\n");
         cursor = generateSTXLoop(8, TR::InstOpCode::LG, TR::InstOpCode::STG, _unroll);
         generateRemainder = true;
     } else if (strideSize() == 1) {
         if (!_isForward) {
             if (_trace) {
-                traceMsg(comp, "MemCpyAtomicMacroOp: 8 bit element loop\n");
+                comp->getLogger()->prints("MemCpyAtomicMacroOp: 8 bit element loop\n");
             }
             cursor = generateSTXLoop(1, TR::InstOpCode::IC, TR::InstOpCode::STC, _unroll);
         } else {
@@ -2247,7 +2248,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateLoop()
         }
     } else if (_isForward && !singular) {
         if (_trace)
-            traceMsg(comp, "MemCpyAtomicMacroOp: aligned loop\n");
+            comp->getLogger()->prints("MemCpyAtomicMacroOp: aligned loop\n");
         if (_destType == TR::Int16) {
             if (comp->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z196)) {
                 auto mnemonic = comp->target().is64Bit() ? TR::InstOpCode::NGRK : TR::InstOpCode::NRK;
@@ -2327,7 +2328,7 @@ TR::Instruction *MemCpyAtomicMacroOp::generateLoop()
         generateRemainder = true;
     } else {
         if (_trace)
-            traceMsg(comp, "MemCpyAtomicMacroOp: unaligned loop\n");
+            comp->getLogger()->prints("MemCpyAtomicMacroOp: unaligned loop\n");
         if (strideSize() == 2) {
             cursor = generateSTXLoop(2, TR::InstOpCode::LH, TR::InstOpCode::STH, _unroll);
         } else {
@@ -2436,8 +2437,9 @@ void MemCpyAtomicMacroOp::allocWorkReg()
 {
     TR::Compilation *comp = _cg->comp();
     if (_trace) {
-        traceMsg(comp, "MemCpyAtomicMacroOp: allocWorkReg\n");
-        traceMsg(comp, "_unrollFactor: %d\n", _unrollFactor);
+        OMR::Logger *log = comp->getLogger();
+        log->prints("MemCpyAtomicMacroOp: allocWorkReg\n");
+        log->printf("_unrollFactor: %d\n", _unrollFactor);
     }
 
     _alignedReg = _cg->allocateRegister();
@@ -2469,7 +2471,7 @@ void MemCpyAtomicMacroOp::createLoopDependencies(TR::Instruction *cursor)
 {
     TR::Compilation *comp = _cg->comp();
     if (_trace)
-        traceMsg(comp, "MemCpyAtomicMacroOp: createLoopDependencies\n");
+        comp->getLogger()->prints("MemCpyAtomicMacroOp: createLoopDependencies\n");
     TR::RegisterDependencyConditions *loopDep;
 
     int32_t core = numCoreDependencies();

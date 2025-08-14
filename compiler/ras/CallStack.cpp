@@ -28,13 +28,15 @@
 #include "ras/CallStackIterator.hpp"
 #include "compile/Compilation.hpp"
 #include "omrformatconsts.h"
+#include "ras/Logger.hpp"
 
 void TR_CallStackIterator::printStackBacktrace(TR::Compilation *comp)
 {
     while (!isDone()) {
-        if (comp)
-            traceMsg(comp, "%s+0x%" OMR_PRIxPTR "\n", getProcedureName(), getOffsetInProcedure());
-        else
+        if (comp) {
+            if (comp->getLoggingEnabled())
+                comp->getLogger()->printf("%s+0x%" OMR_PRIxPTR "\n", getProcedureName(), getOffsetInProcedure());
+        } else
             fprintf(stderr, "%s+0x%" OMR_PRIxPTR "\n", getProcedureName(), getOffsetInProcedure());
         getNext();
     }
@@ -199,18 +201,20 @@ void TR_LinuxCallStackIterator::printSymbol(int32_t frame, char *sig, TR::Compil
         char *demangled = abi::__cxa_demangle(func, buffer, &length, &status);
         if (status == 0)
             funcToPrint = demangled;
-        if (comp)
-            traceMsg(comp, "#%" OMR_PRId32 ": function %s+%#" OMR_PRIxPTR " [%#" OMR_PRIxPTR "]\n", frame, funcToPrint,
-                offset, address);
-        else
+        if (comp) {
+            if (comp->getLoggingEnabled())
+                comp->getLogger()->printf("#%" OMR_PRId32 ": function %s+%#" OMR_PRIxPTR " [%#" OMR_PRIxPTR "]\n",
+                    frame, funcToPrint, offset, address);
+        } else
             fprintf(stderr, "#%" OMR_PRId32 ": function %s+%#" OMR_PRIxPTR " [%#" OMR_PRIxPTR "]\n", frame, funcToPrint,
                 offset, address);
         if (demangled)
             free(demangled);
     } else {
-        if (comp)
-            traceMsg(comp, "#%" OMR_PRId32 ": %s\n", frame, sig);
-        else
+        if (comp) {
+            if (comp->getLoggingEnabled())
+                comp->getLogger()->printf("#%" OMR_PRId32 ": %s\n", frame, sig);
+        } else
             fprintf(stderr, "#%" OMR_PRId32 ": %s\n", frame, sig);
     }
 }
@@ -441,11 +445,11 @@ TR_WinCallStackIterator::TR_WinCallStackIterator()
 
     // Clang format gets upset at the missing ; below, so disable.
     // clang-format off
-   __asm mov [basePtr], ebp
-            // clang-format on
-
+    __asm mov [basePtr], ebp
             StackFrame.AddrPC.Offset
         = pc;
+    // clang-format on
+
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrFrame.Offset = basePtr;
     StackFrame.AddrFrame.Mode = AddrModeFlat;

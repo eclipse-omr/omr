@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include "compile/Compilation.hpp"
+#include "ras/Logger.hpp"
 
 TR_HasRandomGenerator::TR_HasRandomGenerator(TR::Compilation *comp)
     : _randomGenerator(comp->primaryRandom())
@@ -78,10 +79,14 @@ void TR_RandomGenerator::exercise(int32_t period, TR::Compilation *comp)
 {
     // Don't use the actual random generator because we don't want to perturb it
     RandomExercizer ex(comp);
-    traceMsg(comp, "  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)", "Boolean",
-        "Boolean(5)");
+
+    if (comp->getLoggingEnabled())
+        comp->getLogger()->printf("  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)",
+            "Boolean", "Boolean(5)");
+
     for (int32_t i = 0; i < period; i++) {
-        traceMsg(comp, "  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5), ex.randomInt(1, 1),
-            ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
+        if (comp->getLoggingEnabled())
+            comp->getLogger()->printf("  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5),
+                ex.randomInt(1, 1), ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
     }
 }

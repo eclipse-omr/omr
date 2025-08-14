@@ -179,7 +179,7 @@ void TR_VirtualGuardTailSplitter::initializeDataStructures()
     }
 
     if (trace())
-        traceMsg(comp(), "Disjoint set forest:\n");
+        comp()->getLogger()->prints("Disjoint set forest:\n");
 
     // Put the information into the virtual guard table
     //
@@ -190,7 +190,7 @@ void TR_VirtualGuardTailSplitter::initializeDataStructures()
     for (VGInfo *info = it.getFirst(); info; info = it.getNext()) {
         putGuard(i++, info);
         if (trace())
-            traceMsg(comp(), "%d -> %d\n", info->getNumber(), info->getParent()->getNumber());
+            comp()->getLogger()->printf("%d -> %d\n", info->getNumber(), info->getParent()->getNumber());
     }
 }
 
@@ -386,9 +386,10 @@ void TR_VirtualGuardTailSplitter::transformLinear(TR::Block *first, TR::Block *l
         }
 
         if (trace()) {
-            traceMsg(comp(), "$$$ Processing guards: first %d, last %d\n", firstInfo->getNumber(), last->getNumber());
-            traceMsg(comp(), "=> Call node %d, next node %d\n", call->getNumber(), next->getNumber());
-            traceMsg(comp(), "=> clone block is %d\n\n", clone->getNumber());
+            OMR::Logger *log = comp()->getLogger();
+            log->printf("$$$ Processing guards: first %d, last %d\n", firstInfo->getNumber(), last->getNumber());
+            log->printf("=> Call node %d, next node %d\n", call->getNumber(), next->getNumber());
+            log->printf("=> clone block is %d\n\n", clone->getNumber());
         }
 
         _splitDone = true;
@@ -705,8 +706,8 @@ void TR_VirtualGuardTailSplitter::remergeGuard(TR_BlockCloner &cloner, VGInfo *i
 #endif
 
     if (trace())
-        traceMsg(comp(), "Split Guard Block %d->(%d,%d), %d->(%d,%d)\n", block->getNumber(), blockA->getNumber(),
-            blockB->getNumber(), cloneG->getNumber(), cloneA->getNumber(), cloneB->getNumber());
+        comp()->getLogger()->printf("Split Guard Block %d->(%d,%d), %d->(%d,%d)\n", block->getNumber(),
+            blockA->getNumber(), blockB->getNumber(), cloneG->getNumber(), cloneA->getNumber(), cloneB->getNumber());
 }
 
 TR::Node *TR_VirtualGuardTailSplitter::getFirstCallNode(TR::Block *block)
@@ -872,23 +873,24 @@ void TR_InnerPreexistence::transform()
         GuardInfo *parent = info->getParent();
 
         if (trace()) {
+            OMR::Logger *log = comp()->getLogger();
             TR_BitVectorIterator bvi;
 
-            traceMsg(comp(), "Site %d (block_%d, parent-block_%d): thisVN: %d, argsVNs: {", i,
-                info->getBlock()->getNumber(), parent ? parent->getBlock()->getNumber() : -1, info->getThisVN());
+            log->printf("Site %d (block_%d, parent-block_%d): thisVN: %d, argsVNs: {", i, info->getBlock()->getNumber(),
+                parent ? parent->getBlock()->getNumber() : -1, info->getThisVN());
             bvi.setBitVector(*(info->getArgVNs()));
             while (bvi.hasMoreElements()) {
                 uint32_t c = bvi.getNextElement();
-                traceMsg(comp(), "%d ", c);
+                log->printf("%d ", c);
             }
-            traceMsg(comp(), "}\n\tReachable Subtree: {");
+            log->prints("}\n\tReachable Subtree: {");
 
             bvi.setBitVector(*(info->getVisibleGuards()));
             while (bvi.hasMoreElements()) {
                 uint32_t c = bvi.getNextElement();
-                traceMsg(comp(), "%d ", c);
+                log->printf("%d ", c);
             }
-            traceMsg(comp(), "}\n");
+            log->prints("}\n");
         }
     }
 

@@ -43,6 +43,7 @@
 #include "infra/BitVector.hpp"
 #include "optimizer/Optimization.hpp"
 #include "optimizer/Optimization_inlines.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O LOCAL REORDERING: "
 
@@ -53,7 +54,7 @@ TR_LocalReordering::TR_LocalReordering(TR::OptimizationManager *manager)
 int32_t TR_LocalReordering::perform()
 {
     if (trace())
-        traceMsg(comp(), "Starting LocalReordering\n");
+        comp()->getLogger()->prints("Starting LocalReordering\n");
 
     TR::TreeTop *treeTop = comp()->getStartTree();
     while (treeTop != NULL) {
@@ -66,7 +67,7 @@ int32_t TR_LocalReordering::perform()
     }
 
     if (trace())
-        traceMsg(comp(), "\nEnding LocalReordering\n");
+        comp()->getLogger()->prints("\nEnding LocalReordering\n");
 
     return 2;
 }

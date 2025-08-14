@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "optimizer/abstractinterpreter/AbsValue.hpp"
+#include "ras/Logger.hpp"
 
 TR::AbsValue *TR::AbsVPValue::clone(TR::Region &region) const
 {
@@ -58,14 +59,16 @@ TR::AbsValue *TR::AbsVPValue::merge(const TR::AbsValue *other)
 
 void TR::AbsVPValue::print(TR::Compilation *comp) const
 {
-    traceMsg(comp, "AbsValue: Type: %s ", TR::DataType::getName(_dataType));
+    OMR::Logger *log = comp->getLogger();
+
+    log->printf("AbsValue: Type: %s ", TR::DataType::getName(_dataType));
 
     if (_constraint) {
-        traceMsg(comp, "Constraint: ");
+        log->prints("Constraint: ");
         _constraint->print(_vp);
     } else {
-        traceMsg(comp, "TOP (unknown) ");
+        log->prints("TOP (unknown) ");
     }
 
-    traceMsg(comp, " param position: %d", _paramPos);
+    log->printf(" param position: %d", _paramPos);
 }

@@ -26,6 +26,7 @@
 #include "env/j9method.h"
 #include "control/RecompilationInfo.hpp"
 #endif
+#include "ras/Logger.hpp"
 
 #define COLD_ROOT_CALL_RATIO 0.5
 
@@ -46,7 +47,7 @@ TR::IDT *OMR::IDTBuilder::buildIDT()
     bool traceBIIDTGen = comp()->getOption(TR_TraceBIIDTGen);
 
     if (traceBIIDTGen)
-        traceMsg(comp(), "\n+ IDTBuilder: Start building IDT |\n\n");
+        comp()->getLogger()->prints("\n+ IDTBuilder: Start building IDT |\n\n");
 
     TR_ResolvedMethod *rootMethod = _rootSymbol->getResolvedMethod();
     TR_ByteCodeInfo bcInfo;
@@ -80,7 +81,7 @@ TR::IDT *OMR::IDTBuilder::buildIDT()
     buildIDT2(root, NULL, _rootBudget, NULL);
 
     if (traceBIIDTGen)
-        traceMsg(comp(), "\n+ IDTBuilder: Finish building TR::IDT |\n");
+        comp()->getLogger()->prints("\n+ IDTBuilder: Finish building TR::IDT |\n");
 
     return _idt;
 }
@@ -113,12 +114,12 @@ void OMR::IDTBuilder::addNodesToIDT(TR::IDTNode *parent, TR_CallSite *callSite, 
 
     if (callSite == NULL) {
         if (traceBIIDTGen)
-            traceMsg(comp(), "Do not have a callsite. Don't add\n");
+            comp()->getLogger()->prints("Do not have a callsite. Don't add\n");
         return;
     }
 
     if (traceBIIDTGen)
-        traceMsg(comp(), "+ IDTBuilder: Adding a child Node: %s for TR::IDTNode: %s\n",
+        comp()->getLogger()->printf("+ IDTBuilder: Adding a child Node: %s for TR::IDTNode: %s\n",
             callSite->signature(comp()->trMemory()), parent->getName(comp()->trMemory()));
 
     callSite->findCallSiteTarget(callStack, getInliner()); // Find all call targets
@@ -129,7 +130,7 @@ void OMR::IDTBuilder::addNodesToIDT(TR::IDTNode *parent, TR_CallSite *callSite, 
 
     if (callSite->numTargets() == 0) {
         if (traceBIIDTGen)
-            traceMsg(comp(), "Do not have a call target. Don't add\n");
+            comp()->getLogger()->prints("Do not have a call target. Don't add\n");
         return;
     }
 
@@ -141,7 +142,7 @@ void OMR::IDTBuilder::addNodesToIDT(TR::IDTNode *parent, TR_CallSite *callSite, 
         if (remainingBudget < 0) // no budget remains
         {
             if (traceBIIDTGen)
-                traceMsg(comp(), "No budget left. Don't add\n");
+                comp()->getLogger()->prints("No budget left. Don't add\n");
             continue;
         }
 
@@ -150,7 +151,7 @@ void OMR::IDTBuilder::addNodesToIDT(TR::IDTNode *parent, TR_CallSite *callSite, 
         if (isRecursiveCall) // Stop for recursive call
         {
             if (traceBIIDTGen)
-                traceMsg(comp(), "Recursive call. Don't add\n");
+                comp()->getLogger()->prints("Recursive call. Don't add\n");
             continue;
         }
 
@@ -172,7 +173,7 @@ void OMR::IDTBuilder::addNodesToIDT(TR::IDTNode *parent, TR_CallSite *callSite, 
 
         if (!cfg) {
             if (traceBIIDTGen)
-                traceMsg(comp(), "Fail to generate a CFG. Don't add\n");
+                comp()->getLogger()->prints("Fail to generate a CFG. Don't add\n");
             continue;
         }
 

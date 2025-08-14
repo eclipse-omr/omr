@@ -36,6 +36,7 @@
 #include "il/Symbol.hpp"
 #include "il/SymbolReference.hpp"
 #include "infra/Assert.hpp"
+#include "ras/Logger.hpp"
 
 TR_OutOfLineCodeSection::TR_OutOfLineCodeSection(TR::Node *callNode, TR::ILOpCodes callOp, TR::Register *targetReg,
     TR::LabelSymbol *entryLabel, TR::LabelSymbol *restartLabel, TR::CodeGenerator *cg)
@@ -229,8 +230,10 @@ void TR_OutOfLineCodeSection::assignRegisters(TR_RegisterKinds kindsToBeAssigned
     for (auto li = firstTimeLiveOOLRegisterList->begin(); li != firstTimeLiveOOLRegisterList->end(); ++li) {
         if ((*li)->getBackingStorage()) {
             (*li)->getBackingStorage()->setMaxSpillDepth(1);
-            traceMsg(comp, "Adding virtReg:%s from _firstTimeLiveOOLRegisterList to _spilledRegisterList \n",
-                _cg->getDebug()->getName((*li)));
+            if (comp->getOption(TR_TraceCG))
+                comp->getLogger()->printf(
+                    "Adding virtReg:%s from _firstTimeLiveOOLRegisterList to _spilledRegisterList \n",
+                    _cg->getDebug()->getName((*li)));
             spilledRegisterList->push_front((*li));
         }
     }

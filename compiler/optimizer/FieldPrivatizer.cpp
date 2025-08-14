@@ -140,7 +140,7 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
     if (!regionStructure || !regionStructure->getParent() || !regionStructure->isNaturalLoop())
         return 0;
 
-    //  traceMsg(comp(), "Considering Loop %d\n", regionStructure->getNumber());
+    //  comp()->getLogger()->printf("Considering Loop %d\n", regionStructure->getNumber());
 
     TR_ScratchList<TR::Block> blocksInRegion(trMemory());
     regionStructure->getBlocks(&blocksInRegion);
@@ -262,7 +262,7 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
         _criticalEdgeBlock = 0;
 
         if (trace())
-            traceMsg(comp(), "\nChecking loop %d for predictability\n", loopStructure->getNumber());
+            comp()->getLogger()->printf("\nChecking loop %d for predictability\n", loopStructure->getNumber());
 
         _isAddition = false;
         int32_t isPredictableLoop = checkLoopForPredictability(loopStructure, loopInvariantBlock->getBlock(), 0);
@@ -309,13 +309,14 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
                 _privatizedFieldNodes.deleteAll();
 
                 if (trace()) {
-                    traceMsg(comp(), "\nDetected a predictable loop %d\n", loopStructure->getNumber());
+                    OMR::Logger *log = comp()->getLogger();
+                    log->printf("\nDetected a predictable loop %d\n", loopStructure->getNumber());
 
-                    traceMsg(comp(), "Fields that cannot be privatized:\n");
-                    _fieldsThatCannotBePrivatized->print(comp()->getLogger(), comp());
-                    traceMsg(comp(), "\n");
+                    log->prints("Fields that cannot be privatized:\n");
+                    _fieldsThatCannotBePrivatized->print(log, comp());
+                    log->println();
 
-                    traceMsg(comp(), "\nPossible new induction variable candidates :\n");
+                    log->prints("\nPossible new induction variable candidates :\n");
                 }
 
                 visitCount = comp()->incVisitCount();
@@ -955,8 +956,8 @@ void TR_FieldPrivatizer::placeStoresBackInExits(List<TR::Block> *exitBlocks, Lis
                     TR::CFGEdge *newEdge = comp()->getFlowGraph()->addEdge(nnext, next);
                     newEdge->setFrequency(current->getFrequency());
                     if (trace())
-                        traceMsg(comp(), "placeStoresBackInExits: added block %d freq %d\n", nnext->getNumber(),
-                            nnext->getFrequency());
+                        comp()->getLogger()->printf("placeStoresBackInExits: added block %d freq %d\n",
+                            nnext->getNumber(), nnext->getFrequency());
                 }
                 TR::CFGEdge *newEdge = comp()->getFlowGraph()->addEdge(exitBlock, nnext);
                 newEdge->setFrequency(current->getFrequency());
@@ -964,11 +965,11 @@ void TR_FieldPrivatizer::placeStoresBackInExits(List<TR::Block> *exitBlocks, Lis
                     TR::Block *from = newEdge->getFrom()->asBlock();
                     TR::Block *to = newEdge->getTo()->asBlock();
 
-                    traceMsg(comp(), "new edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(), from->getFrequency(),
-                        to->getNumber(), to->getFrequency(), current->getFrequency());
+                    comp()->getLogger()->printf("new edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(),
+                        from->getFrequency(), to->getNumber(), to->getFrequency(), current->getFrequency());
                     from = current->getFrom()->asBlock();
                     to = current->getTo()->asBlock();
-                    traceMsg(comp(), "instead of orig edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(),
+                    comp()->getLogger()->printf("instead of orig edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(),
                         from->getFrequency(), to->getNumber(), to->getFrequency(), current->getFrequency());
                 }
 

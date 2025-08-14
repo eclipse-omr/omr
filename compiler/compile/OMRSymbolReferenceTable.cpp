@@ -462,13 +462,13 @@ TR::SymbolReference *OMR::SymbolReferenceTable::createRefinedArrayShadowSymbolRe
     }
     if (trace && comp()->getLoggingEnabled()) {
         OMR::Logger *log = comp()->getLogger();
-        traceMsg(comp(), "Created new array shadow %d\nRefinedAddress shadows:", index);
+        log->printf("Created new array shadow %d\nRefinedAddress shadows:", index);
         aliasBuilder.refinedAddressArrayShadows().print(log, comp());
-        traceMsg(comp(), "\nRefined Int Array shadows:");
+        log->prints("\nRefined Int Array shadows:");
         aliasBuilder.refinedIntArrayShadows().print(log, comp());
-        traceMsg(comp(), "\nRefined non int shadows:");
+        log->prints("\nRefined non int shadows:");
         aliasBuilder.refinedNonIntPrimitiveArrayShadows().print(log, comp());
-        traceMsg(comp(), "\n");
+        log->println();
     }
 
     rememberOriginalUnimprovedSymRef(newRef, original);
@@ -850,7 +850,7 @@ TR::SymbolReference *OMR::SymbolReferenceTable::methodSymRefFromName(TR::Resolve
     if (_methodsBySignature.Locate(key, hashIndex) && !ignoreMBSCache) {
         TR::SymbolReference *result = _methodsBySignature[hashIndex];
         if (comp()->getOption(TR_TraceMethodIndex))
-            traceMsg(comp(), "-- MBS cache hit (1): M%p\n",
+            comp()->getLogger()->printf("-- MBS cache hit (1): M%p\n",
                 result->getSymbol()->getResolvedMethodSymbol()->getResolvedMethod());
         return result;
     } else {
@@ -858,7 +858,7 @@ TR::SymbolReference *OMR::SymbolReferenceTable::methodSymRefFromName(TR::Resolve
         //
         key = OwningMethodAndString(owningMethodSymbol->getResolvedMethodIndex(), self()->strdup(fullSignature));
         if (comp()->getOption(TR_TraceMethodIndex))
-            traceMsg(comp(), "-- MBS cache miss (1) owning method #%d, signature %s\n",
+            comp()->getLogger()->printf("-- MBS cache miss (1) owning method #%d, signature %s\n",
                 owningMethodSymbol->getResolvedMethodIndex().value(), fullSignature);
     }
 

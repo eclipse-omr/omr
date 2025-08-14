@@ -85,6 +85,7 @@
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
 #include "ras/Delimiter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 #define OPT_DETAILS "O^O CODE GENERATION: "
@@ -610,15 +611,16 @@ void OMR::CodeGenerator::cleanupFlags(TR::Node *node)
 
 void OMR::CodeGenerator::addCountersToEdges(TR::Block *b)
 {
+    TR::Compilation *comp = self()->comp();
     TR::Node *lastNode = b->getLastRealTreeTop()->getNode();
     bool found = (std::find(_counterBlocks.begin(), _counterBlocks.end(), b) != _counterBlocks.end());
     if (lastNode->getOpCode().isBranch() && !found) {
         TR::Block *dest = lastNode->getBranchDestination()->getNode()->getBlock();
         TR::Block *fallthrough = b->getNextBlock();
 
-        const char *c = TR::DebugCounter::debugCounterName(self()->comp(), "block_%d TAKEN", b->getNumber());
+        const char *c = TR::DebugCounter::debugCounterName(comp, "block_%d TAKEN", b->getNumber());
 
-        if (c && self()->comp()->getOptions()->dynamicDebugCounterIsEnabled(c)
+        if (c && comp->getOptions()->dynamicDebugCounterIsEnabled(c)
             && !(dest->getPredecessors().size()
                 == 1) /* && !toBlock(relevantEdge->getFrom())->getSuccessors().isSingleton() */) {
             TR::Node *glRegDeps = NULL;
@@ -627,24 +629,25 @@ void OMR::CodeGenerator::addCountersToEdges(TR::Block *b)
                 TR_ASSERT(glRegDeps->getOpCodeValue() == TR::GlRegDeps, "expected TR::GlRegDeps");
             }
 
-            TR::Block *newBlock = b->splitEdge(b, dest, self()->comp());
+            TR::Block *newBlock = b->splitEdge(b, dest, comp);
 
-            traceMsg(self()->comp(), "\nSplitting edge, create new intermediate block_%d to add edge counters",
-                newBlock->getNumber());
+            if (comp->getOption(TR_TraceCG))
+                comp->getLogger()->printf("\nSplitting edge, create new intermediate block_%d to add edge counters",
+                    newBlock->getNumber());
             if (glRegDeps)
-                newBlock->takeGlRegDeps(self()->comp(), glRegDeps);
+                newBlock->takeGlRegDeps(comp, glRegDeps);
 
             dest = newBlock;
             _counterBlocks.push_front(newBlock);
         }
 
-        TR::DebugCounter::prependDebugCounter(self()->comp(),
-            TR::DebugCounter::debugCounterName(self()->comp(), "block_%d TAKEN", b->getNumber()),
+        TR::DebugCounter::prependDebugCounter(comp,
+            TR::DebugCounter::debugCounterName(comp, "block_%d TAKEN", b->getNumber()),
             dest->getEntry()->getNextTreeTop());
 
         if (lastNode->getOpCode().isIf()) {
-            TR::DebugCounter::prependDebugCounter(self()->comp(),
-                TR::DebugCounter::debugCounterName(self()->comp(), "block_%d NOT TAKEN", b->getNumber()),
+            TR::DebugCounter::prependDebugCounter(comp,
+                TR::DebugCounter::debugCounterName(comp, "block_%d NOT TAKEN", b->getNumber()),
                 fallthrough->getEntry()->getNextTreeTop());
         }
     }
@@ -652,39 +655,38 @@ void OMR::CodeGenerator::addCountersToEdges(TR::Block *b)
 
 void OMR::CodeGenerator::insertDebugCounters()
 {
+    TR::Compilation *comp = self()->comp();
     TR::Block *block = NULL;
     TR::TreeTop *tt;
     TR::Node *node;
 
-    for (tt = self()->comp()->getStartTree(); tt; tt = tt->getNextTreeTop()) {
+    for (tt = comp->getStartTree(); tt; tt = tt->getNextTreeTop()) {
         node = tt->getNode();
 
         if (node->getOpCodeValue() == TR::BBStart) {
             block = node->getBlock();
             self()->setCurrentBlock(block);
 
-            if (self()->comp()->getOption(TR_EnableCFGEdgeCounters))
+            if (comp->getOption(TR_EnableCFGEdgeCounters))
                 self()->addCountersToEdges(block);
 
             if (block->isCold()) {
-                TR::DebugCounter::prependDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "blocks/%sCompiles/coldBlocks/=%d",
-                        self()->comp()->getHotnessName(self()->comp()->getMethodHotness()), block->getNumber()),
+                TR::DebugCounter::prependDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "blocks/%sCompiles/coldBlocks/=%d",
+                        comp->getHotnessName(comp->getMethodHotness()), block->getNumber()),
                     tt->getNextTreeTop(), 1, TR::DebugCounter::Free);
-                TR::DebugCounter::prependDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "coldBlocks/byJittedBody/(%s)/%s/=%d",
-                        self()->comp()->signature(), self()->comp()->getHotnessName(self()->comp()->getMethodHotness()),
-                        block->getNumber()),
+                TR::DebugCounter::prependDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "coldBlocks/byJittedBody/(%s)/%s/=%d", comp->signature(),
+                        comp->getHotnessName(comp->getMethodHotness()), block->getNumber()),
                     tt->getNextTreeTop(), 1, TR::DebugCounter::Free);
             } else {
-                TR::DebugCounter::prependDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "blocks/%sCompiles/warmBlocks/=%d",
-                        self()->comp()->getHotnessName(self()->comp()->getMethodHotness()), block->getNumber()),
+                TR::DebugCounter::prependDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "blocks/%sCompiles/warmBlocks/=%d",
+                        comp->getHotnessName(comp->getMethodHotness()), block->getNumber()),
                     tt->getNextTreeTop());
-                TR::DebugCounter::prependDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "warmBlocks/byJittedBody/(%s)/%s/=%d",
-                        self()->comp()->signature(), self()->comp()->getHotnessName(self()->comp()->getMethodHotness()),
-                        block->getNumber()),
+                TR::DebugCounter::prependDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "warmBlocks/byJittedBody/(%s)/%s/=%d", comp->signature(),
+                        comp->getHotnessName(comp->getMethodHotness()), block->getNumber()),
                     tt->getNextTreeTop());
             }
 
@@ -695,10 +697,9 @@ void OMR::CodeGenerator::insertDebugCounters()
                     TR::Node *predNode = predBlock->getLastRealTreeTop()->getNode();
                     if (predNode->getOpCode().isSwitch()) {
                         const char *opName = predNode->getOpCode().getName();
-                        TR::DebugCounter::prependDebugCounter(self()->comp(),
-                            TR::DebugCounter::debugCounterName(self()->comp(), "branchtargets/%s/(%s)/%s/%d/%d", opName,
-                                self()->comp()->signature(),
-                                self()->comp()->getHotnessName(self()->comp()->getMethodHotness()),
+                        TR::DebugCounter::prependDebugCounter(comp,
+                            TR::DebugCounter::debugCounterName(comp, "branchtargets/%s/(%s)/%s/%d/%d", opName,
+                                comp->signature(), comp->getHotnessName(comp->getMethodHotness()),
                                 predNode->getByteCodeIndex(), tt->getNode()->getByteCodeIndex()),
                             tt->getNextTreeTop());
                     }
@@ -709,10 +710,9 @@ void OMR::CodeGenerator::insertDebugCounters()
         // branch IL counter
         if (node->getOpCode().isBranch() && !node->getOpCode().isSwitch()) {
             const char *opName = tt->getNode()->getOpCode().getName();
-            TR::DebugCounter::prependDebugCounter(self()->comp(),
-                TR::DebugCounter::debugCounterName(self()->comp(), "branches/%s/(%s)/%s/%d", opName,
-                    self()->comp()->signature(), self()->comp()->getHotnessName(self()->comp()->getMethodHotness()),
-                    tt->getNode()->getByteCodeIndex()),
+            TR::DebugCounter::prependDebugCounter(comp,
+                TR::DebugCounter::debugCounterName(comp, "branches/%s/(%s)/%s/%d", opName, comp->signature(),
+                    comp->getHotnessName(comp->getMethodHotness()), tt->getNode()->getByteCodeIndex()),
                 tt);
         }
 
@@ -721,23 +721,22 @@ void OMR::CodeGenerator::insertDebugCounters()
             if (node->getOpCodeValue() == TR::New || node->getOpCodeValue() == TR::anewarray) {
                 TR::Node *classChild = node->getChild(node->getNumChildren() - 1);
                 if (classChild->getOpCodeValue() != TR::loadaddr) {
-                    TR::DebugCounter::prependDebugCounter(self()->comp(),
-                        TR::DebugCounter::debugCounterName(self()->comp(), "allocations/%s/child-%s", opName,
+                    TR::DebugCounter::prependDebugCounter(comp,
+                        TR::DebugCounter::debugCounterName(comp, "allocations/%s/child-%s", opName,
                             classChild->getOpCode().getName()),
                         tt);
                 } else if (classChild->getSymbolReference()->isUnresolved()) {
-                    TR::DebugCounter::prependDebugCounter(self()->comp(),
-                        TR::DebugCounter::debugCounterName(self()->comp(), "allocations/%s/unresolved", opName,
+                    TR::DebugCounter::prependDebugCounter(comp,
+                        TR::DebugCounter::debugCounterName(comp, "allocations/%s/unresolved", opName,
                             classChild->getOpCode().getName()),
                         tt);
                 } else {
                     int32_t length;
-                    const char *className = TR::Compiler->cls.classNameChars(self()->comp(),
+                    const char *className = TR::Compiler->cls.classNameChars(comp,
                         (TR_OpaqueClassBlock *)classChild->getSymbol()->castToStaticSymbol()->getStaticAddress(),
                         length);
-                    TR::DebugCounter::prependDebugCounter(self()->comp(),
-                        TR::DebugCounter::debugCounterName(self()->comp(), "allocations/%s/(%.*s)", opName, length,
-                            className),
+                    TR::DebugCounter::prependDebugCounter(comp,
+                        TR::DebugCounter::debugCounterName(comp, "allocations/%s/(%.*s)", opName, length, className),
                         tt);
                 }
             } else {
@@ -758,8 +757,8 @@ void OMR::CodeGenerator::insertDebugCounters()
                         break;
                 }
 
-                TR::DebugCounter::prependDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "allocations/%s/%s", opName, typeName), tt);
+                TR::DebugCounter::prependDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "allocations/%s/%s", opName, typeName), tt);
             }
         }
     }

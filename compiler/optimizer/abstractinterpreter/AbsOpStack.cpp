@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "optimizer/abstractinterpreter/AbsOpStack.hpp"
+#include "ras/Logger.hpp"
 
 TR::AbsOpStack *TR::AbsOpStack::clone(TR::Region &region) const
 {
@@ -53,26 +54,28 @@ void TR::AbsOpStack::merge(const TR::AbsOpStack *other, TR::Region &region)
 
 void TR::AbsOpStack::print(TR::Compilation *comp) const
 {
-    traceMsg(comp, "Contents of Abstract Operand Stack:\n");
+    OMR::Logger *log = comp->getLogger();
+
+    log->prints("Contents of Abstract Operand Stack:\n");
 
     const size_t stackSize = size();
 
     if (stackSize == 0) {
-        traceMsg(comp, "<empty>\n\n");
+        log->prints("<empty>\n\n");
         return;
     }
 
-    traceMsg(comp, "<top>\n");
+    log->prints("<top>\n");
 
     for (size_t i = 0; i < stackSize; i++) {
         TR::AbsValue *value = _container[stackSize - i - 1];
-        traceMsg(comp, "S[%d] = ", stackSize - i - 1);
+        log->printf("S[%d] = ", stackSize - i - 1);
         if (value)
             value->print(comp);
         else
-            traceMsg(comp, "Uninitialized");
-        traceMsg(comp, "\n");
+            log->prints("Uninitialized");
+        log->println();
     }
 
-    traceMsg(comp, "<bottom>\n\n");
+    log->prints("<bottom>\n\n");
 }

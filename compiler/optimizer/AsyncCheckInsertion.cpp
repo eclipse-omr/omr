@@ -45,6 +45,7 @@
 #include "infra/CfgNode.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/Optimizer.hpp"
+#include "ras/Logger.hpp"
 
 #define NUMBER_OF_NODES_IN_LARGE_METHOD 2000
 
@@ -76,7 +77,7 @@ int32_t TR_AsyncCheckInsertion::insertReturnAsyncChecks(TR::Optimization *opt, c
 {
     TR::Compilation * const comp = opt->comp();
     if (opt->trace())
-        traceMsg(comp, "Inserting return asyncchecks (%s)\n", counterPrefix);
+        comp->getLogger()->printf("Inserting return asyncchecks (%s)\n", counterPrefix);
 
     int numAsyncChecksInserted = 0;
     for (TR::TreeTop *treeTop = comp->getStartTree(); treeTop;
@@ -151,7 +152,7 @@ int32_t TR_AsyncCheckInsertion::perform()
         const char *counterPrefix = largeAcyclicMethod ? "acyclic" : "loopy";
         int32_t numAsyncChecksInserted = insertReturnAsyncChecks(this, counterPrefix);
         if (trace())
-            traceMsg(comp(), "Inserted %d async checks\n", numAsyncChecksInserted);
+            comp()->getLogger()->printf("Inserted %d async checks\n", numAsyncChecksInserted);
         return 1;
     }
 

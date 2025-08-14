@@ -39,6 +39,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/VirtualGuardHeadMerger.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 #include "infra/Checklist.hpp"
 
 #define OPT_DETAILS "O^O VG HEAD MERGE: "
@@ -325,6 +326,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
 {
     static char *disableVGHeadMergerTailSplitting = feGetEnv("TR_DisableVGHeadMergerTailSplitting");
     TR::CFG *cfg = comp()->getFlowGraph();
+    OMR::Logger *log = comp()->getLogger();
 
     // Cache the loads for the outer guard's cold path
     TR_BitVector coldPathLoads(comp()->trMemory()->currentStackRegion());
@@ -337,7 +339,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
 
         if (isMergeableGuard(guard1)) {
             if (trace())
-                traceMsg(comp(), "Found mergeable guard in block_%d\n", block->getNumber());
+                log->printf("Found mergeable guard in block_%d\n", block->getNumber());
             TR::Block *cold1 = guard1->getBranchDestination()->getEnclosingBlock();
 
             // check for an immediate merge back from the cold block and
@@ -395,7 +397,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
             for (TR::Block *nextBlock = block->getNextBlock(); nextBlock; nextBlock = nextBlock->getNextBlock()) {
                 if (block->nodeIsRemoved() || nextBlock->nodeIsRemoved()) {
                     if (trace())
-                        traceMsg(comp(), "block block_%d %p (%d) or nextBlock block_%d %p (%d) has been removed\n",
+                        log->printf("block block_%d %p (%d) or nextBlock block_%d %p (%d) has been removed\n",
                             block->getNumber(), block, block->nodeIsRemoved(), nextBlock->getNumber(), nextBlock,
                             nextBlock->nodeIsRemoved());
                     break;
@@ -430,26 +432,24 @@ int32_t TR_VirtualGuardHeadMerger::perform()
                 TR::Block *cold2 = guard2->getBranchDestination()->getEnclosingBlock();
                 if (guard1->getInlinedSiteIndex() == guard2->getInlinedSiteIndex()) {
                     if (trace())
-                        traceMsg(comp(),
+                        log->printf(
                             "  Guard1 [%p] is guarding the same call as Guard2 [%p] - proceeding with guard merging\n",
                             guard1, guard2);
                 } else if (guard2->getInlinedSiteIndex() > -1
                     && guard1->getInlinedSiteIndex()
                         == comp()->getInlinedCallSite(guard2->getInlinedSiteIndex())._byteCodeInfo.getCallerIndex()) {
                     if (trace())
-                        traceMsg(comp(), "  Guard1 [%p] is the caller of Guard2 [%p] - proceeding with guard merging\n",
+                        log->printf("  Guard1 [%p] is the caller of Guard2 [%p] - proceeding with guard merging\n",
                             guard1, guard2);
                 } else if ((cold1->getSuccessors().size() == 1) && cold1->hasSuccessor(cold2)) {
                     if (trace())
-                        traceMsg(comp(),
-                            "  Guard1 cold destination block_%d has guard2 cold destination block_%d as its only "
-                            "successor - proceeding with guard merging\n",
+                        log->printf("  Guard1 cold destination block_%d has guard2 cold destination block_%d as its "
+                                    "only successor - proceeding with guard merging\n",
                             cold1->getNumber(), cold2->getNumber());
                 } else {
                     if (trace())
-                        traceMsg(comp(),
-                            "  Cold1 block_%d and cold2 block_%d of guard2 [%p] in unknown relationship - abandon the "
-                            "merge attempt\n",
+                        log->printf("  Cold1 block_%d and cold2 block_%d of guard2 [%p] in unknown relationship - "
+                                    "abandon the merge attempt\n",
                             cold1->getNumber(), cold2->getNumber(), guard2);
                     break;
                 }
@@ -467,9 +467,8 @@ int32_t TR_VirtualGuardHeadMerger::perform()
 
                     if (coldPathLoads.intersects(privArgSymRefs)) {
                         if (trace())
-                            traceMsg(comp(),
-                                "  Recycled temp live in cold1 block_%d and used as privarg before guard2 [%p] - stop "
-                                "guard merging",
+                            log->printf("  Recycled temp live in cold1 block_%d and used as privarg before guard2 [%p] "
+                                        "- stop guard merging",
                                 cold1->getNumber(), guard2);
                         break;
                     }
@@ -495,7 +494,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
                 // is no longer valid, it should not proceed.
                 if (guard2Block->nodeIsRemoved()) {
                     if (trace())
-                        traceMsg(comp(), "guard2Block block_%d %p has been removed after changeBranchDestination\n",
+                        log->printf("guard2Block block_%d %p has been removed after changeBranchDestination\n",
                             guard2Block->getNumber(), guard2Block);
                     break;
                 }
@@ -523,8 +522,8 @@ int32_t TR_VirtualGuardHeadMerger::perform()
                         guard2Block = splitRuntimeGuardBlock(comp(), guard2Block, cfg);
                         if (privargBlock != guard2Block) {
                             if (trace())
-                                traceMsg(comp(), "  Moving privarg block_%d after block_%d\n",
-                                    privargBlock->getNumber(), privargIns->getNumber());
+                                log->printf("  Moving privarg block_%d after block_%d\n", privargBlock->getNumber(),
+                                    privargIns->getNumber());
 
                             moveBlockAfterDest(cfg, privargBlock, privargIns);
 
@@ -541,7 +540,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
 
                     guard2Block = guard2Block->split(guard2Tree, cfg, true, false);
                     if (trace())
-                        traceMsg(comp(), "  Created new block_%d to hold guard [%p] from block_%d\n",
+                        log->printf("  Created new block_%d to hold guard [%p] from block_%d\n",
                             guard2Block->getNumber(), guard2, guard2Block->getNumber());
                 }
 
@@ -554,7 +553,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
 
                     block = nextBlock = guard2Block->getPrevBlock();
                     if (trace())
-                        traceMsg(comp(), "  Moving guard2 block block_%d after block_%d\n", guard2Block->getNumber(),
+                        log->printf("  Moving guard2 block block_%d after block_%d\n", guard2Block->getNumber(),
                             insertPoint->getNumber());
 
                     moveBlockAfterDest(cfg, guard2Block, insertPoint);

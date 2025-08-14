@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "optimizer/UnsafeSubexpressionRemover.hpp"
+#include "ras/Logger.hpp"
 
 void OMR::UnsafeSubexpressionRemover::anchorSafeChildrenOfUnsafeNodes(TR::Node *node, TR::TreeTop *anchorPoint)
 {
@@ -27,6 +28,8 @@ void OMR::UnsafeSubexpressionRemover::anchorSafeChildrenOfUnsafeNodes(TR::Node *
         return;
     else
         _visitedNodes.set(node->getGlobalIndex());
+
+    OMR::Logger *log = comp()->getLogger();
 
     //
     // Design note: we don't decrement refcounts in here.  Conceptually,
@@ -50,7 +53,7 @@ void OMR::UnsafeSubexpressionRemover::anchorSafeChildrenOfUnsafeNodes(TR::Node *
             _unsafeNodes.set(node->getGlobalIndex());
             if (trace()) {
                 TR::Node *child = node->getChild(i);
-                traceMsg(comp(), "        (Marked %s n%dn unsafe due to dead child #%d %s n%dn)\n",
+                log->printf("        (Marked %s n%dn unsafe due to dead child #%d %s n%dn)\n",
                     node->getOpCode().getName(), node->getGlobalIndex(), i, child->getOpCode().getName(),
                     child->getGlobalIndex());
             }
@@ -72,7 +75,7 @@ void OMR::UnsafeSubexpressionRemover::anchorSafeChildrenOfUnsafeNodes(TR::Node *
             TR::Node *child = node->getChild(i);
             bool didIt = anchorIfSafe(child, anchorPoint);
             if (didIt && trace()) {
-                traceMsg(comp(), "  - Anchored child #%d %s n%d of %s n%d\n", i, child->getOpCode().getName(),
+                log->printf("  - Anchored child #%d %s n%d of %s n%d\n", i, child->getOpCode().getName(),
                     child->getGlobalIndex(), node->getOpCode().getName(), node->getGlobalIndex());
             }
         }
@@ -165,8 +168,9 @@ void OMR::UnsafeSubexpressionRemover::eliminateStore(TR::TreeTop *treeTop, TR::N
             TR::Node *dummyChild
                 = node->setAndIncChild(0, TR::Node::createConstDead(child, TR::Int32, 0xbad1 /* eyecatcher */));
             if (trace())
-                traceMsg(comp(), "  - replace unsafe child %s n%dn with dummy %s n%dn\n", child->getOpCode().getName(),
-                    child->getGlobalIndex(), dummyChild->getOpCode().getName(), dummyChild->getGlobalIndex());
+                comp()->getLogger()->printf("  - replace unsafe child %s n%dn with dummy %s n%dn\n",
+                    child->getOpCode().getName(), child->getGlobalIndex(), dummyChild->getOpCode().getName(),
+                    dummyChild->getGlobalIndex());
         }
 
         // Set opcode to nop

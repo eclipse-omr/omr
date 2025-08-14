@@ -41,6 +41,7 @@ TR_ReachabilityAnalysis::TR_ReachabilityAnalysis(TR::Compilation *comp)
 
 void TR_ReachabilityAnalysis::perform(TR_BitVector *result)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR::CFG *cfg = comp()->getFlowGraph();
     int32_t numBlockIndexes = cfg->getNextNodeNumber();
     int32_t numBlocks = cfg->getNumberOfNodes();
@@ -54,22 +55,22 @@ void TR_ReachabilityAnalysis::perform(TR_BitVector *result)
     bool trace = comp()->getOption(TR_TraceReachability);
 
     if (trace)
-        traceMsg(comp(), "BEGIN REACHABILITY: %d blocks\n", numBlocks);
+        log->printf("BEGIN REACHABILITY: %d blocks\n", numBlocks);
 
     for (TR::Block *block = comp()->getStartBlock(); block; block = block->getNextBlock()) {
         blocknum_t blockNum = block->getNumber();
         if (trace)
-            traceMsg(comp(), "Visit block_%d\n", blockNum);
+            log->printf("Visit block_%d\n", blockNum);
         if (depthMap[blockNum] == 0)
             traverse(blockNum, 0, stack, depthMap, result);
         else
-            traceMsg(comp(), "  depth is already %d; skip\n", depthMap[blockNum]);
+            log->printf("  depth is already %d; skip\n", depthMap[blockNum]);
     }
 
     if (comp()->getOption(TR_TraceReachability)) {
-        traceMsg(comp(), "END REACHABILITY.  Result:\n");
-        result->print(comp()->getLogger(), comp());
-        traceMsg(comp(), "\n");
+        log->prints("END REACHABILITY.  Result:\n");
+        result->print(log, comp());
+        log->println();
     }
 }
 
@@ -83,11 +84,11 @@ void TR_ReachabilityAnalysis::propagateOneInput(blocknum_t inputBlockNum, blockn
     depthMap[blockNum] = std::min(depthMap[blockNum], depthMap[inputBlockNum]);
     if (result->isSet(inputBlockNum)) {
         if (comp()->getOption(TR_TraceReachability))
-            traceMsg(comp(), "    Propagate block_%d to block_%d\n", blockNum, inputBlockNum);
+            comp()->getLogger()->printf("    Propagate block_%d to block_%d\n", blockNum, inputBlockNum);
         result->set(blockNum);
     } else {
         if (comp()->getOption(TR_TraceReachability))
-            traceMsg(comp(), "    No change to block_%d from block_%d\n", blockNum, inputBlockNum);
+            comp()->getLogger()->printf("    No change to block_%d from block_%d\n", blockNum, inputBlockNum);
     }
 }
 
@@ -105,7 +106,7 @@ void TR_ReachabilityAnalysis::traverse(blocknum_t blockNum, int32_t depth, block
     depthMap[blockNum] = depth;
     bool value = isOrigin(getBlock(blockNum));
     if (trace)
-        traceMsg(comp(), "  traverse %sblock_%d depth %d\n", value ? "origin " : "", blockNum, depth);
+        comp()->getLogger()->printf("  traverse %sblock_%d depth %d\n", value ? "origin " : "", blockNum, depth);
     result->setTo(blockNum, value);
 
     // Recursively propagate from inputs
@@ -122,7 +123,7 @@ void TR_ReachabilityAnalysis::traverse(blocknum_t blockNum, int32_t depth, block
                 break;
             } else {
                 if (trace)
-                    traceMsg(comp(), "    Loop: propagate block_%d to block_%d\n", blockNum, top);
+                    comp()->getLogger()->printf("    Loop: propagate block_%d to block_%d\n", blockNum, top);
                 result->setTo(top, result->isSet(blockNum));
             }
         }

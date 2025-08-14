@@ -50,6 +50,7 @@
 #include "infra/List.hpp"
 #include "infra/TreeServices.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 TR::Register *OMR::TreeEvaluator::brdbarEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
@@ -624,25 +625,26 @@ void OMR::TreeEvaluator::evaluateNodesWithFutureUses(TR::Node *node, TR::CodeGen
             // a failure if evaluated on a common path. Except array accesses if already evaluated.
             //
             if (comp->getOption(TR_TraceCG)) {
-                traceMsg(comp,
+                OMR::Logger *log = comp->getLogger();
+                log->printf(
                     "avoiding escaping commoned subtree %p [RealLoad/Store: %p], but processing its children: node is ",
                     node, actualLoadOrStoreChild);
                 if (actualLoadOrStoreChild->getOpCode().isStore())
-                    traceMsg(comp, "store\n");
+                    log->prints("store\n");
                 else if (actualLoadOrStoreChild->getOpCode().isLoadConst())
-                    traceMsg(comp, "const\n");
+                    log->prints("const\n");
                 else if (actualLoadOrStoreChild->getOpCode().isArrayRef())
-                    traceMsg(comp, "arrayref (aiadd/aladd)\n");
+                    log->prints("arrayref (aiadd/aladd)\n");
                 else if (actualLoadOrStoreChild->getOpCode().isLoad() && actualLoadOrStoreChild->getSymbolReference()) {
                     if (actualLoadOrStoreChild->getSymbolReference()->getSymbol()->isArrayShadowSymbol())
-                        traceMsg(comp, "array shadow\n");
+                        log->prints("array shadow\n");
                     else if (actualLoadOrStoreChild->getSymbolReference()->getSymbol()->isArrayletShadowSymbol())
-                        traceMsg(comp, "arraylet shadow\n");
+                        log->prints("arraylet shadow\n");
                 }
             }
         } else {
             if (comp->getOption(TR_TraceCG))
-                traceMsg(comp, "O^O pre-evaluating escaping commoned subtree %p\n", node);
+                comp->getLogger()->printf("O^O pre-evaluating escaping commoned subtree %p\n", node);
 
             (void)cg->evaluate(node);
 

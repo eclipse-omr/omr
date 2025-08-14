@@ -69,6 +69,7 @@
 #include "infra/CfgEdge.hpp"
 #include "optimizer/Structure.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
 #include "z/codegen/EndianConversion.hpp"
@@ -213,7 +214,8 @@ bool TR::S390LabeledInstruction::isNopCandidate()
                         if (loopLength <= 256
                             && (((uint64_t)cursor + loopLength) & 0xffffff00) > ((uint64_t)cursor & 0xffffff00)) {
                             isNopCandidate = true;
-                            traceMsg(comp, "Insert NOP instructions for loop alignment\n");
+                            if (comp->getOption(TR_TraceCG))
+                                comp->getLogger()->prints("Insert NOP instructions for loop alignment\n");
                             break;
                         } else {
                             isNopCandidate = false;
@@ -404,7 +406,7 @@ void TR::S390LabelInstruction::assignRegistersAndDependencies(TR_RegisterKinds k
     if (getLabelSymbol()->isEndOfColdInstructionStream()) {
         TR::Machine *machine = cg()->machine();
         if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "\nOOL: taking register state snap shot\n");
+            comp->getLogger()->prints("\nOOL: taking register state snap shot\n");
         cg()->setIsOutOfLineHotPath(true);
         machine->takeRegisterStateSnapShot();
     }
@@ -476,13 +478,14 @@ void TR::S390BranchInstruction::assignRegistersAndDependencies(TR_RegisterKinds 
             // Start RA for OOL cold path, restore register state from snap shot
             TR::Machine *machine = cg()->machine();
             if (comp->getOption(TR_TraceRA))
-                traceMsg(comp, "\nOOL: Restoring Register state from snap shot\n");
+                comp->getLogger()->prints("\nOOL: Restoring Register state from snap shot\n");
             cg()->setIsOutOfLineHotPath(false);
             machine->restoreRegisterStateFromSnapShot();
         }
         // Reusing the OOL Section merge label for other branches might be unsafe.
         else if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "\nOOL: Reusing the OOL Section merge label for other branches might be unsafe.\n");
+            comp->getLogger()->prints(
+                "\nOOL: Reusing the OOL Section merge label for other branches might be unsafe.\n");
     }
 }
 
@@ -955,8 +958,9 @@ uint8_t *TR::S390DebugCounterBumpInstruction::generateBinaryEncoding()
     TR_ASSERT(scratchReg != NULL,
         "TR_S390DebugCounterBumpInstruction::generateBinaryEncoding -- A scratch reg should always be found.");
 
-    traceMsg(comp, "[%p] DCB using %s as scratch reg with spill=%s\n", this, cg()->getDebug()->getName(scratchReg),
-        spillNeeded ? "true" : "false");
+    if (comp->getOption(TR_TraceCG))
+        comp->getLogger()->printf("[%p] DCB using %s as scratch reg with spill=%s\n", this,
+            cg()->getDebug()->getName(scratchReg), spillNeeded ? "true" : "false");
 
     if (spillNeeded) {
         *(int32_t *)cursor = boi(0xE3005000 | (offsetToLongDispSlot & 0xFFF)); // STG Rscrtch,offToLongDispSlot(,GPR5)
@@ -4745,7 +4749,9 @@ int32_t TR::S390AlignmentNopInstruction::estimateBinaryLength(int32_t currentEst
 
 uint8_t *TR::S390AlignmentNopInstruction::generateBinaryEncoding()
 {
-    bool trace = cg()->comp()->getOption(TR_TraceCG);
+    TR::Compilation *comp = cg()->comp();
+    bool trace = comp->getOption(TR_TraceCG);
+    OMR::Logger *log = comp->getLogger();
     uint32_t currentMisalign = reinterpret_cast<uintptr_t>(cg()->getBinaryBufferCursor()) % _alignment;
 
     if (currentMisalign != 0) {
@@ -4754,7 +4760,7 @@ uint8_t *TR::S390AlignmentNopInstruction::generateBinaryEncoding()
         uint32_t nopsOfLength2ToAdd = (((_alignment - currentMisalign) % 6) % 4) / 2;
 
         if (trace)
-            traceMsg(cg()->comp(), "Expanding alignment nop %p into %u instructions: [ ", self(),
+            log->printf("Expanding alignment nop %p into %u instructions: [ ", self(),
                 nopsOfLength6ToAdd + nopsOfLength4ToAdd + nopsOfLength2ToAdd);
 
         for (uint32_t i = 0; i < nopsOfLength2ToAdd; ++i) {
@@ -4762,7 +4768,7 @@ uint8_t *TR::S390AlignmentNopInstruction::generateBinaryEncoding()
                 = new (cg()->trHeapMemory()) TR::S390NOPInstruction(TR::InstOpCode::NOP, 2, getNode(), self(), cg());
 
             if (trace)
-                traceMsg(cg()->comp(), "%p ", nop);
+                log->printf("%p ", nop);
         }
 
         for (uint32_t i = 0; i < nopsOfLength4ToAdd; ++i) {
@@ -4770,7 +4776,7 @@ uint8_t *TR::S390AlignmentNopInstruction::generateBinaryEncoding()
                 = new (cg()->trHeapMemory()) TR::S390NOPInstruction(TR::InstOpCode::NOP, 4, getNode(), self(), cg());
 
             if (trace)
-                traceMsg(cg()->comp(), "%p ", nop);
+                log->printf("%p ", nop);
         }
 
         for (uint32_t i = 0; i < nopsOfLength6ToAdd; ++i) {
@@ -4778,15 +4784,14 @@ uint8_t *TR::S390AlignmentNopInstruction::generateBinaryEncoding()
                 = new (cg()->trHeapMemory()) TR::S390NOPInstruction(TR::InstOpCode::NOP, 6, getNode(), self(), cg());
 
             if (trace)
-                traceMsg(cg()->comp(), "%p ", nop);
+                log->printf("%p ", nop);
         }
 
         if (trace)
-            traceMsg(cg()->comp(), "]\n");
+            log->prints("]\n");
     } else {
         if (trace)
-            traceMsg(cg()->comp(), "Eliminating alignment nop %p, since the next instruction is already aligned\n",
-                self());
+            log->printf("Eliminating alignment nop %p, since the next instruction is already aligned\n", self());
     }
 
     cg()->addAccumulatedInstructionLengthError(getEstimatedBinaryLength() - currentMisalign);

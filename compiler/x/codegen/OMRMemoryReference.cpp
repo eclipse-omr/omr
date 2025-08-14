@@ -514,7 +514,7 @@ void OMR::X86::MemoryReference::populateMemoryReference(TR::Node *subTree, TR::C
             self()->setInUpcastingMode();
 
             if (comp->getOption(TR_TraceCG))
-                traceMsg(comp, "Entering UpcastingNoOverflow mode at node %x\n", subTree);
+                comp->getLogger()->printf("Entering UpcastingNoOverflow mode at node %x\n", subTree);
             rcount_t refCount = subTree->getFirstChild()->getReferenceCount();
             self()->populateMemoryReference(subTree->getFirstChild(), cg, subTree);
             self()->checkAndDecReferenceCount(subTree->getFirstChild(), refCount, cg);
@@ -632,14 +632,16 @@ void OMR::X86::MemoryReference::populateMemoryReference(TR::Node *subTree, TR::C
     }
 
     if (comp->getOption(TR_TraceRegisterPressureDetails) && comp->getLoggingEnabled()) {
-        traceMsg(comp, "   populated memref on %s", cg->getDebug()->getName(subTree));
+        OMR::Logger *log = comp->getLogger();
+        log->printf("   populated memref on %s", cg->getDebug()->getName(subTree));
         cg->getDebug()->dumpLiveRegisters(comp->getLogger());
-        traceMsg(comp, "\n");
+        log->println();
     }
 }
 
 TR::Register *OMR::X86::MemoryReference::evaluate(TR::Node *node, TR::CodeGenerator *cg, TR::Node *parent)
 {
+    TR::Compilation *comp = cg->comp();
     TR::Register *reg = cg->evaluate(node);
 
     if (self()->inUpcastingMode()) {
@@ -651,7 +653,7 @@ TR::Register *OMR::X86::MemoryReference::evaluate(TR::Node *node, TR::CodeGenera
         // else if (node->isNonNegative() && reg->areUpperBitsZero())
         {
             // Node is already positive and zero extended
-        } else if (cg->comp()->target().is64Bit()) {
+        } else if (comp->target().is64Bit()) {
             // Sign extension in the 64-bit case
             TR::Instruction *instr = NULL;
             if (node->getSize() == 4)
@@ -659,8 +661,8 @@ TR::Register *OMR::X86::MemoryReference::evaluate(TR::Node *node, TR::CodeGenera
             else if (node->getSize() == 2)
                 instr = generateRegRegInstruction(TR::InstOpCode::MOVSXReg8Reg2, node, reg, reg, cg);
 
-            if (cg->comp()->getOption(TR_TraceCG))
-                traceMsg(cg->comp(), "Add a sign extension instruction to 64-bit in Upcasting Mode %x\n", instr);
+            if (comp->getOption(TR_TraceCG))
+                comp->getLogger()->printf("Add a sign extension instruction to 64-bit in Upcasting Mode %x\n", instr);
         }
 
         else {
@@ -669,8 +671,8 @@ TR::Register *OMR::X86::MemoryReference::evaluate(TR::Node *node, TR::CodeGenera
             if (node->getSize() == 2)
                 instr = generateRegRegInstruction(TR::InstOpCode::MOVSXReg4Reg2, node, reg, reg, cg);
 
-            if (cg->comp()->getOption(TR_TraceCG))
-                traceMsg(cg->comp(), "Add a sign extension instruction to 32-bit in Upcasting Mode %x\n", instr);
+            if (comp->getOption(TR_TraceCG))
+                comp->getLogger()->printf("Add a sign extension instruction to 32-bit in Upcasting Mode %x\n", instr);
         }
     }
 
@@ -681,9 +683,10 @@ void OMR::X86::MemoryReference::consolidateRegisters(TR::Node *node, TR::CodeGen
 {
     TR::Compilation *comp = cg->comp();
     if (comp->getOption(TR_TraceRegisterPressureDetails) && comp->getLoggingEnabled()) {
-        traceMsg(comp, "  consolidateRegisters on %s", cg->getDebug()->getName(node));
+        OMR::Logger *log = comp->getLogger();
+        log->printf("  consolidateRegisters on %s", cg->getDebug()->getName(node));
         cg->getDebug()->dumpLiveRegisters(comp->getLogger());
-        traceMsg(comp, "\n");
+        log->println();
     }
 
     TR::Register *tempTargetRegister;

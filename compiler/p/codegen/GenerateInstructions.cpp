@@ -48,6 +48,7 @@
 #include "il/TreeTop_inlines.hpp"
 #include "infra/Assert.hpp"
 #include "p/codegen/PPCInstruction.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 class TR_VirtualGuardSite;
@@ -567,11 +568,17 @@ int estimateLikeliness(TR::CodeGenerator *cg, TR::Node *n)
             float currentBlockFreq = std::max<float>(n->getBlock()->getFrequency(), 1.0f);
             float targetBlockFreq = std::max<float>(destBlock->getFrequency(), 1.0f);
             float fallThroughBlockFreq = std::max<float>(fallThroughBlock->getFrequency(), 1.0f);
-            traceMsg(comp, "target block: %d, fall through block: %d\n", destBlock->getNumber(),
-                fallThroughBlock->getNumber());
+
+            if (comp->getOption(TR_TraceCG))
+                comp->getLogger()->printf("target block: %d, fall through block: %d\n", destBlock->getNumber(),
+                    fallThroughBlock->getNumber());
+
             bool biased = false;
             bool likeliness;
-            traceMsg(comp, "targetBlockFreq: %f, fallThroughBlockFreq: %f\n", targetBlockFreq, fallThroughBlockFreq);
+
+            if (comp->getOption(TR_TraceCG))
+                comp->getLogger()->printf("targetBlockFreq: %f, fallThroughBlockFreq: %f\n", targetBlockFreq,
+                    fallThroughBlockFreq);
 
             if (fallThroughBlockFreq / targetBlockFreq > predictBranchRatio)
                 return -1;
