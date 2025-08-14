@@ -948,7 +948,7 @@ enum TR_CompilationOptions {
     TR_InlineVeryLargeCompiledMethods                        = 0x00000040 + 29,
     // Available                                             = 0x00000080 + 29,
     TR_UseOldHCRGuardAOTRelocations                          = 0x00000100 + 29,
-    // Available                                             = 0x00000200 + 29,
+    TR_TraceBlockIteration                                   = 0x00000200 + 29,
     TR_DisableSupportForCpuSpentInCompilation                = 0x00000400 + 29,
     TR_DisableSwitchAwayFromProfilingForHotAndVeryhot        = 0x00000800 + 29,
     TR_UseLowerCountsForNonSCCMethodsDuringStartup           = 0x00001000 + 29,

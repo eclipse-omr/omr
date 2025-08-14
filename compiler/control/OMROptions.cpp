@@ -1875,6 +1875,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "P" },
     { "traceBlockFrequencyGeneration", "L\ttrace block frequency generation", SET_OPTION_BIT(TR_TraceBFGeneration),
      "P" },
+    { "traceBlockIteration", "L\ttrace block iteration", SET_OPTION_BIT(TR_TraceBlockIteration), "P" },
     { "traceBlockShuffling", "L\ttrace random rearrangement of blocks", TR::Options::traceOptimization, blockShuffling,
      0, "P" },
     { "traceBlockSplitter", "L\ttrace block splitter", TR::Options::traceOptimization, blockSplitter, 0, "P" },
