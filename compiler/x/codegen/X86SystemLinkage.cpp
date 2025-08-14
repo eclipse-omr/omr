@@ -44,6 +44,7 @@
 #include "infra/BitVector.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 #include "env/CompilerEnv.hpp"
