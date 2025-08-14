@@ -3289,7 +3289,7 @@ bool OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig)
                 _logFile = _debug->findLogFile(TR::Options::getAOTCmdLineOptions(), TR::Options::getJITCmdLineOptions(),
                     optionSet, _logFileName, _logger);
                 if (_logFile == NULL)
-                    self()->openLogFile();
+                    self()->openLogFileCreateLogger();
                 else
                     OMR::Options::_dualLogging = true; // a log file is used in two different option sets, or in
                                                        // in the main TR::Options object and in an option set
@@ -4527,7 +4527,7 @@ bool OMR::Options::jitPostProcess()
             TR::Options::createDebug();
 
         if (_debug)
-            self()->openLogFile();
+            self()->openLogFileCreateLogger();
     } else if (self()->requiresLogFile()) {
         TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE,
             "Log file option must be specified when a trace options is used: log=<filename>");
@@ -4664,7 +4664,7 @@ OMR::Logger *OMR::Options::createLoggerForLogFile(TR::FILE *file)
     return logger;
 }
 
-void OMR::Options::openLogFile(int32_t idSuffix)
+void OMR::Options::openLogFileCreateLogger(int32_t idSuffix)
 {
     _logFile = NULL;
 
@@ -4829,7 +4829,7 @@ void OMR::Options::setLogForCompilationThread(int32_t compThreadID, TR::Options 
     // We should open a new log for this compilation thread
     optionLogEntry = new (PERSISTENT_NEW) TR_MCTLogs(compThreadID, self());
     if (optionLogEntry) {
-        self()->openLogFile(compThreadID); // side effect: the open file will be set in this object
+        self()->openLogFileCreateLogger(compThreadID); // side effect: the open file will be set in this object
         if (_logFile != NULL) {
             // Cache the open log file in the mainOptions
             optionLogEntry->setLogFile(_logFile);
