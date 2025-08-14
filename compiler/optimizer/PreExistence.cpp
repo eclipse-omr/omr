@@ -72,7 +72,7 @@ TR_PrexArgument::TR_PrexArgument(TR::KnownObjectTable::Index knownObjectIndex, T
 void TR_PrexArgInfo::dumpTrace()
 {
     TR::Compilation *comp = TR::comp();
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
 
     log->printf("<argInfo address = %p numArgs = %d>\n", this, getNumArgs());
     for (int i = 0; i < getNumArgs(); i++) {

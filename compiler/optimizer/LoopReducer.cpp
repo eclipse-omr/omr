@@ -4045,7 +4045,7 @@ TR_LoopReducer::TR_LoopReducer(TR::OptimizationManager *manager)
 
 int32_t TR_LoopReducer::perform()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // enable only if the new loop reduction framework is
     // disabled

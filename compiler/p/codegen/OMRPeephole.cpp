@@ -633,7 +633,7 @@ bool OMR::Power::Peephole::tryToRemoveRedundantMoveRegister()
                     for (auto stackMapIter = stackMaps.begin(); stackMapIter != stackMaps.end(); ++stackMapIter) {
                         if (self()->cg()->getDebug())
                             if (comp->getOption(TR_TraceCG))
-                                comp->getLogger()->printf(
+                                comp->log()->printf(
                                     "Adjusting register map %p; removing %s, adding %s due to removal of mr %p\n",
                                     *stackMapIter, self()->cg()->getDebug()->getName(mrTargetReg),
                                     self()->cg()->getDebug()->getName(mrSourceReg), mrInstruction);

@@ -393,7 +393,7 @@ int32_t TR_GlobalRegisterAllocator::perform()
         }
 
         if (trace())
-            comp()->dumpMethodTrees(comp()->getLogger(), "Trees before tactical global register allocator",
+            comp()->dumpMethodTrees(comp()->log(), "Trees before tactical global register allocator",
                 comp()->getMethodSymbol());
 
         _candidatesNeedingSignExtension = NULL;
@@ -541,7 +541,7 @@ int32_t TR_GlobalRegisterAllocator::perform()
                 // 'valueModified'.
                 //
                 if (trace)
-                    comp()->getLogger()->prints("\nPropagating value modified information\n");
+                    comp()->log()->prints("\nPropagating value modified information\n");
                 List<TR::TreeTop> storesFromRegisters(trMemory());
                 TR::TreeTop *tt = NULL, *nextTreeTop = NULL;
                 for (tt = comp()->getStartTree(); tt; tt = tt->getNextTreeTop()) {
@@ -577,7 +577,7 @@ int32_t TR_GlobalRegisterAllocator::perform()
                 // redundant.
                 //
                 if (trace)
-                    comp()->getLogger()->prints("\nRemoving redundant stores\n");
+                    comp()->log()->prints("\nRemoving redundant stores\n");
                 ListIterator<TR::TreeTop> itr(&storesFromRegisters);
                 for (tt = itr.getFirst(); tt; tt = itr.getNext()) {
                     if (!_valueModifiedSymRefs->isSet(
@@ -585,7 +585,7 @@ int32_t TR_GlobalRegisterAllocator::perform()
                         && !nonSplittingCopyStored.isSet(
                             tt->getNode()->getFirstChild()->getRegLoadStoreSymbolReference()->getReferenceNumber())) {
                         if (trace)
-                            comp()->getLogger()->printf("Remove a redundant store %p\n", tt->getNode());
+                            comp()->log()->printf("Remove a redundant store %p\n", tt->getNode());
                         TR::TransformUtil::removeTree(comp(), tt);
                     }
                 }
@@ -614,7 +614,7 @@ bool TR_GlobalRegisterAllocator::isSplittingCopy(TR::Node *node)
     if ((node->getOpCode().isStoreDirect() || node->getOpCode().isStoreReg())
         && (node->getFirstChild()->getOpCode().isLoadVarDirect() || node->getFirstChild()->getOpCode().isLoadReg())) {
         if (trace)
-            comp()->getLogger()->printf("Finding a copy at node %p\n", node);
+            comp()->log()->printf("Finding a copy at node %p\n", node);
         TR::SymbolReference *storeSymRef = node->getSymbolReferenceOfAnyType();
         TR::SymbolReference *loadSymRef = node->getFirstChild()->getSymbolReferenceOfAnyType();
         if (storeSymRef && loadSymRef && storeSymRef != loadSymRef) {
@@ -625,7 +625,7 @@ bool TR_GlobalRegisterAllocator::isSplittingCopy(TR::Node *node)
             if ((origStoreSymRef && origLoadSymRef && origStoreSymRef == origLoadSymRef)
                 || (origStoreSymRef && !origLoadSymRef && origStoreSymRef == loadSymRef)
                 || (!origStoreSymRef && origLoadSymRef && storeSymRef == origLoadSymRef)) {
-                // if (trace) comp()->getLogger()->printf("Found a copy %p\n", node);
+                // if (trace) comp()->log()->printf("Found a copy %p\n", node);
                 return true;
             }
         }
@@ -683,7 +683,7 @@ void TR_GlobalRegisterAllocator::restoreOriginalSymbol(TR::Node *node, vcount_t 
 
             if (rc && !rc->extendedLiveRange() && changeSymRef) {
                 if (trace)
-                    comp()->getLogger()->printf("Restore an original symbol #%d from #%d at %p\n",
+                    comp()->log()->printf("Restore an original symbol #%d from #%d at %p\n",
                         changeSymRef->getReferenceNumber(), symRefNum, node);
                 if (node->getOpCode().isLoadReg() || node->getOpCode().isStoreReg())
                     node->setRegLoadStoreSymbolReference(changeSymRef);
@@ -692,7 +692,7 @@ void TR_GlobalRegisterAllocator::restoreOriginalSymbol(TR::Node *node, vcount_t 
             } else
                 _valueModifiedSymRefs->set(symRefNum);
         } else if (trace)
-            comp()->getLogger()->printf("Node %p has no symbol\n", node);
+            comp()->log()->printf("Node %p has no symbol\n", node);
     }
 }
 
@@ -1420,7 +1420,7 @@ void TR_GlobalRegisterAllocator::transformBlockExit(TR::TreeTop *exitTreeTop, TR
 bool TR_GlobalRegisterAllocator::markCandidateForReloadInSuccessors(int32_t i, TR::GlobalRegister *extReg,
     TR::GlobalRegister *reg, TR::Block *block, bool traceIt)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     bool result = false; // Success or no?
     TR::Block *nextBlock = NULL;
     TR::RegisterCandidate *rc = extReg->getCurrentRegisterCandidate();
@@ -1539,7 +1539,7 @@ void TR_GlobalRegisterAllocator::addStoresForCatchBlockLoads(TR::TreeTop *append
         if (succ->asBlock()->isOSRCatchBlock()) {
             _osrCatchSucc = succ->asBlock();
             if (trace())
-                comp()->getLogger()->printf(
+                comp()->log()->printf(
                     "           addStoresForCatchBlockLoads([%p], block_%d) found OSR catch block_%d\n",
                     appendPoint->getNode(), throwingBlock->getNumber(), _osrCatchSucc->getNumber());
         }
@@ -1770,7 +1770,7 @@ void TR_GlobalRegisterAllocator::prepareForBlockExit(TR::TreeTop *&exitTreeTop, 
 
                 if (extgr->getCurrentRegisterCandidate() != successorRC) {
                     if (trace()) {
-                        OMR::Logger *log = comp()->getLogger();
+                        OMR::Logger *log = comp()->log();
                         log->printf("block_%d successorBlock %d exitNode %p\n", block->getNumber(),
                             successorBlock->getNumber(), exitNode);
 
@@ -1885,7 +1885,7 @@ void TR_GlobalRegisterAllocator::prepareForBlockExit(TR::TreeTop *&exitTreeTop, 
 bool TR_GlobalRegisterAllocator::registerIsLiveAcrossEdge(TR::TreeTop *exitTreeTop, TR::Node *exitNode,
     TR::Block *block, TR::GlobalRegister *extgr, TR::Block *&successorBlock, int32_t i)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR_Array<TR::GlobalRegister> &registers = block->getGlobalRegisters(comp());
     TR::GlobalRegister *gr = &registers[i];
 
@@ -2221,7 +2221,7 @@ TR::Block *TR_GlobalRegisterAllocator::createNewSuccessorBlock(TR::Block *block,
                     if (numRegistersLiveOnNewSuccessor + (needs2Regs ? 2 : 1)
                         > comp()->cg()->getMaximumNumberOfGPRsAllowedAcrossEdge(block)) {
                         if (trace())
-                            comp()->getLogger()->printf(
+                            comp()->log()->printf(
                                 "numRegistersLiveOnNewSuccessor %d on nextNewBlock %d > "
                                 "comp()->cg()->getMaximumNumberOfGPRsAllowedAcrossEdge(block_%d) %d\n",
                                 numRegistersLiveOnNewSuccessor, nextNewBlock->getNumber(), block->getNumber(),
@@ -2722,8 +2722,7 @@ void TR_GlobalRegisterAllocator::offerAllAutosAndRegisterParmAsCandidates(TR::Bl
             if (sym) {
                 if (candidates->aliasesPreventAllocation(comp(), symRef)) {
                     if (comp()->getOptions()->trace(OMR::tacticalGlobalRegisterAllocator))
-                        comp()->getLogger()->printf("Leaving candidate #%d because it has use_def_aliases\n",
-                            symRefNumber);
+                        comp()->log()->printf("Leaving candidate #%d because it has use_def_aliases\n", symRefNumber);
                     continue;
                 }
 
@@ -3528,7 +3527,7 @@ void TR_LiveRangeSplitter::splitLiveRanges()
     }
 
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "Trees before live range splitter ", comp()->getMethodSymbol());
+        comp()->dumpMethodTrees(comp()->log(), "Trees before live range splitter ", comp()->getMethodSymbol());
 
     //_origSymRefs = (TR::SymbolReference
     //**)trMemory()->allocateStackMemory(comp()->getSymRefCount()*sizeof(TR::SymbolReference *)); memset(_origSymRefs,
@@ -3562,7 +3561,7 @@ static bool canSplit(TR::SymbolReference *symRef, TR::Compilation *comp)
 
 void TR_LiveRangeSplitter::splitLiveRanges(TR_StructureSubGraphNode *structureNode)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::SymbolReference **oldOrigSymRefs = _origSymRefs;
     int32_t oldSymRefCount = _origSymRefCount;
 
@@ -3901,8 +3900,8 @@ void TR_LiveRangeSplitter::replaceAutosUsedIn(TR::TreeTop *currentTree, TR::Node
                         comp()->il.opCodeForDirectStore(correspondingSymRef->getSymbol()->getDataType()), 1, 1,
                         node->getFirstChild(), correspondingSymRef);
                     if (trace())
-                        comp()->getLogger()->printf(" --- created a store to auto #%d adjacent to existing store to "
-                                                    "auto #%d at %s node %p --- \n",
+                        comp()->log()->printf(" --- created a store to auto #%d adjacent to existing store to auto #%d "
+                                              "at %s node %p --- \n",
                             correspondingSymRef->getReferenceNumber(), symRef->getReferenceNumber(),
                             node->getOpCode().getName(), node);
                     storeNode->setVisitCount(visitCount);
@@ -4012,7 +4011,7 @@ void TR_LiveRangeSplitter::fixExitsAfterSplit(TR::SymbolReference *symRef,
                     for (nextBlock = blocksIt.getCurrent(); nextBlock; nextBlock = blocksIt.getNext()) {
                         if (!blocksInInnerLoop->get(nextBlock->getNumber())) {
                             if (trace())
-                                comp()->getLogger()->printf(
+                                comp()->log()->printf(
                                     "Adding original candidate #%d in block_%d in outer loop %d (%p)\n",
                                     rc->getSymbolReference()->getReferenceNumber(), nextBlock->getNumber(),
                                     parentOfLoop->getNumber(), parentOfLoop);

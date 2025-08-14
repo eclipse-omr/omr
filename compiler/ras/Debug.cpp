@@ -210,7 +210,7 @@ TR_Debug::TR_Debug(TR::Compilation *c)
         _cg = c->cg();
         _fe = c->fe();
         _outFile = c->getOutFile();
-        _logger = c->getLogger();
+        _logger = c->log();
         resetDebugData();
 
         _nodeChecklist.init(0, c->trMemory(), heapAlloc, growable);
@@ -431,7 +431,7 @@ bool TR_Debug::performTransformationImpl(bool canOmitTransformation, const char 
     if (!_comp->getLoggingEnabled())
         return true;
 
-    OMR::Logger *log = _comp->getLogger();
+    OMR::Logger *log = _comp->log();
 
     if (canOmitTransformation) {
         if (_registerAssignmentTraceFlags & TRACERA_IN_PROGRESS)

@@ -181,7 +181,7 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
         reg = _nodeToInstrEvaluators[opcode](node, self());
 
         if (comp->getOption(TR_TraceRegisterPressureDetails) && comp->getLoggingEnabled()) {
-            OMR::Logger *log = comp->getLogger();
+            OMR::Logger *log = comp->log();
             log->printf("  evaluated %s", self()->getDebug()->getName(node));
             self()->getDebug()->dumpLiveRegisters(log);
             log->println();
@@ -208,8 +208,8 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
                 //     - but a bug might have been avoided: partial and complete evaluation of a commoned node occurred.
                 //
                 if (comp->getOption(TR_TraceCG)) {
-                    comp->getLogger()->printf(" _stackOfArtificiallyInflatedNodes.pop(): node %p part of commoned "
-                                              "case, might have avoided a bug!\n",
+                    comp->log()->printf(" _stackOfArtificiallyInflatedNodes.pop(): node %p part of commoned case, "
+                                        "might have avoided a bug!\n",
                         artificiallyInflatedNode);
                 }
             }
@@ -227,7 +227,7 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
 #endif
 
             if (comp->getOption(TR_TraceCG)) {
-                comp->getLogger()->printf(
+                comp->log()->printf(
                     " _stackOfArtificiallyInflatedNodes.pop() %p, decReferenceCount(...) called. reg=%s\n",
                     artificiallyInflatedNode,
                     artificiallyInflatedNode->getRegister()
@@ -373,8 +373,8 @@ rcount_t OMR::CodeGenerator::decReferenceCount(TR::Node *node)
         if (node->getReferenceCount() == 1) {
             storageReference->decOwningRegisterCount();
             if (self()->traceBCDCodeGen())
-                self()->comp()->getLogger()->printf("\tdecrement owningRegisterCount %d->%d on ref #%d (%s) for reg %s "
-                                                    "as %s (%p) refCount == 1 (going to 0)\n",
+                self()->comp()->log()->printf("\tdecrement owningRegisterCount %d->%d on ref #%d (%s) for reg %s as %s "
+                                              "(%p) refCount == 1 (going to 0)\n",
                     storageReference->getOwningRegisterCount() + 1, storageReference->getOwningRegisterCount(),
                     storageReference->getReferenceNumber(), self()->getDebug()->getName(storageReference->getSymbol()),
                     self()->getDebug()->getName(reg), node->getOpCode().getName(), node);

@@ -77,7 +77,7 @@ int32_t TR_AsyncCheckInsertion::insertReturnAsyncChecks(TR::Optimization *opt, c
 {
     TR::Compilation * const comp = opt->comp();
     if (opt->trace())
-        comp->getLogger()->printf("Inserting return asyncchecks (%s)\n", counterPrefix);
+        comp->log()->printf("Inserting return asyncchecks (%s)\n", counterPrefix);
 
     int numAsyncChecksInserted = 0;
     for (TR::TreeTop *treeTop = comp->getStartTree(); treeTop;
@@ -152,7 +152,7 @@ int32_t TR_AsyncCheckInsertion::perform()
         const char *counterPrefix = largeAcyclicMethod ? "acyclic" : "loopy";
         int32_t numAsyncChecksInserted = insertReturnAsyncChecks(this, counterPrefix);
         if (trace())
-            comp()->getLogger()->printf("Inserted %d async checks\n", numAsyncChecksInserted);
+            comp()->log()->printf("Inserted %d async checks\n", numAsyncChecksInserted);
         return 1;
     }
 

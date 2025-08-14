@@ -208,7 +208,7 @@ template<class Container>
 void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_RegionStructure *regionStructure,
     TR_BitVector &pendingList, TR_BitVector &exitNodes, bool lastIteration)
 {
-    OMR::Logger *log = this->comp()->getLogger();
+    OMR::Logger *log = this->comp()->log();
 
     while (this->_analysisQueue.getListHead()
         && (this->_analysisQueue.getListHead()->getData()->getStructure() != regionStructure)) {
@@ -831,7 +831,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfoForRegion
         changed = false;
 
         if (traceBBVA())
-            this->comp()->getLogger()->printf("\nREGION : %p NUMBER : %d ITERATION NUMBER : %d\n", region,
+            this->comp()->log()->printf("\nREGION : %p NUMBER : %d ITERATION NUMBER : %d\n", region,
                 region->getNumber(), numIterations);
 
         numIterations++;
@@ -883,8 +883,8 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeRegionStructure(TR_RegionStru
 
         if (sameAsPreviousIteration) {
             if (traceBBVA()) {
-                this->comp()->getLogger()->printf("\nSkipping re-analysis of Region : %p numbered %d\n",
-                    regionStructure, regionStructure->getNumber());
+                this->comp()->log()->printf("\nSkipping re-analysis of Region : %p numbered %d\n", regionStructure,
+                    regionStructure->getNumber());
             }
             return false;
         }
@@ -935,7 +935,7 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeRegionStructure(TR_RegionStru
         changed = false;
 
         if (traceBBVA())
-            this->comp()->getLogger()->printf("\nREGION : %p NUMBER : %d ITERATION NUMBER : %d\n", regionStructure,
+            this->comp()->log()->printf("\nREGION : %p NUMBER : %d ITERATION NUMBER : %d\n", regionStructure,
                 regionStructure->getNumber(), numIterations);
 
         numIterations++;
@@ -983,7 +983,7 @@ template<class Container>
 bool TR_BackwardDFSetAnalysis<Container *>::analyzeNodeIfSuccessorsAnalyzed(TR_RegionStructure *regionStructure,
     TR_BitVector &pendingList, TR_BitVector &exitNodes)
 {
-    OMR::Logger *log = this->comp()->getLogger();
+    OMR::Logger *log = this->comp()->log();
     bool anyNodeChanged = false;
 
     while (this->_analysisQueue.getListHead()
@@ -1315,7 +1315,7 @@ template<class Container>
 bool TR_BackwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStructure *blockStructure,
     bool checkForChange)
 {
-    OMR::Logger *log = this->comp()->getLogger();
+    OMR::Logger *log = this->comp()->log();
 
     initializeInfo(this->_regularInfo);
     initializeInfo(this->_exceptionInfo);

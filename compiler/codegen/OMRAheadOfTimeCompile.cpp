@@ -55,7 +55,7 @@ TR_Memory *OMR::AheadOfTimeCompile::trMemory() { return self()->comp()->trMemory
 void OMR::AheadOfTimeCompile::traceRelocationOffsets(uint8_t *&cursor, int32_t offsetSize,
     const uint8_t *endOfCurrentRecord, bool isOrderedPair)
 {
-    OMR::Logger *log = self()->comp()->getLogger();
+    OMR::Logger *log = self()->comp()->log();
 
     // Location Offsets
     int divisor; // num of data that fit on an 80 char wide term

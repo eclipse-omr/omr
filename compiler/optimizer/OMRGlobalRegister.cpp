@@ -102,7 +102,7 @@ void OMR::GlobalRegister::copyCurrentRegisterCandidate(TR::GlobalRegister *gr)
 
 TR::TreeTop *OMR::GlobalRegister::optimalPlacementForStore(TR::Block *currentBlock, TR::Compilation *comp)
 {
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
     bool traceGRA = comp->getOptions()->trace(OMR::tacticalGlobalRegisterAllocator);
     if (traceGRA)
         log->printf("           optimalPlacementForStore([%p], block_%d)\n", getValue(), currentBlock->getNumber());

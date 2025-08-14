@@ -72,7 +72,7 @@ TR_StorageInfo::TR_StorageInfo(TR::Node *node, size_t length, TR::Compilation *c
 
 void TR_StorageInfo::print()
 {
-    comp()->getLogger()->printf("\t\t\t%s (%p) len %d: addr %s (%p) symRef #%d, offset %d, class %s\n",
+    comp()->log()->printf("\t\t\t%s (%p) len %d: addr %s (%p) symRef #%d, offset %d, class %s\n",
         _node->getOpCode().getName(), _node, _length, _address ? _address->getOpCode().getName() : "NULL", _address,
         _symRef ? _symRef->getReferenceNumber() : -1, _offset, getName());
 }
@@ -144,7 +144,7 @@ void TR_StorageInfo::populateLoadOrStore(TR::Node *loadOrStore)
 TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
 {
     bool traceBCDCodeGen = comp()->cg()->traceBCDCodeGen();
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (traceBCDCodeGen) {
         log->prints("\t\toverlapCheck between:\n");

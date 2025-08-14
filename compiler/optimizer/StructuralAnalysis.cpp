@@ -69,7 +69,7 @@ void TR_RegionAnalysis::simpleIterator(TR_Stack<int32_t> &workStack, StructureBi
             if (!cyclesFound && nodesInPath.get(regionNum) && _dominators.dominates(hdrBlock, next._originalBlock)) {
                 cyclesFound = true;
                 if (trace()) {
-                    comp()->getLogger()->printf("cycle found at node = %d\n", (uint32_t)regionNum);
+                    comp()->log()->printf("cycle found at node = %d\n", (uint32_t)regionNum);
                 }
             }
         } else {
@@ -174,8 +174,8 @@ TR_Structure *TR_RegionAnalysis::getRegions(TR::Compilation *comp, TR::ResolvedM
 
     ra._useNew = !comp->getOption(TR_DisableIterativeSA);
     if (ra.trace()) {
-        comp->getLogger()->prints("Blocks before Region Analysis:\n");
-        comp->getDebug()->print(comp->getLogger(), cfg);
+        comp->log()->prints("Blocks before Region Analysis:\n");
+        comp->getDebug()->print(comp->log(), cfg);
     }
 
     ra.createLeafStructures(cfg, stackMemoryRegion);
@@ -213,8 +213,8 @@ TR_Structure *TR_RegionAnalysis::getRegions(TR::Compilation *comp)
 
     ra._useNew = !comp->getOption(TR_DisableIterativeSA);
     if (ra.trace()) {
-        comp->getLogger()->prints("Blocks before Region Analysis:\n");
-        comp->getDebug()->print(comp->getLogger(), cfg);
+        comp->log()->prints("Blocks before Region Analysis:\n");
+        comp->getDebug()->print(comp->log(), cfg);
     }
 
     ra.createLeafStructures(cfg, stackMemoryRegion);
@@ -343,11 +343,11 @@ TR_RegionStructure *TR_RegionAnalysis::findNaturalLoop(StructInfo &node, WorkBit
         TR_RegionStructure(_compilation, node._structure->getNumber() /* node._nodeIndex */);
     if (cyclesFound) {
         if (trace())
-            comp()->getLogger()->printf("   Found improper cyclic region %d\n", node._nodeIndex);
+            comp()->log()->printf("   Found improper cyclic region %d\n", node._nodeIndex);
         region->setContainsInternalCycles(true);
     } else {
         if (trace())
-            comp()->getLogger()->printf("   Found natural loop region %d\n", node._nodeIndex);
+            comp()->log()->printf("   Found natural loop region %d\n", node._nodeIndex);
     }
     return region;
 }
@@ -360,7 +360,7 @@ void TR_RegionAnalysis::addNaturalLoopNodesIterativeVersion(StructInfo &node, Wo
         if (nodesInPath.get(node._nodeIndex)) {
             cyclesFound = true;
             if (trace()) {
-                comp()->getLogger()->printf("cycle found at node = %d\n", node._nodeIndex);
+                comp()->log()->printf("cycle found at node = %d\n", node._nodeIndex);
             }
         }
         return;
@@ -389,7 +389,7 @@ void TR_RegionAnalysis::addNaturalLoopNodesIterativeVersion(StructInfo &node, Wo
         }
 
         if (trace()) {
-            comp()->getLogger()->printf("addNaturalLoopNodesIterativeVersion, index = %d\n", index);
+            comp()->log()->printf("addNaturalLoopNodesIterativeVersion, index = %d\n", index);
         }
 
         StructInfo &next = getInfo(index);
@@ -406,7 +406,7 @@ void TR_RegionAnalysis::addNaturalLoopNodes(StructInfo &node, WorkBitVector &reg
     int32_t index = node._nodeIndex;
 
     if (trace()) {
-        comp()->getLogger()->printf("addNaturalLoopNodes, index = %d\n", index);
+        comp()->log()->printf("addNaturalLoopNodes, index = %d\n", index);
     }
 
     // If the node was already found in the region we can stop tracking this path.
@@ -415,7 +415,7 @@ void TR_RegionAnalysis::addNaturalLoopNodes(StructInfo &node, WorkBitVector &reg
         if (nodesInPath.get(index)) {
             cyclesFound = true;
             if (trace()) {
-                comp()->getLogger()->printf("cycle found at node = %d\n", index);
+                comp()->log()->printf("cycle found at node = %d\n", index);
             }
         }
         return;
@@ -472,11 +472,11 @@ TR_RegionStructure *TR_RegionAnalysis::findRegion(StructInfo &node, WorkBitVecto
         TR_RegionStructure(_compilation, node._structure->getNumber() /* node._nodeIndex */);
     if (cyclesFound) {
         if (trace())
-            comp()->getLogger()->printf("   Found improper cyclic region %d\n", node._nodeIndex);
+            comp()->log()->printf("   Found improper cyclic region %d\n", node._nodeIndex);
         region->setContainsInternalCycles(true);
     } else {
         if (trace())
-            comp()->getLogger()->printf("   Found proper acyclic region %d\n", node._nodeIndex);
+            comp()->log()->printf("   Found proper acyclic region %d\n", node._nodeIndex);
     }
     return region;
 }
@@ -501,7 +501,7 @@ void TR_RegionAnalysis::addRegionNodesIterativeVersion(StructInfo &node, WorkBit
         }
 
         if (trace()) {
-            comp()->getLogger()->printf("addRegionNodesIterativeVersion, index = %d\n", index);
+            comp()->log()->printf("addRegionNodesIterativeVersion, index = %d\n", index);
         }
 
         StructInfo &next = getInfo(index);
@@ -518,7 +518,7 @@ void TR_RegionAnalysis::addRegionNodes(StructInfo &node, WorkBitVector &regionNo
     int32_t index = node._nodeIndex;
 
     if (trace()) {
-        comp()->getLogger()->printf("addRegionNodes, index = %d\n", index);
+        comp()->log()->printf("addRegionNodes, index = %d\n", index);
     }
 
     // If the node was already found in the region we can stop tracking this path.
@@ -527,7 +527,7 @@ void TR_RegionAnalysis::addRegionNodes(StructInfo &node, WorkBitVector &regionNo
         if (nodesInPath.get(index)) {
             cyclesFound = true;
             if (trace()) {
-                comp()->getLogger()->printf("cycle found at node = %d\n", index);
+                comp()->log()->printf("cycle found at node = %d\n", index);
             }
         }
         return;
@@ -664,7 +664,7 @@ void TR_RegionAnalysis::buildRegionSubGraph(TR_RegionStructure *region, StructIn
     //
     region->setEntry(cfgNodes[entryNode._nodeIndex]);
     if (trace()) {
-        OMR::Logger *log = comp()->getLogger();
+        OMR::Logger *log = comp()->log();
         comp()->getDebug()->print(log, region, 6);
         log->prints("   Structure after finding a region:\n");
         comp()->getDebug()->print(log, this, 6);

@@ -145,7 +145,7 @@ public:
 
     void dump(TR::Compilation *comp)
     {
-        OMR::Logger *log = comp->getLogger();
+        OMR::Logger *log = comp->log();
         log->printc('{');
         const char *sep = "";
         for (TR_Mark i = 0; i < _undoCount; i++) {

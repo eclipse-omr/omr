@@ -193,7 +193,7 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
         ListIterator<TR::AutomaticSymbol> automaticIterator(&methodSymbol->getAutomaticList());
 
         if (debug("traceLiveMonitors")) {
-            OMR::Logger *log = comp->getLogger();
+            OMR::Logger *log = comp->log();
             if (liveMonitors)
                 log->printf("building monitor map for instr %p node %p\n", instr, instr->getNode());
             else
@@ -220,7 +220,7 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
 
                 if (liveMonitors && liveMonitors->get(localCursor->getLiveLocalIndex())) {
                     if (debug("traceLiveMonitors"))
-                        comp->getLogger()->printf("setting map bit for local %p (%d) mapIndex %d\n", localCursor,
+                        comp->log()->printf("setting map bit for local %p (%d) mapIndex %d\n", localCursor,
                             localCursor->getLiveLocalIndex(), mapIndex);
                     map->setLiveMonitorBit(mapIndex);
                     map->setBit(mapIndex); // make sure the slot is marked as live
@@ -254,8 +254,8 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
                     || self()->comp()->target().cpu.isARM64())
                 && (*location)->getMaxSpillDepth() == 0 && comp->cg()->isOutOfLineHotPath()) {
                 if (self()->getDebug())
-                    comp->getLogger()->printf("\nSkipping GC map [%p] index %d (%s) for instruction [%p] in OOL hot "
-                                              "path because it has already been reverse spilled.\n",
+                    comp->log()->printf("\nSkipping GC map [%p] index %d (%s) for instruction [%p] in OOL hot path "
+                                        "because it has already been reverse spilled.\n",
                         map, s->getGCMapIndex(), self()->getDebug()->getName((*location)->getSymbolReference()), instr);
                 continue;
             }

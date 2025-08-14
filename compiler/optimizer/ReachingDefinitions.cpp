@@ -65,7 +65,7 @@ int32_t TR_ReachingDefinitions::perform()
 {
     LexicalTimer tlex("reachingDefs_perform", comp()->phaseTimer());
     if (traceRD())
-        comp()->getLogger()->prints("Starting ReachingDefinitions\n");
+        comp()->log()->prints("Starting ReachingDefinitions\n");
 
     // Allocate the block info, allowing the bit vectors to be allocated on the fly
     //
@@ -78,7 +78,7 @@ int32_t TR_ReachingDefinitions::perform()
         performAnalysis(rootStructure, false);
 
         if (traceRD())
-            comp()->getLogger()->prints("\nEnding ReachingDefinitions\n");
+            comp()->log()->prints("\nEnding ReachingDefinitions\n");
 
     } // scope of the stack memory region
 
@@ -105,7 +105,7 @@ void TR_ReachingDefinitions::initializeGenAndKillSetInfo()
     // Go in treetop order, which guarantees that we see the correct (i.e. first)
     // evaluation point for each node.
     //
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::Block *block;
     int32_t blockNum = 0;
     bool seenException = false;

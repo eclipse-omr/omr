@@ -54,7 +54,7 @@ void TR::AbsOpStack::merge(const TR::AbsOpStack *other, TR::Region &region)
 
 void TR::AbsOpStack::print(TR::Compilation *comp) const
 {
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
 
     log->prints("Contents of Abstract Operand Stack:\n");
 

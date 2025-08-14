@@ -115,14 +115,14 @@ bool TR_OrderBlocks::needBetterChoice(TR::CFG *cfg, TR::CFGNode *block, TR::CFGN
     if (_hotPathList.isEmpty() || bestSucc == NULL)
         return false;
 
-    // if (trace()) comp()->getLogger()->printf("\t\tneedBetterChoice: block_%d:sec_%d:
+    // if (trace()) comp()->log()->printf("\t\tneedBetterChoice: block_%d:sec_%d:
     // bestSucc_%d:sec_%d\n",block->getNumber(), block->asBlock()->getSectionNumber(), bestSucc->getNumber(),
     // bestSucc->asBlock()->getSectionNumber());
 
     // Choose a better one if a cold block follows a hot block
     if (bestSucc != comp()->getStartBlock() && bestSucc->asBlock()->isSuperCold() && !block->asBlock()->isSuperCold()) {
         if (trace())
-            comp()->getLogger()->printf(
+            comp()->log()->printf(
                 "\t\tneedBetterChoice: hot block_%d:cold_%d: follows a cold block bestSucc_%d:cold_%d\n",
                 block->getNumber(), block->asBlock()->isSuperCold(), bestSucc->getNumber(),
                 block->asBlock()->isSuperCold());
@@ -140,7 +140,7 @@ bool TR_OrderBlocks::cannotFollowBlock(TR::Block *block, TR::Block *prevBlock)
     if (block->isExtensionOfPreviousBlock()) {
         if (block->getEntry()->getPrevTreeTop() != prevBlock->getExit()) {
             if (trace())
-                comp()->getLogger()->prints("\t\textends some other block, can't follow\n");
+                comp()->log()->prints("\t\textends some other block, can't follow\n");
             return true;
         }
     }
@@ -155,7 +155,7 @@ bool TR_OrderBlocks::mustFollowBlock(TR::Block *block, TR::Block *prevBlock)
     if (block->isExtensionOfPreviousBlock()) {
         if (block->getEntry()->getPrevTreeTop() == prevBlock->getExit()) {
             if (trace())
-                comp()->getLogger()->prints("\t\textends previous block, must follow\n");
+                comp()->log()->prints("\t\textends previous block, must follow\n");
             return true;
         }
     }
@@ -167,7 +167,7 @@ bool TR_OrderBlocks::mustFollowBlock(TR::Block *block, TR::Block *prevBlock)
 // valid hot blocks.
 TR::CFGNode *TR_OrderBlocks::findSuitablePathInList(List<TR::CFGNode> &list, TR::CFGNode *prevBlock)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     ListElement<TR::CFGNode> *prev = NULL;
     ListElement<TR::CFGNode> *ptr = list.getListHead();
     TR::CFGNode *block = NULL;
@@ -236,7 +236,7 @@ TR::CFGNode *TR_OrderBlocks::findSuitablePathInList(List<TR::CFGNode> &list, TR:
 // Return true if a valid block that can follow prevBlock exists in the list. Otherwise return false.
 bool TR_OrderBlocks::hasValidCandidate(List<TR::CFGNode> &list, TR::CFGNode *prevBlock)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     ListElement<TR::CFGNode> *prev = NULL;
     ListElement<TR::CFGNode> *ptr = list.getListHead();
     TR::CFGNode *block = NULL;
@@ -300,7 +300,7 @@ bool TR_OrderBlocks::endPathAtBlock(TR::CFGNode *block, TR::CFGNode *bestSucc, T
             && block->asBlock()->getExit()->getNextTreeTop()) {
             // end path if coldness changes
             if (trace())
-                comp()->getLogger()->printf(
+                comp()->log()->printf(
                     "\t\tEnd path because coldness changed from block_%d to block_%d block->asBlock()->getExit()=%p "
                     "block->asBlock()->getExit()->getNextTreeTop()=%p\n",
                     block->asBlock()->getNumber(), bestSucc->asBlock()->getNumber(), block->asBlock()->getExit(),
@@ -313,7 +313,7 @@ bool TR_OrderBlocks::endPathAtBlock(TR::CFGNode *block, TR::CFGNode *bestSucc, T
     // if (!block->asBlock()->isCold() && bestSucc->asBlock()->isCold())
     if (!_changeBlockOrderBasedOnHWProfile && block->asBlock()->isCold() != bestSucc->asBlock()->isCold()) {
         if (trace())
-            comp()->getLogger()->printf("\t\tEnd path because coldness changed from block_%d to block_%d \n",
+            comp()->log()->printf("\t\tEnd path because coldness changed from block_%d to block_%d \n",
                 block->asBlock()->getNumber(), bestSucc->asBlock()->getNumber());
         return true;
     }
@@ -334,7 +334,7 @@ bool TR_OrderBlocks::endPathAtBlock(TR::CFGNode *block, TR::CFGNode *bestSucc, T
     TR_BlockStructure *blockStructure = block->asBlock()->getStructureOf();
     if (bestSuccStructure == NULL || blockStructure == NULL) {
         if (trace())
-            comp()->getLogger()->printf("\t\tEnd path because structure is NULL block_%d=%p to block_%d=%p \n",
+            comp()->log()->printf("\t\tEnd path because structure is NULL block_%d=%p to block_%d=%p \n",
                 block->asBlock()->getNumber(), blockStructure, bestSucc->asBlock()->getNumber(), bestSuccStructure);
         return true;
     }
@@ -350,7 +350,7 @@ bool TR_OrderBlocks::endPathAtBlock(TR::CFGNode *block, TR::CFGNode *bestSucc, T
         return (bestSuccLoop != blockLoop);
         if (bestSuccLoop != blockLoop) {
             if (trace())
-                comp()->getLogger()->printf("\t\tEnd path because different loop block_%d=%p to block_%d=%p \n",
+                comp()->log()->printf("\t\tEnd path because different loop block_%d=%p to block_%d=%p \n",
                     block->asBlock()->getNumber(), blockLoop, bestSucc->asBlock()->getNumber(), bestSuccLoop);
             return true;
         } else
@@ -382,7 +382,7 @@ bool TR_OrderBlocks::analyseForHazards(TR::CFGNode *block)
 bool TR_OrderBlocks::isCandidateReallyBetter(TR::CFGEdge *candEdge, TR::Compilation *comp)
 {
     TR::CFGEdgeList &predecessors = candEdge->getTo()->getPredecessors();
-    // comp->getLogger()->printf("iCRB cand block_%d\n", candEdge->getTo()->getNumber());
+    // comp->log()->printf("iCRB cand block_%d\n", candEdge->getTo()->getNumber());
     for (auto predEdge = predecessors.begin(); predEdge != predecessors.end(); ++predEdge) {
         TR::CFGEdgeList &predSuccessors = (*predEdge)->getFrom()->getSuccessors();
         float numFactor = 1.5;
@@ -390,15 +390,15 @@ bool TR_OrderBlocks::isCandidateReallyBetter(TR::CFGEdge *candEdge, TR::Compilat
             if (_changeBlockOrderBasedOnHWProfile && ((*predSuccEdge)->getFrom()->getVisitCount() == _visitCount))
                 continue;
 
-            // comp->getLogger()->printf("comparing pred edge  %d -> %d freq %d\n",
-            // predSuccEdge->getFrom()->getNumber(), predSuccEdge->getTo()->getNumber(), predSuccEdge->getFrequency());
-            // comp->getLogger()->printf("cand edge %d -> %d freq %d\n", candEdge->getFrom()->getNumber(),
-            // candEdge->getTo()->getNumber(), candEdge->getFrequency());
+            // comp->log()->printf("comparing pred edge  %d -> %d freq %d\n", predSuccEdge->getFrom()->getNumber(),
+            // predSuccEdge->getTo()->getNumber(), predSuccEdge->getFrequency()); comp->log()->printf("cand edge %d ->
+            // %d freq %d\n", candEdge->getFrom()->getNumber(), candEdge->getTo()->getNumber(),
+            // candEdge->getFrequency());
             if (((*predSuccEdge) != candEdge)
                 && ((float)(*predSuccEdge)->getFrequency() > (float)(numFactor * (float)candEdge->getFrequency())))
             // return predSuccEdge->getFrom();
             {
-                // comp->getLogger()log->printf("rejecting cand block_%d\n", candEdge->getTo()->getNumber());
+                // comp->log()log->printf("rejecting cand block_%d\n", candEdge->getTo()->getNumber());
                 return false;
             }
         }
@@ -436,15 +436,15 @@ static bool isCandidateTheHottestSuccessor(TR::CFGEdge *candEdge, TR::Compilatio
             }
         }
     }
-    // comp->getLogger()->printf("iCHS cand block_%d\n", candEdge->getTo()->getNumber());
+    // comp->log()->printf("iCHS cand block_%d\n", candEdge->getTo()->getNumber());
     for (auto predEdge = predecessors.begin(); predEdge != predecessors.end(); ++predEdge) {
         if (((*predEdge)->getFrequency() > candEdge->getFrequency()) && ((*predEdge)->getFrom() != candEdge->getTo())) {
             /// numTransforms++;
-            // comp->getLogger()->printf("iCHS rejecting cand block_%d numTransforms %d\n",
-            // candEdge->getTo()->getNumber(), numTransforms);
+            // comp->log()->printf("iCHS rejecting cand block_%d numTransforms %d\n", candEdge->getTo()->getNumber(),
+            // numTransforms);
             /// if (numTransforms < count)
             {
-                // comp->getLogger()->printf("really iCHS rejecting cand block_%d numTransforms %d\n",
+                // comp->log()->printf("really iCHS rejecting cand block_%d numTransforms %d\n",
                 // candEdge->getTo()->getNumber(), numTransforms);
                 return false;
             }
@@ -455,7 +455,7 @@ static bool isCandidateTheHottestSuccessor(TR::CFGEdge *candEdge, TR::Compilatio
 
 bool TR_OrderBlocks::candidateIsBetterSuccessorThanBest(TR::CFGEdge *candidateEdge, TR::CFGEdge *currentBestEdge)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::CFGNode *candidate = candidateEdge->getTo();
     TR::CFGNode *currentBest = currentBestEdge->getTo();
     TR::CFGNode *prevBlock = candidateEdge->getFrom();
@@ -566,7 +566,7 @@ TR::CFGNode *TR_OrderBlocks::chooseBestFallThroughSuccessor(TR::CFG *cfg, TR::CF
 {
     static char *reallyNewReordering = feGetEnv("TR_reallyNewReordering");
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     List<TR::CFGEdge> candidateEdges(trMemory());
     // int32_t numCandidates = 0;
     TR::CFGEdge *bestSuccessorEdge = NULL;
@@ -843,7 +843,7 @@ void TR_OrderBlocks::removeFromOrderedBlockLists(TR::CFGNode *block)
     if (_changeBlockOrderBasedOnHWProfile && block->getFrequency() > 0) {
         _numUnschedHotBlocks--;
         if (trace())
-            comp()->getLogger()->printf("\t_numUnschedHotBlocks remove %d (blockNum:%d) \n", _numUnschedHotBlocks,
+            comp()->log()->printf("\t_numUnschedHotBlocks remove %d (blockNum:%d) \n", _numUnschedHotBlocks,
                 block->getNumber());
     }
 }
@@ -896,7 +896,7 @@ void TR_OrderBlocks::addRemainingSuccessorsToList(TR::CFGNode *block, TR::CFGNod
     if (_superColdBlockOnly)
         return;
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (trace())
         log->printf("\tadding remaining successors of block_%d to queue\n", block->getNumber());
@@ -940,7 +940,7 @@ void TR_OrderBlocks::addRemainingSuccessorsToList(TR::CFGNode *block, TR::CFGNod
 void TR_OrderBlocks::addRemainingSuccessorsToListHWProfile(TR::CFGNode *block, TR::CFGNode *excludeBlock)
 {
     if (trace())
-        comp()->getLogger()->printf("\tadding remaining successors of block_%d to queue\n", block->getNumber());
+        comp()->log()->printf("\tadding remaining successors of block_%d to queue\n", block->getNumber());
 
     TR::CFGEdgeList &successors = block->getSuccessors();
     for (auto succEdge = successors.begin(); succEdge != successors.end(); ++succEdge) {
@@ -948,7 +948,7 @@ void TR_OrderBlocks::addRemainingSuccessorsToListHWProfile(TR::CFGNode *block, T
         // If the edge is created by BE, don't add block 1 to list for now
         if (succBlock != excludeBlock && succBlock->getVisitCount() != _visitCount && succBlock->getFrequency() > 0) {
             if (trace())
-                comp()->getLogger()->printf("\t\tAdding unvisited non-cold successor %d\n", succBlock->getNumber());
+                comp()->log()->printf("\t\tAdding unvisited non-cold successor %d\n", succBlock->getNumber());
             addToOrderedBlockList(succBlock, _hotPathList, false);
         }
     }
@@ -1133,7 +1133,7 @@ void TR_OrderBlocks::peepHoleGotoBlock(TR::CFG *cfg, TR::Block *block, const cha
         madeAChange = false;
 
         if (trace())
-            comp()->getLogger()->prints("\t\tlooking for goto optimizations:\n");
+            comp()->log()->prints("\t\tlooking for goto optimizations:\n");
 
         TR::Block *destOfGoto = block->getSuccessors().front()->getTo()->asBlock();
         if (peepHoleGotoToGoto(cfg, block, gotoNode, destOfGoto, title, skippedGotoBlocks))
@@ -1236,7 +1236,7 @@ void TR_OrderBlocks::peepHoleBranchAroundSingleGoto(TR::CFG *cfg, TR::Block *blo
             if (blockStructure) {
                 if (blockStructure->isLoopInvariantBlock()) {
                     if (trace())
-                        comp()->getLogger()->printf(
+                        comp()->log()->printf(
                             "\t\tavoid redirecting a jump to a pre-header block %d for later SPMD optimization\n",
                             blockAfterFallThrough->getNumber());
                     doNotRemove = true;
@@ -1283,7 +1283,7 @@ void TR_OrderBlocks::peepHoleBranchAroundSingleGoto(TR::CFG *cfg, TR::Block *blo
 void TR_OrderBlocks::peepHoleBranchBlock(TR::CFG *cfg, TR::Block *block, const char *title)
 {
     TR_ASSERT(block->endsInBranch(), "peepHoleBranchBlock called on block that doesn't end in a branch!");
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::Node *branchNode = block->getLastRealTreeTop()->getNode();
     TR::TreeTop *takenEntry = branchNode->getBranchDestination();
     TR::Block *takenBlock = takenEntry->getNode()->getBlock();
@@ -1374,7 +1374,7 @@ void TR_OrderBlocks::removeEmptyBlock(TR::CFG *cfg, TR::Block *block, const char
     TR_ASSERT(block->getExceptionPredecessors().empty(),
         "removeEmpty block doesn't deal with empty catch blocks properly");
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     TR::LabelSymbol *entryLabel = NULL;
 
@@ -1527,14 +1527,14 @@ bool TR_OrderBlocks::lookForPeepHoleOpportunities(const char *title)
     TR::Block *lastBlock = NULL;
 
     if (trace())
-        comp()->getLogger()->prints("Looking for peephole opportunities:\n");
+        comp()->log()->prints("Looking for peephole opportunities:\n");
     while (tt != NULL) {
         TR_ASSERT(tt->getNode()->getOpCodeValue() == TR::BBStart, "tree walk reached something that isn't BBStart");
 
         TR::Block *block = tt->getNode()->getBlock();
         TR::TreeTop *nextBlockTT = block->getExit()->getNextTreeTop();
         if (trace())
-            comp()->getLogger()->printf("\tBlock %d:\n", block->getNumber());
+            comp()->log()->printf("\tBlock %d:\n", block->getNumber());
 
         bool blockStillExists = doPeepHoleBlockCorrections(block, title);
         tt = nextBlockTT;
@@ -1547,7 +1547,7 @@ bool TR_OrderBlocks::lookForPeepHoleOpportunities(const char *title)
 
 void TR_OrderBlocks::initialize()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     TR_Structure *rootStructure = cfg->getStructure();
 
@@ -1603,12 +1603,12 @@ void TR_OrderBlocks::insertBlocksToList()
         _numUnschedHotBlocks++;
 
     if (trace())
-        comp()->getLogger()->printf("\t_numUnschedHotBlocks %s %d\n", comp()->signature(), _numUnschedHotBlocks);
+        comp()->log()->printf("\t_numUnschedHotBlocks %s %d\n", comp()->signature(), _numUnschedHotBlocks);
 }
 
 void TR_OrderBlocks::generateNewOrder(TR_BlockList &newBlockOrder)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     ListElement<TR::CFGNode> *lastElementInOrder = NULL;
 
@@ -1776,7 +1776,7 @@ TR::Block *TR_BlockOrderingOptimization::insertGotoFallThroughBlock(TR::TreeTop 
     gotoBlock->asBlock()->inheritBlockInfo(prevBlock->asBlock(), prevBlock->asBlock()->isCold());
 
     if (trace())
-        comp()->getLogger()->printf("\tadded extra goto block_%d\n", gotoBlock->getNumber());
+        comp()->log()->printf("\tadded extra goto block_%d\n", gotoBlock->getNumber());
 
     return gotoBlock;
 }
@@ -1784,7 +1784,7 @@ TR::Block *TR_BlockOrderingOptimization::insertGotoFallThroughBlock(TR::TreeTop 
 // connect all the trees together according to the order of blocks in newBlockOrder
 void TR_BlockOrderingOptimization::connectTreesAccordingToOrder(TR_BlockList &newBlockOrder)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     TR::ResolvedMethodSymbol *methodSymbol = optimizer()->getMethodSymbol();
 
@@ -1925,7 +1925,7 @@ void TR_BlockOrderingOptimization::connectTreesAccordingToOrder(TR_BlockList &ne
 
 bool TR_OrderBlocks::doBlockExtension()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     bool blocksWereExtended = false;
     TR::TreeTop *tt = comp()->getStartTree();
     TR_ASSERT(tt->getNode()->getOpCodeValue() == TR::BBStart, "first tree isn't BBStart");
@@ -1979,7 +1979,7 @@ bool TR_OrderBlocks::doBlockExtension()
 
 void TR_OrderBlocks::doReordering()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // if (!performTransformation(comp(), "%s ORDER BLOCK: Reordering blocks to optimize fall-through paths\n",
     // OPT_DETAILS))
@@ -2038,14 +2038,14 @@ int32_t TR_OrderBlocks::perform()
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "Before ordering");
+        comp()->dumpMethodTrees(comp()->log(), "Before ordering");
 
     initialize();
 
     if (_doPeepHoleOptimizationsBefore) {
         lookForPeepHoleOpportunities(OPT_DETAILS);
         if (trace())
-            comp()->dumpMethodTrees(comp()->getLogger(), "After early peepholing");
+            comp()->dumpMethodTrees(comp()->log(), "After early peepholing");
     }
 
     if (_reorderBlocks && performTransformation(comp(), "%s Propagating coldness information\n", OPT_DETAILS))
@@ -2054,7 +2054,7 @@ int32_t TR_OrderBlocks::perform()
     // comp()->getFlowGraph()->setFrequencies();
 
     if (trace()) {
-        comp()->getLogger()->prints("Original ");
+        comp()->log()->prints("Original ");
         TR::ResolvedMethodSymbol *methodSymbol = optimizer()->getMethodSymbol();
         dumpBlockOrdering(methodSymbol->getFirstTreeTop());
     }
@@ -2068,18 +2068,18 @@ int32_t TR_OrderBlocks::perform()
     // predecessors
     if (_extendBlocks) {
         if (trace())
-            comp()->dumpMethodTrees(comp()->getLogger(), "Before extending blocks");
+            comp()->dumpMethodTrees(comp()->log(), "Before extending blocks");
         bool blocksWereExtended = doBlockExtension();
         if (trace())
-            comp()->dumpMethodTrees(comp()->getLogger(), "After extending blocks");
+            comp()->dumpMethodTrees(comp()->log(), "After extending blocks");
         if (blocksWereExtended)
             optimizer()->enableAllLocalOpts();
     }
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "After enableAllLocalOpts");
+        comp()->dumpMethodTrees(comp()->log(), "After enableAllLocalOpts");
 
     if (trace()) {
-        comp()->getLogger()->prints("Final ");
+        comp()->log()->prints("Final ");
         TR::ResolvedMethodSymbol *methodSymbol = optimizer()->getMethodSymbol();
         dumpBlockOrdering(methodSymbol->getFirstTreeTop());
     }
@@ -2174,7 +2174,7 @@ void checkOrderingConsistency(TR::Compilation *comp)
 
 void TR_BlockOrderingOptimization::dumpBlockOrdering(TR::TreeTop *tt, const char *title)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     log->printf("%s:\n", title ? title : "Block ordering");
     unsigned numberOfColdBlocks = 0;
@@ -2213,7 +2213,7 @@ void TR_BlockShuffling::traceBlocks(TR::Block **blocks)
     if (trace()) {
         const char *sep = "";
         for (int32_t i = 0; i < _numBlocks; i++) {
-            comp()->getLogger()->printf("%s%d", sep, blocks[i]->getNumber());
+            comp()->log()->printf("%s%d", sep, blocks[i]->getNumber());
             if ((i % BLOCKS_PER_LINE) == BLOCKS_PER_LINE - 1)
                 sep = "\n";
             else
@@ -2255,7 +2255,7 @@ int32_t TR_BlockShuffling::perform()
     //
     char *sequence = comp()->getOptions()->getBlockShufflingSequence();
     if (trace())
-        comp()->getLogger()->printf("Using shuffling sequence <%s>\n", sequence);
+        comp()->log()->printf("Using shuffling sequence <%s>\n", sequence);
     for (const char *c = sequence; *c; c++) {
         // Convention: let's use uppercase for randomizing shuffles, and
         // lowercase for deterministic ones.

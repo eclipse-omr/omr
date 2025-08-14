@@ -219,7 +219,7 @@ void TR::ValidateLivenessBoundaries::updateNodeState(TR::Node *node, TR::NodeSid
 
     if (TR::isILValidationLoggingEnabled(comp())) {
         if (!liveNodes.isEmpty()) {
-            OMR::Logger *log = comp()->getLogger();
+            OMR::Logger *log = comp()->log();
             log->prints("    -- Live nodes: {");
             const char *separator = "";
             for (TR::LiveNodeWindow::Iterator lnwi(liveNodes); lnwi.currentNode(); ++lnwi) {

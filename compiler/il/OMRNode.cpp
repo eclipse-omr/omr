@@ -3458,7 +3458,7 @@ void OMR::Node::printFullSubtree()
     TR_BitVector nodeChecklistBeforeDump(comp->getNodeCount(), comp->trMemory(), stackAlloc, notGrowable);
     comp->getDebug()->saveNodeChecklist(nodeChecklistBeforeDump);
     comp->getDebug()->clearNodeChecklist();
-    comp->getDebug()->print(comp->getLogger(), self(), 2, true);
+    comp->getDebug()->print(comp->log(), self(), 2, true);
     comp->getDebug()->restoreNodeChecklist(nodeChecklistBeforeDump);
 }
 

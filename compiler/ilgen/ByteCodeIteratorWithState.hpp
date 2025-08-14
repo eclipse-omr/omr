@@ -154,7 +154,7 @@ protected:
 
         for (ByteCode bc = this->first(); bc != BCunknown; bc = this->next()) {
             if (_printByteCodes)
-                this->printByteCode(comp->getLogger());
+                this->printByteCode(comp->log());
 
             int32_t i = this->bcIndex();
             if (this->isBranch())
@@ -168,7 +168,7 @@ protected:
     virtual void aboutToFindBranchTargets()
     {
         if (_printByteCodes)
-            this->printByteCodePrologue(this->comp()->getLogger());
+            this->printByteCodePrologue(this->comp()->log());
     }
 
     /// analyze any bytecodes that don't look like branches but represent control flows and suggest basic block
@@ -179,7 +179,7 @@ protected:
     virtual void finishedFindingBranchTargets()
     {
         if (_printByteCodes)
-            this->printByteCodeEpilogue(this->comp()->getLogger());
+            this->printByteCodeEpilogue(this->comp()->log());
     }
 
     /// update state when an exception range is identified
@@ -191,7 +191,7 @@ protected:
         TR::Compilation *comp = this->comp();
 
         if (_printByteCodes)
-            comp->getLogger()->printf("ExceptionRange: start [%8x] end [%8x] handler [%8x] type [%8x] \n", start, end,
+            comp->log()->printf("ExceptionRange: start [%8x] end [%8x] handler [%8x] type [%8x] \n", start, end,
                 handler, type);
 
         genBBStart(start);
