@@ -80,6 +80,7 @@ OMR::X86::Linkage::Linkage(TR::CodeGenerator *cg)
 
 void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
 {
+    TR::Compilation *comp = self()->comp();
     ListIterator<TR::AutomaticSymbol> automaticIterator(&method->getAutomaticList());
     TR::AutomaticSymbol *localCursor = automaticIterator.getFirst();
     const TR::X86LinkageProperties &linkage = self()->getProperties();
@@ -160,8 +161,8 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
                     isFirst = true;
 #endif
                 } else {
-                    performSharing = performTransformation(self()->comp(),
-                        "O^O COMPACT LOCALS: Sharing slot for local %p\n", localCursor);
+                    performSharing
+                        = performTransformation(comp, "O^O COMPACT LOCALS: Sharing slot for local %p\n", localCursor);
 
                     if (performSharing)
                         localCursor->setOffset(colourToOffsetMap[colour]);
@@ -177,7 +178,7 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
 #ifdef DEBUG
                 if (debug("reportCL")) {
                     diagnostic("%s ref local %p (colour=%d): %s\n", isFirst ? "First" : "Shared", localCursor, colour,
-                        self()->comp()->signature());
+                        comp->signature());
                     isFirst = false;
                 }
 #endif
@@ -202,9 +203,9 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
             int32_t newOffset = stackIndex + pointerSize * (localCursor->getGCMapIndex() - firstLocalGCIndex);
 
             if (self()->cg()->comp()->getOption(TR_TraceRA))
-                traceMsg(self()->comp(), "\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
-                    self()->comp()->getDebug()->getName(localCursor), localCursor->getGCMapIndex(),
-                    localCursor->getOffset(), newOffset);
+                traceMsg(comp, "\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
+                    comp->getDebug()->getName(localCursor), localCursor->getGCMapIndex(), localCursor->getOffset(),
+                    newOffset);
 
             localCursor->setOffset(newOffset);
 
@@ -242,7 +243,7 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
 #ifdef DEBUG
                 if (debug("reportCL")) {
                     diagnostic("%s local %p (colour=%d): %s\n", isFirst ? "First" : "Shared", localCursor, colour,
-                        self()->comp()->signature());
+                        comp->signature());
                     isFirst = false;
                 }
 #endif
@@ -267,7 +268,7 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
 
     method->setScalarTempSlots((lowGCOffset - stackIndex) >> scalarTempShift);
 
-    if (self()->comp()->getMethodSymbol()->getLinkageConvention() != TR_System)
+    if (comp->getMethodSymbol()->getLinkageConvention() != TR_System)
         self()->mapIncomingParms(method);
     else
         TR::toX86SystemLinkage(self()->cg()->getLinkage())->mapIncomingParms(method, stackIndex);
@@ -287,19 +288,21 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
 #ifdef DEBUG
         diagnostic("\n**** Mapped locals size: %d (orig map size=%d, shared size=%d)  %s\n",
             (linkage.getOffsetToFirstLocal() - stackIndex), origSize,
-            origSize - (linkage.getOffsetToFirstLocal() - stackIndex), self()->comp()->signature());
+            origSize - (linkage.getOffsetToFirstLocal() - stackIndex), comp->signature());
 
         accumMappedSize += (linkage.getOffsetToFirstLocal() - stackIndex);
         accumOrigSize += origSize;
 
         diagnostic("\n**** Accumulated totals: mapped size=%d, shared size=%d, original size=%d after %s\n",
-            accumMappedSize, accumOrigSize - accumMappedSize, accumOrigSize, self()->comp()->signature());
+            accumMappedSize, accumOrigSize - accumMappedSize, accumOrigSize, comp->signature());
 #endif
     }
 }
 
 void OMR::X86::Linkage::mapStack(TR::ResolvedMethodSymbol *method)
 {
+    TR::Compilation *comp = self()->comp();
+
     if (self()->cg()->getLocalsIG() && self()->cg()->getSupportsCompactedLocals()) {
         self()->mapCompactedStack(method);
         return;
@@ -385,7 +388,7 @@ void OMR::X86::Linkage::mapStack(TR::ResolvedMethodSymbol *method)
 
     method->setScalarTempSlots((lowGCOffset - stackIndex) >> scalarTempShift);
 
-    if (self()->comp()->getMethodSymbol()->getLinkageConvention() != TR_System)
+    if (comp->getMethodSymbol()->getLinkageConvention() != TR_System)
         self()->mapIncomingParms(method);
     else
         TR::toX86SystemLinkage(self()->cg()->getLinkage())->mapIncomingParms(method, stackIndex);
@@ -398,13 +401,13 @@ void OMR::X86::Linkage::mapStack(TR::ResolvedMethodSymbol *method)
 #ifdef DEBUG
     if (debug("reportCL")) {
         diagnostic("\n**** Mapped locals size: %d  %s\n", linkage.getOffsetToFirstLocal() - stackIndex,
-            self()->comp()->signature());
+            comp->signature());
 
         accumMappedSize += (linkage.getOffsetToFirstLocal() - stackIndex);
         accumOrigSize += (linkage.getOffsetToFirstLocal() - stackIndex);
 
         diagnostic("\n**** Accumulated totals: mapped size=%d, shared size=%d, original size=%d after %s\n",
-            accumMappedSize, accumOrigSize - accumMappedSize, accumOrigSize, self()->comp()->signature());
+            accumMappedSize, accumOrigSize - accumMappedSize, accumOrigSize, comp->signature());
     }
 #endif
 }
