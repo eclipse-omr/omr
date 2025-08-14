@@ -4444,6 +4444,11 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
             return (et == TR::Double && opcode.getVectorSourceDataType().getVectorElementType() == TR::Int64);
         case TR::vcast:
             return true;
+        case TR::mmAnyTrue:
+        case TR::mmAllTrue:
+        case TR::mAnyTrue:
+        case TR::mAllTrue:
+            return true;
         default:
             return false;
     }
