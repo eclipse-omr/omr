@@ -75,17 +75,17 @@ bool TR_StripMiner::shouldPerform()
     // FIXME: only enabled when creating arraylets (for now)
     if (!comp()->generateArraylets()) {
         if (trace())
-            traceMsg(comp(), "Not enabled in non-rtj mode.\n");
+            comp()->getLogger()->prints("Not enabled in non-rtj mode.\n");
         return false;
     } else if (comp()->getOption(TR_DisableStripMining)) {
         if (trace())
-            traceMsg(comp(), "Option is not enabled -- returning from strip mining.\n");
+            comp()->getLogger()->prints("Option is not enabled -- returning from strip mining.\n");
         return false;
     }
 
     if (!comp()->mayHaveLoops()) {
         if (trace())
-            traceMsg(comp(), "Method does not have loops -- returning from strip mining.\n");
+            comp()->getLogger()->prints("Method does not have loops -- returning from strip mining.\n");
         return false;
     }
 
@@ -95,7 +95,7 @@ bool TR_StripMiner::shouldPerform()
 int32_t TR_StripMiner::perform()
 {
     if (trace())
-        traceMsg(comp(), "Processing method: %s\n", comp()->signature());
+        comp()->getLogger()->printf("Processing method: %s\n", comp()->signature());
 
     _cfg = comp()->getFlowGraph();
     _rootStructure = _cfg->getStructure();
@@ -108,7 +108,7 @@ int32_t TR_StripMiner::perform()
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     if (trace()) {
-        traceMsg(comp(), "Starting StripMining\n");
+        comp()->getLogger()->prints("Starting StripMining\n");
         comp()->dumpMethodTrees(comp()->getLogger(), "Before strip mining");
     }
 
@@ -154,6 +154,7 @@ int32_t TR_StripMiner::perform()
 
 void TR_StripMiner::collectLoops(TR_Structure *str)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR_RegionStructure *region = str->asRegion();
 
     if (region == NULL)
@@ -165,13 +166,13 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
 
     if (region->isNaturalLoop()) {
         if (trace())
-            traceMsg(comp(), "<analyzeLoops loop=%d addr=%p>\n", region->getNumber(), region);
+            log->printf("<analyzeLoops loop=%d addr=%p>\n", region->getNumber(), region);
         // Check for loop pre-header
         //
         TR::Block *preHeader = getLoopPreHeader(str);
         if (preHeader == NULL) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> no pre-header\n", region->getNumber());
+                log->printf("\tReject loop %d ==> no pre-header\n", region->getNumber());
             return;
         }
 
@@ -180,7 +181,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         TR::Block *loopTest = getLoopTest(str, preHeader);
         if (loopTest == NULL) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> no loop test block\n", region->getNumber());
+                log->printf("\tReject loop %d ==> no loop test block\n", region->getNumber());
             return;
         }
 
@@ -189,7 +190,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         TR_PrimaryInductionVariable *piv = region->getPrimaryInductionVariable();
         if (piv == NULL) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> no primary induction variable\n", region->getNumber());
+                log->printf("\tReject loop %d ==> no primary induction variable\n", region->getNumber());
             return;
         }
 
@@ -199,7 +200,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         //
         if (region->getEntryBlock()->getPredecessors().size() != 2) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> more than 1 back edge\n", region->getNumber());
+                log->printf("\tReject loop %d ==> more than 1 back edge\n", region->getNumber());
             return;
         }
 
@@ -212,14 +213,14 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
             if (b->hasExceptionPredecessors()) // catch
             {
                 if (trace())
-                    traceMsg(comp(), "\tReject loop %d ==> block_%d has exception predecessors\n", region->getNumber(),
+                    log->printf("\tReject loop %d ==> block_%d has exception predecessors\n", region->getNumber(),
                         b->getNumber());
                 return;
             }
             if (b->hasExceptionSuccessors()) // try
             {
                 if (trace())
-                    traceMsg(comp(), "\tReject loop %d ==> block_%d has exception successors\n", region->getNumber(),
+                    log->printf("\tReject loop %d ==> block_%d has exception successors\n", region->getNumber(),
                         b->getNumber());
                 return;
             }
@@ -279,7 +280,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
 
         if (checkIfIncrementalIncreasesOfPIV(li)) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> multiple store of induction variable were found\n",
+                log->printf("\tReject loop %d ==> multiple store of induction variable were found\n",
                     region->getNumber());
             return;
         }
@@ -289,10 +290,10 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         if (comp()->generateArraylets() && li->_arrayDataSize <= 0) {
             if (trace()) {
                 if (li->_arrayDataSize < 0)
-                    traceMsg(comp(), "\tReject loop %d ==> array accesses of more than one data size\n",
+                    log->printf("\tReject loop %d ==> array accesses of more than one data size\n",
                         region->getNumber());
                 else
-                    traceMsg(comp(), "\tReject loop %d ==> no array accesses found\n", region->getNumber());
+                    log->printf("\tReject loop %d ==> no array accesses found\n", region->getNumber());
             }
             return;
         }
@@ -311,7 +312,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
             || ((li->_increasing && ((li->_offset & (li->_stripLen - 1)) != 0))
                 || (!li->_increasing && (li->_offset & (li->_stripLen - 1)) != li->_stripLen - 1))) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> needs a offsetLoop - cannot deal with this now\n",
+                log->printf("\tReject loop %d ==> needs a offsetLoop - cannot deal with this now\n",
                     region->getNumber());
             // printf("reject %s: need offset loop %d\n",comp()->signature(),li->_offset);fflush(stdout);
             return;
@@ -323,11 +324,11 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         //
         int32_t iterCount = piv->getIterationCount();
         if (trace())
-            traceMsg(comp(), "\titerationCount = %d stripLength = %d\n", iterCount, li->_stripLen);
+            log->printf("\titerationCount = %d stripLength = %d\n", iterCount, li->_stripLen);
         if (iterCount != -1) {
             if (iterCount < li->_stripLen) {
                 if (trace())
-                    traceMsg(comp(), "\tReject loop %d ==> iteration count is less than the strip length\n",
+                    log->printf("\tReject loop %d ==> iteration count is less than the strip length\n",
                         region->getNumber());
                 return;
             }
@@ -337,7 +338,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
 
         if ((li->_preOffset != 0) || (li->_postOffset != 0)) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> pre offset = %d, post offsets = %d\n", region->getNumber(),
+                log->printf("\tReject loop %d ==> pre offset = %d, post offsets = %d\n", region->getNumber(),
                     li->_preOffset, li->_postOffset);
             // printf("reject %s: pre %d post %d offset\n",comp()->signature(),li->_preOffset,
             // li->_postOffset);fflush(stdout);
@@ -348,7 +349,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         //
         if (li->_preOffset + li->_postOffset >= li->_stripLen) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> pre offset = %d, post offsets = %d, strip length = %d\n",
+                log->printf("\tReject loop %d ==> pre offset = %d, post offsets = %d, strip length = %d\n",
                     region->getNumber(), li->_preOffset, li->_postOffset, li->_stripLen);
             return;
         }
@@ -357,7 +358,7 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         //
         if (!li->_canMoveAsyncCheck) {
             if (trace())
-                traceMsg(comp(), "\tReject loop %d ==> calls present\n", region->getNumber());
+                log->printf("\tReject loop %d ==> calls present\n", region->getNumber());
             return;
         }
 
@@ -365,17 +366,17 @@ void TR_StripMiner::collectLoops(TR_Structure *str)
         //
         _loopInfos.add(li);
         if (trace()) {
-            traceMsg(comp(), "\tSuccess => adding candidate loop %d to the queue\n", region->getNumber());
-            traceMsg(comp(), "\t\tpre-header = %d, loop test = %d, primary induction variable = %d\n",
+            log->printf("\tSuccess => adding candidate loop %d to the queue\n", region->getNumber());
+            log->printf("\t\tpre-header = %d, loop test = %d, primary induction variable = %d\n",
                 preHeader->getNumber(), loopTest->getNumber(), piv->getSymRef()->getReferenceNumber());
-            traceMsg(comp(), "\t\tpre-offset = %d, post-offset = %d, offset = %d, strip length = %d\n", li->_preOffset,
+            log->printf("\t\tpre-offset = %d, post-offset = %d, offset = %d, strip length = %d\n", li->_preOffset,
                 li->_postOffset, li->_offset, li->_stripLen);
-            traceMsg(comp(), "\t\tarray data size = %d, step = %d need-offset-loop = %d\n", li->_arrayDataSize,
+            log->printf("\t\tarray data size = %d, step = %d need-offset-loop = %d\n", li->_arrayDataSize,
                 piv->getDeltaOnBackEdge(), (li->_offset < 0));
         }
     } else {
         if (trace())
-            traceMsg(comp(), "\tReject region %d ==> not a natural loop\n", region->getNumber());
+            log->printf("\tReject region %d ==> not a natural loop\n", region->getNumber());
     }
 }
 
@@ -457,7 +458,7 @@ void TR_StripMiner::transformLoops()
                 block->setFrequency((int32_t)((float)block->getFrequency() / 10));
 
             if (trace())
-                traceMsg(comp(), "Done transforming loop %d\n", li->_regionNum);
+                comp()->getLogger()->printf("Done transforming loop %d\n", li->_regionNum);
             // printf("\n--Strip Mining in -- %s start %d post %d pre %d increasing %d\n", comp()->signature(),
             // li->_offset, li->_postOffset, li->_preOffset, li->_increasing);
         }
@@ -466,6 +467,7 @@ void TR_StripMiner::transformLoops()
 
 void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR::Block **blockMapper = NULL;
     bool isMainOrResidual = true;
     switch (type) {
@@ -484,7 +486,7 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
 
             blockMapper = _offsetBlockMapper;
             if (trace())
-                traceMsg(comp(), "\tcreating start offset loop: loop %d...\n", li->_regionNum);
+                log->printf("\tcreating start offset loop: loop %d...\n", li->_regionNum);
             li->_needOffsetLoop = true;
             isMainOrResidual = false;
             break;
@@ -493,37 +495,37 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
                 return;
             blockMapper = _preBlockMapper;
             if (trace())
-                traceMsg(comp(), "\tcreating pre loop: loop %d...\n", li->_regionNum);
+                log->printf("\tcreating pre loop: loop %d...\n", li->_regionNum);
             isMainOrResidual = false;
             break;
         case mainLoop:
             blockMapper = _mainBlockMapper;
             if (trace())
-                traceMsg(comp(), "\tcreating main loop: loop %d...\n", li->_regionNum);
+                log->printf("\tcreating main loop: loop %d...\n", li->_regionNum);
             break;
         case postLoop:
             if (li->_postOffset <= 0)
                 return;
             blockMapper = _postBlockMapper;
             if (trace())
-                traceMsg(comp(), "\tcreating post loop: loop %d...\n", li->_regionNum);
+                log->printf("\tcreating post loop: loop %d...\n", li->_regionNum);
             isMainOrResidual = false;
             break;
         case residualLoop:
             blockMapper = _residualBlockMapper;
             if (trace())
-                traceMsg(comp(), "\tcreating residual loop: loop %d...\n", li->_regionNum);
+                log->printf("\tcreating residual loop: loop %d...\n", li->_regionNum);
             break;
         default:
             if (trace())
-                traceMsg(comp(), "\tcannot recognize loop type: %d, abort duplication...\n", type);
+                log->printf("\tcannot recognize loop type: %d, abort duplication...\n", type);
             return;
     }
 
     // used for debugging the start position loop
     static char *pEnv = feGetEnv("TR_noStripMineStart");
     if (pEnv && (type == offsetLoop && li->_needOffsetLoop)) {
-        traceMsg(comp(), "loop %d needs a start offset loop %d\n", li->_regionNum, li->_needOffsetLoop);
+        log->printf("loop %d needs a start offset loop %d\n", li->_regionNum, li->_needOffsetLoop);
         li->_needOffsetLoop = false;
         return;
     }
@@ -554,7 +556,7 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
 
             /*if (trace())
                {
-               traceMsg(comp(), "Cloned block (%d): %d\n",
+               log->printf("Cloned block (%d): %d\n",
                      block->getNumber(), blockMapper[block->getNumber()]->getNumber());
                }
              */
@@ -566,13 +568,12 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
     for (block = bIt.getFirst(); block; block = bIt.getNext()) {
         TR::Block *clonedBlock = blockMapper[block->getNumber()];
         if (trace())
-            traceMsg(comp(), "\tprocessing edges for: block [%d] => cloned block [%d]\n", block->getNumber(),
+            log->printf("\tprocessing edges for: block [%d] => cloned block [%d]\n", block->getNumber(),
                 clonedBlock->getNumber());
 
         if (block == li->_loopTest && !isMainOrResidual) {
             if (trace())
-                traceMsg(comp(), "\tskipping edge from non-main non-residual loop test block [%d]\n",
-                    block->getNumber());
+                log->printf("\tskipping edge from non-main non-residual loop test block [%d]\n", block->getNumber());
             continue;
         }
 
@@ -582,23 +583,24 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
             TR::Block *clonedDest = blockMapper[dest->getNumber()];
 
             if (trace())
-                traceMsg(comp(), "\t   for edge: [%d] => [%d]\n", clonedBlock->getNumber(),
+                log->printf("\t   for edge: [%d] => [%d]\n", clonedBlock->getNumber(),
                     clonedDest ? clonedDest->getNumber() : dest->getNumber());
 
             if (clonedDest)
                 redirect(clonedBlock, dest, clonedDest);
             else if (trace())
-                traceMsg(comp(), "\t   skipping exit edge to [%d]\n", dest->getNumber());
+                log->printf("\t   skipping exit edge to [%d]\n", dest->getNumber());
         }
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees(comp()->getLogger(), "stripMining: trees after loop duplication");
+        comp()->dumpMethodTrees(log, "stripMining: trees after loop duplication");
     }
 }
 
 void TR_StripMiner::transformLoop(LoopInfo *li)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR_RegionStructure *loop = li->_region;
     TR::Block *ph = li->_preHeader;
     TR::TreeTop *phEntry = ph->getEntry();
@@ -625,7 +627,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
         intptr_t limit = limitNode->getType().isInt32() ? limitNode->getInt() : limitNode->getLongInt();
         if ((li->_increasing && limit < limit + li->_stripLen) || (!li->_increasing && limit > limit - li->_stripLen)) {
             if (trace())
-                traceMsg(comp(), "No overflow test for %s loop %d: limit = %ld, stripLength = %ld\n",
+                log->printf("No overflow test for %s loop %d: limit = %ld, stripLength = %ld\n",
                     li->_increasing ? "increasing" : "decreasing", loop->getNumber(), limit, li->_stripLen);
             testOverflow = false;
         }
@@ -656,17 +658,17 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
         ifOverBlock->getExit()->setNextTreeTop(NULL);
         _endTree = ifOverBlock->getExit();
         if (trace())
-            traceMsg(comp(), "\tcreating overflow test [%p] in block [%d]\n", ifOverNode, ifOverBlock->getNumber());
+            log->printf("\tcreating overflow test [%p] in block [%d]\n", ifOverNode, ifOverBlock->getNumber());
 
         // Point the original loop pre-header's predecessor to the if over block
         if (trace())
-            traceMsg(comp(), "\tfixing predecessor edges of original loop pre-header [%d] :\n", ph->getNumber());
+            log->printf("\tfixing predecessor edges of original loop pre-header [%d] :\n", ph->getNumber());
 
         for (auto edge = ph->getPredecessors().begin(); edge != ph->getPredecessors().end(); ++edge) {
             TR::Block *fromBlock = toBlock((*edge)->getFrom());
 
             if (trace())
-                traceMsg(comp(), "\t   for edge: [%d] => [%d]\n", fromBlock->getNumber(), ph->getNumber());
+                log->printf("\t   for edge: [%d] => [%d]\n", fromBlock->getNumber(), ph->getNumber());
 
             redirect(fromBlock, ph, ifOverBlock);
             li->_edgesToRemove.add(*edge);
@@ -675,7 +677,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
         // Add an edge: if over -> pre-header
         //
         if (trace())
-            traceMsg(comp(), "\t   adding edge: overflow test block [%d] => original pre-header [%d]\n",
+            log->printf("\t   adding edge: overflow test block [%d] => original pre-header [%d]\n",
                 ifOverBlock->getNumber(), ph->getNumber());
         _cfg->addEdge(ifOverBlock, ph);
     }
@@ -699,23 +701,22 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
             TR::Block *gotoBlock = createGotoBlock(ifOverBlock, offsetLoopPh);
             gotoBlock->setFrequency((int32_t)((float)gotoBlock->getFrequency() / 10));
             if (trace()) {
-                traceMsg(comp(),
-                    "\t   adding edges: overflow test block [%d] => goto [%d]; "
-                    "goto [%d] => start position loop [%d]\n",
+                log->printf("\t   adding edges: overflow test block [%d] => goto [%d]; "
+                            "goto [%d] => start position loop [%d]\n",
                     ifOverBlock->getNumber(), gotoBlock->getNumber(), gotoBlock->getNumber(),
                     offsetLoopPh->getNumber());
             }
         } else {
             // Point the original loop pre-header's predecessor to offsetLoop
             if (trace())
-                traceMsg(comp(), "\tfixing edges: preds of pre-header [%d] -> offset loop [%d]\n", ph->getNumber(),
+                log->printf("\tfixing edges: preds of pre-header [%d] -> offset loop [%d]\n", ph->getNumber(),
                     offsetLoopPh->getNumber());
 
             for (auto edge = ph->getPredecessors().begin(); edge != ph->getPredecessors().end(); ++edge) {
                 TR::Block *fromBlock = toBlock((*edge)->getFrom());
 
                 if (trace())
-                    traceMsg(comp(), "\t   for edge: [%d] => [%d]\n", fromBlock->getNumber(), ph->getNumber());
+                    log->printf("\t   for edge: [%d] => [%d]\n", fromBlock->getNumber(), ph->getNumber());
 
                 redirect(fromBlock, ph, offsetLoopPh);
                 li->_edgesToRemove.add(*edge);
@@ -726,20 +727,20 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
             // Add an edge: if over -> outer header
             //
             if (trace())
-                traceMsg(comp(), "\t   adding edge: overflow test block [%d] => outer pre-header [%d]\n",
+                log->printf("\t   adding edge: overflow test block [%d] => outer pre-header [%d]\n",
                     ifOverBlock->getNumber(), outerHeader->getNumber());
             _cfg->addEdge(ifOverBlock, outerHeader);
         } else {
             // Point the original loop pre-header's predecessor to outer header
             if (trace())
-                traceMsg(comp(), "\tfixing edges: preds of pre-header [%d] -> outer header [%d]\n", ph->getNumber(),
+                log->printf("\tfixing edges: preds of pre-header [%d] -> outer header [%d]\n", ph->getNumber(),
                     outerHeader->getNumber());
 
             for (auto edge = ph->getPredecessors().begin(); edge != ph->getPredecessors().end(); ++edge) {
                 TR::Block *fromBlock = toBlock((*edge)->getFrom());
 
                 if (trace())
-                    traceMsg(comp(), "\t   for edge: [%d] => [%d]\n", fromBlock->getNumber(), ph->getNumber());
+                    log->printf("\t   for edge: [%d] => [%d]\n", fromBlock->getNumber(), ph->getNumber());
 
                 redirect(fromBlock, ph, outerHeader);
                 li->_edgesToRemove.add(*edge);
@@ -752,7 +753,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
     ///////////////////////////////////////
 
     if (trace())
-        traceMsg(comp(), "<stripMining loop=%d outer header=%d>\n", li->_regionNum, outerHeader->getNumber());
+        log->printf("<stripMining loop=%d outer header=%d>\n", li->_regionNum, outerHeader->getNumber());
 
     TR::Block *branchBlock = stripMineLoop(li, outerHeader);
 
@@ -768,9 +769,8 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
         TR::Block *gotoBlock = createGotoBlock(outerHeader, pre);
         gotoBlock->setFrequency((int32_t)((float)gotoBlock->getFrequency() / 10));
         if (trace()) {
-            traceMsg(comp(),
-                "\t   adding edges: outer header [%d] => goto [%d]; "
-                "goto [%d] => preloop pre-header [%d]\n",
+            log->printf("\t   adding edges: outer header [%d] => goto [%d]; "
+                        "goto [%d] => preloop pre-header [%d]\n",
                 outerHeader->getNumber(), gotoBlock->getNumber(), gotoBlock->getNumber(), pre->getNumber());
         }
 
@@ -779,7 +779,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
 
         /* Fix the edges */
         if (trace())
-            traceMsg(comp(), "\t   fixing preloop loop test successor edges:\n");
+            log->prints("\t   fixing preloop loop test successor edges:\n");
 
         for (auto edge = lt->getSuccessors().begin(); edge != lt->getSuccessors().end(); ++edge) {
             TR::Block *fromBlock = _preBlockMapper[(*edge)->getFrom()->getNumber()];
@@ -803,9 +803,8 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
         /* Create a goto block to the cloned loop's pre-header */
         TR::Block *gotoBlock = createGotoBlock(outerHeader, branchBlock);
         if (trace())
-            traceMsg(comp(),
-                "\t   adding edges: outer header [%d] => goto [%d]; "
-                "goto [%d] => branch [%d]\n",
+            log->printf("\t   adding edges: outer header [%d] => goto [%d]; "
+                        "goto [%d] => branch [%d]\n",
                 outerHeader->getNumber(), gotoBlock->getNumber(), gotoBlock->getNumber(), branchBlock->getNumber());
     }
 
@@ -819,7 +818,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
 
         /* Fix the edges */
         if (trace())
-            traceMsg(comp(), "\t   fixing postloop loop test successor edges:\n");
+            log->prints("\t   fixing postloop loop test successor edges:\n");
 
         for (auto edge = lt->getSuccessors().begin(); edge != lt->getSuccessors().end(); ++edge) {
             TR::Block *fromBlock = _postBlockMapper[(*edge)->getFrom()->getNumber()];
@@ -847,17 +846,18 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
     for (edge = eIt.getFirst(); edge; edge = eIt.getNext()) {
         _cfg->removeEdge(edge);
         if (trace())
-            traceMsg(comp(), "\t   removing edge: [%d] => [%d]\n", edge->getFrom()->getNumber(),
-                edge->getTo()->getNumber());
+            log->printf("\t   removing edge: [%d] => [%d]\n", edge->getFrom()->getNumber(), edge->getTo()->getNumber());
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees(comp()->getLogger(), "stripMining: trees after loop transformation");
+        comp()->dumpMethodTrees(log, "stripMining: trees after loop transformation");
     }
 }
 
 TR::Block *TR_StripMiner::createStartOffsetLoop(LoopInfo *li, TR::Block *outerHeader)
 {
+    OMR::Logger *log = comp()->getLogger();
+
     // create a new block which contains the new loop test
     // (i & stripLen) > 0
     // this positions the start value of the iv at the beginning of an arraylet
@@ -916,8 +916,7 @@ TR::Block *TR_StripMiner::createStartOffsetLoop(LoopInfo *li, TR::Block *outerHe
     // add an edge from the loop-test block to the exit
     //
     if (trace())
-        traceMsg(comp(), "\t   adding edge: test block [%d] => exit [%d]\n", ltBlock->getNumber(),
-            origExit->getNumber());
+        log->printf("\t   adding edge: test block [%d] => exit [%d]\n", ltBlock->getNumber(), origExit->getNumber());
     ///_cfg->addEdge(ltBlock, origExit);
     redirect(ltBlock, li->_branchToExit ? origExit : NULL, origExit);
 
@@ -935,17 +934,18 @@ TR::Block *TR_StripMiner::createStartOffsetLoop(LoopInfo *li, TR::Block *outerHe
     //
     newLtNode->setBranchDestination(outerHeader->getEntry());
     if (trace())
-        traceMsg(comp(), "\t   adding edge: new test block [%d] => outer pre-header [%d]\n", newLtBlock->getNumber(),
+        log->printf("\t   adding edge: new test block [%d] => outer pre-header [%d]\n", newLtBlock->getNumber(),
             outerHeader->getNumber());
     _cfg->addEdge(newLtBlock, outerHeader);
     if (trace())
-        traceMsg(comp(), "\t created a new block [%d] to position at arraylet with test [%p]\n",
-            newLtBlock->getNumber(), newLtNode);
+        log->printf("\t created a new block [%d] to position at arraylet with test [%p]\n", newLtBlock->getNumber(),
+            newLtNode);
     return newLtBlock;
 }
 
 TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR_RegionStructure *loop = li->_region;
     TR::Block *ph = li->_preHeader;
     TR::TreeTop *phEntry = ph->getEntry();
@@ -1021,21 +1021,19 @@ TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
     branchBlock->getExit()->setNextTreeTop(NULL);
     _endTree = branchBlock->getExit();
     if (trace())
-        traceMsg(comp(), "\tcreating striplength test [%p] in outer loop block [%d]\n", ifNode,
-            branchBlock->getNumber());
+        log->printf("\tcreating striplength test [%p] in outer loop block [%d]\n", ifNode, branchBlock->getNumber());
 
     /* Add an edge: if -> main pre-header */
     if (trace())
-        traceMsg(comp(), "\t   adding edge: branch [%d] => main pre-header [%d]\n", branchBlock->getNumber(),
+        log->printf("\t   adding edge: branch [%d] => main pre-header [%d]\n", branchBlock->getNumber(),
             mainPh->getNumber());
     _cfg->addEdge(branchBlock, mainPh);
 
     /* Create a goto block to the residual pre-header */
     TR::Block *gotoBlock = createGotoBlock(branchBlock, residualPh);
     if (trace()) {
-        traceMsg(comp(),
-            "\t   adding edges: branch [%d] => goto [%d]; "
-            "goto [%d] => residual pre-header [%d]\n",
+        log->printf("\t   adding edges: branch [%d] => goto [%d]; "
+                    "goto [%d] => residual pre-header [%d]\n",
             branchBlock->getNumber(), gotoBlock->getNumber(), gotoBlock->getNumber(), residualPh->getNumber());
     }
 
@@ -1097,7 +1095,7 @@ TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
     _endTree = ifContinueBlock->getExit();
 
     if (trace())
-        traceMsg(comp(), "\t   created a new block [%d] to store i = i + j and test if i < N\n",
+        log->printf("\t   created a new block [%d] to store i = i + j and test if i < N\n",
             ifContinueBlock->getNumber());
 
     ///////////////////////////////////////////////////
@@ -1146,11 +1144,10 @@ TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
     mainLtTree->getNode()->getChild(1)->recursivelyDecReferenceCount();
     mainLtTree->getNode()->setAndIncChild(1, constNode);
     if (trace())
-        traceMsg(comp(), "\t   changed main loop test [%p] to j < (strip length - pre - post)\n",
-            mainLtTree->getNode());
+        log->printf("\t   changed main loop test [%p] to j < (strip length - pre - post)\n", mainLtTree->getNode());
 
     /* For both main and residual loops, replace old induction variable in the inner loop */
-    traceMsg(comp(), "\t   replacing original induction variable symRef [%d]\n",
+    log->printf("\t   replacing original induction variable symRef [%d]\n",
         li->_piv->getSymRef()->getReferenceNumber());
     examineLoop(li, mainLoop, true);
     examineLoop(li, residualLoop, true);
@@ -1187,7 +1184,7 @@ TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
     residualLtTree->getNode()->setAndIncChild(1, iAddNode);
 
     if (trace())
-        traceMsg(comp(), "\t   changed residual loop test [%p] to j < (N - i)\n", residualLtTree->getNode());
+        log->printf("\t   changed residual loop test [%p] to j < (N - i)\n", residualLtTree->getNode());
 
     // fixing exit edges other than loop test
     // For each block with exit edges, fix each exit edge.
@@ -1247,7 +1244,7 @@ TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
     if (li->_canMoveAsyncCheck) {
         if (li->_asyncTree != NULL) {
             if (trace())
-                traceMsg(comp(), "\t   moved asynccheck tree [%p] to block [%d]\n", li->_asyncTree,
+                log->printf("\t   moved asynccheck tree [%p] to block [%d]\n", li->_asyncTree,
                     outerHeader->getNumber());
             li->_asyncTree->getPrevTreeTop()->join(li->_asyncTree->getNextTreeTop());
             li->_asyncTree->join(outerHeader->getEntry()->getNextTreeTop());
@@ -1289,6 +1286,7 @@ TR::Block *TR_StripMiner::createGotoBlock(TR::Block *source, TR::Block *dest)
 
 void TR_StripMiner::redirect(TR::Block *source, TR::Block *oldDest, TR::Block *newDest)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR::Node *branchNode = source->getExit()->getPrevRealTreeTop()->getNode();
     bool found = false;
 
@@ -1296,7 +1294,7 @@ void TR_StripMiner::redirect(TR::Block *source, TR::Block *oldDest, TR::Block *n
         for (auto i = branchNode->getCaseIndexUpperBound() - 1; i > 0; --i) {
             if (branchNode->getChild(i)->getBranchDestination()->getNode()->getBlock() == oldDest) {
                 if (trace())
-                    traceMsg(comp(), "\t      fixing switch statement: [%d] => [%d]\n", source->getNumber(),
+                    log->printf("\t      fixing switch statement: [%d] => [%d]\n", source->getNumber(),
                         newDest->getNumber());
                 branchNode->getChild(i)->setBranchDestination(newDest->getEntry());
                 found = true;
@@ -1306,7 +1304,7 @@ void TR_StripMiner::redirect(TR::Block *source, TR::Block *oldDest, TR::Block *n
         for (auto i = 0; i < branchNode->getNumChildren() - 1; ++i) {
             if (branchNode->getChild(i)->getBranchDestination()->getNode()->getBlock() == oldDest) {
                 if (trace())
-                    traceMsg(comp(), "\t      fixing switch statement: [%d] => [%d]\n", source->getNumber(),
+                    log->printf("\t      fixing switch statement: [%d] => [%d]\n", source->getNumber(),
                         newDest->getNumber());
                 branchNode->getChild(i)->setBranchDestination(newDest->getEntry());
                 found = true;
@@ -1316,13 +1314,13 @@ void TR_StripMiner::redirect(TR::Block *source, TR::Block *oldDest, TR::Block *n
     } else if ((branchNode->getOpCode().isBranch() || branchNode->getOpCode().isGoto())
         && (branchNode->getBranchDestination()->getNode()->getBlock() == oldDest)) {
         if (trace())
-            traceMsg(comp(), "\t      fixing branch/goto statement: [%d] => [%d]\n", source->getNumber(),
+            log->printf("\t      fixing branch/goto statement: [%d] => [%d]\n", source->getNumber(),
                 newDest->getNumber());
         branchNode->setBranchDestination(newDest->getEntry());
         found = true;
     } else if (branchNode->getOpCode().isBranch() && source->getNextBlock() == newDest) {
         if (trace())
-            traceMsg(comp(), "\t      skipping edge: [%d] => [%d], already exist\n", source->getNumber(),
+            log->printf("\t      skipping edge: [%d] => [%d], already exist\n", source->getNumber(),
                 newDest->getNumber());
         found = true;
     }
@@ -1331,12 +1329,12 @@ void TR_StripMiner::redirect(TR::Block *source, TR::Block *oldDest, TR::Block *n
         /* Add an edge if the destination has been found and changed */
         _cfg->addEdge(source, newDest);
         if (trace())
-            traceMsg(comp(), "\t      adding edge: [%d] => [%d]\n", source->getNumber(), newDest->getNumber());
+            log->printf("\t      adding edge: [%d] => [%d]\n", source->getNumber(), newDest->getNumber());
     } else {
         /* Create a goto block to the new destination */
         TR::Block *gotoBlock = createGotoBlock(source, newDest);
         if (trace()) {
-            traceMsg(comp(), "\t      adding edges: source [%d] => goto [%d]; goto [%d] => new dest [%d]\n",
+            log->printf("\t      adding edges: source [%d] => goto [%d]; goto [%d] => new dest [%d]\n",
                 source->getNumber(), gotoBlock->getNumber(), gotoBlock->getNumber(), newDest->getNumber());
         }
     }
@@ -1360,7 +1358,7 @@ TR::Block *TR_StripMiner::createLoopTest(LoopInfo *li, TR_ClonedLoopType type)
 
     /* Adding temp = i + offset in pre-header */
     if (trace())
-        traceMsg(comp(), "\t Adding temp = i + %s-offset in block [%d]\n", type == preLoop ? "pre" : "post",
+        comp()->getLogger()->printf("\t Adding temp = i + %s-offset in block [%d]\n", type == preLoop ? "pre" : "post",
             clonedPh->getNumber());
 
     TR::SymbolReference *tempSymRef
@@ -1390,7 +1388,7 @@ TR::Block *TR_StripMiner::createLoopTest(LoopInfo *li, TR_ClonedLoopType type)
     _endTree = ifBlock->getExit();
 
     if (trace())
-        traceMsg(comp(), "\t created a new block [%d] to test if i < temp [%p]\n", ifBlock->getNumber(),
+        comp()->getLogger()->printf("\t created a new block [%d] to test if i < temp [%p]\n", ifBlock->getNumber(),
             ifTree->getNode());
 
     return ifBlock;
@@ -1402,7 +1400,8 @@ TR::Block *TR_StripMiner::createLoopTest(LoopInfo *li, TR_ClonedLoopType type)
 void TR_StripMiner::examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool checkClone)
 {
     if (trace())
-        traceMsg(comp(), "   analyze %s loop %d...\n", type == mainLoop ? "main" : "residual", li->_regionNum);
+        comp()->getLogger()->printf("   analyze %s loop %d...\n", type == mainLoop ? "main" : "residual",
+            li->_regionNum);
 
     TR_RegionStructure *loop = li->_region;
     TR::SymbolReference *oldCounter = li->_piv->getSymRef();
@@ -1429,7 +1428,8 @@ void TR_StripMiner::examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool check
             if (checkClone && li->_canMoveAsyncCheck && node->getOpCodeValue() == TR::asynccheck
                 && li->_asyncTree == NULL) {
                 if (trace())
-                    traceMsg(comp(), "      found asynccheck [%p] in block [%d]\n", currentTree, block->getNumber());
+                    comp()->getLogger()->printf("      found asynccheck [%p] in block [%d]\n", currentTree,
+                        block->getNumber());
                 li->_asyncTree = currentTree;
             }
 
@@ -1443,6 +1443,8 @@ void TR_StripMiner::examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool check
 void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, TR::SymbolReference *oldSymRef,
     vcount_t visitCount, TR_ClonedLoopType type, bool checkClone, int32_t childNum)
 {
+    OMR::Logger *log = comp()->getLogger();
+
     // Check the cloned node's symbol reference
     //
     if (checkClone && node->getSymbolReference() == oldSymRef) {
@@ -1450,7 +1452,7 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, 
             bool foundLoad = (parent->getChild(childNum) == node);
             if (foundLoad) {
                 if (trace())
-                    traceMsg(comp(), "      adding node [%p] to load list parent: [%p], childNum: %d\n", node, parent,
+                    log->printf("      adding node [%p] to load list parent: [%p], childNum: %d\n", node, parent,
                         childNum);
 
                 type == mainLoop
@@ -1459,7 +1461,7 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, 
             }
         } else {
             if (trace())
-                traceMsg(comp(), "      adding node [%p] store list parent: [%p]\n", node, parent);
+                log->printf("      adding node [%p] store list parent: [%p]\n", node, parent);
 
             type == mainLoop ? li->_mainParentsOfStores.add(new (trStackMemory()) TR_ParentOfChildNode(parent, -1))
                              : li->_residualParentsOfStores.add(new (trStackMemory()) TR_ParentOfChildNode(parent, -1));
@@ -1520,7 +1522,7 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, 
                                         && (accessNode->getSymbolReference() == li->_piv->getSymRef())) {
                                         foundArrayAccess = true;
                                         if (trace())
-                                            traceMsg(comp(), "Node %p accesses array with no pre/post offset\n", node);
+                                            log->printf("Node %p accesses array with no pre/post offset\n", node);
                                     } else {
                                         if (accessNode->getOpCodeValue() != TR::iload) {
                                             if ((accessNode->getOpCode().isAdd() || accessNode->getOpCode().isSub())
@@ -1542,8 +1544,8 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, 
                                                         li->_postOffset = std::max(li->_postOffset, -1 * offset);
                                                 }
                                                 if (trace())
-                                                    traceMsg(comp(), "Node %p has pre-offset: %d, post-offset: %d\n",
-                                                        node, li->_preOffset, li->_postOffset);
+                                                    log->printf("Node %p has pre-offset: %d, post-offset: %d\n", node,
+                                                        li->_preOffset, li->_postOffset);
                                             } else {
                                                 bool foundPiv = findPivInSimpleForm(accessNode, oldSymRef);
                                                 if (foundPiv) {
@@ -1551,13 +1553,13 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, 
                                                     li->_preOffset = 0;
                                                     li->_postOffset = 0;
                                                     if (trace())
-                                                        traceMsg(comp(), "Found an iload/iadd/isub tree for node %p\n",
+                                                        log->printf("Found an iload/iadd/isub tree for node %p\n",
                                                             node);
                                                 } else {
                                                     li->_preOffset = -1;
                                                     li->_postOffset = -1;
                                                     if (trace())
-                                                        traceMsg(comp(), "No iload/iadd/isub tree found for node %p\n",
+                                                        log->printf("No iload/iadd/isub tree found for node %p\n",
                                                             node);
                                                 }
                                             }
@@ -1566,13 +1568,12 @@ void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, 
                                         else // if iload
                                         {
                                             if (trace())
-                                                traceMsg(comp(), "Found iload %p which is not piv ... skipping it\n",
-                                                    node);
+                                                log->printf("Found iload %p which is not piv ... skipping it\n", node);
                                         }
                                     }
                                 } else {
                                     if (trace())
-                                        traceMsg(comp(), "Node %p does not have an ishr/idiv tree\n", node);
+                                        log->printf("Node %p does not have an ishr/idiv tree\n", node);
                                 }
                             }
                         }
@@ -1620,6 +1621,7 @@ TR::Node *findIndexChild(TR::Node *node, TR::SymbolReference *newSymRef)
 void TR_StripMiner::replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::Node *newConst,
     TR::SymbolReference *newSymRef, TR_ClonedLoopType type)
 {
+    OMR::Logger *log = comp()->getLogger();
     TR::SymbolReference *origSymRef = li->_piv->getSymRef();
     ListIterator<TR_ParentOfChildNode> it;
     TR_ParentOfChildNode *parent = NULL;
@@ -1627,8 +1629,7 @@ void TR_StripMiner::replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::N
     TR_ScratchList<TR_Pair<TR::Node, TR::Node> > storeMapper(trMemory());
 
     if (trace())
-        traceMsg(comp(), "   replacing Pivs in %s loop %d...\n", type == mainLoop ? "main" : "residual",
-            li->_regionNum);
+        log->printf("   replacing Pivs in %s loop %d...\n", type == mainLoop ? "main" : "residual", li->_regionNum);
 
     /* Process list of loads */
     type == mainLoop ? it.set(&li->_mainParentsOfLoads) : it.set(&li->_residualParentsOfLoads);
@@ -1695,17 +1696,17 @@ void TR_StripMiner::replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::N
         // fix shr/and
         if ((parentNode->getOpCode().isRightShift() || parentNode->getOpCode().isDiv()) && skipNode) {
             if (trace())
-                traceMsg(comp(), "      replacing load [%p] with new load [%p]: parent [%p], childNum %d\n",
+                log->printf("      replacing load [%p] with new load [%p]: parent [%p], childNum %d\n",
                     parentNode->getChild(childNum), iNode, parentNode, childNum);
             parentNode->getChild(childNum)->decReferenceCount();
             parentNode->setAndIncChild(childNum, iNode->duplicateTree());
         } else if (parentNode->getOpCode().isAnd() && skipNode) {
             if (trace())
-                traceMsg(comp(), "    changing and node parent  [%p] with new load [%p]\n", parentNode,
+                log->printf("    changing and node parent  [%p] with new load [%p]\n", parentNode,
                     parentNode->getChild(0));
         } else {
             if (trace())
-                traceMsg(comp(), "      replacing load [%p] with new load [%p]: parent [%p], childNum %d\n",
+                log->printf("      replacing load [%p] with new load [%p]: parent [%p], childNum %d\n",
                     parentNode->getChild(childNum), loadNode, parentNode, childNum);
             parentNode->getChild(childNum)->decReferenceCount();
             parentNode->setAndIncChild(childNum, loadNode);
@@ -1738,7 +1739,7 @@ void TR_StripMiner::replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::N
         }
 
         if (trace())
-            traceMsg(comp(), "      replacing store [%p] with new store [%p]: new symref [%d]\n", node, storeNode,
+            log->printf("      replacing store [%p] with new store [%p]: new symref [%d]\n", node, storeNode,
                 newSymRef->getReferenceNumber());
 
         node->setSymbolReference(newSymRef);
@@ -1783,7 +1784,7 @@ TR::Block *TR_StripMiner::getLoopTest(TR_Structure *str, TR::Block *preHeader)
     //
     if (loopTest && !loopTest->getLastRealTreeTop()->getNode()->getOpCode().isBooleanCompare()) {
         if (trace())
-            traceMsg(comp(), "loop %d: no loop test found on backedge\n", region->getNumber());
+            comp()->getLogger()->printf("loop %d: no loop test found on backedge\n", region->getNumber());
         loopTest = NULL;
     }
     // FIXME: if the test is eq/ne, make sure the loop increment is 1/-1
@@ -1792,7 +1793,7 @@ TR::Block *TR_StripMiner::getLoopTest(TR_Structure *str, TR::Block *preHeader)
         if (TR::ILOpCode::isNotEqualCmp(loopTest->getLastRealTreeTop()->getNode()->getOpCodeValue())
             || TR::ILOpCode::isEqualCmp(loopTest->getLastRealTreeTop()->getNode()->getOpCodeValue())) {
             if (trace())
-                traceMsg(comp(), "loop %d: found loop with eq/ne test condition\n", region->getNumber());
+                comp()->getLogger()->printf("loop %d: found loop with eq/ne test condition\n", region->getNumber());
             loopTest = NULL;
             // check for increment here
         }
@@ -1804,7 +1805,7 @@ TR::Block *TR_StripMiner::getLoopTest(TR_Structure *str, TR::Block *preHeader)
 bool TR_StripMiner::checkIfIncrementalIncreasesOfPIV(LoopInfo *li)
 {
     if (trace())
-        traceMsg(comp(), "   looking for stores in original loop %d...\n", li->_regionNum);
+        comp()->getLogger()->printf("   looking for stores in original loop %d...\n", li->_regionNum);
 
     TR_RegionStructure *loop = li->_region;
     TR::SymbolReference *oldCounter = li->_piv->getSymRef();
@@ -1836,9 +1837,8 @@ bool TR_StripMiner::checkIfIncrementalIncreasesOfPIV(LoopInfo *li)
 
                     if (pivIncInStore != li->_piv->getDeltaOnBackEdge()) {
                         if (trace())
-                            traceMsg(comp(),
-                                "\t loop %d ==> Found a store to induction variable with increment different than "
-                                "deltaObBackEdge\n",
+                            comp()->getLogger()->printf("\t loop %d ==> Found a store to induction variable with "
+                                                        "increment different than deltaObBackEdge\n",
                                 li->_region->getNumber());
                         return true;
                     }

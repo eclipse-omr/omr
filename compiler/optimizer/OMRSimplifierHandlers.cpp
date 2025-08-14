@@ -2226,9 +2226,6 @@ static void partialRedundantCompareElimination(TR::Node *node, TR::Block *block,
                                 cfg->addNode(newIfCmpBlock, parent);
                                 cfg->addNode(gotoBlock, parent);
 
-                                // traceMsg(comp, "\n AAA num=%d adding edge between block %d to block %d\n", num,
-                                // predBlock->getNumber(), newIfCmpBlock->getNumber());
-
                                 // Update edges for gotoBlock
                                 cfg->addEdge(predBlock, newIfCmpBlock);
                                 cfg->addEdge(newIfCmpBlock, gotoBlock);
@@ -2898,65 +2895,65 @@ static TR::Node *generateDecomposedTree(TR::Node *parentNode, TR::Node *multipli
 static void printTree(TR::Simplifier *s, char bitPosition[], char operationType[], int from, int to, int tabspace,
     bool isLong)
 {
+    OMR::Logger *log = s->comp()->getLogger();
     int count = to - from;
     int i;
 
-    traceMsg(s->comp(), "\n");
+    log->println();
     for (i = 0; i < tabspace; i++)
-        traceMsg(s->comp(), "\t");
+        log->printc('\t');
 
     if (count <= 2) {
         if (count == 1) {
             if (operationType[from] == OP_MINUS) {
-                traceMsg(s->comp(), isLong ? "lneg\n" : "ineg\n");
+                log->prints(isLong ? "lneg\n" : "ineg\n");
                 operationType[from] = (operationType[from] == OP_MINUS) ? OP_PLUS : OP_MINUS;
                 for (i = 0; i < tabspace; i++)
-                    traceMsg(s->comp(), "\t");
-                traceMsg(s->comp(), "\t-> %cn<<%d ", (operationType[from] == OP_MINUS) ? '-' : '+',
+                    log->printc('\t');
+                log->printf("\t-> %cn<<%d ", (operationType[from] == OP_MINUS) ? '-' : '+',
                     (int32_t)(bitPosition[from]));
             } else
-                traceMsg(s->comp(), "-> %cn<<%d ", (operationType[from] == OP_MINUS) ? '-' : '+',
-                    (int32_t)(bitPosition[from]));
+                log->printf("-> %cn<<%d ", (operationType[from] == OP_MINUS) ? '-' : '+', (int32_t)(bitPosition[from]));
         } else {
             if (operationType[from + 1] == OP_MINUS) {
-                traceMsg(s->comp(), isLong ? "lsub\n" : "isub\n");
+                log->prints(isLong ? "lsub\n" : "isub\n");
                 for (i = 0; i < tabspace; i++)
-                    traceMsg(s->comp(), "\t");
+                    log->printc('\t');
                 if (operationType[from] == OP_MINUS) {
-                    traceMsg(s->comp(), isLong ? "\tlneg\n" : "\tineg\n");
+                    log->prints(isLong ? "\tlneg\n" : "\tineg\n");
                     operationType[from] = (operationType[from] == OP_MINUS) ? OP_PLUS : OP_MINUS;
-                    traceMsg(s->comp(), "\t\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
+                    log->printf("\t\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
                         (int32_t)(bitPosition[from]));
                 } else {
-                    traceMsg(s->comp(), "\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
+                    log->printf("\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
                         (int32_t)(bitPosition[from]));
                 }
                 operationType[from + 1] = (operationType[from + 1] == OP_MINUS) ? OP_PLUS : OP_MINUS;
                 for (i = 0; i < tabspace; i++)
-                    traceMsg(s->comp(), "\t");
-                traceMsg(s->comp(), "\t-> %cn<<%d \n", (operationType[from + 1] == OP_MINUS) ? '-' : '+',
+                    log->printc('\t');
+                log->printf("\t-> %cn<<%d \n", (operationType[from + 1] == OP_MINUS) ? '-' : '+',
                     (int32_t)(bitPosition[from + 1]));
             } else {
                 if (operationType[from] == OP_MINUS) {
-                    traceMsg(s->comp(), isLong ? "lsub\n" : "isub\n");
+                    log->prints(isLong ? "lsub\n" : "isub\n");
                     for (i = 0; i < tabspace; i++)
-                        traceMsg(s->comp(), "\t");
-                    traceMsg(s->comp(), "\t-> %cn<<%d \n", (operationType[from + 1] == OP_MINUS) ? '-' : '+',
+                        log->printc('\t');
+                    log->printf("\t-> %cn<<%d \n", (operationType[from + 1] == OP_MINUS) ? '-' : '+',
                         (int32_t)(bitPosition[from + 1]));
                     operationType[from] = (operationType[from] == OP_MINUS) ? OP_PLUS : OP_MINUS;
                     for (i = 0; i < tabspace; i++)
-                        traceMsg(s->comp(), "\t");
-                    traceMsg(s->comp(), "\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
+                        log->printc('\t');
+                    log->printf("\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
                         (int32_t)(bitPosition[from]));
                 } else {
-                    traceMsg(s->comp(), isLong ? "ladd\n" : "iadd\n");
+                    log->prints(isLong ? "ladd\n" : "iadd\n");
                     for (i = 0; i < tabspace; i++)
-                        traceMsg(s->comp(), "\t");
-                    traceMsg(s->comp(), "\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
+                        log->printc('\t');
+                    log->printf("\t-> %cn<<%d \n", (operationType[from] == OP_MINUS) ? '-' : '+',
                         (int32_t)(bitPosition[from]));
                     for (i = 0; i < tabspace; i++)
-                        traceMsg(s->comp(), "\t");
-                    traceMsg(s->comp(), "\t-> %cn<<%d \n", (operationType[from + 1] == OP_MINUS) ? '-' : '+',
+                        log->printc('\t');
+                    log->printf("\t-> %cn<<%d \n", (operationType[from + 1] == OP_MINUS) ? '-' : '+',
                         (int32_t)(bitPosition[from + 1]));
                 }
             }
@@ -2965,16 +2962,16 @@ static void printTree(TR::Simplifier *s, char bitPosition[], char operationType[
         int mid = (int32_t)(count >> 1) + 1;
 
         if (operationType[from + mid] == OP_MINUS) {
-            traceMsg(s->comp(), isLong ? "lsub\n" : "isub\n");
+            log->prints(isLong ? "lsub\n" : "isub\n");
             for (i = from + mid; i < to; i++)
                 operationType[i] = (operationType[i] == OP_MINUS) ? OP_PLUS : OP_MINUS;
         } else
-            traceMsg(s->comp(), isLong ? "ladd\n" : "iadd\n");
+            log->prints(isLong ? "ladd\n" : "iadd\n");
 
         printTree(s, bitPosition, operationType, from, from + mid, tabspace + 1, isLong);
         printTree(s, bitPosition, operationType, from + mid, to, tabspace + 1, isLong);
     }
-    traceMsg(s->comp(), "\n");
+    log->println();
 }
 
 static void decomposeMultiply(TR::Node *node, TR::Simplifier *s, bool isLong)
@@ -3039,7 +3036,7 @@ static void decomposeMultiply(TR::Node *node, TR::Simplifier *s, bool isLong)
                 tempOpType[j] = operationType[j];
             }
 
-            traceMsg(comp, "MUL Decomposition in method: %s\n", comp->signature());
+            comp->getLogger()->printf("MUL Decomposition in method: %s\n", comp->signature());
             printTree(s, tempBitPos, tempOpType, 0, count, 0, isLong);
         }
 
@@ -3414,10 +3411,7 @@ static bool isLegalToMerge(TR::Node *node, TR::Block *block, TR::Block *nextBloc
     if (!(inEdge.empty()) && (inEdge.front() != outEdge || (inEdge.size() > 1))) {
         for (auto ie = inEdge.begin(); ie != inEdge.end(); ++ie) {
             if ((*ie) != outEdge && (*ie)->getFrom() != cfg->getStart()) {
-                // traceMsg(s->comp()," fromBlock:%p:%p:%d cfg->getStart()=%p
-                // toBlock:%d",ie->getData()->getFrom(),ie->getData()->getFrom()->asBlock(),
-                // ie->getData()->getFrom()->getNumber(),s->comp()->getFlowGraph()->getStart(), nextBlock->getNumber());
-                //  change edge "To" target if no exsiting edge to the merge block exist
+                // change edge "To" target if no exsiting edge to the merge block exist
                 bool isLegal
                     = (*ie)->getFrom()->asBlock()->getLastRealTreeTop()->isLegalToChangeBranchDestination(s->comp());
                 if (!isLegal)
@@ -4465,9 +4459,6 @@ template<typename T> static bool checkAndReplaceRotation(TR::Node *node, TR::Blo
         node); // I believe this is general enough to allow other opcodes, like add's, xor's. But just want to be safe
                // for now.
 
-    // traceMsg(TR::comp(), "In checkAndReplaceRotation for node %p firstChild = %p secondChild =
-    // %p\n",node,firstChild,secondChild);
-
     if (!firstChild->getOpCode().isShift() && !firstChild->getOpCode().isShiftLogical()
         && !firstChild->getOpCode().isMul())
         return false;
@@ -4512,21 +4503,12 @@ template<typename T> static bool checkAndReplaceRotation(TR::Node *node, TR::Blo
         || mulNonConstNode != shiftNonConstNode) // requires commoning to have commoned the non const value.
         return false;
 
-    // traceMsg(TR::comp(), "firstChild: isMul = %d isShiftLogical = %d isRightShift = %d secondChild: isMul = %d
-    // isShiftLogical = %d isRightShift = %d\n",firstChild->getOpCode().isMul(),
-    // firstChild->getOpCode().isShiftLogical(), firstChild->getOpCode().isRightShift(),
-    // secondChild->getOpCode().isMul(), firstChild->getOpCode().isShiftLogical(),
-    // firstChild->getOpCode().isRightShift());
-
     T mulConst = mulConstNode->getConst<T>();
     T shiftConst = shiftConstNode->getConst<T>();
 
     // have to calculate the left shift amount from the multiply
 
     T correctLeftShiftAmount = sizeof(T) * 8 - shiftConst;
-
-    // traceMsg(TR::comp(), "Spot 2.5 correctLeftShiftAmount = %d mulConst = %d shiftConst = %d sizeof(T)*8 =
-    // %d\n",correctLeftShiftAmount,mulConst,shiftConst,sizeof(T)*8);
 
     // We can only convert to a rotate if the calculated shift value (based on
     // operand size) matches the constant from the multiply, specifically the
@@ -12333,7 +12315,8 @@ TR::Node *removeArithmeticsUnderIntegralCompare(TR::Node *node, TR::Simplifier *
             signedMin = TR::getMinSigned<TR::Int64>();
         } else {
             if (s->trace())
-                traceMsg(s->comp(), "\nEliminating add/sub under compare node n%dn failed due to opcode data type\n",
+                s->comp()->getLogger()->printf(
+                    "\nEliminating add/sub under compare node n%dn failed due to opcode data type\n",
                     node->getGlobalIndex());
 
             return node;
@@ -12354,7 +12337,8 @@ TR::Node *removeArithmeticsUnderIntegralCompare(TR::Node *node, TR::Simplifier *
 
             if (!(canTransformAdd || canTransformSub)) {
                 if (s->trace())
-                    traceMsg(s->comp(), "\nEliminating add/sub under order compare node n%dn failed due to overflow\n",
+                    s->comp()->getLogger()->printf(
+                        "\nEliminating add/sub under order compare node n%dn failed due to overflow\n",
                         node->getGlobalIndex());
 
                 return node;
@@ -14646,7 +14630,7 @@ TR::Node *endBlockSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s
             }
 
             if (s->trace()) {
-                traceMsg(s->comp(), "\nStructures after merging blocks:\n");
+                s->comp()->getLogger()->prints("\nStructures after merging blocks:\n");
                 s->getDebug()->print(s->comp()->getLogger(), rootStructure, 6);
             }
         }
@@ -15817,9 +15801,8 @@ TR::Node *divchkSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
             //
             if (s->_nodeToDivchk == NULL) {
                 if (s->trace()) {
-                    traceMsg(s->comp(),
-                        "Simplifying DIVCHK n%un %p child resulted in no node to DIVCHK - replacing DIVCHK with "
-                        "treetop\n",
+                    s->comp()->getLogger()->printf("Simplifying DIVCHK n%un %p child resulted in no node to DIVCHK - "
+                                                   "replacing DIVCHK with treetop\n",
                         node->getGlobalIndex(), node);
                 }
 
@@ -15828,7 +15811,7 @@ TR::Node *divchkSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
                 return node;
             } else {
                 if (s->trace()) {
-                    traceMsg(s->comp(),
+                    s->comp()->getLogger()->printf(
                         "Simplifying DIVCHK child has left us with a node to DIVCHK - replacing child with n%un [%p]\n",
                         s->_nodeToDivchk->getGlobalIndex(), s->_nodeToDivchk);
                 }
@@ -15846,7 +15829,7 @@ TR::Node *divchkSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
             // eliminate the DIVCHK.
             //
             if (s->trace()) {
-                traceMsg(s->comp(),
+                s->comp()->getLogger()->printf(
                     "DIVCHK n%un %p child is not a division or remainder operation - replacing DIVCHK with treetop\n",
                     node->getGlobalIndex(), node);
             }
@@ -16179,7 +16162,7 @@ TR::Node *bndchkwithspinechkSimplifier(TR::Node *node, TR::Block *block, TR::Sim
         prevTree->join(newTree);
 
         if (s->trace()) {
-            traceMsg(s->comp(), "removing spine check from node %p, anchoring element child to %p\n", node,
+            s->comp()->getLogger()->printf("removing spine check from node %p, anchoring element child to %p\n", node,
                 treeTopNode);
         }
     }

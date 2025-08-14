@@ -42,6 +42,7 @@
 #include "il/TreeTop.hpp"
 #include "il/TreeTop_inlines.hpp"
 #include "infra/Bit.hpp"
+#include "ras/Logger.hpp"
 
 static void mulConstant(TR::Node *node, TR::Register *trgReg, TR::Register *sourceReg, int32_t value,
     TR::CodeGenerator *cg);
@@ -1163,7 +1164,7 @@ static inline TR::Register *ibooleanTypeEvaluator(TR::Node *node, TR::InstOpCode
     auto comp = cg->comp();
 
     if (comp->getOption(TR_TraceCG)) {
-        traceMsg(comp, "In ibooleanTypeEvaluator for n%dn (%p)\n", node->getGlobalIndex(), node);
+        comp->getLogger()->printf("In ibooleanTypeEvaluator for n%dn (%p)\n", node->getGlobalIndex(), node);
     }
 
     uint32_t base, rotate;

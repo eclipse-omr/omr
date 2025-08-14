@@ -70,6 +70,7 @@
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
 #include "ras/Delimiter.hpp"
+#include "ras/Logger.hpp"
 #include "z/codegen/BinaryAnalyser.hpp"
 #include "z/codegen/BinaryCommutativeAnalyser.hpp"
 #include "z/codegen/CompareAnalyser.hpp"
@@ -179,9 +180,11 @@ static bool virtualGuardHelper(TR::Node *node, TR::CodeGenerator *cg)
     cg->recursivelyDecReferenceCount(node->getFirstChild());
     cg->recursivelyDecReferenceCount(node->getSecondChild());
 
-    traceMsg(comp, "virtualGuardHelper for %s %s\n",
-        comp->getDebug() ? comp->getDebug()->getVirtualGuardKindName(virtualGuard->getKind()) : "???Guard",
-        virtualGuard->mergedWithHCRGuard() ? "merged with HCRGuard" : "");
+    if (comp->getOption(TR_TraceCG)) {
+        comp->getLogger()->printf("virtualGuardHelper for %s %s\n",
+            comp->getDebug() ? comp->getDebug()->getVirtualGuardKindName(virtualGuard->getKind()) : "???Guard",
+            virtualGuard->mergedWithHCRGuard() ? "merged with HCRGuard" : "");
+    }
     return true;
 #else
     return false;
@@ -979,11 +982,13 @@ static inline void generateMergedGuardCodeIfNeeded(TR::Node *node, TR::CodeGener
                 vgnopInstr->setNext(instr);
                 cg->setAppendInstruction(instr);
             }
-            traceMsg(comp, "generateMergedGuardCodeIfNeeded for %s %s\n",
-                comp->getDebug() ? comp->getDebug()->getVirtualGuardKindName(virtualGuard->getKind()) : "???Guard",
-                virtualGuard->mergedWithHCRGuard()       ? "merged with HCRGuard"
-                    : virtualGuard->mergedWithOSRGuard() ? "merged with OSRGuard"
-                                                         : "");
+            if (comp->getOption(TR_TraceCG)) {
+                comp->getLogger()->printf("generateMergedGuardCodeIfNeeded for %s %s\n",
+                    comp->getDebug() ? comp->getDebug()->getVirtualGuardKindName(virtualGuard->getKind()) : "???Guard",
+                    virtualGuard->mergedWithHCRGuard()       ? "merged with HCRGuard"
+                        : virtualGuard->mergedWithOSRGuard() ? "merged with OSRGuard"
+                                                             : "");
+            }
         }
     }
 #endif
@@ -2453,7 +2458,7 @@ bool OMR::Z::TreeEvaluator::treeContainsAllOtherUsesForNode(TR::Node *treeNode, 
         return false;
     }
 
-    // traceMsg(cg->comp(), "node refcount = %d\n",node->getReferenceCount());
+    // cg->comp()->getLogger()->printf("node refcount = %d\n",node->getReferenceCount());
 
     int32_t numberOfInstancesToFind = node->getReferenceCount() - 1;
     if (numberOfInstancesToFind == 0)
@@ -2461,7 +2466,7 @@ bool OMR::Z::TreeEvaluator::treeContainsAllOtherUsesForNode(TR::Node *treeNode, 
 
     int32_t instancesFound = TR::TreeEvaluator::countReferencesInTree(treeNode, node, cg);
 
-    // traceMsg(cg->comp(), "numberOfInstancesToFind = %d instancesFound =
+    // cg->comp()->getLogger()->printf("numberOfInstancesToFind = %d instancesFound =
     // %d\n",numberOfInstancesToFind,instancesFound);
 
     if (numberOfInstancesToFind == instancesFound)
@@ -2480,9 +2485,8 @@ TR::Register *OMR::Z::TreeEvaluator::selectEvaluator(TR::Node *node, TR::CodeGen
     TR::Node *falseVal = node->getThirdChild();
 
     if (comp->getOption(TR_TraceCG))
-        traceMsg(comp,
-            "Starting evaluation of select node %p condition %p (in reg %p) trueVal %p (in reg %p) falseVal %p (in reg "
-            "%p)\n",
+        comp->getLogger()->printf("Starting evaluation of select node %p condition %p (in reg %p) trueVal %p (in reg "
+                                  "%p) falseVal %p (in reg %p)\n",
             node, condition, condition->getRegister(), trueVal, trueVal->getRegister(), falseVal,
             falseVal->getRegister());
 
@@ -2491,9 +2495,8 @@ TR::Register *OMR::Z::TreeEvaluator::selectEvaluator(TR::Node *node, TR::CodeGen
         && (!trueVal->isUnneededConversion()
             || TR::TreeEvaluator::treeContainsAllOtherUsesForNode(condition, trueVal->getFirstChild(), cg))) {
         if (comp->getOption(TR_TraceCG))
-            traceMsg(comp,
-                "Calling evaluate (instead of clobber evaluate for node %p because all other uses are in the compare "
-                "tree)\n",
+            comp->getLogger()->printf("Calling evaluate (instead of clobber evaluate for node %p because all other "
+                                      "uses are in the compare tree)\n",
                 trueVal);
         trueReg = cg->evaluate(trueVal);
     } else {
@@ -2508,21 +2511,22 @@ TR::Register *OMR::Z::TreeEvaluator::selectEvaluator(TR::Node *node, TR::CodeGen
     TR_ASSERT_FATAL_WITH_NODE(node, !trueReg->containsInternalPointer() && !falseReg->containsInternalPointer(),
         "Select nodes cannot have children that are internal pointers");
     if (falseReg->containsCollectedReference()) {
-        if (cg->comp()->getOption(TR_TraceCG))
-            traceMsg(cg->comp(), "Setting containsCollectedReference on result of select node in register %s\n",
+        if (comp->getOption(TR_TraceCG))
+            comp->getLogger()->printf("Setting containsCollectedReference on result of select node in register %s\n",
                 cg->getDebug()->getName(trueReg));
         trueReg->setContainsCollectedReference();
     }
 
     if (comp->getOption(TR_TraceCG))
-        traceMsg(comp, "Done evaluating child %p in reg %p and %p in reg %p\n", trueVal, trueReg, falseVal, falseReg);
+        comp->getLogger()->printf("Done evaluating child %p in reg %p and %p in reg %p\n", trueVal, trueReg, falseVal,
+            falseReg);
 
     // I don't want to evaluate the first child as icmp evaluator places value in an integer, which we can short
     // circuit.
     if (condition->getOpCode().isBooleanCompare()
         && (condition->getFirstChild()->getType().isIntegral() || condition->getFirstChild()->getType().isAddress())) {
         if (comp->getOption(TR_TraceCG))
-            traceMsg(comp, "First Child %p is a compare\n", condition);
+            comp->getLogger()->printf("First Child %p is a compare\n", condition);
 
         TR::InstOpCode::Mnemonic compareOp = TR::TreeEvaluator::getCompareOpFromNode(cg, condition);
 
@@ -2579,9 +2583,8 @@ TR::Register *OMR::Z::TreeEvaluator::selectEvaluator(TR::Node *node, TR::CodeGen
             cFlowRegionEnd->setEndInternalControlFlow();
 
             if (comp->getOption(TR_TraceCG)) {
-                traceMsg(comp,
-                    "firstReg = %p secondReg = %p trueReg = %p falseReg = %p trueReg->is64BitReg() = %d "
-                    "falseReg->is64BitReg() = %d isLongCompare = %d\n",
+                comp->getLogger()->printf("firstReg = %p secondReg = %p trueReg = %p falseReg = %p "
+                                          "trueReg->is64BitReg() = %d falseReg->is64BitReg() = %d isLongCompare = %d\n",
                     firstReg, secondReg, trueReg, falseReg, trueReg->is64BitReg(), falseReg->is64BitReg(),
                     condition->getOpCode().isLongCompare());
             }
@@ -2591,12 +2594,12 @@ TR::Register *OMR::Z::TreeEvaluator::selectEvaluator(TR::Node *node, TR::CodeGen
         cg->decReferenceCount(secondChild);
     } else {
         if (comp->getOption(TR_TraceCG))
-            traceMsg(comp, "evaluating condition %p\n", condition);
+            comp->getLogger()->printf("evaluating condition %p\n", condition);
 
         TR::Register *condReg = cg->evaluate(condition);
 
         if (comp->getOption(TR_TraceCG))
-            traceMsg(comp, "emitting a compare with 0 instruction\n");
+            comp->getLogger()->prints("emitting a compare with 0 instruction\n");
 
         TR::Instruction *compareInst = generateRILInstruction(cg,
             condition->getOpCode().isLongCompare() ? TR::InstOpCode::CGFI : TR::InstOpCode::CFI, condition,
@@ -2641,7 +2644,7 @@ TR::Register *OMR::Z::TreeEvaluator::selectEvaluator(TR::Node *node, TR::CodeGen
     }
 
     if (comp->getOption(TR_TraceCG))
-        traceMsg(comp, "Setting node %p register to %p\n", node, trueReg);
+        comp->getLogger()->printf("Setting node %p register to %p\n", node, trueReg);
     node->setRegister(trueReg);
 
     cg->decReferenceCount(condition);

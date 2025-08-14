@@ -53,11 +53,11 @@
 #define OPT_DETAILS "O^O ILBLD: "
 
 #define TraceEnabled (comp()->getOption(TR_TraceILGen) && comp()->getLoggingEnabled())
-#define TraceIL(m, ...)                         \
-    {                                           \
-        if (TraceEnabled) {                     \
-            traceMsg(comp(), m, ##__VA_ARGS__); \
-        }                                       \
+#define TraceIL(m, ...)                                    \
+    {                                                      \
+        if (TraceEnabled) {                                \
+            comp()->getLogger()->printf(m, ##__VA_ARGS__); \
+        }                                                  \
     }
 
 // IlBuilder is a class designed to help build Testarossa IL quickly without

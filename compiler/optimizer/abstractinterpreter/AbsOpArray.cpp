@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "optimizer/abstractinterpreter/AbsOpArray.hpp"
+#include "ras/Logger.hpp"
 
 TR::AbsOpArray *TR::AbsOpArray::clone(TR::Region &region) const
 {
@@ -65,15 +66,17 @@ TR::AbsValue *TR::AbsOpArray::at(uint32_t index) const
 
 void TR::AbsOpArray::print(TR::Compilation *comp) const
 {
-    traceMsg(comp, "Contents of Abstract Local Variable Array:\n");
+    OMR::Logger *log = comp->getLogger();
+
+    log->prints("Contents of Abstract Local Variable Array:\n");
     for (auto i = 0; i < size(); i++) {
-        traceMsg(comp, "A[%d] = ", i);
+        log->printf("A[%d] = ", i);
         if (!at(i))
-            traceMsg(comp, "Uninitialized");
+            log->prints("Uninitialized");
         else
             at(i)->print(comp);
 
-        traceMsg(comp, "\n");
+        log->println();
     }
-    traceMsg(comp, "\n");
+    log->println();
 }

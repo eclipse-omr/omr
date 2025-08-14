@@ -39,6 +39,7 @@
 #include "infra/Cfg.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/UseDefInfo.hpp"
+#include "ras/Logger.hpp"
 
 class TR_BlockStructure;
 class TR_Structure;
@@ -64,7 +65,7 @@ int32_t TR_ReachingDefinitions::perform()
 {
     LexicalTimer tlex("reachingDefs_perform", comp()->phaseTimer());
     if (traceRD())
-        traceMsg(comp(), "Starting ReachingDefinitions\n");
+        comp()->getLogger()->prints("Starting ReachingDefinitions\n");
 
     // Allocate the block info, allowing the bit vectors to be allocated on the fly
     //
@@ -77,7 +78,7 @@ int32_t TR_ReachingDefinitions::perform()
         performAnalysis(rootStructure, false);
 
         if (traceRD())
-            traceMsg(comp(), "\nEnding ReachingDefinitions\n");
+            comp()->getLogger()->prints("\nEnding ReachingDefinitions\n");
 
     } // scope of the stack memory region
 
@@ -104,6 +105,7 @@ void TR_ReachingDefinitions::initializeGenAndKillSetInfo()
     // Go in treetop order, which guarantees that we see the correct (i.e. first)
     // evaluation point for each node.
     //
+    OMR::Logger *log = comp()->getLogger();
     TR::Block *block;
     int32_t blockNum = 0;
     bool seenException = false;
@@ -118,33 +120,33 @@ void TR_ReachingDefinitions::initializeGenAndKillSetInfo()
             blockNum = block->getNumber();
             seenException = false;
             if (traceRD())
-                traceMsg(comp(), "\nNow generating gen and kill information for block_%d\n", blockNum);
+                log->printf("\nNow generating gen and kill information for block_%d\n", blockNum);
             continue;
         }
 
 #if DEBUG
         if (node->getOpCodeValue() == TR::BBEnd && traceRD()) {
-            traceMsg(comp(), "  Block %d:\n", blockNum);
-            traceMsg(comp(), "     Gen set ");
+            log->printf("  Block %d:\n", blockNum);
+            log->prints("     Gen set ");
             if (_regularGenSetInfo[blockNum])
                 _regularGenSetInfo[blockNum]->print(comp());
             else
-                traceMsg(comp(), "{}");
-            traceMsg(comp(), "\n     Kill set ");
+                log->prints("{}");
+            log->prints("\n     Kill set ");
             if (_regularKillSetInfo[blockNum])
                 _regularKillSetInfo[blockNum]->print(comp());
             else
-                traceMsg(comp(), "{}");
-            traceMsg(comp(), "\n     Exception Gen set ");
+                log->prints("{}");
+            log->prints("\n     Exception Gen set ");
             if (_exceptionGenSetInfo[blockNum])
                 _exceptionGenSetInfo[blockNum]->print(comp());
             else
-                traceMsg(comp(), "{}");
-            traceMsg(comp(), "\n     Exception Kill set ");
+                log->prints("{}");
+            log->prints("\n     Exception Kill set ");
             if (_exceptionKillSetInfo[blockNum])
                 _exceptionKillSetInfo[blockNum]->print(comp());
             else
-                traceMsg(comp(), "{}");
+                log->prints("{}");
             continue;
         }
 #endif

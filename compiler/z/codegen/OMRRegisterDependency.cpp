@@ -61,6 +61,7 @@
 #include "infra/Assert.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 #include "z/codegen/S390Instruction.hpp"
 #include "env/IO.hpp"
@@ -722,7 +723,8 @@ void OMR::Z::RegisterDependencyGroup::assignRegisters(TR::Instruction *currentIn
             int32_t dataSize;
             if (toS390LabelInstruction(currentInstruction)->getLabelSymbol()->isStartOfColdInstructionStream()
                 && location) {
-                traceMsg(comp, "\nOOL: Releasing backing storage (%p)\n", location);
+                if (comp->getOption(TR_TraceCG))
+                    comp->getLogger()->printf("\nOOL: Releasing backing storage (%p)\n", location);
                 if (rk == TR_GPR)
                     dataSize = TR::Compiler->om.sizeofReferenceAddress();
                 else if (rk == TR_VRF)
@@ -1286,9 +1288,10 @@ void OMR::Z::RegisterDependencyGroup::assignRegisters(TR::Instruction *currentIn
             if (_dependencies[i].isSpilledReg()) {
                 virtReg = realReg->getAssignedRegister();
 
-                traceMsg(comp, "\nOOL HPR Spill: %s", cg->getDebug()->getName(realReg));
-                traceMsg(comp, ":%s\n", cg->getDebug()->getName(virtReg));
-
+                if (comp->getOption(TR_TraceCG)) {
+                    comp->getLogger()->printf("\nOOL HPR Spill: %s", cg->getDebug()->getName(realReg));
+                    comp->getLogger()->printf(":%s\n", cg->getDebug()->getName(virtReg));
+                }
                 virtReg->setAssignedRegister(NULL);
             }
         }

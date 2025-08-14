@@ -39,6 +39,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/Structure.hpp"
 #include "optimizer/InductionVariable.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O ARRAY INDEX EXPRESSION MANIPULATION: "
 
@@ -113,7 +114,7 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_Structure *loopStructure
     regionStructure->getBlocks(&blocksInRegion);
 
     if (_debug)
-        traceMsg(comp(), "XX looking at region %d\n", regionStructure->getNumber());
+        comp()->getLogger()->printf("XX looking at region %d\n", regionStructure->getNumber());
     ListIterator<TR::Block> blocksIt(&blocksInRegion);
     TR::Block *nextBlock;
     TR::TreeTop /**first,*/ *last, *curTree;
@@ -127,7 +128,7 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_Structure *loopStructure
     _visitCount = comp()->incOrResetVisitCount();
 
     if (_debug)
-        traceMsg(comp(), "Loop: %d primeIV:%p\n", regionStructure->getNumber(), primeIV);
+        comp()->getLogger()->printf("Loop: %d primeIV:%p\n", regionStructure->getNumber(), primeIV);
     for (nextBlock = blocksIt.getCurrent(); nextBlock; nextBlock = blocksIt.getNext()) {
         curTree = nextBlock->getFirstRealTreeTop();
         last = nextBlock->getLastRealTreeTop();
@@ -159,12 +160,13 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_PrimaryInductionVariable
         rewriteIndexExpression(primeIV, node, childNode, parentIsAiadd);
 
         if (_debug)
-            traceMsg(comp(), "traced %p %s\n", childNode, parentIsAiadd ? "(arrayRef)" : "");
+            comp()->getLogger()->printf("traced %p %s\n", childNode, parentIsAiadd ? "(arrayRef)" : "");
         if (parentIsAiadd) {
             if (childNode->getOpCode().hasSymbolReference()
                 && childNode->getSymbol() == primeIV->getSymRef()->getSymbol()) {
                 if (_debug)
-                    traceMsg(comp(), "Found reference [%p] to primeiv %p\n", childNode, childNode->getSymbol());
+                    comp()->getLogger()->printf("Found reference [%p] to primeiv %p\n", childNode,
+                        childNode->getSymbol());
                 if (childNode->cannotOverflow() && // no wrapping of index can happen, hence safe to move around
                     parentNode->getReferenceCount() < 2 && // safe to swap nodes
                     node->getReferenceCount() < 2 && node->getOpCodeValue() == parentNode->getOpCodeValue()

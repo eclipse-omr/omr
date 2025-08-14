@@ -59,6 +59,7 @@
 #include "p/codegen/PPCInstruction.hpp"
 #include "p/codegen/PPCOpsDefines.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "env/IO.hpp"
 
 namespace TR {
@@ -1720,7 +1721,7 @@ void OMR::Power::Machine::decFutureUseCountAndUnlatch(TR::Register *virtualRegis
             && virtualRegister->getFutureUseCount() == virtualRegister->getOutOfLineUseCount())) {
         if (virtualRegister->getFutureUseCount() != 0) {
             if (trace) {
-                traceMsg(comp, "\nOOL: %s's remaining uses are out-of-line, unlatching\n",
+                comp->getLogger()->printf("\nOOL: %s's remaining uses are out-of-line, unlatching\n",
                     self()->cg()->getDebug()->getName(virtualRegister));
             }
         }
@@ -1736,7 +1737,8 @@ void OMR::Power::Machine::decFutureUseCountAndUnlatch(TR::Register *virtualRegis
         TR_ASSERT(cg->isFreeSpillListLocked(), "Expecting the free spill list to be locked on this path");
         int32_t size = spillSizeForRegister(virtualRegister);
         if (trace)
-            traceMsg(comp, "\nFreeing backing storage " POINTER_PRINTF_FORMAT " of size %u from dead virtual %s\n",
+            comp->getLogger()->printf("\nFreeing backing storage " POINTER_PRINTF_FORMAT
+                                      " of size %u from dead virtual %s\n",
                 location, size, cg->getDebug()->getName(virtualRegister));
         cg->unlockFreeSpillList();
         cg->freeSpill(location, size, 0);
@@ -1782,9 +1784,8 @@ void OMR::Power::Machine::disassociateUnspilledBackingStorage()
             if (location != NULL) {
                 int32_t size = spillSizeForRegister(virtReg);
                 if (trace)
-                    traceMsg(comp,
-                        "\nDisassociating backing storage " POINTER_PRINTF_FORMAT
-                        " of size %u from assigned virtual %s\n",
+                    comp->getLogger()->printf("\nDisassociating backing storage " POINTER_PRINTF_FORMAT
+                                              " of size %u from assigned virtual %s\n",
                         location, size, cg->getDebug()->getName(virtReg));
                 cg->freeSpill(location, size, 0);
                 virtReg->setBackingStorage(NULL);

@@ -168,15 +168,16 @@ void OMR::CodeGenPhase::performProcessRelocationsPhase(TR::CodeGenerator *cg, TR
 
     if (cg->getAheadOfTimeCompile()
         && (comp->getOption(TR_TraceRelocatableDataCG) || comp->getOption(TR_TraceRelocatableDataDetailsCG))) {
-        traceMsg(comp, "\n<relocatableDataCG>\n");
+        OMR::Logger *log = comp->getLogger();
+        log->prints("\n<relocatableDataCG>\n");
         if (comp->getOption(TR_TraceRelocatableDataDetailsCG)) // verbose output
         {
             uint8_t *relocatableMethodCodeStart = (uint8_t *)comp->getRelocatableMethodCodeStart();
-            traceMsg(comp, "Code start = %8x, Method start pc = %x, Method start pc offset = 0x%x\n",
+            log->printf("Code start = %8x, Method start pc = %x, Method start pc offset = 0x%x\n",
                 relocatableMethodCodeStart, cg->getCodeStart(), cg->getCodeStart() - relocatableMethodCodeStart);
         }
         cg->getAheadOfTimeCompile()->dumpRelocationData();
-        traceMsg(comp, "</relocatableDataCG>\n");
+        log->prints("</relocatableDataCG>\n");
     }
 
     if (debug("dumpCodeSizes")) {
@@ -203,12 +204,13 @@ void OMR::CodeGenPhase::performProcessRelocationsPhase(TR::CodeGenerator *cg, TR
     }
 
     if (comp->getOption(TR_TraceCG)) {
+        OMR::Logger *log = comp->getLogger();
         const char *title = "Post Relocation Instructions";
-        comp->getDebug()->dumpMethodInstrs(comp->getLogger(), title, false, true);
+        comp->getDebug()->dumpMethodInstrs(log, title, false, true);
 
-        traceMsg(comp, "<snippets>");
-        comp->getDebug()->print(comp->getLogger(), cg->getSnippetList());
-        traceMsg(comp, "\n</snippets>\n");
+        log->prints("<snippets>");
+        comp->getDebug()->print(log, cg->getSnippetList());
+        log->prints("\n</snippets>\n");
 
         auto iterator = cg->getSnippetList().begin();
         int32_t estimatedSnippetStart = cg->getEstimatedSnippetStart();
@@ -244,15 +246,16 @@ void OMR::CodeGenPhase::performEmitSnippetsPhase(TR::CodeGenerator *cg, TR::Code
     }
 
     if (comp->getOption(TR_TraceCG)) {
+        OMR::Logger *log = comp->getLogger();
         diagnostic("\nbuffer start = %8x, code start = %8x, buffer length = %d\n", cg->getBinaryBufferStart(),
             cg->getCodeStart(), cg->getEstimatedCodeLength());
         const char *title = "Post Binary Instructions";
 
-        comp->getDebug()->dumpMethodInstrs(comp->getLogger(), title, false, true);
+        comp->getDebug()->dumpMethodInstrs(log, title, false, true);
 
-        traceMsg(comp, "<snippets>");
-        comp->getDebug()->print(comp->getLogger(), cg->getSnippetList());
-        traceMsg(comp, "\n</snippets>\n");
+        log->prints("<snippets>");
+        comp->getDebug()->print(log, cg->getSnippetList());
+        log->prints("\n</snippets>\n");
 
         auto iterator = cg->getSnippetList().begin();
         int32_t estimatedSnippetStart = cg->getEstimatedSnippetStart();
@@ -402,7 +405,7 @@ void OMR::CodeGenPhase::performSetupForInstructionSelectionPhase(TR::CodeGenerat
 
     // Dump preIR
     if (comp->getOption(TR_TraceRegisterPressureDetails) && !comp->getOption(TR_DisableRegisterPressureSimulation)) {
-        traceMsg(comp, "         { Post optimization register pressure simulation\n");
+        comp->getLogger()->prints("         { Post optimization register pressure simulation\n");
         TR_BitVector emptyBitVector;
         vcount_t vc = comp->incVisitCount();
         cg->initializeRegisterPressureSimulator();
@@ -415,7 +418,7 @@ void OMR::CodeGenPhase::performSetupForInstructionSelectionPhase(TR::CodeGenerat
                 state._vrfPressure);
             cg->simulateBlockEvaluation(block, &state, &summary);
         }
-        traceMsg(comp, "         }\n");
+        comp->getLogger()->prints("         }\n");
     }
 
     TR::LexicalMemProfiler mp(phase->getName(), comp->phaseMemProfiler());
@@ -440,7 +443,7 @@ void OMR::CodeGenPhase::performUncommonCallConstNodesPhase(TR::CodeGenerator *cg
     TR::Compilation *comp = cg->comp();
 
     if (comp->getOption(TR_DisableCallConstUncommoning)) {
-        traceMsg(comp, "Skipping Uncommon Call Constant Node phase\n");
+        comp->getLogger()->prints("Skipping Uncommon Call Constant Node phase\n");
         return;
     }
 
@@ -564,10 +567,9 @@ LexicalXmlTag::LexicalXmlTag(TR::CodeGenerator *cg)
     TR::Compilation *comp = cg->comp();
     if (comp->getOption(TR_TraceOptDetails) || comp->getOption(TR_TraceCG)) {
         const char *hotnessString = comp->getHotnessName(comp->getMethodHotness());
-        traceMsg(comp,
-            "<codegen\n"
-            "\tmethod=\"%s\"\n"
-            "\thotness=\"%s\">\n",
+        comp->getLogger()->printf("<codegen\n"
+                                  "\tmethod=\"%s\"\n"
+                                  "\thotness=\"%s\">\n",
             comp->signature(), hotnessString);
     }
 }
@@ -576,5 +578,5 @@ LexicalXmlTag::~LexicalXmlTag()
 {
     TR::Compilation *comp = cg->comp();
     if (comp->getOption(TR_TraceOptDetails) || comp->getOption(TR_TraceCG))
-        traceMsg(comp, "</codegen>\n");
+        comp->getLogger()->prints("</codegen>\n");
 }

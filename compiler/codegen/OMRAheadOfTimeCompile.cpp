@@ -37,6 +37,7 @@
 #include "infra/Assert.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "env/CompilerEnv.hpp"
 
 namespace TR {
@@ -54,6 +55,8 @@ TR_Memory *OMR::AheadOfTimeCompile::trMemory() { return self()->comp()->trMemory
 void OMR::AheadOfTimeCompile::traceRelocationOffsets(uint8_t *&cursor, int32_t offsetSize,
     const uint8_t *endOfCurrentRecord, bool isOrderedPair)
 {
+    OMR::Logger *log = self()->comp()->getLogger();
+
     // Location Offsets
     int divisor; // num of data that fit on an 80 char wide term
     uint8_t count; // start count is number of data that could have fit so far
@@ -68,25 +71,25 @@ void OMR::AheadOfTimeCompile::traceRelocationOffsets(uint8_t *&cursor, int32_t o
 
     while (cursor < endOfCurrentRecord) {
         if ((count % divisor) == 0) {
-            traceMsg(self()->comp(), "\n                                                                       ");
+            log->prints("\n                                                                       ");
         }
         count++;
         if (offsetSize == 2) {
             if (isOrderedPair) {
-                traceMsg(self()->comp(), "(%04x ", *(uint16_t *)cursor);
+                log->printf("(%04x ", *(uint16_t *)cursor);
                 cursor += offsetSize;
-                traceMsg(self()->comp(), "%04x) ", *(uint16_t *)cursor);
+                log->printf("%04x) ", *(uint16_t *)cursor);
             } else {
-                traceMsg(self()->comp(), "%04x ", *(uint16_t *)cursor);
+                log->printf("%04x ", *(uint16_t *)cursor);
             }
         } else // offsetSize == 4
         {
             if (isOrderedPair) {
-                traceMsg(self()->comp(), "(%08x ", *(uint32_t *)cursor);
+                log->printf("(%08x ", *(uint32_t *)cursor);
                 cursor += offsetSize;
-                traceMsg(self()->comp(), "%08x) ", *(uint32_t *)cursor);
+                log->printf("%08x) ", *(uint32_t *)cursor);
             } else {
-                traceMsg(self()->comp(), "%08x ", *(uint32_t *)cursor);
+                log->printf("%08x ", *(uint32_t *)cursor);
             }
         }
         cursor += offsetSize;

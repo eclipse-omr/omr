@@ -109,6 +109,8 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
     if (_blocksGeneratedByMe->isSet(block->getNumber()))
         return;
 
+    OMR::Logger *log = comp()->getLogger();
+
     _switch = node;
     _switchTree = block->getLastRealTreeTop();
     _defaultDest = node->getChild(1)->getBranchDestination();
@@ -154,8 +156,8 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
         }
 
         if (trace())
-            traceMsg(comp(), "Switch info pointing at target tree top 0x%p has frequency scale of %f\n",
-                target->getNode(), info->_freq);
+            log->printf("Switch info pointing at target tree top 0x%p has frequency scale of %f\n", target->getNode(),
+                info->_freq);
 
         if ((upperBound - 2) >= MIN_CASES_FOR_OPT && keepAsUnique(info, i)) {
             info->setNext(earlyUniques->getFirst());
@@ -183,9 +185,8 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
         _signed = true;
 
     if (trace()) {
-        OMR::Logger *log = comp()->getLogger();
         printInfo(log, comp()->fe(), chain);
-        traceMsg(comp(), "Early Unique Chain:\n");
+        log->prints("Early Unique Chain:\n");
         printInfo(log, comp()->fe(), earlyUniques);
     }
 
@@ -204,8 +205,8 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
     //
     TR_LinkHead<SwitchInfo> *bound = gather(chain);
     if (trace()) {
-        traceMsg(comp(), "Early Unique Chain:\n");
-        printInfo(comp()->getLogger(), comp()->fe(), earlyUniques);
+        log->prints("Early Unique Chain:\n");
+        printInfo(log, comp()->fe(), earlyUniques);
     }
 
     // Remerge bound nodes back into the primary chain if small // FIXME: implement
@@ -221,8 +222,7 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
         fixUpUnsigned(bound);
         fixUpUnsigned(earlyUniques);
         if (trace()) {
-            OMR::Logger *log = comp()->getLogger();
-            traceMsg(comp(), "After fixing unsigned sort order\n");
+            log->prints("After fixing unsigned sort order\n");
             printInfo(log, comp()->fe(), chain);
             printInfo(log, comp()->fe(), bound);
             printInfo(log, comp()->fe(), earlyUniques);
@@ -234,7 +234,7 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
     emit(chain, bound, earlyUniques);
 
     if (trace())
-        traceMsg(comp(), "Done.\n");
+        log->prints("Done.\n");
 }
 
 void TR::SwitchAnalyzer::findDenseSets(TR_LinkHead<SwitchInfo> *chain)
@@ -269,7 +269,7 @@ void TR::SwitchAnalyzer::findDenseSets(TR_LinkHead<SwitchInfo> *chain)
     }
 
     if (trace()) {
-        traceMsg(comp(), "After finding dense sets\n");
+        comp()->getLogger()->prints("After finding dense sets\n");
         printInfo(comp()->getLogger(), comp()->fe(), chain);
     }
 }
@@ -317,7 +317,7 @@ bool TR::SwitchAnalyzer::mergeDenseSets(TR_LinkHead<SwitchInfo> *chain)
     }
 
     if (trace()) {
-        traceMsg(comp(), "After merging dense sets\n");
+        comp()->getLogger()->prints("After merging dense sets\n");
         printInfo(comp()->getLogger(), comp()->fe(), chain);
     }
     return change;
@@ -367,9 +367,9 @@ TR_LinkHead<TR::SwitchAnalyzer::SwitchInfo> *TR::SwitchAnalyzer::gather(TR_LinkH
 
     if (trace()) {
         OMR::Logger *log = comp()->getLogger();
-        traceMsg(comp(), "After Gathering\nPrimary Chain:\n");
+        log->prints("After Gathering\nPrimary Chain:\n");
         printInfo(log, comp()->fe(), chain);
-        traceMsg(comp(), "Bound Chain:\n");
+        log->prints("Bound Chain:\n");
         printInfo(log, comp()->fe(), bound);
     }
 
@@ -533,7 +533,7 @@ TR::Block *TR::SwitchAnalyzer::peelOffTheHottestValue(TR_LinkHead<SwitchInfo> *c
     float cutOffFrequency = 0.33f;
 
     if (trace()) {
-        traceMsg(comp(), "\nLooking to see if we have a value that's more than 33%% of all cases.\n");
+        comp()->getLogger()->prints("\nLooking to see if we have a value that's more than 33%% of all cases.\n");
     }
 
     TR_LinkHead<SwitchInfo> *list = chain;
@@ -566,9 +566,10 @@ TR::Block *TR::SwitchAnalyzer::peelOffTheHottestValue(TR_LinkHead<SwitchInfo> *c
         newBlock = addIfBlock(cmpOp, topNode->_min, topNode->_target);
 
         if (trace()) {
-            traceMsg(comp(), "Found a dominant entry in a dense node for target 0x%p with frequency of %f.\n",
+            comp()->getLogger()->printf(
+                "Found a dominant entry in a dense node for target 0x%p with frequency of %f.\n",
                 topNode->_target->getNode(), maxFreq);
-            traceMsg(comp(), "Peeling off a quick test for this entry.\n");
+            comp()->getLogger()->prints("Peeling off a quick test for this entry.\n");
         }
 
         return newBlock;
@@ -585,12 +586,13 @@ TR::Block *TR::SwitchAnalyzer::checkIfDefaultIsDominant(SwitchInfo *start)
     if (!start)
         return NULL;
 
+    OMR::Logger *log = comp()->getLogger();
     bool hasChildWithDecentFrequency = false;
     int32_t numCases = _switch->getNumChildren() - 2;
     float cutOffFrequency = .5f / ((float)numCases);
 
     if (trace()) {
-        traceMsg(comp(),
+        log->printf(
             "Looking to see if the default case is dominant. Number of cases is %d, cut off frequency set to %f\n",
             numCases, cutOffFrequency);
     }
@@ -599,8 +601,7 @@ TR::Block *TR::SwitchAnalyzer::checkIfDefaultIsDominant(SwitchInfo *start)
         if (temp->_freq >= cutOffFrequency) {
             hasChildWithDecentFrequency = true;
             if (trace()) {
-                traceMsg(comp(), "Found child with frequency of %f. The default case isn't that dominant.\n",
-                    temp->_freq);
+                log->printf("Found child with frequency of %f. The default case isn't that dominant.\n", temp->_freq);
             }
             break;
         }
@@ -611,7 +612,7 @@ TR::Block *TR::SwitchAnalyzer::checkIfDefaultIsDominant(SwitchInfo *start)
         int64_t absMax = start->_max;
 
         if (trace()) {
-            traceMsg(comp(), "The default case is dominant, we'll generate the range tests.\n");
+            log->prints("The default case is dominant, we'll generate the range tests.\n");
         }
 
         for (SwitchInfo *temp = start->getNext(); temp; temp = temp->getNext()) {
@@ -622,7 +623,7 @@ TR::Block *TR::SwitchAnalyzer::checkIfDefaultIsDominant(SwitchInfo *start)
         }
 
         if (trace()) {
-            traceMsg(comp(), "Range [%d, %d]\n", absMin, absMax);
+            log->printf("Range [%d, %d]\n", absMin, absMax);
         }
 
         bool _isInt64 = false;
@@ -720,7 +721,8 @@ void TR::SwitchAnalyzer::emit(TR_LinkHead<SwitchInfo> *chain, TR_LinkHead<Switch
     if (_switch->getOpCodeValue() == TR::lookup
         && (!comp()->isOptServer() || numCases > LOOKUP_SWITCH_GEN_IN_IL_OVERRIDE)) {
         if (trace())
-            traceMsg(comp(), "numMajors %d, majorsInBound %d, numCases %d\n", numMajors, majorsInBound, numCases);
+            comp()->getLogger()->printf("numMajors %d, majorsInBound %d, numCases %d\n", numMajors, majorsInBound,
+                numCases);
 
         // if the number of cases is so small that it's always better to convert the switch to ifs, skip checks for
         // backing out
@@ -1017,6 +1019,8 @@ TR::SwitchAnalyzer::SwitchInfo *TR::SwitchAnalyzer::sortedListByFrequency(Switch
 
 TR::Block *TR::SwitchAnalyzer::linearSearch(SwitchInfo *start)
 {
+    OMR::Logger *log = comp()->getLogger();
+
     // FIXME: use profiling info
     //
     TR::Block *newBlock = addGotoBlock(_defaultDest);
@@ -1027,11 +1031,11 @@ TR::Block *TR::SwitchAnalyzer::linearSearch(SwitchInfo *start)
     TR::ILOpCodes cmpOp = TR::BadILOp;
 
     if ((_switch->getOpCodeValue() == TR::lookup) && trace()) {
-        traceMsg(comp(), "Laying down linear search sequence. Initial switch values order:\n");
+        log->prints("Laying down linear search sequence. Initial switch values order:\n");
         for (SwitchInfo *temp = start; temp; temp = temp->getNext()) {
-            traceMsg(comp(), "0x%p ", temp->_target->getNode());
+            log->printf("0x%p ", temp->_target->getNode());
         }
-        traceMsg(comp(), "\n");
+        log->println();
     }
 
     // we sort in ascending order because the loop below
@@ -1040,11 +1044,11 @@ TR::Block *TR::SwitchAnalyzer::linearSearch(SwitchInfo *start)
         = (comp()->isOptServer() && _switch->getOpCodeValue() == TR::lookup) ? sortedListByFrequency(start) : start;
 
     if ((_switch->getOpCodeValue() == TR::lookup) && trace()) {
-        traceMsg(comp(), "Ascending sorted order by frequency:\n");
+        log->prints("Ascending sorted order by frequency:\n");
         for (SwitchInfo *temp = cursor; temp; temp = temp->getNext()) {
-            traceMsg(comp(), "0x%p ", temp->_target->getNode());
+            log->printf("0x%p ", temp->_target->getNode());
         }
-        traceMsg(comp(), "\n");
+        log->println();
     }
 
     for (; cursor; cursor = cursor->getNext()) {
@@ -1197,7 +1201,7 @@ int32_t *TR::SwitchAnalyzer::setupFrequencies(TR::Node *node)
         frequencies[i] = frequency;
 
         if (trace())
-            traceMsg(comp(), "Switch analyser: Frequency at pos %d is %d\n", i, frequencies[i]);
+            comp()->getLogger()->printf("Switch analyser: Frequency at pos %d is %d\n", i, frequencies[i]);
     }
 
     // For each case value, lists the frequency of the selector being of that value

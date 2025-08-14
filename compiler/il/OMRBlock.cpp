@@ -72,6 +72,7 @@
 #include "optimizer/GlobalRegister.hpp"
 #include "optimizer/GlobalRegister_inlines.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 class TR_Memory;
 
@@ -496,18 +497,26 @@ void OMR::Block::redirectFlowToNewDestination(TR::Compilation *comp, TR::CFGEdge
             comp->getFlowGraph()->removeEdge(from, origTo);
         } else if (lastNode->getOpCode().isJumpWithMultipleTargets()) {
             if (lastNode->getOpCode().hasBranchChildren()) {
-                traceMsg(comp, "Jump with multple targets, with non fall through path to empty block\n");
+                bool doTrace = comp->getOptions()->getAnyOption(TR_TraceAll);
+                OMR::Logger *log = comp->getLogger();
+
+                if (doTrace)
+                    log->prints("Jump with multiple targets, with non fall through path to empty block\n");
                 TR::TreeTop *origToEntry = origTo->getEntry();
                 TR::TreeTop *newToEntry = newTo->getEntry();
-                if (origToEntry)
-                    traceMsg(comp, "jumpwithmultipletargets: origToEntry->getNode = %p\n", origToEntry->getNode());
-                if (newToEntry)
-                    traceMsg(comp, "jumpwithmultipletargets: newToEntry->getNode = %p\n", newToEntry->getNode());
+                if (doTrace) {
+                    if (origToEntry)
+                        log->printf("jumpwithmultipletargets: origToEntry->getNode = %p\n", origToEntry->getNode());
+                    if (newToEntry)
+                        log->printf("jumpwithmultipletargets: newToEntry->getNode = %p\n", newToEntry->getNode());
+                }
                 // Get the right branch target
                 for (int32_t i = 0; i < lastNode->getNumChildren() - 1; i++) {
                     TR::Node *child = lastNode->getChild(i);
-                    traceMsg(comp, "considering node %p with branch destination %p \n", child,
-                        child->getBranchDestination() ? child->getBranchDestination()->getNode() : 0);
+
+                    if (doTrace)
+                        log->printf("considering node %p with branch destination %p \n", child,
+                            child->getBranchDestination() ? child->getBranchDestination()->getNode() : 0);
                     if (child->getBranchDestination() == origToEntry) {
                         child->setBranchDestination(newToEntry);
                         if (!from->hasSuccessor(newTo))
@@ -1852,7 +1861,7 @@ void OMR::Block::collectReferencedAutoSymRefsIn(TR::Compilation *comp, TR::Node 
 TR::Block *OMR::Block::splitEdge(TR::Block *from, TR::Block *to, TR::Compilation *c, TR::TreeTop **lastTreeTop,
     bool findOptimalInsertionPoint)
 {
-    // traceMsg("Splitting edge (%d,%d)\n", from->getNumber(), to->getNumber());
+    // c->getLogger()->printf("Splitting edge (%d,%d)\n", from->getNumber(), to->getNumber());
     TR_ASSERT(!to->isOSRCatchBlock(), "Splitting edge to OSRCatchBlock (block_%d -> block_%d) is not supported\n",
         from->getNumber(), to->getNumber());
     TR::Node *exitNode = from->getExit()->getNode();

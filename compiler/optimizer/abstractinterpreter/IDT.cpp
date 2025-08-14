@@ -21,6 +21,7 @@
 
 #include "optimizer/abstractinterpreter/IDT.hpp"
 #include "infra/String.hpp"
+#include "ras/Logger.hpp"
 
 TR::IDT::IDT(TR::Region &region, TR_CallTarget *callTarget, TR::ResolvedMethodSymbol *symbol, uint32_t budget,
     TR::Compilation *comp)
@@ -52,7 +53,7 @@ void TR::IDT::print()
         TR_VerboseLog::writeLine(TR_Vlog_BI, "%s", line.text());
     }
     if (traceBIIDTGen)
-        traceMsg(comp(), "%s\n", line.text());
+        comp()->getLogger()->printf("%s\n", line.text());
 
     if (candidates <= 0)
         return;
@@ -81,7 +82,7 @@ void TR::IDT::print()
                 TR_VerboseLog::writeLine(TR_Vlog_BI, "%s", line.text());
 
             if (traceBIIDTGen)
-                traceMsg(comp(), "%s\n", line.text());
+                comp()->getLogger()->printf("%s\n", line.text());
         }
 
         // process children

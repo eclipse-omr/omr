@@ -25,6 +25,7 @@
 #include "il/Node_inlines.hpp"
 #include "il/TreeTop_inlines.hpp"
 #include "il/Block.hpp"
+#include "ras/Logger.hpp"
 
 void RematSafetyInformation::add(TR::TreeTop *argStore, TR::SparseBitVector &symRefDependencies)
 {
@@ -44,19 +45,20 @@ void RematSafetyInformation::add(TR::TreeTop *argStore, TR::TreeTop *rematStore)
 
 void RematSafetyInformation::dumpInfo(TR::Compilation *comp)
 {
+    OMR::Logger *log = comp->getLogger();
     for (uint32_t i = 0; i < dependentSymRefs.size(); ++i) {
-        traceMsg(comp, "  Arg Remat Safety Info for priv arg store node %d",
+        log->printf("  Arg Remat Safety Info for priv arg store node %d",
             argumentTreeTops[i]->getNode()->getGlobalIndex());
         if (rematTreeTops[i]) {
             if (rematTreeTops[i] != argumentTreeTops[i])
-                traceMsg(comp, "     partial remat candidate node %d", rematTreeTops[i]->getNode()->getGlobalIndex());
+                log->printf("     partial remat candidate node %d", rematTreeTops[i]->getNode()->getGlobalIndex());
             else
-                traceMsg(comp, "     node candidate for full remat");
-            traceMsg(comp, "    dependent symrefs: ");
+                log->prints("     node candidate for full remat");
+            log->prints("    dependent symrefs: ");
             (*comp) << dependentSymRefs[i];
-            traceMsg(comp, "\n");
+            log->println();
         } else {
-            traceMsg(comp, "    candidate is unsafe for remat - no candidates under consideration");
+            log->prints("    candidate is unsafe for remat - no candidates under consideration");
         }
     }
 }
@@ -128,12 +130,13 @@ TR_YesNoMaybe RematTools::gatherNodesToCheck(TR::Compilation *comp, TR::Node *pr
     TR::SparseBitVector &scanTargets, TR::SparseBitVector &symRefsToCheck, bool trace,
     TR::SparseBitVector &visitedNodes)
 {
+    OMR::Logger *log = comp->getLogger();
     visitedNodes[currentNode->getGlobalIndex()] = true;
 
     TR::ILOpCode &opCode = currentNode->getOpCode();
     if (opCode.hasSymbolReference() && !opCode.isLoad()) {
         if (trace)
-            traceMsg(comp, "  priv arg remat: Can't fully remat [%p] due to [%p] - non-load with a symref", privArg,
+            log->printf("  priv arg remat: Can't fully remat [%p] due to [%p] - non-load with a symref", privArg,
                 currentNode);
         return TR_no;
     } else if (opCode.isLoadVarDirect()) {
@@ -152,7 +155,7 @@ TR_YesNoMaybe RematTools::gatherNodesToCheck(TR::Compilation *comp, TR::Node *pr
         //
         if (comp->requiresSpineChecks() && currentNode->getSymbol()->isArrayShadowSymbol()) {
             if (trace)
-                traceMsg(comp, "  priv arg remat: Can't fully remat [%p] due to [%p] - array access needs spine check",
+                log->printf("  priv arg remat: Can't fully remat [%p] due to [%p] - array access needs spine check",
                     privArg, currentNode);
 
             return TR_no;
@@ -188,7 +191,7 @@ TR_YesNoMaybe RematTools::gatherNodesToCheck(TR::Compilation *comp, TR::Node *pr
                 childSymRefsToCheck, trace, visitedNodes);
             if (childResult == TR_no) {
                 if (trace)
-                    traceMsg(comp, "  priv arg remat: Can't fully remat [%p] due to [%p] - unsafe arithmetic child %d",
+                    log->printf("  priv arg remat: Can't fully remat [%p] due to [%p] - unsafe arithmetic child %d",
                         privArg, currentNode, i);
                 candidateForRemat = TR_no;
                 break;
@@ -205,7 +208,7 @@ TR_YesNoMaybe RematTools::gatherNodesToCheck(TR::Compilation *comp, TR::Node *pr
     } else {
         // anything we haven't considered is dangerous as a conservative assumption
         if (trace)
-            traceMsg(comp, "  guarded call remat: Can't fully remat [%p] due to [%p] - unhandled case", privArg,
+            log->printf("  guarded call remat: Can't fully remat [%p] due to [%p] - unhandled case", privArg,
                 currentNode);
         return TR_no;
     }
@@ -222,6 +225,8 @@ void RematTools::walkNodesCalculatingRematSafety(TR::Compilation *comp, TR::Node
     TR::SparseBitVector &scanTargets, TR::SparseBitVector &enabledSymRefs, TR::SparseBitVector &unsafeSymRefs,
     bool trace, TR::SparseBitVector &visitedNodes)
 {
+    OMR::Logger *log = comp->getLogger();
+
     for (uint16_t i = 0; i < currentNode->getNumChildren(); ++i) {
         if (visitedNodes.ValueAt(currentNode->getChild(i)->getGlobalIndex()))
             continue;
@@ -233,12 +238,12 @@ void RematTools::walkNodesCalculatingRematSafety(TR::Compilation *comp, TR::Node
     }
 
     if (trace) {
-        traceMsg(comp, "Remat Safety Walk visiting n%dn\n", currentNode->getGlobalIndex());
-        traceMsg(comp, "Enabled symrefs: ");
+        log->printf("Remat Safety Walk visiting n%dn\n", currentNode->getGlobalIndex());
+        log->prints("Enabled symrefs: ");
         (*comp) << enabledSymRefs;
-        traceMsg(comp, "\nUnsafe symrefs: ");
+        log->prints("\nUnsafe symrefs: ");
         (*comp) << unsafeSymRefs;
-        traceMsg(comp, "\n");
+        log->println();
     }
 
     // step 1 - add the current node kills to our running kills
@@ -247,7 +252,7 @@ void RematTools::walkNodesCalculatingRematSafety(TR::Compilation *comp, TR::Node
     TR::ILOpCode &opCode = currentNode->getOpCode();
     if (opCode.isLikeDef() && opCode.hasSymbolReference()) {
         if (trace)
-            traceMsg(comp, "Setting symref #%d as unsafe\n", currentNode->getSymbolReference()->getReferenceNumber());
+            log->printf("Setting symref #%d as unsafe\n", currentNode->getSymbolReference()->getReferenceNumber());
         unsafeSymRefs[currentNode->getSymbolReference()->getReferenceNumber()] = true;
     }
 
@@ -259,16 +264,16 @@ void RematTools::walkNodesCalculatingRematSafety(TR::Compilation *comp, TR::Node
     if (scanTargets.ValueAt(currentNode->getGlobalIndex()) && opCode.hasSymbolReference()) {
         // enable the symref we just found
         if (trace)
-            traceMsg(comp, "Enabling symref #%d\n", currentNode->getSymbolReference()->getReferenceNumber());
+            log->printf("Enabling symref #%d\n", currentNode->getSymbolReference()->getReferenceNumber());
         enabledSymRefs[currentNode->getSymbolReference()->getReferenceNumber()] = true;
     }
     if (trace) {
-        traceMsg(comp, "Remat Safety Walk after visiting n%dn\n", currentNode->getGlobalIndex());
-        traceMsg(comp, "Enabled symrefs: ");
+        log->printf("Remat Safety Walk after visiting n%dn\n", currentNode->getGlobalIndex());
+        log->prints("Enabled symrefs: ");
         (*comp) << enabledSymRefs;
-        traceMsg(comp, "\nUnsafe symrefs: ");
+        log->prints("\nUnsafe symrefs: ");
         (*comp) << unsafeSymRefs;
-        traceMsg(comp, "\n");
+        log->println();
     }
 }
 
@@ -309,7 +314,9 @@ bool RematTools::walkTreesCalculatingRematSafety(TR::Compilation *comp, TR::Tree
                 visitedNodes);
         }
         if (!getNextTreeTop(start, blocks, firstBlock)) {
-            traceMsg(comp, "  remat tools: failed to follow path for remat safety at [%p]\n", start->getNode());
+            if (trace)
+                comp->getLogger()->printf("  remat tools: failed to follow path for remat safety at [%p]\n",
+                    start->getNode());
             return false;
         }
     }
@@ -343,6 +350,7 @@ bool RematTools::walkTreeTopsCalculatingRematFailureAlternatives(TR::Compilation
     TR::TreeTop *end, TR::list<TR::TreeTop *> &failedArgs, TR::SparseBitVector &scanTargets,
     RematSafetyInformation &rematInfo, TR_BitVector *blocksToVisit, bool trace)
 {
+    OMR::Logger *log = comp->getLogger();
     TR::Block *firstBlock = start->getEnclosingBlock();
     TR_BitVector *blocks = blocksToVisit;
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
@@ -360,8 +368,8 @@ bool RematTools::walkTreeTopsCalculatingRematFailureAlternatives(TR::Compilation
 
     while (start != end) {
         if (trace)
-            traceMsg(comp, "  priv arg remat: visiting [%p]: isStore %d privArg %d failedTargetMatch %d",
-                start->getNode(), start->getNode()->getOpCode().isStoreDirect(),
+            log->printf("  priv arg remat: visiting [%p]: isStore %d privArg %d failedTargetMatch %d", start->getNode(),
+                start->getNode()->getOpCode().isStoreDirect(),
                 start->getNode()->getSymbol() && start->getNode()->getSymbol()->isAuto(),
                 start->getNode()->getNumChildren() > 0
                     ? failedTargets.ValueAt(start->getNode()->getFirstChild()->getGlobalIndex())
@@ -369,14 +377,14 @@ bool RematTools::walkTreeTopsCalculatingRematFailureAlternatives(TR::Compilation
         if (start->getNode() && start->getNode()->getOpCode().isStoreDirect() && start->getNode()->getSymbol()->isAuto()
             && failedTargets.ValueAt(start->getNode()->getFirstChild()->getGlobalIndex())) {
             if (trace)
-                traceMsg(comp, "  priv arg remat: considering partial remat with node [%p]", start->getNode());
+                log->printf("  priv arg remat: considering partial remat with node [%p]", start->getNode());
             for (auto iter = failedArgs.begin(); iter != failedArgs.end(); ++iter) {
                 if ((*iter) && (*iter)->getNode()->getOpCode().hasSymbolReference()
                     && (*iter)->getNode()->getSymbolReference()->getReferenceNumber()
                         != start->getNode()->getSymbolReference()->getReferenceNumber()
                     && (*iter)->getNode()->getFirstChild() == start->getNode()->getFirstChild()) {
                     if (trace)
-                        traceMsg(comp, "  priv arg remat: attempting partial remat with node [%p] for [%p]",
+                        log->printf("  priv arg remat: attempting partial remat with node [%p] for [%p]",
                             start->getNode(), (*iter)->getNode());
                     rematInfo.add(*iter, start);
                     scanTargets[start->getNode()->getGlobalIndex()] = true;
@@ -386,7 +394,9 @@ bool RematTools::walkTreeTopsCalculatingRematFailureAlternatives(TR::Compilation
             }
         }
         if (!getNextTreeTop(start, blocks, firstBlock)) {
-            traceMsg(comp, "  remat tools: failed to follow path for failure alternatives at [%p]\n", start->getNode());
+            if (trace)
+                log->printf("  remat tools: failed to follow path for failure alternatives at [%p]\n",
+                    start->getNode());
             return false;
         }
     }

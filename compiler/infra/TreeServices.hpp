@@ -33,6 +33,7 @@
 #include "il/Node_inlines.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 class TR_AddressTree {
 public:
@@ -144,13 +145,14 @@ public:
 
     void dump(TR::Compilation *comp)
     {
-        traceMsg(comp, "{");
+        OMR::Logger *log = comp->getLogger();
+        log->printc('{');
         const char *sep = "";
         for (TR_Mark i = 0; i < _undoCount; i++) {
-            traceMsg(comp, "%s%d:%s", sep, _undoStack[i], comp->getDebug()->getName(_unifiedNodes[_undoStack[i]]));
+            log->printf("%s%d:%s", sep, _undoStack[i], comp->getDebug()->getName(_unifiedNodes[_undoStack[i]]));
             sep = " ";
         }
-        traceMsg(comp, "}");
+        log->printc('}');
     }
 };
 
