@@ -60,11 +60,11 @@
 #define MEM_SEGMENT_SIZE 1 << 16 // i.e. 65536 bytes (~64KB)
 
 #define TraceEnabled (comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...)                                    \
-    {                                                      \
-        if (TraceEnabled) {                                \
-            comp()->getLogger()->printf(m, ##__VA_ARGS__); \
-        }                                                  \
+#define TraceIL(m, ...)                              \
+    {                                                \
+        if (TraceEnabled) {                          \
+            comp()->log()->printf(m, ##__VA_ARGS__); \
+        }                                            \
     }
 
 // MethodBuilder is an IlBuilder object representing an entire method /

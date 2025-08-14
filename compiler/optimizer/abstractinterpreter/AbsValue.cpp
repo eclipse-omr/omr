@@ -59,7 +59,7 @@ TR::AbsValue *TR::AbsVPValue::merge(const TR::AbsValue *other)
 
 void TR::AbsVPValue::print(TR::Compilation *comp) const
 {
-    TR::Logger *log = comp->getLogger();
+    TR::Logger *log = comp->log();
 
     log->printf("AbsValue: Type: %s ", TR::DataType::getName(_dataType));
 

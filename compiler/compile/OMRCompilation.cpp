@@ -515,33 +515,32 @@ bool OMR::Compilation::supportsInduceOSR()
 {
     if (_osrInfrastructureRemoved) {
         if (self()->getOption(TR_TraceOSR))
-            self()->getLogger()->prints(
-                "OSR induction cannot be performed after OSR infrastructure has been removed\n");
+            self()->log()->prints("OSR induction cannot be performed after OSR infrastructure has been removed\n");
         return false;
     }
 
     if (!self()->canAffordOSRControlFlow()) {
         if (self()->getOption(TR_TraceOSR))
-            self()->getLogger()->prints("canAffordOSRControlFlow is false - OSR induction is not supported\n");
+            self()->log()->prints("canAffordOSRControlFlow is false - OSR induction is not supported\n");
         return false;
     }
 
     if (self()->getOption(TR_MimicInterpreterFrameShape)
         && !self()->getOption(TR_FullSpeedDebug) /* && areSlotsSharedByRefAndNonRef() */) {
         if (self()->getOption(TR_TraceOSR))
-            self()->getLogger()->prints("MimicInterpreterFrameShape is set - OSR induction is not supported\n");
+            self()->log()->prints("MimicInterpreterFrameShape is set - OSR induction is not supported\n");
         return false;
     }
 
     if (self()->isDLT() /* && getJittedMethodSymbol()->sharesStackSlots(self()) */) {
         if (self()->getOption(TR_TraceOSR))
-            self()->getLogger()->prints("DLT compilation - OSR induction is not supported\n");
+            self()->log()->prints("DLT compilation - OSR induction is not supported\n");
         return false;
     }
 
     if (_osrCompilationData && _osrCompilationData->seenClassPreventingInducedOSR()) {
         if (self()->getOption(TR_TraceOSR))
-            self()->getLogger()->prints(
+            self()->log()->prints(
                 "Cannot guarantee OSR transfer of control to the interpreter will work for calls preventing induced "
                 "OSR (e.g. Quad) because of differences in JIT vs interpreter representations\n");
         return false;
@@ -831,7 +830,7 @@ static void traceBondMethods(TR::Compilation *comp)
         return;
     }
 
-    TR::Logger *log = comp->getLogger();
+    TR::Logger *log = comp->log();
 
     log->prints("\nBond methods:\n");
 
@@ -919,11 +918,11 @@ int32_t OMR::Compilation::compile()
 
     if (self()->getLoggingEnabled()
         && (self()->getOption(TR_TraceAll) || debug("traceStartCompile") || self()->getOption(TR_Timing))) {
-        self()->getDebug()->printHeader(self()->getLogger());
+        self()->getDebug()->printHeader(self()->log());
 
         static char *randomExercisePeriodStr = feGetEnv("TR_randomExercisePeriod");
         if (self()->getOption(TR_Randomize) || randomExercisePeriodStr != NULL)
-            self()->getLogger()->printf("Random seed is %d%s\n", _options->getRandomSeed(),
+            self()->log()->printf("Random seed is %d%s\n", _options->getRandomSeed(),
                 self()->getOption(TR_RandomSeedSignatureHash) ? " hashed with signature" : "");
 
         if (randomExercisePeriodStr != NULL) {
@@ -969,7 +968,7 @@ int32_t OMR::Compilation::compile()
             }
 
             if ((debug("dumpInitialTrees") || self()->getOption(TR_TraceTrees)) && self()->getLoggingEnabled()) {
-                TR::Logger *log = self()->getLogger();
+                TR::Logger *log = self()->log();
                 self()->dumpMethodTrees(log, "Initial Trees");
                 self()->getDebug()->print(log, self()->getSymRefTab());
             }
@@ -989,7 +988,7 @@ int32_t OMR::Compilation::compile()
             }
 
             if (self()->getOption(TR_TraceAll))
-                self()->getDebug()->printMethodHotness(self()->getLogger());
+                self()->getDebug()->printMethodHotness(self()->log());
 
             TR_DebuggingCounters::initializeCompilation();
             if (printCodegenTime)
@@ -1123,7 +1122,7 @@ int32_t OMR::Compilation::compile()
         // Flush the log
         //
         if (self()->getOption(TR_TraceAll))
-            self()->getLogger()->flush();
+            self()->log()->flush();
     }
 
     if (self()->getOption(TR_Timing)) {
@@ -1148,7 +1147,7 @@ int32_t OMR::Compilation::compile()
     if (self()->getOption(TR_TraceCG)) {
         TR_CHTable *chTable = self()->getCHTable();
         if (chTable)
-            self()->getDebug()->dump(self()->getLogger(), chTable);
+            self()->getDebug()->dump(self()->log(), chTable);
     }
 #endif /* ifdef(J9_PROJECT_SPECIFIC) */
 
@@ -1198,7 +1197,7 @@ void OMR::Compilation::performOptimizations()
             // guaranteed to outlive this body.
             bool trace = self()->getOption(TR_TraceRetainedMethods);
             if (trace) {
-                self()->getLogger()->prints("dontInlineUnloadableMethods: check inlining table\n");
+                self()->log()->prints("dontInlineUnloadableMethods: check inlining table\n");
             }
 
             // Keepalives must be taken into account, since without them it might
@@ -1226,7 +1225,7 @@ void OMR::Compilation::performOptimizations()
                     //
                     TR_ByteCodeInfo bci = self()->getInlinedCallSite(i)._byteCodeInfo;
                     if (trace) {
-                        self()->getLogger()->printf("check inlined site %u, bci=%d:%d\n", i, bci.getCallerIndex(),
+                        self()->log()->printf("check inlined site %u, bci=%d:%d\n", i, bci.getCallerIndex(),
                             bci.getByteCodeIndex());
                     }
 
@@ -1245,7 +1244,7 @@ void OMR::Compilation::performOptimizations()
             }
 
             if (trace) {
-                self()->getLogger()->println("\n");
+                self()->log()->println("\n");
             }
         }
     }
@@ -1326,7 +1325,7 @@ bool OMR::Compilation::incInlineDepth(TR_OpaqueMethodBlock *methodInfo, TR::Reso
     // For example, in Java TR_ByteCodeInfo::maxCallerIndex is set to 4095 (12 bits and one used for signness)
     if (self()->getNumInlinedCallSites() >= unsigned(maxCallerIndex)) {
         if (self()->getOption(TR_TraceAll))
-            self()->getLogger()->printf("The maximum number of inlined methods %d is reached\n",
+            self()->log()->printf("The maximum number of inlined methods %d is reached\n",
                 TR_ByteCodeInfo::maxCallerIndex);
         return false;
     }
@@ -1534,8 +1533,8 @@ TR_VirtualGuard *OMR::Compilation::findVirtualGuardInfo(TR::Node *guardNode)
 void OMR::Compilation::removeVirtualGuard(TR_VirtualGuard *guard)
 {
     if (self()->getOption(TR_TraceRelocatableDataDetailsCG)) {
-        self()->getLogger()->printf("removeVirtualGuard %p, kind %d bcindex %d calleeindex %d\n", guard,
-            guard->getKind(), guard->getByteCodeIndex(), guard->getCalleeIndex());
+        self()->log()->printf("removeVirtualGuard %p, kind %d bcindex %d calleeindex %d\n", guard, guard->getKind(),
+            guard->getByteCodeIndex(), guard->getCalleeIndex());
     }
 
     bool wasPresent = _virtualGuards.erase(guard) != 0;
@@ -1718,7 +1717,7 @@ void OMR::Compilation::resetVisitCounts(vcount_t count, TR::TreeTop *start)
 void OMR::Compilation::reportFailure(const char *reason)
 {
     if (self()->getOption(TR_TraceAll))
-        self()->getLogger()->printf("Compilation Failed Because: %s\n", reason);
+        self()->log()->printf("Compilation Failed Because: %s\n", reason);
     if (self()->getOption(TR_PrintErrorInfoOnCompFailure)) {
         fprintf(stderr, "Compilation Failed Because: %s\n", reason);
     }
@@ -1907,7 +1906,7 @@ void OMR::Compilation::verifyAndFixRdbarAnchors()
                 iter.currentTree()->insertBefore(TR::TreeTop::create(self(), newttNode));
 
                 if (self()->getOption(TR_TraceAll))
-                    self()->getLogger()->printf(
+                    self()->log()->printf(
                         "node (n%dn) %p is an unanchored readbar, anchor it now under treetop node (n%dn) %p\n",
                         node->getGlobalIndex(), node, newttNode->getGlobalIndex(), newttNode);
             }
@@ -1922,7 +1921,7 @@ void OMR::Compilation::dumpMethodGraph(int index, TR::ResolvedMethodSymbol *meth
         return;
     }
 
-    TR::Logger *log = getLogger();
+    TR::Logger *log = log();
 
     if (methodSymbol == 0)
         methodSymbol = _methodSymbol;
@@ -2337,7 +2336,7 @@ void OMR::Compilation::diagnosticImpl(const char *s, ...)
 void OMR::Compilation::diagnosticImplVA(const char *s, va_list ap)
 {
     if (self()->getLoggingEnabled()) {
-        TR::Logger *log = self()->getLogger();
+        TR::Logger *log = self()->log();
         log->vprintf(s, ap);
         log->flush();
     }
@@ -2449,13 +2448,13 @@ void BitVectorPool::release(TR_BitVector *v)
 namespace TR {
 Compilation &operator<<(Compilation &comp, const char *str)
 {
-    (&comp)->getLogger()->prints(str);
+    (&comp)->log()->prints(str);
     return comp;
 }
 
 Compilation &operator<<(Compilation &comp, const int n)
 {
-    (&comp)->getLogger()->printf("%d", n);
+    (&comp)->log()->printf("%d", n);
     return comp;
 }
 

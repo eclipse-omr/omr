@@ -47,7 +47,7 @@ void OMR::GCStackAtlas::close(TR::CodeGenerator *cg)
     TR::Compilation *comp = cg->comp();
 
     if (comp->getOption(TR_TraceCG)) {
-        comp->getDebug()->print(comp->getLogger(), self());
+        comp->getDebug()->print(comp->log(), self());
     }
 
     // Merge adjacent similar maps

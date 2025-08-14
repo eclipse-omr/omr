@@ -70,7 +70,7 @@ void TR::PPCLabelInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
         // This label is the end of the hot instruction stream (i.e., the fallthru path).
         //
         if (comp->getOption(TR_TraceRA))
-            comp->getLogger()->prints("\nOOL: 1. Taking register state snap shot\n");
+            comp->log()->prints("\nOOL: 1. Taking register state snap shot\n");
         cg()->setIsOutOfLineHotPath(true);
         machine->takeRegisterStateSnapShot();
 
@@ -88,7 +88,7 @@ void TR::PPCLabelInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
         // Start RA for OOL cold path, restore register state from snap shot
         //
         if (comp->getOption(TR_TraceRA))
-            comp->getLogger()->prints("\nOOL: 1. Restoring Register state from snap shot\n");
+            comp->log()->prints("\nOOL: 1. Restoring Register state from snap shot\n");
         cg()->setIsOutOfLineHotPath(false);
         machine->restoreRegisterStateFromSnapShot();
     }

@@ -54,7 +54,7 @@ TR::InliningProposal::InliningProposal(const InliningProposal &proposal, TR::Reg
 
 void TR::InliningProposal::print(TR::Compilation *comp)
 {
-    TR::Logger *log = comp->getLogger();
+    TR::Logger *log = comp->log();
     bool traceBIProposal = comp->getOption(TR_TraceBIProposal);
     bool verboseInlining = comp->getOptions()->getVerboseOption(TR_VerboseInlining);
 

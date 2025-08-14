@@ -42,7 +42,7 @@ TR_YesNoMaybe TR_TrivialDeadBlockRemover::evaluateTakeBranch(TR::Node *ifNode)
         && (TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue())
             || TR::ILOpCode::isNotEqualCmp(ifNode->getOpCodeValue()))) {
         if (trace())
-            comp()->getLogger()->printf("An equality comparison %p folded to %d\n", ifNode,
+            comp()->log()->printf("An equality comparison %p folded to %d\n", ifNode,
                 TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue()));
 
         return TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue()) ? TR_yes : TR_no;
@@ -81,8 +81,8 @@ TR_YesNoMaybe TR_TrivialDeadBlockRemover::evaluateTakeBranch(TR::Node *ifNode)
     int row = less ? 0 : greater ? 1 : 2;
 
     if (trace())
-        comp()->getLogger()->printf("ifNode %p folded using a decision table,"
-                                    "row %d col %d value %s\n",
+        comp()->log()->printf("ifNode %p folded using a decision table,"
+                              "row %d col %d value %s\n",
             ifNode, row, col, comp()->getDebug()->getName(decisionTable[row][col]));
 
     return decisionTable[row][col];

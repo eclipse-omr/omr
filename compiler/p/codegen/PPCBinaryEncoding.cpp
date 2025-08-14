@@ -1138,22 +1138,21 @@ uint8_t *TR::PPCAlignmentNopInstruction::generateBinaryEncoding()
         lastNop->setEstimatedBinaryLength(PPC_INSTRUCTION_LENGTH);
 
         if (trace)
-            comp->getLogger()->printf("Expanding alignment nop %p into %u instructions: [ %p ", self(), nopsToAdd,
-                lastNop);
+            comp->log()->printf("Expanding alignment nop %p into %u instructions: [ %p ", self(), nopsToAdd, lastNop);
 
         for (uint32_t i = 1; i < nopsToAdd; i++) {
             TR::Instruction *nop = generateInstruction(cg(), TR::InstOpCode::nop, getNode(), self());
             nop->setEstimatedBinaryLength(PPC_INSTRUCTION_LENGTH);
 
             if (trace)
-                comp->getLogger()->printf("%p ", nop);
+                comp->log()->printf("%p ", nop);
         }
 
         if (trace)
-            comp->getLogger()->prints("]\n");
+            comp->log()->prints("]\n");
     } else {
         if (trace)
-            comp->getLogger()->printf("Eliminating alignment nop %p, since the next instruction is already aligned\n",
+            comp->log()->printf("Eliminating alignment nop %p, since the next instruction is already aligned\n",
                 self());
     }
 
@@ -1267,7 +1266,7 @@ void TR::PPCConditionalBranchInstruction::expandIntoFarBranch()
     TR_ASSERT_FATAL_WITH_INSTRUCTION(self(), getLabelSymbol(), "Cannot expand conditional branch without a label");
 
     if (comp()->getOption(TR_TraceCG))
-        comp()->getLogger()->printf("Expanding conditional branch instruction %p into a far branch\n", self());
+        comp()->log()->printf("Expanding conditional branch instruction %p into a far branch\n", self());
 
     TR::InstOpCode::Mnemonic newOpCode;
     bool wasLinkForm = reversedConditionalBranchOpCode(getOpCodeValue(), &newOpCode);

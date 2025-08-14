@@ -54,7 +54,7 @@ TR_LocalReordering::TR_LocalReordering(TR::OptimizationManager *manager)
 int32_t TR_LocalReordering::perform()
 {
     if (trace())
-        comp()->getLogger()->prints("Starting LocalReordering\n");
+        comp()->log()->prints("Starting LocalReordering\n");
 
     TR::TreeTop *treeTop = comp()->getStartTree();
     while (treeTop != NULL) {
@@ -67,7 +67,7 @@ int32_t TR_LocalReordering::perform()
     }
 
     if (trace())
-        comp()->getLogger()->prints("\nEnding LocalReordering\n");
+        comp()->log()->prints("\nEnding LocalReordering\n");
 
     return 2;
 }

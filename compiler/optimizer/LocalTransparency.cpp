@@ -49,7 +49,7 @@
 TR_LocalTransparency::TR_LocalTransparency(TR_LocalAnalysisInfo &info, bool t)
     : TR_LocalAnalysis(info, t)
 {
-    TR::Logger *log = comp()->getLogger();
+    TR::Logger *log = comp()->log();
     if (trace())
         log->prints("Starting LocalTransparency\n");
 
@@ -610,7 +610,7 @@ void TR_LocalTransparency::updateInfoForSupportedNodes(TR::Node *node, Container
 
     node->setVisitCount(visitCount);
 
-    TR::Logger *log = comp()->getLogger();
+    TR::Logger *log = comp()->log();
 
     TR::ILOpCode &opCode = node->getOpCode();
 
@@ -784,7 +784,7 @@ void TR_LocalTransparency::updateInfoForSupportedNodes(TR::Node *node, Container
 void TR_LocalTransparency::adjustInfoForAddressAdd(TR::Node *node, TR::Node *child,
     ContainerType *seenDefinedSymbolReferences, ContainerType *seenStoredSymRefs)
 {
-    TR::Logger *log = comp()->getLogger();
+    TR::Logger *log = comp()->log();
     bool childHasSupportedOpCode = false;
 
     TR::ILOpCode &childOpCode = child->getOpCode();

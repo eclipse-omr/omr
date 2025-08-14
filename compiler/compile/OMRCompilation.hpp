@@ -423,7 +423,16 @@ public:
 
     void setOutFile(TR::FILE *pf) { _options->setLogFile(pf); }
 
-    TR::Logger *getLogger() { return _options->getLogger(); }
+    /**
+     *  @details
+     *     The function \c getLoggingEnabled() should be used to determine whether
+     *     logging is presently enabled, not the presence or absence of a logger
+     *     as reported by this API.
+     *
+     *  @returns Currently active logger on this compilation thread, or NULL
+     *     if a logger is not active.
+     */
+    TR::Logger *log() { return _options->getLogger(); }
 
     void setLogger(TR::Logger *log) { _options->setLogger(log); }
 

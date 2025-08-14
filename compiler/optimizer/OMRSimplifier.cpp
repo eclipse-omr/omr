@@ -188,14 +188,14 @@ void OMR::Simplifier::prePerformOnBlocks()
     _ccHashTab.init(64, true);
 
     if (trace()) {
-        comp()->dumpMethodTrees(comp()->getLogger(), "Trees before simplification");
+        comp()->dumpMethodTrees(comp()->log(), "Trees before simplification");
     }
 }
 
 void OMR::Simplifier::postPerformOnBlocks()
 {
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after simplification");
+        comp()->dumpMethodTrees(comp()->log(), "Trees after simplification");
 
     // Invalidate usedef and value number information if necessary
     //
@@ -335,15 +335,15 @@ TR::TreeTop *OMR::Simplifier::simplifyExtendedBlock(TR::TreeTop *treeTop)
         block = b;
 
         if (trace())
-            comp()->getLogger()->printf("simplifying block_%d\n", block->getNumber());
+            comp()->log()->printf("simplifying block_%d\n", block->getNumber());
 
         simplify(block);
 
         for (auto cursor = _performLowerTreeNodePairs.begin(); cursor != _performLowerTreeNodePairs.end(); ++cursor) {
             auto treeNodePair = *cursor;
             if (trace())
-                comp()->getLogger()->printf("process _performLowerTreeNodePairs treetop %p node %p\n",
-                    treeNodePair.first, treeNodePair.second);
+                comp()->log()->printf("process _performLowerTreeNodePairs treetop %p node %p\n", treeNodePair.first,
+                    treeNodePair.second);
             TR::Node *performLowerNode
                 = postWalkLowerTreeSimplifier(treeNodePair.first, treeNodePair.second, block, (TR::Simplifier *)this);
             treeNodePair.first->setNode(performLowerNode);
@@ -548,8 +548,8 @@ TR::Node *OMR::Simplifier::unaryCancelOutWithChild(TR::Node *node, TR::Node *fir
                 && (grandChild->getSecondChild()->get64bitIntegralValue() == truncatedBits)) {
                 disallow = false;
                 if (trace())
-                    comp()->getLogger()->printf("do allow unaryCancel of node %s (%p) and firstChild %s (%p) as "
-                                                "grandChild %s (%p) zeros the %d truncated bytes\n",
+                    comp()->log()->printf("do allow unaryCancel of node %s (%p) and firstChild %s (%p) as grandChild "
+                                          "%s (%p) zeros the %d truncated bytes\n",
                         node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild,
                         grandChild->getOpCode().getName(), grandChild, truncatedBits / 8);
             }
@@ -557,9 +557,8 @@ TR::Node *OMR::Simplifier::unaryCancelOutWithChild(TR::Node *node, TR::Node *fir
 
         if (disallow) {
             if (trace())
-                comp()->getLogger()->printf(
-                    "disallow unaryCancel of node %s (%p) and firstChild %s (%p) due to unequal sizes (nodeSize %d, "
-                    "firstChildSize %d, firstChild->childSize %d)\n",
+                comp()->log()->printf("disallow unaryCancel of node %s (%p) and firstChild %s (%p) due to unequal "
+                                      "sizes (nodeSize %d, firstChildSize %d, firstChild->childSize %d)\n",
                     node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild, node->getSize(),
                     firstChild->getSize(), firstChild->getFirstChild()->getSize());
             return NULL;
@@ -625,7 +624,7 @@ void OMR::Simplifier::anchorOrderDependentNodesInSubtree(TR::Node *node, TR::Nod
 
     if (nodeIsOrderDependent(node, 0, false)) {
         if (trace())
-            comp()->getLogger()->printf("anchor detached node %p\n", node);
+            comp()->log()->printf("anchor detached node %p\n", node);
 
         generateAnchor(node, anchorTree);
     } else

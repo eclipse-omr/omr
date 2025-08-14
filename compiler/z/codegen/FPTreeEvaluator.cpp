@@ -583,7 +583,7 @@ inline TR::Register *floadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::Memo
     TR::MemoryReference *tempMR = srcMR;
     if (tempMR == NULL) {
         tempMR = TR::MemoryReference::create(cg, node);
-        // cg->comp()->getLogger()->printf("Generated memory reference %p for node %p with offset
+        // cg->comp()->log()->printf("Generated memory reference %p for node %p with offset
         // %d",tempMR,node,tempMR->getOffset());
     }
     generateRXEInstruction(cg, TR::InstOpCode::LDE, node, tempReg, tempMR);
@@ -652,7 +652,7 @@ TR::Register *OMR::Z::TreeEvaluator::faddEvaluator(TR::Node *node, TR::CodeGener
     if ((canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MAEBR)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("Successfully changed fadd to fused multiply and add operation\n");
+            comp->log()->prints("Successfully changed fadd to fused multiply and add operation\n");
     } else {
         TR_S390BinaryCommutativeAnalyser temp(cg);
         temp.floatBinaryCommutativeAnalyser(node, TR::InstOpCode::AEBR, TR::InstOpCode::AEB);
@@ -669,7 +669,7 @@ TR::Register *OMR::Z::TreeEvaluator::daddEvaluator(TR::Node *node, TR::CodeGener
     if ((canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MADBR)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("Successfully changed dadd to fused multiply and add operation\n");
+            comp->log()->prints("Successfully changed dadd to fused multiply and add operation\n");
     } else {
         TR_S390BinaryCommutativeAnalyser temp(cg);
         temp.doubleBinaryCommutativeAnalyser(node, TR::InstOpCode::ADBR, TR::InstOpCode::ADB);
@@ -712,11 +712,11 @@ TR::Register *OMR::Z::TreeEvaluator::fsubEvaluator(TR::Node *node, TR::CodeGener
     if (canUseNodeForFusedMultiply(node->getFirstChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MSEBR)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("Successfully changed fsub to fused multiply and sub operation\n");
+            comp->log()->prints("Successfully changed fsub to fused multiply and sub operation\n");
     } else if (canUseNodeForFusedMultiply(node->getSecondChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MAEBR, TR::InstOpCode::LCEBR)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("Successfully changed fsub to fused multiply, negate, and add operation\n");
+            comp->log()->prints("Successfully changed fsub to fused multiply, negate, and add operation\n");
     } else {
         TR_S390BinaryAnalyser temp(cg);
         temp.floatBinaryAnalyser(node, TR::InstOpCode::SEBR, TR::InstOpCode::SEB);
@@ -732,11 +732,11 @@ TR::Register *OMR::Z::TreeEvaluator::dsubEvaluator(TR::Node *node, TR::CodeGener
     if (canUseNodeForFusedMultiply(node->getFirstChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MSDBR)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("Successfully changed dsub to fused multiply and subtract operation\n");
+            comp->log()->prints("Successfully changed dsub to fused multiply and subtract operation\n");
     } else if (canUseNodeForFusedMultiply(node->getSecondChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MADBR, TR::InstOpCode::LCDBR)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("Successfully changed dsub to fused multiply, negate, and add operation\n");
+            comp->log()->prints("Successfully changed dsub to fused multiply, negate, and add operation\n");
     } else {
         TR_S390BinaryAnalyser temp(cg);
         temp.doubleBinaryAnalyser(node, TR::InstOpCode::SDBR, TR::InstOpCode::SDB);
