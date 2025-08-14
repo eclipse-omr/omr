@@ -3656,21 +3656,21 @@ TR::Instruction *generateS390PackedCompareAndBranchOps(TR::Node *node, TR::CodeG
     TR_PseudoRegister *secondReg = cg->evaluateBCDNode(secondChild);
     TR::Compilation *comp = cg->comp();
     TR::Logger *log = comp->log();
+    bool trace = cg->traceBCDCodeGen();
 
     bool useCLC = false;
     int32_t clcSize = 0;
-    if (cg->traceBCDCodeGen())
-        comp->log()->printf(
-            "pdcompare node %p attempt to gen CLC with firstReg %s (symRef #%d) and secondReg %s (symRef #%d)\n", node,
-            cg->getDebug()->getName(firstReg), firstReg->getStorageReference()->getReferenceNumber(),
-            cg->getDebug()->getName(secondReg), secondReg->getStorageReference()->getReferenceNumber());
+    trprintf(trace, log,
+        "pdcompare node %p attempt to gen CLC with firstReg %s (symRef #%d) and secondReg %s (symRef #%d)\n", node,
+        cg->getDebug()->getName(firstReg), firstReg->getStorageReference()->getReferenceNumber(),
+        cg->getDebug()->getName(secondReg), secondReg->getStorageReference()->getReferenceNumber());
     bool signsAndDataAreValid = firstReg->hasKnownValidSignAndData() && secondReg->hasKnownValidSignAndData();
     if (signsAndDataAreValid) {
         bool knownSigns = firstReg->hasKnownOrAssumedSignCode() && secondReg->hasKnownOrAssumedSignCode()
             && firstReg->knownOrAssumedSignCodeIs(secondReg->getKnownOrAssumedSignCode());
         bool cleanSigns = firstReg->hasKnownOrAssumedCleanSign() && secondReg->hasKnownOrAssumedCleanSign();
         if (knownSigns || cleanSigns) {
-            if (cg->traceBCDCodeGen()) {
+            if (trace) {
                 log->printf("\t+validateDecimalSignAndData=%s (firstReg (validData=%s validSign=%s) and secondReg "
                             "(validData=%s validSign=%s))\n",
                     true ? "yes" : "no", firstReg->hasKnownValidData() ? "yes" : "no",
@@ -3686,91 +3686,81 @@ TR::Instruction *generateS390PackedCompareAndBranchOps(TR::Node *node, TR::CodeG
             bool knownSignsArePositive = knownSigns && firstReg->hasKnownOrAssumedPositiveSignCode();
             if (knownSignsArePositive || fBranchOpCond == TR::InstOpCode::COND_BE
                 || fBranchOpCond == TR::InstOpCode::COND_BNE) {
-                if (cg->traceBCDCodeGen())
-                    log->printf("\t+branchCond %s is allowed (knownSignsArePositive = %s) so check sizes\n",
-                        node->getOpCode().getName(), knownSignsArePositive ? "yes" : "no");
+                trprintf(trace, log, "\t+branchCond %s is allowed (knownSignsArePositive = %s) so check sizes\n",
+                    node->getOpCode().getName(), knownSignsArePositive ? "yes" : "no");
                 if (firstReg->getSize() == secondReg->getSize()) {
                     useCLC = true;
                     clcSize = firstReg->getSize();
-                    if (cg->traceBCDCodeGen())
-                        log->printf("\t+regSizes match (firstRegSize = secondRegSize = %d) so do gen CLC\n",
-                            firstReg->getSize());
+                    trprintf(trace, log, "\t+regSizes match (firstRegSize = secondRegSize = %d) so do gen CLC\n",
+                        firstReg->getSize());
                 } else {
                     if (firstReg->getSize() < secondReg->getSize()) {
-                        if (cg->traceBCDCodeGen())
-                            log->printf("\t+firstRegSize < secondRegSize (%d < %d) so check upper bytes on firstReg\n",
-                                firstReg->getSize(), secondReg->getSize());
+                        trprintf(trace, log,
+                            "\t+firstRegSize < secondRegSize (%d < %d) so check upper bytes on firstReg\n",
+                            firstReg->getSize(), secondReg->getSize());
                         if (firstReg->getLiveSymbolSize() >= secondReg->getSize()) {
-                            if (cg->traceBCDCodeGen())
-                                log->printf("\t+firstReg->liveSymSize() >= secondReg->getSize() (%d >= %d)\n",
-                                    firstReg->getLiveSymbolSize(), secondReg->getSize());
+                            trprintf(trace, log, "\t+firstReg->liveSymSize() >= secondReg->getSize() (%d >= %d)\n",
+                                firstReg->getLiveSymbolSize(), secondReg->getSize());
                             if (firstReg->getBytesToClear(firstReg->getSize(), secondReg->getSize()) == 0) {
-                                if (cg->traceBCDCodeGen())
-                                    log->printf("\t+upper bytes (byte %d to %d) are clear so do gen CLC with clcSize = "
-                                                "secondReg->getSize() = %d\n",
-                                        firstReg->getSize(), secondReg->getSize(), secondReg->getSize());
+                                trprintf(trace, log,
+                                    "\t+upper bytes (byte %d to %d) are clear so do gen CLC with clcSize = "
+                                    "secondReg->getSize() = %d\n",
+                                    firstReg->getSize(), secondReg->getSize(), secondReg->getSize());
                                 useCLC = true;
                                 clcSize = secondReg->getSize();
-                            } else if (cg->traceBCDCodeGen()) {
-                                log->printf("\t-upper bytes (byte %d to %d) are not clear so do not gen CLC\n",
+                            } else
+                                trprintf(trace, log, "\t-upper bytes (byte %d to %d) are not clear so do not gen CLC\n",
                                     firstReg->getSize(), secondReg->getSize());
-                            }
-                        } else if (cg->traceBCDCodeGen()) {
-                            log->printf(
+                        } else
+                            trprintf(trace, log,
                                 "\t-firstReg->liveSymSize() < secondReg->getSize() (%d < %d) so do not gen CLC\n",
                                 firstReg->getLiveSymbolSize(), secondReg->getSize());
-                        }
                     } else // firstReg->getSize() > secondReg->getSize()
                     {
-                        if (cg->traceBCDCodeGen())
-                            log->printf("\t+firstRegSize > secondRegSize (%d > %d) so check upper bytes on secondReg\n",
-                                firstReg->getSize(), secondReg->getSize());
+                        trprintf(trace, log,
+                            "\t+firstRegSize > secondRegSize (%d > %d) so check upper bytes on secondReg\n",
+                            firstReg->getSize(), secondReg->getSize());
                         if (secondReg->getLiveSymbolSize() >= firstReg->getSize()) {
-                            if (cg->traceBCDCodeGen())
-                                log->printf("\t+secondReg->liveSymSize() >= firstReg->getSize() (%d >= %d)\n",
-                                    secondReg->getLiveSymbolSize(), firstReg->getSize());
+                            trprintf(trace, log, "\t+secondReg->liveSymSize() >= firstReg->getSize() (%d >= %d)\n",
+                                secondReg->getLiveSymbolSize(), firstReg->getSize());
                             if (secondReg->getBytesToClear(secondReg->getSize(), firstReg->getSize()) == 0) {
-                                if (cg->traceBCDCodeGen())
-                                    log->printf("\t+upper bytes (byte %d to %d) are clear so do gen CLC with clcSize = "
-                                                "firstReg->getSize() = %d\n",
-                                        secondReg->getSize(), firstReg->getSize(), firstReg->getSize());
+                                trprintf(trace, log,
+                                    "\t+upper bytes (byte %d to %d) are clear so do gen CLC with clcSize = "
+                                    "firstReg->getSize() = %d\n",
+                                    secondReg->getSize(), firstReg->getSize(), firstReg->getSize());
                                 useCLC = true;
                                 clcSize = firstReg->getSize();
-                            } else if (cg->traceBCDCodeGen()) {
-                                log->printf("\t-upper bytes (byte %d to %d) are not clear so do not gen CLC\n",
+                            } else
+                                trprintf(trace, log, "\t-upper bytes (byte %d to %d) are not clear so do not gen CLC\n",
                                     secondReg->getSize(), firstReg->getSize());
-                            }
-                        } else if (cg->traceBCDCodeGen()) {
-                            log->printf(
+                        } else
+                            trprintf(trace, log,
                                 "\t-secondReg->liveSymSize() < firstReg->getSize() (%d < %d) so do not gen CLC\n",
                                 secondReg->getLiveSymbolSize(), firstReg->getSize());
-                        }
                     }
                 }
-            } else if (cg->traceBCDCodeGen()) {
-                log->printf("\t-branchCond %s is not allowed (knownSignsArePositive = %s) so do not gen CLC\n",
+            } else
+                trprintf(trace, log, "\t-branchCond %s is not allowed (knownSignsArePositive = %s) so do not gen CLC\n",
                     node->getOpCode().getName(), knownSignsArePositive ? "yes" : "no");
-            }
-        } else if (cg->traceBCDCodeGen()) {
-            log->printf("\t-firstReg (clean=%s known=0x%x) and secondReg (clean=%s known=0x%x) signs are not "
-                        "compatible so do not gen CLC\n",
+        } else
+            trprintf(trace, log,
+                "\t-firstReg (clean=%s known=0x%x) and secondReg (clean=%s known=0x%x) signs are not compatible so do "
+                "not gen CLC\n",
                 firstReg->hasKnownOrAssumedCleanSign() ? "yes" : "no",
                 firstReg->hasKnownOrAssumedSignCode() ? firstReg->getKnownOrAssumedSignCode() : 0,
                 secondReg->hasKnownOrAssumedCleanSign() ? "yes" : "no",
                 secondReg->hasKnownOrAssumedSignCode() ? secondReg->getKnownOrAssumedSignCode() : 0);
-        }
-    } else if (cg->traceBCDCodeGen()) {
-        log->printf("\t-firstReg (validData=%s validSign=%s) and secondReg (validData=%s validSign=%s) signs/data are "
-                    "not valid so do not gen CLC\n",
+    } else
+        trprintf(trace, log,
+            "\t-firstReg (validData=%s validSign=%s) and secondReg (validData=%s validSign=%s) signs/data are not "
+            "valid so do not gen CLC\n",
             firstReg->hasKnownValidData() ? "yes" : "no", firstReg->hasKnownValidSign() ? "yes" : "no",
             secondReg->hasKnownValidData() ? "yes" : "no", secondReg->hasKnownValidSign() ? "yes" : "no");
-    }
 
     TR::Instruction *inst = NULL;
     if (useCLC) {
         TR_ASSERT(clcSize > 0, "clcSize (%d) must be set at this point\n", clcSize);
-        if (cg->traceBCDCodeGen())
-            log->printf("gen CLC with size %d\n", clcSize);
+        trprintf(trace, log, "gen CLC with size %d\n", clcSize);
         inst = generateSS1Instruction(cg, TR::InstOpCode::CLC, node, clcSize - 1,
             generateS390RightAlignedMemoryReference(firstChild, firstReg->getStorageReference(), cg),
             generateS390RightAlignedMemoryReference(secondChild, secondReg->getStorageReference(), cg));
@@ -3881,6 +3871,8 @@ static bool tryGenerateSIComparisons(TR::Node *node, TR::Node *constNode, TR::No
 
     TR::Node *operand = otherNode;
     TR::Compilation *comp = cg->comp();
+    TR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
 #ifdef J9_PROJECT_SPECIFIC
     if ((operand->getOpCode().isConversion()
@@ -3969,8 +3961,7 @@ static bool tryGenerateSIComparisons(TR::Node *node, TR::Node *constNode, TR::No
 
         TR::MemoryReference *memRef = TR::MemoryReference::create(cg, operand);
 
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("CLI-Success\n");
+        trprints(trace, log, "CLI-Success\n");
 
         // Generate the CLI
         //
@@ -4074,8 +4065,7 @@ static bool tryGenerateSIComparisons(TR::Node *node, TR::Node *constNode, TR::No
         i = generateSILInstruction(cg, opCode, node, memRef,
             svalue); // doesn't matter if we use svalue or uvalue, only 16 bits are needed
 
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("SI-Success\n");
+        trprints(trace, log, "SI-Success\n");
 
         // FIXME: is this necessary?
         memRef->stopUsingMemRefRegister(cg);
@@ -4296,9 +4286,8 @@ static TR::Instruction *tryGenerateCLCForComparison(TR::Node *node, TR::CodeGene
     TR::Instruction *i
         = generateSS1Instruction(cg, TR::InstOpCode::CLC, node, numOfBytesToCompare - 1, memRef1, memRef2);
 
-    if (comp->getOption(TR_TraceCG))
-        comp->log()->printf("CLC-Success (size=%d), node %s (%p)\n", numOfBytesToCompare, node->getOpCode().getName(),
-            node); // size = numOfBytesToCompare+1 since CLC is 0-based
+    trprintf(comp->getOption(TR_TraceCG), comp->log(), "CLC-Success (size=%d), node %s (%p)\n", numOfBytesToCompare,
+        node->getOpCode().getName(), node); // size = numOfBytesToCompare+1 since CLC is 0-based
 
     // If we skipped a level, decrement the grand-children
     //
@@ -4407,7 +4396,6 @@ static TR::Instruction *tryGenerateConversionRXComparison(TR::Node *node, TR::Co
             case TR::ifacmpge:
             case TR::ifacmpgt:
                 isUnsignedCmp = true;
-                //            cg->comp()->log()->prints("Setting isUnsignedCmp to true for address compare\n");
                 break;
             default:
                 break;
@@ -4548,8 +4536,7 @@ static TR::Instruction *tryGenerateConversionRXComparison(TR::Node *node, TR::Co
 
     TR::Instruction *i = generateRXInstruction(cg, op, node, reg, memRef);
 
-    if (comp->getOption(TR_TraceCG))
-        comp->log()->prints("Conversion RX-Success\n");
+    trprints(comp->getOption(TR_TraceCG), comp->log(), "Conversion RX-Success\n");
 
     // We skipped a conversion, we must decrement the grandchild
     //
@@ -5169,9 +5156,6 @@ TR::Instruction *genCompareAndBranchInstructionIfPossible(TR::CodeGenerator *cg,
 
     TR::DataType dataType = constNode->getDataType();
     if (canUseImm8) {
-        // comp->log()->printf("canUseImm8 is true.  isIntegral for constNode %p is %d  isAddress =
-        // %d\n",constNode,constNode->getType().isIntegral(),constNode->getType().isAddress());
-
         if (constNode->getType().isIntegral()) {
             value = getIntegralValue(constNode);
 
@@ -5809,9 +5793,8 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
     TR::RegisterDependencyConditions *deps = NULL;
     TR::InstOpCode::S390BranchCondition opBranchCond = TR::InstOpCode::COND_NOP;
     TR::Compilation *comp = cg->comp();
-
-    //   comp->log()->printf("In generateS390CompareBranch for node %p child1 = %p child2 = %p  child2->GetFloat =
-    //   %f\n",node,firstChild,secondChild,secondChild->getOpCodeValue() == TR::fconst ? secondChild->getFloat() : -1);
+    TR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     if (node->getNumChildren() == 3) {
         thirdChild = node->getChild(2);
@@ -5885,9 +5868,6 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
         cmpBranchInstr = genCompareAndBranchInstructionIfPossible(cg, node, fBranchOpCond, rBranchOpCond, deps);
     }
     if (cmpBranchInstr == NULL) {
-        // comp->log()->prints("Couldn't use z6/z10 compare and branch instructions, so we'll generate this the old
-        // fashioned way\n");
-
         // couldn't use z6/z10 compare and branch instructions, so we'll generate this the old fashioned way
 
         // Generate compare code, find out if ops were reversed
@@ -5908,8 +5888,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
 
         // We'll skip emitting the branch for LoadOrStoreOnCondition target blocks.
         if (isLoadOrStoreOnConditionCandidate) {
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->prints("isLoadOrStoreOnConditionCandidate is true\n");
+            trprints(trace, log, "isLoadOrStoreOnConditionCandidate is true\n");
             // We need to evaluate the end of this block for the GLRegDeps
             TR::TreeTop *blockEndTT = cg->getCurrentEvaluationTreeTop()->getNextTreeTop();
             TR_ASSERT(blockEndTT->getNode()->getOpCodeValue() == TR::BBEnd,
@@ -5942,8 +5921,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
                     if (candidateBlockNode->getOpCodeValue() == TR::Goto)
                         continue;
 
-                    if (comp->getOption(TR_TraceCG))
-                        comp->log()->printf("Evaluating node %p", candidateBlockNode);
+                    trprintf(trace, log, "Evaluating node %p", candidateBlockNode);
                     cg->evaluate(candidateBlockNode);
                 } while (tt != canadidateLoadStoreConditionalBlock->getExit());
 
@@ -5955,7 +5933,6 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
             }
         }
         if (!isUnorderedOK) {
-            // comp->log()->prints("in !isunorderedOK statement\n");
             if (isCmpGT && useBranchOnCount) {
                 if (TR::ificmpgt == node->getOpCodeValue()) {
                     generateS390BranchInstruction(cg, TR::InstOpCode::BRCT, node, firstChild->getRegister(), deps,
@@ -5972,8 +5949,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
                     node->getBranchDestination()->getNode()->getLabel(), deps);
             }
         } else {
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->prints("in else statement\n");
+            trprints(trace, log, "in else statement\n");
             uint8_t branchMask = getMaskForBranchCondition(opBranchCond);
             branchMask += 0x01;
             opBranchCond = getBranchConditionForMask(branchMask);
@@ -6564,8 +6540,7 @@ TR::Register *aloadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryRefer
     // to skip evaluation of unneeded aloadi nodes which do not contain any symbol reference.
     if (node->isUnneededAloadi()
         && (node->getFirstChild()->getNumChildren() == 0 || node->getFirstChild()->getRegister() != NULL)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->printf("This aloadi is not needed: %p\n", node);
+        trprintf(comp->getOption(TR_TraceCG), comp->log(), "This aloadi is not needed: %p\n", node);
 
         tempReg = cg->allocateRegister();
         node->setRegister(tempReg);
@@ -7698,8 +7673,8 @@ TR::Register *OMR::Z::TreeEvaluator::checkAndAllocateReferenceRegister(TR::Node 
         }
     }
 
-    if (cg->comp()->getOption(TR_TraceCG))
-        cg->comp()->log()->printf("aload reg contains ref: %d\n", tempReg->containsCollectedReference());
+    trprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "aload reg contains ref: %d\n",
+        tempReg->containsCollectedReference());
     return tempReg;
 }
 
@@ -10495,15 +10470,15 @@ TR::Register *OMR::Z::TreeEvaluator::indirectCallEvaluator(TR::Node *node, TR::C
 TR::Register *OMR::Z::TreeEvaluator::treetopEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
+    TR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     if (node->getFirstChild()->getReferenceCount() == 1) {
         switch (node->getFirstChild()->getOpCodeValue()) {
             case TR::aiadd: {
-                if (comp->getOption(TR_TraceCG)) {
-                    comp->log()->printf(
-                        " found %s [%p] with ref count 1 under treetop, avoiding evaluation into register.\n",
-                        node->getFirstChild()->getOpCode().getName(), node->getFirstChild());
-                }
+                trprintf(trace, log,
+                    " found %s [%p] with ref count 1 under treetop, avoiding evaluation into register.\n",
+                    node->getFirstChild()->getOpCode().getName(), node->getFirstChild());
 
                 TR::MemoryReference *mr = generateS390MemoryReference(cg);
                 mr->setForceFoldingIfAdvantageous(cg, node->getFirstChild());
@@ -10533,12 +10508,11 @@ TR::Register *OMR::Z::TreeEvaluator::treetopEvaluator(TR::Node *node, TR::CodeGe
                 } else {
                     cg->evaluate(addressChild);
                     if (storageReference->getNodeReferenceCount() == 0) {
-                        if (cg->traceBCDCodeGen())
-                            comp->log()->printf(
-                                "storageReference->nodeRefCount == 0 so dec addr child %p refCount %d->%d\n",
-                                storageReference->getNode()->getFirstChild(),
-                                storageReference->getNode()->getFirstChild()->getReferenceCount(),
-                                storageReference->getNode()->getFirstChild()->getReferenceCount() - 1);
+                        trprintf(cg->traceBCDCodeGen(), log,
+                            "storageReference->nodeRefCount == 0 so dec addr child %p refCount %d->%d\n",
+                            storageReference->getNode()->getFirstChild(),
+                            storageReference->getNode()->getFirstChild()->getReferenceCount(),
+                            storageReference->getNode()->getFirstChild()->getReferenceCount() - 1);
                         cg->decReferenceCount(addressChild);
                     }
                 }
@@ -11924,14 +11898,12 @@ TR::Register *OMR::Z::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::CodeG
                     value += (value << 16);
                     value += (value << 32);
                     genLoadLongConstant(cg, node, value, constExprRegister, NULL, NULL, NULL);
-                    // printf ("\n STG for short generated in %s", comp->signature());fflush(stdout);
                 } else {
                     // pack in 2 words in constExprRegister
                     uint64_t value = (uint64_t)constExpr->getInt();
                     value &= 0xFFFFFFFF; // clear high order bits
                     value += (value << 32);
                     genLoadLongConstant(cg, node, value, constExprRegister, NULL, NULL, NULL);
-                    // printf ("\n STG for int generated in %s", comp->signature());fflush(stdout);
                 }
             } else {
                 constExprRegister = generateLoad32BitConstant(cg, constExpr);
@@ -13280,6 +13252,8 @@ TR::Register *OMR::Z::TreeEvaluator::bitOpMemEvaluator(TR::Node *node, TR::CodeG
     TR::Node *aggrChild1 = NULL;
     TR::Node *aggrChild2 = NULL;
     TR::Compilation *comp = cg->comp();
+    TR::Logger *log = comp->log();
+    bool trace = cg->traceBCDCodeGen();
 
     byteDstNode = node->getChild(0);
     byteSrc1Node = node->getChild(1);
@@ -13335,15 +13309,13 @@ TR::Register *OMR::Z::TreeEvaluator::bitOpMemEvaluator(TR::Node *node, TR::CodeG
                 if (isClearingOp(byteValue, SI_opcode)) {
                     opcode = TR::InstOpCode::MVI;
                     byteValue = 0;
-                    if (cg->traceBCDCodeGen())
-                        comp->log()->printf("\tuse MVI 0 for clearing op %s (%p): value[%d] = 0x%x\n",
-                            node->getOpCode().getName(), node, i, value[i]);
+                    trprintf(trace, log, "\tuse MVI 0 for clearing op %s (%p): value[%d] = 0x%x\n",
+                        node->getOpCode().getName(), node, i, value[i]);
                 } else if (isSettingOp(byteValue, SI_opcode)) {
                     opcode = TR::InstOpCode::MVI;
                     byteValue = 0xFF;
-                    if (cg->traceBCDCodeGen())
-                        comp->log()->printf("\tuse MVI 0xFF for setting op %s (%p): value[%d] = 0x%x\n",
-                            node->getOpCode().getName(), node, i, value[i]);
+                    trprintf(trace, log, "\tuse MVI 0xFF for setting op %s (%p): value[%d] = 0x%x\n",
+                        node->getOpCode().getName(), node, i, value[i]);
                 }
                 TR::Instruction *cursor = generateSIInstruction(cg, opcode, node, tempMRbyte, byteValue);
             }
@@ -13473,8 +13445,8 @@ TR::Register *OMR::Z::TreeEvaluator::PrefetchEvaluator(TR::Node *node, TR::CodeG
     } else if (type == ReleaseAll) {
         memAccessMode = 7;
     } else {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->printf("Prefetching for type %d not implemented/supported on 390.\n", type);
+        trprintf(comp->getOption(TR_TraceCG), comp->log(),
+            "Prefetching for type %d not implemented/supported on 390.\n", type);
     }
 
     if (memAccessMode) {
@@ -15195,9 +15167,8 @@ TR::Register *OMR::Z::TreeEvaluator::vaddEvaluator(TR::Node *node, TR::CodeGener
             || node->getDataType().getVectorElementType() == TR::Float)
         && (canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMA)) {
-        if (cg->comp()->getOption(TR_TraceCG))
-            cg->comp()->log()->prints(
-                "Successfully changed vadd with vmul child to fused multiply and add operation\n");
+        trprints(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+            "Successfully changed vadd with vmul child to fused multiply and add operation\n");
 
         return node->getRegister();
     } else {
@@ -15230,9 +15201,8 @@ TR::Register *OMR::Z::TreeEvaluator::vsubEvaluator(TR::Node *node, TR::CodeGener
             || node->getDataType().getVectorElementType() == TR::Float)
         && canUseNodeForFusedMultiply(node->getFirstChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMS)) {
-        if (cg->comp()->getOption(TR_TraceCG))
-            cg->comp()->log()->prints(
-                "Successfully changed vsub with vmul child to fused multiply and sub operation\n");
+        trprints(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+            "Successfully changed vsub with vmul child to fused multiply and sub operation\n");
 
         return node->getRegister();
     } else {

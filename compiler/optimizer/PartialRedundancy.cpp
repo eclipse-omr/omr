@@ -111,8 +111,8 @@ static void fixDecimalPrecision(TR::Node *store, TR::Node *child, TR::Compilatio
 {
     if (child->getType().isBCD()) {
         store->setDecimalPrecision(child->getDecimalPrecision());
-        if (comp->cg()->traceBCDCodeGen())
-            comp->log()->printf("%s setting precision on node:%p to be equal to node:%p\n", OPT_DETAILS, store, child);
+        trprintf(comp->cg()->traceBCDCodeGen(), comp->log(), "%s setting precision on node:%p to be equal to node:%p\n",
+            OPT_DETAILS, store, child);
     }
 }
 #endif
@@ -255,8 +255,7 @@ int32_t TR_PartialRedundancy::perform()
     TR_LocalAnticipatability &localAnticipatability
         = _isolatedness->_latestness->_delayedness->_earliestness->_globalAnticipatability->_localAnticipatability;
 
-    if (trace())
-        log->prints("Starting PartialRedundancy\n");
+    trprints(trace(), log, "Starting PartialRedundancy\n");
 
     _numNodes = cfg->getNextNodeNumber();
     TR_ASSERT(_numNodes > 0, "Partial Redundancy, node numbers not assigned");
@@ -514,10 +513,9 @@ int32_t TR_PartialRedundancy::perform()
                                && (nextOptimalNode->getSymbol()->isStatic()
                                    || nextOptimalNode->getSymbol()->isMethodMetaData()))
                     || !isNodeAnImplicitNoOp(nextOptimalNode)) {
-                    if (trace()) {
-                        log->printf("Creating new symbol for optimal expr number %d node %p\n", nextOptimalComputation,
-                            nextOptimalNode);
-                    }
+                    trprintf(trace(), log, "Creating new symbol for optimal expr number %d node %p\n",
+                        nextOptimalComputation, nextOptimalNode);
+
                     TR::DataType dataType = nextOptimalNode->getDataType();
                     // set the datatype of the temporary created below to
                     // be at least OMR::Int ; otherwise the opcode used to create
@@ -578,9 +576,8 @@ int32_t TR_PartialRedundancy::perform()
                     if (nextNode->getFrequency() >= 0)
                         weight = weight * nextNode->getFrequency();
 
-                    if (trace())
-                        log->printf("Benefit block_%d benefit %d expr %d\n", nextNode->getNumber(), weight,
-                            nextOptimalComputation);
+                    trprintf(trace(), log, "Benefit block_%d benefit %d expr %d\n", nextNode->getNumber(), weight,
+                        nextOptimalComputation);
                     benefit = benefit + weight;
                 }
 
@@ -591,18 +588,16 @@ int32_t TR_PartialRedundancy::perform()
                     if (nextNode->getFrequency() >= 0)
                         weight = weight * nextNode->getFrequency();
 
-                    if (trace())
-                        log->printf("Cost block_%d cost %d expr %d\n", nextNode->getNumber(), weight,
-                            nextOptimalComputation);
+                    trprintf(trace(), log, "Cost block_%d cost %d expr %d\n", nextNode->getNumber(), weight,
+                        nextOptimalComputation);
                     cost = cost + weight;
                 }
             }
         }
 
         if (cost > benefit) {
-            if (trace())
-                log->printf("Cost-benefit analysis (cost %d > benefit %d) said ignore expression #%d\n", cost, benefit,
-                    nextOptimalComputation);
+            trprintf(trace(), log, "Cost-benefit analysis (cost %d > benefit %d) said ignore expression #%d\n", cost,
+                benefit, nextOptimalComputation);
             invalidateOptimalComputation(nextOptimalComputation);
         }
     }
@@ -764,8 +759,6 @@ bool TR_PartialRedundancy::isNodeAnImplicitNoOp(TR::Node *node)
         return true;
 
     if (node->getType().isAggregate() && node->getSize() > 8) {
-        // if (trace())
-        //    comp()->log()->printf("skipping placing aggr %s (%p)\n",node->getOpCode().getName(),node);
         return true;
     }
 
@@ -811,9 +804,9 @@ void TR_PartialRedundancy::processReusedNode(TR::Node *node, TR::ILOpCodes newOp
 #endif
 
     TR::Logger *log = comp()->log();
+    bool trace = comp()->cg()->traceBCDCodeGen();
 
-    if (comp()->cg()->traceBCDCodeGen())
-        log->printf("reusing %s (%p) as op ", node->getOpCode().getName(), node);
+    trprintf(trace, log, "reusing %s (%p) as op ", node->getOpCode().getName(), node);
 
     node->setNumChildren(newNumChildren);
     if (newSymRef)
@@ -824,17 +817,14 @@ void TR_PartialRedundancy::processReusedNode(TR::Node *node, TR::ILOpCodes newOp
     if (node->getOpCode().isLoadVarDirect())
         node->setIsNodeCreatedByPRE();
 
-    if (comp()->cg()->traceBCDCodeGen())
-        log->printf("%s", node->getOpCode().getName());
+    trprints(trace, log, node->getOpCode().getName());
 
 #ifdef J9_PROJECT_SPECIFIC
     if (wasBCDNonLoad && node->getOpCode().isBCDLoad()) {
         node->setHasSignStateOnLoad(true);
-        if (comp()->cg()->traceBCDCodeGen())
-            log->prints(" and setting hasSignState flag to true\n");
+        trprints(trace, log, " and setting hasSignState flag to true\n");
     } else {
-        if (comp()->cg()->traceBCDCodeGen())
-            log->println();
+        trprintln(trace, log);
     }
 #endif
 }
@@ -848,8 +838,7 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
     TR::TreeTop *placeToInsertOptimalComputations = block->getEntry();
     TR::TreeTop *placeToInsertUnanticipatableOptimalComputations = NULL;
 
-    if (trace())
-        log->printf("Placing computations optimally in block number %d\n", block->getStructureOf()->getNumber());
+    trprintf(trace(), log, "Placing computations optimally in block number %d\n", block->getStructureOf()->getNumber());
 
     ContainerType *anticipatabilityInfo
         = _isolatedness->_latestness->_delayedness->_earliestness->_globalAnticipatability->_localAnticipatability
@@ -864,9 +853,8 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
     for (nextOptimalComputation = orderedOptNumbersList[currOptimalElement]; seenOptimalElements < numOptimalElements;
          currOptimalElement++) {
         nextOptimalComputation = orderedOptNumbersList[currOptimalElement];
-        if (trace())
-            log->printf("Optimal computation %d in block number %d insert after %p\n", nextOptimalComputation,
-                block->getStructureOf()->getNumber(), placeToInsertOptimalComputations->getNode());
+        trprintf(trace(), log, "Optimal computation %d in block number %d insert after %p\n", nextOptimalComputation,
+            block->getStructureOf()->getNumber(), placeToInsertOptimalComputations->getNode());
 
         if (_optSetInfo[block->getNumber()]->get(nextOptimalComputation)) {
             seenOptimalElements++;
@@ -1192,18 +1180,17 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
                                 comp()->il.opCodeForDirectLoad(nullCheckReferenceDataType), 0, newSymbolReference);
                             newLoad->setLocalIndex(-1);
 
-                            if (trace())
-                                log->printf("Duplicate null check had its new null check reference %p replaced by %p "
-                                            "with symRef #%d\n",
-                                    duplicateOptimalNode, newLoad, newLoad->getSymbolReference()->getReferenceNumber());
+                            trprintf(trace(), log,
+                                "Duplicate null check had its new null check reference %p replaced by %p with symRef "
+                                "#%d\n",
+                                duplicateOptimalNode, newLoad, newLoad->getSymbolReference()->getReferenceNumber());
                             duplicateOptimalNode = newLoad;
                         }
                     }
                 }
 
                 if (!replacedNullCheckReference) {
-                    if (trace())
-                        log->printf("Trying to replace OPTIMAL SUBNODES in : %p\n", nextOptimalNode);
+                    trprintf(trace(), log, "Trying to replace OPTIMAL SUBNODES in : %p\n", nextOptimalNode);
                     int32_t k;
                     for (k = 0; k < nextOptimalNode->getNullCheckReference()->getNumChildren(); k++) {
                         vcount_t visitCount4 = comp()->incVisitCount();
@@ -1267,8 +1254,7 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
                 // ALL the subnodes' optimal placement; therefore the temp for a subnode
                 // might only be placed (created) AFTER the check's optimal placement
                 //
-                if (trace())
-                    log->printf("Trying to replace OPTIMAL SUBNODES in : %p\n", nextOptimalNode);
+                trprintf(trace(), log, "Trying to replace OPTIMAL SUBNODES in : %p\n", nextOptimalNode);
 
                 int32_t k;
                 for (k = 0; k < nextOptimalNode->getNumChildren(); k++) {
@@ -1324,8 +1310,7 @@ TR::TreeTop *TR_PartialRedundancy::placeComputationsOptimally(TR::Block *block, 
             // in temps by the load of the temp before placing the computation
             // optimally.
             //
-            if (trace())
-                log->printf("Trying to replace OPTIMAL SUBNODES in : %p\n", nextOptimalNode);
+            trprintf(trace(), log, "Trying to replace OPTIMAL SUBNODES in : %p\n", nextOptimalNode);
 
             int32_t k;
             for (k = 0; k < nextOptimalNode->getNumChildren(); k++) {
@@ -1478,9 +1463,8 @@ void TR_PartialRedundancy::eliminateRedundantComputations(TR::Block *block, TR::
 
     vcount_t visitCount = _visitCount;
 
-    if (trace())
-        comp()->log()->printf("Eliminating redundant computations in block number %d visit count %d\n",
-            block->getStructureOf()->getNumber(), visitCount);
+    trprintf(trace(), comp()->log(), "Eliminating redundant computations in block number %d visit count %d\n",
+        block->getStructureOf()->getNumber(), visitCount);
 
     _profilingWalk = true;
     bool walkedTreesAtLeastOnce = false;
@@ -1593,12 +1577,10 @@ void TR_PartialRedundancy::eliminateRedundantComputations(TR::Block *block, TR::
                     } else {
                         TR::SymbolReference *newSymbolReference = _newSymbolReferences[nodeIndex];
                         if (newSymbolReference /* &&
-		      performTransformation(comp(), "%sEliminating redundant computation (store) : %p\n", OPT_DETAILS, currentTree->getNode()) */)
+                      performTransformation(comp(), "%sEliminating redundant computation (store) : %p\n", OPT_DETAILS, currentTree->getNode()) */)
                      {
                             // Eliminate the store which is a treetop itself
                             //
-                            // printf("Privatized store %p in %s\n", currentTree->getNode(),
-                            // signature(comp()->getCurrentMethod()));
                             TR::ILOpCodes opCodeValue = comp()->il.opCodeForDirectStore(redundantNode->getDataType());
 
                             TR::Node *storeForCommonedNode = NULL;
@@ -1650,10 +1632,8 @@ void TR_PartialRedundancy::eliminateRedundantComputations(TR::Block *block, TR::
 
                     TR::SymbolReference *newSymbolReference = _newSymbolReferences[nodeIndex];
                     if (newSymbolReference /* &&
-		  performTransformation(comp(), "%sEliminating redundant computation (store) : %p\n", OPT_DETAILS, currentTree->getNode()->getFirstChild()) */)
+                  performTransformation(comp(), "%sEliminating redundant computation (store) : %p\n", OPT_DETAILS, currentTree->getNode()->getFirstChild()) */)
                  {
-                        // printf("Privatized store %p in %s\n", currentTree->getNode(),
-                        // signature(comp()->getCurrentMethod()));
                         TR::ILOpCodes opCodeValue = comp()->il.opCodeForDirectStore(redundantNode->getDataType());
 
                         TR::Node *storeForCommonedNode = NULL;
@@ -1863,9 +1843,8 @@ node->getSymbolReference()->getSymbol()->isAutoOrParm())) && */
                     else
                         valueProfiler->addProfilingTrees(node, currentTree);
 
-                    if (trace())
-                        comp()->log()->printf("Added profiling instrumentation for %p(%d)\n", node,
-                            node->getByteCodeIndex());
+                    trprintf(trace(), comp()->log(), "Added profiling instrumentation for %p(%d)\n", node,
+                        node->getByteCodeIndex());
                 }
             }
         }
@@ -2005,6 +1984,7 @@ TR::TreeTop *TR_PartialRedundancy::replaceOptimalSubNodes(TR::TreeTop *curTree, 
     if (node->getVisitCount() == visitCount)
         return curTree;
 
+    TR::Logger *log = comp()->log();
     node->setVisitCount(visitCount);
 
     TR::ILOpCode &opCode = node->getOpCode();
@@ -2013,8 +1993,7 @@ TR::TreeTop *TR_PartialRedundancy::replaceOptimalSubNodes(TR::TreeTop *curTree, 
     if (isSupportedOpCode(node, parent)
         && (!(opCode.isLoadVarDirect() && !node->getSymbol()->isStatic() && !node->getSymbol()->isMethodMetaData()))
         && (!isNodeAnImplicitNoOp(node))) {
-        if (trace())
-            comp()->log()->printf("Node %p has parent %p and we are considering replacing it\n", node, parent);
+        trprintf(trace(), log, "Node %p has parent %p and we are considering replacing it\n", node, parent);
         if (((node->getLocalIndex() != MAX_SCOUNT) && (node->getLocalIndex() != 0))
             && !(isNullCheck && (_nullCheckNode->getNullCheckReference() == node))) {
             // We do not want to do optimal subnode replacement under tracePRE because it can cause spurious failures as
@@ -2047,17 +2026,16 @@ TR::TreeTop *TR_PartialRedundancy::replaceOptimalSubNodes(TR::TreeTop *curTree, 
                 duplicateOptimalNode->recursivelyDecReferenceCount();
                 duplicateParent->setChild(childNum, newLoad);
 
-                if (trace())
-                    comp()->log()->printf("Duplicate parent %p had its old child %p replaced by %p with symRef #%d\n",
-                        duplicateParent, duplicateOptimalNode, newLoad,
-                        newLoad->getSymbolReference()->getReferenceNumber());
+                trprintf(trace(), log, "Duplicate parent %p had its old child %p replaced by %p with symRef #%d\n",
+                    duplicateParent, duplicateOptimalNode, newLoad,
+                    newLoad->getSymbolReference()->getReferenceNumber());
                 if (duplicateParent->getOpCode().isNullCheck())
                     TR::Node::recreate(duplicateParent, TR::treetop);
             } else {
-                if (trace())
-                    comp()->log()->printf("Note : Duplicate parent %p wanted to replace its child %p by possibly "
-                                          "already available symRef but FAILED to do so\n",
-                        duplicateParent, duplicateOptimalNode);
+                trprintf(trace(), log,
+                    "Note : Duplicate parent %p wanted to replace its child %p by possibly already available symRef "
+                    "but FAILED to do so\n",
+                    duplicateParent, duplicateOptimalNode);
                 int32_t i;
                 for (i = 0; i < node->getNumChildren(); i++) {
                     TR::Node *child = node->getChild(i);
@@ -2179,23 +2157,19 @@ void TR_ExceptionCheckMotion::setBlockFenceStatus(TR::Block *block)
                 break;
             case FIRST_LARGER: {
                 _blockWithFencesAtEntry->set(blockNum);
-                if (trace())
-                    log->printf("Fence at entry to %d\n", blockNum);
+                trprintf(trace(), log, "Fence at entry to %d\n", blockNum);
                 break;
             }
             case SECOND_LARGER: {
                 _blockWithFencesAtExit->set(pred->getNumber());
-                if (trace())
-                    log->printf("Fence at exit from %d\n", pred->getNumber());
+                trprintf(trace(), log, "Fence at exit from %d\n", pred->getNumber());
                 break;
             }
             case BOTH_UNRELATED: {
                 _blockWithFencesAtEntry->set(blockNum);
-                if (trace())
-                    log->printf("Fence at entry to %d\n", blockNum);
+                trprintf(trace(), log, "Fence at entry to %d\n", blockNum);
                 _blockWithFencesAtExit->set(pred->getNumber());
-                if (trace())
-                    log->printf("Fence at exit from %d\n", pred->getNumber());
+                trprintf(trace(), log, "Fence at exit from %d\n", pred->getNumber());
                 break;
             }
         }
@@ -2242,6 +2216,7 @@ int32_t TR_ExceptionCheckMotion::areExceptionSuccessorsIdentical(TR::CFGNode *no
 
 int32_t TR_ExceptionCheckMotion::perform()
 {
+    TR::Logger *log = comp()->log();
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     TR::CFG *cfg = comp()->getFlowGraph();
@@ -2362,8 +2337,7 @@ int32_t TR_ExceptionCheckMotion::perform()
             *_tempContainer = *_optimisticOptSetInfo[i];
             *_tempContainer &= *_exprsUnaffectedByOrder;
 
-            if (trace())
-                comp()->log()->printf("Block Number (ordered list) : %d\n", i);
+            trprintf(trace(), log, "Block Number (ordered list) : %d\n", i);
 
             //
             // First add the expressions that are unaffected by order;
@@ -2379,8 +2353,7 @@ int32_t TR_ExceptionCheckMotion::perform()
                 for (bvi.SetToFirstOne(); bvi.Valid(); bvi.SetToNextOne()) {
                     int32_t nextExpressionUnaffectedByOrder = bvi;
                     _orderedOptNumbersList[i][size] = nextExpressionUnaffectedByOrder;
-                    if (trace())
-                        comp()->log()->printf("Unaffected by order <%d>\n", nextExpressionUnaffectedByOrder);
+                    trprintf(trace(), log, "Unaffected by order <%d>\n", nextExpressionUnaffectedByOrder);
                     size++;
                 }
             }
@@ -2398,8 +2371,7 @@ int32_t TR_ExceptionCheckMotion::perform()
                         = _optimisticOptSetInfo[i]->elementCount() + _optimisticRednSetInfo[i]->elementCount();
                     int32_t j;
                     for (j = size; j < orderedListSize; j++) {
-                        if (trace())
-                            comp()->log()->printf("Affected by order <%d>\n", nextElement->getData()->getLocalIndex());
+                        trprintf(trace(), log, "Affected by order <%d>\n", nextElement->getData()->getLocalIndex());
                         _orderedOptNumbersList[i][j] = nextElement->getData()->getLocalIndex();
                         nextElement = nextElement->getNextElement();
                     }
@@ -2474,7 +2446,7 @@ int32_t TR_ExceptionCheckMotion::perform()
         comp()->incVisitCount();
         TR::TreeTop *currentTree = comp()->getStartTree();
         while (!(currentTree == NULL)) {
-            getDebug()->print(comp()->log(), currentTree);
+            getDebug()->print(log, currentTree);
             currentTree = currentTree->getNextTreeTop();
         }
     }
@@ -2836,6 +2808,8 @@ void TR_ExceptionCheckMotion::initializeAnalysisInfo(ExprDominanceInfo *info, TR
 
 void TR_ExceptionCheckMotion::initializeGenAndKillSetInfo()
 {
+    TR::Logger *log = comp()->log();
+
     // For each block in the CFG build the gen and kill set for this analysis
     //
     if (_firstIteration) {
@@ -2952,10 +2926,10 @@ void TR_ExceptionCheckMotion::initializeGenAndKillSetInfo()
                 ListElement<TR::Node> *listElem;
                 for (listElem = _regularGenSetInfo[blockNum]->getListHead(); listElem != NULL;
                      listElem = listElem->getNextElement())
-                    comp()->log()->printf("Expr %d (representative) Node %p in Block : %d\n",
+                    log->printf("Expr %d (representative) Node %p in Block : %d\n",
                         listElem->getData()->getLocalIndex(), listElem->getData(), blockNum);
             } else
-                comp()->log()->printf("Block : %d has NO expr gened\n", blockNum);
+                log->printf("Block : %d has NO expr gened\n", blockNum);
         }
     }
 }
@@ -3714,6 +3688,7 @@ void TR_ExceptionCheckMotion::initializeOutList(List<TR::Node> *list) { list->de
 
 bool TR_ExceptionCheckMotion::analyzeRegionStructure(TR_RegionStructure *regionStructure, bool checkForChange)
 {
+    TR::Logger *log = comp()->log();
     ExprDominanceInfo *analysisInfo = getAnalysisInfo(regionStructure);
 
     // Use information from last time we analyzed this structure; if
@@ -3722,10 +3697,9 @@ bool TR_ExceptionCheckMotion::analyzeRegionStructure(TR_RegionStructure *regionS
     if (!regionStructure->hasBeenAnalyzedBefore())
         regionStructure->setAnalyzedStatus(true);
     else {
-        if (trace()) {
-            comp()->log()->printf("\nSkipping re-analysis of Region : %p numbered %d\n", regionStructure,
-                regionStructure->getNumber());
-        }
+        trprintf(trace(), log, "\nSkipping re-analysis of Region : %p numbered %d\n", regionStructure,
+            regionStructure->getNumber());
+
         return false;
     }
 
@@ -3778,9 +3752,8 @@ bool TR_ExceptionCheckMotion::analyzeRegionStructure(TR_RegionStructure *regionS
         changed = false;
         *pendingList |= *originalPendingList;
 
-        if (trace())
-            comp()->log()->printf("\nREGION : %p NUMBER : %d ITERATION NUMBER : %d\n", regionStructure,
-                regionStructure->getNumber(), numIterations);
+        trprintf(trace(), log, "\nREGION : %p NUMBER : %d ITERATION NUMBER : %d\n", regionStructure,
+            regionStructure->getNumber(), numIterations);
 
         numIterations++;
 
@@ -3847,8 +3820,7 @@ bool TR_ExceptionCheckMotion::analyzeNodeIfSuccessorsAnalyzed(TR::CFGNode *cfgNo
             continue;
         }
 
-        if (trace())
-            log->printf("Begin analyzing node %p numbered %d\n", node, node->getNumber());
+        trprintf(trace(), log, "Begin analyzing node %p numbered %d\n", node, node->getNumber());
 
         bool alreadyVisitedNode = false;
         // if (nodeStructure->getVisitCount() == comp()->getVisitCount())
@@ -4046,10 +4018,8 @@ bool TR_ExceptionCheckMotion::analyzeBlockStructure(TR_BlockStructure *blockStru
     if (!blockStructure->hasBeenAnalyzedBefore())
         blockStructure->setAnalyzedStatus(true);
     else {
-        if (trace()) {
-            log->printf("\nSkipping re-analysis of Block : %p numbered %d\n", blockStructure,
-                blockStructure->getNumber());
-        }
+        trprintf(trace(), log, "\nSkipping re-analysis of Block : %p numbered %d\n", blockStructure,
+            blockStructure->getNumber());
         return false;
     }
 
@@ -4840,9 +4810,8 @@ bool TR_ExceptionCheckMotion::analyzeBlockStructure(TR_BlockStructure *blockStru
             //
             if (canPlaceOptimally && !_actualOptSetInfo[blockNum]->get(listElem->getData()->getLocalIndex())) {
                 _tryAnotherIteration = true;
-                if (trace())
-                    log->printf("IN ORDER Expr %d (representative) Node %p (listElem %p) in Block : %d\n",
-                        listElem->getData()->getLocalIndex(), listElem->getData(), listElem, blockNum);
+                trprintf(trace(), log, "IN ORDER Expr %d (representative) Node %p (listElem %p) in Block : %d\n",
+                    listElem->getData()->getLocalIndex(), listElem->getData(), listElem, blockNum);
 
                 if (checkElement) {
                     TR::ILOpCodes opCodeValue = listElem->getData()->getOpCodeValue();
@@ -5340,8 +5309,8 @@ TR_RedundantExpressionAdjustment::TR_RedundantExpressionAdjustment(TR::Compilati
     TR_Structure *rootStructure, TR_ExceptionCheckMotion *exceptionCheckMotion)
     : TR_IntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, exceptionCheckMotion->trace())
 {
-    if (trace())
-        comp->log()->prints("Starting Redundant expression adjustment\n");
+    TR::Logger *log = comp->log();
+    trprints(trace(), log, "Starting Redundant expression adjustment\n");
 
     int32_t i;
 
@@ -5364,11 +5333,11 @@ TR_RedundantExpressionAdjustment::TR_RedundantExpressionAdjustment(TR::Compilati
         if (trace()) {
             for (i = 1; i < _numberOfNodes; ++i) {
                 if (_blockAnalysisInfo[i]) {
-                    comp->log()->printf("\nAvailable optimal expressions for block_%d: ", i);
-                    _blockAnalysisInfo[i]->print(comp->log(), comp);
+                    log->printf("\nAvailable optimal expressions for block_%d: ", i);
+                    _blockAnalysisInfo[i]->print(log, comp);
                 }
             }
-            comp->log()->prints("\nEnding Redundant expression adjustment\n");
+            log->prints("\nEnding Redundant expression adjustment\n");
         }
     } // scope for stack memory region
 }
@@ -5471,10 +5440,9 @@ bool TR_RedundantExpressionAdjustment::analyzeBlockStructure(TR_BlockStructure *
         blockStructure->setAnalyzedStatus(true);
     else {
         if (*_currentInSetInfo == *analysisInfo->_inSetInfo) {
-            if (trace()) {
-                log->printf("\nSkipping re-analysis of Block : %p numbered %d\n", blockStructure,
-                    blockStructure->getNumber());
-            }
+            trprintf(trace(), log, "\nSkipping re-analysis of Block : %p numbered %d\n", blockStructure,
+                blockStructure->getNumber());
+
             return false;
         }
     }
@@ -5530,25 +5498,22 @@ bool TR_RedundantExpressionAdjustment::analyzeBlockStructure(TR_BlockStructure *
             // optimally at this point so that it dominates any further
             // blocks where this expression is redundant
             //
-            if (trace())
-                log->printf("CONSIDERING Expr %d (representative) Node %p (listElem %p) in Block : %d\n",
-                    listElem->getData()->getLocalIndex(), listElem->getData(), listElem, blockNum);
+            trprintf(trace(), log, "CONSIDERING Expr %d (representative) Node %p (listElem %p) in Block : %d\n",
+                listElem->getData()->getLocalIndex(), listElem->getData(), listElem, blockNum);
             if (/*_optSetHelper->get(listElem->getData()->getLocalIndex()) || */
                 ((optimisticRednSetInfo[blockNum]->get(listElem->getData()->getLocalIndex()))
                     && (!_currentInSetInfo->get(listElem->getData()->getLocalIndex()))
                     && (!actualOptSetInfo[blockNum]->get(listElem->getData()->getLocalIndex())))) {
-                if (trace())
-                    log->printf("IN ORDER Expr %d (representative) Node %p (listElem %p) in Block : %d\n",
-                        listElem->getData()->getLocalIndex(), listElem->getData(), listElem, blockNum);
+                trprintf(trace(), log, "IN ORDER Expr %d (representative) Node %p (listElem %p) in Block : %d\n",
+                    listElem->getData()->getLocalIndex(), listElem->getData(), listElem, blockNum);
 
                 actualOptSetInfo[blockNum]->set(listElem->getData()->getLocalIndex());
                 _regularGenSetInfo[blockNum]->set(listElem->getData()->getLocalIndex());
                 _exceptionGenSetInfo[blockNum]->set(listElem->getData()->getLocalIndex());
                 _optSetHelper->reset(listElem->getData()->getLocalIndex());
 
-                if (trace())
-                    log->printf("Affected by order <%d> will be at index %d\n", listElem->getData()->getLocalIndex(),
-                        j);
+                trprintf(trace(), log, "Affected by order <%d> will be at index %d\n",
+                    listElem->getData()->getLocalIndex(), j);
                 orderedOptNumbersList[blockNum][j++] = listElem->getData()->getLocalIndex();
             }
 
@@ -5640,7 +5605,6 @@ bool TR_RedundantExpressionAdjustment::analyzeBlockStructure(TR_BlockStructure *
         if (nullConstraintBlock && (nullConstraintBlock == (*succ)->getTo()) && !_regularInfo->get(nullCheckNumber)) {
             addedNullConstraint = true;
             _regularInfo->set(nullCheckNumber);
-            // printf("Propagating null constraint in %s\n", signature(comp()->getCurrentMethod()));
         }
 
         if (checkForChange && !changed && !(*_regularInfo == *outSetInfo))

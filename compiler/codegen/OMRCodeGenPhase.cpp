@@ -139,6 +139,7 @@ int OMR::CodeGenPhase::getNumPhases() { return static_cast<int>(TR::CodeGenPhase
 void OMR::CodeGenPhase::performProcessRelocationsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *phase)
 {
     TR::Compilation *comp = cg->comp();
+    TR::Logger *log = comp->log();
 
     if (comp->getPersistentInfo()->isRuntimeInstrumentationEnabled()) {
         // This must be called before relocations to generate the relocation data for the profiled instructions.
@@ -168,7 +169,6 @@ void OMR::CodeGenPhase::performProcessRelocationsPhase(TR::CodeGenerator *cg, TR
 
     if (cg->getAheadOfTimeCompile()
         && (comp->getOption(TR_TraceRelocatableDataCG) || comp->getOption(TR_TraceRelocatableDataDetailsCG))) {
-        TR::Logger *log = comp->log();
         log->prints("\n<relocatableDataCG>\n");
         if (comp->getOption(TR_TraceRelocatableDataDetailsCG)) // verbose output
         {
@@ -204,7 +204,6 @@ void OMR::CodeGenPhase::performProcessRelocationsPhase(TR::CodeGenerator *cg, TR
     }
 
     if (comp->getOption(TR_TraceCG)) {
-        TR::Logger *log = comp->log();
         const char *title = "Post Relocation Instructions";
         comp->getDebug()->dumpMethodInstrs(log, title, false, true);
 
