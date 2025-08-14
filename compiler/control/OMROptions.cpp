@@ -1910,8 +1910,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      explicitNewInitialization, 0, "P" },
     { "traceFieldPrivatization", "L\ttrace field privatization", TR::Options::traceOptimization, fieldPrivatization, 0,
      "P" },
-    { "traceFileLength=", "L\ttrace file length in MB", TR::Options::setStaticNumeric,
-     (intptr_t)&OMR::Options::_traceFileLength, 0, "F%d", NOT_IN_SUBSET },
+    { "traceFileLength=", "L\tmax trace file length in MiB (best effort). 0 for unlimited (default)",
+     TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_traceFileLengthInMiB, 0, "F%d", NOT_IN_SUBSET },
     { "traceFull", "L\tturn on all trace options", SET_OPTION_BIT(TR_TraceAll), "P" },
     { "traceGeneralStoreSinking", "L\ttrace general store sinking", TR::Options::traceOptimization, generalStoreSinking,
      0, "P" },
@@ -2489,7 +2489,7 @@ int32_t OMR::Options::_numAllocatedCompilationThreads = -1; // -1 means not init
 
 int32_t OMR::Options::_trampolineSpacePercentage = 0; // 0 means no change from default
 
-int32_t OMR::Options::_traceFileLength = 0; // in MBs, 0 unlimited
+int32_t OMR::Options::_traceFileLengthInMiB = 0; // 0 means unlimited
 
 bool OMR::Options::_countsAreProvidedByUser = false;
 TR_YesNoMaybe OMR::Options::_startupTimeMatters = TR_maybe;

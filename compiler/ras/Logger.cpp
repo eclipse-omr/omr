@@ -266,3 +266,84 @@ int32_t OMR::TRIOStreamLogger::close()
     return this->flush();
 }
 
+/*
+ * -----------------------------------------------------------------------------
+ * CircularLogger
+ * -----------------------------------------------------------------------------
+ */
+OMR::CircularLogger::CircularLogger(OMR::Logger *innerLogger, int64_t rewindThresholdInChars)
+    : _innerLogger(innerLogger)
+    , _rewindThresholdInChars(rewindThresholdInChars)
+{
+    TR_ASSERT_FATAL(innerLogger->supportsRewinding(),
+        "Inner logger must support rewinding for use in a circular logger");
+    TR_ASSERT_FATAL(rewindThresholdInChars > 0, "Circular log threshold must be a non-zero, positive integer");
+}
+
+OMR::CircularLogger *OMR::CircularLogger::create(OMR::Logger *innerLogger, int64_t rewindThresholdInChars)
+{
+    return new OMR::CircularLogger(innerLogger, rewindThresholdInChars);
+}
+
+int32_t OMR::CircularLogger::printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    int32_t length = getInnerLogger()->vprintf(format, args);
+    va_end(args);
+    return length;
+}
+
+int32_t OMR::CircularLogger::prints(const char *str)
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->prints(str);
+}
+
+int32_t OMR::CircularLogger::printc(char c)
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->printc(c);
+}
+
+int32_t OMR::CircularLogger::println()
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->println();
+}
+
+int32_t OMR::CircularLogger::vprintf(const char *format, va_list args)
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->vprintf(format, args);
+}
+
+int64_t OMR::CircularLogger::tell() { return getInnerLogger()->tell(); }
+
+int32_t OMR::CircularLogger::flush() { return getInnerLogger()->flush(); }
+
+void OMR::CircularLogger::rewind() { getInnerLogger()->rewind(); }
+
+int32_t OMR::CircularLogger::close()
+{
+    setLoggerClosed(true);
+    setEnabled_DEPRECATED(false);
+    return getInnerLogger()->close();
+}
