@@ -50,12 +50,12 @@ int32_t TR_CatchBlockRemover::perform()
     TR::CFG *cfg = comp()->getFlowGraph();
     if (cfg == NULL) {
         if (trace())
-            comp()->getLogger()->prints("Can't do Catch Block Removal, no CFG\n");
+            comp()->log()->prints("Can't do Catch Block Removal, no CFG\n");
         return 0;
     }
 
     if (trace())
-        comp()->getLogger()->prints("Starting Catch Block Removal\n");
+        comp()->log()->prints("Starting Catch Block Removal\n");
 
     bool thereMayBeRemovableCatchBlocks = false;
 
@@ -151,7 +151,7 @@ int32_t TR_CatchBlockRemover::perform()
     } // scope of the stack memory region
 
     if (trace())
-        comp()->getLogger()->prints("\nEnding Catch Block Removal\n");
+        comp()->log()->prints("\nEnding Catch Block Removal\n");
 
     return 1; // actual cost
 }

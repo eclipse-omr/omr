@@ -272,8 +272,8 @@ private:
                         oldSize == newSymSize) // 16 == 16
                     {
                         if (trace() || comp()->cg()->traceBCDCodeGen()) {
-                            comp()->getLogger()->printf("reduce newPrecision %d->%d for odd to even truncation "
-                                                        "(origNode %s (%p) prec=%d, node %s (%p) prec=%d\n",
+                            comp()->log()->printf("reduce newPrecision %d->%d for odd to even truncation (origNode %s "
+                                                  "(%p) prec=%d, node %s (%p) prec=%d\n",
                                 newPrecision, oldPrecision, newNode->getOpCode().getName(), newNode,
                                 newNode->getDecimalPrecision(), oldNode->getOpCode().getName(), oldNode, oldPrecision);
                         }
@@ -417,7 +417,7 @@ private:
 
 int32_t TR_CopyPropagation::perform()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (trace())
         log->prints("Starting CopyPropagation\n");
@@ -1009,7 +1009,7 @@ void TR_CopyPropagation::rematerializeIndirectLoadsFromAutos()
     }
 
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after rematerialization of indirect loads from autos");
+        comp()->dumpMethodTrees(comp()->log(), "Trees after rematerialization of indirect loads from autos");
 }
 
 void TR_CopyPropagation::commonIndirectLoadsFromAutos()
@@ -1044,7 +1044,7 @@ void TR_CopyPropagation::commonIndirectLoadsFromAutos()
     }
 
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after commoning of indirect loads from autos");
+        comp()->dumpMethodTrees(comp()->log(), "Trees after commoning of indirect loads from autos");
 }
 
 static void preserveKnownObjectInfo(TR::Compilation *comp, TR::Node *node, TR::SymbolReference *oldSymRef,
@@ -1077,7 +1077,7 @@ TR::treetop
 void TR_CopyPropagation::replaceCopySymbolReferenceByOriginalIn(TR::SymbolReference *copySymbolReference,
     TR::Node *origNode, TR::Node *node, TR::Node *defNode, TR::Node *baseAddrNode, bool baseAddrAvail)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     vcount_t curVisit = comp()->getVisitCount();
 
 #ifdef J9_PROJECT_SPECIFIC

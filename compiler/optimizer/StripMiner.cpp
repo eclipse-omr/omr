@@ -75,17 +75,17 @@ bool TR_StripMiner::shouldPerform()
     // FIXME: only enabled when creating arraylets (for now)
     if (!comp()->generateArraylets()) {
         if (trace())
-            comp()->getLogger()->prints("Not enabled in non-rtj mode.\n");
+            comp()->log()->prints("Not enabled in non-rtj mode.\n");
         return false;
     } else if (comp()->getOption(TR_DisableStripMining)) {
         if (trace())
-            comp()->getLogger()->prints("Option is not enabled -- returning from strip mining.\n");
+            comp()->log()->prints("Option is not enabled -- returning from strip mining.\n");
         return false;
     }
 
     if (!comp()->mayHaveLoops()) {
         if (trace())
-            comp()->getLogger()->prints("Method does not have loops -- returning from strip mining.\n");
+            comp()->log()->prints("Method does not have loops -- returning from strip mining.\n");
         return false;
     }
 
@@ -95,7 +95,7 @@ bool TR_StripMiner::shouldPerform()
 int32_t TR_StripMiner::perform()
 {
     if (trace())
-        comp()->getLogger()->printf("Processing method: %s\n", comp()->signature());
+        comp()->log()->printf("Processing method: %s\n", comp()->signature());
 
     _cfg = comp()->getFlowGraph();
     _rootStructure = _cfg->getStructure();
@@ -108,8 +108,8 @@ int32_t TR_StripMiner::perform()
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     if (trace()) {
-        comp()->getLogger()->prints("Starting StripMining\n");
-        comp()->dumpMethodTrees(comp()->getLogger(), "Before strip mining");
+        comp()->log()->prints("Starting StripMining\n");
+        comp()->dumpMethodTrees(comp()->log(), "Before strip mining");
     }
 
     // Collect and analyze information about loops
@@ -154,7 +154,7 @@ int32_t TR_StripMiner::perform()
 
 void TR_StripMiner::collectLoops(TR_Structure *str)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR_RegionStructure *region = str->asRegion();
 
     if (region == NULL)
@@ -458,7 +458,7 @@ void TR_StripMiner::transformLoops()
                 block->setFrequency((int32_t)((float)block->getFrequency() / 10));
 
             if (trace())
-                comp()->getLogger()->printf("Done transforming loop %d\n", li->_regionNum);
+                comp()->log()->printf("Done transforming loop %d\n", li->_regionNum);
             // printf("\n--Strip Mining in -- %s start %d post %d pre %d increasing %d\n", comp()->signature(),
             // li->_offset, li->_postOffset, li->_preOffset, li->_increasing);
         }
@@ -467,7 +467,7 @@ void TR_StripMiner::transformLoops()
 
 void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::Block **blockMapper = NULL;
     bool isMainOrResidual = true;
     switch (type) {
@@ -600,7 +600,7 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
 
 void TR_StripMiner::transformLoop(LoopInfo *li)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR_RegionStructure *loop = li->_region;
     TR::Block *ph = li->_preHeader;
     TR::TreeTop *phEntry = ph->getEntry();
@@ -856,7 +856,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
 
 TR::Block *TR_StripMiner::createStartOffsetLoop(LoopInfo *li, TR::Block *outerHeader)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // create a new block which contains the new loop test
     // (i & stripLen) > 0
@@ -945,7 +945,7 @@ TR::Block *TR_StripMiner::createStartOffsetLoop(LoopInfo *li, TR::Block *outerHe
 
 TR::Block *TR_StripMiner::stripMineLoop(LoopInfo *li, TR::Block *outerHeader)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR_RegionStructure *loop = li->_region;
     TR::Block *ph = li->_preHeader;
     TR::TreeTop *phEntry = ph->getEntry();
@@ -1286,7 +1286,7 @@ TR::Block *TR_StripMiner::createGotoBlock(TR::Block *source, TR::Block *dest)
 
 void TR_StripMiner::redirect(TR::Block *source, TR::Block *oldDest, TR::Block *newDest)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::Node *branchNode = source->getExit()->getPrevRealTreeTop()->getNode();
     bool found = false;
 
@@ -1358,7 +1358,7 @@ TR::Block *TR_StripMiner::createLoopTest(LoopInfo *li, TR_ClonedLoopType type)
 
     /* Adding temp = i + offset in pre-header */
     if (trace())
-        comp()->getLogger()->printf("\t Adding temp = i + %s-offset in block [%d]\n", type == preLoop ? "pre" : "post",
+        comp()->log()->printf("\t Adding temp = i + %s-offset in block [%d]\n", type == preLoop ? "pre" : "post",
             clonedPh->getNumber());
 
     TR::SymbolReference *tempSymRef
@@ -1388,7 +1388,7 @@ TR::Block *TR_StripMiner::createLoopTest(LoopInfo *li, TR_ClonedLoopType type)
     _endTree = ifBlock->getExit();
 
     if (trace())
-        comp()->getLogger()->printf("\t created a new block [%d] to test if i < temp [%p]\n", ifBlock->getNumber(),
+        comp()->log()->printf("\t created a new block [%d] to test if i < temp [%p]\n", ifBlock->getNumber(),
             ifTree->getNode());
 
     return ifBlock;
@@ -1400,8 +1400,7 @@ TR::Block *TR_StripMiner::createLoopTest(LoopInfo *li, TR_ClonedLoopType type)
 void TR_StripMiner::examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool checkClone)
 {
     if (trace())
-        comp()->getLogger()->printf("   analyze %s loop %d...\n", type == mainLoop ? "main" : "residual",
-            li->_regionNum);
+        comp()->log()->printf("   analyze %s loop %d...\n", type == mainLoop ? "main" : "residual", li->_regionNum);
 
     TR_RegionStructure *loop = li->_region;
     TR::SymbolReference *oldCounter = li->_piv->getSymRef();
@@ -1428,7 +1427,7 @@ void TR_StripMiner::examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool check
             if (checkClone && li->_canMoveAsyncCheck && node->getOpCodeValue() == TR::asynccheck
                 && li->_asyncTree == NULL) {
                 if (trace())
-                    comp()->getLogger()->printf("      found asynccheck [%p] in block [%d]\n", currentTree,
+                    comp()->log()->printf("      found asynccheck [%p] in block [%d]\n", currentTree,
                         block->getNumber());
                 li->_asyncTree = currentTree;
             }
@@ -1443,7 +1442,7 @@ void TR_StripMiner::examineLoop(LoopInfo *li, TR_ClonedLoopType type, bool check
 void TR_StripMiner::examineNode(LoopInfo *li, TR::Node *parent, TR::Node *node, TR::SymbolReference *oldSymRef,
     vcount_t visitCount, TR_ClonedLoopType type, bool checkClone, int32_t childNum)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // Check the cloned node's symbol reference
     //
@@ -1621,7 +1620,7 @@ TR::Node *findIndexChild(TR::Node *node, TR::SymbolReference *newSymRef)
 void TR_StripMiner::replaceLoopPivs(LoopInfo *li, TR::ILOpCodes newOpCode, TR::Node *newConst,
     TR::SymbolReference *newSymRef, TR_ClonedLoopType type)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::SymbolReference *origSymRef = li->_piv->getSymRef();
     ListIterator<TR_ParentOfChildNode> it;
     TR_ParentOfChildNode *parent = NULL;
@@ -1784,7 +1783,7 @@ TR::Block *TR_StripMiner::getLoopTest(TR_Structure *str, TR::Block *preHeader)
     //
     if (loopTest && !loopTest->getLastRealTreeTop()->getNode()->getOpCode().isBooleanCompare()) {
         if (trace())
-            comp()->getLogger()->printf("loop %d: no loop test found on backedge\n", region->getNumber());
+            comp()->log()->printf("loop %d: no loop test found on backedge\n", region->getNumber());
         loopTest = NULL;
     }
     // FIXME: if the test is eq/ne, make sure the loop increment is 1/-1
@@ -1793,7 +1792,7 @@ TR::Block *TR_StripMiner::getLoopTest(TR_Structure *str, TR::Block *preHeader)
         if (TR::ILOpCode::isNotEqualCmp(loopTest->getLastRealTreeTop()->getNode()->getOpCodeValue())
             || TR::ILOpCode::isEqualCmp(loopTest->getLastRealTreeTop()->getNode()->getOpCodeValue())) {
             if (trace())
-                comp()->getLogger()->printf("loop %d: found loop with eq/ne test condition\n", region->getNumber());
+                comp()->log()->printf("loop %d: found loop with eq/ne test condition\n", region->getNumber());
             loopTest = NULL;
             // check for increment here
         }
@@ -1805,7 +1804,7 @@ TR::Block *TR_StripMiner::getLoopTest(TR_Structure *str, TR::Block *preHeader)
 bool TR_StripMiner::checkIfIncrementalIncreasesOfPIV(LoopInfo *li)
 {
     if (trace())
-        comp()->getLogger()->printf("   looking for stores in original loop %d...\n", li->_regionNum);
+        comp()->log()->printf("   looking for stores in original loop %d...\n", li->_regionNum);
 
     TR_RegionStructure *loop = li->_region;
     TR::SymbolReference *oldCounter = li->_piv->getSymRef();
@@ -1837,8 +1836,8 @@ bool TR_StripMiner::checkIfIncrementalIncreasesOfPIV(LoopInfo *li)
 
                     if (pivIncInStore != li->_piv->getDeltaOnBackEdge()) {
                         if (trace())
-                            comp()->getLogger()->printf("\t loop %d ==> Found a store to induction variable with "
-                                                        "increment different than deltaObBackEdge\n",
+                            comp()->log()->printf("\t loop %d ==> Found a store to induction variable with increment "
+                                                  "different than deltaObBackEdge\n",
                                 li->_region->getNumber());
                         return true;
                     }

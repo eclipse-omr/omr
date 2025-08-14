@@ -62,12 +62,12 @@ TR_Isolatedness::TR_Isolatedness(TR::Compilation *comp, TR::Optimizer *optimizer
 
     /*
     if (trace())
-       comp()->getLogger()->prints("Starting Isolatedness\n");
+       comp()->log()->prints("Starting Isolatedness\n");
 
     performAnalysis(rootStructure, false);
 
     if (trace())
-       comp()->getLogger()->prints("\nEnding Isolatedness\n");
+       comp()->log()->prints("\nEnding Isolatedness\n");
     */
 }
 
@@ -168,8 +168,8 @@ void TR_Isolatedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockSt
 
       if (trace())
          {
-         /////comp()->getLogger()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
-         /////_regularInfo->print(comp()->getLogger());
+         /////comp()->log()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
+         /////_regularInfo->print(comp()->log());
          }
       }
    }

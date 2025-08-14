@@ -39,7 +39,7 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
     if (isLabel && getLabelSymbol()->isEndOfColdInstructionStream()) {
         TR::Machine *machine = cg()->machine();
         if (comp->getOption(TR_TraceRA))
-            comp->getLogger()->prints("\nOOL: taking register state snap shot\n");
+            comp->log()->prints("\nOOL: taking register state snap shot\n");
         cg()->setIsOutOfLineHotPath(true);
         machine->takeRegisterStateSnapShot();
     }
@@ -68,14 +68,13 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
             // Start RA for OOL cold path, restore register state from snap shot
             TR::Machine *machine = cg()->machine();
             if (comp->getOption(TR_TraceRA))
-                comp->getLogger()->prints("\nOOL: Restoring Register state from snap shot\n");
+                comp->log()->prints("\nOOL: Restoring Register state from snap shot\n");
             cg()->setIsOutOfLineHotPath(false);
             machine->restoreRegisterStateFromSnapShot();
         }
         // Reusing the OOL Section merge label for other branches might be unsafe.
         else if (comp->getOption(TR_TraceRA))
-            comp->getLogger()->prints(
-                "\nOOL: Reusing the OOL Section merge label for other branches might be unsafe.\n");
+            comp->log()->prints("\nOOL: Reusing the OOL Section merge label for other branches might be unsafe.\n");
     }
 }
 

@@ -498,7 +498,7 @@ void OMR::Block::redirectFlowToNewDestination(TR::Compilation *comp, TR::CFGEdge
         } else if (lastNode->getOpCode().isJumpWithMultipleTargets()) {
             if (lastNode->getOpCode().hasBranchChildren()) {
                 bool doTrace = comp->getOptions()->getAnyOption(TR_TraceAll);
-                OMR::Logger *log = comp->getLogger();
+                OMR::Logger *log = comp->log();
 
                 if (doTrace)
                     log->prints("Jump with multiple targets, with non fall through path to empty block\n");
@@ -1861,7 +1861,7 @@ void OMR::Block::collectReferencedAutoSymRefsIn(TR::Compilation *comp, TR::Node 
 TR::Block *OMR::Block::splitEdge(TR::Block *from, TR::Block *to, TR::Compilation *c, TR::TreeTop **lastTreeTop,
     bool findOptimalInsertionPoint)
 {
-    // c->getLogger()->printf("Splitting edge (%d,%d)\n", from->getNumber(), to->getNumber());
+    // c->log()->printf("Splitting edge (%d,%d)\n", from->getNumber(), to->getNumber());
     TR_ASSERT(!to->isOSRCatchBlock(), "Splitting edge to OSRCatchBlock (block_%d -> block_%d) is not supported\n",
         from->getNumber(), to->getNumber());
     TR::Node *exitNode = from->getExit()->getNode();

@@ -58,13 +58,13 @@ TR_DominatorVerifier::TR_DominatorVerifier(TR_Dominators &findDominators)
         TR::TreeTop *currentTree = comp()->getStartTree();
 
         while (!(currentTree == NULL)) {
-            comp()->getDebug()->print(comp()->getLogger(), currentTree);
+            comp()->getDebug()->print(comp()->log(), currentTree);
             currentTree = currentTree->getNextTreeTop();
         }
 
         dumpOptDetails(comp(), "Printing out the CFG from DominatorVerifier\n");
         if (cfg != NULL)
-            comp()->getDebug()->print(comp()->getLogger(), cfg);
+            comp()->getDebug()->print(comp()->log(), cfg);
     }
 
     TR_DominatorsChk expensiveAlgorithm(comp());

@@ -180,7 +180,7 @@ void OMR::ARM64::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
             if (localCursor->getGCMapIndex() >= 0) {
                 int32_t newOffset = stackIndex + pointerSize * (localCursor->getGCMapIndex() - firstLocalGCIndex);
                 if (comp->getOption(TR_TraceCG)) {
-                    comp->getLogger()->printf("\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
+                    comp->log()->printf("\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
                         comp->getDebug()->getName(localCursor), localCursor->getGCMapIndex(), localCursor->getOffset(),
                         newOffset);
                 }
@@ -233,9 +233,8 @@ void OMR::ARM64::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
                             } else // share local with already mapped stack slot
                             {
                                 if (comp->getOption(TR_TraceCG))
-                                    comp->getLogger()->printf(
-                                        "O^O COMPACT LOCALS: Sharing slot for local %p (colour = %d)\n", localCursor,
-                                        colour);
+                                    comp->log()->printf("O^O COMPACT LOCALS: Sharing slot for local %p (colour = %d)\n",
+                                        localCursor, colour);
 
                                 localCursor->setOffset(colourToOffsetMap[colour]);
                             }

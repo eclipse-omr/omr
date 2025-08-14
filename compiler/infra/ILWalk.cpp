@@ -60,10 +60,10 @@ void TR::TreeTopIteratorImpl::logCurrentLocation()
     if (_name && _comp && _comp->getOption(TR_TraceILWalks)) {
         if (currentTree()) {
             TR::Node *node = currentTree()->getNode();
-            _comp->getLogger()->printf("TREE  %s @ %s n%dn [%p]\n", _name, node->getOpCode().getName(),
+            _comp->log()->printf("TREE  %s @ %s n%dn [%p]\n", _name, node->getOpCode().getName(),
                 node->getGlobalIndex(), node);
         } else {
-            _comp->getLogger()->printf("TREE  %s finished\n", _name);
+            _comp->log()->printf("TREE  %s finished\n", _name);
         }
     }
 }
@@ -116,7 +116,7 @@ bool TR::NodeIterator::isAt(PreorderNodeIterator &other)
 void TR::NodeIterator::logCurrentLocation()
 {
     if (_name && comp() && comp()->getOption(TR_TraceILWalks)) {
-        OMR::Logger *log = comp()->getLogger();
+        OMR::Logger *log = comp()->log();
         if (currentTree()) {
             TR::Node *node = currentNode();
             log->printf("NODE  %s  ", _name);
@@ -266,7 +266,7 @@ TR::Node *TR::NodeOccurrenceIterator::currentNode()
 void TR::NodeOccurrenceIterator::logCurrentLocation()
 {
     if (_name && comp() && comp()->getOption(TR_TraceILWalks)) {
-        OMR::Logger *log = comp()->getLogger();
+        OMR::Logger *log = comp()->log();
         if (currentTree()) {
             TR::Node *node = currentNode();
             log->printf("WALK  %s  ", _name);
@@ -399,7 +399,7 @@ TR::ReversePostorderSnapshotBlockIterator::ReversePostorderSnapshotBlockIterator
 {
     takeSnapshot(cfg->getStart()->asBlock());
     if (isLoggingEnabled()) {
-        OMR::Logger *log = comp->getLogger();
+        OMR::Logger *log = comp->log();
         log->printf("BLOCK  %s Snapshot:", _name);
         for (int32_t i = _postorder.lastIndex(); i >= 0; --i)
             log->printf(" %d", _postorder[i]->getNumber());
@@ -466,8 +466,7 @@ bool TR::ReversePostorderSnapshotBlockIterator::isStepOperationFinished()
         return true; // Reached the next block in the walk
 
     if (isLoggingEnabled())
-        comp()->getLogger()->printf("BLOCK  %s Skip block_%d removed during walk\n", _name,
-            currentBlock()->getNumber());
+        comp()->log()->printf("BLOCK  %s Skip block_%d removed during walk\n", _name, currentBlock()->getNumber());
     return false;
 }
 
@@ -475,9 +474,9 @@ void TR::ReversePostorderSnapshotBlockIterator::logCurrentLocation()
 {
     if (isLoggingEnabled()) {
         if (currentBlock())
-            comp()->getLogger()->printf("BLOCK  %s @ block_%d\n", _name, currentBlock()->getNumber());
+            comp()->log()->printf("BLOCK  %s @ block_%d\n", _name, currentBlock()->getNumber());
         else
-            comp()->getLogger()->printf("BLOCK  %s finished\n", _name);
+            comp()->log()->printf("BLOCK  %s finished\n", _name);
     }
 }
 
@@ -537,9 +536,8 @@ void TR::AllBlockIterator::stepForward()
                 // Found one!
                 //
                 if (isLoggingEnabled())
-                    comp()->getLogger()->printf(
-                        "BLOCK  %s REMOVED_BLOCKS_CAN_BE_REINSERTED: block_%d found via extra scan\n", _name,
-                        next->asBlock()->getNumber());
+                    comp()->log()->printf("BLOCK  %s REMOVED_BLOCKS_CAN_BE_REINSERTED: block_%d found via extra scan\n",
+                        _name, next->asBlock()->getNumber());
                 break;
             }
         }
@@ -565,9 +563,9 @@ void TR::AllBlockIterator::logCurrentLocation()
 {
     if (isLoggingEnabled()) {
         if (currentBlock())
-            comp()->getLogger()->printf("BLOCK  %s @ block_%d\n", _name, currentBlock()->getNumber());
+            comp()->log()->printf("BLOCK  %s @ block_%d\n", _name, currentBlock()->getNumber());
         else
-            comp()->getLogger()->printf("BLOCK  %s finished\n", _name);
+            comp()->log()->printf("BLOCK  %s finished\n", _name);
     }
 }
 
@@ -615,9 +613,9 @@ void TR::TreeTopOrderExtendedBlockIterator::logCurrentLocation()
 {
     if (isLoggingEnabled()) {
         if (getFirst() != NULL) {
-            comp()->getLogger()->printf("BLOCK %s @ block_%d\n", _name, getFirst()->getNumber());
+            comp()->log()->printf("BLOCK %s @ block_%d\n", _name, getFirst()->getNumber());
         } else {
-            comp()->getLogger()->printf("BLOCK %s finished\n", _name);
+            comp()->log()->printf("BLOCK %s finished\n", _name);
         }
     }
 }

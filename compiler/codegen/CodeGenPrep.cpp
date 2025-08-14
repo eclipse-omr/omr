@@ -632,7 +632,7 @@ void OMR::CodeGenerator::addCountersToEdges(TR::Block *b)
             TR::Block *newBlock = b->splitEdge(b, dest, comp);
 
             if (comp->getOption(TR_TraceCG))
-                comp->getLogger()->printf("\nSplitting edge, create new intermediate block_%d to add edge counters",
+                comp->log()->printf("\nSplitting edge, create new intermediate block_%d to add edge counters",
                     newBlock->getNumber());
             if (glRegDeps)
                 newBlock->takeGlRegDeps(comp, glRegDeps);

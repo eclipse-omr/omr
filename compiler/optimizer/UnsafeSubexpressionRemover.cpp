@@ -29,7 +29,7 @@ void OMR::UnsafeSubexpressionRemover::anchorSafeChildrenOfUnsafeNodes(TR::Node *
     else
         _visitedNodes.set(node->getGlobalIndex());
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     //
     // Design note: we don't decrement refcounts in here.  Conceptually,
@@ -168,7 +168,7 @@ void OMR::UnsafeSubexpressionRemover::eliminateStore(TR::TreeTop *treeTop, TR::N
             TR::Node *dummyChild
                 = node->setAndIncChild(0, TR::Node::createConstDead(child, TR::Int32, 0xbad1 /* eyecatcher */));
             if (trace())
-                comp()->getLogger()->printf("  - replace unsafe child %s n%dn with dummy %s n%dn\n",
+                comp()->log()->printf("  - replace unsafe child %s n%dn with dummy %s n%dn\n",
                     child->getOpCode().getName(), child->getGlobalIndex(), dummyChild->getOpCode().getName(),
                     dummyChild->getGlobalIndex());
         }

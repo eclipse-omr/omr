@@ -59,7 +59,7 @@ TR_Earliestness::TR_Earliestness(TR::Compilation *comp, TR::Optimizer *optimizer
     bool trace)
     : TR_UnionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
 {
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
     _globalAnticipatability = new (comp->allocator()) TR_GlobalAnticipatability(comp, optimizer, rootStructure, trace);
 
     if (trace)
@@ -126,10 +126,10 @@ void TR_Earliestness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockSt
     copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
 
     if (trace()) {
-        /////comp()->getLogger()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
-        /////_inSetInfo[blockStructure->getNumber()]->print(comp()->getLogger());
-        /////comp()->getLogger()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(comp()->getLogger());
+        /////comp()->log()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
+        /////_inSetInfo[blockStructure->getNumber()]->print(comp()->log());
+        /////comp()->log()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
+        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(comp()->log());
     }
 
     TR::Block *block = blockStructure->getBlock();

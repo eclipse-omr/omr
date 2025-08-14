@@ -355,7 +355,7 @@ public:
         }
         if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
             diagnostic("Tree after insertion of key %d:\n", key);
-            tree.print(comp()->getLogger());
+            tree.print(comp()->log());
             tree.verify();
         }
         return result;
@@ -382,7 +382,7 @@ public:
         }
         if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
             diagnostic("Tree after insertion of key %d:\n", newNode->getKey());
-            tree.print(comp()->getLogger());
+            tree.print(comp()->log());
             tree.verify();
         }
         return result;
@@ -397,7 +397,7 @@ public:
         T *result = remove(key, tree.rootReference(), rebalance);
         if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
             diagnostic("Tree after removal of key %d:\n", key);
-            tree.print(comp()->getLogger());
+            tree.print(comp()->log());
             tree.verify();
         }
         return result;

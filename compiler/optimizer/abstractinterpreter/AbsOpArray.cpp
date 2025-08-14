@@ -66,7 +66,7 @@ TR::AbsValue *TR::AbsOpArray::at(uint32_t index) const
 
 void TR::AbsOpArray::print(TR::Compilation *comp) const
 {
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
 
     log->prints("Contents of Abstract Local Variable Array:\n");
     for (auto i = 0; i < size(); i++) {

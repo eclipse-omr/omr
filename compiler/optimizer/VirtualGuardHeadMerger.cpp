@@ -326,7 +326,7 @@ int32_t TR_VirtualGuardHeadMerger::perform()
 {
     static char *disableVGHeadMergerTailSplitting = feGetEnv("TR_DisableVGHeadMergerTailSplitting");
     TR::CFG *cfg = comp()->getFlowGraph();
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // Cache the loads for the outer guard's cold path
     TR_BitVector coldPathLoads(comp()->trMemory()->currentStackRegion());

@@ -81,12 +81,12 @@ void TR_RandomGenerator::exercise(int32_t period, TR::Compilation *comp)
     RandomExercizer ex(comp);
 
     if (comp->getLoggingEnabled())
-        comp->getLogger()->printf("  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)",
+        comp->log()->printf("  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)",
             "Boolean", "Boolean(5)");
 
     for (int32_t i = 0; i < period; i++) {
         if (comp->getLoggingEnabled())
-            comp->getLogger()->printf("  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5),
+            comp->log()->printf("  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5),
                 ex.randomInt(1, 1), ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
     }
 }

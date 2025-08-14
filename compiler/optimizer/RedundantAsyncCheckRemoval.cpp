@@ -122,7 +122,7 @@ int32_t TR_RedundantAsyncCheckRemoval::perform()
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "Before analysis:");
+        comp()->dumpMethodTrees(comp()->log(), "Before analysis:");
 
     _asyncCheckInCurrentLoop = false;
     _numAsyncChecksInserted = 0;
@@ -172,7 +172,7 @@ int32_t TR_RedundantAsyncCheckRemoval::perform()
     }
 
     if (trace())
-        comp()->dumpMethodTrees(comp()->getLogger(), "After analysis:");
+        comp()->dumpMethodTrees(comp()->log(), "After analysis:");
 
     return count;
 }
@@ -204,7 +204,7 @@ int32_t TR_RedundantAsyncCheckRemoval::perform(TR_Structure *str, bool insideImp
             asyncCheckFlag = true;
 
         if (trace())
-            comp()->getLogger()->printf("sub node %d flag %d\n", node->getNumber(), asyncCheckFlag);
+            comp()->log()->printf("sub node %d flag %d\n", node->getNumber(), asyncCheckFlag);
 
         if (region->isNaturalLoop())
             _asyncCheckInCurrentLoop = false;
@@ -212,7 +212,7 @@ int32_t TR_RedundantAsyncCheckRemoval::perform(TR_Structure *str, bool insideImp
 
     if (region->isNaturalLoop()) {
         if (trace())
-            comp()->getLogger()->printf("region %d flag %d\n", region->getNumber(), asyncCheckFlag);
+            comp()->log()->printf("region %d flag %d\n", region->getNumber(), asyncCheckFlag);
         _asyncCheckInCurrentLoop = asyncCheckFlag;
         int32_t retValue = processNaturalLoop(region, insideImproperRegion);
         if (asyncCheckFlag || origAsyncCheckFlag)
@@ -311,7 +311,7 @@ int32_t TR_RedundantAsyncCheckRemoval::processBlockStructure(TR_BlockStructure *
                     //
                     _asyncCheckInCurrentLoop = true;
                     if (trace())
-                        comp()->getLogger()->printf("removing async check from block_%d\n", b->getNumber());
+                        comp()->log()->printf("removing async check from block_%d\n", b->getNumber());
                     if (performTransformation(comp(), "%sremoving async check from block_%d\n", OPT_DETAILS,
                             b->getNumber())) {
                         prev = treeTop->getPrevTreeTop();
@@ -532,7 +532,7 @@ void TR_RedundantAsyncCheckRemoval::computeCoverageInfo(TR_StructureSubGraphNode
     }
 
     if (trace())
-        comp()->getLogger()->printf("for node: %d coverage: %d\n", node->getNumber(), info->getCoverage());
+        comp()->log()->printf("for node: %d coverage: %d\n", node->getNumber(), info->getCoverage());
 }
 
 bool TR_RedundantAsyncCheckRemoval::isMaxLoopIterationGuardedLoop(TR_RegionStructure *loop)
@@ -649,7 +649,7 @@ bool TR_RedundantAsyncCheckRemoval::containsImplicitInternalPointer(TR::Node *no
         }
     }
     if (trace())
-        comp()->getLogger()->printf("    containsImplicitInternalPointer(%p) = %s\n", node, result ? "true" : "false");
+        comp()->log()->printf("    containsImplicitInternalPointer(%p) = %s\n", node, result ? "true" : "false");
     return result;
 }
 
@@ -660,7 +660,7 @@ void TR_RedundantAsyncCheckRemoval::markExtendees(TR::Block *block, bool canHave
         TR_BlockStructure *s = cursor->getStructureOf();
         AsyncInfo *ai = ((AsyncInfo *)s->getAnalysisInfo());
         if (trace()) {
-            comp()->getLogger()->printf("    block_%d canHaveAYieldPoint %s -> %s\n", cursor->getNumber(),
+            comp()->log()->printf("    block_%d canHaveAYieldPoint %s -> %s\n", cursor->getNumber(),
                 ai->canHaveAYieldPoint() ? "true" : "false", canHaveAYieldPoint ? "true" : "false");
         }
         ai->setCanHaveAYieldPoint(canHaveAYieldPoint);
@@ -805,7 +805,7 @@ bool TR_RedundantAsyncCheckRemoval::originatesFromShortRunningMethod(TR_RegionSt
 
 bool TR_RedundantAsyncCheckRemoval::hasEarlyExit(TR_RegionStructure *region)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     ListIterator<TR::CFGEdge> eit2(&region->getExitEdges());
     for (TR::CFGEdge *edge2 = eit2.getCurrent(); edge2 != 0; edge2 = eit2.getNext()) {
         TR_StructureSubGraphNode *pred2 = edge2->getFrom()->asStructureSubGraphNode();
@@ -835,7 +835,7 @@ bool TR_RedundantAsyncCheckRemoval::hasEarlyExit(TR_RegionStructure *region)
 
 int32_t TR_RedundantAsyncCheckRemoval::processNaturalLoop(TR_RegionStructure *region, bool isInsideImproperRegion)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     if (trace())
         log->printf("==> Forward Processing natural loop %d\n", region->getNumber());
     bool isShortRunning = false;
@@ -1087,7 +1087,7 @@ static TR_StructureSubGraphNode *findNodeInHierarchy(TR_RegionStructure *region,
 void TR_RedundantAsyncCheckRemoval::insertAsyncCheckOnSubTree(TR_StructureSubGraphNode *node,
     TR_StructureSubGraphNode *entry)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     AsyncInfo *info = GET_ASYNC_INFO(node);
 
     if (info->getCoverage() == FullyCovered)
@@ -1168,7 +1168,7 @@ void TR_RedundantAsyncCheckRemoval::markAncestors(TR_StructureSubGraphNode *node
 {
     return; // Disable it for performance. For more details, refer to https://github.com/eclipse-omr/omr/pull/1138
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (node == entry)
         return;
@@ -1290,7 +1290,7 @@ void TR_RedundantAsyncCheckRemoval::enqueueSinks(TR_RegionStructure *region, TR_
 //
 bool TR_RedundantAsyncCheckRemoval::performRegionalBackwardAnalysis(TR_RegionStructure *region, bool inInfo)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     bool earlyExit = hasEarlyExit(region);
 
     TR_Queue<TR_StructureSubGraphNode> *q = new (trHeapMemory()) TR_Queue<TR_StructureSubGraphNode>(trMemory());
@@ -1462,7 +1462,7 @@ const char *TR_RedundantAsyncCheckRemoval::optDetailString() const throw()
 
 uint32_t TR_LoopEstimator::estimateLoopIterationsUpperBound()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     int32_t numSymRefs = comp()->getSymRefTab()->getNumSymRefs();

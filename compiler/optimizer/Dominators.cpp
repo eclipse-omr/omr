@@ -48,7 +48,7 @@ TR_Dominators::TR_Dominators(TR::Compilation *c, bool post)
 {
     LexicalTimer tlex("TR_Dominators::TR_Dominators", _compilation->phaseTimer());
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     _postDominators = post;
     _isValid = true;
@@ -144,7 +144,7 @@ int TR_Dominators::dominates(TR::Block *block, TR::Block *other)
 
 void TR_Dominators::findDominators(TR::Block *start)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     int32_t i;
 
     // Initialize the BBInfo structure for the first (dummy) entry
@@ -228,7 +228,7 @@ void TR_Dominators::findDominators(TR::Block *start)
 
 void TR_Dominators::initialize(TR::Block *start, BBInfo *nullParent)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // Set up to start at the start block
     //
@@ -431,7 +431,7 @@ void TR_PostDominators::findControlDependents()
     }
 
     if (trace()) {
-        OMR::Logger *log = comp()->getLogger();
+        OMR::Logger *log = comp()->log();
         for (i = 0; i < nextNodeNumber; i++) {
             BitVector::Cursor cursor(*_directControlDependents[i]);
             cursor.SetToFirstOne();

@@ -2498,7 +2498,7 @@ TR::Instruction *armLoadConstant(TR::Node *node, int32_t value, TR::Register *tr
     TR::Compilation *comp = cg->comp();
 
     if (comp->getOption(TR_TraceCG)) {
-        OMR::Logger *log = comp->getLogger();
+        OMR::Logger *log = comp->log();
         log->prints("In armLoadConstant with\n");
         log->printf("\tvalue = %d\n", value);
         log->printf("\tnotBits = %d\n", notBits);

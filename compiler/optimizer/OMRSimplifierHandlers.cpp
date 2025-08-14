@@ -2895,7 +2895,7 @@ static TR::Node *generateDecomposedTree(TR::Node *parentNode, TR::Node *multipli
 static void printTree(TR::Simplifier *s, char bitPosition[], char operationType[], int from, int to, int tabspace,
     bool isLong)
 {
-    OMR::Logger *log = s->comp()->getLogger();
+    OMR::Logger *log = s->comp()->log();
     int count = to - from;
     int i;
 
@@ -3036,7 +3036,7 @@ static void decomposeMultiply(TR::Node *node, TR::Simplifier *s, bool isLong)
                 tempOpType[j] = operationType[j];
             }
 
-            comp->getLogger()->printf("MUL Decomposition in method: %s\n", comp->signature());
+            comp->log()->printf("MUL Decomposition in method: %s\n", comp->signature());
             printTree(s, tempBitPos, tempOpType, 0, count, 0, isLong);
         }
 
@@ -12315,7 +12315,7 @@ TR::Node *removeArithmeticsUnderIntegralCompare(TR::Node *node, TR::Simplifier *
             signedMin = TR::getMinSigned<TR::Int64>();
         } else {
             if (s->trace())
-                s->comp()->getLogger()->printf(
+                s->comp()->log()->printf(
                     "\nEliminating add/sub under compare node n%dn failed due to opcode data type\n",
                     node->getGlobalIndex());
 
@@ -12337,7 +12337,7 @@ TR::Node *removeArithmeticsUnderIntegralCompare(TR::Node *node, TR::Simplifier *
 
             if (!(canTransformAdd || canTransformSub)) {
                 if (s->trace())
-                    s->comp()->getLogger()->printf(
+                    s->comp()->log()->printf(
                         "\nEliminating add/sub under order compare node n%dn failed due to overflow\n",
                         node->getGlobalIndex());
 
@@ -14630,8 +14630,8 @@ TR::Node *endBlockSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s
             }
 
             if (s->trace()) {
-                s->comp()->getLogger()->prints("\nStructures after merging blocks:\n");
-                s->getDebug()->print(s->comp()->getLogger(), rootStructure, 6);
+                s->comp()->log()->prints("\nStructures after merging blocks:\n");
+                s->getDebug()->print(s->comp()->log(), rootStructure, 6);
             }
         }
 
@@ -15801,8 +15801,8 @@ TR::Node *divchkSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
             //
             if (s->_nodeToDivchk == NULL) {
                 if (s->trace()) {
-                    s->comp()->getLogger()->printf("Simplifying DIVCHK n%un %p child resulted in no node to DIVCHK - "
-                                                   "replacing DIVCHK with treetop\n",
+                    s->comp()->log()->printf("Simplifying DIVCHK n%un %p child resulted in no node to DIVCHK - "
+                                             "replacing DIVCHK with treetop\n",
                         node->getGlobalIndex(), node);
                 }
 
@@ -15811,7 +15811,7 @@ TR::Node *divchkSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
                 return node;
             } else {
                 if (s->trace()) {
-                    s->comp()->getLogger()->printf(
+                    s->comp()->log()->printf(
                         "Simplifying DIVCHK child has left us with a node to DIVCHK - replacing child with n%un [%p]\n",
                         s->_nodeToDivchk->getGlobalIndex(), s->_nodeToDivchk);
                 }
@@ -15829,7 +15829,7 @@ TR::Node *divchkSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
             // eliminate the DIVCHK.
             //
             if (s->trace()) {
-                s->comp()->getLogger()->printf(
+                s->comp()->log()->printf(
                     "DIVCHK n%un %p child is not a division or remainder operation - replacing DIVCHK with treetop\n",
                     node->getGlobalIndex(), node);
             }
@@ -16162,7 +16162,7 @@ TR::Node *bndchkwithspinechkSimplifier(TR::Node *node, TR::Block *block, TR::Sim
         prevTree->join(newTree);
 
         if (s->trace()) {
-            s->comp()->getLogger()->printf("removing spine check from node %p, anchoring element child to %p\n", node,
+            s->comp()->log()->printf("removing spine check from node %p, anchoring element child to %p\n", node,
                 treeTopNode);
         }
     }

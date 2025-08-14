@@ -140,8 +140,8 @@ TR::Node *constrainVcall(OMR::ValuePropagation *vp, TR::Node *node)
             && performTransformation(vp->comp(), "%s Removing redundant call to jitCheckIfFinalize [%p]\n", OPT_DETAILS,
                 node)) {
             /// printf("found opportunity in %s to remove call to checkfinalize\n",
-            /// vp->comp()->signature());fflush(stdout); vp->comp()->getLogger()->printf("found opportunity to remove
-            /// call %p to checkfinalize\n", node);
+            /// vp->comp()->signature());fflush(stdout); vp->comp()->log()->printf("found opportunity to remove call %p
+            /// to checkfinalize\n", node);
             TR::TransformUtil::transformCallNodeToPassThrough(vp, node, vp->_curTree, receiver);
             return node;
         }

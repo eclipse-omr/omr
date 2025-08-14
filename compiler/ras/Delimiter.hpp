@@ -43,7 +43,7 @@ public:
         TR_ASSERT(strlen(tag) < tagsize - 1, "tag is too long");
 
         if (_trace) {
-            OMR::Logger *log = _comp->getLogger();
+            OMR::Logger *log = _comp->log();
             if (!comment0)
                 log->printf("<%s>\n", _tag);
             else {
@@ -65,7 +65,7 @@ public:
     ~Delimiter()
     {
         if (_trace)
-            _comp->getLogger()->printf("</%s>\n", _tag);
+            _comp->log()->printf("</%s>\n", _tag);
     }
 
 protected:

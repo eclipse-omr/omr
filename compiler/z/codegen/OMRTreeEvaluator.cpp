@@ -3655,12 +3655,12 @@ TR::Instruction *generateS390PackedCompareAndBranchOps(TR::Node *node, TR::CodeG
     TR::Node *secondChild = node->getSecondChild();
     TR_PseudoRegister *secondReg = cg->evaluateBCDNode(secondChild);
     TR::Compilation *comp = cg->comp();
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
 
     bool useCLC = false;
     int32_t clcSize = 0;
     if (cg->traceBCDCodeGen())
-        comp->getLogger()->printf(
+        comp->log()->printf(
             "pdcompare node %p attempt to gen CLC with firstReg %s (symRef #%d) and secondReg %s (symRef #%d)\n", node,
             cg->getDebug()->getName(firstReg), firstReg->getStorageReference()->getReferenceNumber(),
             cg->getDebug()->getName(secondReg), secondReg->getStorageReference()->getReferenceNumber());
@@ -3970,7 +3970,7 @@ static bool tryGenerateSIComparisons(TR::Node *node, TR::Node *constNode, TR::No
         TR::MemoryReference *memRef = TR::MemoryReference::create(cg, operand);
 
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("CLI-Success\n");
+            comp->log()->prints("CLI-Success\n");
 
         // Generate the CLI
         //
@@ -4075,7 +4075,7 @@ static bool tryGenerateSIComparisons(TR::Node *node, TR::Node *constNode, TR::No
             svalue); // doesn't matter if we use svalue or uvalue, only 16 bits are needed
 
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->prints("SI-Success\n");
+            comp->log()->prints("SI-Success\n");
 
         // FIXME: is this necessary?
         memRef->stopUsingMemRefRegister(cg);
@@ -4297,8 +4297,8 @@ static TR::Instruction *tryGenerateCLCForComparison(TR::Node *node, TR::CodeGene
         = generateSS1Instruction(cg, TR::InstOpCode::CLC, node, numOfBytesToCompare - 1, memRef1, memRef2);
 
     if (comp->getOption(TR_TraceCG))
-        comp->getLogger()->printf("CLC-Success (size=%d), node %s (%p)\n", numOfBytesToCompare,
-            node->getOpCode().getName(), node); // size = numOfBytesToCompare+1 since CLC is 0-based
+        comp->log()->printf("CLC-Success (size=%d), node %s (%p)\n", numOfBytesToCompare, node->getOpCode().getName(),
+            node); // size = numOfBytesToCompare+1 since CLC is 0-based
 
     // If we skipped a level, decrement the grand-children
     //
@@ -4407,7 +4407,7 @@ static TR::Instruction *tryGenerateConversionRXComparison(TR::Node *node, TR::Co
             case TR::ifacmpge:
             case TR::ifacmpgt:
                 isUnsignedCmp = true;
-                //            cg->comp()->getLogger()->prints("Setting isUnsignedCmp to true for address compare\n");
+                //            cg->comp()->log()->prints("Setting isUnsignedCmp to true for address compare\n");
                 break;
             default:
                 break;
@@ -4549,7 +4549,7 @@ static TR::Instruction *tryGenerateConversionRXComparison(TR::Node *node, TR::Co
     TR::Instruction *i = generateRXInstruction(cg, op, node, reg, memRef);
 
     if (comp->getOption(TR_TraceCG))
-        comp->getLogger()->prints("Conversion RX-Success\n");
+        comp->log()->prints("Conversion RX-Success\n");
 
     // We skipped a conversion, we must decrement the grandchild
     //
@@ -5169,7 +5169,7 @@ TR::Instruction *genCompareAndBranchInstructionIfPossible(TR::CodeGenerator *cg,
 
     TR::DataType dataType = constNode->getDataType();
     if (canUseImm8) {
-        // comp->getLogger()->printf("canUseImm8 is true.  isIntegral for constNode %p is %d  isAddress =
+        // comp->log()->printf("canUseImm8 is true.  isIntegral for constNode %p is %d  isAddress =
         // %d\n",constNode,constNode->getType().isIntegral(),constNode->getType().isAddress());
 
         if (constNode->getType().isIntegral()) {
@@ -5810,7 +5810,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
     TR::InstOpCode::S390BranchCondition opBranchCond = TR::InstOpCode::COND_NOP;
     TR::Compilation *comp = cg->comp();
 
-    //   comp->getLogger()->printf("In generateS390CompareBranch for node %p child1 = %p child2 = %p  child2->GetFloat =
+    //   comp->log()->printf("In generateS390CompareBranch for node %p child1 = %p child2 = %p  child2->GetFloat =
     //   %f\n",node,firstChild,secondChild,secondChild->getOpCodeValue() == TR::fconst ? secondChild->getFloat() : -1);
 
     if (node->getNumChildren() == 3) {
@@ -5885,8 +5885,8 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
         cmpBranchInstr = genCompareAndBranchInstructionIfPossible(cg, node, fBranchOpCond, rBranchOpCond, deps);
     }
     if (cmpBranchInstr == NULL) {
-        // comp->getLogger()->prints("Couldn't use z6/z10 compare and branch instructions, so we'll generate this the
-        // old fashioned way\n");
+        // comp->log()->prints("Couldn't use z6/z10 compare and branch instructions, so we'll generate this the old
+        // fashioned way\n");
 
         // couldn't use z6/z10 compare and branch instructions, so we'll generate this the old fashioned way
 
@@ -5909,7 +5909,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
         // We'll skip emitting the branch for LoadOrStoreOnCondition target blocks.
         if (isLoadOrStoreOnConditionCandidate) {
             if (comp->getOption(TR_TraceCG))
-                comp->getLogger()->prints("isLoadOrStoreOnConditionCandidate is true\n");
+                comp->log()->prints("isLoadOrStoreOnConditionCandidate is true\n");
             // We need to evaluate the end of this block for the GLRegDeps
             TR::TreeTop *blockEndTT = cg->getCurrentEvaluationTreeTop()->getNextTreeTop();
             TR_ASSERT(blockEndTT->getNode()->getOpCodeValue() == TR::BBEnd,
@@ -5943,7 +5943,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
                         continue;
 
                     if (comp->getOption(TR_TraceCG))
-                        comp->getLogger()->printf("Evaluating node %p", candidateBlockNode);
+                        comp->log()->printf("Evaluating node %p", candidateBlockNode);
                     cg->evaluate(candidateBlockNode);
                 } while (tt != canadidateLoadStoreConditionalBlock->getExit());
 
@@ -5955,7 +5955,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
             }
         }
         if (!isUnorderedOK) {
-            // comp->getLogger()->prints("in !isunorderedOK statement\n");
+            // comp->log()->prints("in !isunorderedOK statement\n");
             if (isCmpGT && useBranchOnCount) {
                 if (TR::ificmpgt == node->getOpCodeValue()) {
                     generateS390BranchInstruction(cg, TR::InstOpCode::BRCT, node, firstChild->getRegister(), deps,
@@ -5973,7 +5973,7 @@ TR::Register *generateS390CompareBranch(TR::Node *node, TR::CodeGenerator *cg, T
             }
         } else {
             if (comp->getOption(TR_TraceCG))
-                comp->getLogger()->prints("in else statement\n");
+                comp->log()->prints("in else statement\n");
             uint8_t branchMask = getMaskForBranchCondition(opBranchCond);
             branchMask += 0x01;
             opBranchCond = getBranchConditionForMask(branchMask);
@@ -6565,7 +6565,7 @@ TR::Register *aloadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::MemoryRefer
     if (node->isUnneededAloadi()
         && (node->getFirstChild()->getNumChildren() == 0 || node->getFirstChild()->getRegister() != NULL)) {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->printf("This aloadi is not needed: %p\n", node);
+            comp->log()->printf("This aloadi is not needed: %p\n", node);
 
         tempReg = cg->allocateRegister();
         node->setRegister(tempReg);
@@ -7699,7 +7699,7 @@ TR::Register *OMR::Z::TreeEvaluator::checkAndAllocateReferenceRegister(TR::Node 
     }
 
     if (cg->comp()->getOption(TR_TraceCG))
-        cg->comp()->getLogger()->printf("aload reg contains ref: %d\n", tempReg->containsCollectedReference());
+        cg->comp()->log()->printf("aload reg contains ref: %d\n", tempReg->containsCollectedReference());
     return tempReg;
 }
 
@@ -10500,7 +10500,7 @@ TR::Register *OMR::Z::TreeEvaluator::treetopEvaluator(TR::Node *node, TR::CodeGe
         switch (node->getFirstChild()->getOpCodeValue()) {
             case TR::aiadd: {
                 if (comp->getOption(TR_TraceCG)) {
-                    comp->getLogger()->printf(
+                    comp->log()->printf(
                         " found %s [%p] with ref count 1 under treetop, avoiding evaluation into register.\n",
                         node->getFirstChild()->getOpCode().getName(), node->getFirstChild());
                 }
@@ -10534,7 +10534,7 @@ TR::Register *OMR::Z::TreeEvaluator::treetopEvaluator(TR::Node *node, TR::CodeGe
                     cg->evaluate(addressChild);
                     if (storageReference->getNodeReferenceCount() == 0) {
                         if (cg->traceBCDCodeGen())
-                            comp->getLogger()->printf(
+                            comp->log()->printf(
                                 "storageReference->nodeRefCount == 0 so dec addr child %p refCount %d->%d\n",
                                 storageReference->getNode()->getFirstChild(),
                                 storageReference->getNode()->getFirstChild()->getReferenceCount(),
@@ -13333,13 +13333,13 @@ TR::Register *OMR::Z::TreeEvaluator::bitOpMemEvaluator(TR::Node *node, TR::CodeG
                     opcode = TR::InstOpCode::MVI;
                     byteValue = 0;
                     if (cg->traceBCDCodeGen())
-                        comp->getLogger()->printf("\tuse MVI 0 for clearing op %s (%p): value[%d] = 0x%x\n",
+                        comp->log()->printf("\tuse MVI 0 for clearing op %s (%p): value[%d] = 0x%x\n",
                             node->getOpCode().getName(), node, i, value[i]);
                 } else if (isSettingOp(byteValue, SI_opcode)) {
                     opcode = TR::InstOpCode::MVI;
                     byteValue = 0xFF;
                     if (cg->traceBCDCodeGen())
-                        comp->getLogger()->printf("\tuse MVI 0xFF for setting op %s (%p): value[%d] = 0x%x\n",
+                        comp->log()->printf("\tuse MVI 0xFF for setting op %s (%p): value[%d] = 0x%x\n",
                             node->getOpCode().getName(), node, i, value[i]);
                 }
                 TR::Instruction *cursor = generateSIInstruction(cg, opcode, node, tempMRbyte, byteValue);
@@ -13471,7 +13471,7 @@ TR::Register *OMR::Z::TreeEvaluator::PrefetchEvaluator(TR::Node *node, TR::CodeG
         memAccessMode = 7;
     } else {
         if (comp->getOption(TR_TraceCG))
-            comp->getLogger()->printf("Prefetching for type %d not implemented/supported on 390.\n", type);
+            comp->log()->printf("Prefetching for type %d not implemented/supported on 390.\n", type);
     }
 
     if (memAccessMode) {
@@ -15190,7 +15190,7 @@ TR::Register *OMR::Z::TreeEvaluator::vaddEvaluator(TR::Node *node, TR::CodeGener
         && (canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMA)) {
         if (cg->comp()->getOption(TR_TraceCG))
-            cg->comp()->getLogger()->prints(
+            cg->comp()->log()->prints(
                 "Successfully changed vadd with vmul child to fused multiply and add operation\n");
 
         return node->getRegister();
@@ -15225,7 +15225,7 @@ TR::Register *OMR::Z::TreeEvaluator::vsubEvaluator(TR::Node *node, TR::CodeGener
         && canUseNodeForFusedMultiply(node->getFirstChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMS)) {
         if (cg->comp()->getOption(TR_TraceCG))
-            cg->comp()->getLogger()->prints(
+            cg->comp()->log()->prints(
                 "Successfully changed vsub with vmul child to fused multiply and sub operation\n");
 
         return node->getRegister();

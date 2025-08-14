@@ -113,8 +113,7 @@ const bool TR_LoadExtensions::canSkipConversion(TR::Node *conversion, TR::Node *
     forceExtension = false;
 
     if (trace()) {
-        comp()->getLogger()->printf("\t\tExamining conversion %s [%p]\n", conversion->getOpCode().getName(),
-            conversion);
+        comp()->log()->printf("\t\tExamining conversion %s [%p]\n", conversion->getOpCode().getName(), conversion);
     }
 
     if (isSupportedType(child) && excludedNodes->count(child) == 0) {
@@ -137,7 +136,7 @@ const bool TR_LoadExtensions::canSkipConversion(TR::Node *conversion, TR::Node *
             ((loadPrefersSignExtension && loadPrefersSignExtension == conversionOpCode.isSignExtension())
                 || (loadPrefersZeroExtension && loadPrefersZeroExtension == conversion->isZeroExtension()))) {
             if (trace()) {
-                comp()->getLogger()->printf(
+                comp()->log()->printf(
                     "\t\tDetected sign extension pattern on widening conversion %s [%p] and load %s [%p]\n",
                     conversion->getOpCode().getName(), conversion, child->getOpCode().getName(), child);
             }
@@ -157,7 +156,7 @@ const bool TR_LoadExtensions::canSkipConversion(TR::Node *conversion, TR::Node *
                     // Conversion is narrowing down to the original width (i.e. stacked conversion which is a NOP)
                     conversion->getSize() == grandChild->getSize()) {
                     if (trace()) {
-                        comp()->getLogger()->printf(
+                        comp()->log()->printf(
                             "\t\tDetected sign extension pattern on narrowing conversion %s [%p] and load %s [%p]\n",
                             conversion->getOpCode().getName(), conversion, child->getOpCode().getName(), child);
                     }
@@ -223,8 +222,8 @@ void TR_LoadExtensions::findPreferredLoadExtensions(TR::Node *parent)
                     TR_UseDefInfo::BitVector info(comp()->allocator());
                     if (useDefInfo->getUseDef(info, useRegLoad->getUseDefIndex())) {
                         if (trace()) {
-                            comp()->getLogger()->printf("\t\tPeeking through RegLoad %p for conversion %s [%p]\n",
-                                useRegLoad, parentOpCode.getName(), parent);
+                            comp()->log()->printf("\t\tPeeking through RegLoad %p for conversion %s [%p]\n", useRegLoad,
+                                parentOpCode.getName(), parent);
                         }
 
                         TR_UseDefInfo::BitVector::Cursor cursor(info);
@@ -255,8 +254,8 @@ void TR_LoadExtensions::findPreferredLoadExtensions(TR::Node *parent)
                                 if (defRegLoad->getOpCode().isStoreReg() && isSupportedType(defRegLoadChild)
                                     && isSupportedLoad(defRegLoadChild)) {
                                     if (trace()) {
-                                        comp()->getLogger()->printf("\t\tPeeked through use %s [%p] and found def %s "
-                                                                    "[%p] with child %s [%p] - Counting [%p]\n",
+                                        comp()->log()->printf("\t\tPeeked through use %s [%p] and found def %s [%p] "
+                                                              "with child %s [%p] - Counting [%p]\n",
                                             useRegLoad->getOpCode().getName(), useRegLoad,
                                             defRegLoad->getOpCode().getName(), defRegLoad,
                                             defRegLoadChild->getOpCode().getName(), defRegLoadChild, defRegLoadChild);
@@ -265,8 +264,8 @@ void TR_LoadExtensions::findPreferredLoadExtensions(TR::Node *parent)
                                     setExtensionPreference(defRegLoadChild, parent);
                                 } else {
                                     if (trace()) {
-                                        comp()->getLogger()->printf("\t\tPeeked through use %s [%p] and found def %s "
-                                                                    "[%p] with child %s [%p] - Excluding [%p]\n",
+                                        comp()->log()->printf("\t\tPeeked through use %s [%p] and found def %s [%p] "
+                                                              "with child %s [%p] - Excluding [%p]\n",
                                             useRegLoad->getOpCode().getName(), useRegLoad,
                                             defRegLoad->getOpCode().getName(), defRegLoad,
                                             defRegLoadChild != NULL ? defRegLoadChild->getOpCode().getName() : "NULL",
@@ -300,7 +299,7 @@ void TR_LoadExtensions::findPreferredLoadExtensions(TR::Node *parent)
 void TR_LoadExtensions::flagPreferredLoadExtensions(TR::Node *parent)
 {
     if (isSupportedType(parent) && parent->getOpCode().isConversion()) {
-        OMR::Logger *log = comp()->getLogger();
+        OMR::Logger *log = comp()->log();
         TR::Node *child = parent->getFirstChild();
 
         bool canSkipConversion = false;
@@ -534,16 +533,16 @@ const int32_t TR_LoadExtensions::setExtensionPreference(TR::Node *load, TR::Node
 
     if (conversion->isZeroExtension() || conversion->getOpCode().isUnsigned()) {
         if (trace()) {
-            comp()->getLogger()->printf("\t\tCounting unsigned load %s [%p] under %s [%p]\n",
-                load->getOpCode().getName(), load, conversion->getOpCode().getName(), conversion);
+            comp()->log()->printf("\t\tCounting unsigned load %s [%p] under %s [%p]\n", load->getOpCode().getName(),
+                load, conversion->getOpCode().getName(), conversion);
         }
 
         // i.e. TR::bu2i || TR::iu2l
         result = --(*loadExtensionPreference)[load];
     } else {
         if (trace()) {
-            comp()->getLogger()->printf("\t\tCounting signed load %s [%p] under %s [%p]\n", load->getOpCode().getName(),
-                load, conversion->getOpCode().getName(), conversion);
+            comp()->log()->printf("\t\tCounting signed load %s [%p] under %s [%p]\n", load->getOpCode().getName(), load,
+                conversion->getOpCode().getName(), conversion);
         }
 
         // i.e. TR::i2l || TR::b2i

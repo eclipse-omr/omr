@@ -62,7 +62,7 @@ void TR_Delayedness::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, Cont
 TR_Delayedness::TR_Delayedness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure, bool trace)
     : TR_IntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
 {
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
 
     _earliestness = new (comp->allocator()) TR_Earliestness(comp, optimizer, rootStructure, trace);
 
@@ -111,10 +111,10 @@ bool TR_Delayedness::postInitializationProcessing()
 void TR_Delayedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStructure)
 {
     if (trace()) {
-        /////comp()->getLogger()->printf("\ncurrentInSetInfo when entering Block : %d\n", blockStructure->getNumber());
+        /////comp()->log()->printf("\ncurrentInSetInfo when entering Block : %d\n", blockStructure->getNumber());
         /////_currentInSetInfo->print(_compilation);
-        /////comp()->getLogger()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getLogger());
+        /////comp()->log()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
+        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->log());
     }
 
     // Block info is local to this analysis, so allocate from there
@@ -134,10 +134,10 @@ void TR_Delayedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStr
     copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
 
     if (trace()) {
-        /////comp()->getLogger()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
-        /////_inSetInfo[blockStructure->getNumber()]->print(_compilation->getLogger());
-        /////comp()->getLogger()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getLogger());
+        /////comp()->log()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
+        /////_inSetInfo[blockStructure->getNumber()]->print(_compilation->log());
+        /////comp()->log()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
+        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->log());
     }
 
     TR::Block *block = blockStructure->getBlock();

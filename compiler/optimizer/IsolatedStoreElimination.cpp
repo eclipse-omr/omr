@@ -80,7 +80,7 @@ int32_t TR_IsolatedStoreElimination::perform()
 {
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     _storeNodes = new (trStackMemory()) TR_Array<TR::Node *>(trMemory(), 64, true, stackAlloc);
 
@@ -337,7 +337,7 @@ void TR_IsolatedStoreElimination::removeRedundantSpills()
                     if (defIndex >= useDefInfo->getFirstRealDefIndex() && (defNode = useDefInfo->getNode(defIndex))
                         && defNode->getOpCode().isStoreReg() && defNode->getFirstChild()->getOpCode().isLoadVarDirect()
                         && defNode->getFirstChild()->getSymbolReference() == node->getSymbolReference()) {
-                        // comp()->getLogger()->printf("Redundant store node=%p defNode=%p \n", node, defNode);
+                        // comp()->log()->printf("Redundant store node=%p defNode=%p \n", node, defNode);
                     } else {
                         redundantStore = false;
                     }
@@ -400,7 +400,7 @@ int32_t TR_IsolatedStoreElimination::performWithUseDefInfo()
                     && (firstChild->getSymbolReference() == node->getSymbolReference())) {
                     _trivialDefs->set(i);
                     if (trace())
-                        comp()->getLogger()->printf("Found trivial node %p %s n%dn udi=%d\n", node,
+                        comp()->log()->printf("Found trivial node %p %s n%dn udi=%d\n", node,
                             node->getOpCode().getName(), node->getGlobalIndex(), i);
                 }
             } else
@@ -457,7 +457,7 @@ void TR_IsolatedStoreElimination::collectDefParentInfo(int32_t defIndex, TR::Nod
                 int32_t useIndex = index - info->getFirstUseIndex();
                 _defParentOfUse->element(useIndex) = defIndex;
                 if (trace())
-                    comp()->getLogger()->printf("DefParent - use %d has parent %d\n", useIndex, defIndex);
+                    comp()->log()->printf("DefParent - use %d has parent %d\n", useIndex, defIndex);
             }
         }
         collectDefParentInfo(defIndex, child, info);
@@ -486,7 +486,7 @@ static void examChildrenForValueNode(TR::TreeTop *tt, TR::Node *parent, TR::Node
 bool TR_IsolatedStoreElimination::groupIsolatedStores(int32_t defIndex, TR_BitVector *currentGroupOfStores,
     TR_UseDefInfo *info)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     //   TR_ASSERT(defIndex < info->getNumDefOnlyNodes(),"DSE: not a real def");
     defStatus status = _defStatus->element(defIndex);
     if (status == inTransit || status == toBeRemoved) {
@@ -706,7 +706,7 @@ void TR_IsolatedStoreElimination::performDeadStructureRemoval(TR_UseDefInfo *inf
 bool TR_IsolatedStoreElimination::findStructuresAndNodesUsedIn(TR_UseDefInfo *info, TR_Structure *structure,
     vcount_t visitCount, TR_BitVector *nodesInStructure, TR_BitVector *defsInStructure, bool *propagateRemovalToParent)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     bool canRemoveStructure = true;
     int32_t onlyExitEdge = -1;
 
@@ -1269,7 +1269,7 @@ void TR_IsolatedStoreElimination::analyzeSingleBlockLoop(TR_RegionStructure *reg
                         placeHolderTree = treeTop;
 
                         if (trace()) {
-                            OMR::Logger *log = comp()->getLogger();
+                            OMR::Logger *log = comp()->log();
                             log->printf("treeTop : %p\n", treeTop->getNode());
                             log->prints("PREDICTABLE COMPUTATION : \n");
                             comp()->getDebug()->print(log, treeTop);
@@ -1332,7 +1332,7 @@ bool TR_IsolatedStoreElimination::markNodesAndLocateSideEffectIn(TR::Node *node,
         if (!(node->getOpCode().isStoreDirect() && node->getSymbolReference()->getSymbol()->isAutoOrParm()
                 && node->storedValueIsIrrelevant())) {
             if (trace())
-                comp()->getLogger()->printf("Marking useDefIndex %d as seendef at node n%dn\n", node->getUseDefIndex(),
+                comp()->log()->printf("Marking useDefIndex %d as seendef at node n%dn\n", node->getUseDefIndex(),
                     node->getGlobalIndex());
             defsSeen->set(node->getUseDefIndex());
         }

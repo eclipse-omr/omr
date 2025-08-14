@@ -380,7 +380,7 @@ void TR::BtypeInstruction::expandIntoFarBranch()
     TR_ASSERT_FATAL(getLabelSymbol(), "Attempt to expand conditional branch %p without a label", self());
 
     if (comp()->getOption(TR_TraceCG))
-        comp()->getLogger()->printf("Expanding conditional branch instruction %p into a far branch\n", self());
+        comp()->log()->printf("Expanding conditional branch instruction %p into a far branch\n", self());
 
     TR::RealRegister *zero = cg()->machine()->getRealRegister(TR::RealRegister::zero);
 

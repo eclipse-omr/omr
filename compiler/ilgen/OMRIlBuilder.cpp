@@ -53,11 +53,11 @@
 #define OPT_DETAILS "O^O ILBLD: "
 
 #define TraceEnabled (comp()->getOption(TR_TraceILGen) && comp()->getLoggingEnabled())
-#define TraceIL(m, ...)                                    \
-    {                                                      \
-        if (TraceEnabled) {                                \
-            comp()->getLogger()->printf(m, ##__VA_ARGS__); \
-        }                                                  \
+#define TraceIL(m, ...)                              \
+    {                                                \
+        if (TraceEnabled) {                          \
+            comp()->log()->printf(m, ##__VA_ARGS__); \
+        }                                            \
     }
 
 // IlBuilder is a class designed to help build Testarossa IL quickly without
@@ -134,10 +134,10 @@ bool OMR::IlBuilder::injectIL()
 
     rc = connectTrees();
     if (TraceEnabled)
-        comp()->dumpMethodTrees(comp()->getLogger(), "after connectTrees");
+        comp()->dumpMethodTrees(comp()->log(), "after connectTrees");
     cfg()->removeUnreachableBlocks();
     if (TraceEnabled)
-        comp()->dumpMethodTrees(comp()->getLogger(), "after removing unreachable blocks");
+        comp()->dumpMethodTrees(comp()->log(), "after removing unreachable blocks");
     return rc;
 }
 
@@ -185,10 +185,10 @@ void OMR::IlBuilder::printBlock(TR::Block *block)
     TraceIL("[ %p ] Block %p\n", this, block);
     TR::TreeTop *tt = block->getEntry();
     while (tt != block->getExit()) {
-        comp()->getDebug()->print(comp()->getLogger(), tt);
+        comp()->getDebug()->print(comp()->log(), tt);
         tt = tt->getNextTreeTop();
     }
-    comp()->getDebug()->print(comp()->getLogger(), tt);
+    comp()->getDebug()->print(comp()->log(), tt);
 }
 
 TR::IlBuilder *OMR::IlBuilder::setBCIndex(int32_t bcIndex)

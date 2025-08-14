@@ -225,7 +225,7 @@ bool TR_LoopUnroller::shouldConnectToNextIteration(TR_StructureSubGraphNode *sub
 
 void TR_LoopUnroller::unrollLoopOnce(TR_RegionStructure *loop, TR_StructureSubGraphNode *branchNode, bool finalUnroll)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR_StructureSubGraphNode *newEntryNode = NULL;
 
     // Reset the mappers.
@@ -648,8 +648,8 @@ void TR_LoopUnroller::modifyBranchTree(TR_RegionStructure *loop, TR_StructureSub
     originalLimitNode->recursivelyDecReferenceCount();
 
     if (trace()) {
-        comp()->dumpMethodTrees(comp()->getLogger(), "\nbefore adding the loopiter test");
-        getDebug()->print(comp()->getLogger(), _rootStructure, 6);
+        comp()->dumpMethodTrees(comp()->log(), "\nbefore adding the loopiter test");
+        getDebug()->print(comp()->log(), _rootStructure, 6);
     }
 
     // add the minimum loop iteration test after the overflow test
@@ -779,8 +779,8 @@ void TR_LoopUnroller::modifyBranchTree(TR_RegionStructure *loop, TR_StructureSub
         }
 
         if (trace()) {
-            comp()->dumpMethodTrees(comp()->getLogger(), "\nafter adding loopiter test");
-            getDebug()->print(comp()->getLogger(), _rootStructure, 6);
+            comp()->dumpMethodTrees(comp()->log(), "\nafter adding loopiter test");
+            getDebug()->print(comp()->log(), _rootStructure, 6);
         }
     }
 }
@@ -795,7 +795,7 @@ bool TR_LoopUnroller::isInternalPointerLimitExceeded()
 
 void TR_LoopUnroller::modifyOriginalLoop(TR_RegionStructure *loop, TR_StructureSubGraphNode *branchNode)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     int32_t origExitNum = 0;
     if (1) {
         ListIterator<TR::CFGEdge> it(&loop->getExitEdges());
@@ -1326,7 +1326,7 @@ static bool isBiv(TR_RegionStructure *loop, TR::SymbolReference *symRef, TR_Basi
 
 void TR_LoopUnroller::collectInternalPointers()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     TR_ScratchList<TR::Block> preheaders(trMemory());
     getLoopPreheaders(_loop, &preheaders);
 
@@ -1417,7 +1417,7 @@ void TR_LoopUnroller::collectInternalPointers()
 
 void TR_LoopUnroller::collectArrayAccesses()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     intptr_t visitCount = comp()->incVisitCount();
     TR_ScratchList<TR::Block> blocksInRegion(trMemory());
     _loop->getBlocks(&blocksInRegion);
@@ -1488,8 +1488,8 @@ void TR_LoopUnroller::examineNode(TR::Node *node, intptr_t visitCount)
         listOfAA->add(aa);
 
         if (trace())
-            comp()->getLogger()->printf("\t\tFound array access node %p with sym ref %d and internal pointer node %p\n",
-                node, node->getSymbolReference()->getReferenceNumber(), aa->intrnPtrNode);
+            comp()->log()->printf("\t\tFound array access node %p with sym ref %d and internal pointer node %p\n", node,
+                node->getSymbolReference()->getReferenceNumber(), aa->intrnPtrNode);
     }
 
     /* Walk its children */
@@ -1556,7 +1556,7 @@ bool TR_LoopUnroller::isSymRefSameTypeArrayShadow(TR::Node *node)
 
 void TR_LoopUnroller::examineArrayAccesses()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // What we are trying to achieve here is to allow the possibility to schedule array accesses
     // that belong to different unrolled iterations across these iterations.
@@ -1666,7 +1666,7 @@ int32_t TR_LoopUnroller::unroll(TR_RegionStructure *loop, TR_StructureSubGraphNo
 {
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     // Initialize the mapping datastructures
     //
@@ -1817,9 +1817,9 @@ void TR_LoopUnroller::generateSpillLoop(TR_RegionStructure *loop, TR_StructureSu
     processSwingQueue();
 
     if (trace()) {
-        comp()->getLogger()->printf("trees after creating the spill loop %d for loop %d:\n", spillNode->getNumber(),
+        comp()->log()->printf("trees after creating the spill loop %d for loop %d:\n", spillNode->getNumber(),
             loop->getNumber());
-        comp()->dumpMethodTrees(comp()->getLogger(), "trees after creating spill loop");
+        comp()->dumpMethodTrees(comp()->log(), "trees after creating spill loop");
     }
 
     _spillNode = spillNode;
@@ -1884,10 +1884,10 @@ newBranchBlock->getNumber(), newBranchBlock); TR_StructureSubGraphNode *newBranc
 
    if (trace())
       {
-      comp()->getLogger()->printf("\nstructure after creating the spill loop %d:\n\n", loop->getNumber());
-      getDebug()->print(comp()->getLogger(), _rootStructure, 6);
-      getDebug()->print(comp()->getLogger(), _cfg);
-      comp()->dumpMethodTrees(comp()->getLogger(), "method trees:");
+      comp()->log()->printf("\nstructure after creating the spill loop %d:\n\n", loop->getNumber());
+      getDebug()->print(comp()->log(), _rootStructure, 6);
+      getDebug()->print(comp()->log(), _cfg);
+      comp()->dumpMethodTrees(comp()->log(), "method trees:");
       }
 
 
@@ -1966,10 +1966,10 @@ newBranchBlock->getNumber(), newBranchBlock); TR_StructureSubGraphNode *newBranc
 
    if (trace())
       {
-      comp()->getLogger()->printf("\nstructure after including the spill loop %d:\n\n", loop->getNumber());
-      getDebug()->print(comp()->getLogger(), _rootStructure, 6);
-      getDebug()->print(comp()->getLogger(), _cfg);
-      comp()->dumpMethodTrees(comp()->getLogger(), "method trees:");
+      comp()->log()->printf("\nstructure after including the spill loop %d:\n\n", loop->getNumber());
+      getDebug()->print(comp()->log(), _rootStructure, 6);
+      getDebug()->print(comp()->log(), _cfg);
+      comp()->dumpMethodTrees(comp()->log(), "method trees:");
       }
 
    _spillNode = spillNode;
@@ -2866,7 +2866,7 @@ bool TR_LoopUnroller::isWellFormedLoop(TR_RegionStructure *loop, TR::Compilation
                 if (!source->getStructure()->asBlock()) {
                     backEdgesFromBlocks = false;
                     if (comp->trace(OMR::generalLoopUnroller))
-                        comp->getLogger()->printf("found a backedge originating from a regionStructure %p\n", source);
+                        comp->log()->printf("found a backedge originating from a regionStructure %p\n", source);
                     break;
                 }
             }
@@ -3287,7 +3287,7 @@ int32_t TR_GeneralLoopUnroller::perform()
         if (randomly) {
             budget = randomInt(2000, 20000);
             if (trace())
-                comp()->getLogger()->printf("\nTR_Randomize Enabled||budget:%d\n", budget);
+                comp()->log()->printf("\nTR_Randomize Enabled||budget:%d\n", budget);
         } else {
             if (nodeCount > 6000)
                 budget = 625;
@@ -3347,7 +3347,7 @@ int32_t TR_GeneralLoopUnroller::perform()
         }
 
         if (trace())
-            comp()->getLogger()->printf("<unroll loop=\"%d\">\n", top->_loop->getNumber());
+            comp()->log()->printf("<unroll loop=\"%d\">\n", top->_loop->getNumber());
 
         bool didUnroll = false;
         if (top->_loop->getPrimaryInductionVariable()) {
@@ -3358,7 +3358,7 @@ int32_t TR_GeneralLoopUnroller::perform()
         }
 
         if (trace())
-            comp()->getLogger()->prints("</unroll>\n");
+            comp()->log()->prints("</unroll>\n");
 
         if (didUnroll)
             budget -= top->_cost;
@@ -3543,7 +3543,7 @@ static bool exitsLoop(TR::Compilation *comp, TR_RegionStructure *loop, TR_Struct
 int32_t TR_GeneralLoopUnroller::weighNaturalLoop(TR_RegionStructure *loop, TR_LoopUnroller::UnrollKind &unrollKind,
     int32_t &unrollCount, int32_t &peelCount, int32_t &cost)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
     const int32_t maxIterCountForCompleteUnroll = 9;
 
     int32_t maxSizeForSingleBlockCompleteUnroll;
@@ -3948,7 +3948,7 @@ bool TR_GeneralLoopUnroller::canUnrollUnCountedLoop(TR_RegionStructure *loop, in
                             && (n->getSecondChild()->getOpCodeValue() == TR::aconst)
                             && (n->getSecondChild()->getAddress() == 0)) {
                             if (trace()) {
-                                comp()->getLogger()->printf(
+                                comp()->log()->printf(
                                     "\tLoop %d can be unrolled because of common NULLCHK and compare to NIL\n",
                                     loop->getNumber());
                             }
@@ -3980,7 +3980,7 @@ bool TR_GeneralLoopUnroller::branchContainsInductionVariable(TR_RegionStructure 
         int32_t index = iv->getSymRef()->getReferenceNumber();
         if (branchContainsInductionVariable(branchNode, iv->getSymRef())) {
             if (trace())
-                comp()->getLogger()->printf("\tbranchnode [%p] contains basiciv [%d]\n", branchNode, index);
+                comp()->log()->printf("\tbranchnode [%p] contains basiciv [%d]\n", branchNode, index);
             result = true;
             TR::Node *firstChild = branchNode->getFirstChild();
             if (firstChild->getOpCode().isConversion())
@@ -3991,11 +3991,11 @@ bool TR_GeneralLoopUnroller::branchContainsInductionVariable(TR_RegionStructure 
             } else {
                 result = false;
                 if (trace())
-                    comp()->getLogger()->printf("\tbut branch expr [%p] is not in recognized form\n", firstChild);
+                    comp()->log()->printf("\tbut branch expr [%p] is not in recognized form\n", firstChild);
             }
         } else {
             if (trace())
-                comp()->getLogger()->printf("\tbranchnode [%p] does not contain basiciv [%d]\n", branchNode, index);
+                comp()->log()->printf("\tbranchnode [%p] does not contain basiciv [%d]\n", branchNode, index);
         }
     }
     return result;

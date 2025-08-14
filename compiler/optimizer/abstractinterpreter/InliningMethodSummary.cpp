@@ -47,7 +47,7 @@ uint32_t TR::InliningMethodSummary::testArgument(TR::AbsValue *arg, uint32_t arg
 
 void TR::InliningMethodSummary::trace(TR::Compilation *comp)
 {
-    OMR::Logger *log = comp->getLogger();
+    OMR::Logger *log = comp->log();
 
     log->prints("Inlining Method Summary:\n");
 
@@ -172,6 +172,6 @@ bool TR::PotentialOptimizationVPPredicate::test(TR::AbsValue *value)
 
 void TR::PotentialOptimizationVPPredicate::trace(TR::Compilation *comp)
 {
-    comp->getLogger()->prints("Predicate Constraint: ");
+    comp->log()->prints("Predicate Constraint: ");
     _constraint->print(_vp);
 }

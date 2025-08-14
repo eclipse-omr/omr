@@ -227,7 +227,7 @@ static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp
 {
     if (comp) {
         if (comp->getLoggingEnabled())
-            comp->getLogger()->printf("\n=== EXCEPTION THROWN (%s) ===\n", reason);
+            comp->log()->printf("\n=== EXCEPTION THROWN (%s) ===\n", reason);
 
         if (debug("traceCompilationException")) {
             diagnostic("JIT: terminated compile of %s: %s\n", comp->signature(),
@@ -242,7 +242,7 @@ static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp
         }
 
         if (comp->getOption(TR_TraceAll))
-            comp->getLogger()->prints("<result success=\"false\">exception thrown by the compiler</result>\n");
+            comp->log()->prints("<result success=\"false\">exception thrown by the compiler</result>\n");
     }
 }
 
@@ -326,7 +326,7 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
         if (compiler.getOption(TR_TraceAll)) {
             const char *signature = compilee.signature(&trMemory);
 
-            compiler.getLogger()->printf("<compile hotness=\"%s\" method=\"%s\">\n",
+            compiler.log()->printf("<compile hotness=\"%s\" method=\"%s\">\n",
                 compiler.getHotnessName(compiler.getMethodHotness()), signature);
         }
 
@@ -380,8 +380,8 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
             }
 
             if (compiler.getOption(TR_TraceAll))
-                compiler.getLogger()->printf("<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n",
-                    startPC, translationTime / 1000, translationTime % 1000);
+                compiler.log()->printf("<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n", startPC,
+                    translationTime / 1000, translationTime % 1000);
         } else /* of rc == COMPILATION_SUCCEEDED */
         {
             TR_ASSERT(false, "compiler error code %d returned\n", rc);

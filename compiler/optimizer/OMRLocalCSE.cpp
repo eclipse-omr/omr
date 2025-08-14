@@ -98,8 +98,7 @@ bool OMR::LocalCSE::shouldCopyPropagateNode(TR::Node *parent, TR::Node *node, in
 
     if (_numCopyPropagations >= MAX_COPY_PROP) {
         if (trace())
-            comp()->getLogger()->printf("z^z : _numCopyPropagations %d >= max %d\n", _numCopyPropagations,
-                MAX_COPY_PROP);
+            comp()->log()->printf("z^z : _numCopyPropagations %d >= max %d\n", _numCopyPropagations, MAX_COPY_PROP);
         return false;
     }
 
@@ -125,7 +124,7 @@ TR::Node *OMR::LocalCSE::getNode(TR::Node *node)
     if (_simulatedNodesAsArray[node->getGlobalIndex()]) {
         TR::Node *toReturn = _simulatedNodesAsArray[node->getGlobalIndex()];
         if (trace())
-            comp()->getLogger()->printf("Updating comparison node n%dn to n%dn due to volatile simulation\n",
+            comp()->log()->printf("Updating comparison node n%dn to n%dn due to volatile simulation\n",
                 node->getGlobalIndex(), toReturn->getGlobalIndex());
         return toReturn;
     }
@@ -141,7 +140,7 @@ bool OMR::LocalCSE::doExtraPassForVolatiles()
 
 int32_t OMR::LocalCSE::perform()
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (trace())
         log->prints("Starting LocalCommonSubexpressionElimination\n");
@@ -179,12 +178,12 @@ int32_t OMR::LocalCSE::performOnBlock(TR::Block *block)
         _volatileState = VOLATILE_AND_NON_VOLATILE;
         if (doExtraPassForVolatiles()) {
             if (trace())
-                comp()->getLogger()->prints(
+                comp()->log()->prints(
                     "LocalCSE entering 2 pass mode for volatile elimination - pass 1 for volatiles ONLY\n");
             _volatileState = VOLATILE_ONLY;
             transformBlock(block->getEntry(), block->getEntry()->getExtendedBlockExitTreeTop());
             if (trace())
-                comp()->getLogger()->prints("LocalCSE volatile only pass 1 complete - pass 2 for non-volatiles ONLY\n");
+                comp()->log()->prints("LocalCSE volatile only pass 1 complete - pass 2 for non-volatiles ONLY\n");
             _volatileState = NON_VOLATILE_ONLY;
             transformBlock(block->getEntry(), block->getEntry()->getExtendedBlockExitTreeTop());
         } else
@@ -345,7 +344,7 @@ void OMR::LocalCSE::setIsInMemoryCopyPropFlag(TR::Node *rhsOfStoreDefNode)
         && cg()->IsInMemoryType(rhsOfStoreDefNode->getType())) {
         if (cg()->traceBCDCodeGen() && _treeBeingExamined->getNode()->chkOpsIsInMemoryCopyProp()
             && !_treeBeingExamined->getNode()->isInMemoryCopyProp())
-            comp()->getLogger()->printf("\tset IsInMemoryCopyProp on %s (%p), rhsOfStoreDefNode %s (%p)\n",
+            comp()->log()->printf("\tset IsInMemoryCopyProp on %s (%p), rhsOfStoreDefNode %s (%p)\n",
                 _treeBeingExamined->getNode()->getOpCode().getName(), _treeBeingExamined->getNode(),
                 rhsOfStoreDefNode->getOpCode().getName(), rhsOfStoreDefNode);
         _treeBeingExamined->getNode()->setIsInMemoryCopyProp(true);
@@ -375,7 +374,7 @@ bool OMR::LocalCSE::allowNodeTypes(TR::Node *storeNode, TR::Node *node)
 void OMR::LocalCSE::examineNode(TR::Node *node, TR_BitVector &seenAvailableLoadedSymbolReferences, TR::Node *parent,
     int32_t childNum, int32_t *nextLoadIndex, bool *parentCanBeAvailable, int32_t depth)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (depth > MAX_DEPTH) {
         comp()->failCompilation<TR::ExcessiveComplexity>("scratch space in local CSE");
@@ -810,7 +809,7 @@ void OMR::LocalCSE::doCommoningIfAvailable(TR::Node *node, TR::Node *parent, int
             }
         } else {
             if (trace())
-                comp()->getLogger()->printf("Simulating commoning of node n%dn with n%dn - current mode %n\n",
+                comp()->log()->printf("Simulating commoning of node n%dn with n%dn - current mode %n\n",
                     node->getGlobalIndex(), availableExpression->getGlobalIndex(), _volatileState);
             _simulatedNodesAsArray[node->getGlobalIndex()] = availableExpression;
         }
@@ -1024,7 +1023,7 @@ TR::Node *OMR::LocalCSE::replaceCopySymbolReferenceByOriginalIn(
                     if (overrideNodePrecision != 0) {
                         nodePrecision = overrideNodePrecision;
                         if (comp()->cg()->traceBCDCodeGen() || trace())
-                            comp()->getLogger()->printf("using overrideNodePrecision %d instead of node %s (%p)\n",
+                            comp()->log()->printf("using overrideNodePrecision %d instead of node %s (%p)\n",
                                 overrideNodePrecision, node->getOpCode().getName(), node);
                     } else {
                         TR_ASSERT(node->getType().isBCD(),
@@ -1177,7 +1176,7 @@ bool OMR::LocalCSE::isAvailableNullCheck(TR::Node *node, TR_BitVector &seenAvail
 //
 TR::Node *OMR::LocalCSE::getAvailableExpression(TR::Node *parent, TR::Node *node)
 {
-    OMR::Logger *log = comp()->getLogger();
+    OMR::Logger *log = comp()->log();
 
     if (node->getOpCodeValue() == TR::NULLCHK) {
         for (int32_t i = 0; i < _numNullCheckNodes; i++) {
@@ -1421,7 +1420,7 @@ void OMR::LocalCSE::killAvailableExpressionsAtGCSafePoints(TR::Node *node, TR::N
         // causing a crash when using the live local index to index into a bit vector.
         //
         if (trace())
-            comp()->getLogger()->printf("Node %p is detected as a method enter/exit point\n", node);
+            comp()->log()->printf("Node %p is detected as a method enter/exit point\n", node);
 
         _storeMap->clear();
 
@@ -1440,7 +1439,7 @@ void OMR::LocalCSE::killAvailableExpressionsAtGCSafePoints(TR::Node *node, TR::N
 
     if (node->canGCandReturn()) {
         if (trace())
-            comp()->getLogger()->printf("Node %p is detected as a GC safe point\n", node);
+            comp()->log()->printf("Node %p is detected as a GC safe point\n", node);
 
         for (auto itr = _storeMap->begin(), end = _storeMap->end(); itr != end;) {
             TR::Node *storeNode = itr->second;
@@ -1643,7 +1642,7 @@ void OMR::LocalCSE::collectAllReplacedNodes(TR::Node *node, TR::Node *replacingN
         _replacedNodesByAsArray[_nextReplacedNode++] = replacingNode;
 
         if (trace())
-            comp()->getLogger()->printf("Replaced node : %p Replacing node : %p\n", node, replacingNode);
+            comp()->log()->printf("Replaced node : %p Replacing node : %p\n", node, replacingNode);
 
         node->setLocalIndex(REPLACE_MARKER);
     }
