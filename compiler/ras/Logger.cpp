@@ -266,3 +266,84 @@ int32_t TR::TRIOStreamLogger::close()
     return this->flush();
 }
 
+/*
+ * -----------------------------------------------------------------------------
+ * CircularLogger
+ * -----------------------------------------------------------------------------
+ */
+TR::CircularLogger::CircularLogger(TR::Logger *innerLogger, int64_t rewindThresholdInChars)
+    : _innerLogger(innerLogger)
+    , _rewindThresholdInChars(rewindThresholdInChars)
+{
+    TR_ASSERT_FATAL(innerLogger->supportsRewinding(),
+        "Inner logger must support rewinding for use in a circular logger");
+    TR_ASSERT_FATAL(rewindThresholdInChars > 0, "Circular log threshold must be a non-zero, positive integer");
+}
+
+TR::CircularLogger *TR::CircularLogger::create(TR::Logger *innerLogger, int64_t rewindThresholdInChars)
+{
+    return new TR::CircularLogger(innerLogger, rewindThresholdInChars);
+}
+
+int32_t TR::CircularLogger::printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    int32_t length = getInnerLogger()->vprintf(format, args);
+    va_end(args);
+    return length;
+}
+
+int32_t TR::CircularLogger::prints(const char *str)
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->prints(str);
+}
+
+int32_t TR::CircularLogger::printc(char c)
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->printc(c);
+}
+
+int32_t TR::CircularLogger::println()
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->println();
+}
+
+int32_t TR::CircularLogger::vprintf(const char *format, va_list args)
+{
+    if (getInnerLogger()->tell() > getRewindThresholdInChars()) {
+        getInnerLogger()->rewind();
+    }
+
+    return getInnerLogger()->vprintf(format, args);
+}
+
+int64_t TR::CircularLogger::tell() { return getInnerLogger()->tell(); }
+
+int32_t TR::CircularLogger::flush() { return getInnerLogger()->flush(); }
+
+void TR::CircularLogger::rewind() { getInnerLogger()->rewind(); }
+
+int32_t TR::CircularLogger::close()
+{
+    setLoggerClosed(true);
+    setEnabled_DEPRECATED(false);
+    return getInnerLogger()->close();
+}
