@@ -777,8 +777,11 @@ char *TR_Debug::formattedString(char *buf, uint32_t bufLen, const char *format, 
     // vsnprintf returns -1 on zos when buffer is too small
     char s[VSNPRINTF_BUFFER_SIZE];
     int resultLen = vsnprintf(s, VSNPRINTF_BUFFER_SIZE, format, args_copy);
-    if (resultLen < 0 && _comp->getLoggingEnabled()) {
-        log->printf("Failed to get length of string with format %s\n", format);
+    if (resultLen < 0) {
+        OMR::Logger *log = _comp->log();
+        static char *disableReportFormattedStringError = feGetEnv("TR_DisableReportFormattedStringError");
+        if (!disableReportFormattedStringError && log->isEnabled_DEPRECATED())
+            log->printf("Failed to get length of string with format %s\n", format);
     }
 #else
     int resultLen = vsnprintf(NULL, 0, format, args_copy);
@@ -1877,7 +1880,7 @@ void TR_Debug::verifyGlobalIndices(TR::Node *node, TR::Node **nodesByGlobalIndex
 void TR_Debug::verifyTrees(TR::ResolvedMethodSymbol *methodSymbol)
 {
 #ifndef ASSUMES
-    if (!_comp->getLoggingEnabled()) {
+    if (!_comp->getOption(TR_TraceTreeVerification)) {
         return;
     }
 #endif
@@ -1951,11 +1954,10 @@ void TR_Debug::verifyTreesPass1(TR::Node *node)
                 if (childType != expectedType && childType != TR::NoType
                     && !((node->getOpCodeValue() == TR::imul || node->getOpCodeValue() == TR::ishl)
                         && child->getOpCodeValue() == TR::loadaddr)) {
-                    if (_comp->getLoggingEnabled()) {
-                        getLogger()->printf(
-                            "TREE VERIFICATION ERROR -- node [%s] has wrong type for child [%s] (%s), expected %s\n",
-                            getName(node), getName(child), getName(childType), getName(expectedType));
-                    }
+                    trprintf(_comp->getOption(TR_TraceTreeVerification), getLogger(),
+                        "TREE VERIFICATION ERROR -- node [%s] has wrong type for child [%s] (%s), expected %s\n",
+                        getName(node), getName(child), getName(childType), getName(expectedType));
+
                     TR_ASSERT(debug("fixTrees"), "Tree verification error");
                 }
             }
@@ -1965,6 +1967,9 @@ void TR_Debug::verifyTreesPass1(TR::Node *node)
 
 void TR_Debug::verifyTreesPass2(TR::Node *node, bool isTreeTop)
 {
+    OMR::Logger *log = getLogger();
+    bool trace = _comp->getOption(TR_TraceTreeVerification);
+
     // Verify the reference count. Pass 1 should have set the localIndex to the
     // reference count.
     //
@@ -1976,10 +1981,9 @@ void TR_Debug::verifyTreesPass2(TR::Node *node, bool isTreeTop)
 
         if (isTreeTop) {
             if (node->getReferenceCount() != 0) {
-                if (_comp->getLoggingEnabled()) {
-                    getLogger()->printf("TREE VERIFICATION ERROR -- treetop node [%s] with ref count %d\n",
-                        getName(node), node->getReferenceCount());
-                }
+                trprintf(trace, log, "TREE VERIFICATION ERROR -- treetop node [%s] with ref count %d\n", getName(node),
+                    node->getReferenceCount());
+
                 TR_ASSERT(debug("fixTrees"), "Tree verification error");
                 node->setReferenceCount(0);
             }
@@ -1987,22 +1991,20 @@ void TR_Debug::verifyTreesPass2(TR::Node *node, bool isTreeTop)
 
         if (node->getReferenceCount() > 1
             && (node->getOpCodeValue() == TR::call || node->getOpCodeValue() == TR::calli)) {
-            if (_comp->getLoggingEnabled()) {
-                getLogger()->printf("TREE VERIFICATION ERROR -- void call node [%s] with ref count %d\n", getName(node),
-                    node->getReferenceCount());
-            }
+            trprintf(trace, log, "TREE VERIFICATION ERROR -- void call node [%s] with ref count %d\n", getName(node),
+                node->getReferenceCount());
+
             TR_ASSERT(debug("fixTrees"), "Tree verification error");
         }
 
         if (node->getReferenceCount() != node->getLocalIndex()) {
-            if (_comp->getLoggingEnabled()) {
-                getLogger()->printf("TREE VERIFICATION ERROR -- node [%s] ref count is %d and should be %d\n",
-                    getName(node), node->getReferenceCount(), node->getLocalIndex());
-            }
+            trprintf(trace, log, "TREE VERIFICATION ERROR -- node [%s] ref count is %d and should be %d\n",
+                getName(node), node->getReferenceCount(), node->getLocalIndex());
+
             TR_ASSERT(debug("fixTrees"), "Tree verification error");
 
             // if there is logging, don't fix the ref count!
-            if (!_comp->getLoggingEnabled()) {
+            if (!trace) {
                 node->setReferenceCount(node->getLocalIndex());
             }
         }
@@ -2020,7 +2022,7 @@ TR::Node *TR_Debug::verifyFinalNodeReferenceCounts(TR::ResolvedMethodSymbol *met
             firstBadNode = badNode;
     }
 
-    if (_comp->getLoggingEnabled()) {
+    if (_comp->getOption(TR_TraceNodeRefCountVerification)) {
         getLogger()->flush();
     }
 
@@ -2042,10 +2044,10 @@ TR::Node *TR_Debug::verifyFinalNodeReferenceCounts(TR::Node *node)
         //
         if (node->getReferenceCount() != 0) {
             badNode = node;
-            if (_comp->getLoggingEnabled()) {
-                getLogger()->printf("WARNING -- node [%s] has final ref count %d and should be zero\n",
-                    getName(badNode), badNode->getReferenceCount());
-            }
+
+            trprintf(_comp->getOption(TR_TraceNodeRefCountVerification), getLogger(),
+                "WARNING -- node [%s] has final ref count %d and should be zero\n", getName(badNode),
+                badNode->getReferenceCount());
         }
 
         // Recursively check its children
@@ -2065,7 +2067,7 @@ TR::Node *TR_Debug::verifyFinalNodeReferenceCounts(TR::Node *node)
 void TR_Debug::verifyBlocks(TR::ResolvedMethodSymbol *methodSymbol)
 {
 #ifndef ASSUMES
-    if (!_comp->getLoggingEnabled()) {
+    if (!_comp->getOption(TR_TraceBlockVerification)) {
         return;
     }
 #endif
@@ -2132,9 +2134,8 @@ void TR_Debug::verifyBlocksPass2(TR::Node *node)
                 "BLOCK VERIFICATION ERROR -- node [%s] accessed outside of its (extended) basic block: %d time(s)\n",
                 getName(node), node->getLocalIndex());
 
-            if (_comp->getLoggingEnabled()) {
-                getLogger()->prints(buffer);
-            }
+            trprints(_comp->getOption(TR_TraceBlockVerification), getLogger(), buffer);
+
             TR_ASSERT(debug("fixTrees"), buffer);
         }
     }

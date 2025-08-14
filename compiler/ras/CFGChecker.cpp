@@ -54,7 +54,7 @@ void TR_Debug::verifyCFG(TR::ResolvedMethodSymbol *methodSymbol)
 
 TR_CFGChecker::TR_CFGChecker(TR::ResolvedMethodSymbol *methodSymbol, TR_Debug *debug)
     : _cfg(methodSymbol->getFlowGraph())
-    , _loggingEnabled(debug->_comp->getLoggingEnabled())
+    , _trace(debug->_comp->getOption(TR_TraceCFGVerification))
     , _fe(debug->_fe)
     , _logger(debug->_comp->log())
 {
@@ -70,14 +70,14 @@ void TR_CFGChecker::check()
 
     {
         TR::StackMemoryRegion stackMemoryRegion(*_cfg->comp()->trMemory());
+        OMR::Logger *log = getLogger();
 
         // _numBlocks includes the dummy start and end blocks
         //
         _numBlocks = _cfg->getNumberOfNodes();
         _numRealBlocks = _numBlocks - 2;
 
-        if (debug("traceCFGCHK") && getLoggingEnabled()) {
-            OMR::Logger *log = getLogger();
+        if (debug("traceCFGCHK") && trace()) {
             _cfg->comp()->dumpMethodTrees(log, "Printing out the TreeTops from CFGChecker");
             log->prints("Printing out the CFG from CFGChecker\n");
             _cfg->comp()->getDebug()->print(log, _cfg);
@@ -99,12 +99,9 @@ void TR_CFGChecker::check()
     } // scope of the stack memory region
 
     if (_successorsCorrect && _isCFGConsistent) {
-        if (debug("traceCFGCHK") && getLoggingEnabled()) {
-            getLogger()->prints("The CFG is correct\n");
-        }
+        trprints(trace(), log, "The CFG is correct\n");
     } else {
-        if (getLoggingEnabled()) {
-            OMR::Logger *log = getLogger();
+        if (trace()) {
             log->prints("The CFG is NOT correct\nPrinting out the CFG from CFGChecker\n");
             _cfg->comp()->getDebug()->print(log, _cfg);
         }
@@ -130,14 +127,12 @@ void TR_CFGChecker::performCorrectnessCheck()
     _successorsCorrect = true;
 
     if (_cfg->getStart()->getSuccessors().size() != 1) {
-        if (getLoggingEnabled()) {
-            log->prints("There is more than one successor block for the start block\n");
-        }
+        trprints(trace(), log, "There is more than one successor block for the start block\n");
+
         _successorsCorrect = false;
     } else if (!_cfg->getEnd()->getSuccessors().empty()) {
-        if (getLoggingEnabled()) {
-            log->prints("There is a successor for the end block\n");
-        }
+        trprints(trace(), log, "There is a successor for the end block\n");
+
         _successorsCorrect = false;
     } else {
         if (!arrangeBlocksInProgramOrder()) {
@@ -151,10 +146,10 @@ void TR_CFGChecker::performCorrectnessCheck()
         // successor must be verified in this manner.
         //
         if (_cfg->getStart()->getSuccessors().front()->getTo() != _blocksInProgramOrder[0]) {
-            if (getLoggingEnabled()) {
-                log->prints("The successor block for the (dummy) start block in the CFG is NOT the start block in the "
-                            "actual program\n");
-            }
+            trprints(trace(), log,
+                "The successor block for the (dummy) start block in the CFG is NOT the start block in the actual "
+                "program\n");
+
             _successorsCorrect = false;
         }
     }
@@ -169,9 +164,7 @@ void TR_CFGChecker::performCorrectnessCheck()
     }
 
     if (!_successorsCorrect) {
-        if (getLoggingEnabled()) {
-            log->prints("Check for correctness of successors is NOT successful\n");
-        }
+        trprints(trace(), log, "Check for correctness of successors is NOT successful\n");
     }
 }
 
@@ -198,9 +191,8 @@ bool TR_CFGChecker::arrangeBlocksInProgramOrder()
     //
     int32_t nextNodeNumber = _cfg->getNextNodeNumber();
     if (nextNodeNumber < -1 || (nextNodeNumber >= 0 && nextNodeNumber < _numBlocks)) {
-        if (getLoggingEnabled()) {
-            log->printf("CFG has a bad nextNodeNumber [%d]\n", nextNodeNumber);
-        }
+        trprintf(trace(), log, "CFG has a bad nextNodeNumber [%d]\n", nextNodeNumber);
+
         return false;
     }
 
@@ -217,10 +209,9 @@ bool TR_CFGChecker::arrangeBlocksInProgramOrder()
         TR::Block *b = node->getBlock();
 
         if (!_blockChecklist.isSet(b->getNumber())) {
-            if (getLoggingEnabled()) {
-                log->printf("Block %d [%p]  at tree node [%p] is in the trees but not in the CFG\n", b->getNumber(), b,
-                    node);
-            }
+            trprintf(trace(), log, "Block %d [%p]  at tree node [%p] is in the trees but not in the CFG\n",
+                b->getNumber(), b, node);
+
             return false;
         }
 
@@ -228,9 +219,9 @@ bool TR_CFGChecker::arrangeBlocksInProgramOrder()
         //
         if ((nextNodeNumber < 0 && b->getNumber() != nextNodeNumber)
             || (nextNodeNumber >= 0 && b->getNumber() >= nextNodeNumber)) {
-            if (getLoggingEnabled()) {
-                log->printf("Block %d [%p]  at tree node [%p] has a bad node number [%d]\n", b, node, b->getNumber());
-            }
+            trprintf(trace(), log, "Block %d [%p]  at tree node [%p] has a bad node number [%d]\n", b, node,
+                b->getNumber());
+
             return false;
         }
         _blocksInProgramOrder[i++] = b;
@@ -240,9 +231,8 @@ bool TR_CFGChecker::arrangeBlocksInProgramOrder()
     // Check for the right number of blocks in the trees
     //
     if (i != _numRealBlocks) {
-        if (getLoggingEnabled()) {
-            log->printf("Number of blocks in trees [%d] does not match number in CFG [%d]\n", i, _numRealBlocks);
-        }
+        trprintf(trace(), log, "Number of blocks in trees [%d] does not match number in CFG [%d]\n", i, _numRealBlocks);
+
         return false;
     }
     return true;
@@ -271,29 +261,26 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
     for (auto edge = block->getSuccessors().begin(); edge != block->getSuccessors().end(); ++edge) {
         next = toBlock((*edge)->getTo());
         if (!_blockChecklist.isSet(next->getNumber())) {
-            if (getLoggingEnabled()) {
-                log->printf("Successor block [%d] of block [%d] is not in the CFG\n", next->getNumber(),
-                    block->getNumber());
-            }
+            trprintf(trace(), log, "Successor block [%d] of block [%d] is not in the CFG\n", next->getNumber(),
+                block->getNumber());
+
             return false;
         }
     }
     for (auto edge = block->getExceptionSuccessors().begin(); edge != block->getExceptionSuccessors().end(); ++edge) {
         next = toBlock((*edge)->getTo());
         if (!_blockChecklist.isSet(next->getNumber())) {
-            if (getLoggingEnabled()) {
-                log->printf("Exception successor block [%d] of block [%d] is not in the CFG\n", next->getNumber(),
-                    block->getNumber());
-            }
+            trprintf(trace(), log, "Exception successor block [%d] of block [%d] is not in the CFG\n",
+                next->getNumber(), block->getNumber());
+
             return false;
         }
         for (auto edge2 = block->getExceptionSuccessors().begin(); edge2 != block->getExceptionSuccessors().end();
              ++edge2)
             if (((*edge) != (*edge2)) && (next == (*edge2)->getTo())) {
-                if (getLoggingEnabled()) {
-                    log->printf("Exception successor block [%d] of block [%d] is listed more than once\n",
-                        next->getNumber(), block->getNumber());
-                }
+                trprintf(trace(), log, "Exception successor block [%d] of block [%d] is listed more than once\n",
+                    next->getNumber(), block->getNumber());
+
                 return false;
             }
     }
@@ -308,7 +295,7 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
     if (!(opCode.isBranch() || opCode.isSwitch() || opCode.isReturn() || opCode.isJumpWithMultipleTargets()
             || opCode.isStoreReg() || opCode.getOpCodeValue() == TR::athrow)) {
         if (!(block->getSuccessors().size() == 1)) {
-            if (getLoggingEnabled()) {
+            if (trace()) {
                 log->printf("Considering Node %p\n", lastNode);
                 log->printf("Last non-fence opcode in block [%d] is not a branch, switch, or a return and it does not "
                             "have exactly one successor\n",
@@ -318,11 +305,11 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
         }
 
         if (block->getSuccessors().front()->getTo() != _blocksInProgramOrder[i + 1]) {
-            if (getLoggingEnabled()) {
-                log->printf("Successor block [%d] of block [%d] (with no branch, switch, or return at the end) is not "
-                            "the fall through block\n",
-                    block->getSuccessors().front()->getTo()->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log,
+                "Successor block [%d] of block [%d] (with no branch, switch, or return at the end) is not the fall "
+                "through block\n",
+                block->getSuccessors().front()->getTo()->getNumber(), block->getNumber());
+
             return false;
         }
     }
@@ -335,10 +322,10 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
         //
         if (opCode.getOpCodeValue() == TR::Goto) {
             if (!(block->getSuccessors().size() == 1)) {
-                if (getLoggingEnabled()) {
-                    log->printf("Number of successors of block [%d] having a goto at the exit is not equal to one\n",
-                        block->getNumber());
-                }
+                trprintf(trace(), log,
+                    "Number of successors of block [%d] having a goto at the exit is not equal to one\n",
+                    block->getNumber());
+
                 return false;
             }
         } else {
@@ -349,11 +336,11 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
                 numUniqueChildren = 2;
 
             if (!(numUniqueChildren == block->getSuccessors().size())) {
-                if (getLoggingEnabled()) {
-                    log->printf("Number of successors of block [%d] having an if at the exit is not equal to the "
-                                "number of unique targets of the if\n",
-                        block->getNumber());
-                }
+                trprintf(trace(), log,
+                    "Number of successors of block [%d] having an if at the exit is not equal to the number of unique "
+                    "targets of the if\n",
+                    block->getNumber());
+
                 return false;
             }
         }
@@ -363,11 +350,11 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
         for (auto edge = block->getSuccessors().begin(); edge != block->getSuccessors().end(); ++edge) {
             next = toBlock((*edge)->getTo());
             if (!((next == fallThroughBlock) || (next == branchBlock))) {
-                if (getLoggingEnabled()) {
-                    log->printf("Successor block [%d] of block [%d] containing a branch does not match the "
-                                "destination(s) specified in the IL branch instruction\n",
-                        next->getNumber(), block->getNumber());
-                }
+                trprintf(trace(), log,
+                    "Successor block [%d] of block [%d] containing a branch does not match the destination(s) "
+                    "specified in the IL branch instruction\n",
+                    next->getNumber(), block->getNumber());
+
                 return false;
             }
         }
@@ -377,11 +364,11 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
         // if (!((lastNode->getCaseIndexUpperBound()-1) == block->getSuccessors().size()))
 
         if (!(getNumUniqueCases(lastNode) == block->getSuccessors().size())) {
-            if (getLoggingEnabled()) {
-                log->printf("Number of successors of block [%d] having a switch at the exit is not equal to the number "
-                            "of destinations in the IL switch instruction\n",
-                    block->getNumber());
-            }
+            trprintf(trace(), log,
+                "Number of successors of block [%d] having a switch at the exit is not equal to the number of "
+                "destinations in the IL switch instruction\n",
+                block->getNumber());
+
             return false;
         }
 
@@ -391,20 +378,20 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
             next = toBlock((*edge)->getTo());
 
             if (!equalsAnyChildOf(next->getEntry(), lastNode)) {
-                if (getLoggingEnabled()) {
-                    log->printf("Successor block [%d] of block [%d] containing a switch does not match any of the "
-                                "destinations specified in the IL switch instruction\n",
-                        next->getNumber(), block->getNumber());
-                }
+                trprintf(trace(), log,
+                    "Successor block [%d] of block [%d] containing a switch does not match any of the destinations "
+                    "specified in the IL switch instruction\n",
+                    next->getNumber(), block->getNumber());
+
                 return false;
             }
         }
     } else if (opCode.isReturn() || opCode.getOpCodeValue() == TR::athrow) {
         if (!(block->getSuccessors().size() == 1)) {
-            if (getLoggingEnabled()) {
-                log->printf("Number of successors of block [%d] having a return at the exit is not equal to one\n",
-                    block->getNumber());
-            }
+            trprintf(trace(), log,
+                "Number of successors of block [%d] having a return at the exit is not equal to one\n",
+                block->getNumber());
+
             return false;
         }
 
@@ -412,10 +399,9 @@ bool TR_CFGChecker::areSuccessorsCorrect(int32_t i)
         for (auto edge = block->getSuccessors().begin(); edge != block->getSuccessors().end(); ++edge) {
             next = toBlock((*edge)->getTo());
             if (next != cfgEnd) {
-                if (getLoggingEnabled()) {
-                    log->printf("Successor block [%d] of block [%d] containing a return is NOT the exit block\n",
-                        next->getNumber(), block->getNumber());
-                }
+                trprintf(trace(), log, "Successor block [%d] of block [%d] containing a return is NOT the exit block\n",
+                    next->getNumber(), block->getNumber());
+
                 return false;
             }
         }
@@ -482,9 +468,8 @@ void TR_CFGChecker::performConsistencyCheck()
 
     node = _cfg->getStart();
     if (!(node->getPredecessors().empty() && node->getExceptionPredecessors().empty())) {
-        if (getLoggingEnabled()) {
-            log->prints("CFG Start block has predecessors\n");
-        }
+        trprints(trace(), log, "CFG Start block has predecessors\n");
+
         _isCFGConsistent = false;
     }
     node = _cfg->getEnd();
@@ -500,9 +485,7 @@ void TR_CFGChecker::performConsistencyCheck()
         _isCFGConsistent = false;
 
     if (!_isCFGConsistent) {
-        if (getLoggingEnabled()) {
-            log->prints("Check for consistency of CFG is NOT successful\n");
-        }
+        trprints(trace(), log, "Check for consistency of CFG is NOT successful\n");
     }
 }
 
@@ -530,19 +513,17 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
         if (block == _cfg->getEnd())
             return true;
 
-        if (getLoggingEnabled()) {
-            log->printf("Block %d [%p] is an orphan\n", block->getNumber(), block);
-        }
+        trprintf(trace(), log, "Block %d [%p] is an orphan\n", block->getNumber(), block);
+
         return false;
     }
 
     for (auto nextEdge = block->getPredecessors().begin(); nextEdge != block->getPredecessors().end(); ++nextEdge) {
         nextBlock = toBlock((*nextEdge)->getFrom());
         if (!_blockChecklist.isSet(nextBlock->getNumber())) {
-            if (getLoggingEnabled()) {
-                log->printf("Predecessor block [%d] of block [%d] is not in the CFG\n", nextBlock->getNumber(),
-                    block->getNumber());
-            }
+            trprintf(trace(), log, "Predecessor block [%d] of block [%d] is not in the CFG\n", nextBlock->getNumber(),
+                block->getNumber());
+
             return false;
         }
         auto matchEdge = nextBlock->getSuccessors().begin();
@@ -551,10 +532,10 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
                 break;
         }
         if (matchEdge == nextBlock->getSuccessors().end()) {
-            if (getLoggingEnabled()) {
-                log->printf("Predecessor block [%d] of block [%d] does not contain block [%d] in its successors list\n",
-                    nextBlock->getNumber(), block->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log,
+                "Predecessor block [%d] of block [%d] does not contain block [%d] in its successors list\n",
+                nextBlock->getNumber(), block->getNumber(), block->getNumber());
+
             return false;
         }
     }
@@ -564,10 +545,9 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
     while (basicP != block->getPredecessors().end()) {
         TR::CFGEdge *e = (*basicP);
         if (e->getTo() != block) {
-            if (getLoggingEnabled()) {
-                log->printf("ERROR: edge from %d to %d does not point to block_%d\n", e->getFrom()->getNumber(),
-                    e->getTo()->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log, "ERROR: edge from %d to %d does not point to block_%d\n", e->getFrom()->getNumber(),
+                e->getTo()->getNumber(), block->getNumber());
+
             ok = false;
         }
         bool foundMe = false;
@@ -579,10 +559,9 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
             ++basicP2;
         }
         if (!foundMe) {
-            if (getLoggingEnabled()) {
-                log->printf("ERROR: block_%d is a predecessor of block_%d but the reverse is not true\n",
-                    e->getFrom()->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log, "ERROR: block_%d is a predecessor of block_%d but the reverse is not true\n",
+                e->getFrom()->getNumber(), block->getNumber());
+
             ok = false;
         }
         ++basicP;
@@ -592,10 +571,9 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
     while (basicS != block->getSuccessors().end()) {
         TR::CFGEdge *e = (*basicS);
         if (e->getFrom() != block) {
-            if (getLoggingEnabled()) {
-                log->printf("ERROR: edge from %d to %d does not come from block_%d\n", e->getFrom()->getNumber(),
-                    e->getTo()->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log, "ERROR: edge from %d to %d does not come from block_%d\n", e->getFrom()->getNumber(),
+                e->getTo()->getNumber(), block->getNumber());
+
             ok = false;
         }
         bool foundMe = false;
@@ -607,10 +585,9 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
             ++basicS2;
         }
         if (!foundMe) {
-            if (getLoggingEnabled()) {
-                log->printf("ERROR: block_%d is a successor of block_%d but the reverse is not true\n",
-                    e->getTo()->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log, "ERROR: block_%d is a successor of block_%d but the reverse is not true\n",
+                e->getTo()->getNumber(), block->getNumber());
+
             ok = false;
         }
         ++basicS;
@@ -623,10 +600,9 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
          ++nextEdge) {
         nextBlock = toBlock((*nextEdge)->getFrom());
         if (!_blockChecklist.isSet(nextBlock->getNumber())) {
-            if (getLoggingEnabled()) {
-                log->printf("Exception predecessor block [%d] of block [%d] is not in the CFG\n",
-                    nextBlock->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log, "Exception predecessor block [%d] of block [%d] is not in the CFG\n",
+                nextBlock->getNumber(), block->getNumber());
+
             return false;
         }
         auto matchEdge = nextBlock->getExceptionSuccessors().begin();
@@ -635,11 +611,11 @@ bool TR_CFGChecker::isConsistent(TR::Block *block)
                 break;
         }
         if (matchEdge == nextBlock->getExceptionSuccessors().end()) {
-            if (getLoggingEnabled()) {
-                log->printf("Exception Predecessor block [%d] of block [%d] does not contain block [%d] in its "
-                            "exception successors list\n",
-                    nextBlock->getNumber(), block->getNumber(), block->getNumber());
-            }
+            trprintf(trace(), log,
+                "Exception Predecessor block [%d] of block [%d] does not contain block [%d] in its exception "
+                "successors list\n",
+                nextBlock->getNumber(), block->getNumber(), block->getNumber());
+
             return false;
         }
     }
@@ -663,10 +639,9 @@ bool TR_CFGChecker::checkForUnreachableCycles()
     for (TR::CFGNode *node = _cfg->getFirstNode(); node; node = node->getNext())
         if (!reachableBlocks.isSet(node->getNumber()) && node->asBlock() && node != _cfg->getEnd()) {
             unreachable = true;
-            if (getLoggingEnabled()) {
-                getLogger()->printf("Block %d [%p] is unreachable or is in an unreachable cycle\n", node->getNumber(),
-                    node);
-            }
+
+            trprintf(trace(), getLogger(), "Block %d [%p] is unreachable or is in an unreachable cycle\n",
+                node->getNumber(), node);
         }
 
     return unreachable;

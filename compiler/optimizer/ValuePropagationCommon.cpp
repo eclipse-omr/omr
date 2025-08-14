@@ -325,7 +325,7 @@ void OMR::ValuePropagation::initialize()
 
             if (doTiming) {
                 myTimer.stopTiming(comp());
-                if (comp()->getLoggingEnabled()) {
+                if (trace()) {
                     OMR::Logger *log = comp()->log();
                     log->printf("Time taken for %s = ", myTimer.title());
                     log->printf("%9.6f seconds\n", myTimer.secondsTaken());

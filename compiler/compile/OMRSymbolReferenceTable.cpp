@@ -460,7 +460,7 @@ TR::SymbolReference *OMR::SymbolReferenceTable::createRefinedArrayShadowSymbolRe
             aliasBuilder.nonIntPrimitiveShadowSymRefs().set(index);
             break;
     }
-    if (trace && comp()->getLoggingEnabled()) {
+    if (trace) {
         OMR::Logger *log = comp()->log();
         log->printf("Created new array shadow %d\nRefinedAddress shadows:", index);
         aliasBuilder.refinedAddressArrayShadows().print(log, comp());

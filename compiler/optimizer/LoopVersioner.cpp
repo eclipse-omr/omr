@@ -5532,7 +5532,7 @@ void TR_LoopVersioner::copyOnWriteNode(TR::Node *original, TR::Node **current)
 
     // Later calls to dumpOptDetails() may refer to these nodes, so show this
     // output even without trace().
-    if (comp()->getLoggingEnabled() && (trace() || comp()->getOption(TR_TraceOptDetails))) {
+    if (trace() || comp()->getOption(TR_TraceOptDetails)) {
         comp()->getDebug()->clearNodeChecklist();
         dumpOptDetails(comp(), "Copy on write:\n\toriginal node:\n");
         comp()->getDebug()->printWithFixedPrefix(comp()->log(), original, 1, true, false, "\t\t");
@@ -6778,7 +6778,7 @@ void TR_LoopVersioner::collectAllExpressionsToBeChecked(TR::Node *node, List<TR:
     // Because node will no longer appear verbatim in the trees, print it to
     // the log so that other dumpOptDetails() messages that refer to its
     // descendants make sense.
-    bool optDetails = comp()->getLoggingEnabled() && (trace() || comp()->getOption(TR_TraceOptDetails));
+    bool optDetails = trace() || comp()->getOption(TR_TraceOptDetails);
 
     if (optDetails) {
         dumpOptDetails(comp(), "collectAllExpressionsToBeChecked on tree:\n");
@@ -8603,7 +8603,7 @@ TR_LoopVersioner::LoopEntryPrep *TR_LoopVersioner::createLoopEntryPrep(LoopEntry
     TR::NodeChecklist *visited, LoopEntryPrep *prev)
 {
     OMR::Logger *log = comp()->log();
-    bool optDetails = comp()->getLoggingEnabled() && (trace() || comp()->getOption(TR_TraceOptDetails));
+    bool optDetails = trace() || comp()->getOption(TR_TraceOptDetails);
 
     if (visited == NULL) {
         // This is the top-level call. Ensure that node's flags have been reset

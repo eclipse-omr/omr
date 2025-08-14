@@ -60,7 +60,8 @@ void TR::printILDiagnostic(TR::Compilation *comp, const char *formatStr, ...)
     va_start(stderr_args, formatStr);
     vfprintf(stderr, formatStr, stderr_args);
     va_end(stderr_args);
-    if (comp->getLoggingEnabled()) {
+
+    if (TR::isILValidationLoggingEnabled(comp)) {
         va_list log_args;
         va_start(log_args, formatStr);
         comp->diagnosticImplVA(formatStr, log_args);
@@ -74,7 +75,7 @@ void TR::vprintILDiagnostic(TR::Compilation *comp, const char *formatStr, va_lis
     va_copy(stderr_copy, ap);
     vfprintf(stderr, formatStr, stderr_copy);
     va_end(stderr_copy);
-    if (comp->getLoggingEnabled()) {
+    if (TR::isILValidationLoggingEnabled(comp)) {
         va_list log_copy;
         va_copy(log_copy, ap);
         comp->diagnosticImplVA(formatStr, log_copy);
