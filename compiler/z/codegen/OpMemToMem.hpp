@@ -37,6 +37,7 @@
 #include "il/DataTypes.hpp"
 #include "il/LabelSymbol.hpp"
 #include "infra/Assert.hpp"
+#include "ras/Logger.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 
 namespace TR {
@@ -759,7 +760,7 @@ public:
     void cleanUpReg()
     {
         if (_trace)
-            traceMsg(_cg->comp(), "MemCpyAtomicMacroOp: cleanUpReg\n");
+            _cg->comp()->getLogger()->prints("MemCpyAtomicMacroOp: cleanUpReg\n");
         _cg->stopUsingRegister(_workReg);
         _cg->stopUsingRegister(_alignedReg);
 

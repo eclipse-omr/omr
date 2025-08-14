@@ -1432,6 +1432,7 @@ TR::Instruction *OMR::X86::CodeGenerator::findBetterSpillPlacement(TR::Register 
 void OMR::X86::CodeGenerator::performNonLinearRegisterAssignmentAtBranch(TR::X86LabelInstruction *branchInstruction,
     TR_RegisterKinds kindsToBeAssigned)
 {
+    TR::Compilation *comp = self()->comp();
     TR::Machine *xm = self()->machine();
     TR_RegisterAssignerState *branchRAState = new (self()->trHeapMemory()) TR_RegisterAssignerState(xm);
 
@@ -1469,8 +1470,8 @@ void OMR::X86::CodeGenerator::performNonLinearRegisterAssignmentAtBranch(TR::X86
         TR::Instruction *ins = generateLabelInstruction(oi->getFirstInstruction(), TR::InstOpCode::label,
             generateLabelSymbol(self()), deps, self());
 
-        if (self()->comp()->getOption(TR_TraceNonLinearRegisterAssigner)) {
-            traceMsg(self()->comp(), "creating TR::InstOpCode::label instruction %p for dependencies\n", ins);
+        if (comp->getOption(TR_TraceNonLinearRegisterAssigner)) {
+            comp->getLogger()->printf("creating TR::InstOpCode::label instruction %p for dependencies\n", ins);
         }
     }
 
@@ -1829,7 +1830,7 @@ void OMR::X86::CodeGenerator::addItemsToRSSReport(uint8_t *coldCode)
 
             if (blocksInsideColdCodeSize != actualColdLength) {
                 if (comp->getOption(TR_TraceCG)) {
-                    traceMsg(comp,
+                    comp->getLogger()->printf(
                         "RSS: blocksInsideColdCodeSize=%zu actualColdLength=%zu coldCode=%p coldCodeEnd=%p\n",
                         blocksInsideColdCodeSize, actualColdLength, coldCode, coldCode + actualColdLength);
                 }
@@ -1876,7 +1877,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     //
 
     if (comp->getOption(TR_TraceCG)) {
-        traceMsg(comp, "<proepilogue>\n");
+        comp->getLogger()->prints("<proepilogue>\n");
     }
 
     TR::Instruction *estimateCursor = self()->getFirstInstruction();
@@ -1925,9 +1926,8 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     }
 
     if (comp->getOption(TR_TraceCG))
-        traceMsg(comp,
-            "\n<instructions\n"
-            "\ttitle=\"VFP Substitution\">");
+        comp->getLogger()->prints("\n<instructions\n"
+                                  "\ttitle=\"VFP Substitution\">");
 
     // Estimate instruction length of prologue and remainder of method,
     // determine adjustments if using esp-relative addressing, and generate
@@ -2031,7 +2031,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     }
 
     if (comp->getOption(TR_TraceCG))
-        traceMsg(comp, "\n</instructions>\n");
+        comp->getLogger()->prints("\n</instructions>\n");
 
     if (!snippetsAfterWarm || !warmEstimate)
         estimate = self()->setEstimatedLocationsForSnippetLabels(estimate);
@@ -2057,7 +2057,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     }
 
     if (comp->getOption(TR_TraceCG)) {
-        traceMsg(comp, "</proepilogue>\n");
+        comp->getLogger()->prints("</proepilogue>\n");
     }
 
     /////////////////////////////////////////////////////////////////
@@ -2066,7 +2066,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     //
 
     if (comp->getOption(TR_TraceCG)) {
-        traceMsg(comp, "<encode>\n");
+        comp->getLogger()->prints("<encode>\n");
     }
 
     uint8_t *coldCode = NULL;
@@ -2135,7 +2135,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
             self()->setBinaryBufferCursor(coldCode);
 
             if (comp->getOption(TR_TraceCG)) {
-                traceMsg(comp, "%s warmCodeEnd = %p, lastWarmInstruction = %p coldCodeStart = %p\n",
+                comp->getLogger()->printf("%s warmCodeEnd = %p, lastWarmInstruction = %p coldCodeStart = %p\n",
                     SPLIT_WARM_COLD_STRING, self()->getWarmCodeEnd(), cursorInstruction, coldCode);
             }
 
@@ -2191,7 +2191,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     self()->getLinkage()->performPostBinaryEncoding();
 
     if (comp->getOption(TR_TraceCG)) {
-        traceMsg(comp, "</encode>\n");
+        comp->getLogger()->prints("</encode>\n");
     }
 
     if (comp->getOption(TR_SplitWarmAndColdBlocks)) {
@@ -2213,7 +2213,7 @@ TR::Register *OMR::X86::CodeGenerator::gprClobberEvaluate(TR::Node *node, TR::In
         canClobber = self()->canClobberNodesRegister(node);
 
     if (comp->getOption(TR_TraceCG) && sourceRegister->needsLazyClobbering())
-        traceMsg(comp, "LAZY CLOBBERING: node %s register %s refcount=%d canClobber=%s\n",
+        comp->getLogger()->printf("LAZY CLOBBERING: node %s register %s refcount=%d canClobber=%s\n",
             self()->getDebug()->getName(node), self()->getDebug()->getName(sourceRegister), node->getReferenceCount(),
             canClobber ? "true" : "false");
 
@@ -2234,16 +2234,15 @@ TR::Register *OMR::X86::CodeGenerator::gprClobberEvaluate(TR::Node *node, TR::In
 
         if (sourceRegister->containsCollectedReference()) {
             if (comp->getOption(TR_TraceCG))
-                traceMsg(comp, "Setting containsCollectedReference on register %s\n",
+                comp->getLogger()->printf("Setting containsCollectedReference on register %s\n",
                     self()->getDebug()->getName(targetRegister));
             targetRegister->setContainsCollectedReference();
         }
         if (sourceRegister->containsInternalPointer()) {
             TR::AutomaticSymbol *pinningArrayPointer = sourceRegister->getPinningArrayPointer();
             if (comp->getOption(TR_TraceCG))
-                traceMsg(comp,
-                    "Setting containsInternalPointer on register %s and setting pinningArrayPointer "
-                    "to " POINTER_PRINTF_FORMAT "\n",
+                comp->getLogger()->printf("Setting containsInternalPointer on register %s and setting "
+                                          "pinningArrayPointer to " POINTER_PRINTF_FORMAT "\n",
                     self()->getDebug()->getName(targetRegister), pinningArrayPointer);
             targetRegister->setContainsInternalPointer();
             targetRegister->setPinningArrayPointer(pinningArrayPointer);
@@ -2618,7 +2617,7 @@ bool OMR::X86::CodeGenerator::nodeIsFoldableMemOperand(TR::Node *node, TR::Node 
         //
         if (parent->getOpCode().isBndCheck() && node->getOpCode().isArrayLength() && node->getFutureUseCount() == 2) {
             if (self()->traceSimulateTreeEvaluation() && result)
-                traceMsg(self()->comp(), " bndchk/arraylength");
+                self()->comp()->getLogger()->prints(" bndchk/arraylength");
             TR::TreeTop *prevTT = state->_currentTreeTop->getPrevTreeTop();
             if (prevTT) {
                 TR::Node *nullchk = prevTT->getNode();
@@ -2629,7 +2628,7 @@ bool OMR::X86::CodeGenerator::nodeIsFoldableMemOperand(TR::Node *node, TR::Node 
     }
 
     if (self()->traceSimulateTreeEvaluation() && result)
-        traceMsg(self()->comp(), " %s foldable into %s", self()->getDebug()->getName(node),
+        self()->comp()->getLogger()->printf("%s foldable into %s", self()->getDebug()->getName(node),
             self()->getDebug()->getName(parent));
     return result;
 }
@@ -2725,7 +2724,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
         // Go live
         self()->simulateNodeGoingLive(node, state);
         if (self()->traceSimulateTreeEvaluation())
-            traceMsg(comp, " memop");
+            comp->getLogger()->prints(" memop");
     } else {
         // Just call inherited logic
         //
@@ -2748,7 +2747,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
             //
             usesMul = false;
             if (self()->traceSimulateTreeEvaluation())
-                traceMsg(comp, " nomul");
+                comp->getLogger()->prints(" nomul");
         }
 
         if (usesMul) {
@@ -2762,7 +2761,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
 
             if (candidateDiesHere) {
                 if (self()->traceSimulateTreeEvaluation())
-                    traceMsg(comp, " dieshere");
+                    comp->getLogger()->prints(" dieshere");
             } else {
                 summary->spill(TR_eaxSpill, self());
             }
@@ -2771,7 +2770,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
             //
             summary->accumulate(state, self(), 1);
             if (self()->traceSimulateTreeEvaluation())
-                traceMsg(comp, " mul:g=%d", summary->_gprPressure);
+                comp->getLogger()->printf(" mul:g=%d", summary->_gprPressure);
         }
     } else if ((opCode.isLeftShift() || opCode.isRightShift()) && !node->getSecondChild()->getOpCode().isLoadConst()
         && !self()->isCandidateLoad(node->getSecondChild(), candidate)) {
@@ -3279,7 +3278,7 @@ void OMR::X86::CodeGenerator::moveOutOfLineInstructionsToWarmCode()
 
     TR::Compilation *comp = self()->comp();
     if (comp->getOption(TR_TraceCG))
-        traceMsg(comp, "Moving OutOfLine instructions to after %p\n", self()->getLastWarmInstruction());
+        comp->getLogger()->printf("Moving OutOfLine instructions to after %p\n", self()->getLastWarmInstruction());
 
     auto oiIterator = self()->getOutlinedInstructionsList().begin();
 

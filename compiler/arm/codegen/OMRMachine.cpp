@@ -29,6 +29,7 @@
 #include "env/CompilerEnv.hpp"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "ras/Logger.hpp"
 
 static void registerExchange(TR::Instruction *precedingI, TR_RegisterKinds rk, TR::RealRegister *tReg,
     TR::RealRegister *sReg, TR::RealRegister *mReg, TR::CodeGenerator *cg);
@@ -833,7 +834,7 @@ void OMR::ARM::Machine::takeRegisterStateSnapShot()
         _assignedRegisterSnapShot[i] = _registerFile[i]->getAssignedRegister();
         _registerFlagsSnapShot[i] = _registerFile[i]->getFlags();
         if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
+            comp->getLogger()->printf("OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
                 _assignedRegisterSnapShot[i], _registerFlagsSnapShot[i]);
     }
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
@@ -845,7 +846,7 @@ void OMR::ARM::Machine::takeRegisterStateSnapShot()
         _assignedRegisterSnapShot[i] = _registerFile[i]->getAssignedRegister();
         _registerFlagsSnapShot[i] = _registerFile[i]->getFlags();
         if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
+            comp->getLogger()->printf("OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
                 _assignedRegisterSnapShot[i], _registerFlagsSnapShot[i]);
     }
 #endif
@@ -873,7 +874,7 @@ void OMR::ARM::Machine::restoreRegisterStateFromSnapShot()
             _registerFile[i]->getAssignedRegister()->setAssignedRegister(_registerFile[i]);
         }
         if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
+            comp->getLogger()->printf("OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
                 _registerFile[i]->getAssignedRegister(), _registerFile[i]->getFlags());
     }
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
@@ -894,7 +895,7 @@ void OMR::ARM::Machine::restoreRegisterStateFromSnapShot()
             _registerFile[i]->getAssignedRegister()->setAssignedRegister(_registerFile[i]);
         }
         if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
+            comp->getLogger()->printf("OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
                 _registerFile[i]->getAssignedRegister(), _registerFile[i]->getFlags());
     }
 #endif

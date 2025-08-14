@@ -28,6 +28,7 @@
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
 #include "il/LabelSymbol.hpp"
+#include "ras/Logger.hpp"
 
 TR::Register *genericReturnEvaluator(TR::Node *node, TR::RealRegister::RegNum rnum, TR_RegisterKinds rk,
     TR_ReturnInfo i, TR::CodeGenerator *cg)
@@ -512,7 +513,8 @@ TR::Register *OMR::RV::TreeEvaluator::iselectEvaluator(TR::Node *node, TR::CodeG
         "Select nodes cannot have children that are internal pointers");
     if (falseReg->containsCollectedReference()) {
         if (cg->comp()->getOption(TR_TraceCG))
-            traceMsg(cg->comp(), "Setting containsCollectedReference on result of select node in register %s\n",
+            cg->comp()->getLogger()->printf(
+                "Setting containsCollectedReference on result of select node in register %s\n",
                 cg->getDebug()->getName(trueReg));
         trueReg->setContainsCollectedReference();
     }
