@@ -63,6 +63,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/Structure.hpp"
 #include "optimizer/UnsafeSubexpressionRemover.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O SINK STORES: "
 
@@ -184,17 +185,17 @@ TR_LiveOnNotAllPaths::TR_LiveOnNotAllPaths(TR::Compilation *c, TR_Liveness *live
         if (trace) {
             traceMsg(comp(), "Block %d:\n", b);
             traceMsg(comp(), "  Liveness IN: ");
-            liveOnSomePaths->_blockAnalysisInfo[b]->print(comp());
+            liveOnSomePaths->_blockAnalysisInfo[b]->print(comp()->getLogger(), comp());
             traceMsg(comp(), " OUT ");
-            liveOnSomePathsOut.print(comp());
+            liveOnSomePathsOut.print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n  LiveOnAllPaths IN: ");
-            liveOnAllPaths->_blockAnalysisInfo[b]->print(comp());
+            liveOnAllPaths->_blockAnalysisInfo[b]->print(comp()->getLogger(), comp());
             traceMsg(comp(), " OUT ");
-            liveOnAllPathsOut.print(comp());
+            liveOnAllPathsOut.print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n  LiveOnNotAllPaths IN: ");
-            _inSetInfo[b]->print(comp());
+            _inSetInfo[b]->print(comp()->getLogger(), comp());
             traceMsg(comp(), " OUT ");
-            _outSetInfo[b]->print(comp());
+            _outSetInfo[b]->print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n");
         }
     }
@@ -459,14 +460,14 @@ void TR_SinkStores::recordPlacementForDefInBlock(TR_BlockStorePlacement *blockPl
     if (trace()) {
         traceMsg(comp(), "updating symbolsKilled in recordPlacementForDefInBlock\n");
         traceMsg(comp(), "BEF  _symbolsKilledInBlock[%d]: ", blockNumber);
-        _symbolsKilledInBlock[blockNumber]->print(comp());
+        _symbolsKilledInBlock[blockNumber]->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
     (*_symbolsKilledInBlock[blockNumber]) |= (*_killedSymbolsToMove);
 
     if (trace()) {
         traceMsg(comp(), "AFT _symbolsKilledInBlock[%d]: ", blockNumber);
-        _symbolsKilledInBlock[blockNumber]->print(comp());
+        _symbolsKilledInBlock[blockNumber]->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n\n");
     }
     TR_ASSERT(_symbolsUsedInBlock[blockNumber] != NULL, "_symbolsUsedInBlock[%d] should have been initialized!",
@@ -475,13 +476,13 @@ void TR_SinkStores::recordPlacementForDefInBlock(TR_BlockStorePlacement *blockPl
     if (trace()) {
         traceMsg(comp(), "updating symbolsUsed in recordPlacementForDefInBlock\n");
         traceMsg(comp(), "BEF  _symbolsUsedInBlock[%d]: ", blockNumber);
-        _symbolsUsedInBlock[blockNumber]->print(comp());
+        _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
     (*_symbolsUsedInBlock[blockNumber]) |= (*_usedSymbolsToMove);
     if (trace()) {
         traceMsg(comp(), "AFT _symbolsUsedInBlock[%d]: ", blockNumber);
-        _symbolsUsedInBlock[blockNumber]->print(comp());
+        _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n\n");
     }
 }
@@ -497,7 +498,7 @@ int32_t TR_GeneralSinkStores::perform()
 int32_t TR_SinkStores::performStoreSinking()
 {
     if (trace()) {
-        comp()->dumpMethodTrees("Before Store Sinking");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Before Store Sinking");
     }
 
     _handlerIndex = comp()->getCurrentMethod()->numberOfExceptionHandlers();
@@ -635,7 +636,7 @@ int32_t TR_SinkStores::performStoreSinking()
         doSinking();
 
         if (trace()) {
-            comp()->dumpMethodTrees("After Store Sinking");
+            comp()->dumpMethodTrees(comp()->getLogger(), "After Store Sinking");
         }
 
     } // scope of the stack memory region
@@ -649,14 +650,6 @@ int32_t TR_SinkStores::performStoreSinking()
         traceMsg(comp(), "  Performed %d kill mark walks\n", _killMarkWalks);
         traceMsg(comp(), "  Performed %d search mark walks\n", _searchMarkWalks);
         traceMsg(comp(), "  Performed %d search mark calls\n", _searchMarkCalls);
-        /*
-              printf("  Removed %d stores\n", _numRemovedStores);
-              printf("  Placed  %d stores\n", _numPlacements);
-              printf("  Created %d temps\n", _numTemps);
-              printf("  Performed %d kill mark walks\n", _killMarkWalks);
-              printf(" Performed %d search mark walks\n", _searchMarkWalks);
-              printf("  Performed %d search mark calls\n", _searchMarkCalls);
-        */
     }
 
     if (_numTemps > 0)
@@ -749,7 +742,7 @@ void TR_SinkStores::lookForSinkableStores()
 
                 if (trace()) {
                     traceMsg(comp(), "      savedLiveCommonedLoads: ");
-                    savedLiveCommonedLoads->print(comp());
+                    savedLiveCommonedLoads->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                 }
 
@@ -765,12 +758,12 @@ void TR_SinkStores::lookForSinkableStores()
                     treeCommonedLoads, treeVisitCount);
                 if (trace()) {
                     traceMsg(comp(), "      killedSymbols: ");
-                    killedSymbols->print(comp());
+                    killedSymbols->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                     traceMsg(comp(), "      usedSymbols: ");
-                    usedSymbols->print(comp());
+                    usedSymbols->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "      treeCommonedLoads: ");
-                    treeCommonedLoads->print(comp());
+                    treeCommonedLoads->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                 }
                 TR::RegisterMappedSymbol *local = NULL;
@@ -806,19 +799,19 @@ void TR_SinkStores::lookForSinkableStores()
 
                 if (trace()) {
                     traceMsg(comp(), "      killedSymbols: ");
-                    killedSymbols->print(comp());
+                    killedSymbols->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                     traceMsg(comp(), "      usedSymbols: ");
-                    usedSymbols->print(comp());
+                    usedSymbols->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                     traceMsg(comp(), "      treeCommonedLoads: ");
-                    treeCommonedLoads->print(comp());
+                    treeCommonedLoads->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                     traceMsg(comp(), "      savedLiveCommonedLoads: ");
-                    savedLiveCommonedLoads->print(comp());
+                    savedLiveCommonedLoads->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                     traceMsg(comp(), "      killedLiveCommonedLoads: ");
-                    killedLiveCommonedLoads->print(comp());
+                    killedLiveCommonedLoads->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
                     if (local)
                         traceMsg(comp(), "      is store to local %d\n", symIdx);
@@ -919,7 +912,7 @@ void TR_SinkStores::lookForSinkableStores()
                     (*firstRefsToKilledSymbols) &= (*killedLiveCommonedLoads);
                     if (trace()) {
                         traceMsg(comp(), "         (non-commoned) uses of killed symbols: ");
-                        firstRefsToKilledSymbols->print(comp());
+                        firstRefsToKilledSymbols->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                     }
                     ListElement<TR_MovableStore> *storeElement = potentiallyMovableStores.getListHead();
@@ -939,7 +932,7 @@ void TR_SinkStores::lookForSinkableStores()
                                         "] below that may require a temp\n",
                                         store->_useOrKillInfo->_tt->getNode());
                                     traceMsg(comp(), "               killed live commoned loads used above store:");
-                                    commonedLoadsUsedAboveStore->print(comp());
+                                    commonedLoadsUsedAboveStore->print(comp()->getLogger(), comp());
                                     traceMsg(comp(), "\n");
                                 }
                                 genStoreToTempSyms(tt, node, commonedLoadsUsedAboveStore, killedLiveCommonedLoads,
@@ -1216,7 +1209,7 @@ void TR_SinkStores::lookForSinkableStores()
                                 traceMsg(comp(),
                                     "      Update for movable store due to commonedLoad: LOAP->blockInfo[%d]=",
                                     blockNumber);
-                                _liveOnAllPaths->_blockAnalysisInfo[blockNumber]->print(comp());
+                                _liveOnAllPaths->_blockAnalysisInfo[blockNumber]->print(comp()->getLogger(), comp());
                                 traceMsg(comp(), "\n");
                             }
                         }
@@ -1225,7 +1218,7 @@ void TR_SinkStores::lookForSinkableStores()
                                 "        symbolsUsed in block_%d is updated due to commoned loads.  Symbols USED BEF "
                                 "is ",
                                 blockNumber);
-                            _symbolsUsedInBlock[blockNumber]->print(comp());
+                            _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
                             traceMsg(comp(), "\n");
                         }
                         (*_symbolsUsedInBlock[blockNumber]) |= (*store->_commonedLoadsAfter);
@@ -1234,7 +1227,7 @@ void TR_SinkStores::lookForSinkableStores()
                                 "        symbolsUsed in block_%d is updated due to commoned loads.  Symbols USED AFT "
                                 "is ",
                                 blockNumber);
-                            _symbolsUsedInBlock[blockNumber]->print(comp());
+                            _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
                             traceMsg(comp(), "\n");
                         }
                     }
@@ -1245,9 +1238,9 @@ void TR_SinkStores::lookForSinkableStores()
                         traceMsg(comp(), "      Did not move node %p so update killed and used symbols\n",
                             tt->getNode());
                         traceMsg(comp(), "      Before use and def in block_%d: symbols KILLED ", blockNumber);
-                        _symbolsKilledInBlock[blockNumber]->print(comp());
+                        _symbolsKilledInBlock[blockNumber]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), " USED ");
-                        _symbolsUsedInBlock[blockNumber]->print(comp());
+                        _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                     }
                     (*_symbolsUsedInBlock[blockNumber]) |= (*_usedSymbolsToMove);
@@ -1274,10 +1267,10 @@ void TR_SinkStores::lookForSinkableStores()
                         // remove 0 for more detailed tracing
                         if (0 && trace()) {
                             traceMsg(comp(), "      Update for the inmovable: LOSP->blockInfo[%d]=", blockNumber);
-                            _liveOnSomePaths->_blockAnalysisInfo[blockNumber]->print(comp());
+                            _liveOnSomePaths->_blockAnalysisInfo[blockNumber]->print(comp()->getLogger(), comp());
                             traceMsg(comp(), "\n");
                             traceMsg(comp(), "      Update for the inmovable: LOAP->blockInfo[%d]=", blockNumber);
-                            _liveOnAllPaths->_blockAnalysisInfo[blockNumber]->print(comp());
+                            _liveOnAllPaths->_blockAnalysisInfo[blockNumber]->print(comp()->getLogger(), comp());
                             traceMsg(comp(), "\n");
                         }
                     }
@@ -1286,9 +1279,9 @@ void TR_SinkStores::lookForSinkableStores()
                         //  traceMsg(comp(), "      Did not move node %p so update killed and used
                         //  symbols\n",tt->getNode());
                         traceMsg(comp(), "      Update use and def in block_%d: symbols KILLED ", blockNumber);
-                        _symbolsKilledInBlock[blockNumber]->print(comp());
+                        _symbolsKilledInBlock[blockNumber]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), " USED ");
-                        _symbolsUsedInBlock[blockNumber]->print(comp());
+                        _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n\n");
                     }
                 }
@@ -1597,8 +1590,6 @@ void TR_SinkStores::placeStoresAlongEdges(List<TR_StoreInformation> &stores, Lis
     }
 
     placeStoresInBlock(stores, placementBlock);
-
-    // comp()->dumpMethodTrees("After splitting an edge");
 }
 
 void TR_SinkStores::doSinking()
@@ -1944,10 +1935,10 @@ bool TR_SinkStores::isSymUsedInEdgePlacement(TR::CFGNode *block, TR::CFGNode *su
                 if (edgeInfo->_symbolsUsedOrKilled->intersects(*_killedSymbolsToMove)) {
                     if (trace()) {
                         traceMsg(comp(), "              symbolsKilled in current store\t");
-                        _killedSymbolsToMove->print(comp());
+                        _killedSymbolsToMove->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                         traceMsg(comp(), "              symbolsKilledUsed along edge\t");
-                        edgeInfo->_symbolsUsedOrKilled->print(comp());
+                        edgeInfo->_symbolsUsedOrKilled->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                         traceMsg(comp(), "              Killed symbols used in store placement along edge (%d->%d)\n",
                             block->getNumber(), succBlockNumber);
@@ -2285,10 +2276,10 @@ bool TR_GeneralSinkStores::sinkStorePlacement(TR_MovableStore *movableStore)
     // remove 0 for more detail tracing
     if (0 && trace()) {
         traceMsg(comp(), "            usedSymbols = ");
-        usedSymbols->print(comp());
+        usedSymbols->print(comp()->getLogger(), comp());
         if (commonedSymbols) {
             traceMsg(comp(), ", allUsedSymbols = ");
-            allUsedSymbols->print(comp());
+            allUsedSymbols->print(comp()->getLogger(), comp());
         }
         traceMsg(comp(), "\n");
     }
@@ -2343,7 +2334,7 @@ bool TR_GeneralSinkStores::sinkStorePlacement(TR_MovableStore *movableStore)
         if (trace()) {
             traceMsg(comp(), "            trying to push to block_%d\n", succBlock->getNumber());
             traceMsg(comp(), "              LOSP->blockInfo[%d]: ", succBlock->getNumber());
-            _liveOnSomePaths->_blockAnalysisInfo[succBlock->getNumber()]->print(comp());
+            _liveOnSomePaths->_blockAnalysisInfo[succBlock->getNumber()]->print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n");
         }
 
@@ -2487,10 +2478,10 @@ bool TR_GeneralSinkStores::sinkStorePlacement(TR_MovableStore *movableStore)
                     // remove 0 for more detail tracing
                     if (0) {
                         traceMsg(comp(), "            symbolsKilled[%d] now is ", blockNumber);
-                        _symbolsKilledInBlock[blockNumber]->print(comp());
+                        _symbolsKilledInBlock[blockNumber]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                         traceMsg(comp(), "            used is ");
-                        _usedSymbolsToMove->print(comp());
+                        _usedSymbolsToMove->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                     }
                     traceMsg(comp(), "              intersection of used with symbolsKilled[%d] is %s\n", blockNumber,
@@ -2504,10 +2495,10 @@ bool TR_GeneralSinkStores::sinkStorePlacement(TR_MovableStore *movableStore)
                     // remove 0 for more detail tracing
                     if (0) {
                         traceMsg(comp(), "            symbolsUsed[%d] now is ", blockNumber);
-                        _symbolsUsedInBlock[blockNumber]->print(comp());
+                        _symbolsUsedInBlock[blockNumber]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                         traceMsg(comp(), "            kill is ");
-                        _killedSymbolsToMove->print(comp());
+                        _killedSymbolsToMove->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                     }
                     traceMsg(comp(), "              intersection of killed with symbolsUsed[%d] is %s\n", blockNumber,
@@ -2530,7 +2521,7 @@ bool TR_GeneralSinkStores::sinkStorePlacement(TR_MovableStore *movableStore)
                 (*_liveOnNotAllPaths->_inSetInfo[blockNumber]) |= (*_usedSymbolsToMove);
             if (trace()) {
                 traceMsg(comp(), "              LONAP->blockInfo[%d]: ", blockNumber);
-                _liveOnNotAllPaths->_inSetInfo[blockNumber]->print(comp());
+                _liveOnNotAllPaths->_inSetInfo[blockNumber]->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
 
@@ -2746,10 +2737,10 @@ bool TR_GeneralSinkStores::sinkStorePlacement(TR_MovableStore *movableStore)
             // remove 0 for more detail tracing
             if (0 && trace()) {
                 traceMsg(comp(), "            Update for the movable store: LOSP->blockInfo[%d]", visitedBlockNumber);
-                _liveOnSomePaths->_blockAnalysisInfo[visitedBlockNumber]->print(comp());
+                _liveOnSomePaths->_blockAnalysisInfo[visitedBlockNumber]->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
                 traceMsg(comp(), "            Update for the movable store: LOAP->blockInfo[%d]", visitedBlockNumber);
-                _liveOnAllPaths->_blockAnalysisInfo[visitedBlockNumber]->print(comp());
+                _liveOnAllPaths->_blockAnalysisInfo[visitedBlockNumber]->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
         }

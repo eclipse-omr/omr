@@ -40,6 +40,7 @@ int jitDebugARM;
 #include "env/jittypes.h"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -142,97 +143,94 @@ char *TR_Debug::fullOpCodeName(TR::Instruction *instr)
     return nameBuf;
 }
 
-void TR_Debug::printPrefix(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::printPrefix(OMR::Logger *log, TR::Instruction *instr)
 {
-    printPrefix(pOutFile, instr, instr->getBinaryEncoding(), instr->getBinaryLength());
+    printPrefix(log, instr, instr->getBinaryEncoding(), instr->getBinaryLength());
 }
 
-void TR_Debug::printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr)
+void TR_Debug::printInstructionComment(OMR::Logger *log, int32_t tabStops, TR::Instruction *instr)
 {
     while (tabStops-- > 0)
-        trfprintf(pOutFile, "\t");
+        log->printc('\t');
 
-    dumpInstructionComments(pOutFile, instr);
+    dumpInstructionComments(log, instr);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     switch (instr->getKind()) {
         case OMR::Instruction::IsImm:
-            print(pOutFile, (TR::ARMImmInstruction *)instr);
+            print(log, (TR::ARMImmInstruction *)instr);
             break;
         case OMR::Instruction::IsImmSym:
-            print(pOutFile, (TR::ARMImmSymInstruction *)instr);
+            print(log, (TR::ARMImmSymInstruction *)instr);
             break;
         case OMR::Instruction::IsLabel:
-            print(pOutFile, (TR::ARMLabelInstruction *)instr);
+            print(log, (TR::ARMLabelInstruction *)instr);
             break;
         case OMR::Instruction::IsConditionalBranch:
-            print(pOutFile, (TR::ARMConditionalBranchInstruction *)instr);
+            print(log, (TR::ARMConditionalBranchInstruction *)instr);
             break;
 #ifdef J9_PROJECT_SPECIFIC
         case OMR::Instruction::IsVirtualGuardNOP:
-            print(pOutFile, (TR::ARMVirtualGuardNOPInstruction *)instr);
+            print(log, (TR::ARMVirtualGuardNOPInstruction *)instr);
             break;
 #endif
         case OMR::Instruction::IsAdmin:
-            print(pOutFile, (TR::ARMAdminInstruction *)instr);
+            print(log, (TR::ARMAdminInstruction *)instr);
             break;
         case OMR::Instruction::IsTrg1Src2:
         case OMR::Instruction::IsSrc2:
         case OMR::Instruction::IsTrg1Src1:
-            print(pOutFile, (TR::ARMTrg1Src2Instruction *)instr);
+            print(log, (TR::ARMTrg1Src2Instruction *)instr);
             break;
         case OMR::Instruction::IsTrg1:
-            print(pOutFile, (TR::ARMTrg1Instruction *)instr);
+            print(log, (TR::ARMTrg1Instruction *)instr);
             break;
         case OMR::Instruction::IsMem:
-            print(pOutFile, (TR::ARMMemInstruction *)instr);
+            print(log, (TR::ARMMemInstruction *)instr);
             break;
         case OMR::Instruction::IsMemSrc1:
-            print(pOutFile, (TR::ARMMemSrc1Instruction *)instr);
+            print(log, (TR::ARMMemSrc1Instruction *)instr);
             break;
         case OMR::Instruction::IsTrg1Mem:
-            print(pOutFile, (TR::ARMTrg1MemInstruction *)instr);
+            print(log, (TR::ARMTrg1MemInstruction *)instr);
             break;
         case OMR::Instruction::IsTrg1MemSrc1:
-            print(pOutFile, (TR::ARMTrg1MemSrc1Instruction *)instr);
+            print(log, (TR::ARMTrg1MemSrc1Instruction *)instr);
             break;
 #if defined(__VFP_FP__) && !defined(__SOFTFP__)
         case OMR::Instruction::IsTrg2Src1:
-            print(pOutFile, (TR::ARMTrg2Src1Instruction *)instr);
+            print(log, (TR::ARMTrg2Src1Instruction *)instr);
             break;
 #endif
         case OMR::Instruction::IsMul:
-            print(pOutFile, (TR::ARMMulInstruction *)instr);
+            print(log, (TR::ARMMulInstruction *)instr);
             break;
         case OMR::Instruction::IsControlFlow:
-            print(pOutFile, (TR::ARMControlFlowInstruction *)instr);
+            print(log, (TR::ARMControlFlowInstruction *)instr);
             break;
         case OMR::Instruction::IsMultipleMove:
-            print(pOutFile, (TR::ARMMultipleMoveInstruction *)instr);
+            print(log, (TR::ARMMultipleMoveInstruction *)instr);
             break;
         default:
             TR_ASSERT(0, "unexpected instruction kind");
             // fall thru
         case OMR::Instruction::IsNotExtended: {
-            printPrefix(pOutFile, instr);
-            trfprintf(pOutFile, "%-32s", fullOpCodeName(instr));
-            trfflush(pOutFile);
+            printPrefix(log, instr);
+            log->printf("%-32s", fullOpCodeName(instr));
+            log->flush();
         }
     }
 }
 
-void TR_Debug::dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGroup *group, int32_t numConditions,
+void TR_Debug::dumpDependencyGroup(OMR::Logger *log, TR::RegisterDependencyGroup *group, int32_t numConditions,
     char *prefix, bool omitNullDependencies)
 {
     int32_t i;
     bool foundDep = false;
 
-    trfprintf(pOutFile, "\n\t%s: ", prefix);
+    log->printf("\n\t%s: ", prefix);
     for (i = 0; i < numConditions; ++i) {
         TR::RegisterDependency *regDep = group->getRegisterDependency(i);
         TR::Register *virtReg = regDep->getRegister();
@@ -242,24 +240,24 @@ void TR_Debug::dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGro
 
         TR::RealRegister::RegNum r = group->getRegisterDependency(i)->getRealRegister();
 
-        trfprintf(pOutFile, " [%s : ", getName(virtReg));
+        log->printf(" [%s : ", getName(virtReg));
         if (regDep->isNoReg())
-            trfprintf(pOutFile, "NoReg]");
+            log->prints("NoReg]");
         else
-            trfprintf(pOutFile, "%s]", getName(_cg->machine()->getRealRegister(r)));
+            log->printf("%s]", getName(_cg->machine()->getRealRegister(r)));
 
         foundDep = true;
     }
 
     if (!foundDep)
-        trfprintf(pOutFile, " None");
+        log->prints(" None");
 }
 
-void TR_Debug::dumpDependencies(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::dumpDependencies(OMR::Logger *log, TR::Instruction *instr)
 {
     // If we are in instruction selection and dependency
     // information is requested, dump it.
-    if (pOutFile == NULL || _cg->getStackAtlas())
+    if (_cg->getStackAtlas())
         return;
 
     TR::RegisterDependencyConditions *deps = instr->getDependencyConditions();
@@ -267,104 +265,104 @@ void TR_Debug::dumpDependencies(TR::FILE *pOutFile, TR::Instruction *instr)
         return;
 
     if (deps->getNumPreConditions() > 0)
-        dumpDependencyGroup(pOutFile, deps->getPreConditions(), deps->getNumPreConditions(), " PRE", true);
+        dumpDependencyGroup(log, deps->getPreConditions(), deps->getNumPreConditions(), " PRE", true);
 
     if (deps->getNumPostConditions() > 0)
-        dumpDependencyGroup(pOutFile, deps->getPostConditions(), deps->getNumPostConditions(), "POST", true);
+        dumpDependencyGroup(log, deps->getPostConditions(), deps->getNumPostConditions(), "POST", true);
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMLabelInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMLabelInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
 
     TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
     if (instr->getOpCodeValue() == TR::InstOpCode::label) {
-        print(pOutFile, label);
-        trfprintf(pOutFile, ":");
+        print(log, label);
+        log->printc(':');
         if (label->isStartInternalControlFlow())
-            trfprintf(pOutFile, " (Start of internal control flow)");
+            log->prints(" (Start of internal control flow)");
         else if (label->isEndInternalControlFlow())
-            trfprintf(pOutFile, " (End of internal control flow)");
+            log->prints(" (End of internal control flow)");
     } else if (instr->getOpCodeValue() == TR::InstOpCode::b || instr->getOpCodeValue() == TR::InstOpCode::bl) {
-        trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-        print(pOutFile, label);
+        log->printf("%s\t", fullOpCodeName(instr));
+        print(log, label);
         if (snippet)
-            trfprintf(pOutFile, " (%s)", getName(snippet));
+            log->printf(" (%s)", getName(snippet));
     } else {
-        trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-        print(pOutFile, instr->getTarget1Register(), TR_WordReg);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSource1Register(), TR_WordReg);
-        trfprintf(pOutFile, ", ");
+        log->printf("%s\t", fullOpCodeName(instr));
+        print(log, instr->getTarget1Register(), TR_WordReg);
+        log->prints(", ");
+        print(log, instr->getSource1Register(), TR_WordReg);
+        log->prints(", ");
         uint8_t *instrPos = instr->getBinaryEncoding();
-        trfprintf(pOutFile, "#(");
-        print(pOutFile, label);
-        trfprintf(pOutFile, " - gr15)");
+        log->prints("#(");
+        print(log, label);
+        log->prints(" - gr15)");
     }
-    printInstructionComment(pOutFile, 1, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 1, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMVirtualGuardNOPInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMVirtualGuardNOPInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s Site:" POINTER_PRINTF_FORMAT ", ", getOpCodeName(&instr->getOpCode()), instr->getSite());
-    print(pOutFile, instr->getLabelSymbol());
-    printInstructionComment(pOutFile, 1, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s Site:" POINTER_PRINTF_FORMAT ", ", getOpCodeName(&instr->getOpCode()), instr->getSite());
+    print(log, instr->getLabelSymbol());
+    printInstructionComment(log, 1, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 #endif
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMAdminInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMAdminInstruction *instr)
 {
     // Omit admin instructions from post-binary dumps unless they mark basic block boundaries.
     if (instr->getBinaryEncoding() && instr->getNode()->getOpCodeValue() != TR::BBStart
         && instr->getNode()->getOpCodeValue() != TR::BBEnd)
         return;
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
     if (instr->getOpCodeValue() == TR::InstOpCode::fence && instr->getFenceNode()) {
         TR::Node *fenceNode = instr->getFenceNode();
         if (fenceNode->getRelocationType() == TR_AbsoluteAddress)
-            trfprintf(pOutFile, " Absolute [");
+            log->prints(" Absolute [");
         else if (fenceNode->getRelocationType() == TR_ExternalAbsoluteAddress)
-            trfprintf(pOutFile, " External Absolute [");
+            log->prints(" External Absolute [");
         else
-            trfprintf(pOutFile, " Relative [");
+            log->prints(" Relative [");
         for (uint32_t i = 0; i < fenceNode->getNumRelocations(); i++) {
-            trfprintf(pOutFile, " " POINTER_PRINTF_FORMAT, fenceNode->getRelocationDestination(i));
+            log->printf(" " POINTER_PRINTF_FORMAT, fenceNode->getRelocationDestination(i));
         }
-        trfprintf(pOutFile, " ]");
+        log->prints(" ]");
     } else {
-        trfprintf(pOutFile, "\t\t");
+        log->prints("\t\t");
     }
 
     TR::Node *node = instr->getNode();
     if (node && node->getOpCodeValue() == TR::BBStart)
-        trfprintf(pOutFile, " (BBStart (block_%d))", node->getBlock()->getNumber());
+        log->printf(" (BBStart (block_%d))", node->getBlock()->getNumber());
     else if (node && node->getOpCodeValue() == TR::BBEnd)
-        trfprintf(pOutFile, " (BBEnd (block_%d))", node->getBlock()->getNumber());
+        log->printf(" (BBEnd (block_%d))", node->getBlock()->getNumber());
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMImmInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t0x%08x", fullOpCodeName(instr), instr->getSourceImmediate());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s\t0x%08x", fullOpCodeName(instr), instr->getSourceImmediate());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMImmSymInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMImmSymInstruction *instr)
 {
     uint8_t *bufferPos = instr->getBinaryEncoding();
     int32_t imm = instr->getSourceImmediate();
@@ -380,39 +378,39 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMImmSymInstruction *instr)
     if (bufferPos != NULL && longJump) {
         if (*(int32_t *)bufferPos == 0xe1a0e00f) {
             const char *name = getName(symRef);
-            printPrefix(pOutFile, NULL, bufferPos, 4);
-            trfprintf(pOutFile, "mov\tgr14, gr15");
-            printPrefix(pOutFile, NULL, bufferPos + 4, 4);
-            trfprintf(pOutFile, "ldr\tgr15, [gr15, #-4]");
-            printPrefix(pOutFile, NULL, bufferPos + 8, 4);
+            printPrefix(log, NULL, bufferPos, 4);
+            log->prints("mov\tgr14, gr15");
+            printPrefix(log, NULL, bufferPos + 4, 4);
+            log->prints("ldr\tgr15, [gr15, #-4]");
+            printPrefix(log, NULL, bufferPos + 8, 4);
             if (name)
-                trfprintf(pOutFile, "DCD\t0x%x\t; %s (" POINTER_PRINTF_FORMAT ")", imm, name);
+                log->printf("DCD\t0x%x\t; %s (" POINTER_PRINTF_FORMAT ")", imm, name);
             else
-                trfprintf(pOutFile, "DCD\t0x%x", imm);
+                log->printf("DCD\t0x%x", imm);
             return;
         } else {
-            printARMHelperBranch(instr->getSymbolReference(), bufferPos, pOutFile, fullOpCodeName(instr));
+            printARMHelperBranch(log, instr->getSymbolReference(), bufferPos, fullOpCodeName(instr));
         }
     } else {
         const char *name = getName(symRef);
-        printPrefix(pOutFile, instr);
+        printPrefix(log, instr);
         if (name) {
-            trfprintf(pOutFile, "%s\t%-24s; ", fullOpCodeName(instr), name);
+            log->printf("%s\t%-24s; ", fullOpCodeName(instr), name);
 
             TR::Snippet *snippet = sym->getLabelSymbol() ? sym->getLabelSymbol()->getSnippet() : NULL;
             if (snippet)
-                trfprintf(pOutFile, "(%s)", getName(snippet));
+                log->printf("(%s)", getName(snippet));
             else
-                trfprintf(pOutFile, "(" POINTER_PRINTF_FORMAT ")", imm);
+                log->printf("(" POINTER_PRINTF_FORMAT ")", imm);
         } else {
-            trfprintf(pOutFile, "%s\t" POINTER_PRINTF_FORMAT, fullOpCodeName(instr), imm);
+            log->printf("%s\t" POINTER_PRINTF_FORMAT, fullOpCodeName(instr), imm);
         }
     }
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMTrg1Src2Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMTrg1Src2Instruction *instr)
 {
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
     TR_RegisterSizes targetSize = instr->doubleFPOp() ? TR_DoubleReg : TR_WordReg;
@@ -424,252 +422,252 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMTrg1Src2Instruction *instr)
     TR_RegisterSizes source2Size = TR_WordReg;
 #endif
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
     if (instr->getOpCodeValue() == TR::InstOpCode::fmrs) {
         if (instr->getTarget1Register()) {
-            print(pOutFile, instr->getTarget1Register(), targetSize);
-            trfprintf(pOutFile, ", ");
+            print(log, instr->getTarget1Register(), targetSize);
+            log->prints(", ");
         }
         if (instr->getSource1Register()) {
-            print(pOutFile, instr->getSource1Register(), source1Size);
+            print(log, instr->getSource1Register(), source1Size);
         }
     } else if (instr->getOpCodeValue() == TR::InstOpCode::fmsr) {
         if (instr->getSource1Register()) {
-            print(pOutFile, instr->getSource1Register(), source1Size);
-            trfprintf(pOutFile, ", ");
+            print(log, instr->getSource1Register(), source1Size);
+            log->prints(", ");
         }
         if (instr->getTarget1Register()) {
-            print(pOutFile, instr->getTarget1Register(), targetSize);
+            print(log, instr->getTarget1Register(), targetSize);
         }
     } else if (instr->getOpCodeValue() == TR::InstOpCode::fmdrr) {
-        print(pOutFile, instr->getSource2Operand(), TR_DoubleReg);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getTarget1Register(), TR_WordReg);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSource1Register(), TR_WordReg);
+        print(log, instr->getSource2Operand(), TR_DoubleReg);
+        log->prints(", ");
+        print(log, instr->getTarget1Register(), TR_WordReg);
+        log->prints(", ");
+        print(log, instr->getSource1Register(), TR_WordReg);
     } else if (instr->getOpCodeValue() == TR::InstOpCode::fcvtds || instr->getOpCodeValue() == TR::InstOpCode::fsitod
         || instr->getOpCodeValue() == TR::InstOpCode::fuitod) {
-        print(pOutFile, instr->getTarget1Register(), TR_DoubleReg);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSource2Operand(), TR_WordReg);
+        print(log, instr->getTarget1Register(), TR_DoubleReg);
+        log->prints(", ");
+        print(log, instr->getSource2Operand(), TR_WordReg);
     } else if (instr->getOpCodeValue() == TR::InstOpCode::fcvtsd || instr->getOpCodeValue() == TR::InstOpCode::ftosizd
         || instr->getOpCodeValue() == TR::InstOpCode::ftouizd) {
-        print(pOutFile, instr->getTarget1Register(), TR_WordReg);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSource2Operand(), TR_DoubleReg);
+        print(log, instr->getTarget1Register(), TR_WordReg);
+        log->prints(", ");
+        print(log, instr->getSource2Operand(), TR_DoubleReg);
     } else if (instr->getOpCodeValue() == TR::InstOpCode::fcmpzd || instr->getOpCodeValue() == TR::InstOpCode::fcmpzs) {
-        print(pOutFile, instr->getTarget1Register(),
+        print(log, instr->getTarget1Register(),
             (instr->getOpCodeValue() == TR::InstOpCode::fcmpzd) ? TR_DoubleReg : TR_WordReg);
 #if defined(__ARM_ARCH_7A__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
-        trfprintf(pOutFile, ", #0.0");
+        log->prints(", #0.0");
 #endif
     } else
 #endif
     {
         if (instr->getTarget1Register()) {
             // TR_RegisterSizes targetSize = TR_WordReg;
-            print(pOutFile, instr->getTarget1Register(), targetSize);
-            trfprintf(pOutFile, ", ");
+            print(log, instr->getTarget1Register(), targetSize);
+            log->prints(", ");
         }
         // TR_RegisterSizes source1Size = TR_WordReg;
         if (instr->getSource1Register() && instr->getOpCodeValue() != TR::InstOpCode::swp) {
-            print(pOutFile, instr->getSource1Register(), source1Size);
-            trfprintf(pOutFile, ", ");
+            print(log, instr->getSource1Register(), source1Size);
+            log->prints(", ");
         }
         // TR_RegisterSizes source2Size = TR_WordReg;
-        print(pOutFile, instr->getSource2Operand(), source2Size);
+        print(log, instr->getSource2Operand(), source2Size);
         if (instr->getSource1Register() && instr->getOpCodeValue() == TR::InstOpCode::swp) {
-            trfprintf(pOutFile, ", [");
-            print(pOutFile, instr->getSource1Register(), source1Size);
-            trfprintf(pOutFile, "]");
+            log->prints(", [");
+            print(log, instr->getSource1Register(), source1Size);
+            log->printc(']');
         }
     }
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMTrg2Src1Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMTrg2Src1Instruction *instr)
 {
     // fmrrd
     TR_RegisterSizes size = TR_WordReg;
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
     if (instr->getTarget1Register()) {
-        print(pOutFile, instr->getTarget1Register(), size);
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTarget1Register(), size);
+        log->prints(", ");
     }
     if (instr->getTarget2Register()) {
-        print(pOutFile, instr->getTarget2Register(), size);
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTarget2Register(), size);
+        log->prints(", ");
     }
     if (instr->getSource1Register()) {
-        print(pOutFile, instr->getSource1Register(), TR_DoubleReg);
+        print(log, instr->getSource1Register(), TR_DoubleReg);
     }
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 #endif
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMMulInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMMulInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
 
-    print(pOutFile, instr->getTargetLoRegister());
+    print(log, instr->getTargetLoRegister());
     if (instr->getTargetHiRegister()) // if a mull instruction
     {
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getTargetHiRegister());
+        log->prints(", ");
+        print(log, instr->getTargetHiRegister());
     }
-    trfprintf(pOutFile, ", ");
+    log->prints(", ");
 
-    print(pOutFile, instr->getSource1Register());
-    trfprintf(pOutFile, ", ");
+    print(log, instr->getSource1Register());
+    log->prints(", ");
 
-    print(pOutFile, instr->getSource2Register());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    print(log, instr->getSource2Register());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMMemSrc1Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMMemSrc1Instruction *instr)
 {
     if (instr->getBinaryEncoding() && instr->getMemoryReference()->hasDelayedOffset()
         && !instr->getMemoryReference()->getUnresolvedSnippet()) {
         TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
         int32_t offset = instr->getMemoryReference()->getOffset();
         if (op == TR::InstOpCode::strh && !constantIsUnsignedImmed8(offset)) {
-            printARMDelayedOffsetInstructions(pOutFile, instr);
+            printARMDelayedOffsetInstructions(log, instr);
             return;
         } else if (!constantIsImmed12(offset)) {
-            printARMDelayedOffsetInstructions(pOutFile, instr);
+            printARMDelayedOffsetInstructions(log, instr);
             return;
         }
         // deliberate fall through if none of the above cases are taken.
     }
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-    print(pOutFile, instr->getMemoryReference());
-    trfprintf(pOutFile, ", ");
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
+    print(log, instr->getMemoryReference());
+    log->prints(", ");
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
-    print(pOutFile, instr->getSourceRegister(), instr->doubleFPOp() ? TR_DoubleReg : TR_WordReg);
+    print(log, instr->getSourceRegister(), instr->doubleFPOp() ? TR_DoubleReg : TR_WordReg);
 #else
-    print(pOutFile, instr->getSourceRegister());
+    print(log, instr->getSourceRegister());
 #endif
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMTrg1Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMTrg1Instruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-    print(pOutFile, instr->getTargetRegister());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
+    print(log, instr->getTargetRegister());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMMemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMMemInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-    print(pOutFile, instr->getMemoryReference());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
+    print(log, instr->getMemoryReference());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMTrg1MemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMTrg1MemInstruction *instr)
 {
     if (instr->getBinaryEncoding() && instr->getMemoryReference()->hasDelayedOffset()
         && !instr->getMemoryReference()->getUnresolvedSnippet()) {
         TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
         int32_t offset = instr->getMemoryReference()->getOffset();
         if (op == TR::InstOpCode::add && instr->getMemoryReference()->getIndexRegister()) {
-            printARMDelayedOffsetInstructions(pOutFile, instr);
+            printARMDelayedOffsetInstructions(log, instr);
             return;
         } else if ((op == TR::InstOpCode::ldrsb || op == TR::InstOpCode::ldrh || op == TR::InstOpCode::ldrsh)
             && !constantIsUnsignedImmed8(offset)) {
-            printARMDelayedOffsetInstructions(pOutFile, instr);
+            printARMDelayedOffsetInstructions(log, instr);
             return;
         } else if (!constantIsImmed12(offset)) {
-            printARMDelayedOffsetInstructions(pOutFile, instr);
+            printARMDelayedOffsetInstructions(log, instr);
             return;
         }
         // deliberate fall through if none of the above cases are taken.
     }
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
-    print(pOutFile, instr->getTargetRegister(), instr->doubleFPOp() ? TR_DoubleReg : TR_WordReg);
+    print(log, instr->getTargetRegister(), instr->doubleFPOp() ? TR_DoubleReg : TR_WordReg);
 #else
-    print(pOutFile, instr->getTargetRegister());
+    print(log, instr->getTargetRegister());
 #endif
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getMemoryReference());
+    log->prints(", ");
+    print(log, instr->getMemoryReference());
     TR::Symbol *symbol = instr->getMemoryReference()->getSymbolReference().getSymbol();
     if (symbol && symbol->isSpillTempAuto()) {
-        trfprintf(pOutFile, "\t; spilled for %s", getName(instr->getNode()->getOpCode()));
+        log->printf("\t; spilled for %s", getName(instr->getNode()->getOpCode()));
     }
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMTrg1MemSrc1Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMTrg1MemSrc1Instruction *instr)
 {
     // strex
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-    print(pOutFile, instr->getTargetRegister());
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getSourceRegister());
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getMemoryReference());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
+    print(log, instr->getTargetRegister());
+    log->prints(", ");
+    print(log, instr->getSourceRegister());
+    log->prints(", ");
+    print(log, instr->getMemoryReference());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMControlFlowInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMControlFlowInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
 
     int i;
     int numTargets = instr->getNumTargets();
     int numSources = instr->getNumSources();
     for (i = 0; i < numTargets; i++) {
-        print(pOutFile, instr->getTargetRegister(i));
+        print(log, instr->getTargetRegister(i));
         if (i != numTargets + numSources - 1) {
-            trfprintf(pOutFile, ", ");
+            log->prints(", ");
         }
     }
     for (i = 0; i < numSources; i++) {
-        print(pOutFile, instr->getSourceRegister(i));
+        print(log, instr->getSourceRegister(i));
         if (i != numSources - 1) {
-            trfprintf(pOutFile, ", ");
+            log->prints(", ");
         }
     }
     if (instr->getOpCode2Value() != TR::InstOpCode::bad) {
-        trfprintf(pOutFile, ", %s", getOpCodeName(&instr->getOpCode2()));
+        log->printf(", %s", getOpCodeName(&instr->getOpCode2()));
     }
     if (instr->getLabelSymbol()) {
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getLabelSymbol());
+        log->prints(", ");
+        print(log, instr->getLabelSymbol());
     }
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMMultipleMoveInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ARMMultipleMoveInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", fullOpCodeName(instr));
 
-    print(pOutFile, instr->getMemoryBaseRegister());
-    trfprintf(pOutFile, "%s, {", instr->isWriteBack() ? "!" : "");
+    print(log, instr->getMemoryBaseRegister());
+    log->printf("%s, {", instr->isWriteBack() ? "!" : "");
 
     TR::Machine *machine = _cg->machine();
 
@@ -679,10 +677,10 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMMultipleMoveInstruction *instr)
             if (regList & 1) {
                 TR::RealRegister::RegNum r;
                 r = (TR::RealRegister::RegNum)((int)TR::RealRegister::FirstGPR + i);
-                print(pOutFile, machine->getRealRegister(r));
+                print(log, machine->getRealRegister(r));
                 regList >>= 1;
                 if (regList && i != 15)
-                    trfprintf(pOutFile, ",");
+                    log->printc(',');
             } else
                 regList >>= 1;
         }
@@ -692,18 +690,18 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMMultipleMoveInstruction *instr)
         TR_RegisterSizes size = instr->doubleFPOp() ? TR_DoubleReg : TR_WordReg;
         for (int i = 0; i < nreg; i++) {
             TR::RealRegister::RegNum r = (TR::RealRegister::RegNum)((int)TR::RealRegister::FirstFPR + startReg + i);
-            print(pOutFile, machine->getRealRegister(r), size);
+            print(log, machine->getRealRegister(r), size);
             if (i != (nreg - 1))
-                trfprintf(pOutFile, ",");
+                log->printc(',');
         }
     }
-    trfprintf(pOutFile, "}");
+    log->printc('}');
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printARMHelperBranch(TR::SymbolReference *symRef, uint8_t *bufferPos, TR::FILE *pOutFile,
+void TR_Debug::printARMHelperBranch(OMR::Logger *log, TR::SymbolReference *symRef, uint8_t *bufferPos,
     const char *opcodeName)
 {
     TR::MethodSymbol *methodSym = symRef->getSymbol()->castToMethodSymbol();
@@ -726,115 +724,115 @@ void TR_Debug::printARMHelperBranch(TR::SymbolReference *symRef, uint8_t *buffer
     }
 
     const char *name = getName(symRef);
-    printPrefix(pOutFile, NULL, bufferPos, 4);
+    printPrefix(log, NULL, bufferPos, 4);
     if (name)
-        trfprintf(pOutFile, "%s\t%s\t;%s (" POINTER_PRINTF_FORMAT ")", opcodeName, name, info, target);
+        log->printf("%s\t%s\t;%s (" POINTER_PRINTF_FORMAT ")", opcodeName, name, info, target);
     else
-        trfprintf(pOutFile, "%s\t" POINTER_PRINTF_FORMAT "\t\t;%s", opcodeName, target, info);
+        log->printf("%s\t" POINTER_PRINTF_FORMAT "\t\t;%s", opcodeName, target, info);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::MemoryReference *mr)
+void TR_Debug::print(OMR::Logger *log, TR::MemoryReference *mr)
 {
-    trfprintf(pOutFile, "[");
+    log->printc('[');
     if (mr->getBaseRegister() != NULL) {
-        print(pOutFile, mr->getBaseRegister());
+        print(log, mr->getBaseRegister());
         if (mr->isPostIndexed())
-            trfprintf(pOutFile, "]");
-        trfprintf(pOutFile, ", ");
+            log->printc(']');
+        log->prints(", ");
     }
     if (mr->getIndexRegister() != NULL) {
-        print(pOutFile, mr->getIndexRegister());
+        print(log, mr->getIndexRegister());
         if (mr->getScale() != 0) {
             TR_ASSERT(mr->getScale() == 4, "strides other than 4 unimplemented");
-            trfprintf(pOutFile, " LSL #2");
+            log->prints(" LSL #2");
         }
     } else {
         if (mr->getSymbolReference().getSymbol() != NULL) {
-            print(pOutFile, &mr->getSymbolReference());
+            print(log, &mr->getSymbolReference());
         } else {
-            trfprintf(pOutFile, "%+d", mr->getOffset());
+            log->printf("%+d", mr->getOffset());
         }
     }
     if (!mr->isPostIndexed()) {
-        trfprintf(pOutFile, "]");
+        log->printc(']');
     }
     if (mr->isImmediatePreIndexed()) {
-        trfprintf(pOutFile, "!");
+        log->printc('!');
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_ARMOperand2 *op, TR_RegisterSizes size)
+void TR_Debug::print(OMR::Logger *log, TR_ARMOperand2 *op, TR_RegisterSizes size)
 {
     switch (op->_opType) {
         case ARMOp2RegLSLImmed:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " LSL #%d", op->_shiftOrImmed);
+            print(log, op->_baseRegister, size);
+            log->printf(" LSL #%d", op->_shiftOrImmed);
             break;
         case ARMOp2RegLSRImmed:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " LSR #%d", op->_shiftOrImmed);
+            print(log, op->_baseRegister, size);
+            log->printf(" LSR #%d", op->_shiftOrImmed);
             break;
         case ARMOp2RegASRImmed:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " ASR #%d", op->_shiftOrImmed);
+            print(log, op->_baseRegister, size);
+            log->printf(" ASR #%d", op->_shiftOrImmed);
             break;
         case ARMOp2RegRORImmed:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " ROR #%d", op->_shiftOrImmed);
+            print(log, op->_baseRegister, size);
+            log->printf(" ROR #%d", op->_shiftOrImmed);
             break;
         case ARMOp2Reg:
-            print(pOutFile, op->_baseRegister, size);
+            print(log, op->_baseRegister, size);
             break;
         case ARMOp2RegRRX:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " RRX");
+            print(log, op->_baseRegister, size);
+            log->prints(" RRX");
             break;
         case ARMOp2RegLSLReg:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " LSL ");
-            print(pOutFile, op->_shiftRegister, size);
+            print(log, op->_baseRegister, size);
+            log->prints(" LSL ");
+            print(log, op->_shiftRegister, size);
             break;
         case ARMOp2RegLSRReg:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " LSR ");
-            print(pOutFile, op->_shiftRegister, size);
+            print(log, op->_baseRegister, size);
+            log->prints(" LSR ");
+            print(log, op->_shiftRegister, size);
             break;
         case ARMOp2RegASRReg:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " ASR ");
-            print(pOutFile, op->_shiftRegister, size);
+            print(log, op->_baseRegister, size);
+            log->prints(" ASR ");
+            print(log, op->_shiftRegister, size);
             break;
         case ARMOp2RegRORReg:
-            print(pOutFile, op->_baseRegister, size);
-            trfprintf(pOutFile, " ROR ");
-            print(pOutFile, op->_shiftRegister, size);
+            print(log, op->_baseRegister, size);
+            log->prints(" ROR ");
+            print(log, op->_shiftRegister, size);
             break;
         case ARMOp2Immed8r:
             if (op->_immedShift)
-                trfprintf(pOutFile, "#0x%08x (0x%x << %d)", op->_shiftOrImmed << op->_immedShift, op->_shiftOrImmed,
+                log->printf("#0x%08x (0x%x << %d)", op->_shiftOrImmed << op->_immedShift, op->_shiftOrImmed,
                     op->_immedShift);
             else
-                trfprintf(pOutFile, "#0x%08x", op->_shiftOrImmed);
+                log->printf("#0x%08x", op->_shiftOrImmed);
             break;
     }
 }
 
-void TR_Debug::printARMGCRegisterMap(TR::FILE *pOutFile, TR::GCRegisterMap *map)
+void TR_Debug::printARMGCRegisterMap(OMR::Logger *log, TR::GCRegisterMap *map)
 {
     TR::Machine *machine = _cg->machine();
-    trfprintf(pOutFile, "    registers: {");
+    log->prints("    registers: {");
     for (int i = 15; i >= 0; i--) {
         if (map->getMap() & (1 << i))
-            trfprintf(pOutFile, "%s ",
+            log->printf("%s ",
                 getName(machine->getRealRegister((TR::RealRegister::RegNum)(i + TR::RealRegister::FirstGPR))));
     }
 
-    trfprintf(pOutFile, "}\n");
+    log->prints("}\n");
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RealRegister *reg, TR_RegisterSizes size)
+void TR_Debug::print(OMR::Logger *log, TR::RealRegister *reg, TR_RegisterSizes size)
 {
-    trfprintf(pOutFile, "%s", getName(reg, size));
+    log->prints(getName(reg, size));
 }
 
 const char *TR_Debug::getName(TR::RealRegister *reg, TR_RegisterSizes size)
@@ -1006,52 +1004,49 @@ const char *TR_Debug::getNamea(TR::Snippet *snippet)
     }
 }
 
-void TR_Debug::printa(TR::FILE *pOutFile, TR::Snippet *snippet)
+void TR_Debug::printa(OMR::Logger *log, TR::Snippet *snippet)
 {
-    if (pOutFile == NULL)
-        return;
-
     switch (snippet->getKind()) {
         case TR::Snippet::IsCall:
-            print(pOutFile, (TR::ARMCallSnippet *)snippet);
+            print(log, (TR::ARMCallSnippet *)snippet);
             break;
         case TR::Snippet::IsUnresolvedCall:
-            print(pOutFile, (TR::ARMUnresolvedCallSnippet *)snippet);
+            print(log, (TR::ARMUnresolvedCallSnippet *)snippet);
             break;
         case TR::Snippet::IsVirtualUnresolved:
-            print(pOutFile, (TR::ARMVirtualUnresolvedSnippet *)snippet);
+            print(log, (TR::ARMVirtualUnresolvedSnippet *)snippet);
             break;
         case TR::Snippet::IsInterfaceCall:
-            print(pOutFile, (TR::ARMInterfaceCallSnippet *)snippet);
+            print(log, (TR::ARMInterfaceCallSnippet *)snippet);
             break;
         case TR::Snippet::IsStackCheckFailure:
-            print(pOutFile, (TR::ARMStackCheckFailureSnippet *)snippet);
+            print(log, (TR::ARMStackCheckFailureSnippet *)snippet);
             break;
         case TR::Snippet::IsUnresolvedData:
-            print(pOutFile, (TR::UnresolvedDataSnippet *)snippet);
+            print(log, (TR::UnresolvedDataSnippet *)snippet);
             break;
         case TR::Snippet::IsRecompilation:
-            print(pOutFile, (TR::ARMRecompilationSnippet *)snippet);
+            print(log, (TR::ARMRecompilationSnippet *)snippet);
             break;
 #ifdef J9_PROJECT_SPECIFIC
         case TR::Snippet::IsHelperCall:
-            print(pOutFile, (TR::ARMHelperCallSnippet *)snippet);
+            print(log, (TR::ARMHelperCallSnippet *)snippet);
             break;
 #endif
         case TR::Snippet::IsMonitorEnter:
-            // print(pOutFile, (TR::ARMMonitorEnterSnippet *)snippet);
-            trfprintf(pOutFile, "** MonitorEnterSnippet **\n");
+            // print(log, (TR::ARMMonitorEnterSnippet *)snippet);
+            log->prints("** MonitorEnterSnippet **\n");
             break;
         case TR::Snippet::IsMonitorExit:
-            // print(pOutFile, (TR::ARMMonitorExitSnippet *)snippet);
-            trfprintf(pOutFile, "** MonitorExitSnippet **\n");
+            // print(log, (TR::ARMMonitorExitSnippet *)snippet);
+            log->prints("** MonitorExitSnippet **\n");
             break;
         default:
             TR_ASSERT(0, "unexpected snippet kind");
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMCallSnippet *snippet)
 {
 #if J9_PROJECT_SPECIFIC
     TR::Node *callNode = snippet->getNode();
@@ -1061,7 +1056,7 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
     TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
 
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(methodSymRef));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(methodSymRef));
 
     TR::Machine *machine = _cg->machine();
     TR::Linkage *linkage = _cg->getLinkage(methodSymbol->getLinkageConvention());
@@ -1085,9 +1080,9 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
                 if (!linkageProperties.getRightToLeft())
                     offset -= 4;
                 if (numIntArgs < linkageProperties.getNumIntArgRegs()) {
-                    printPrefix(pOutFile, NULL, bufferPos, 4);
-                    trfprintf(pOutFile, "str\t[gr7, %+d], ", offset);
-                    print(pOutFile, machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(numIntArgs)));
+                    printPrefix(log, NULL, bufferPos, 4);
+                    log->printf("str\t[gr7, %+d], ", offset);
+                    print(log, machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(numIntArgs)));
                     bufferPos += 4;
                 }
                 numIntArgs++;
@@ -1098,14 +1093,14 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
                 if (!linkageProperties.getRightToLeft())
                     offset -= 8;
                 if (numIntArgs < linkageProperties.getNumIntArgRegs()) {
-                    printPrefix(pOutFile, NULL, bufferPos, 4);
-                    trfprintf(pOutFile, "str\t[gr7, %+d], ", offset);
-                    print(pOutFile, machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(numIntArgs)));
+                    printPrefix(log, NULL, bufferPos, 4);
+                    log->printf("str\t[gr7, %+d], ", offset);
+                    print(log, machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(numIntArgs)));
                     bufferPos += 4;
                     if (numIntArgs < linkageProperties.getNumIntArgRegs() - 1) {
-                        printPrefix(pOutFile, NULL, bufferPos, 4);
-                        trfprintf(pOutFile, "str\t[gr7, %+d], ", offset + 4);
-                        print(pOutFile,
+                        printPrefix(log, NULL, bufferPos, 4);
+                        log->printf("str\t[gr7, %+d], ", offset + 4);
+                        print(log,
                             machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(numIntArgs + 1)));
                         bufferPos += 4;
                     }
@@ -1121,9 +1116,9 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
                offset -= 4;
             if (numFloatArgs < linkageProperties.getNumFloatArgRegs())
                {
-               printPrefix(pOutFile, NULL, bufferPos, 4);
-               trfprintf(pOutFile, "stfs\t[gr7, %+d], ", offset);
-               print(pOutFile, machine->getRealRegister(linkageProperties.getFloatArgumentRegister(numFloatArgs)));
+               printPrefix(log, NULL, bufferPos, 4);
+               log->printf("stfs\t[gr7, %+d], ", offset);
+               print(log, machine->getRealRegister(linkageProperties.getFloatArgumentRegister(numFloatArgs)));
                bufferPos += 4;
                }
             numFloatArgs++;
@@ -1135,9 +1130,9 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
                offset -= 8;
             if (numFloatArgs < linkageProperties.getNumFloatArgRegs())
                {
-               printPrefix(pOutFile, NULL, bufferPos, 4);
-               trfprintf(pOutFile, "stfd\t[gr7, %+d], ", offset);
-               print(pOutFile, machine->getRealRegister(linkageProperties.getFloatArgumentRegister(numFloatArgs)));
+               printPrefix(log, NULL, bufferPos, 4);
+               log->printf("stfd\t[gr7, %+d], ", offset);
+               print(log, machine->getRealRegister(linkageProperties.getFloatArgumentRegister(numFloatArgs)));
                bufferPos += 4;
                }
             numFloatArgs++;
@@ -1148,26 +1143,26 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMCallSnippet *snippet)
         }
     }
 
-    printARMHelperBranch(glueRef, bufferPos, pOutFile);
+    printARMHelperBranch(log, glueRef, bufferPos);
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; return address", snippet->getCallRA());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; return address", snippet->getCallRA());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
+    printPrefix(log, NULL, bufferPos, 4);
     if (methodSymRef->isUnresolved())
-        trfprintf(pOutFile, "dd\t0x00000000\t\t; method address (unresolved)");
+        log->prints("dd\t0x00000000\t\t; method address (unresolved)");
     else
-        trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; method address (interpreted)");
+        log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; method address (interpreted)");
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; lock word for compilation");
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; lock word for compilation");
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMUnresolvedCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMUnresolvedCallSnippet *snippet)
 {
 #ifdef J9_PROJECT_SPECIFIC
     TR::SymbolReference *methodSymRef = snippet->getNode()->getSymbolReference();
@@ -1195,45 +1190,44 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMUnresolvedCallSnippet *snippet)
             break;
     }
 
-    print(pOutFile, (TR::ARMCallSnippet *)snippet);
+    print(log, (TR::ARMCallSnippet *)snippet);
     bufferPos += (snippet->getLength(0) - 12);
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; offset|flag|cpIndex", (helperLookupOffset << 24) | methodSymRef->getCPIndex());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; offset|flag|cpIndex", (helperLookupOffset << 24) | methodSymRef->getCPIndex());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; cpAddress", getOwningMethod(methodSymRef)->constantPool());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; cpAddress", getOwningMethod(methodSymRef)->constantPool());
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMVirtualUnresolvedSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMVirtualUnresolvedSnippet *snippet)
 {
 #ifdef J9_PROJECT_SPECIFIC
     TR::SymbolReference *callSymRef = snippet->getNode()->getSymbolReference();
 
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(callSymRef));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(callSymRef));
 
     TR::SymbolReference *glueRef = _cg->getSymRef(TR_ARMvirtualUnresolvedHelper);
-    printARMHelperBranch(glueRef, bufferPos, pOutFile);
+    printARMHelperBranch(log, glueRef, bufferPos);
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; return address",
-        snippet->getReturnLabel()->getCodeLocation());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; return address", snippet->getReturnLabel()->getCodeLocation());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; cpAddress", getOwningMethod(callSymRef)->constantPool());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; cpAddress", getOwningMethod(callSymRef)->constantPool());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; cpIndex", callSymRef->getCPIndex());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; cpIndex", callSymRef->getCPIndex());
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMInterfaceCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMInterfaceCallSnippet *snippet)
 {
 #ifdef J9_PROJECT_SPECIFIC
     TR::SymbolReference *callSymRef = snippet->getNode()->getSymbolReference();
@@ -1241,91 +1235,91 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMInterfaceCallSnippet *snippet)
 
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
 
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(callSymRef));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(callSymRef));
 
-    printARMHelperBranch(glueRef, bufferPos, pOutFile);
+    printARMHelperBranch(log, glueRef, bufferPos);
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; return address", (uintptr_t)snippet->getReturnLabel()->getCodeLocation());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; return address", (uintptr_t)snippet->getReturnLabel()->getCodeLocation());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; cpAddress", (uintptr_t)getOwningMethod(callSymRef)->constantPool());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; cpAddress", (uintptr_t)getOwningMethod(callSymRef)->constantPool());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; cpIndex", callSymRef->getCPIndex());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; cpIndex", callSymRef->getCPIndex());
     bufferPos += 4;
 
     const char *comment[] = { "resolved interface class", "resolved method index" };
 
     for (int i = 0; i < 2; i++) {
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "dd\t0x%08x\t\t; %s", 0, comment[i]);
+        printPrefix(log, NULL, bufferPos, 4);
+        log->printf("dd\t0x%08x\t\t; %s", 0, comment[i]);
         bufferPos += 4;
     }
 #if 0
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; resolved interface class", 0);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; resolved interface class", 0);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; resolved method index", 0);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; resolved method index", 0);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; 1st cached class", -1);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; 1st cached class", -1);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; 1st cached target", 0);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; 1st cached target", 0);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; 2nd cached class", -1);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; 2nd cached class", -1);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; 2nd cached target", 0);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; 2nd cached target", 0);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; 1st lock word", 0);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; 1st lock word", 0);
    bufferPos += 4;
 
-   printPrefix(pOutFile, NULL, bufferPos, 4);
-   trfprintf(pOutFile, "dd\t0x%08x\t\t; 2nd lock word", 0);
+   printPrefix(log, NULL, bufferPos, 4);
+   log->printf("dd\t0x%08x\t\t; 2nd lock word", 0);
 #endif
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMHelperCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMHelperCallSnippet *snippet)
 {
 #ifdef J9_PROJECT_SPECIFIC
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 
     TR::LabelSymbol *restartLabel = snippet->getRestartLabel();
     // int32_t          distance  = target - (uintptr_t)bufferPos;
 
-    printARMHelperBranch(snippet->getDestination(), bufferPos, pOutFile);
+    printARMHelperBranch(log, snippet->getDestination(), bufferPos);
     bufferPos += 4;
 
     if (restartLabel) {
-        printPrefix(pOutFile, NULL, bufferPos, 4);
+        printPrefix(log, NULL, bufferPos, 4);
         // int32_t distance = *((int32_t *) bufferPos) & 0x00ffffff;
         // distance = (distance << 8) >> 8;   // sign extend
-        trfprintf(pOutFile, "b \t" POINTER_PRINTF_FORMAT "\t\t; Return to %s",
-            (intptr_t)(restartLabel->getCodeLocation()), getName(restartLabel));
+        log->printf("b \t" POINTER_PRINTF_FORMAT "\t\t; Return to %s", (intptr_t)(restartLabel->getCodeLocation()),
+            getName(restartLabel));
     }
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMStackCheckFailureSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMStackCheckFailureSnippet *snippet)
 {
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 
     TR::ResolvedMethodSymbol *bodySymbol = _comp->getJittedMethodSymbol();
     TR::SymbolReference *sofRef = _comp->getSymRefTab()->element(TR_stackOverflow);
@@ -1341,111 +1335,111 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARMStackCheckFailureSnippet *snippe
 
     if (constantIsImmed8r(frameSize, &base, &rotate)) {
         // mov R11, frameSize
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "mov\tgr11, #0x%08x", frameSize);
+        printPrefix(log, NULL, bufferPos, 4);
+        log->printf("mov\tgr11, #0x%08x", frameSize);
         bufferPos += 4;
     } else if (!constantIsImmed8r(frameSize - offset, &base, &rotate) && constantIsImmed8r(-offset, &base, &rotate)) {
         // sub R11, R11, -offset
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "sub\tgr11, gr11, #0x%08x", -offset);
+        printPrefix(log, NULL, bufferPos, 4);
+        log->printf("sub\tgr11, gr11, #0x%08x", -offset);
         bufferPos += 4;
     } else {
         // R11 <- frameSize
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "mov\tgr11, #0x%08x", frameSize & 0xFF);
+        printPrefix(log, NULL, bufferPos, 4);
+        log->printf("mov\tgr11, #0x%08x", frameSize & 0xFF);
         bufferPos += 4;
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "add\tgr11, gr11, #0x%08x", (frameSize >> 8 & 0xFF) << 8);
+        printPrefix(log, NULL, bufferPos, 4);
+        log->printf("add\tgr11, gr11, #0x%08x", (frameSize >> 8 & 0xFF) << 8);
         bufferPos += 4;
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "add\tgr11, gr11, #0x%08x", (frameSize >> 16 & 0xFF) << 16);
+        printPrefix(log, NULL, bufferPos, 4);
+        log->printf("add\tgr11, gr11, #0x%08x", (frameSize >> 16 & 0xFF) << 16);
         bufferPos += 4;
         // There is no need in another add, since a stack frame can never be that big.
     }
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "add\tgr7, gr7, gr11");
+    printPrefix(log, NULL, bufferPos, 4);
+    log->prints("add\tgr7, gr7, gr11");
     bufferPos += 4;
     if (saveLR) {
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "str\t[gr7, +0], gr14");
+        printPrefix(log, NULL, bufferPos, 4);
+        log->prints("str\t[gr7, +0], gr14");
         bufferPos += 4;
     }
 
-    printARMHelperBranch(sofRef, bufferPos, pOutFile);
+    printARMHelperBranch(log, sofRef, bufferPos);
     bufferPos += 4;
 
     if (saveLR) {
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "ldr\tgr14, [gr7, +0]");
+        printPrefix(log, NULL, bufferPos, 4);
+        log->prints("ldr\tgr14, [gr7, +0]");
         bufferPos += 4;
     }
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "sub\tgr7, gr7, gr11");
+    printPrefix(log, NULL, bufferPos, 4);
+    log->prints("sub\tgr7, gr7, gr11");
     bufferPos += 4;
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "b\t");
-    print(pOutFile, snippet->getReStartLabel());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->prints("b\t");
+    print(log, snippet->getReStartLabel());
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-void TR_Debug::print(TR::FILE *pOutFile, TR::UnresolvedDataSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::UnresolvedDataSnippet *snippet)
 {
     TR::MemoryReference *mr = snippet->getMemoryReference();
     TR::SymbolReference *symRef = snippet->getDataSymbolReference();
 
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(symRef));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(symRef));
 
-    printARMHelperBranch(_cg->getSymRef(snippet->getHelper()), bufferPos, pOutFile);
+    printARMHelperBranch(log, _cg->getSymRef(snippet->getHelper()), bufferPos);
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; return address", snippet->getAddressOfDataReference());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; return address", snippet->getAddressOfDataReference());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; cpIndex", symRef->getCPIndex());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; cpIndex", symRef->getCPIndex());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t" POINTER_PRINTF_FORMAT "\t\t; cpAddress", getOwningMethod(symRef)->constantPool());
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t" POINTER_PRINTF_FORMAT "\t\t; cpAddress", getOwningMethod(symRef)->constantPool());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0x%08x\t\t; memory reference offset",
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0x%08x\t\t; memory reference offset",
         symRef->getSymbol()->isConstObjectRef() ? 0 : mr->getOffset());
     bufferPos += 4;
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "dd\t0xe3a0%x000\t\t; instruction template",
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("dd\t0xe3a0%x000\t\t; instruction template",
         toRealRegister(mr->getModBase())->getRegisterNumber() - TR::RealRegister::FirstGPR);
 }
 #endif
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARMRecompilationSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARMRecompilationSnippet *snippet)
 {
 #ifdef J9_PROJECT_SPECIFIC
     uint8_t *cursor = snippet->getSnippetLabel()->getCodeLocation();
 
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "Counting Recompilation Snippet");
+    printSnippetLabel(log, snippet->getSnippetLabel(), cursor, "Counting Recompilation Snippet");
 
     TR::SymbolReference *symRef = _cg->getSymRef(TR_ARMcountingRecompileMethod);
-    printARMHelperBranch(symRef, cursor, pOutFile);
+    printARMHelperBranch(log, symRef, cursor);
     cursor += 4;
 
     // methodInfo
-    printPrefix(pOutFile, NULL, cursor, 4);
-    trfprintf(pOutFile, "dd \t0x%08x\t\t;%s", _comp->getRecompilationInfo()->getMethodInfo(), "methodInfo");
+    printPrefix(log, NULL, cursor, 4);
+    log->printf("dd \t0x%08x\t\t;%s", _comp->getRecompilationInfo()->getMethodInfo(), "methodInfo");
     cursor += 4;
 
     // startPC
-    printPrefix(pOutFile, NULL, cursor, 4);
-    trfprintf(pOutFile, "dd \t0x%08x\t\t; startPC ", _cg->getCodeStart());
+    printPrefix(log, NULL, cursor, 4);
+    log->printf("dd \t0x%08x\t\t; startPC ", _cg->getCodeStart());
 #endif
 }
 
-void TR_Debug::printARMDelayedOffsetInstructions(TR::FILE *pOutFile, TR::ARMMemInstruction *instr)
+void TR_Debug::printARMDelayedOffsetInstructions(OMR::Logger *log, TR::ARMMemInstruction *instr)
 {
     bool regSpilled;
     uint8_t *bufferPos = instr->getBinaryEncoding();
@@ -1460,46 +1454,44 @@ void TR_Debug::printARMDelayedOffsetInstructions(TR::FILE *pOutFile, TR::ARMMemI
     if (op == TR::InstOpCode::str || op == TR::InstOpCode::strh || op == TR::InstOpCode::strb
         || toRealRegister(instr->getMemoryDataRegister())->getRegisterNumber() == base->getRegisterNumber()) {
         regSpilled = true;
-        printPrefix(pOutFile, instr, bufferPos, 4);
-        trfprintf(pOutFile, "str\t[gr7, -4], %s", regName);
+        printPrefix(log, instr, bufferPos, 4);
+        log->printf("str\t[gr7, -4], %s", regName);
         bufferPos += 4;
     } else {
         regSpilled = false;
     }
 
-    printPrefix(pOutFile, instr, bufferPos, 4);
-    trfprintf(pOutFile, "mov\t%s, 0x%08x (0x%x << 24)", regName, localVal.getByte3() << 24, localVal.getByte3());
+    printPrefix(log, instr, bufferPos, 4);
+    log->printf("mov\t%s, 0x%08x (0x%x << 24)", regName, localVal.getByte3() << 24, localVal.getByte3());
     bufferPos += 4;
 
-    printPrefix(pOutFile, instr, bufferPos, 4);
-    trfprintf(pOutFile, "add\t%s, %s, 0x%08x (0x%x << 16)", regName, regName, localVal.getByte2() << 16,
-        localVal.getByte2());
+    printPrefix(log, instr, bufferPos, 4);
+    log->printf("add\t%s, %s, 0x%08x (0x%x << 16)", regName, regName, localVal.getByte2() << 16, localVal.getByte2());
     bufferPos += 4;
 
-    printPrefix(pOutFile, instr, bufferPos, 4);
-    trfprintf(pOutFile, "add\t%s, %s, 0x%08x (0x%x << 8)", regName, regName, localVal.getByte1() << 8,
-        localVal.getByte1());
+    printPrefix(log, instr, bufferPos, 4);
+    log->printf("add\t%s, %s, 0x%08x (0x%x << 8)", regName, regName, localVal.getByte1() << 8, localVal.getByte1());
     bufferPos += 4;
 
-    printPrefix(pOutFile, instr, bufferPos, 4);
-    trfprintf(pOutFile, "add\t%s, %s, 0x%08x", regName, regName, localVal.getByte0());
+    printPrefix(log, instr, bufferPos, 4);
+    log->printf("add\t%s, %s, 0x%08x", regName, regName, localVal.getByte0());
     bufferPos += 4;
 
-    printPrefix(pOutFile, instr, bufferPos, 4);
-    trfprintf(pOutFile, "%s\t", fullOpCodeName(instr));
-    print(pOutFile, instr->getTargetRegister());
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getMemoryReference());
+    printPrefix(log, instr, bufferPos, 4);
+    log->printf("%s\t", fullOpCodeName(instr));
+    print(log, instr->getTargetRegister());
+    log->prints(", ");
+    print(log, instr->getMemoryReference());
     bufferPos += 4;
 
     if (regSpilled) {
-        printPrefix(pOutFile, instr, bufferPos, 4);
-        trfprintf(pOutFile, "ldr\t%s, [gr7, -4]", regName);
+        printPrefix(log, instr, bufferPos, 4);
+        log->printf("ldr\t%s, [gr7, -4]", regName);
         bufferPos += 4;
     }
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 
     return;
 }

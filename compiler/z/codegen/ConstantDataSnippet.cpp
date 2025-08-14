@@ -60,6 +60,7 @@
 #include "infra/Link.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 #if defined(TR_HOST_S390)
@@ -414,57 +415,52 @@ TR::S390WritableDataSnippet::S390WritableDataSnippet(TR::CodeGenerator *cg, TR::
     : TR::S390ConstantDataSnippet(cg, n, c, size)
 {}
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::S390ConstantDataSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::S390ConstantDataSnippet *snippet)
 {
-    // *this   swipeable for debugger
-    if (pOutFile == NULL) {
-        return;
-    }
-
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
     if (snippet->getKind() == TR::Snippet::IsWritableData) {
-        printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, "Writable Data Snippet");
+        printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, "Writable Data Snippet");
     } else if (snippet->getKind() == TR::Snippet::IsEyeCatcherData) {
         // Cold Eyecatcher is used for padding of endPC so that Return Address for exception snippets will never equal
         // the endPC.
-        printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, "EyeCatcher Data Snippet");
-        printPrefix(pOutFile, NULL, bufferPos, 4);
-        trfprintf(pOutFile, "Eye Catcher = JITM\n");
+        printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, "EyeCatcher Data Snippet");
+        printPrefix(log, NULL, bufferPos, 4);
+        log->prints("Eye Catcher = JITM\n");
         return;
     } else if (snippet->getKind() == TR::Snippet::IsConstantInstruction) {
-        printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, "Constant Instruction Snippet");
-        print(pOutFile, ((TR::S390ConstantInstructionSnippet *)snippet)->getInstruction());
+        printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, "Constant Instruction Snippet");
+        print(log, ((TR::S390ConstantInstructionSnippet *)snippet)->getInstruction());
         return;
     } else if (snippet->getKind() == TR::Snippet::IsInterfaceCallData) {
 #ifdef J9_PROJECT_SPECIFIC
-        print(pOutFile, reinterpret_cast<TR::J9S390InterfaceCallDataSnippet *>(snippet));
+        print(log, reinterpret_cast<TR::J9S390InterfaceCallDataSnippet *>(snippet));
 #endif
         return;
     } else {
-        printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, "Constant Data Snippet");
+        printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, "Constant Data Snippet");
     }
 
-    printPrefix(pOutFile, NULL, bufferPos, snippet->getConstantSize());
+    printPrefix(log, NULL, bufferPos, snippet->getConstantSize());
 
     if (snippet->getConstantSize() == 8) {
-        trfprintf(pOutFile, "DC   \t0x%016lx ", snippet->getDataAs8Bytes());
+        log->printf("DC   \t0x%016lx ", snippet->getDataAs8Bytes());
     } else if (snippet->getConstantSize() == 4) {
-        trfprintf(pOutFile, "DC   \t0x%08x ", snippet->getDataAs4Bytes());
+        log->printf("DC   \t0x%08x ", snippet->getDataAs4Bytes());
     } else if (snippet->getConstantSize() == 2) {
-        trfprintf(pOutFile, "DC   \t0x%04x ", snippet->getDataAs2Bytes());
+        log->printf("DC   \t0x%04x ", snippet->getDataAs2Bytes());
     } else {
-        trfprintf(pOutFile, "DC\n");
+        log->prints("DC\n");
         int n = snippet->getConstantSize();
         uint8_t *p = snippet->getRawData();
         while (n >= 8) {
-            trfprintf(pOutFile, "\t%016llx\n", *(uint64_t *)p);
+            log->printf("\t%016llx\n", *(uint64_t *)p);
             n -= 8;
             p += 8;
         }
         if (n) {
-            trfprintf(pOutFile, "\t");
+            log->printc('\t');
             for (int32_t i = 0; i < n; i++) {
-                trfprintf(pOutFile, "%02x ", *p++);
+                log->printf("%02x ", *p++);
             }
         }
     }

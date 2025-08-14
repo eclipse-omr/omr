@@ -28,6 +28,7 @@
 #include "objectfmt/FunctionCallData.hpp"
 #include "objectfmt/JitCodeRWXObjectFormat.hpp"
 #include "objectfmt/OMRJitCodeRWXObjectFormat.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeMetaDataManager.hpp"
 #include "runtime/Runtime.hpp"
 #include "z/codegen/CallSnippet.hpp"
@@ -131,27 +132,27 @@ uint8_t *OMR::Z::JitCodeRWXObjectFormat::encodeFunctionCall(TR::FunctionCallData
     return cursor;
 }
 
-uint8_t *OMR::Z::JitCodeRWXObjectFormat::printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data)
+uint8_t *OMR::Z::JitCodeRWXObjectFormat::printEncodedFunctionCall(OMR::Logger *log, TR::FunctionCallData &data)
 {
     uint8_t *bufferPos = data.bufferAddress;
     TR_Debug *debug = data.cg->getDebug();
     if (data.snippet->getKind() == TR::Snippet::IsUnresolvedCall
         || data.snippet->getKind() == TR::Snippet::IsUnresolvedData) {
-        debug->printPrefix(pOutFile, NULL, bufferPos, 6);
-        trfprintf(pOutFile, "LARL \tGPR14, <%p>\t# Start of Data Const.",
+        debug->printPrefix(log, NULL, bufferPos, 6);
+        log->printf("LARL \tGPR14, <%p>\t# Start of Data Const.",
             bufferPos + 6 /*LARL*/ + 6 /*LG/LGF*/ + 2 /*BRC*/ + data.snippet->getPadBytes());
         bufferPos += 6;
 
-        debug->printPrefix(pOutFile, NULL, bufferPos, 6);
-        trfprintf(pOutFile, data.cg->comp()->target().is64Bit() ? "LG \tGPR_EP, 0(GPR14)" : "LGF \tGPR_EP, 0(GPR14)");
+        debug->printPrefix(log, NULL, bufferPos, 6);
+        log->prints(data.cg->comp()->target().is64Bit() ? "LG \tGPR_EP, 0(GPR14)" : "LGF \tGPR_EP, 0(GPR14)");
         bufferPos += 6;
 
-        debug->printPrefix(pOutFile, NULL, bufferPos, 2);
-        trfprintf(pOutFile, "BCR \tGPR_EP");
+        debug->printPrefix(log, NULL, bufferPos, 2);
+        log->prints("BCR \tGPR_EP");
         bufferPos += 2;
     } else {
-        debug->printPrefix(pOutFile, NULL, bufferPos, 6);
-        trfprintf(pOutFile, "BRASL \tGPR14, <%p>\t# Branch to Helper Method %s", data.snippet->getSnippetDestAddr(),
+        debug->printPrefix(log, NULL, bufferPos, 6);
+        log->printf("BRASL \tGPR14, <%p>\t# Branch to Helper Method %s", data.snippet->getSnippetDestAddr(),
             data.snippet->usedTrampoline() ? "- Trampoline Used. " : "");
         bufferPos += 6;
     }

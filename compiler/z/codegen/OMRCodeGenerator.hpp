@@ -112,7 +112,8 @@ class TR_StorageReference;
 
 namespace OMR {
 class Linkage;
-}
+class Logger;
+} // namespace OMR
 
 namespace TR {
 class CodeGenerator;
@@ -552,7 +553,7 @@ public:
 
     bool doRematerialization() { return true; }
 
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(OMR::Logger *log);
 
     bool getSupportsBitOpCodes() { return true; }
 

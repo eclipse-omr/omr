@@ -38,37 +38,34 @@
 #include "ilgen/IlGeneratorMethodDetails_inlines.hpp"
 #include "il/ResolvedMethodSymbol.hpp"
 
+namespace TR {
+class Logger;
+}
 
 namespace TRTest {
 
 class NullIlGenRequest : public TR::IlGenRequest {
     TR::IlGeneratorMethodDetails _details;
-public:
-    NullIlGenRequest() : TR::IlGenRequest(_details) {}
 
-    virtual TR_IlGenerator *getIlGenerator(
-        TR::ResolvedMethodSymbol *methodSymbol,
-        TR_FrontEnd *fe,
-        TR::Compilation *comp,
-        TR::SymbolReferenceTable *symRefTab
-    ) {
+public:
+    NullIlGenRequest()
+        : TR::IlGenRequest(_details)
+    {}
+
+    virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+        TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
+    {
         throw std::runtime_error("The mock JIT environment does not support calling TR::IlGenRequest::getIlGenerator");
     }
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix) {}
-
-
+    virtual void print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix) {}
 };
 
 class JitInitializer {
 public:
-    JitInitializer() {
-        initializeJit();
-    }
+    JitInitializer() { initializeJit(); }
 
-    ~JitInitializer() {
-        shutdownJit();
-    }
+    ~JitInitializer() { shutdownJit(); }
 };
 
 /**
@@ -76,25 +73,27 @@ public:
  */
 class CompilerUnitTest : public ::testing::Test {
 public:
-    CompilerUnitTest() :
-        _jitInit(),
-        _rawAllocator(),
-        _segmentProvider(1 << 16, _rawAllocator),
-        _dispatchRegion(_segmentProvider, _rawAllocator),
-        _trMemory(*(TR::FrontEnd::instance()->persistentMemory()), _dispatchRegion),
-        _types(),
-        _options(),
-        _ilGenRequest(),
-        _method("compunittest", "0", "test", 0, NULL, _types.NoType, NULL, NULL),
-        _comp(0, NULL, TR::FrontEnd::instance(), &_method, _ilGenRequest, _options, _dispatchRegion, &_trMemory, TR_OptimizationPlan::alloc(warm)) {
+    CompilerUnitTest()
+        : _jitInit()
+        , _rawAllocator()
+        , _segmentProvider(1 << 16, _rawAllocator)
+        , _dispatchRegion(_segmentProvider, _rawAllocator)
+        , _trMemory(*(TR::FrontEnd::instance()->persistentMemory()), _dispatchRegion)
+        , _types()
+        , _options()
+        , _ilGenRequest()
+        , _method("compunittest", "0", "test", 0, NULL, _types.NoType, NULL, NULL)
+        , _comp(0, NULL, TR::FrontEnd::instance(), &_method, _ilGenRequest, _options, _dispatchRegion, &_trMemory,
+              TR_OptimizationPlan::alloc(warm))
+    {
         _symbol = TR::ResolvedMethodSymbol::create(_comp.trStackMemory(), &_method, &_comp);
-        TR::CFG* cfg =  new (region()) TR::CFG(&_comp, _symbol, region());
+        TR::CFG *cfg = new (region()) TR::CFG(&_comp, _symbol, region());
         _symbol->setFlowGraph(cfg);
         _optimizer = new (region()) TR::Optimizer(&_comp, _symbol, false);
         _comp.setOptimizer(_optimizer);
     }
 
-    TR::Region& region() { return _dispatchRegion; }
+    TR::Region &region() { return _dispatchRegion; }
 
 protected:
     JitInitializer _jitInit;
@@ -105,34 +104,28 @@ protected:
     TR::TypeDictionary _types;
     TR::Options _options;
     NullIlGenRequest _ilGenRequest;
-    TR::ResolvedMethodSymbol* _symbol;
+    TR::ResolvedMethodSymbol *_symbol;
     TR::ResolvedMethod _method;
     TR::Compilation _comp;
-    TR::Optimizer* _optimizer;
+    TR::Optimizer *_optimizer;
 };
 
-template <typename T>
-class MakeVector {
+template<typename T> class MakeVector {
     std::vector<T> _vals;
 
     void add_vals() {}
 
-    template <typename... Ts>
-    void add_vals(T next_val, Ts... more_vals) {
+    template<typename... Ts> void add_vals(T next_val, Ts... more_vals)
+    {
         _vals.push_back(next_val);
         add_vals(more_vals...);
     }
 
 public:
-    template <typename... Ts>
-    MakeVector(Ts... vals) {
-        add_vals(vals...);
-    }
+    template<typename... Ts> MakeVector(Ts... vals) { add_vals(vals...); }
 
-    const std::vector<T>& operator*() const {
-        return _vals;
-    }
+    const std::vector<T> &operator*() const { return _vals; }
 };
 
-}
+} // namespace TRTest
 #endif

@@ -26,6 +26,10 @@
 #include "infra/vector.hpp"
 #include <stdint.h>
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class CodeGenerator;
 class Node;
@@ -52,8 +56,8 @@ public:
     template<typename T> inline T getData() { return *((T *)getRawData()); }
 
     virtual uint8_t *emitSnippetBody();
-    virtual void print(TR::FILE *pOutFile, TR_Debug *debug);
-    virtual void printValue(TR::FILE *pOutFile, TR_Debug *debug);
+    virtual void print(OMR::Logger *log, TR_Debug *debug);
+    virtual void printValue(OMR::Logger *log, TR_Debug *debug);
     void addMetaDataForCodeAddress(uint8_t *cursor);
 
 private:

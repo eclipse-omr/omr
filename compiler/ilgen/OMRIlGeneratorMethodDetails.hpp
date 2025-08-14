@@ -48,6 +48,8 @@ class IlVerifier;
 
 namespace OMR {
 
+class Logger;
+
 /**
  * Accessing ANY language-specific API/data in common code is prohibited.
  *
@@ -64,7 +66,7 @@ public:
 
     bool sameAs(TR::IlGeneratorMethodDetails &other) { return false; }
 
-    void print(TR_FrontEnd *fe, TR::FILE *file) {}
+    void print(OMR::Logger *log, TR_FrontEnd *fe) {}
 
     inline static TR::IlGeneratorMethodDetails &create(TR::IlGeneratorMethodDetails &target, TR_ResolvedMethod *method);
 

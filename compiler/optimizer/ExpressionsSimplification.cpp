@@ -51,6 +51,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O EXPRESSION SIMPLIFICATION: "
 
@@ -66,7 +67,7 @@ int32_t TR_ExpressionsSimplification::perform()
     _supportedExpressions = NULL;
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees Before Performing Expression Simplification");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees Before Performing Expression Simplification");
     }
     cost = perform(comp()->getFlowGraph()->getStructure());
 
@@ -377,7 +378,7 @@ bool TR_ExpressionsSimplification::tranformSummationReductionCandidate(TR::TreeT
 
     if (expNode) {
         if (trace())
-            comp()->getDebug()->print(comp()->getOutFile(), expNode, 0, true);
+            comp()->getDebug()->print(comp()->getLogger(), expNode, 0, true);
 
         TR::Block *entryBlock = _currentRegion->getEntryBlock();
         TR::Block *preheaderBlock = findPredecessorBlock(entryBlock);
@@ -418,7 +419,7 @@ void TR_ExpressionsSimplification::tranformStoreMotionCandidate(TR::TreeTop *tre
     // this candidate should be valid, either direct or indirect
 
     if (trace())
-        comp()->getDebug()->print(comp()->getOutFile(), node, 0, true);
+        comp()->getDebug()->print(comp()->getLogger(), node, 0, true);
 
     TR::Block *entryBlock = _currentRegion->getEntryBlock();
     TR::Block *preheaderBlock = findPredecessorBlock(entryBlock);
@@ -883,7 +884,7 @@ void TR_ExpressionsSimplification::transformNode(TR::Node *srcNode, TR::Block *d
     TR::TreeTop *srcNodeTT = TR::TreeTop::create(comp(), srcNode);
 
     if (trace())
-        comp()->getDebug()->print(comp()->getOutFile(), srcNode, 0, true);
+        comp()->getDebug()->print(comp()->getLogger(), srcNode, 0, true);
 
     if (lastTree->getNode()->getOpCode().isBranch()
         || (lastTree->getNode()->getOpCode().isJumpWithMultipleTargets()

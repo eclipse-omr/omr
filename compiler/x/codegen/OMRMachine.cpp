@@ -2210,48 +2210,42 @@ uint32_t OMR::X86::Machine::maxAssignableRegisters()
 }
 
 #if defined(DEBUG)
-static void printOneRegisterStatus(TR_FrontEnd *fe, TR::FILE *pOutFile, TR_Debug *debug, TR::RealRegister *reg)
+static void printOneRegisterStatus(OMR::Logger *log, TR_FrontEnd *fe, TR_Debug *debug, TR::RealRegister *reg)
 {
-    trfprintf(pOutFile, "                      ");
-    debug->printFullRegInfo(pOutFile, reg);
+    log->prints("                      ");
+    debug->printFullRegInfo(log, reg);
 }
 
-void OMR::X86::Machine::printGPRegisterStatus(TR_FrontEnd *fe, TR::RealRegister **registerFile, TR::FILE *pOutFile)
+void OMR::X86::Machine::printGPRegisterStatus(OMR::Logger *log, TR_FrontEnd *fe, TR::RealRegister **registerFile)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "\n  GP Reg Status:          Register         State        Assigned\n");
+    log->prints("\n  GP Reg Status:          Register         State        Assigned\n");
     int i;
     for (i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastAssignableGPR; i++) {
-        printOneRegisterStatus(fe, pOutFile, self()->getDebug(), registerFile[i]);
+        printOneRegisterStatus(log, fe, self()->getDebug(), registerFile[i]);
     }
     for (i = TR::RealRegister::FirstXMMR; i <= TR::RealRegister::LastXMMR; i++) {
-        printOneRegisterStatus(fe, pOutFile, self()->getDebug(), registerFile[i]);
+        printOneRegisterStatus(log, fe, self()->getDebug(), registerFile[i]);
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
 // Dump the FP register stack
 //
-void OMR::X86::Machine::printFPRegisterStatus(TR_FrontEnd *fe, TR::FILE *pOutFile)
+void OMR::X86::Machine::printFPRegisterStatus(OMR::Logger *log, TR_FrontEnd *fe)
 {
     char buf[32];
     char *cursor;
     int32_t i;
 
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "\n  FP Reg Status:          Register         State        Assigned      Total Future\n");
+    log->prints("\n  FP Reg Status:          Register         State        Assigned      Total Future\n");
     for (i = 0; i < 8; i++) {
         memset(buf, ' ', 25);
         cursor = buf + 17;
         sprintf(cursor, "st%d:", i);
-        trfprintf(pOutFile, "%s [ empty      ]\n", buf);
+        log->printf("%s [ empty      ]\n", buf);
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 #endif

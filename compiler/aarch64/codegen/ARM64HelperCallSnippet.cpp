@@ -24,6 +24,7 @@
 #include "codegen/CodeGenerator.hpp"
 #include "codegen/Relocation.hpp"
 #include "codegen/SnippetGCMap.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
 uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
@@ -66,12 +67,12 @@ uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
     return cursor;
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ARM64HelperCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::ARM64HelperCallSnippet *snippet)
 {
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
     auto restartLabel = snippet->getRestartLabel();
 
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 
     char *info = "";
     intptr_t target = (intptr_t)(snippet->getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress());
@@ -82,17 +83,17 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::ARM64HelperCallSnippet *snippet)
         TR_ASSERT(constantIsSignedImm28(distance), "Trampoline too far away.");
     }
 
-    printPrefix(pOutFile, NULL, bufferPos, 4);
-    trfprintf(pOutFile, "bl \t" POINTER_PRINTF_FORMAT "\t\t; %s%s", target, getName(snippet->getDestination()), info);
+    printPrefix(log, NULL, bufferPos, 4);
+    log->printf("bl \t" POINTER_PRINTF_FORMAT "\t\t; %s%s", target, getName(snippet->getDestination()), info);
 
     if (restartLabel != NULL) {
         bufferPos += ARM64_INSTRUCTION_LENGTH;
         intptr_t restartLocation = (intptr_t)restartLabel->getCodeLocation();
         if (comp()->target().cpu.isTargetWithinUnconditionalBranchImmediateRange((intptr_t)restartLocation,
                 (intptr_t)bufferPos)) {
-            printPrefix(pOutFile, NULL, bufferPos, 4);
-            trfprintf(pOutFile, "b \t" POINTER_PRINTF_FORMAT "\t\t; Back to ", restartLocation);
-            print(pOutFile, restartLabel);
+            printPrefix(log, NULL, bufferPos, 4);
+            log->printf("b \t" POINTER_PRINTF_FORMAT "\t\t; Back to ", restartLocation);
+            print(log, restartLabel);
         } else {
             TR_ASSERT(false, "Target too far away.  Not supported yet");
         }

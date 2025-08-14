@@ -76,6 +76,7 @@
 #include "infra/CfgEdge.hpp"
 #include "infra/CfgNode.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -459,13 +460,14 @@ TR::SymbolReference *OMR::SymbolReferenceTable::createRefinedArrayShadowSymbolRe
             aliasBuilder.nonIntPrimitiveShadowSymRefs().set(index);
             break;
     }
-    if (trace) {
+    if (trace && comp()->getLoggingEnabled()) {
+        OMR::Logger *log = comp()->getLogger();
         traceMsg(comp(), "Created new array shadow %d\nRefinedAddress shadows:", index);
-        aliasBuilder.refinedAddressArrayShadows().print(comp());
+        aliasBuilder.refinedAddressArrayShadows().print(log, comp());
         traceMsg(comp(), "\nRefined Int Array shadows:");
-        aliasBuilder.refinedIntArrayShadows().print(comp());
+        aliasBuilder.refinedIntArrayShadows().print(log, comp());
         traceMsg(comp(), "\nRefined non int shadows:");
-        aliasBuilder.refinedNonIntPrimitiveArrayShadows().print(comp());
+        aliasBuilder.refinedNonIntPrimitiveArrayShadows().print(log, comp());
         traceMsg(comp(), "\n");
     }
 

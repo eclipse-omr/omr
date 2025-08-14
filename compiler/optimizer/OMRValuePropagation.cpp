@@ -77,6 +77,7 @@
 #include "optimizer/VPConstraint.hpp"
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
 #include "env/ClassTableCriticalSection.hpp"
@@ -475,7 +476,7 @@ TR::VPConstraint *OMR::ValuePropagation::addConstraintToList(TR::Node *node, int
                         if (trace() && node) {
                             traceMsg(comp(), "   %s [%p] gets new store constraint:", node->getOpCode().getName(),
                                 node);
-                            storeRel->print(this, valueNumber, 1);
+                            storeRel->print(comp()->getLogger(), this, valueNumber, 1);
                         }
                     }
                 } else {
@@ -497,7 +498,7 @@ TR::VPConstraint *OMR::ValuePropagation::addConstraintToList(TR::Node *node, int
     if (newOrChanged) {
         if (trace() && node) {
             traceMsg(comp(), "   n%in %s gets new constraint:", node->getGlobalIndex(), node->getOpCode().getName());
-            rel->print(this, valueNumber, 1);
+            rel->print(comp()->getLogger(), this, valueNumber, 1);
             traceMsg(comp(), "type of constraint - longConstraint: %p, intConstraint: %p, shortConstraint: %p\n",
                 rel->constraint->asLongConstraint(), rel->constraint->asIntConstraint(),
                 rel->constraint->asShortConstraint());
@@ -619,7 +620,7 @@ TR::VPConstraint *OMR::ValuePropagation::addGlobalConstraint(TR::Node *node, int
     if (newOrChanged) {
         if (trace() && node) {
             traceMsg(comp(), "   %s [%p] gets new global constraint:", node->getOpCode().getName(), node);
-            rel->print(this, valueNumber, 1);
+            rel->print(comp()->getLogger(), this, valueNumber, 1);
         }
 
         // Propagate the effects of the constraint to other constraints
@@ -645,7 +646,7 @@ TR::VPConstraint *OMR::ValuePropagation::addGlobalConstraint(TR::Node *node, int
             traceMsg(comp(),
                 "   %s [%p] found existing global constraint value number %d (%p): ", node->getOpCode().getName(), node,
                 valueNumber, c);
-            c->print(comp(), comp()->getOutFile());
+            c->print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n");
         }
     }
@@ -784,10 +785,11 @@ void OMR::ValuePropagation::mergeRelationships(TR_LinkHead<Relationship> &fromLi
         }
 
         if (trace()) {
+            OMR::Logger *log = comp()->getLogger();
             traceMsg(comp(), "Attempting merge from: ");
-            from->print(this);
+            from->print(log, this);
             traceMsg(comp(), "\n           merge To: ");
-            to->print(this);
+            to->print(log, this);
             traceMsg(comp(), "\n");
         }
 
@@ -1252,7 +1254,8 @@ void OMR::ValuePropagation::createExceptionEdgeConstraints(uint32_t exceptions, 
         /////if (extraConstraint)
         /////   mergeConstraintIntoEdge(extraConstraint, constraints);
 
-        printEdgeConstraints(constraints);
+        if (trace())
+            printEdgeConstraints(comp()->getLogger(), constraints);
     }
 }
 
@@ -1455,7 +1458,7 @@ TR::VPConstraint *OMR::ValuePropagation::getStoreConstraint(TR::Node *node, TR::
     if (rel) {
         if (trace()) {
             traceMsg(comp(), "   %s [%p] has existing store constraint:", node->getOpCode().getName(), node);
-            rel->print(this, valueNumber, 1);
+            rel->print(comp()->getLogger(), this, valueNumber, 1);
         }
         return rel->constraint;
     }
@@ -2069,7 +2072,7 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
             unconstrained = true;
         } else {
             if (trace()) {
-                defConstraint->print(comp(), comp()->getOutFile());
+                defConstraint->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
 
@@ -2545,7 +2548,7 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
                         }
 
                         if (trace()) {
-                            defConstraint->print(comp(), comp()->getOutFile());
+                            defConstraint->print(comp()->getLogger(), comp());
                             traceMsg(comp(), "\n");
                         }
 
@@ -2572,7 +2575,6 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
         if (constraint && constraint->isFixedClass()) {
             TR_ResolvedMethod *owningMethod = comp()->getCurrentMethod();
             TR_OpaqueClassBlock *classObject = fe()->getClassFromSignature("java/math/BigDecimal", 20, owningMethod);
-            // printf("VP class for BigDecimal %p\n", classObject); fflush(stdout);
             if (classObject && (constraint->getClass() == classObject))
                 mergeDeferredConstraints = false;
         }
@@ -2705,8 +2707,6 @@ void OMR::ValuePropagation::mustTakeException()
     if (_curTree->getNextTreeTop()->getNode()->getOpCodeValue() == TR::Return)
         return;
 
-    /////printf("\nRemoving rest of block in %s\n", comp()->signature());
-
     if (!performTransformation(comp(), "%sRemoving rest of block after %s [%p]\n", OPT_DETAILS,
             _curTree->getNode()->getOpCode().getName(), _curTree->getNode()))
         return;
@@ -2781,7 +2781,6 @@ bool OMR::ValuePropagation::isHighWordZero(TR::Node *node)
         TR::VPLongConstraint *longConstraint = constraint->asLongConstraint();
         if (longConstraint && (longConstraint->getLow() >= 0)
             && ((longConstraint->getHigh() & (((uint64_t)0xffffffff) << 32)) == 0)) {
-            // printf("Found a long which has high word zero (node %x) in %s\n", node, comp()->signature());
             return true;
         }
     }
@@ -3412,19 +3411,18 @@ void OMR::ValuePropagation::setUpInductionVariables(TR_StructureSubGraphNode *no
             TR_InductionVariable(ivInfo->_symbol->castToRegisterMappedSymbol(), entry, exit, incr, isSigned);
 
         if (trace()) {
-            /////printf("\nFound induction variable in %s",comp()->signature());
+            OMR::Logger *log = comp()->getLogger();
             traceMsg(comp(), "\nFound induction variable %d [%p]",
                 ivInfo->_valueNumber - _firstInductionVariableValueNumber, ivInfo->_symbol);
             if (ivInfo->_entryConstraint && ivInfo->_entryDef) {
                 traceMsg(comp(), "\n   Entry constraint : ");
-                ivInfo->_entryConstraint->print(comp(), comp()->getOutFile());
+                ivInfo->_entryConstraint->print(log, comp());
             }
             traceMsg(comp(), "\n   Increment constraint : ");
-            ivInfo->_increment->print(comp(), comp()->getOutFile());
+            ivInfo->_increment->print(log, comp());
             if (exitConstraint) {
                 traceMsg(comp(), "\n   Exit constraint : ");
-                exit->print(comp(), comp()->getOutFile());
-                // exitConstraint->print(comp(), comp()->getOutFile());
+                exit->print(log, comp());
             }
             traceMsg(comp(), "\n");
         }
@@ -3525,7 +3523,7 @@ int32_t TR::GlobalValuePropagation::perform()
     _valueNumberInfo = optimizer()->getValueNumberInfo();
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees before Global Value Propagation");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees before Global Value Propagation");
     }
 
     // From here, down, stack memory allocations will die when the function returns
@@ -3615,7 +3613,7 @@ int32_t TR::GlobalValuePropagation::perform()
     }
 
     if (trace())
-        comp()->dumpMethodTrees("Trees after Global Value Propagation");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after Global Value Propagation");
 
     // Invalidate usedef and value number information if necessary
     //
@@ -3676,11 +3674,7 @@ bool TR::GlobalValuePropagation::buildInputConstraints(TR::CFGNode *node)
                 continue;
             }
 
-            // dumpOptDetails(comp(), "Calling from 2 before\n");
-            // printValueConstraints(_curConstraints);
             mergeEdgeConstraints(constraints, NULL);
-            // dumpOptDetails(comp(), "Calling from 2 after\n");
-            // printValueConstraints(_curConstraints);
         }
     }
 
@@ -3829,12 +3823,12 @@ void TR::GlobalValuePropagation::processAcyclicRegion(TR_StructureSubGraphNode *
     bool insideLoop)
 {
     if (trace())
-        printStructureInfo(node->getStructure(), true, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), true, lastTimeThrough);
 
     processRegionSubgraph(node, lastTimeThrough, insideLoop, false);
 
     if (trace())
-        printStructureInfo(node->getStructure(), false, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), false, lastTimeThrough);
 }
 
 void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *node, bool lastTimeThrough,
@@ -3862,7 +3856,7 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
         // Process the loop first time through
         //
         if (trace())
-            printStructureInfo(region, true, false);
+            printStructureInfo(comp()->getLogger(), region, true, false);
 
         _visitCount--;
         processRegionSubgraph(node, false, true, true);
@@ -3882,7 +3876,7 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
         }
 
         if (trace())
-            printStructureInfo(region, false, false);
+            printStructureInfo(comp()->getLogger(), region, false, false);
 
         // Reset saved values and process the loop again.
         //
@@ -3914,7 +3908,7 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
     }
 
     if (trace())
-        printStructureInfo(region, true, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), region, true, lastTimeThrough);
 
     // If this is the last time through the loop, collect info for induction
     // variable entry constraints.
@@ -3947,7 +3941,7 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
 
     if (trace()) {
         traceMsg(comp(), "   defined on all paths for entry of loop %d", region->getNumber());
-        inboundDefinedOnAllPaths->print(comp());
+        inboundDefinedOnAllPaths->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 
@@ -3959,7 +3953,7 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
 
         if ((*_definedOnAllPaths)[edge]) {
             if (trace()) {
-                ((*_definedOnAllPaths)[edge])->print(comp());
+                ((*_definedOnAllPaths)[edge])->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
             (*(*_definedOnAllPaths)[edge]) |= *inboundDefinedOnAllPaths;
@@ -4011,7 +4005,7 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
     }
 
     if (trace())
-        printStructureInfo(node->getStructure(), false, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), false, lastTimeThrough);
 
     _loopInfo = parentLoopInfo;
     if (!insideLoop) {
@@ -4028,7 +4022,7 @@ void TR::GlobalValuePropagation::processImproperLoop(TR_StructureSubGraphNode *n
     bool insideLoop)
 {
     if (trace())
-        printStructureInfo(node->getStructure(), true, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), true, lastTimeThrough);
 
     TR_RegionStructure *region = node->getStructure()->asRegion();
 
@@ -4065,14 +4059,12 @@ void TR::GlobalValuePropagation::processImproperLoop(TR_StructureSubGraphNode *n
        }
     */
 
-    // printf("Found and analyzing improper region in %s\n", comp()->signature());
-    //
-    //  If we do decide to analyze code inside improper regions, then we
-    //  need to analyze in proper order (rather than random order as shown above)
-    //  as there are cases when a conservative constraint for a value may mean
-    //  we do not fold a branch that would have been folded (if blocks were analyzed
-    //  in proper order) resulting in analysis of unreachable code which might
-    //  cause problems when intersecting constraints, for example.
+    // If we do decide to analyze code inside improper regions, then we
+    // need to analyze in proper order (rather than random order as shown above)
+    // as there are cases when a conservative constraint for a value may mean
+    // we do not fold a branch that would have been folded (if blocks were analyzed
+    // in proper order) resulting in analysis of unreachable code which might
+    // cause problems when intersecting constraints, for example.
     //
     // freeValueConstraints(_curConstraints);
     // processRegionSubgraph(node, true, true, false);
@@ -4095,7 +4087,7 @@ void TR::GlobalValuePropagation::processImproperLoop(TR_StructureSubGraphNode *n
     freeValueConstraints(stores);
 
     if (trace())
-        printStructureInfo(node->getStructure(), false, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), false, lastTimeThrough);
 }
 
 void OMR::ValuePropagation::generalizeStores(ValueConstraints &stores, ValueConstraints *vC)
@@ -4237,7 +4229,9 @@ void TR::GlobalValuePropagation::processRegionNode(TR_StructureSubGraphNode *nod
         //
         TR_SuccessorIterator si(node);
         for (edge = si.getFirst(); edge; edge = si.getNext()) {
-            printEdgeConstraints(createEdgeConstraints(edge, true));
+            OMR::ValuePropagation::EdgeConstraints *ec = createEdgeConstraints(edge, true);
+            if (trace())
+                printEdgeConstraints(comp()->getLogger(), ec);
         }
 
         // If the node represents a block, add it to the list of unreachable
@@ -4282,7 +4276,7 @@ TR_BitVector *TR::GlobalValuePropagation::mergeDefinedOnAllPaths(TR_StructureSub
             traceMsg(comp(), "   inbound seenOnAllpaths for edge %d->%d", (*itr)->getFrom()->getNumber(),
                 (*itr)->getTo()->getNumber());
             if (predDefinedOnAllPaths)
-                predDefinedOnAllPaths->print(comp());
+                predDefinedOnAllPaths->print(comp()->getLogger(), comp());
             else
                 traceMsg(comp(), "NULL");
             traceMsg(comp(), "\n");
@@ -4329,7 +4323,7 @@ void TR::GlobalValuePropagation::processBlock(TR_StructureSubGraphNode *node, bo
 
     if (insideLoop && trace()) {
         traceMsg(comp(), "   defined on all paths for entry of block %d", block->getNumber());
-        _curDefinedOnAllPaths->print(comp());
+        _curDefinedOnAllPaths->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 
@@ -4373,7 +4367,7 @@ void TR::GlobalValuePropagation::processBlock(TR_StructureSubGraphNode *node, bo
     }
 
     if (trace())
-        printStructureInfo(node->getStructure(), true, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), true, lastTimeThrough);
 
     bool hasIncomingStoreRelationships = false;
     ValueConstraintIterator iter(_curConstraints);
@@ -4401,7 +4395,7 @@ void TR::GlobalValuePropagation::processBlock(TR_StructureSubGraphNode *node, bo
             if (trace()) {
                 traceMsg(comp(), "   outbound seenOnAllpaths for edge %d->%d", (*itr)->getFrom()->getNumber(),
                     (*itr)->getTo()->getNumber());
-                _curDefinedOnAllPaths->print(comp());
+                _curDefinedOnAllPaths->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
             (*_definedOnAllPaths)[*itr] = _curDefinedOnAllPaths;
@@ -4422,11 +4416,14 @@ void TR::GlobalValuePropagation::processBlock(TR_StructureSubGraphNode *node, bo
         if (trace())
             traceMsg(comp(), "Processing %s [%p]\n   Fall-through to next block\n",
                 endTree->getNode()->getOpCode().getName(), endTree->getNode());
-        printEdgeConstraints(createEdgeConstraints(edge, false));
+
+        OMR::ValuePropagation::EdgeConstraints *ec = createEdgeConstraints(edge, false);
+        if (trace())
+            printEdgeConstraints(comp()->getLogger(), ec);
     }
 
     if (trace())
-        printStructureInfo(node->getStructure(), false, lastTimeThrough);
+        printStructureInfo(comp()->getLogger(), node->getStructure(), false, lastTimeThrough);
 
     // Check to make sure we are not dropping store constraints.
     // If we are, it is probably a bug.
@@ -4507,7 +4504,7 @@ void OMR::ValuePropagation::setUnreachablePath(TR::CFGEdge *edge)
 #endif
 }
 
-void OMR::ValuePropagation::printStructureInfo(TR_Structure *s, bool starting, bool lastTimeThrough)
+void OMR::ValuePropagation::printStructureInfo(OMR::Logger *log, TR_Structure *s, bool starting, bool lastTimeThrough)
 {
     traceMsg(comp(), "\n%s ", starting ? "Starting " : "Stopping ");
     const char *type;
@@ -4525,7 +4522,7 @@ void OMR::ValuePropagation::printStructureInfo(TR_Structure *s, bool starting, b
         type = "block";
     traceMsg(comp(), "%s ", type);
 
-    printParentStructure(s);
+    printParentStructure(log, s);
     traceMsg(comp(), "%d", s->getNumber());
     if (lastTimeThrough)
         traceMsg(comp(), " last time through\n");
@@ -4533,12 +4530,12 @@ void OMR::ValuePropagation::printStructureInfo(TR_Structure *s, bool starting, b
         traceMsg(comp(), " first time through\n");
 
     if (starting) {
-        printGlobalConstraints();
+        printGlobalConstraints(log);
         traceMsg(comp(), "   Starting edge constraints:\n");
         if (_curConstraints.isEmpty()) {
             traceMsg(comp(), "      NONE\n");
         } else {
-            printValueConstraints(_curConstraints);
+            printValueConstraints(log, _curConstraints);
         }
 
         if (isLoop && lastTimeThrough) {
@@ -4546,30 +4543,30 @@ void OMR::ValuePropagation::printStructureInfo(TR_Structure *s, bool starting, b
             if (!_loopInfo->_backEdgeConstraints || _loopInfo->_backEdgeConstraints->valueConstraints.isEmpty()) {
                 traceMsg(comp(), "      NONE\n");
             } else {
-                printValueConstraints(_loopInfo->_backEdgeConstraints->valueConstraints);
+                printValueConstraints(log, _loopInfo->_backEdgeConstraints->valueConstraints);
             }
         }
     }
 }
 
-void OMR::ValuePropagation::printParentStructure(TR_Structure *s)
+void OMR::ValuePropagation::printParentStructure(OMR::Logger *log, TR_Structure *s)
 {
     if (s->getParent()) {
-        printParentStructure(s->getParent());
+        printParentStructure(log, s->getParent());
         traceMsg(comp(), "%d->", s->getParent()->getNumber());
     }
 }
 
-void OMR::ValuePropagation::printValueConstraints(ValueConstraints &valueConstraints)
+void OMR::ValuePropagation::printValueConstraints(OMR::Logger *log, ValueConstraints &valueConstraints)
 {
     ValueConstraintIterator iter(valueConstraints);
     ValueConstraint *vc;
     for (vc = iter.getFirst(); vc; vc = iter.getNext()) {
-        vc->print(this, 6);
+        vc->print(log, this, 6);
     }
 }
 
-void OMR::ValuePropagation::printGlobalConstraints()
+void OMR::ValuePropagation::printGlobalConstraints(OMR::Logger *log)
 {
     traceMsg(comp(), "   Global constraints:\n");
     for (auto i = 0U; i <= _globalConstraintsHTMaxBucketIndex; i++) {
@@ -4577,15 +4574,15 @@ void OMR::ValuePropagation::printGlobalConstraints()
         for (entry = _globalConstraintsHashTable[i]; entry; entry = entry->next) {
             for (Relationship *rel = entry->constraints.getFirst(); rel; rel = rel->getNext()) {
                 traceMsg(comp(), "      global");
-                rel->print(this, entry->valueNumber, 1);
+                rel->print(log, this, entry->valueNumber, 1);
             }
         }
     }
 }
 
-void OMR::ValuePropagation::printEdgeConstraints(EdgeConstraints *constraints)
+void OMR::ValuePropagation::printEdgeConstraints(OMR::Logger *log, EdgeConstraints *constraints)
 {
-    if (!_isGlobalPropagation || comp()->getOutFile() == NULL)
+    if (!_isGlobalPropagation)
         return;
 
     if (trace()) {
@@ -4598,39 +4595,35 @@ void OMR::ValuePropagation::printEdgeConstraints(EdgeConstraints *constraints)
             traceMsg(comp(), " has no constraints\n");
         } else {
             traceMsg(comp(), " constraints:\n");
-            printValueConstraints(constraints->valueConstraints);
+            printValueConstraints(log, constraints->valueConstraints);
         }
     }
 }
 
-void OMR::ValuePropagation::Relationship::print(OMR::ValuePropagation *vp)
+void OMR::ValuePropagation::Relationship::print(OMR::Logger *log, OMR::ValuePropagation *vp)
 {
-    if (vp->comp()->getOutFile() == NULL)
-        return;
     if (relative == AbsoluteConstraint) {
         // An absolute store constraint can have a null constraint value.
         //
         if (constraint)
-            constraint->print(vp->comp(), vp->comp()->getOutFile());
+            constraint->print(log, vp->comp());
         else
             traceMsg(vp->comp(), "generalized");
     } else
-        constraint->print(vp->comp(), vp->comp()->getOutFile(), relative);
+        constraint->print(log, vp->comp(), relative);
 }
 
-void OMR::ValuePropagation::Relationship::print(OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent)
+void OMR::ValuePropagation::Relationship::print(OMR::Logger *log, OMR::ValuePropagation *vp, int32_t valueNumber,
+    int32_t indent)
 {
-    if (vp->comp()->getOutFile() == NULL)
-        return;
     TR_FrontEnd *fe = vp->fe();
     if (valueNumber < vp->_firstUnresolvedSymbolValueNumber) {
-        trfprintf(vp->comp()->getOutFile(), "%*.svalue %d is ", indent, " ", valueNumber);
-        print(vp);
+        log->printf("%*.svalue %d is ", indent, " ", valueNumber);
+        print(log, vp);
     } else if (valueNumber < vp->_firstInductionVariableValueNumber) {
         // Symbol resolution constraint
         //
-        trfprintf(vp->comp()->getOutFile(), "%*.ssymbol %d is resolved", indent, " ",
-            valueNumber - vp->_firstUnresolvedSymbolValueNumber);
+        log->printf("%*.ssymbol %d is resolved", indent, " ", valueNumber - vp->_firstUnresolvedSymbolValueNumber);
     } else {
         // Induction variable use constraint
         //
@@ -4640,40 +4633,36 @@ void OMR::ValuePropagation::Relationship::print(OMR::ValuePropagation *vp, int32
                 break;
         }
         if (iv)
-            trfprintf(vp->comp()->getOutFile(), "%*.sinduction variable %d [%p]", indent, " ",
+            log->printf("%*.sinduction variable %d [%p]", indent, " ",
                 valueNumber - vp->_firstInductionVariableValueNumber, iv->_symbol);
         else
-            trfprintf(vp->comp()->getOutFile(), "%*.sparent induction variable %d", indent, " ",
+            log->printf("%*.sparent induction variable %d", indent, " ",
                 valueNumber - vp->_firstInductionVariableValueNumber);
-        trfprintf(vp->comp()->getOutFile(), " used by value number(s) ");
-        constraint->print(vp->comp(), vp->comp()->getOutFile());
+        log->prints(" used by value number(s) ");
+        constraint->print(vp->comp()->getLogger(), vp->comp());
     }
-    trfprintf(vp->comp()->getOutFile(), "\n");
+
+    log->println();
 }
 
-void OMR::ValuePropagation::StoreRelationship::print(OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent)
+void OMR::ValuePropagation::StoreRelationship::print(OMR::Logger *log, OMR::ValuePropagation *vp, int32_t valueNumber,
+    int32_t indent)
 {
-    if (vp->comp()->getOutFile() == NULL)
-        return;
-
-    TR_FrontEnd *fe = vp->fe();
-    if (relationships.getFirst())
+    if (relationships.getFirst()) {
         for (Relationship *rel = relationships.getFirst(); rel; rel = rel->getNext()) {
-            trfprintf(vp->comp()->getOutFile(), "%*.ssymbol %p store", indent, " ", symbol);
-            rel->print(vp, valueNumber, 1);
+            log->printf("%*.ssymbol %p store", indent, " ", symbol);
+            rel->print(log, vp, valueNumber, 1);
         }
-    else
-        trfprintf(vp->comp()->getOutFile(), "%*.sptr %p symbol %p has no relationships\n", indent, " ", this, symbol);
+    } else
+        log->printf("%*.sptr %p symbol %p has no relationships\n", indent, " ", this, symbol);
 }
 
-void OMR::ValuePropagation::ValueConstraint::print(OMR::ValuePropagation *vp, int32_t indent)
+void OMR::ValuePropagation::ValueConstraint::print(OMR::Logger *log, OMR::ValuePropagation *vp, int32_t indent)
 {
-    if (vp->comp()->getOutFile() == NULL)
-        return;
     for (Relationship *rel = relationships.getFirst(); rel; rel = rel->getNext())
-        rel->print(vp, getValueNumber(), indent);
+        rel->print(log, vp, getValueNumber(), indent);
     for (StoreRelationship *storeRel = storeRelationships.getFirst(); storeRel; storeRel = storeRel->getNext())
-        storeRel->print(vp, getValueNumber(), indent);
+        storeRel->print(log, vp, getValueNumber(), indent);
 }
 
 // routines to support removal of
@@ -4758,7 +4747,7 @@ bool OMR::ValuePropagation::removeConstraints(int32_t valueNumber, ValueConstrai
 
             if (trace()) {
                 traceMsg(comp(), "   removing absoulte constraint:\n");
-                rel->print(this, valueNumber, 6);
+                rel->print(comp()->getLogger(), this, valueNumber, 6);
             }
             vc->relationships.remove(rel);
             freeRelationship(rel);
@@ -4774,7 +4763,7 @@ bool OMR::ValuePropagation::removeConstraints(int32_t valueNumber, ValueConstrai
                     removeStoreConstraints(valueConstraints, rel->relative, valueNumber);
                 if (trace()) {
                     traceMsg(comp(), "   removing absolute store constraint:\n");
-                    rel->print(this, valueNumber, 6);
+                    rel->print(comp()->getLogger(), this, valueNumber, 6);
                 }
             }
             vc->storeRelationships.remove(curStore);
@@ -4799,7 +4788,7 @@ bool OMR::ValuePropagation::removeStoreConstraints(ValueConstraints *valueConstr
                 if (rel->relative == relative) {
                     if (trace()) {
                         traceMsg(comp(), "   removing store relationship:\n");
-                        rel->print(this, rel->relative, 6);
+                        rel->print(comp()->getLogger(), this, rel->relative, 6);
                     }
                     curStore->relationships.remove(rel);
                     freeRelationship(rel);
@@ -4842,7 +4831,7 @@ bool OMR::ValuePropagation::removeConstraints(int32_t valueNumber)
                 if (foundRel) {
                     if (trace()) {
                         traceMsg(comp(), "   removing global relationship:\n");
-                        rel->print(this, cur->relative, 6);
+                        rel->print(comp()->getLogger(), this, cur->relative, 6);
                     }
                     gc->constraints.remove(cur);
                     freeRelationship(cur);
@@ -4852,7 +4841,7 @@ bool OMR::ValuePropagation::removeConstraints(int32_t valueNumber)
         // remove this relationship
         if (trace()) {
             traceMsg(comp(), "   removing global absolute constraint:\n");
-            rel->print(this, valueNumber, 6);
+            rel->print(comp()->getLogger(), this, valueNumber, 6);
         }
         gc->constraints.remove(rel);
         freeRelationship(rel);
@@ -5158,8 +5147,9 @@ TR::TreeTop *TR::ArraycopyTransformation::createMultipleArrayNodes(TR::TreeTop *
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees after forward/backward arraycopy transformation");
-        cfg->comp()->getDebug()->print(cfg->comp()->getOutFile(), cfg);
+        OMR::Logger *log = comp()->getLogger();
+        comp()->dumpMethodTrees(log, "Trees after forward/backward arraycopy transformation");
+        comp()->getDebug()->print(log, cfg);
     }
 
     arraycopyBlock = outerArraycopyTree->getEnclosingBlock();
@@ -5168,8 +5158,9 @@ TR::TreeTop *TR::ArraycopyTransformation::createMultipleArrayNodes(TR::TreeTop *
             dstObjRef);
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees after arraycopy frequency specialization");
-        cfg->comp()->getDebug()->print(cfg->comp()->getOutFile(), cfg);
+        OMR::Logger *log = comp()->getLogger();
+        comp()->dumpMethodTrees(log, "Trees after arraycopy frequency specialization");
+        comp()->getDebug()->print(log, cfg);
     }
 
     return firstInsertedTree;
@@ -5390,11 +5381,6 @@ void OMR::ValuePropagation::versionBlocks()
             tempBlock = node->getBlock();
         }
         TR::Block *lastBlock = tempBlock;
-
-        // if (lastBlock == block)
-        //    printf("versioning block_%d in %s \n",block->getNumber(),  comp()->signature());
-        // else
-        //    printf("versioning extended block_%d in %s \n",block->getNumber(),  comp()->signature());
 
         // clone block
         TR_BlockCloner cloner(_cfg, true, false); // clone branches exactly
@@ -6481,8 +6467,9 @@ void OMR::ValuePropagation::transformReferenceArrayCopyWithoutCreatingStoreTrees
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees after arraycopy array store check specialization");
-        cfg->comp()->getDebug()->print(cfg->comp()->getOutFile(), cfg);
+        OMR::Logger *log = comp()->getLogger();
+        comp()->dumpMethodTrees(log, "Trees after arraycopy array store check specialization");
+        comp()->getDebug()->print(log, cfg);
     }
 }
 
@@ -6556,9 +6543,10 @@ void OMR::ValuePropagation::transformUnknownTypeArrayCopy(TR_TreeTopWrtBarFlag *
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees after arraycopy reference/primitive specialization");
+        OMR::Logger *log = comp()->getLogger();
+        comp()->dumpMethodTrees(log, "Trees after arraycopy reference/primitive specialization");
 #if DEBUG
-        cfg->comp()->getDebug()->print(cfg->comp()->getOutFile(), cfg);
+        comp()->getDebug()->print(log, cfg);
 #endif
     }
 
@@ -6737,16 +6725,18 @@ void OMR::ValuePropagation::doDelayedTransformations()
              nullRestrictedArrayCopyTree = tt.getNext()) {
             if (trace()) {
                 TR::CFG *cfg = comp()->getFlowGraph();
-                comp()->dumpMethodTrees("Trees before transformNullRestrictedArrayCopy");
-                comp()->getDebug()->print(comp()->getOutFile(), cfg);
+                OMR::Logger *log = comp()->getLogger();
+                comp()->dumpMethodTrees(log, "Trees before transformNullRestrictedArrayCopy");
+                comp()->getDebug()->print(log, cfg);
             }
 
             transformNullRestrictedArrayCopy(nullRestrictedArrayCopyTree);
 
             if (trace()) {
                 TR::CFG *cfg = comp()->getFlowGraph();
-                comp()->dumpMethodTrees("Trees after transformNullRestrictedArrayCopy");
-                comp()->getDebug()->print(comp()->getOutFile(), cfg);
+                OMR::Logger *log = comp()->getLogger();
+                comp()->dumpMethodTrees(log, "Trees after transformNullRestrictedArrayCopy");
+                comp()->getDebug()->print(log, cfg);
             }
         }
         _needRuntimeTestNullRestrictedArrayCopy.deleteAll();
@@ -7140,8 +7130,9 @@ void OMR::ValuePropagation::doDelayedTransformations()
         invalidateUseDefInfo();
         invalidateValueNumberInfo();
 
-        if (debug("traceThrowToGoto"))
-            printf("\nthrow converted to goto in %s ", comp()->signature());
+        if (debug("traceThrowToGoto") && comp()->getLoggingEnabled()) {
+            comp()->getLogger()->printf("\nthrow converted to goto in %s ", comp()->signature());
+        }
         TR::Block *gotoDestination = predictedCatchBlock->split(firstTT, cfg);
 
         List<TR::SymbolReference> l1(trMemory()), l2(trMemory()), l3(trMemory());
@@ -7177,7 +7168,6 @@ void OMR::ValuePropagation::doDelayedTransformations()
     //
     ListIterator<TR_OpaqueClassBlock> cit(&_prexClasses);
     for (TR_OpaqueClassBlock *clazz = cit.getCurrent(); clazz; clazz = cit.getNext()) {
-        // printf("---secs--- class assumption in %s\n", comp()->signature());
         comp()->getCHTable()->recompileOnClassExtend(comp(), clazz);
     }
 
@@ -7185,7 +7175,6 @@ void OMR::ValuePropagation::doDelayedTransformations()
 
     ListIterator<TR_ResolvedMethod> mit(&_prexMethods);
     for (TR_ResolvedMethod *method = mit.getCurrent(); method; method = mit.getNext()) {
-        // printf("---secs--- method assumption in %s\n", comp()->signature());
         comp()->getCHTable()->recompileOnMethodOverride(comp(), method);
     }
 
@@ -7195,7 +7184,6 @@ void OMR::ValuePropagation::doDelayedTransformations()
     //
     ListIterator<TR_OpaqueClassBlock> prexCit(&_prexClassesThatShouldNotBeNewlyExtended);
     for (TR_OpaqueClassBlock *prexClazz = prexCit.getCurrent(); prexClazz; prexClazz = prexCit.getNext()) {
-        // printf("---secs--- class assumption in %s\n", comp()->signature());
         comp()->getCHTable()->recompileOnNewClassExtend(comp(), prexClazz);
 
         TR_PersistentClassInfo *classInfo
@@ -7231,8 +7219,6 @@ void OMR::ValuePropagation::doDelayedTransformations()
     for (ClassInitInfo *cii = _classesToCheckInit.getFirst(); cii; cii = cii->getNext()) {
         if (cii->_block->nodeIsRemoved())
             continue;
-
-        // printf("Doing new vp trace transformation in %s\n", comp()->signature()); fflush(stdout);
 
         TR::Block *succToSplit = NULL;
         TR::TreeTop *ifTree = cii->_tt;

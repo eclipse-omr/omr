@@ -47,6 +47,8 @@ class Instruction;
 
 namespace OMR {
 
+class Logger;
+
 /**
  * @class ObjectFormat
  *
@@ -119,13 +121,13 @@ public:
     virtual int32_t estimateBinaryLength() = 0;
 
     /**
-     * @brief Print an encoded function call to a file stream
+     * @brief Print an encoded function call to a logger
      *
-     * @param[in] file : the \c TR::FILE to print to
+     * @param[in] log : the \c OMR::Logger to print to
      * @param[in] data : a populated \c TR::FunctionCallData structure with valid parameters
      *          for an encoded function call.
      */
-    virtual uint8_t *printEncodedFunctionCall(TR::FILE *file, TR::FunctionCallData &data) = 0;
+    virtual uint8_t *printEncodedFunctionCall(OMR::Logger *log, TR::FunctionCallData &data) = 0;
 };
 
 } // namespace OMR

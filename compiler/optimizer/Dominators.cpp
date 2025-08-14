@@ -37,6 +37,7 @@
 #include "infra/CfgEdge.hpp"
 #include "infra/CfgNode.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 TR_Dominators::TR_Dominators(TR::Compilation *c, bool post)
     : _region(c->trMemory()->heapMemoryRegion())
@@ -150,7 +151,7 @@ void TR_Dominators::findDominators(TR::Block *start)
 
     if (trace()) {
         traceMsg(comp(), "CFG before initialization:\n");
-        comp()->getDebug()->print(comp()->getOutFile(), _cfg);
+        comp()->getDebug()->print(comp()->getLogger(), _cfg);
     }
 
     // Initialize the BBInfo structures for the real blocks
@@ -159,10 +160,10 @@ void TR_Dominators::findDominators(TR::Block *start)
 
     if (trace()) {
         traceMsg(comp(), "CFG after initialization:\n");
-        comp()->getDebug()->print(comp()->getOutFile(), _cfg);
+        comp()->getDebug()->print(comp()->getLogger(), _cfg);
         traceMsg(comp(), "\nInfo after initialization:\n");
         for (i = 0; i <= _topDfNum; i++)
-            getInfo(i).print(comp()->fe(), comp()->getOutFile());
+            getInfo(i).print(comp()->getLogger(), comp()->fe());
     }
 
     for (i = _topDfNum; i > 1; i--) {
@@ -389,13 +390,11 @@ void TR_Dominators::link(int32_t parentIndex, int32_t childIndex)
 }
 
 #ifdef DEBUG
-void TR_Dominators::BBInfo::print(TR_FrontEnd *fe, TR::FILE *pOutFile)
+void TR_Dominators::BBInfo::print(OMR::Logger *log, TR_FrontEnd *fe)
 {
-    if (pOutFile == NULL)
-        return;
-    trfprintf(pOutFile, "BBInfo %d:\n", getIndex());
-    trfprintf(pOutFile, "   _parent=%d, _idom=%d, _sdno=%d, _ancestor=%d, _label=%d, _size=%d, _child=%d\n", _parent,
-        _idom, _sdno, _ancestor, _label, _size, _child);
+    log->printf("BBInfo %d:\n", getIndex());
+    log->printf("   _parent=%d, _idom=%d, _sdno=%d, _ancestor=%d, _label=%d, _size=%d, _child=%d\n", _parent, _idom,
+        _sdno, _ancestor, _label, _size, _child);
 }
 #endif
 

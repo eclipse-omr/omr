@@ -30,6 +30,10 @@ class TR_FrontEnd;
 class TR_IlGenerator;
 class TR_InlineBlocks;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Compilation;
 class IlGeneratorMethodDetails;
@@ -65,7 +69,7 @@ public:
     virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab);
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix);
+    virtual void print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix);
 };
 
 class InliningIlGenRequest : public IlGenRequest {
@@ -83,7 +87,7 @@ public:
     virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab);
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix);
+    virtual void print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix);
 };
 
 class PartialInliningIlGenRequest : public InliningIlGenRequest {
@@ -100,7 +104,7 @@ public:
     virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab);
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix);
+    virtual void print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix);
 };
 
 } // namespace TR

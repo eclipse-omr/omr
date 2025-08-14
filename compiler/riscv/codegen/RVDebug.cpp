@@ -35,6 +35,7 @@
 #include "codegen/RegisterDependencyStruct.hpp"
 #include "env/IO.hpp"
 #include "il/Block.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
 static const char *opCodeToNameMap[] = {
@@ -56,290 +57,281 @@ static const char *opCodeToNameMap[] = {
 
 const char *TR_Debug::getOpCodeName(TR::InstOpCode *opCode) { return opCodeToNameMap[opCode->getMnemonic()]; }
 
-void TR_Debug::printMemoryReferenceComment(TR::FILE *pOutFile, TR::MemoryReference *mr)
+void TR_Debug::printMemoryReferenceComment(OMR::Logger *log, TR::MemoryReference *mr)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR::Symbol *symbol = mr->getSymbolReference()->getSymbol();
     if (symbol == NULL && mr->getSymbolReference()->getOffset() == 0)
         return;
 
-    trfprintf(pOutFile, "\t\t# SymRef");
-    print(pOutFile, mr->getSymbolReference());
+    log->prints("\t\t# SymRef");
+    print(log, mr->getSymbolReference());
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::DataInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::DataInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t0x%08x (%d)", getOpCodeName(&instr->getOpCode()), instr->getSourceImmediate(),
+    printPrefix(log, instr);
+    log->printf("%s \t0x%08x (%d)", getOpCodeName(&instr->getOpCode()), instr->getSourceImmediate(),
         instr->getSourceImmediate());
-    trfflush(_comp->getOutFile());
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RtypeInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::RtypeInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getTargetRegister(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getSource1Register(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getSource2Register(), TR_WordReg);
-    trfflush(_comp->getOutFile());
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getTargetRegister(), TR_WordReg);
+    log->prints(", ");
+    print(log, instr->getSource1Register(), TR_WordReg);
+    log->prints(", ");
+    print(log, instr->getSource2Register(), TR_WordReg);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::ItypeInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::ItypeInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getTargetRegister(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getSource1Register(), TR_WordReg);
-    trfprintf(pOutFile, ", 0x%04x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
-    trfflush(_comp->getOutFile());
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getTargetRegister(), TR_WordReg);
+    log->prints(", ");
+    print(log, instr->getSource1Register(), TR_WordReg);
+    log->printf(", 0x%04x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::StypeInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::StypeInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getSource1Register(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getSource2Register(), TR_WordReg);
-    trfprintf(pOutFile, ", 0x%04x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
-    trfflush(_comp->getOutFile());
-}
-
-void
-
-TR_Debug::print(TR::FILE *pOutFile, TR::BtypeInstruction *instr)
-{
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getSource1Register(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getSource2Register(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
-    print(pOutFile, instr->getLabelSymbol());
-    trfflush(_comp->getOutFile());
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getSource1Register(), TR_WordReg);
+    log->prints(", ");
+    print(log, instr->getSource2Register(), TR_WordReg);
+    log->printf(", 0x%04x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
+    log->flush();
 }
 
 void
 
-TR_Debug::print(TR::FILE *pOutFile, TR::UtypeInstruction *instr)
+TR_Debug::print(OMR::Logger *log, TR::BtypeInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getTargetRegister(), TR_WordReg);
-    trfprintf(pOutFile, ", 0x%08x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
-    trfflush(_comp->getOutFile());
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getSource1Register(), TR_WordReg);
+    log->prints(", ");
+    print(log, instr->getSource2Register(), TR_WordReg);
+    log->prints(", ");
+    print(log, instr->getLabelSymbol());
+    log->flush();
 }
 
 void
 
-TR_Debug::print(TR::FILE *pOutFile, TR::JtypeInstruction *instr)
+TR_Debug::print(OMR::Logger *log, TR::UtypeInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getTargetRegister(), TR_WordReg);
-    trfprintf(pOutFile, ", ");
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getTargetRegister(), TR_WordReg);
+    log->printf(", 0x%08x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
+    log->flush();
+}
+
+void
+
+TR_Debug::print(OMR::Logger *log, TR::JtypeInstruction *instr)
+{
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getTargetRegister(), TR_WordReg);
+    log->prints(", ");
     if (instr->getLabelSymbol()) {
-        print(pOutFile, instr->getLabelSymbol());
+        print(log, instr->getLabelSymbol());
     } else if (instr->getSymbolReference()) {
-        print(pOutFile, instr->getSymbolReference());
+        print(log, instr->getSymbolReference());
     } else {
-        trfprintf(pOutFile, "0x%08x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
+        log->printf("0x%08x (%d)", instr->getSourceImmediate(), instr->getSourceImmediate());
     }
-    trfflush(_comp->getOutFile());
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::LoadInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::LoadInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getTargetRegister(), TR_WordReg);
-    trfprintf(pOutFile, " <- ");
-    print(pOutFile, instr->getMemoryReference());
-    trfflush(_comp->getOutFile());
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getTargetRegister(), TR_WordReg);
+    log->prints(" <- ");
+    print(log, instr->getMemoryReference());
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::StoreInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::StoreInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-    print(pOutFile, instr->getSource1Register(), TR_WordReg);
-    trfprintf(pOutFile, " -> ");
-    print(pOutFile, instr->getMemoryReference());
-    trfflush(_comp->getOutFile());
+    printPrefix(log, instr);
+    log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+    print(log, instr->getSource1Register(), TR_WordReg);
+    log->prints(" -> ");
+    print(log, instr->getMemoryReference());
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     switch (instr->getKind()) {
         case OMR::Instruction::IsLabel:
-            print(pOutFile, (TR::LabelInstruction *)instr);
+            print(log, (TR::LabelInstruction *)instr);
             break;
         case OMR::Instruction::IsAdmin:
-            print(pOutFile, (TR::AdminInstruction *)instr);
+            print(log, (TR::AdminInstruction *)instr);
             break;
         case OMR::Instruction::IsData:
-            print(pOutFile, (TR::DataInstruction *)instr);
+            print(log, (TR::DataInstruction *)instr);
             break;
         case OMR::Instruction::IsRTYPE:
-            print(pOutFile, (TR::RtypeInstruction *)instr);
+            print(log, (TR::RtypeInstruction *)instr);
             break;
         case OMR::Instruction::IsITYPE:
-            print(pOutFile, (TR::ItypeInstruction *)instr);
+            print(log, (TR::ItypeInstruction *)instr);
             break;
         case OMR::Instruction::IsSTYPE:
-            print(pOutFile, (TR::StypeInstruction *)instr);
+            print(log, (TR::StypeInstruction *)instr);
             break;
         case OMR::Instruction::IsBTYPE:
-            print(pOutFile, (TR::BtypeInstruction *)instr);
+            print(log, (TR::BtypeInstruction *)instr);
             break;
         case OMR::Instruction::IsUTYPE:
-            print(pOutFile, (TR::UtypeInstruction *)instr);
+            print(log, (TR::UtypeInstruction *)instr);
             break;
         case OMR::Instruction::IsJTYPE:
-            print(pOutFile, (TR::JtypeInstruction *)instr);
+            print(log, (TR::JtypeInstruction *)instr);
             break;
         case OMR::Instruction::IsLOAD:
-            print(pOutFile, (TR::LoadInstruction *)instr);
+            print(log, (TR::LoadInstruction *)instr);
             break;
         case OMR::Instruction::IsSTORE:
-            print(pOutFile, (TR::StoreInstruction *)instr);
+            print(log, (TR::StoreInstruction *)instr);
             break;
         default: {
-            printPrefix(pOutFile, instr);
-            trfprintf(pOutFile, "%s", getOpCodeName(&instr->getOpCode()));
-            trfflush(_comp->getOutFile());
+            printPrefix(log, instr);
+            log->prints(getOpCodeName(&instr->getOpCode()));
+            log->flush();
         }
     }
 }
 
-void TR_Debug::printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr)
+void TR_Debug::printInstructionComment(OMR::Logger *log, int32_t tabStops, TR::Instruction *instr)
 {
     while (tabStops-- > 0)
-        trfprintf(pOutFile, "\t");
+        log->printc('\t');
 
-    dumpInstructionComments(pOutFile, instr);
+    dumpInstructionComments(log, instr);
 }
 
-void TR_Debug::printPrefix(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::printPrefix(OMR::Logger *log, TR::Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr, instr->getBinaryEncoding(), instr->getBinaryLength());
+    printPrefix(log, instr, instr->getBinaryEncoding(), instr->getBinaryLength());
     TR::Node *node = instr->getNode();
-    trfprintf(pOutFile, "%d \t", node ? node->getByteCodeIndex() : 0);
+    log->printf("%d \t", node ? node->getByteCodeIndex() : 0);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::LabelInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::LabelInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
 
     TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
     if (instr->getOpCodeValue() == TR::InstOpCode::label) {
-        print(pOutFile, label);
-        trfprintf(pOutFile, ":");
+        print(log, label);
+        log->printc(':');
         if (label->isStartInternalControlFlow())
-            trfprintf(pOutFile, "\t; (Start of internal control flow)");
+            log->prints("\t; (Start of internal control flow)");
         else if (label->isEndInternalControlFlow())
-            trfprintf(pOutFile, "\t; (End of internal control flow)");
+            log->prints("\t; (End of internal control flow)");
     } else {
-        trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-        print(pOutFile, label);
+        log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+        print(log, label);
         if (snippet) {
             TR_UNIMPLEMENTED();
         }
     }
-    printInstructionComment(pOutFile, 1, instr);
+    printInstructionComment(log, 1, instr);
     if (instr->getDependencyConditions())
-        print(pOutFile, instr->getDependencyConditions());
-    trfflush(_comp->getOutFile());
+        print(log, instr->getDependencyConditions());
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::AdminInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::AdminInstruction *instr)
 {
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s ", getOpCodeName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s ", getOpCodeName(&instr->getOpCode()));
 
     TR::Node *node = instr->getNode();
     if (node) {
         if (node->getOpCodeValue() == TR::BBStart) {
-            trfprintf(pOutFile, " (BBStart (block_%d))", node->getBlock()->getNumber());
+            log->printf(" (BBStart (block_%d))", node->getBlock()->getNumber());
         } else if (node->getOpCodeValue() == TR::BBEnd) {
-            trfprintf(pOutFile, " (BBEnd (block_%d))", node->getBlock()->getNumber());
+            log->printf(" (BBEnd (block_%d))", node->getBlock()->getNumber());
         }
     }
 
     if (instr->getDependencyConditions())
-        print(pOutFile, instr->getDependencyConditions());
+        print(log, instr->getDependencyConditions());
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
 /*
 void
-TR_Debug::print(TR::FILE *pOutFile, TR::RVTrg1Instruction *instr)
+TR_Debug::print(OMR::Logger *log, TR::RVTrg1Instruction *instr)
    {
-   printPrefix(pOutFile, instr);
-   trfprintf(pOutFile, "%s \t", getOpCodeName(&instr->getOpCode()));
-   print(pOutFile, instr->getTargetRegister(), TR_WordReg);
-   trfflush(_comp->getOutFile());
+   printPrefix(log, instr);
+   log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
+   print(log, instr->getTargetRegister(), TR_WordReg);
+   log->flush();
    }
 */
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RegisterDependency *dep)
+void TR_Debug::print(OMR::Logger *log, TR::RegisterDependency *dep)
 {
-    trfprintf(pOutFile, "[");
-    print(pOutFile, dep->getRegister(), TR_WordReg);
-    trfprintf(pOutFile, " : ");
-    trfprintf(pOutFile, "%s] ", getRVRegisterName(dep->getRealRegister()));
-    trfflush(_comp->getOutFile());
+    log->printc('[');
+    print(log, dep->getRegister(), TR_WordReg);
+    log->prints(" : ");
+    log->printf("%s] ", getRVRegisterName(dep->getRealRegister()));
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RegisterDependencyConditions *conditions)
+void TR_Debug::print(OMR::Logger *log, TR::RegisterDependencyConditions *conditions)
 {
     if (conditions) {
         uint32_t i;
-        trfprintf(pOutFile, "\n PRE: ");
+        log->prints("\n PRE: ");
         for (i = 0; i < conditions->getAddCursorForPre(); i++) {
-            print(pOutFile, conditions->getPreConditions()->getRegisterDependency(i));
+            print(log, conditions->getPreConditions()->getRegisterDependency(i));
         }
-        trfprintf(pOutFile, "\nPOST: ");
+        log->prints("\nPOST: ");
         for (i = 0; i < conditions->getAddCursorForPost(); i++) {
-            print(pOutFile, conditions->getPostConditions()->getRegisterDependency(i));
+            print(log, conditions->getPostConditions()->getRegisterDependency(i));
         }
-        trfflush(_comp->getOutFile());
+        log->flush();
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::MemoryReference *mr)
+void TR_Debug::print(OMR::Logger *log, TR::MemoryReference *mr)
 {
-    trfprintf(pOutFile, "[");
+    log->printc('[');
 
     if (mr->getBaseRegister() != NULL) {
-        print(pOutFile, mr->getBaseRegister());
-        trfprintf(pOutFile, ", ");
+        print(log, mr->getBaseRegister());
+        log->prints(", ");
     }
 
-    trfprintf(pOutFile, "%d", mr->getOffset(true));
+    log->printf("%d", mr->getOffset(true));
 
-    trfprintf(pOutFile, "]");
+    log->printc(']');
 }
 
-void TR_Debug::printRVGCRegisterMap(TR::FILE *pOutFile, TR::GCRegisterMap *map) { TR_UNIMPLEMENTED(); }
+void TR_Debug::printRVGCRegisterMap(OMR::Logger *log, TR::GCRegisterMap *map) { TR_UNIMPLEMENTED(); }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RealRegister *reg, TR_RegisterSizes size)
+void TR_Debug::print(OMR::Logger *log, TR::RealRegister *reg, TR_RegisterSizes size)
 {
-    trfprintf(pOutFile, "%s", getName(reg, size));
+    log->prints(getName(reg, size));
 }
 
 static const char *getRegisterName(TR::RealRegister::RegNum num, bool is64bit)
@@ -369,7 +361,7 @@ const char *TR_Debug::getRVRegisterName(uint32_t regNum, bool is64bit)
     return getRegisterName((TR::RealRegister::RegNum)regNum, is64bit);
 }
 
-void TR_Debug::printRVOOLSequences(TR::FILE *pOutFile) { TR_UNIMPLEMENTED(); }
+void TR_Debug::printRVOOLSequences(OMR::Logger *log) { TR_UNIMPLEMENTED(); }
 
 // This function assumes that if a trampoline is required then it must be to a helper function.
 // Use this API only for inquiring about branches to helpers.

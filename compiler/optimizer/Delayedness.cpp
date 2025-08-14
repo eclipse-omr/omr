@@ -31,6 +31,7 @@
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
 #include "optimizer/Structure.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Optimizer;
@@ -75,7 +76,7 @@ TR_Delayedness::TR_Delayedness(TR::Compilation *comp, TR::Optimizer *optimizer, 
         int32_t i;
         for (i = 0; i < _numberOfNodes; i++) {
             traceMsg(comp, "Block number : %d has solution : ", i);
-            _inSetInfo[i]->print(comp);
+            _inSetInfo[i]->print(comp->getLogger(), comp);
             traceMsg(comp, "\n");
         }
 
@@ -111,7 +112,7 @@ void TR_Delayedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStr
         /////traceMsg(comp(), "\ncurrentInSetInfo when entering Block : %d\n", blockStructure->getNumber());
         /////_currentInSetInfo->print(_compilation);
         /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getOutFile());
+        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getLogger());
     }
 
     // Block info is local to this analysis, so allocate from there
@@ -132,9 +133,9 @@ void TR_Delayedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStr
 
     if (trace()) {
         /////traceMsg(comp(), "\nIn Set of Block : %d\n", blockStructure->getNumber());
-        /////_inSetInfo[blockStructure->getNumber()]->print(_compilation->getOutFile());
+        /////_inSetInfo[blockStructure->getNumber()]->print(_compilation->getLogger());
         /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getOutFile());
+        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getLogger());
     }
 
     TR::Block *block = blockStructure->getBlock();

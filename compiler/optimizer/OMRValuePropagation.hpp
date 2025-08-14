@@ -67,8 +67,9 @@ class VPUnreachablePath;
 class TR_ValueNumberInfo;
 
 namespace OMR {
+class Logger;
 class ValuePropagation;
-}
+} // namespace OMR
 class TR_VirtualGuard;
 
 namespace TR {
@@ -189,8 +190,8 @@ public:
     struct Relationship : public TR_Link<Relationship> {
         int32_t relative;
         TR::VPConstraint *constraint;
-        void print(OMR::ValuePropagation *vp);
-        void print(OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
+        void print(OMR::Logger *log, OMR::ValuePropagation *vp);
+        void print(OMR::Logger *log, OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
     };
 
     Relationship *createRelationship(int32_t relative, TR::VPConstraint *constraint);
@@ -209,7 +210,7 @@ public:
     struct StoreRelationship : public TR_Link<StoreRelationship> {
         TR::Symbol *symbol;
         TR_LinkHead<Relationship> relationships;
-        void print(OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
+        void print(OMR::Logger *log, OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
     };
 
     StoreRelationship *createStoreRelationship(TR::Symbol *symbol, Relationship *firstRel);
@@ -239,7 +240,7 @@ public:
 
         TR_LinkHead<Relationship> relationships;
         TR_LinkHead<StoreRelationship> storeRelationships;
-        void print(OMR::ValuePropagation *vp, int32_t indent);
+        void print(OMR::Logger *log, OMR::ValuePropagation *vp, int32_t indent);
     };
 
     typedef TREE_CLASS<ValueConstraint> ValueConstraints;
@@ -763,11 +764,11 @@ public:
      */
     virtual TR::Node *innerConstrainAcall(TR::Node *node) { return node; }
 
-    void printStructureInfo(TR_Structure *structure, bool starting, bool lastTimeThrough);
-    void printParentStructure(TR_Structure *structure);
-    void printValueConstraints(ValueConstraints &valueConstraints);
-    void printEdgeConstraints(EdgeConstraints *constraints);
-    void printGlobalConstraints();
+    void printStructureInfo(OMR::Logger *log, TR_Structure *structure, bool starting, bool lastTimeThrough);
+    void printParentStructure(OMR::Logger *log, TR_Structure *structure);
+    void printValueConstraints(OMR::Logger *log, ValueConstraints &valueConstraints);
+    void printEdgeConstraints(OMR::Logger *log, EdgeConstraints *constraints);
+    void printGlobalConstraints(OMR::Logger *log);
 
     // routines for removal of constraints
     // when intersection fails for a vn

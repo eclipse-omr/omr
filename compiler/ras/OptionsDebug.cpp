@@ -37,6 +37,7 @@
 #include "optimizer/Optimizations.hpp"
 #include "ras/Debug.hpp"
 #include "ras/IgnoreLocale.hpp"
+#include "ras/Logger.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
 #include "env/VMJ9.h"
@@ -58,18 +59,23 @@ static const char *optionCategoryNames[] = {
     0 // Fail quickly if we run past the end of this array
 };
 
-TR::FILE *TR_Debug::findLogFile(TR::Options *cmdLineOptions, TR::OptionSet *optSet, char *logFileName)
+TR::FILE *TR_Debug::findLogFile(TR::Options *cmdLineOptions, TR::OptionSet *optSet, char *logFileName,
+    OMR::Logger *&logger)
 {
     char *fileName = cmdLineOptions->getLogFileName();
     TR::FILE *logFile = NULL;
-    if (fileName && !STRICMP(logFileName, fileName))
+    logger = NULL;
+
+    if (fileName && !STRICMP(logFileName, fileName)) {
         logFile = cmdLineOptions->getLogFile();
-    else {
+        logger = cmdLineOptions->getLogger();
+    } else {
         for (TR::OptionSet *prev = cmdLineOptions->getFirstOptionSet(); prev && prev != optSet;
              prev = prev->getNext()) {
             fileName = prev->getOptions() ? prev->getOptions()->getLogFileName() : NULL;
             if (fileName && !STRICMP(logFileName, fileName)) {
                 logFile = prev->getOptions()->getLogFile();
+                logger = prev->getOptions()->getLogger();
                 break;
             }
         }
@@ -78,16 +84,16 @@ TR::FILE *TR_Debug::findLogFile(TR::Options *cmdLineOptions, TR::OptionSet *optS
 }
 
 TR::FILE *TR_Debug::findLogFile(TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions, TR::OptionSet *optSet,
-    char *logFileName)
+    char *logFileName, OMR::Logger *&logger)
 {
     if (aotCmdLineOptions) {
-        TR::FILE *logFile = findLogFile(aotCmdLineOptions, optSet, logFileName);
+        TR::FILE *logFile = findLogFile(aotCmdLineOptions, optSet, logFileName, logger);
         if (logFile != NULL)
             return logFile;
     }
 
     if (jitCmdLineOptions) {
-        TR::FILE *logFile = findLogFile(jitCmdLineOptions, optSet, logFileName);
+        TR::FILE *logFile = findLogFile(jitCmdLineOptions, optSet, logFileName, logger);
         if (logFile != NULL)
             return logFile;
     }

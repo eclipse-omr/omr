@@ -65,6 +65,7 @@
 #include "optimizer/ValueNumberInfo.hpp"
 #include "optimizer/IsolatedStoreElimination.hpp"
 #include "optimizer/LoopCanonicalizer.hpp"
+#include "ras/Logger.hpp"
 
 TR_FieldPrivatizer::TR_FieldPrivatizer(TR::OptimizationManager *manager)
     : TR_LoopTransformer(manager)
@@ -311,7 +312,7 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
                     traceMsg(comp(), "\nDetected a predictable loop %d\n", loopStructure->getNumber());
 
                     traceMsg(comp(), "Fields that cannot be privatized:\n");
-                    _fieldsThatCannotBePrivatized->print(comp());
+                    _fieldsThatCannotBePrivatized->print(comp()->getLogger(), comp());
                     traceMsg(comp(), "\n");
 
                     traceMsg(comp(), "\nPossible new induction variable candidates :\n");

@@ -27,6 +27,7 @@
 #include "codegen/ConstantDataSnippet.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "x/codegen/DataSnippet.hpp"
 #include "x/codegen/HelperCallSnippet.hpp"
 #include "x/codegen/RestartSnippet.hpp"
@@ -126,88 +127,85 @@ const char *TR_Debug::getNamex(TR::Snippet *snippet)
     }
 }
 
-void TR_Debug::printx(TR::FILE *pOutFile, TR::Snippet *snippet)
+void TR_Debug::printx(OMR::Logger *log, TR::Snippet *snippet)
 {
-    // TODO:AMD64: Clean up these #ifdefs
-    if (pOutFile == NULL)
-        return;
     switch (snippet->getKind()) {
 #ifdef J9_PROJECT_SPECIFIC
         case TR::Snippet::IsCall:
-            print(pOutFile, (TR::X86CallSnippet *)snippet);
+            print(log, (TR::X86CallSnippet *)snippet);
             break;
         case TR::Snippet::IsIPicData:
         case TR::Snippet::IsVPicData:
-            print(pOutFile, (TR::X86PicDataSnippet *)snippet);
+            print(log, (TR::X86PicDataSnippet *)snippet);
             break;
         case TR::Snippet::IsCheckFailure:
-            print(pOutFile, (TR::X86CheckFailureSnippet *)snippet);
+            print(log, (TR::X86CheckFailureSnippet *)snippet);
             break;
         case TR::Snippet::IsCheckFailureWithResolve:
-            print(pOutFile, (TR::X86CheckFailureSnippetWithResolve *)snippet);
+            print(log, (TR::X86CheckFailureSnippetWithResolve *)snippet);
             break;
         case TR::Snippet::IsBoundCheckWithSpineCheck:
-            print(pOutFile, (TR::X86BoundCheckWithSpineCheckSnippet *)snippet);
+            print(log, (TR::X86BoundCheckWithSpineCheckSnippet *)snippet);
             break;
         case TR::Snippet::IsSpineCheck:
-            print(pOutFile, (TR::X86SpineCheckSnippet *)snippet);
+            print(log, (TR::X86SpineCheckSnippet *)snippet);
             break;
         case TR::Snippet::IsForceRecompilation:
-            print(pOutFile, (TR::X86ForceRecompilationSnippet *)snippet);
+            print(log, (TR::X86ForceRecompilationSnippet *)snippet);
             break;
         case TR::Snippet::IsRecompilation:
-            print(pOutFile, (TR::X86RecompilationSnippet *)snippet);
+            print(log, (TR::X86RecompilationSnippet *)snippet);
             break;
 #endif
         case TR::Snippet::IsDivideCheck:
-            print(pOutFile, (TR::X86DivideCheckSnippet *)snippet);
+            print(log, (TR::X86DivideCheckSnippet *)snippet);
             break;
 #ifdef J9_PROJECT_SPECIFIC
         case TR::Snippet::IsGuardedDevirtual:
-            print(pOutFile, (TR::X86GuardedDevirtualSnippet *)snippet);
+            print(log, (TR::X86GuardedDevirtualSnippet *)snippet);
             break;
 #endif
         case TR::Snippet::IsHelperCall:
-            print(pOutFile, (TR::X86HelperCallSnippet *)snippet);
+            print(log, (TR::X86HelperCallSnippet *)snippet);
             break;
         case TR::Snippet::IsFPConvertToInt:
-            print(pOutFile, (TR::X86FPConvertToIntSnippet *)snippet);
+            print(log, (TR::X86FPConvertToIntSnippet *)snippet);
             break;
         case TR::Snippet::IsFPConvertToLong:
-            print(pOutFile, (TR::X86FPConvertToLongSnippet *)snippet);
+            print(log, (TR::X86FPConvertToLongSnippet *)snippet);
             break;
         case TR::Snippet::IsUnresolvedDataIA32:
-            print(pOutFile, (TR::UnresolvedDataSnippet *)snippet);
+            print(log, (TR::UnresolvedDataSnippet *)snippet);
             break;
 #ifdef TR_TARGET_64BIT
         case TR::Snippet::IsUnresolvedDataAMD64:
-            print(pOutFile, (TR::UnresolvedDataSnippet *)snippet);
+            print(log, (TR::UnresolvedDataSnippet *)snippet);
             break;
 #endif
         case TR::Snippet::IsRestart:
             TR_ASSERT(0, "unexpected snippet kind: %d", snippet->getKind());
             break;
         default:
-            snippet->print(pOutFile, this);
+            snippet->print(log, this);
             break;
     }
 }
 
-int32_t TR_Debug::printRestartJump(TR::FILE *pOutFile, TR::X86RestartSnippet *snippet, uint8_t *bufferPos)
+int32_t TR_Debug::printRestartJump(OMR::Logger *log, TR::X86RestartSnippet *snippet, uint8_t *bufferPos)
 {
     int32_t size = snippet->estimateRestartJumpLength(TR::InstOpCode::JMP4,
         static_cast<int32_t>(bufferPos - (uint8_t *)snippet->cg()->getBinaryBufferStart()));
-    printPrefix(pOutFile, NULL, bufferPos, size);
-    printLabelInstruction(pOutFile, "jmp", snippet->getRestartLabel());
+    printPrefix(log, NULL, bufferPos, size);
+    printLabelInstruction(log, "jmp", snippet->getRestartLabel());
     return size;
 }
 
-int32_t TR_Debug::printRestartJump(TR::FILE *pOutFile, TR::X86RestartSnippet *snippet, uint8_t *bufferPos,
+int32_t TR_Debug::printRestartJump(OMR::Logger *log, TR::X86RestartSnippet *snippet, uint8_t *bufferPos,
     int32_t branchOp, const char *branchOpName)
 {
     int32_t size = snippet->estimateRestartJumpLength((TR::InstOpCode::Mnemonic)branchOp,
         static_cast<int32_t>(bufferPos - (uint8_t *)snippet->cg()->getBinaryBufferStart()));
-    printPrefix(pOutFile, NULL, bufferPos, size);
-    printLabelInstruction(pOutFile, branchOpName, snippet->getRestartLabel());
+    printPrefix(log, NULL, bufferPos, size);
+    printLabelInstruction(log, branchOpName, snippet->getRestartLabel());
     return size;
 }

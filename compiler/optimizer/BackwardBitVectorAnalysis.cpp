@@ -34,6 +34,7 @@
 #include "infra/CfgNode.hpp"
 #include "optimizer/Structure.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 class TR_BitVector;
 #define MAX_CASES_FOR_STACK_ALLOCATION 16
@@ -302,7 +303,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_regularGenSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -315,7 +316,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_regularKillSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -328,7 +329,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_exceptionGenSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -341,7 +342,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_exceptionKillSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -592,7 +593,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_currentRegularGenSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -605,7 +606,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_currentRegularKillSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -618,7 +619,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_currentExceptionGenSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -631,7 +632,7 @@ void TR_BackwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Regio
                 for (pair = analysisInfo->_currentExceptionKillSetInfo->getFirst(); pair; pair = pair->getNext()) {
                     if (pair->_container) {
                         traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                        pair->_container->print(this->comp());
+                        pair->_container->print(this->comp()->getLogger(), this->comp());
                         traceMsg(this->comp(), "\n");
                     }
                 }
@@ -1216,13 +1217,13 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeNodeIfSuccessorsAnalyzed(TR_R
             typename TR_BasicDFSetAnalysis<Container *>::TR_ContainerNodeNumberPair *pair;
             for (pair = analysisInfo->_outSetInfo->getFirst(); pair; pair = pair->getNext()) {
                 traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                pair->_container->print(this->comp());
-                _currentOutSetInfo[pair->_nodeNumber]->print(this->comp());
+                pair->_container->print(this->comp()->getLogger(), this->comp());
+                _currentOutSetInfo[pair->_nodeNumber]->print(this->comp()->getLogger(), this->comp());
                 traceMsg(this->comp(), "\n");
             }
             traceMsg(this->comp(), "\nBEFORE In Set Info for Region or Block : %p numbered %d is : \n",
                 nodeStructure->getStructure(), nodeStructure->getStructure()->getNumber());
-            analysisInfo->_inSetInfo->print(this->comp());
+            analysisInfo->_inSetInfo->print(this->comp()->getLogger(), this->comp());
             traceMsg(this->comp(), "\n");
         }
 
@@ -1239,24 +1240,24 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeNodeIfSuccessorsAnalyzed(TR_R
             typename TR_BasicDFSetAnalysis<Container *>::TR_ContainerNodeNumberPair *pair;
             for (pair = analysisInfo->_outSetInfo->getFirst(); pair; pair = pair->getNext()) {
                 traceMsg(this->comp(), "Exit or Succ numbered %d : ", pair->_nodeNumber);
-                pair->_container->print(this->comp());
+                pair->_container->print(this->comp()->getLogger(), this->comp());
                 traceMsg(this->comp(), "\n");
             }
             traceMsg(this->comp(), "\nIn Set Info for Region or Block : %p numbered %d is : \n",
                 nodeStructure->getStructure(), nodeStructure->getStructure()->getNumber());
-            analysisInfo->_inSetInfo->print(this->comp());
+            analysisInfo->_inSetInfo->print(this->comp()->getLogger(), this->comp());
             traceMsg(this->comp(), "\n");
 
             traceMsg(this->comp(), "\nOut Set Info for parent region : %p numbered %d is : \n", regionStructure,
                 regionStructure->getNumber());
             for (pair = regionAnalysisInfo->_outSetInfo->getFirst(); pair; pair = pair->getNext()) {
                 traceMsg(this->comp(), "Succ numbered %d : ", pair->_nodeNumber);
-                pair->_container->print(this->comp());
+                pair->_container->print(this->comp()->getLogger(), this->comp());
                 traceMsg(this->comp(), "\n");
             }
             traceMsg(this->comp(), "\nIn Set Info for parent region : %p numbered %d is : \n", regionStructure,
                 regionStructure->getNumber());
-            regionAnalysisInfo->_inSetInfo->print(this->comp());
+            regionAnalysisInfo->_inSetInfo->print(this->comp()->getLogger(), this->comp());
             traceMsg(this->comp(), "\n");
         }
 
@@ -1377,7 +1378,7 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStruct
 
             if (traceBBVA()) {
                 dumpOptDetails(this->comp(), "Normal info for %d : ", blockNum);
-                this->_regularInfo->print(this->comp());
+                this->_regularInfo->print(this->comp()->getLogger(), this->comp());
                 dumpOptDetails(this->comp(), "\n");
             }
 
@@ -1386,7 +1387,7 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStruct
 
             if (traceBBVA()) {
                 dumpOptDetails(this->comp(), "Normal info for %d : ", blockNum);
-                this->_regularInfo->print(this->comp());
+                this->_regularInfo->print(this->comp()->getLogger(), this->comp());
                 dumpOptDetails(this->comp(), "\n");
             }
 
@@ -1398,7 +1399,7 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStruct
 
             if (traceBBVA()) {
                 dumpOptDetails(this->comp(), "Normal info for %d : ", blockNum);
-                this->_regularInfo->print(this->comp());
+                this->_regularInfo->print(this->comp()->getLogger(), this->comp());
                 dumpOptDetails(this->comp(), "\n");
             }
         } else {
@@ -1427,12 +1428,12 @@ bool TR_BackwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStruct
         typename TR_BasicDFSetAnalysis<Container *>::TR_ContainerNodeNumberPair *pair;
         for (pair = analysisInfo->_outSetInfo->getFirst(); pair; pair = pair->getNext()) {
             traceMsg(this->comp(), "Succ numbered %d : ", pair->_nodeNumber);
-            pair->_container->print(this->comp());
+            pair->_container->print(this->comp()->getLogger(), this->comp());
             traceMsg(this->comp(), "\n");
         }
         traceMsg(this->comp(), "\nIn Set Info for Block : %p numbered %d is : \n", blockStructure,
             blockStructure->getNumber());
-        analysisInfo->_inSetInfo->print(this->comp());
+        analysisInfo->_inSetInfo->print(this->comp()->getLogger(), this->comp());
         traceMsg(this->comp(), "\n");
     }
 

@@ -56,6 +56,7 @@
 #include "optimizer/UseDefInfo.hpp"
 #include "optimizer/ValueNumberInfo.hpp"
 #include "optimizer/TransformUtil.hpp"
+#include "ras/Logger.hpp"
 
 #define OP_PLUS 0
 #define OP_MINUS 1
@@ -5470,8 +5471,6 @@ TR::Node *directStoreSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier
                         // the block (executive summary: all our careful work above would be for naught).  So mark the
                         // load here so that eliminateDeadTrees won't make us look (as?) bad.
                         loadNode->setIsDontMoveUnderBranch(true);
-
-                        // s->comp()->dumpMethodTrees("Trees after swing");
                     }
                 }
             }
@@ -14648,7 +14647,7 @@ TR::Node *endBlockSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s
 
             if (s->trace()) {
                 traceMsg(s->comp(), "\nStructures after merging blocks:\n");
-                s->getDebug()->print(s->comp()->getOutFile(), rootStructure, 6);
+                s->getDebug()->print(s->comp()->getLogger(), rootStructure, 6);
             }
         }
 

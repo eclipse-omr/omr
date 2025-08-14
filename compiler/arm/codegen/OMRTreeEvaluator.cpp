@@ -3332,7 +3332,6 @@ TR::Register *OMR::ARM::TreeEvaluator::arraycopyEvaluator(TR::Node *node, TR::Co
     TR::Register *srcObjReg = NULL, *dstObjReg = NULL, *srcAddrReg, *dstAddrReg, *lengthReg;
     bool stopUsingCopyReg1, stopUsingCopyReg2, stopUsingCopyReg3, stopUsingCopyReg4, stopUsingCopyReg5 = false;
     TR::SymbolReference *arrayCopyHelper;
-    FILE *outFile;
 
     bool isSimpleCopy = (node->getNumChildren() == 3);
 

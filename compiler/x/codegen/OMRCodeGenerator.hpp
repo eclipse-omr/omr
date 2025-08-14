@@ -80,6 +80,7 @@ class CodeGenerator;
 
 namespace TR {
 class CodeGenerator;
+class Logger;
 class MemoryReference;
 class X86ImmInstruction;
 class X86LabelInstruction;
@@ -777,7 +778,7 @@ public:
     void dumpPostGPRegisterAssignment(TR::Instruction *, TR::Instruction *);
 #endif
 
-    void dumpDataSnippets(TR::FILE *pOutFile);
+    void dumpDataSnippets(OMR::Logger *log);
 
     TR::X86ConstantDataSnippet *findOrCreate2ByteConstant(TR::Node *, int16_t c);
     TR::X86ConstantDataSnippet *findOrCreate4ByteConstant(TR::Node *, int32_t c);

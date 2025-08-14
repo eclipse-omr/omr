@@ -36,6 +36,7 @@
 #include "il/Symbol.hpp"
 #include "infra/Assert.hpp"
 #include "p/codegen/PPCTableOfConstants.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 void OMR::ConstantDataSnippet::addConstantRequest(void *v, TR::DataType type, TR::Instruction *nibble0,
@@ -308,23 +309,20 @@ uint32_t OMR::ConstantDataSnippet::getLength()
 }
 
 #if DEBUG
-void OMR::ConstantDataSnippet::print(TR::FILE *outFile)
+void OMR::ConstantDataSnippet::print(OMR::Logger *log)
 {
-    if (outFile == NULL)
-        return;
-
     TR_FrontEnd *fe = cg()->comp()->fe();
 
     uint8_t *codeCursor = getSnippetBinaryStart();
     uint8_t *codeStart = cg()->getBinaryBufferStart();
 
-    trfprintf(outFile, "\n%08x\t\t\t\t\t; Constant Data", codeCursor - codeStart);
+    log->printf("\n%08x\t\t\t\t\t; Constant Data", codeCursor - codeStart);
 
     ListIterator<PPCConstant<double> > diterator(&_doubleConstants);
     PPCConstant<double> *dcursor = diterator.getFirst();
     while (dcursor != NULL) {
         if (cg()->comp()->target().is32Bit() || dcursor->getRequestors().size() > 0) {
-            trfprintf(outFile, "\n%08x %08x %08x\t\t; %16f Double", codeCursor - codeStart, *(int32_t *)codeCursor,
+            log->printf("\n%08x %08x %08x\t\t; %16f Double", codeCursor - codeStart, *(int32_t *)codeCursor,
                 *(int32_t *)(codeCursor + 4), dcursor->getConstantValue());
             codeCursor += 8;
         }
@@ -335,7 +333,7 @@ void OMR::ConstantDataSnippet::print(TR::FILE *outFile)
     PPCConstant<float> *fcursor = fiterator.getFirst();
     while (fcursor != NULL) {
         if (cg()->comp()->target().is32Bit() || fcursor->getRequestors().size() > 0) {
-            trfprintf(outFile, "\n%08x %08x\t\t; %16f Float", codeCursor - codeStart, *(int32_t *)codeCursor,
+            log->printf("\n%08x %08x\t\t; %16f Float", codeCursor - codeStart, *(int32_t *)codeCursor,
                 fcursor->getConstantValue());
             codeCursor += 4;
         }
@@ -346,7 +344,7 @@ void OMR::ConstantDataSnippet::print(TR::FILE *outFile)
     PPCConstant<intptr_t> *acursor = aiterator.getFirst();
     while (acursor != NULL) {
         if (acursor->getRequestors().size() > 0) {
-            trfprintf(outFile, "\n%08x %08x\t\t; %p Address", codeCursor - codeStart, *(int32_t *)codeCursor,
+            log->printf("\n%08x %08x\t\t; %p Address", codeCursor - codeStart, *(int32_t *)codeCursor,
                 acursor->getConstantValue());
             codeCursor += 4;
         }

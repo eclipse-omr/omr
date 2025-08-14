@@ -38,6 +38,7 @@
 #include "infra/TRCfgEdge.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/TransformUtil.hpp"
+#include "ras/Logger.hpp"
 
 #define MIN_SIZE_FOR_BIN_SEARCH 4
 #define MIN_CASES_FOR_OPT 4
@@ -72,7 +73,7 @@ int32_t TR::SwitchAnalyzer::perform()
         = new (trStackMemory()) TR_BitVector(_cfg->getNextNodeNumber(), trMemory(), stackAlloc, growable);
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees Before Performing Switch Analysis");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees Before Performing Switch Analysis");
     }
 
     TR::TreeTop *tt, *exitTree;
@@ -95,7 +96,7 @@ int32_t TR::SwitchAnalyzer::perform()
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees After Performing Switch Analysis");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees After Performing Switch Analysis");
     }
 
     return 1;
@@ -182,9 +183,10 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
         _signed = true;
 
     if (trace()) {
-        printInfo(comp()->fe(), comp()->getOutFile(), chain);
+        OMR::Logger *log = comp()->getLogger();
+        printInfo(log, comp()->fe(), chain);
         traceMsg(comp(), "Early Unique Chain:\n");
-        printInfo(comp()->fe(), comp()->getOutFile(), earlyUniques);
+        printInfo(log, comp()->fe(), earlyUniques);
     }
 
     // Find Dense Sets
@@ -203,7 +205,7 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
     TR_LinkHead<SwitchInfo> *bound = gather(chain);
     if (trace()) {
         traceMsg(comp(), "Early Unique Chain:\n");
-        printInfo(comp()->fe(), comp()->getOutFile(), earlyUniques);
+        printInfo(comp()->getLogger(), comp()->fe(), earlyUniques);
     }
 
     // Remerge bound nodes back into the primary chain if small // FIXME: implement
@@ -219,10 +221,11 @@ void TR::SwitchAnalyzer::analyze(TR::Node *node, TR::Block *block)
         fixUpUnsigned(bound);
         fixUpUnsigned(earlyUniques);
         if (trace()) {
+            OMR::Logger *log = comp()->getLogger();
             traceMsg(comp(), "After fixing unsigned sort order\n");
-            printInfo(comp()->fe(), comp()->getOutFile(), chain);
-            printInfo(comp()->fe(), comp()->getOutFile(), bound);
-            printInfo(comp()->fe(), comp()->getOutFile(), earlyUniques);
+            printInfo(log, comp()->fe(), chain);
+            printInfo(log, comp()->fe(), bound);
+            printInfo(log, comp()->fe(), earlyUniques);
         }
     }
 
@@ -267,7 +270,7 @@ void TR::SwitchAnalyzer::findDenseSets(TR_LinkHead<SwitchInfo> *chain)
 
     if (trace()) {
         traceMsg(comp(), "After finding dense sets\n");
-        printInfo(comp()->fe(), comp()->getOutFile(), chain);
+        printInfo(comp()->getLogger(), comp()->fe(), chain);
     }
 }
 
@@ -315,7 +318,7 @@ bool TR::SwitchAnalyzer::mergeDenseSets(TR_LinkHead<SwitchInfo> *chain)
 
     if (trace()) {
         traceMsg(comp(), "After merging dense sets\n");
-        printInfo(comp()->fe(), comp()->getOutFile(), chain);
+        printInfo(comp()->getLogger(), comp()->fe(), chain);
     }
     return change;
 }
@@ -363,10 +366,11 @@ TR_LinkHead<TR::SwitchAnalyzer::SwitchInfo> *TR::SwitchAnalyzer::gather(TR_LinkH
     }
 
     if (trace()) {
+        OMR::Logger *log = comp()->getLogger();
         traceMsg(comp(), "After Gathering\nPrimary Chain:\n");
-        printInfo(comp()->fe(), comp()->getOutFile(), chain);
+        printInfo(log, comp()->fe(), chain);
         traceMsg(comp(), "Bound Chain:\n");
-        printInfo(comp()->fe(), comp()->getOutFile(), bound);
+        printInfo(log, comp()->fe(), bound);
     }
 
     return bound;
@@ -457,38 +461,32 @@ void TR::SwitchAnalyzer::denseMerge(SwitchInfo *to, SwitchInfo *from)
     }
 }
 
-void TR::SwitchAnalyzer::printInfo(TR_FrontEnd *fe, TR::FILE *pOutFile, TR_LinkHead<SwitchInfo> *chain)
+void TR::SwitchAnalyzer::printInfo(OMR::Logger *log, TR_FrontEnd *fe, TR_LinkHead<SwitchInfo> *chain)
 {
-    if (!pOutFile)
-        return;
-
-    trfprintf(pOutFile, "------------------------------------------------ for lookup node [%p] in block_%d\n", _switch,
+    log->printf("------------------------------------------------ for lookup node [%p] in block_%d\n", _switch,
         _block->getNumber());
 
     for (SwitchInfo *info = chain->getFirst(); info; info = info->getNext()) {
-        info->print(fe, pOutFile, 0);
+        info->print(log, fe, 0);
     }
-    trfprintf(pOutFile, "================================================\n");
-    trfflush(pOutFile);
+    log->prints("================================================\n");
+    log->flush();
 }
 
-void TR::SwitchAnalyzer::SwitchInfo::print(TR_FrontEnd *fe, TR::FILE *pOutFile, int32_t indent)
+void TR::SwitchAnalyzer::SwitchInfo::print(OMR::Logger *log, TR_FrontEnd *fe, int32_t indent)
 {
-    if (!pOutFile)
-        return;
-
-    trfprintf(pOutFile, "%*s %0.8g %4d %8d [%4d -%4d] ", indent, " ", _freq, _count, _cost, _min, _max);
+    log->printf("%*s %0.8g %4d %8d [%4d -%4d] ", indent, " ", _freq, _count, _cost, _min, _max);
     switch (_kind) {
         case Unique:
-            trfprintf(pOutFile, " -> %3d Unique\n", _target->getNode()->getBlock()->getNumber());
+            log->printf(" -> %3d Unique\n", _target->getNode()->getBlock()->getNumber());
             break;
         case Range:
-            trfprintf(pOutFile, " -> %3d Range\n", _target->getNode()->getBlock()->getNumber());
+            log->printf(" -> %3d Range\n", _target->getNode()->getBlock()->getNumber());
             break;
         case Dense:
-            trfprintf(pOutFile, " [====] Dense\n");
+            log->prints(" [====] Dense\n");
             for (SwitchInfo *info = _chain->getFirst(); info; info = info->getNext())
-                info->print(fe, pOutFile, indent + 40);
+                info->print(log, fe, indent + 40);
             break;
     }
 }
@@ -528,7 +526,9 @@ TR::Block *TR::SwitchAnalyzer::peelOffTheHottestValue(TR_LinkHead<SwitchInfo> *c
     if (!chain)
         return NULL;
 
-    printInfo(comp()->fe(), comp()->getOutFile(), chain);
+    if (trace()) {
+        printInfo(comp()->getLogger(), comp()->fe(), chain);
+    }
 
     float cutOffFrequency = 0.33f;
 

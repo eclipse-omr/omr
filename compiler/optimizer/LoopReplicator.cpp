@@ -44,6 +44,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/Structure.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O LOOP REPLICATOR: "
 #define MIN_BLOCKS_IN_TRACE 5
@@ -125,9 +126,9 @@ int32_t TR_LoopReplicator::perform()
     // initialize the bitvectors
     _blocksVisited->empty();
 
-    if (trace() && getDebug()) {
+    if (trace()) {
         traceMsg(comp(), "structure before replication :\n");
-        getDebug()->print(comp()->getOutFile(), _rootStructure, 6);
+        getDebug()->print(comp()->getLogger(), _rootStructure, 6);
     }
 
     // collect info about potential
@@ -1729,13 +1730,14 @@ void TR_LoopReplicator::modifyLoops()
         if (lInfo->_replicated
             && performTransformation(comp(), "%sreplicating loop - %d\n", OPT_DETAILS, lInfo->_regionNumber)) {
             if (trace()) {
-                printf("--secs-- loopreplication in %s\n", comp()->signature());
-                fflush(stdout);
+                OMR::Logger *log = comp()->getLogger();
+                log->printf("--secs-- loopreplication in %s\n", comp()->signature());
+                log->flush();
             }
             doTailDuplication(lInfo);
             if (trace()) {
                 traceMsg(comp(), "loop (%d) replicated %d\n", lInfo->_regionNumber, lInfo->_replicated);
-                comp()->dumpMethodTrees("trees after replication - ");
+                comp()->dumpMethodTrees(comp()->getLogger(), "trees after replication - ");
             }
         } else if (!lInfo->_replicated)
             dumpOptDetails(comp(), "loop (%d) will not be replicated\n", lInfo->_regionNumber);

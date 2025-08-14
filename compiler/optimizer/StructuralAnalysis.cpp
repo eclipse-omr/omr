@@ -41,6 +41,7 @@
 #include "optimizer/Structure.hpp"
 #include "optimizer/Dominators.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 void TR_RegionAnalysis::simpleIterator(TR_Stack<int32_t> &workStack, StructureBitVector &vector,
     WorkBitVector &regionNodes, WorkBitVector &nodesInPath, bool &cyclesFound, TR::Block *hdrBlock, bool doThisCheck)
@@ -174,7 +175,7 @@ TR_Structure *TR_RegionAnalysis::getRegions(TR::Compilation *comp, TR::ResolvedM
     ra._useNew = !comp->getOption(TR_DisableIterativeSA);
     if (ra.trace()) {
         traceMsg(comp, "Blocks before Region Analysis:\n");
-        comp->getDebug()->print(comp->getOutFile(), cfg);
+        comp->getDebug()->print(comp->getLogger(), cfg);
     }
 
     ra.createLeafStructures(cfg, stackMemoryRegion);
@@ -213,7 +214,7 @@ TR_Structure *TR_RegionAnalysis::getRegions(TR::Compilation *comp)
     ra._useNew = !comp->getOption(TR_DisableIterativeSA);
     if (ra.trace()) {
         traceMsg(comp, "Blocks before Region Analysis:\n");
-        comp->getDebug()->print(comp->getOutFile(), cfg);
+        comp->getDebug()->print(comp->getLogger(), cfg);
     }
 
     ra.createLeafStructures(cfg, stackMemoryRegion);
@@ -663,8 +664,8 @@ void TR_RegionAnalysis::buildRegionSubGraph(TR_RegionStructure *region, StructIn
     //
     region->setEntry(cfgNodes[entryNode._nodeIndex]);
     if (trace()) {
-        _compilation->getDebug()->print(_compilation->getOutFile(), region, 6);
+        comp()->getDebug()->print(comp()->getLogger(), region, 6);
         traceMsg(comp(), "   Structure after finding a region:\n");
-        _compilation->getDebug()->print(_compilation->getOutFile(), this, 6);
+        comp()->getDebug()->print(comp()->getLogger(), this, 6);
     }
 }

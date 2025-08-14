@@ -34,6 +34,7 @@
 #include "infra/Stack.hpp"
 #include "optimizer/Optimizations.hpp"
 #include "env/IO.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class ResolvedMethodSymbol;
@@ -55,18 +56,18 @@ public:
         , _stackTemps(comp->trMemory(), 20)
         , _tryCatchInfo(comp->allocator("IlGen"))
     {
-        _printByteCodes = (comp->getOutFile() != NULL && comp->getOption(TR_TraceBC)
+        _printByteCodes = (comp->getLoggingEnabled() && comp->getOption(TR_TraceBC)
             && (comp->isOutermostMethod() || comp->getOption(TR_DebugInliner) || comp->trace(OMR::inlining)));
         _cannotAttemptOSR = comp->getOption(TR_EnableOSR) && !comp->isPeekingMethod()
             && methodSym->cannotAttemptOSRDuring(comp->getCurrentInlinedSiteIndex(), comp);
     }
 
-    void printByteCodes()
+    void printByteCodes(OMR::Logger *log)
     {
-        this->printByteCodePrologue();
+        this->printByteCodePrologue(log);
         for (ByteCode bc = this->first(); bc != BCunknown; bc = this->next())
-            this->printByteCode();
-        this->printByteCodeEpilogue();
+            this->printByteCode(log);
+        this->printByteCodeEpilogue(log);
     }
 
 protected:
@@ -153,7 +154,7 @@ protected:
 
         for (ByteCode bc = this->first(); bc != BCunknown; bc = this->next()) {
             if (_printByteCodes)
-                this->printByteCode();
+                this->printByteCode(comp->getLogger());
 
             int32_t i = this->bcIndex();
             if (this->isBranch())
@@ -167,7 +168,7 @@ protected:
     virtual void aboutToFindBranchTargets()
     {
         if (_printByteCodes)
-            this->printByteCodePrologue();
+            this->printByteCodePrologue(this->comp()->getLogger());
     }
 
     /// analyze any bytecodes that don't look like branches but represent control flows and suggest basic block
@@ -178,7 +179,7 @@ protected:
     virtual void finishedFindingBranchTargets()
     {
         if (_printByteCodes)
-            this->printByteCodeEpilogue();
+            this->printByteCodeEpilogue(this->comp()->getLogger());
     }
 
     /// update state when an exception range is identified
@@ -190,8 +191,8 @@ protected:
         TR::Compilation *comp = this->comp();
 
         if (_printByteCodes)
-            trfprintf(this->comp()->getOutFile(), "ExceptionRange: start [%8x] end [%8x] handler [%8x] type [%8x] \n",
-                start, end, handler, type);
+            comp->getLogger()->printf("ExceptionRange: start [%8x] end [%8x] handler [%8x] type [%8x] \n", start, end,
+                handler, type);
 
         genBBStart(start);
         genBBStart(end + 1);

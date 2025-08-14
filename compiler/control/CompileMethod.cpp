@@ -55,6 +55,7 @@
 #include "infra/Assert.hpp"
 #include "infra/String.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "env/SystemSegmentProvider.hpp"
 #include "env/DebugSegmentProvider.hpp"
 #include "omrformatconsts.h"
@@ -239,7 +240,7 @@ static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPFAIL, "%s failed compilation", comp->signature());
         }
 
-        if (comp->getOutFile() != NULL && comp->getOption(TR_TraceAll))
+        if (comp->getOption(TR_TraceAll))
             traceMsg(comp, "<result success=\"false\">exception thrown by the compiler</result>\n");
     }
 }
@@ -310,7 +311,6 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
         &compiler);
 
     try {
-        // fprintf(stderr,"loading JIT debug\n");
         if (TR::Options::requiresDebugObject() || options.getLogFileName() || options.enableDebugCounters()) {
             compiler.setDebug(createDebugObject(&compiler));
         }
@@ -322,7 +322,7 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPSTART, "compiling %s", signature);
         }
 
-        if (compiler.getOutFile() != NULL && compiler.getOption(TR_TraceAll)) {
+        if (compiler.getOption(TR_TraceAll)) {
             const char *signature = compilee.signature(&trMemory);
             traceMsg((&compiler), "<compile hotness=\"%s\" method=\"%s\">\n",
                 compiler.getHotnessName(compiler.getMethodHotness()), signature);
@@ -377,7 +377,7 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
                 }
             }
 
-            if (compiler.getOutFile() != NULL && compiler.getOption(TR_TraceAll))
+            if (compiler.getOption(TR_TraceAll))
                 traceMsg((&compiler), "<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n", startPC,
                     translationTime / 1000, translationTime % 1000);
         } else /* of rc == COMPILATION_SUCCEEDED */

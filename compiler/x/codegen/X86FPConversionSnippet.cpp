@@ -43,6 +43,7 @@
 #include "il/SymbolReference.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
 #include "x/codegen/X86Instruction.hpp"
@@ -162,60 +163,57 @@ uint8_t *TR::X86FPConvertToIntSnippet::genFPConversion(uint8_t *buffer)
     return buffer;
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FPConvertToIntSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::X86FPConvertToIntSnippet *snippet)
 {
-    if (pOutFile == NULL)
-        return;
-
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
 
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 
     TR::RealRegister *targetRegister = toRealRegister(snippet->getConvertInstruction()->getTargetRegister());
     uint8_t reg = targetRegister->getRegisterNumber();
 
     if (reg != TR::RealRegister::eax) {
-        printPrefix(pOutFile, NULL, bufferPos, 2);
-        trfprintf(pOutFile, "mov\t");
-        print(pOutFile, targetRegister, TR_WordReg);
-        trfprintf(pOutFile, ", eax\t\t%s preserve helper return reg", commentString());
+        printPrefix(log, NULL, bufferPos, 2);
+        log->prints("mov\t");
+        print(log, targetRegister, TR_WordReg);
+        log->printf(", eax\t\t%s preserve helper return reg", commentString());
         bufferPos += 2;
     }
 
-    printPrefix(pOutFile, NULL, bufferPos, 3);
-    trfprintf(pOutFile, "sub\tesp, 4\t\t%s push parameter", commentString());
+    printPrefix(log, NULL, bufferPos, 3);
+    log->printf("sub\tesp, 4\t\t%s push parameter", commentString());
     bufferPos += 3;
 
     TR::X86RegRegInstruction *instr = snippet->getConvertInstruction()->getIA32RegRegInstruction();
 
     if (instr) {
-        printPrefix(pOutFile, NULL, bufferPos, 5);
-        trfprintf(pOutFile, "movss\t dword ptr [esp], ");
-        print(pOutFile, toRealRegister(instr->getSourceRegister()), TR_QuadWordReg);
+        printPrefix(log, NULL, bufferPos, 5);
+        log->prints("movss\t dword ptr [esp], ");
+        print(log, toRealRegister(instr->getSourceRegister()), TR_QuadWordReg);
         bufferPos += 5;
     } else {
-        printPrefix(pOutFile, NULL, bufferPos, 3);
-        trfprintf(pOutFile, "fst\tdword ptr [esp]");
+        printPrefix(log, NULL, bufferPos, 3);
+        log->prints("fst\tdword ptr [esp]");
         bufferPos += 3;
     }
 
-    printPrefix(pOutFile, NULL, bufferPos, 5);
-    trfprintf(pOutFile, "call\t%s", getName(snippet->getHelperSymRef()));
+    printPrefix(log, NULL, bufferPos, 5);
+    log->printf("call\t%s", getName(snippet->getHelperSymRef()));
     bufferPos += 5;
 
-    printPrefix(pOutFile, NULL, bufferPos, 3);
-    trfprintf(pOutFile, "add\tesp, 4\t\t%s pop parameter", commentString());
+    printPrefix(log, NULL, bufferPos, 3);
+    log->printf("add\tesp, 4\t\t%s pop parameter", commentString());
     bufferPos += 3;
 
     if (reg != TR::RealRegister::eax) {
-        printPrefix(pOutFile, NULL, bufferPos, 1);
-        trfprintf(pOutFile, "xchg\teax, ");
-        print(pOutFile, targetRegister, TR_WordReg);
-        trfprintf(pOutFile, "\t\t%s restore eax", commentString());
+        printPrefix(log, NULL, bufferPos, 1);
+        log->prints("xchg\teax, ");
+        print(log, targetRegister, TR_WordReg);
+        log->printf("\t\t%s restore eax", commentString());
         bufferPos++;
     }
 
-    printRestartJump(pOutFile, snippet, bufferPos);
+    printRestartJump(log, snippet, bufferPos);
 }
 
 uint32_t TR::X86FPConvertToIntSnippet::getLength(int32_t estimatedSnippetStart)
@@ -319,83 +317,80 @@ uint8_t *TR::X86FPConvertToLongSnippet::genFPConversion(uint8_t *buffer)
     return buffer;
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FPConvertToLongSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::X86FPConvertToLongSnippet *snippet)
 {
-    if (pOutFile == NULL)
-        return;
-
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
 
     uint8_t action = TR::X86FPConvertToLongSnippet::_registerActions[snippet->getAction() & 0x7f];
 
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 
     if (snippet->getAction() & snippet->kNeedFXCH) {
-        printPrefix(pOutFile, NULL, bufferPos, 2);
-        trfprintf(pOutFile, "fxch\t");
-        print(pOutFile, snippet->getDoubleRegister(), TR_FloatReg);
-        trfprintf(pOutFile, "\t\t%s register to convert", commentString());
+        printPrefix(log, NULL, bufferPos, 2);
+        log->prints("fxch\t");
+        print(log, snippet->getDoubleRegister(), TR_FloatReg);
+        log->printf("\t\t%s register to convert", commentString());
         bufferPos += 2;
     }
 
     if (action & snippet->kPreserveEAX) {
-        printPrefix(pOutFile, NULL, bufferPos, 1);
-        trfprintf(pOutFile, "push\teax\t\t%s preserve eax", commentString());
+        printPrefix(log, NULL, bufferPos, 1);
+        log->printf("push\teax\t\t%s preserve eax", commentString());
         bufferPos++;
     }
 
     if (action & snippet->kPreserveEDX) {
-        printPrefix(pOutFile, NULL, bufferPos, 1);
-        trfprintf(pOutFile, "push\tedx\t\t%s preserve eax", commentString());
+        printPrefix(log, NULL, bufferPos, 1);
+        log->printf("push\tedx\t\t%s preserve eax", commentString());
         bufferPos++;
     }
 
-    printPrefix(pOutFile, NULL, bufferPos, 5);
-    trfprintf(pOutFile, "call\t%s", getName(snippet->getHelperSymRef()));
+    printPrefix(log, NULL, bufferPos, 5);
+    log->printf("call\t%s", getName(snippet->getHelperSymRef()));
     bufferPos += 5;
 
     if (action & snippet->kMOVLow) {
-        printPrefix(pOutFile, NULL, bufferPos, 2);
-        trfprintf(pOutFile, "mov\t");
-        print(pOutFile, snippet->getLowRegister(), TR_WordReg);
-        trfprintf(pOutFile, ", eax\t%s result register (low)", commentString());
+        printPrefix(log, NULL, bufferPos, 2);
+        log->prints("mov\t");
+        print(log, snippet->getLowRegister(), TR_WordReg);
+        log->printf(", eax\t%s result register (low)", commentString());
         bufferPos += 2;
     }
 
     if (action & snippet->kMOVHigh) {
-        printPrefix(pOutFile, NULL, bufferPos, 2);
-        trfprintf(pOutFile, "mov\t");
-        print(pOutFile, snippet->getHighRegister(), TR_WordReg);
-        trfprintf(pOutFile, ", edx\t%s result register (high)", commentString());
+        printPrefix(log, NULL, bufferPos, 2);
+        log->prints("mov\t");
+        print(log, snippet->getHighRegister(), TR_WordReg);
+        log->printf(", edx\t%s result register (high)", commentString());
         bufferPos += 2;
     }
 
     if (action & snippet->kXCHG) {
-        printPrefix(pOutFile, NULL, bufferPos, 1);
-        trfprintf(pOutFile, "xchg\teax, edx");
+        printPrefix(log, NULL, bufferPos, 1);
+        log->prints("xchg\teax, edx");
         bufferPos += 1;
     }
 
     if (action & snippet->kPreserveEDX) {
-        printPrefix(pOutFile, NULL, bufferPos, 1);
-        trfprintf(pOutFile, "pop\tedx\t\t%s restore edx", commentString());
+        printPrefix(log, NULL, bufferPos, 1);
+        log->printf("pop\tedx\t\t%s restore edx", commentString());
         bufferPos += 1;
     }
 
     if (action & snippet->kPreserveEAX) {
-        printPrefix(pOutFile, NULL, bufferPos, 1);
-        trfprintf(pOutFile, "pop\teax\t\t%s restore eax", commentString());
+        printPrefix(log, NULL, bufferPos, 1);
+        log->printf("pop\teax\t\t%s restore eax", commentString());
         bufferPos += 1;
     }
 
     if (snippet->getAction() & snippet->kNeedFXCH) {
-        printPrefix(pOutFile, NULL, bufferPos, 2);
-        trfprintf(pOutFile, "fxch\t");
-        print(pOutFile, snippet->getDoubleRegister(), TR_FloatReg);
+        printPrefix(log, NULL, bufferPos, 2);
+        log->prints("fxch\t");
+        print(log, snippet->getDoubleRegister(), TR_FloatReg);
         bufferPos += 2;
     }
 
-    printRestartJump(pOutFile, snippet, bufferPos);
+    printRestartJump(log, snippet, bufferPos);
 }
 
 void TR::X86FPConvertToLongSnippet::analyseLongConversion()

@@ -28,23 +28,18 @@
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
 #include "env/IO.hpp"
+#include "ras/Logger.hpp"
 
-uint32_t
-TR::S390RestoreGPR7Snippet::getLength(int32_t estimatedSnippetStart)
-   {
-   TR_UNIMPLEMENTED();
-   return 0;
-   }
+uint32_t TR::S390RestoreGPR7Snippet::getLength(int32_t estimatedSnippetStart)
+{
+    TR_UNIMPLEMENTED();
+    return 0;
+}
 
-uint8_t *
-TR::S390RestoreGPR7Snippet::emitSnippetBody()
-   {
-   TR_UNIMPLEMENTED();
-   return NULL;
-   }
+uint8_t *TR::S390RestoreGPR7Snippet::emitSnippetBody()
+{
+    TR_UNIMPLEMENTED();
+    return NULL;
+}
 
-void
-TR_Debug::print(TR::FILE *pOutFile, TR::S390RestoreGPR7Snippet *snippet)
-   {
-   TR_UNIMPLEMENTED();
-   }
+void TR_Debug::print(OMR::Logger *log, TR::S390RestoreGPR7Snippet *snippet) { TR_UNIMPLEMENTED(); }
