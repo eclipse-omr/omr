@@ -25,6 +25,33 @@
 #include <stdint.h>
 #include "env/FilePointerDecl.hpp"
 
+/**
+ * Convenience macros for logging guarded by some boolean condition
+ */
+#define trprintf(cond, log, fmt, ...)        \
+    do {                                     \
+        if (cond)                            \
+            log->printf(fmt, ##__VA_ARGS__); \
+    } while (0)
+
+#define trprints(cond, log, str) \
+    do {                         \
+        if (cond)                \
+            log->prints(str);    \
+    } while (0)
+
+#define trprintc(cond, log, c) \
+    do {                       \
+        if (cond)              \
+            log->printc(c);    \
+    } while (0)
+
+#define trprintln(cond, log) \
+    do {                     \
+        if (cond)            \
+            log->println();  \
+    } while (0)
+
 namespace TR {
 
 class Logger {
