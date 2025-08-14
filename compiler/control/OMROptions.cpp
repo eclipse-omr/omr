@@ -4443,10 +4443,13 @@ bool OMR::Options::requiresLogFile()
     // note: enumerators with different word maps can't be or'ed together
     //
     if (self()->getAnyOption(TR_TraceAll) || self()->getAnyOption(TR_TraceAliases) || self()->getAnyOption(TR_TraceBBVA)
-        || self()->getAnyOption(TR_TraceBVA) || self()->getAnyOption(TR_TraceCG)
-        || self()->getAnyOption(TR_TraceUseDefs) || self()->getAnyOption(TR_TraceNodeFlags)
-        || self()->getAnyOption(TR_TraceValueNumbers) || self()->getAnyOption(TR_TraceLiveness)
-        || self()->getAnyOption(TR_TraceILGen) || self()->getAnyOption(TR_TraceILValidator))
+        || self()->getAnyOption(TR_TraceBVA) || self()->getAnyOption(TR_TraceRegisterPressureDetails)
+        || self()->getAnyOption(TR_TraceOSR) || self()->getAnyOption(TR_TraceUseDefs)
+        || self()->getAnyOption(TR_TraceNodeFlags) || self()->getAnyOption(TR_TraceValueNumbers)
+        || self()->getAnyOption(TR_TraceLiveness) || self()->getAnyOption(TR_TraceILGen)
+        || self()->getAnyOption(TR_TraceILValidator) || self()->getAnyOption(TR_TraceCFGVerification)
+        || self()->getAnyOption(TR_TraceTreeVerification) || self()->getAnyOption(TR_TraceNodeRefCountVerification)
+        || self()->getAnyOption(TR_TraceBlockVerification) || self()->getAnyOption(TR_DebugInliner))
         return true;
 
     if (self()->tracingOptimization())
