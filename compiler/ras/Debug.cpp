@@ -469,30 +469,6 @@ bool TR_Debug::performTransformationImpl(bool canOmitTransformation, const char 
     return true;
 }
 
-void TR_Debug::trace(const char *format, ...)
-{
-    if (getLogger()->isEnabled_DEPRECATED()) {
-        va_list args;
-        va_start(args, format);
-        vtrace(format, args);
-        va_end(args);
-    }
-}
-
-void TR_Debug::vtrace(const char *format, va_list args)
-{
-    OMR::Logger *log = getLogger();
-
-    if ((0 != TR::Options::_traceFileLength) && log->supportsRewinding()
-        && log->tell() > (static_cast<int64_t>(TR::Options::_traceFileLength) << 20)) {
-        log->rewind();
-        log->prints("Rewind trace file ...\n\n\n");
-    }
-
-    log->vprintf(format, args);
-    log->flush();
-}
-
 void TR_Debug::traceLnFromLogTracer(const char *preFormatted)
 {
     OMR::Logger *log = getLogger();
