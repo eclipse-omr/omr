@@ -1160,52 +1160,6 @@ void OMR::Optimizer::dumpPostOptTrees()
         comp()->dumpMethodTrees("Post Optimization Trees");
 }
 
-void dumpName(TR::Optimizer *op, TR_FrontEnd *fe, TR::Compilation *comp, OMR::Optimizations optNum)
-{
-    static int level = 1;
-    TR::OptimizationManager *manager = op->getOptimization(optNum);
-
-    if (level > 6)
-        return;
-
-    if (optNum > endGroup && optNum < OMR::numGroups) {
-        trfprintf(comp->getOutFile(), "%*s<%s>\n", level * 6, " ", manager->name());
-
-        level++;
-
-        const OptimizationStrategy *subGroup = ((TR::OptimizationManager *)manager)->groupOfOpts();
-
-        while (subGroup->_num != endOpts && subGroup->_num != endGroup) {
-            dumpName(op, fe, comp, subGroup->_num);
-            subGroup++;
-        }
-
-        level--;
-
-        trfprintf(comp->getOutFile(), "%*s</%s>", level * 6, " ", manager->name());
-    } else if (optNum > endOpts && optNum < OMR::numOpts)
-        trfprintf(comp->getOutFile(), "%*s%s", level * 6, " ", manager->name());
-    else
-        trfprintf(comp->getOutFile(), "%*s<%d>", level * 6, " ", optNum);
-
-    trfprintf(comp->getOutFile(), "\n");
-}
-
-void OMR::Optimizer::dumpStrategy(const OptimizationStrategy *opt)
-{
-    TR_FrontEnd *fe = comp()->fe();
-
-    trfprintf(comp()->getOutFile(), "endOpts:%d OMR::numOpts:%d endGroup:%d numGroups:%d\n", endOpts, OMR::numOpts,
-        endGroup, OMR::numGroups);
-
-    while (opt->_num != endOpts) {
-        dumpName(self(), fe, comp(), opt->_num);
-        opt++;
-    }
-
-    trfprintf(comp()->getOutFile(), "\n");
-}
-
 static bool hasMoreThanOneBlock(TR::Compilation *comp)
 {
     return (comp->getStartBlock() && comp->getStartBlock()->getNextBlock());
