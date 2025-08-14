@@ -53,8 +53,9 @@ class TR_FrontEnd;
 class TR_OutlinedInstructions;
 
 namespace OMR {
+class Logger;
 class RegisterUsage;
-}
+} // namespace OMR
 
 namespace TR {
 class CodeGenerator;
@@ -227,8 +228,8 @@ public:
         TR::list<TR::Register *> *spilledRegisterList = NULL);
 
 #if defined(DEBUG)
-    void printGPRegisterStatus(TR_FrontEnd *, TR::RealRegister **registerFile, TR::FILE *pOutFile);
-    void printFPRegisterStatus(TR_FrontEnd *, TR::FILE *pOutFile);
+    void printGPRegisterStatus(OMR::Logger *log, TR_FrontEnd *, TR::RealRegister **registerFile);
+    void printFPRegisterStatus(OMR::Logger *log, TR_FrontEnd *);
 #endif
 
 protected:

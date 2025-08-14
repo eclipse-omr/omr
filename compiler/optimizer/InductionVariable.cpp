@@ -71,6 +71,7 @@
 #include "optimizer/LoopCanonicalizer.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "optimizer/TransformUtil.hpp"
 
 #define OPT_DETAILS "O^O INDUCTION VARIABLE ANALYSIS: "
@@ -331,7 +332,7 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
             if (trace()) {
                 traceMsg(comp(), "\nDetected a predictable loop %d\n", loopStructure->getNumber());
                 traceMsg(comp(), "Possible new induction variable candidates :\n");
-                comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
+                comp()->getDebug()->print(comp()->getLogger(), &_writtenExactlyOnce);
                 traceMsg(comp(), "\n");
             }
 
@@ -3977,7 +3978,7 @@ void TR_LoopStrider::detectLoopsForIndVarConversion(TR_Structure *loopStructure,
                     extendIVsOnLoopEntry(widenedIVs, loopInvariantBlock->getBlock());
                     truncateIVsOnLoopExit(widenedIVs, regionStructure);
                     if (trace())
-                        comp()->dumpMethodTrees("trees after extending in this loop");
+                        comp()->dumpMethodTrees(comp()->getLogger(), "trees after extending in this loop");
                 }
             }
         }
@@ -4480,7 +4481,7 @@ void TR_LoopStrider::eliminateSignExtensions(TR::NodeChecklist &exLoads)
         it->second.extended->recursivelyDecReferenceCount();
 
     if (trace())
-        comp()->dumpMethodTrees("trees after eliminating sign extensions");
+        comp()->dumpMethodTrees(comp()->getLogger(), "trees after eliminating sign extensions");
 }
 
 // node-recursive implementation of eliminateSignExtensions (above)
@@ -5038,9 +5039,9 @@ void TR_InductionVariableAnalysis::gatherCandidates(TR_Structure *s, TR_BitVecto
 
             if (trace()) {
                 traceMsg(comp(), "All Defs inside cyclic region %d: ", region->getNumber());
-                myAllDefs->print(comp());
+                myAllDefs->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\nLoopLocalDefs inside cyclic region %d: ", region->getNumber());
-                loopLocalDefs->print(comp());
+                loopLocalDefs->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
 
@@ -6639,8 +6640,7 @@ TR_PrimaryInductionVariable::TR_PrimaryInductionVariable(TR_BasicInductionVariab
         // TODO: do above
     }
 
-    if (trace || (comp()->getDebug() && comp()->getOptions()->getAnyOption(TR_TraceAll))) // always dump the info
-    {
+    if (trace || comp()->getOptions()->getAnyOption(TR_TraceAll)) {
         comp()->incVisitCount();
 
         traceMsg(comp(), "Loop Controlling Induction Variable %d (%p):\n", getSymRef()->getReferenceNumber(), this);
@@ -6649,13 +6649,13 @@ TR_PrimaryInductionVariable::TR_PrimaryInductionVariable(TR_BasicInductionVariab
         traceMsg(comp(), "  Branch Block is %d (%p)\n", _branchBlock->getNumber(), _branchBlock);
         traceMsg(comp(), "  EntryValue:\n");
         if (getEntryValue()) {
-            comp()->getDebug()->printWithFixedPrefix(comp()->getOutFile(), getEntryValue(), 8, true, false, "\t");
+            comp()->getDebug()->printWithFixedPrefix(comp()->getLogger(), getEntryValue(), 8, true, false, "\t");
             traceMsg(comp(), "\n");
         } else
             traceMsg(comp(), "\t(nil)\n");
 
         traceMsg(comp(), "  ExitBound:\n");
-        comp()->getDebug()->printWithFixedPrefix(comp()->getOutFile(), getExitBound(), 8, true, false, "\t");
+        comp()->getDebug()->printWithFixedPrefix(comp()->getLogger(), getExitBound(), 8, true, false, "\t");
         traceMsg(comp(), "\n  DeltaOnBackEdge: %d\n", getDeltaOnBackEdge());
         traceMsg(comp(), "  DeltaOnExitEdge: %d\n", getDeltaOnExitEdge());
         traceMsg(comp(), "  UsesUnchangedValueInLoopTest: %d\n", usesUnchangedValueInLoopTest);
@@ -6695,7 +6695,7 @@ int32_t TR_IVTypeTransformer::perform()
     }
 
     if (trace())
-        comp()->dumpMethodTrees("Trees before TR_IVTypeTransformation");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees before TR_IVTypeTransformation");
 
     TR_ScratchList<TR_Structure> whileLoops(trMemory());
     ListAppender<TR_Structure> whileLoopsInnerFirst(&whileLoops);

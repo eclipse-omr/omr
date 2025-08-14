@@ -118,6 +118,7 @@
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
 #include "ras/Delimiter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCache.hpp"
 #include "runtime/Runtime.hpp"
 #include "z/codegen/CallSnippet.hpp"
@@ -1962,8 +1963,8 @@ void OMR::Z::CodeGenerator::doBinaryEncoding()
     }
 
     if (self()->comp()->getOption(TR_TraceCG))
-        self()->comp()->getDebug()->dumpMethodInstrs(self()->comp()->getOutFile(),
-            "Post Prologue/epilogue Instructions", false);
+        self()->comp()->getDebug()->dumpMethodInstrs(self()->comp()->getLogger(), "Post Prologue/epilogue Instructions",
+            false);
 
     data.estimate = self()->setEstimatedLocationsForSnippetLabels(data.estimate);
     // need to reset constant data snippets offset for inlineEXTarget peephole optimization
@@ -3488,11 +3489,8 @@ void OMR::Z::CodeGenerator::buildRegisterMapForInstruction(TR_GCStackMap *map)
 ////////////////////////////////////////////////////////////////////////////////
 // OMR::Z::CodeGenerator::dumpDataSnippets
 ////////////////////////////////////////////////////////////////////////////////
-void OMR::Z::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
+void OMR::Z::CodeGenerator::dumpDataSnippets(OMR::Logger *log)
 {
-    if (outFile == NULL) {
-        return;
-    }
     TR_ConstHashCursor constCur(_constantHash);
     TR::S390EyeCatcherDataSnippet *eyeCatcher = NULL;
     TR::S390ConstantDataSnippet *cursor = NULL;
@@ -3503,14 +3501,14 @@ void OMR::Z::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
         size = 1 << exp;
         for (auto iterator = _constantList.begin(); iterator != _constantList.end(); ++iterator) {
             if (HANDLE_CONSTANT_SNIPPET((*iterator), size)) {
-                self()->getDebug()->print(outFile, *iterator);
+                self()->getDebug()->print(log, *iterator);
             }
         }
         CS2::HashIndex hi;
         for (hi = _constantHashCur.SetToFirst(); _constantHashCur.Valid(); hi = _constantHashCur.SetToNext()) {
             cursor = _constantHash.DataAt(hi);
             if (HANDLE_CONSTANT_SNIPPET(cursor, size)) {
-                self()->getDebug()->print(outFile, cursor);
+                self()->getDebug()->print(log, cursor);
             }
         }
     }
@@ -3519,7 +3517,7 @@ void OMR::Z::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
         for (auto writeableiterator = _writableList.begin(); writeableiterator != _writableList.end();
              ++writeableiterator) {
             if (HANDLE_CONSTANT_SNIPPET((*writeableiterator), size)) {
-                self()->getDebug()->print(outFile, *writeableiterator);
+                self()->getDebug()->print(log, *writeableiterator);
             }
         }
     }
@@ -3530,12 +3528,12 @@ void OMR::Z::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
         if ((*snippetDataIterator)->getKind() == TR::Snippet::IsEyeCatcherData)
             eyeCatcher = (TR::S390EyeCatcherDataSnippet *)(*snippetDataIterator);
         else
-            self()->getDebug()->print(outFile, *snippetDataIterator);
+            self()->getDebug()->print(log, *snippetDataIterator);
     }
 
     if (eyeCatcher != NULL) // WCODE
     {
-        self()->getDebug()->print(outFile, eyeCatcher);
+        self()->getDebug()->print(log, eyeCatcher);
     }
 }
 

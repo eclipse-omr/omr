@@ -46,6 +46,10 @@ typedef OMR::RV::CodeGenerator CodeGeneratorConnector;
 
 class TR_RVOutOfLineCodeSection;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class RVLinkageProperties;
 class ConstantDataSnippet;
@@ -131,9 +135,9 @@ public:
 #ifdef DEBUG
     /**
      * @brief Dumps data snippets
-     * @param[in] outFile : FILE for output
+     * @param[in] log : OMR::Logger for output
      */
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(OMR::Logger *log);
 #endif
 
     /**

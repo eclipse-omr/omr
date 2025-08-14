@@ -105,6 +105,7 @@
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
 #include "ras/Delimiter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCache.hpp"
 #include "runtime/CodeCacheExceptions.hpp"
 #include "runtime/CodeCacheManager.hpp"
@@ -707,8 +708,8 @@ void OMR::CodeGenerator::doInstructionSelection()
         diagnostic("\n<selection>");
     }
 
-    if (comp->getOption(TR_TraceCG) || debug("traceGRA")) {
-        self()->getDebug()->setupToDumpTreesAndInstructions("Performing Instruction Selection");
+    if (comp->getOption(TR_TraceCG)) {
+        self()->getDebug()->setupToDumpTreesAndInstructions(comp->getLogger(), "Performing Instruction Selection");
     }
 
     self()->beginInstructionSelection();
@@ -760,11 +761,11 @@ void OMR::CodeGenerator::doInstructionSelection()
 
         self()->setLiveLocals(liveLocals);
 
-        if (comp->getOption(TR_TraceCG) || debug("traceGRA")) {
+        if (comp->getOption(TR_TraceCG)) {
             // any evaluator that handles multiple trees will need to dump
             // the others
             self()->getDebug()->saveNodeChecklist(nodeChecklistBeforeDump);
-            self()->getDebug()->dumpSingleTreeWithInstrs(tt, NULL, true, false, true, true);
+            self()->getDebug()->dumpSingleTreeWithInstrs(comp->getLogger(), tt, NULL, true, false, true, true);
             traceMsg(comp, "\n------------------------------\n");
         }
 
@@ -831,25 +832,27 @@ void OMR::CodeGenerator::doInstructionSelection()
             }
         }
 
-        if (comp->getOption(TR_TraceCG) || debug("traceGRA")) {
+        if (comp->getOption(TR_TraceCG)) {
+            OMR::Logger *log = comp->getLogger();
+
             self()->getDebug()->restoreNodeChecklist(nodeChecklistBeforeDump);
             if (tt == self()->getCurrentEvaluationTreeTop()) {
                 traceMsg(comp, "------------------------------\n");
-                self()->getDebug()->dumpSingleTreeWithInstrs(tt, prevInstr->getNext(), true, true, true, false);
+                self()->getDebug()->dumpSingleTreeWithInstrs(log, tt, prevInstr->getNext(), true, true, true, false);
             } else {
                 // dump all the trees that the evaluator handled
                 traceMsg(comp, "------------------------------");
                 for (TR::TreeTop *dumptt = tt; dumptt != self()->getCurrentEvaluationTreeTop()->getNextTreeTop();
                      dumptt = dumptt->getNextTreeTop()) {
                     traceMsg(comp, "\n");
-                    self()->getDebug()->dumpSingleTreeWithInstrs(dumptt, NULL, true, false, true, false);
+                    self()->getDebug()->dumpSingleTreeWithInstrs(log, dumptt, NULL, true, false, true, false);
                 }
 
                 // all instructions are on the tt tree
-                self()->getDebug()->dumpSingleTreeWithInstrs(tt, prevInstr->getNext(), false, true, false, false);
+                self()->getDebug()->dumpSingleTreeWithInstrs(log, tt, prevInstr->getNext(), false, true, false, false);
             }
 
-            trfflush(comp->getOutFile());
+            log->flush();
         }
     }
 
@@ -891,7 +894,7 @@ void OMR::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssign)
     }
 
     if (self()->getDebug()) {
-        self()->getDebug()->startTracingRegisterAssignment();
+        self()->getDebug()->startTracingRegisterAssignment(self()->comp()->getLogger());
     }
 
     while (currInstr) {
@@ -928,7 +931,7 @@ void OMR::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssign)
     _afterRA = true;
 
     if (self()->getDebug()) {
-        self()->getDebug()->stopTracingRegisterAssignment();
+        self()->getDebug()->stopTracingRegisterAssignment(self()->comp()->getLogger());
     }
 }
 
@@ -1251,50 +1254,52 @@ void OMR::CodeGenerator::traceRAInstruction(TR::Instruction *instr)
 {
     const static char *traceEveryInstruction = feGetEnv("TR_traceEveryInstructionDuringRA");
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterAssignment(instr, true, traceEveryInstruction ? true : false);
+        self()->getDebug()->traceRegisterAssignment(self()->comp()->getLogger(), instr, true,
+            traceEveryInstruction ? true : false);
 }
 
 void OMR::CodeGenerator::tracePreRAInstruction(TR::Instruction *instr)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterAssignment(instr, false);
+        self()->getDebug()->traceRegisterAssignment(self()->comp()->getLogger(), instr, false);
 }
 
 void OMR::CodeGenerator::tracePostRAInstruction(TR::Instruction *instr)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterAssignment(instr, false, true);
+        self()->getDebug()->traceRegisterAssignment(self()->comp()->getLogger(), instr, false, true);
 }
 
 void OMR::CodeGenerator::traceRegAssigned(TR::Register *virtReg, TR::Register *realReg)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterAssigned(_regAssignFlags, virtReg, realReg);
+        self()->getDebug()->traceRegisterAssigned(self()->comp()->getLogger(), _regAssignFlags, virtReg, realReg);
 }
 
 void OMR::CodeGenerator::traceRegAssigned(TR::Register *virtReg, TR::Register *realReg,
     TR_RegisterAssignmentFlags flags)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterAssigned(flags, virtReg, realReg);
+        self()->getDebug()->traceRegisterAssigned(self()->comp()->getLogger(), flags, virtReg, realReg);
 }
 
 void OMR::CodeGenerator::traceRegFreed(TR::Register *virtReg, TR::Register *realReg)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterFreed(virtReg, realReg);
+        self()->getDebug()->traceRegisterFreed(self()->comp()->getLogger(), virtReg, realReg);
 }
 
 void OMR::CodeGenerator::traceRegInterference(TR::Register *virtReg, TR::Register *interferingVirtual, int32_t distance)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterInterference(virtReg, interferingVirtual, distance);
+        self()->getDebug()->traceRegisterInterference(self()->comp()->getLogger(), virtReg, interferingVirtual,
+            distance);
 }
 
 void OMR::CodeGenerator::traceRegWeight(TR::Register *realReg, uint32_t weight)
 {
     if (self()->getDebug())
-        self()->getDebug()->traceRegisterWeight(realReg, weight);
+        self()->getDebug()->traceRegisterWeight(self()->comp()->getLogger(), realReg, weight);
 }
 
 void OMR::CodeGenerator::traceRegisterAssignment(const char *format, ...)
@@ -1302,7 +1307,7 @@ void OMR::CodeGenerator::traceRegisterAssignment(const char *format, ...)
     if (self()->getDebug()) {
         va_list args;
         va_start(args, format);
-        self()->getDebug()->traceRegisterAssignment(format, args);
+        self()->getDebug()->traceRegisterAssignment(self()->comp()->getLogger(), format, args);
         va_end(args);
     }
 }
@@ -2446,10 +2451,6 @@ int32_t OMR::CodeGenerator::sizeOfInstructionToBePatchedHCRGuard(TR::Instruction
 
     return accumulatedSize;
 }
-
-#ifdef DEBUG
-void OMR::CodeGenerator::shutdown(TR_FrontEnd *fe, TR::FILE *logFile) {}
-#endif
 
 #if !(defined(TR_HOST_POWER) \
     && (defined(__IBMC__) || defined(__IBMCPP__) || defined(__ibmxl__) || defined(__open_xl__)))

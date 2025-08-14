@@ -45,6 +45,7 @@
 #include "il/Node_inlines.hpp"
 #include "il/StaticSymbol.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 
 OMR::ARM64::CodeGenerator::CodeGenerator(TR::Compilation *comp)
     : OMR::CodeGenerator(comp)
@@ -414,13 +415,10 @@ TR::ARM64ConstantDataSnippet *OMR::ARM64::CodeGenerator::findOrCreate8ByteConsta
     return self()->findOrCreateConstantDataSnippet(n, &c, 8);
 }
 
-void OMR::ARM64::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
+void OMR::ARM64::CodeGenerator::dumpDataSnippets(OMR::Logger *log)
 {
-    if (outFile == NULL)
-        return;
-
     for (auto iterator = _dataSnippetList.begin(); iterator != _dataSnippetList.end(); ++iterator) {
-        (*iterator)->print(outFile, self()->getDebug());
+        (*iterator)->print(log, self()->getDebug());
     }
 }
 

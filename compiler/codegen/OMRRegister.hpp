@@ -45,6 +45,10 @@ typedef OMR::Register RegisterConnector;
 
 class TR_BackingStore;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class AutomaticSymbol;
 class Compilation;
@@ -202,7 +206,7 @@ public:
     virtual void unblock();
 
 #if defined(DEBUG)
-    virtual void print(TR::Compilation *comp, TR::FILE *pOutFile, TR_RegisterSizes size = TR_WordReg);
+    virtual void print(OMR::Logger *log, TR::Compilation *comp, TR_RegisterSizes size = TR_WordReg);
 #endif
 
 protected:

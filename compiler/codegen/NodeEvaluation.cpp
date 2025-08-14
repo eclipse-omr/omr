@@ -44,6 +44,7 @@
 #include "infra/Assert.hpp"
 #include "infra/Stack.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
 #ifdef TR_TARGET_S390
@@ -178,9 +179,9 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
 
         reg = _nodeToInstrEvaluators[opcode](node, self());
 
-        if (self()->comp()->getOption(TR_TraceRegisterPressureDetails)) {
+        if (self()->comp()->getOption(TR_TraceRegisterPressureDetails) && self()->comp()->getLoggingEnabled()) {
             traceMsg(self()->comp(), "  evaluated %s", self()->getDebug()->getName(node));
-            self()->getDebug()->dumpLiveRegisters();
+            self()->getDebug()->dumpLiveRegisters(self()->comp()->getLogger());
             traceMsg(self()->comp(), "\n");
         }
 

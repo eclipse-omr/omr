@@ -28,6 +28,10 @@
 
 class TR_Memory;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Block;
 class ResolvedMethodSymbol;
@@ -96,9 +100,9 @@ public:
 
 protected:
     // Abstract Methods - subclasses must provide these
-    void printByteCodePrologue();
-    void printByteCode();
-    void printByteCodeEpilogue();
+    void printByteCodePrologue(OMR::Logger *log);
+    void printByteCode(OMR::Logger *log);
+    void printByteCodeEpilogue(OMR::Logger *log);
 
     bool isBranch();
     int32_t branchDesination(int32_t base);

@@ -33,6 +33,7 @@
 #include "codegen/TreeEvaluator.hpp"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "ras/Logger.hpp"
 
 OMR::RV::CodeGenerator::CodeGenerator(TR::Compilation *comp)
     : OMR::CodeGenerator(comp)
@@ -248,15 +249,12 @@ int32_t OMR::RV::CodeGenerator::setEstimatedLocationsForDataSnippetLabels(int32_
 }
 
 #ifdef DEBUG
-void OMR::RV::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
+void OMR::RV::CodeGenerator::dumpDataSnippets(OMR::Logger *log)
 {
-    if (outFile == NULL)
-        return;
-
     TR_UNIMPLEMENTED();
     /*
      * Commented out until TR::ConstantDataSnippet is implemented
-    _constantData->print(outFile);
+    _constantData->print(log);
      */
 }
 #endif

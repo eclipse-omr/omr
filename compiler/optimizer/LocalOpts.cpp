@@ -93,6 +93,7 @@
 #include "ras/DebugCounter.hpp"
 #include "ras/ILValidator.hpp"
 #include "ras/ILValidationStrategies.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "env/VMAccessCriticalSection.hpp"
 
@@ -1169,7 +1170,6 @@ int32_t TR_BlockManipulator::performChecksAndTreesMovement(TR::Block *newBlock, 
         if (endOfTreesBeingMoved && !prevNode->isNopableInlineGuard()
             && performTransformation(comp(), "%sswing down block_%d to maximize fall through with block_%d\n",
                 optDetailString(), newBlock->getNumber(), prevBlock->getNumber())) {
-            // comp()->dumpMethodTrees("Trees before :");
             TR::TreeTop *nextTree = prevBlock->getExit()->getNextTreeTop();
             TR::TreeTop *exitTree = prevBlock->getExit();
             TR::TreeTop *prevTree = startOfTreesBeingMoved->getPrevTreeTop();
@@ -7778,7 +7778,7 @@ int32_t TR_ColdBlockOutlining::perform()
     TR_OrderBlocks orderBlocks(manager(), true);
 
     if (trace()) {
-        comp()->dumpMethodTrees("Before cold block outlining");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Before cold block outlining");
         traceMsg(comp(), "Original ");
         orderBlocks.dumpBlockOrdering(comp()->getMethodSymbol()->getFirstTreeTop());
     }
@@ -7789,7 +7789,7 @@ int32_t TR_ColdBlockOutlining::perform()
     if (trace()) {
         traceMsg(comp(), "After outlining cold Block ");
         orderBlocks.dumpBlockOrdering(comp()->getMethodSymbol()->getFirstTreeTop());
-        comp()->dumpMethodTrees("After cold block outlining");
+        comp()->dumpMethodTrees(comp()->getLogger(), "After cold block outlining");
     }
 
     return 1;

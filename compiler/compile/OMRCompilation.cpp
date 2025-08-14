@@ -104,6 +104,7 @@
 #include "ras/ILValidationStrategies.hpp"
 #include "ras/ILValidator.hpp"
 #include "ras/IlVerifier.hpp"
+#include "ras/Logger.hpp"
 #include "control/Recompilation.hpp"
 #include "runtime/CodeCacheExceptions.hpp"
 #include "ilgen/IlGen.hpp"
@@ -912,13 +913,15 @@ int32_t OMR::Compilation::compile()
     }
 #endif /* defined(AIXPPC) */
 
-    if (self()->getOutFile() != NULL
+    if (self()->getLoggingEnabled()
         && (self()->getOption(TR_TraceAll) || debug("traceStartCompile") || self()->getOption(TR_Timing))) {
-        self()->getDebug()->printHeader();
+        self()->getDebug()->printHeader(self()->getLogger());
+
         static char *randomExercisePeriodStr = feGetEnv("TR_randomExercisePeriod");
         if (self()->getOption(TR_Randomize) || randomExercisePeriodStr != NULL)
             traceMsg(self(), "Random seed is %d%s\n", _options->getRandomSeed(),
                 self()->getOption(TR_RandomSeedSignatureHash) ? " hashed with signature" : "");
+
         if (randomExercisePeriodStr != NULL) {
             auto period = atoi(randomExercisePeriodStr);
             if (period > 0)
@@ -928,6 +931,7 @@ int32_t OMR::Compilation::compile()
 
     if (printCodegenTime)
         compTime.startTiming(self());
+
     if (_recompilationInfo)
         _recompilationInfo->startOfCompilation();
 
@@ -960,9 +964,10 @@ int32_t OMR::Compilation::compile()
                 self()->failCompilation<TR::CompilationException>("Catch blocks have real predecessors");
             }
 
-            if ((debug("dumpInitialTrees") || self()->getOption(TR_TraceTrees)) && self()->getOutFile() != NULL) {
-                self()->dumpMethodTrees("Initial Trees");
-                self()->getDebug()->print(self()->getOutFile(), self()->getSymRefTab());
+            if ((debug("dumpInitialTrees") || self()->getOption(TR_TraceTrees)) && self()->getLoggingEnabled()) {
+                OMR::Logger *log = self()->getLogger();
+                self()->dumpMethodTrees(log, "Initial Trees");
+                self()->getDebug()->print(log, self()->getSymRefTab());
             }
 #if !defined(DISABLE_CFG_CHECK)
             if (self()->getOption(TR_UseILValidator)) {
@@ -979,8 +984,8 @@ int32_t OMR::Compilation::compile()
                 TR_ASSERT(false, "we must know an opt level at this stage");
             }
 
-            if (self()->getOutFile() != NULL && (self()->getOption(TR_TraceAll) || debug("traceStartCompile")))
-                self()->getDebug()->printMethodHotness();
+            if (self()->getOption(TR_TraceAll))
+                self()->getDebug()->printMethodHotness(self()->getLogger());
 
             TR_DebuggingCounters::initializeCompilation();
             if (printCodegenTime)
@@ -1113,9 +1118,10 @@ int32_t OMR::Compilation::compile()
 
         // Flush the log
         //
-        if (self()->getOutFile() != NULL && self()->getOption(TR_TraceAll))
-            trfflush(self()->getOutFile());
+        if (self()->getOption(TR_TraceAll))
+            self()->getLogger()->flush();
     }
+
     if (self()->getOption(TR_Timing)) {
         self()->phaseTimer().DumpSummary(*self());
     }
@@ -1138,7 +1144,7 @@ int32_t OMR::Compilation::compile()
     if (self()->getOption(TR_TraceCG)) {
         TR_CHTable *chTable = self()->getCHTable();
         if (chTable)
-            self()->getDebug()->dump(self()->getOutFile(), chTable);
+            self()->getDebug()->dump(self()->getLogger(), chTable);
     }
 #endif /* ifdef(J9_PROJECT_SPECIFIC) */
 
@@ -1786,48 +1792,46 @@ void OMR::Compilation::setUsesPreexistence(bool v)
     _usesPreexistence = v;
 }
 
-// Dump the trees for the method and return the number of nodes in the trees.
+// Dump the trees for the method
 //
-void OMR::Compilation::dumpMethodTrees(const char *title, TR::ResolvedMethodSymbol *methodSymbol)
+void OMR::Compilation::dumpMethodTrees(OMR::Logger *log, char *title, TR::ResolvedMethodSymbol *methodSymbol)
 {
-    if (self()->getOutFile() == NULL)
-        return;
-
     if (methodSymbol == 0)
         methodSymbol = _methodSymbol;
 
-    self()->getDebug()->printIRTrees(self()->getOutFile(), title, methodSymbol);
+    self()->getDebug()->printIRTrees(log, title, methodSymbol);
 
     if (!self()->getOption(TR_DisableDumpFlowGraph))
-        self()->dumpFlowGraph(methodSymbol->getFlowGraph());
+        self()->dumpFlowGraph(log, methodSymbol->getFlowGraph());
 
     if (self()->isOutermostMethod() && self()->getKnownObjectTable()) // This is pretty verbose.  Let's just dump it
                                                                       // when we're dumping the whole method.
-        self()->getKnownObjectTable()->dumpTo(self()->getOutFile(), self());
+        self()->getKnownObjectTable()->dumpTo(log, self());
 
-    trfflush(self()->getOutFile());
+    log->flush();
 }
 
-void OMR::Compilation::dumpMethodTrees(const char *title1, const char *title2, TR::ResolvedMethodSymbol *methodSymbol)
+void OMR::Compilation::dumpMethodTrees(OMR::Logger *log, char *title1, const char *title2,
+    TR::ResolvedMethodSymbol *methodSymbol)
 {
     TR::StackMemoryRegion stackMemoryRegion(*self()->trMemory());
     char *title = (char *)self()->trMemory()->allocateStackMemory(20 + strlen(title1) + strlen(title2));
     sprintf(title, "%s%s", title1, title2);
-    self()->dumpMethodTrees(title, methodSymbol);
+    self()->dumpMethodTrees(log, title, methodSymbol);
 }
 
-void OMR::Compilation::dumpFlowGraph(TR::CFG *cfg)
+void OMR::Compilation::dumpFlowGraph(OMR::Logger *log, TR::CFG *cfg)
 {
     if (cfg == 0)
         cfg = self()->getFlowGraph();
     if (debug("dumpCFG") || self()->getOption(TR_TraceTrees) || self()->getOption(TR_TraceCG)
         || self()->getOption(TR_TraceUseDefs)) {
         if (cfg)
-            self()->getDebug()->print(self()->getOutFile(), cfg);
+            self()->getDebug()->print(log, cfg);
         else
-            trfprintf(self()->getOutFile(), "\nControl Flow Graph is empty\n");
+            log->prints("\nControl Flow Graph is empty\n");
     }
-    trfflush(self()->getOutFile());
+    log->flush();
 }
 
 void OMR::Compilation::mapStaticAddressToCounter(TR::SymbolReference *symRef, TR::DebugCounterBase *counter)
@@ -1905,8 +1909,11 @@ void OMR::Compilation::verifyAndFixRdbarAnchors()
 #ifdef DEBUG
 void OMR::Compilation::dumpMethodGraph(int index, TR::ResolvedMethodSymbol *methodSymbol)
 {
-    if (self()->getOutFile() == NULL)
+    if (!self()->getLoggingEnabled()) {
         return;
+    }
+
+    OMR::Logger *log = getLogger();
 
     if (methodSymbol == 0)
         methodSymbol = _methodSymbol;
@@ -1922,20 +1929,29 @@ void OMR::Compilation::dumpMethodGraph(int index, TR::ResolvedMethodSymbol *meth
         char *fn = self()->fe()->getFormattedName(tmp, 1025, fileName, NULL, false);
         TR::FILE *pFile = trfopen(fn, "wb", false);
         TR_ASSERT(pFile != NULL, "unable to open cfg file");
-        self()->getDebug()->printVCG(pFile, cfg, self()->signature());
-        trfprintf(self()->getOutFile(), "VCG graph dumped in file %s\n", fn);
+
+#ifdef J9_PROJECT_SPECIFIC
+        /**
+         * This project-specific guard is required because `TR::FILE` is not designed for
+         * specialization by downstream projects.  Currently, it exists as a typedef in OMR
+         * but a class in some projects like OpenJ9.
+         */
+        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(pFile->_stream);
+#else
+        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create((::FILE *)pFile);
+#endif
+        vcgLog->setEnable();
+        self()->getDebug()->printVCG(vcgLog, cfg, self()->signature());
+        log->printf("VCG graph dumped in file %s\n", fn);
+        vcgLog->close();
         trfclose(pFile);
     } else
-        trfprintf(self()->getOutFile(), "CFG is empty, VCG file not printed\n");
+        log->prints("CFG is empty, VCG file not printed\n");
 }
 #endif
 
 void OMR::Compilation::shutdown(TR_FrontEnd *fe)
 {
-    TR::FILE *logFile = NULL;
-    if (TR::Options::isFullyInitialized() && TR::Options::getCmdLineOptions())
-        logFile = TR::Options::getCmdLineOptions()->getLogFile();
-
     bool printCummStats
         = ((fe != 0) && TR::Options::getCmdLineOptions() && TR::Options::getCmdLineOptions()->getOption(TR_CummTiming));
     if (printCummStats) {
@@ -1944,10 +1960,6 @@ void OMR::Compilation::shutdown(TR_FrontEnd *fe)
         fprintf(stderr, "Optimization Time  = %9.6f\n", optTime.secondsTaken());
         fprintf(stderr, "Code Gen Time      = %9.6f\n", codegenTime.secondsTaken());
     }
-
-#ifdef DEBUG
-    TR::CodeGenerator::shutdown(fe, logFile);
-#endif
 
     TR::Recompilation::shutdown();
 
@@ -2315,9 +2327,10 @@ void OMR::Compilation::diagnosticImpl(const char *s, ...)
 
 void OMR::Compilation::diagnosticImplVA(const char *s, va_list ap)
 {
-    if (self()->getOutFile() != NULL) {
-        TR::IO::vfprintf(self()->getOutFile(), s, ap);
-        trfflush(self()->getOutFile());
+    if (self()->getLoggingEnabled()) {
+        OMR::Logger *log = self()->getLogger();
+        log->vprintf(s, ap);
+        log->flush();
     }
 }
 

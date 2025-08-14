@@ -53,6 +53,8 @@ class Snippet;
 
 namespace OMR {
 
+class Logger;
+
 class OMR_EXTENSIBLE Snippet {
 public:
     TR_ALLOC(TR_Memory::Snippet)
@@ -80,7 +82,7 @@ public:
     virtual uint32_t getLength(int32_t estimatedSnippetStart) = 0;
     virtual uint8_t *emitSnippetBody() = 0;
 
-    virtual void print(TR::FILE *, TR_Debug *debug);
+    virtual void print(OMR::Logger *log, TR_Debug *debug);
 
     void prepareSnippetForGCSafePoint();
 

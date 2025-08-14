@@ -61,6 +61,7 @@
 #include "optimizer/TranslateTable.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O LOOP TRANSFORMATION: "
 
@@ -4069,7 +4070,7 @@ int32_t TR_LoopReducer::perform()
     if (trace()) {
         traceMsg(comp(), "Starting LoopReducer\n");
         traceMsg(comp(), "\nCFG before loop reduction:\n");
-        getDebug()->print(comp()->getOutFile(), _cfg);
+        getDebug()->print(comp()->getLogger(), _cfg);
     }
 
     // From this point on, stack memory allocations will die when the function returns
@@ -4113,7 +4114,7 @@ int32_t TR_LoopReducer::perform()
 
     if (trace()) {
         traceMsg(comp(), "\nCFG after loop reduction:\n");
-        getDebug()->print(comp()->getOutFile(), _cfg);
+        getDebug()->print(comp()->getLogger(), _cfg);
         traceMsg(comp(), "Ending LoopReducer\n");
     }
 

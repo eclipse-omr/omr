@@ -77,6 +77,7 @@
 #include "optimizer/ValuePropagation.hpp"
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -2841,7 +2842,10 @@ TR::Node *constrainGoto(OMR::ValuePropagation *vp, TR::Node *node)
     // branch
     //
     TR::CFGEdge *edge = vp->findOutEdge(vp->_curBlock->getSuccessors(), target);
-    vp->printEdgeConstraints(vp->createEdgeConstraints(edge, false));
+    OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, false);
+    if (vp->trace())
+        vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
+
     vp->setUnreachablePath();
 
     return node;
@@ -2858,7 +2862,10 @@ TR::Node *constrainIgoto(OMR::ValuePropagation *vp, TR::Node *node)
     for (auto edge = vp->_curBlock->getSuccessors().begin(); edge != vp->_curBlock->getSuccessors().end(); ++edge) {
         auto current = edge;
         bool keepConstraints = (++current != vp->_curBlock->getSuccessors().end()) || canFallThrough;
-        vp->printEdgeConstraints(vp->createEdgeConstraints(*edge, keepConstraints));
+
+        OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(*edge, keepConstraints);
+        if (vp->trace())
+            vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
     }
 
     if (!canFallThrough)
@@ -7850,7 +7857,10 @@ static void changeConditionalToGoto(OMR::ValuePropagation *vp, TR::Node *node, T
     TR::Block *target = node->getBranchDestination()->getNode()->getBlock();
     if (fallThrough != target)
         vp->_edgesToBeRemoved->add(edge);
-    vp->printEdgeConstraints(vp->createEdgeConstraints(edge, true));
+
+    OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, true);
+    if (vp->trace())
+        vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
 }
 
 static void removeConditionalBranch(OMR::ValuePropagation *vp, TR::Node *node, TR::CFGEdge *branchEdge)
@@ -7964,7 +7974,7 @@ static TR::VPConstraint *passingTypeTestObjectConstraint(OMR::ValuePropagation *
 
     if (vp->trace()) {
         traceMsg(vp->comp(), "passingTypeTestObjectConstraint returning constraint: ");
-        newConstraint->print(vp->comp(), vp->comp()->getOutFile());
+        newConstraint->print(vp->comp()->getLogger(), vp->comp());
         traceMsg(vp->comp(), "\n");
     }
 
@@ -8168,7 +8178,9 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
     if (cannotFallThrough
         && performTransformation(vp->comp(), "%sChanging node [%p] %s into goto\n", OPT_DETAILS, node,
             node->getOpCode().getName())) {
-        vp->printEdgeConstraints(vp->createEdgeConstraints(edge, false));
+        OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, false);
+        if (vp->trace())
+            vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
         changeConditionalToGoto(vp, node, edge);
         return node;
     }
@@ -8652,7 +8664,7 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
     }
 
     if (vp->trace() && !cannotBranch)
-        vp->printEdgeConstraints(edgeConstraints);
+        vp->printEdgeConstraints(vp->comp()->getLogger(), edgeConstraints);
 
     // Apply new constraints to the fall through edge
     //
@@ -9102,7 +9114,9 @@ static TR::Node *constrainIfcmplessthan(OMR::ValuePropagation *vp, TR::Node *nod
     if (cannotFallThrough
         && performTransformation(vp->comp(), "%sChanging node [%p] %s into goto\n", OPT_DETAILS, node,
             node->getOpCode().getName())) {
-        vp->printEdgeConstraints(vp->createEdgeConstraints(edge, false));
+        OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, false);
+        if (vp->trace())
+            vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
         changeConditionalToGoto(vp, node, edge);
         return node;
     }
@@ -9214,7 +9228,7 @@ static TR::Node *constrainIfcmplessthan(OMR::ValuePropagation *vp, TR::Node *nod
     //   cannotBranch = true;
 
     if (vp->trace() && !cannotBranch)
-        vp->printEdgeConstraints(edgeConstraints);
+        vp->printEdgeConstraints(vp->comp()->getLogger(), edgeConstraints);
 
     if (lhsChild->getOpCode().isLong() && !isUnsigned) {
         // Create extra constraints for lhs and rhs on the fall through edge
@@ -9358,7 +9372,9 @@ TR::Node *constrainCondBranch(OMR::ValuePropagation *vp, TR::Node *node)
     // branch
     //
     TR::CFGEdge *edge = vp->findOutEdge(vp->_curBlock->getSuccessors(), target);
-    vp->printEdgeConstraints(vp->createEdgeConstraints(edge, true));
+    OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, true);
+    if (vp->trace())
+        vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
     return node;
 }
 
@@ -9728,7 +9744,9 @@ TR::Node *constrainCase(OMR::ValuePropagation *vp, TR::Node *node)
     // branch
     //
     TR::CFGEdge *edge = vp->findOutEdge(vp->_curBlock->getSuccessors(), target);
-    vp->printEdgeConstraints(vp->createEdgeConstraints(edge, true));
+    OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, true);
+    if (vp->trace())
+        vp->printEdgeConstraints(vp->comp()->getLogger(), ec);
     return node;
 }
 

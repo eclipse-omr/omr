@@ -63,6 +63,10 @@ class TR_PPCLoadLabelItem;
 class TR_PPCOutOfLineCodeSection;
 class TR_PPCScratchRegisterManager;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class CodeGenerator;
 class ConstantDataSnippet;
@@ -181,7 +185,7 @@ public:
     int32_t setEstimatedLocationsForDataSnippetLabels(int32_t estimatedSnippetStart);
 
 #ifdef DEBUG
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(OMR::Logger *log);
 #endif
 
     bool considerTypeForGRA(TR::Node *node);

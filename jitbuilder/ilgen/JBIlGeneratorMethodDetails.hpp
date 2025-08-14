@@ -28,8 +28,14 @@
  */
 #ifndef JITBUILDER_ILGENERATOR_METHOD_DETAILS_CONNECTOR
 #define JITBUILDER_ILGENERATOR_METHOD_DETAILS_CONNECTOR
-namespace JitBuilder { class IlGeneratorMethodDetails; }
-namespace JitBuilder { typedef ::JitBuilder::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector; }
+
+namespace JitBuilder {
+class IlGeneratorMethodDetails;
+}
+
+namespace JitBuilder {
+typedef ::JitBuilder::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector;
+}
 #endif // !defined(JITBUILDER_ILGENERATOR_METHOD_DETAILS_CONNECTOR)
 
 #include "ilgen/OMRIlGeneratorMethodDetails.hpp"
@@ -40,52 +46,49 @@ namespace JitBuilder { typedef ::JitBuilder::IlGeneratorMethodDetails IlGenerato
 class TR_InlineBlocks;
 class TR_ResolvedMethod;
 class TR_IlGenerator;
-namespace TR { class Compilation; }
-namespace TR { class ResolvedMethod; }
-namespace TR { class ResolvedMethodSymbol; }
-namespace TR { class SymbolReferenceTable; }
 
-namespace JitBuilder
-{
+namespace TR {
+class Compilation;
+class Logger;
+class ResolvedMethod;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
+} // namespace TR
+
+namespace JitBuilder {
 
 class ResolvedMethod;
 
-class OMR_EXTENSIBLE IlGeneratorMethodDetails : public OMR::IlGeneratorMethodDetailsConnector
-   {
-
+class OMR_EXTENSIBLE IlGeneratorMethodDetails : public OMR::IlGeneratorMethodDetailsConnector {
 public:
+    IlGeneratorMethodDetails()
+        : OMR::IlGeneratorMethodDetailsConnector()
+        , _method(NULL)
+    {}
 
-   IlGeneratorMethodDetails() :
-      OMR::IlGeneratorMethodDetailsConnector(),
-      _method(NULL)
-   { }
+    IlGeneratorMethodDetails(TR::ResolvedMethod *method)
+        : OMR::IlGeneratorMethodDetailsConnector()
+        , _method(method)
+    {}
 
-   IlGeneratorMethodDetails(TR::ResolvedMethod *method) :
-      OMR::IlGeneratorMethodDetailsConnector(),
-      _method(method)
-   { }
+    IlGeneratorMethodDetails(TR_ResolvedMethod *method);
 
-   IlGeneratorMethodDetails(TR_ResolvedMethod *method);
+    TR::ResolvedMethod *getMethod() { return _method; }
 
-   TR::ResolvedMethod * getMethod() { return _method; }
-   TR_ResolvedMethod * getResolvedMethod() { return (TR_ResolvedMethod *)_method; }
+    TR_ResolvedMethod *getResolvedMethod() { return (TR_ResolvedMethod *)_method; }
 
-   bool sameAs(TR::IlGeneratorMethodDetails & other, TR_FrontEnd *fe);
+    bool sameAs(TR::IlGeneratorMethodDetails &other, TR_FrontEnd *fe);
 
-   void print(TR_FrontEnd *fe, TR::FILE *file);
+    void print(OMR::Logger *log, TR_FrontEnd *fe);
 
-   virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol,
-                                          TR_FrontEnd * fe,
-                                          TR::Compilation *comp,
-                                          TR::SymbolReferenceTable *symRefTab,
-                                          bool forceClassLookahead,
-                                          TR_InlineBlocks *blocksToInline);
+    virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
+        TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab, bool forceClassLookahead,
+        TR_InlineBlocks *blocksToInline);
 
 protected:
+    TR::ResolvedMethod *_method;
+};
 
-   TR::ResolvedMethod * _method;
-   };
-
-}
+} // namespace JitBuilder
 
 #endif // defined(JITBUILDER_ILGENERATOR_METHOD_DETAILS_INCL)

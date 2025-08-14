@@ -67,6 +67,7 @@
 #include "infra/CfgNode.hpp"
 #include "optimizer/Optimizer.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "infra/SimpleRegex.hpp"
 
@@ -1075,7 +1076,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
     if (comp->ilGenTrace() || comp->isPeekingMethod())
         traceIt = true;
 
-    if (traceIt && comp->getOutFile() != NULL && comp->getOption(TR_TraceBC)) {
+    if (traceIt && comp->getLoggingEnabled() && comp->getOption(TR_TraceBC)) {
         // matching its traceflag
         if (comp->isPeekingMethod())
             traceMsg(comp,
@@ -1089,7 +1090,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
                 self()->signature(comp->trMemory()));
         if (comp->getDebug()) {
             traceMsg(comp, "   <request> ");
-            customRequest.print(fe, comp->getOutFile(), " </request>\n");
+            customRequest.print(comp->getLogger(), fe, " </request>\n");
         }
     }
 
@@ -1126,7 +1127,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
             auto genIL_rc = ilGen->genIL();
             _methodFlags.set(IlGenSuccess, genIL_rc);
 
-            if (comp->getOutFile() != NULL && comp->getOption(TR_TraceBC)) {
+            if (comp->getLoggingEnabled() && comp->getOption(TR_TraceBC)) {
                 traceMsg(self()->comp(), "genIL() returned %d\n", genIL_rc);
             }
 
@@ -1168,7 +1169,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
                     if (osrMethodData->getOSRCodeBlock() != NULL) {
                         self()->genOSRHelperCall(siteIndex, symRefTab);
                         if (comp->getOption(TR_TraceOSR))
-                            comp->dumpMethodTrees("Trees after OSR in genIL", self());
+                            comp->dumpMethodTrees(comp->getLogger(), "Trees after OSR in genIL", self());
                     }
 
                     if (!comp->isOutermostMethod())
@@ -1179,7 +1180,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
                     optimizer->optimize();
                     comp->setOptimizer(previousOptimizer);
                 } else {
-                    if (comp->getOutFile() != NULL && comp->getOption(TR_TraceBC))
+                    if (comp->getLoggingEnabled() && comp->getOption(TR_TraceBC))
                         traceMsg(comp, "Skipping ilgen opts\n");
                 }
             }
@@ -1195,7 +1196,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
             comp->setCurrentIlGenerator(0);
     }
 
-    if (traceIt && (comp->getOutFile() != NULL) && comp->getOption(TR_TraceBC)) {
+    if (traceIt && comp->getLoggingEnabled() && comp->getOption(TR_TraceBC)) {
         if (comp->isPeekingMethod())
             traceMsg(comp, "</peeking ilgen>\n");
         else

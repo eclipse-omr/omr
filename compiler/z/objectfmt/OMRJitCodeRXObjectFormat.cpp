@@ -27,6 +27,7 @@
 #include "infra/Assert.hpp"
 #include "objectfmt/FunctionCallData.hpp"
 #include "objectfmt/JitCodeRXObjectFormat.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCache.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
@@ -131,7 +132,7 @@ uint8_t *OMR::Z::JitCodeRXObjectFormat::encodeFunctionCall(TR::FunctionCallData 
     return data.bufferAddress;
 }
 
-uint8_t *OMR::Z::JitCodeRXObjectFormat::printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data)
+uint8_t *OMR::Z::JitCodeRXObjectFormat::printEncodedFunctionCall(OMR::Logger *log, TR::FunctionCallData &data)
 {
     uint8_t *bufferPos = data.bufferAddress;
     TR_Debug *debug = data.cg->getDebug();
@@ -139,13 +140,13 @@ uint8_t *OMR::Z::JitCodeRXObjectFormat::printEncodedFunctionCall(TR::FILE *pOutF
     uintptr_t ccFunctionCallDataAddress
         = static_cast<uintptr_t>(*(reinterpret_cast<int32_t *>(bufferPos + sizeof(int16_t))) * 2)
         + reinterpret_cast<uintptr_t>(bufferPos);
-    debug->printPrefix(pOutFile, NULL, bufferPos, 6);
-    trfprintf(pOutFile, "LGRL \tGPR14, <%p>\t# Target Address = <%p>.", ccFunctionCallDataAddress,
+    debug->printPrefix(log, NULL, bufferPos, 6);
+    log->printf("LGRL \tGPR14, <%p>\t# Target Address = <%p>.", ccFunctionCallDataAddress,
         *reinterpret_cast<uint8_t *>(ccFunctionCallDataAddress));
     bufferPos += 6;
 
-    debug->printPrefix(pOutFile, NULL, bufferPos, 2);
-    trfprintf(pOutFile, "BASR \tGPR_14, GPR14");
+    debug->printPrefix(log, NULL, bufferPos, 2);
+    log->prints("BASR \tGPR_14, GPR14");
     bufferPos += 2;
 
     return bufferPos;

@@ -30,6 +30,10 @@
 #include "env/TRMemory.hpp"
 #include "infra/Assert.hpp"
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 // Implementation of Symmetric Binary B-Trees
 //    (also called "hedge trees")
 //
@@ -160,7 +164,7 @@ public:
     }
 
 #if DEBUG
-    void printTree(TR::FILE *outFile, int32_t indent, char *prefix, bool isLeftChild, bool isSibling)
+    void printTree(OMR::Logger *log, int32_t indent, char *prefix, bool isLeftChild, bool isSibling)
     {
         int32_t prefixPos = isSibling ? indent : indent - 3;
         if (prefixPos > 0) {
@@ -171,15 +175,17 @@ public:
         }
         if (_right) {
             if (isRightSibling())
-                _right->printTree(outFile, indent, prefix, false, true);
+                _right->printTree(log, indent, prefix, false, true);
             else
-                _right->printTree(outFile, indent + 5, prefix, false, false);
+                _right->printTree(log, indent + 5, prefix, false, false);
         } else
-            trfprintf(outFile, "%.*s\n", prefixPos + 1, prefix);
+            log->printf("%.*s\n", prefixPos + 1, prefix);
+
         if (isSibling)
-            trfprintf(outFile, "%.*s%d\n", prefixPos, prefix, getKey());
+            log->printf("%.*s%d\n", prefixPos, prefix, getKey());
         else
-            trfprintf(outFile, "%.*s-->%d\n", prefixPos, prefix, getKey());
+            log->printf("%.*s-->%d\n", prefixPos, prefix, getKey());
+
         if (prefixPos > 0) {
             if (!isLeftChild)
                 prefix[prefixPos] = '|';
@@ -188,15 +194,15 @@ public:
         }
         if (_left) {
             if (isLeftSibling())
-                _left->printTree(outFile, indent, prefix, true, true);
+                _left->printTree(log, indent, prefix, true, true);
             else
-                _left->printTree(outFile, indent + 5, prefix, true, false);
+                _left->printTree(log, indent + 5, prefix, true, false);
         } else
-            trfprintf(outFile, "%.*s\n", prefixPos + 1, prefix);
+            log->printf("%.*s\n", prefixPos + 1, prefix);
         prefix[prefixPos] = ' ';
     }
 #else
-    void printTree(TR::FILE *outFile, int32_t indent, char *prefix, bool isLeftChild, bool isSibling) {}
+    void printTree(OMR::Logger *log, int32_t indent, char *prefix, bool isLeftChild, bool isSibling) {}
 #endif
 
 private:
@@ -247,21 +253,19 @@ public:
     }
 
 #if DEBUG
-    void print(TR::FILE *outFile)
+    void print(OMR::Logger *log)
     {
-        if (outFile == NULL)
-            return;
         if (!_root) {
-            trfprintf(outFile, "     empty\n");
+            log->prints("     empty\n");
             return;
         }
         char prefix[80];
         memset(prefix, ' ', 80);
-        _root->printTree(outFile, 3, prefix, false, false);
-        trfflush(outFile);
+        _root->printTree(log, 3, prefix, false, false);
+        log->flush();
     }
 #else
-    void print(TR::FILE *outFile) {}
+    void print(OMR::Logger *log) {}
 #endif
 
 private:
@@ -349,9 +353,9 @@ public:
             tree.setRoot(result);
             _treeChanged = true;
         }
-        if (_treeChanged && debug("traceHedge")) {
+        if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
             diagnostic("Tree after insertion of key %d:\n", key);
-            tree.print(comp()->getOutFile());
+            tree.print(comp()->getLogger());
             tree.verify();
         }
         return result;
@@ -376,9 +380,9 @@ public:
             tree.setRoot(newNode);
             _treeChanged = true;
         }
-        if (_treeChanged && debug("traceHedge")) {
+        if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
             diagnostic("Tree after insertion of key %d:\n", newNode->getKey());
-            tree.print(comp()->getOutFile());
+            tree.print(comp()->getLogger());
             tree.verify();
         }
         return result;
@@ -391,9 +395,9 @@ public:
         if (debug("traceHedge"))
             diagnostic("\nCall remove with key %d\n", key);
         T *result = remove(key, tree.rootReference(), rebalance);
-        if (_treeChanged && debug("traceHedge")) {
+        if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
             diagnostic("Tree after removal of key %d:\n", key);
-            tree.print(comp()->getOutFile());
+            tree.print(comp()->getLogger());
             tree.verify();
         }
         return result;

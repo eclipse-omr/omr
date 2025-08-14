@@ -47,6 +47,7 @@
 #include "il/SymbolReference.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
 #include "z/codegen/CallSnippet.hpp"
@@ -115,61 +116,58 @@ uint32_t OMR::Z::Snippet::getRuntimeInstrumentationOnOffInstructionLength(TR::Co
 #include "z/codegen/ConstantDataSnippet.hpp"
 #include "z/codegen/S390HelperCallSnippet.hpp"
 
-void TR_Debug::printz(TR::FILE *pOutFile, TR::Snippet *snippet)
+void TR_Debug::printz(OMR::Logger *log, TR::Snippet *snippet)
 {
-    if (pOutFile == NULL) {
-        return;
-    }
     switch (snippet->getKind()) {
         case TR::Snippet::IsHelperCall:
-            print(pOutFile, (TR::S390HelperCallSnippet *)snippet);
+            print(log, (TR::S390HelperCallSnippet *)snippet);
             break;
 #if J9_PROJECT_SPECIFIC
         case TR::Snippet::IsCall:
-            snippet->print(pOutFile, this);
+            snippet->print(log, this);
             break;
         case TR::Snippet::IsForceRecomp:
-            print(pOutFile, (TR::S390ForceRecompilationSnippet *)snippet);
+            print(log, (TR::S390ForceRecompilationSnippet *)snippet);
             break;
         case TR::Snippet::IsForceRecompData:
-            print(pOutFile, (TR::S390ForceRecompilationDataSnippet *)snippet);
+            print(log, (TR::S390ForceRecompilationDataSnippet *)snippet);
             break;
         case TR::Snippet::IsUnresolvedCall:
-            print(pOutFile, (TR::S390UnresolvedCallSnippet *)snippet);
+            print(log, (TR::S390UnresolvedCallSnippet *)snippet);
             break;
         case TR::Snippet::IsVirtual:
-            print(pOutFile, (TR::S390VirtualSnippet *)snippet);
+            print(log, (TR::S390VirtualSnippet *)snippet);
             break;
         case TR::Snippet::IsVirtualUnresolved:
-            print(pOutFile, (TR::S390VirtualUnresolvedSnippet *)snippet);
+            print(log, (TR::S390VirtualUnresolvedSnippet *)snippet);
             break;
         case TR::Snippet::IsInterfaceCall:
-            print(pOutFile, (TR::S390InterfaceCallSnippet *)snippet);
+            print(log, (TR::S390InterfaceCallSnippet *)snippet);
             break;
         case TR::Snippet::IsStackCheckFailure:
-            print(pOutFile, (TR::S390StackCheckFailureSnippet *)snippet);
+            print(log, (TR::S390StackCheckFailureSnippet *)snippet);
             break;
         case TR::Snippet::IsInterfaceCallData:
-            print(pOutFile, (TR::J9S390InterfaceCallDataSnippet *)snippet);
+            print(log, (TR::J9S390InterfaceCallDataSnippet *)snippet);
             break;
 #endif
         case TR::Snippet::IsConstantData:
         case TR::Snippet::IsWritableData:
         case TR::Snippet::IsEyeCatcherData:
-            print(pOutFile, (TR::S390ConstantDataSnippet *)snippet);
+            print(log, (TR::S390ConstantDataSnippet *)snippet);
             break;
         case TR::Snippet::IsUnresolvedData:
-            print(pOutFile, (TR::UnresolvedDataSnippet *)snippet);
+            print(log, (TR::UnresolvedDataSnippet *)snippet);
             break;
 
         case TR::Snippet::IsConstantInstruction:
-            print(pOutFile, (TR::S390ConstantInstructionSnippet *)snippet);
+            print(log, (TR::S390ConstantInstructionSnippet *)snippet);
             break;
         case TR::Snippet::IsRestoreGPR7:
-            print(pOutFile, (TR::S390RestoreGPR7Snippet *)snippet);
+            print(log, (TR::S390RestoreGPR7Snippet *)snippet);
             break;
 
         default:
-            snippet->print(pOutFile, this);
+            snippet->print(log, this);
     }
 }

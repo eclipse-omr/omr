@@ -45,9 +45,13 @@ typedef OMR::ConstantDataSnippet ConstantDataSnippetConnector;
 #include "infra/Array.hpp"
 #include "infra/List.hpp"
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Node;
-}
+} // namespace TR
 
 namespace OMR {
 
@@ -207,7 +211,7 @@ public:
     TR::CodeGenerator *cg() { return _cg; }
 
 #ifdef DEBUG
-    virtual void print(TR::FILE *outFile);
+    virtual void print(OMR::Logger *log);
 #endif
 };
 

@@ -85,6 +85,7 @@
 #include "optimizer/LocalValuePropagation.hpp"
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
 #include "env/VMJ9.h"
@@ -324,9 +325,10 @@ void OMR::ValuePropagation::initialize()
 
             if (doTiming) {
                 myTimer.stopTiming(comp());
-                if (comp()->getOutFile() != NULL) {
-                    trfprintf(comp()->getOutFile(), "Time taken for %s = ", myTimer.title());
-                    trfprintf(comp()->getOutFile(), "%9.6f seconds\n", myTimer.secondsTaken());
+                if (comp()->getLoggingEnabled()) {
+                    OMR::Logger *log = comp()->getLogger();
+                    log->printf("Time taken for %s = ", myTimer.title());
+                    log->printf("%9.6f seconds\n", myTimer.secondsTaken());
                 }
 #ifdef OPT_TIMING
                 statStructuralAnalysisTiming.update(
@@ -453,7 +455,7 @@ TR::VPConstraint *OMR::ValuePropagation::getConstraint(TR::Node *node, bool &isG
     if (rel) {
         if (trace()) {
             traceMsg(comp(), "   %s [%p] has existing constraint:", node->getOpCode().getName(), node);
-            rel->print(this, valueNumber, 1);
+            rel->print(comp()->getLogger(), this, valueNumber, 1);
         }
         isGlobal = false;
         constraint = rel->constraint;
@@ -482,7 +484,7 @@ TR::VPConstraint *OMR::ValuePropagation::getConstraint(TR::Node *node, bool &isG
     if (rel) {
         if (trace()) {
             traceMsg(comp(), "   %s [%p] has existing global constraint:", node->getOpCode().getName(), node);
-            rel->print(this, valueNumber, 1);
+            rel->print(comp()->getLogger(), this, valueNumber, 1);
         }
         isGlobal = true;
         constraint = rel->constraint;
@@ -1304,8 +1306,9 @@ void OMR::ValuePropagation::transformArrayCopyCall(TR::Node *node)
 #ifdef J9_PROJECT_SPECIFIC
         if (doRuntimeNullRestrictedTest) {
             if (trace()) {
-                comp()->dumpMethodTrees("Trees before modifying for null-restricted array check");
-                comp()->getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph());
+                OMR::Logger *log = comp()->getLogger();
+                comp()->dumpMethodTrees(log, "Trees before modifying for null restricted array check");
+                comp()->getDebug()->print(log, comp()->getFlowGraph());
             }
             /*
                   ==== Before ===
@@ -1435,8 +1438,9 @@ void OMR::ValuePropagation::transformArrayCopyCall(TR::Node *node)
                 new (trStackMemory()) TR_NeedRuntimeTestNullRestrictedArrayCopy(dstArrRefSymRef, srcArrRefSymRef,
                     prevTT, nextTT, _curTree->getEnclosingBlock(), slowBlock, needRuntimeTestDstArray));
             if (trace()) {
-                comp()->dumpMethodTrees("Trees after modifying for null-restricted array check");
-                comp()->getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph());
+                OMR::Logger *log = comp()->getLogger();
+                comp()->dumpMethodTrees(log, "Trees after modifying for null restricted array check");
+                comp()->getDebug()->print(log, comp()->getFlowGraph());
             }
         }
 #endif
@@ -2945,9 +2949,6 @@ void OMR::ValuePropagation::transformArrayCopySpineCheck(TR_ArrayCopySpineCheck 
 {
     TR::CFG *cfg = comp()->getFlowGraph();
 
-    //   comp()->dumpMethodTrees("Trees before arraycopy spine check");
-    //   cfg->comp()->getDebug()->print(cfg->comp()->getOutFile(), cfg);
-
     // Spill the arguments to the arraycopy call before the branch.
     //
     TR::TreeTop *lastTree = createAndInsertStoresForArrayCopySpineCheck(checkInfo);
@@ -3005,9 +3006,6 @@ void OMR::ValuePropagation::transformArrayCopySpineCheck(TR_ArrayCopySpineCheck 
     cfg->addEdge(TR::CFGEdge::createEdge(ifBlock, remainderBlock, trMemory()));
 
     cfg->copyExceptionSuccessors(arraycopyBlock, ifBlock);
-
-    //   comp()->dumpMethodTrees("Trees after arraycopy spine check");
-    //   cfg->comp()->getDebug()->print(cfg->comp()->getOutFile(), cfg);
 }
 
 void OMR::ValuePropagation::transformRealTimeArrayCopy(TR_RealTimeArrayCopy *rtArrayCopyTree)
@@ -3144,16 +3142,9 @@ void OMR::ValuePropagation::transformRealTimeArrayCopy(TR_RealTimeArrayCopy *rtA
     dummyTT->setNode(dummyNode);
     dummyTT->join(vcallTree->getNextTreeTop());
     vcallTree->join(dummyTT);
-    //   if (trace())
-    //  comp()->dumpMethodTrees("Trees before createConditional");
     origCallBlock->createConditionalBlocksBeforeTree(dummyTT, ifTree, dupVCallTree, dupArraycopyTree, cfg, false);
 
-    // if (trace())
-    //  comp()->dumpMethodTrees("Trees after createConditional");
     createStoresForArraycopyVCallChildren(comp(), vcallTree, srcRef, dstRef, srcOffRef, dstOffRef, lenRef, vcallTree);
-
-    // if (trace())
-    // comp()->dumpMethodTrees("Trees after StoresCreated");
 
     // fix arraycopy
     // this is the fast path
@@ -4226,7 +4217,7 @@ void OMR::ValuePropagation::transformConverterCall(TR::TreeTop *callTree)
     }
 
     if (trace())
-        comp()->dumpMethodTrees("Trees after reducing converter call to intrinsic arraytranslate");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after reducing converter call to intrinsic arraytranslate");
 
     return;
 }
@@ -4300,7 +4291,7 @@ void TR::LocalValuePropagation::prePerformOnBlocks()
     _bestRun = comp()->getMethodHotness() <= cold; // && getLastRun(); getLastRun doesn't work well yet for VP
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees before Local Value Propagation");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees before Local Value Propagation");
     }
 
     initialize();
@@ -4328,7 +4319,7 @@ void TR::LocalValuePropagation::postPerformOnBlocks()
         requestOpt(OMR::catchBlockRemoval);
 
     if (trace())
-        comp()->dumpMethodTrees("Trees after Local Value Propagation");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after Local Value Propagation");
 
     // Invalidate usedef and value number information if necessary
     //

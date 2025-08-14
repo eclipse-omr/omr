@@ -35,6 +35,8 @@
 #include "il/Symbol.hpp"
 #include "infra/Assert.hpp"
 #include "infra/Bit.hpp"
+#include "ras/Logger.hpp"
+
 #include "runtime/Runtime.hpp"
 
 int32_t TR::ARMConstantDataSnippet::addConstantRequest(void *v, TR::DataType type, TR::Instruction *nibble0,
@@ -325,23 +327,20 @@ uint8_t *TR::ARMConstantDataSnippet::emitSnippetBody()
 uint32_t TR::ARMConstantDataSnippet::getLength() { return _addressConstants.getSize() * 4; }
 
 #if DEBUG
-void TR::ARMConstantDataSnippet::print(TR::FILE *outFile)
+void TR::ARMConstantDataSnippet::print(OMR::Logger *log)
 {
-    if (outFile == NULL)
-        return;
-
     TR_FrontEnd *fe = cg()->comp()->fe();
 
     uint8_t *codeCursor = getSnippetBinaryStart();
     uint8_t *codeStart = cg()->getBinaryBufferStart();
 
-    trfprintf(outFile, "\n%08x\t\t\t\t\t; Constant Data", codeCursor - codeStart);
+    log->printf("\n%08x\t\t\t\t\t; Constant Data", codeCursor - codeStart);
 
     ListIterator<TR::ARMConstant<intptr_t> > aiterator(&_addressConstants);
     TR::ARMConstant<intptr_t> *acursor = aiterator.getFirst();
     while (acursor != NULL) {
         if (acursor->getRequestors().size() > 0) {
-            trfprintf(outFile, "\n%08x %08x\t\t; %p Address", codeCursor - codeStart, *(int32_t *)codeCursor,
+            log->printf("\n%08x %08x\t\t; %p Address", codeCursor - codeStart, *(int32_t *)codeCursor,
                 acursor->getConstantValue());
             codeCursor += 4;
         }

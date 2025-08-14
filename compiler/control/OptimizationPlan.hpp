@@ -146,6 +146,10 @@ public:
 
     TR::FILE *getLogCompilation() { return _logFile; }
 
+    void setLogger(OMR::Logger *log) { _logger = log; }
+
+    OMR::Logger *getLogger() { return _logger; }
+
     bool shouldAddToUpgradeQueue() const { return _flags.testAny(AddToUpgradeQueue); }
 
     void setAddToUpgradeQueue() { _flags.set(AddToUpgradeQueue); }
@@ -292,6 +296,7 @@ private:
 
     bool _hwpDoReducedWarm;
     TR::FILE *_logFile;
+    OMR::Logger *_logger;
     static TR_OptimizationPlan *_pool;
     static unsigned long _totalNumAllocatedPlans; // number of elements in the system
     static unsigned long _poolSize; // number of elements currently in the pool

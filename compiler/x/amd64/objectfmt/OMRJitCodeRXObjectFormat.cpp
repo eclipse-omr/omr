@@ -28,6 +28,7 @@
 #include "infra/Assert.hpp"
 #include "objectfmt/FunctionCallData.hpp"
 #include "objectfmt/JitCodeRXObjectFormat.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "omrformatconsts.h"
 
@@ -179,23 +180,19 @@ uint8_t *OMR::X86::AMD64::JitCodeRXObjectFormat::encodeFunctionCall(TR::Function
     return data.bufferAddress;
 }
 
-void OMR::X86::AMD64::JitCodeRXObjectFormat::printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data,
+void OMR::X86::AMD64::JitCodeRXObjectFormat::printEncodedFunctionCall(OMR::Logger *log, TR::FunctionCallData &data,
     uint8_t *bufferPos)
 {
-    if (!pOutFile) {
-        return;
-    }
-
     TR_Debug *debug = data.cg->getDebug();
 
-    debug->printPrefix(pOutFile, NULL, bufferPos, 5);
-    trfprintf(pOutFile, data.useCall ? "call\t" : "jmp\t");
-    trfprintf(pOutFile, "[%#" OMR_PRIxPTR "]", data.out_encodedMethodAddressLocation);
+    debug->printPrefix(log, NULL, bufferPos, 5);
+    log->prints(data.useCall ? "call\t" : "jmp\t");
+    log->printf("[%#" OMR_PRIxPTR "]", data.out_encodedMethodAddressLocation);
 
     if (data.methodSymRef && data.methodSymRef->getSymbol()->castToMethodSymbol()->isHelper()) {
-        trfprintf(pOutFile, " (%s)", debug->getRuntimeHelperName(data.methodSymRef->getReferenceNumber()));
+        log->printf(" (%s)", debug->getRuntimeHelperName(data.methodSymRef->getReferenceNumber()));
     } else {
-        trfprintf(pOutFile, " (%#" OMR_PRIxPTR ")", data.methodSymRef->getMethodAddress());
+        log->printf(" (%#" OMR_PRIxPTR ")", data.methodSymRef->getMethodAddress());
     }
 }
 
