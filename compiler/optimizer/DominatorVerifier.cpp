@@ -52,7 +52,7 @@ TR_DominatorVerifier::TR_DominatorVerifier(TR_Dominators &findDominators)
     _visitCount = comp()->incVisitCount();
     _numBlocks = cfg->getNumberOfNodes() + 1;
 
-    if (debug("traceVER") && comp()->getLoggingEnabled()) {
+    if (debug("traceVER")) {
         dumpOptDetails(comp(), "Printing out the TreeTops from DominatorVerifier\n");
 
         TR::TreeTop *currentTree = comp()->getStartTree();

@@ -632,7 +632,7 @@ void OMR::X86::MemoryReference::populateMemoryReference(TR::Node *subTree, TR::C
         cg->decReferenceCount(nodeToBeAdjusted);
     }
 
-    if (comp->getOption(TR_TraceRegisterPressureDetails) && comp->getLoggingEnabled()) {
+    if (comp->getOption(TR_TraceRegisterPressureDetails)) {
         log->printf("   populated memref on %s", cg->getDebug()->getName(subTree));
         cg->getDebug()->dumpLiveRegisters(log);
         log->println();
@@ -683,7 +683,7 @@ TR::Register *OMR::X86::MemoryReference::evaluate(TR::Node *node, TR::CodeGenera
 void OMR::X86::MemoryReference::consolidateRegisters(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
-    if (comp->getOption(TR_TraceRegisterPressureDetails) && comp->getLoggingEnabled()) {
+    if (comp->getOption(TR_TraceRegisterPressureDetails)) {
         OMR::Logger *log = comp->log();
         log->printf("  consolidateRegisters on %s", cg->getDebug()->getName(node));
         cg->getDebug()->dumpLiveRegisters(comp->log());

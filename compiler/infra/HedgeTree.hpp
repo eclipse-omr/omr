@@ -353,7 +353,7 @@ public:
             tree.setRoot(result);
             _treeChanged = true;
         }
-        if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
+        if (_treeChanged && debug("traceHedge")) {
             diagnostic("Tree after insertion of key %d:\n", key);
             tree.print(comp()->log());
             tree.verify();
@@ -380,7 +380,7 @@ public:
             tree.setRoot(newNode);
             _treeChanged = true;
         }
-        if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
+        if (_treeChanged && debug("traceHedge")) {
             diagnostic("Tree after insertion of key %d:\n", newNode->getKey());
             tree.print(comp()->log());
             tree.verify();
@@ -395,7 +395,7 @@ public:
         if (debug("traceHedge"))
             diagnostic("\nCall remove with key %d\n", key);
         T *result = remove(key, tree.rootReference(), rebalance);
-        if (_treeChanged && debug("traceHedge") && comp()->getLoggingEnabled()) {
+        if (_treeChanged && debug("traceHedge")) {
             diagnostic("Tree after removal of key %d:\n", key);
             tree.print(comp()->log());
             tree.verify();

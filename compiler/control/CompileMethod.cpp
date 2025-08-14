@@ -226,8 +226,11 @@ void registerTrampoline(uint8_t *start, uint32_t size, const char *name)
 static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp, const char *reason)
 {
     if (comp) {
-        if (comp->getLoggingEnabled())
-            comp->log()->printf("\n=== EXCEPTION THROWN (%s) ===\n", reason);
+        OMR::Logger *log = comp->log();
+
+        static char *disableExceptionLogging = feGetEnv("TR_DisableJITExceptionLogging");
+        if (!disableExceptionLogging && log && log->isEnabled_DEPRECATED())
+            log->printf("\n=== EXCEPTION THROWN (%s) ===\n", reason);
 
         if (debug("traceCompilationException")) {
             diagnostic("JIT: terminated compile of %s: %s\n", comp->signature(),
@@ -241,8 +244,8 @@ static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPFAIL, "%s failed compilation", comp->signature());
         }
 
-        logprints(comp->getOption(TR_TraceAll), comp->log(),
-            "<result success=\"false\">exception thrown by the compiler</result>\n");
+        if (!disableExceptionLogging && log && log->isEnabled_DEPRECATED())
+            log->prints("<result success=\"false\">exception thrown by the compiler</result>\n");
     }
 }
 
