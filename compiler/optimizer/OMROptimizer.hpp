@@ -375,8 +375,6 @@ private:
     int32_t performOptimization(const OptimizationStrategy *, int32_t firstOptIndex, int32_t lastOptIndex,
         int32_t doTiming);
 
-    void dumpStrategy(const OptimizationStrategy *);
-
     TR::Compilation *_compilation;
     TR_Memory *_trMemory;
     TR::CodeGenerator *_cg;
