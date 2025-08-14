@@ -113,14 +113,6 @@ bool OMR::IlBuilder::TraceEnabled_log()
     return traceEnabled;
 }
 
-void OMR::IlBuilder::TraceIL_log(const char *s, ...)
-{
-    va_list argp;
-    va_start(argp, s);
-    traceMsgVarArgs(_comp, s, argp);
-    va_end(argp);
-}
-
 void OMR::IlBuilder::initSequence()
 {
     _sequence = new (_comp->trMemory()->trHeapMemory()) List<SequenceEntry>(_comp->trMemory());
