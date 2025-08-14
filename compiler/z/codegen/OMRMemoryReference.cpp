@@ -1179,9 +1179,7 @@ void ArtificiallyInflateReferenceCountWhenNecessary(TR::MemoryReference *mr, con
                 // Reference count is now 2.
                 cg->incRefCountForOpaquePseudoRegister(nodeArray[i]);
             } else {
-                if (trace) {
-                    comp->getDebug()->trace(" could not add node %p to cg stack\n", nodeArray[i]);
-                }
+                logprintf(trace, log, " could not add node %p to cg stack\n", nodeArray[i]);
             }
         }
     }

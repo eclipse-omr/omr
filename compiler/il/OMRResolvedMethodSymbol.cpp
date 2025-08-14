@@ -1122,7 +1122,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
             auto genIL_rc = ilGen->genIL();
             _methodFlags.set(IlGenSuccess, genIL_rc);
 
-            trprintf(traceBC, log, "genIL() returned %d\n", genIL_rc);
+            logprintf(traceBC, log, "genIL() returned %d\n", genIL_rc);
 
             if (_methodFlags.testAny(IlGenSuccess)) {
                 if (!comp->isPeekingMethod()) {
@@ -1173,7 +1173,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
                     optimizer->optimize();
                     comp->setOptimizer(previousOptimizer);
                 } else {
-                    trprints(traceBC, log, "Skipping ilgen opts\n");
+                    logprints(traceBC, log, "Skipping ilgen opts\n");
                 }
             }
         }

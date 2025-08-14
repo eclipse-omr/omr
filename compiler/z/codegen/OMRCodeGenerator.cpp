@@ -1723,11 +1723,9 @@ void OMR::Z::CodeGenerator::StopUsingEscapedMemRefsRegisters(int32_t topOfMemRef
         // this should be safe to call / it should be safe to "stop using" a register multiple times.
         potentiallyLeakedMemRef->stopUsingMemRefRegister(self());
 
-        if (self()->comp()->getOption(TR_TraceCG)) {
-            self()->comp()->getDebug()->trace(
-                " _stackOfMemoryReferencesCreatedDuringEvaluation.pop() %p, stopUsingMemRefRegister called.\n",
-                potentiallyLeakedMemRef);
-        }
+        logprintf(self()->comp()->getOption(TR_TraceCG), self()->comp()->log(),
+            " _stackOfMemoryReferencesCreatedDuringEvaluation.pop() %p, stopUsingMemRefRegister called.\n",
+            potentiallyLeakedMemRef);
     }
 }
 
