@@ -2269,7 +2269,7 @@ private:
     static void closeLogsForOtherCompilationThreads(TR_FrontEnd *fe);
 
 protected:
-    void openLogFile(int32_t idSuffix = -1);
+    void openLogFileCreateLogger(int32_t idSuffix = -1);
     static void closeLogFile(TR_FrontEnd *fe, TR::FILE *file, TR::Logger *log);
 
 private:
