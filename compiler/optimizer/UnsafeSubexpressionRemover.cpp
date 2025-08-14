@@ -167,10 +167,9 @@ void OMR::UnsafeSubexpressionRemover::eliminateStore(TR::TreeTop *treeTop, TR::N
             child->recursivelyDecReferenceCount();
             TR::Node *dummyChild
                 = node->setAndIncChild(0, TR::Node::createConstDead(child, TR::Int32, 0xbad1 /* eyecatcher */));
-            if (trace())
-                comp()->log()->printf("  - replace unsafe child %s n%dn with dummy %s n%dn\n",
-                    child->getOpCode().getName(), child->getGlobalIndex(), dummyChild->getOpCode().getName(),
-                    dummyChild->getGlobalIndex());
+            logprintf(trace(), comp()->log(), "  - replace unsafe child %s n%dn with dummy %s n%dn\n",
+                child->getOpCode().getName(), child->getGlobalIndex(), dummyChild->getOpCode().getName(),
+                dummyChild->getGlobalIndex());
         }
 
         // Set opcode to nop

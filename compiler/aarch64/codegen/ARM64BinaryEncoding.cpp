@@ -909,17 +909,8 @@ uint8_t *TR::ARM64VirtualGuardNOPInstruction::generateBinaryEncoding()
         _site->setDestination(cursor);
         cg()->addRelocation(
             new (cg()->trHeapMemory()) TR::LabelAbsoluteRelocation((uint8_t *)(&_site->getDestination()), label));
-
-#ifdef DEBUG
-        if (debug("traceVGNOP"))
-            printf("####> virtual location = %p, label (relocation) = %p\n", cursor, label);
-#endif
     } else {
         _site->setDestination(label->getCodeLocation());
-#ifdef DEBUG
-        if (debug("traceVGNOP"))
-            printf("####> virtual location = %p, label location = %p\n", cursor, label->getCodeLocation());
-#endif
     }
 
     setBinaryEncoding(cursor);

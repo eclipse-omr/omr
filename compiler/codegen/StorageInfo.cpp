@@ -155,17 +155,17 @@ TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
     // lengths and offset do not matter in these first two cases as disjointness is known from the storage classes alone
     bool symbolMismatch = _symRef && info->_symRef && _symRef->getSymbol() != info->_symRef->getSymbol();
     if (symbolMismatch && _class == TR_DirectMappedAuto && info->_class == TR_DirectMappedAuto) {
-        if (traceBCDCodeGen)
-            log->printf("\t\toverlap=false : autoDirectMapped and diff symbols (#%d (%p) and #%d (%p))\n",
-                _symRef->getReferenceNumber(), _symRef->getSymbol(), info->_symRef->getReferenceNumber(),
-                info->_symRef->getSymbol());
+        logprintf(traceBCDCodeGen, log,
+            "\t\toverlap=false : autoDirectMapped and diff symbols (#%d (%p) and #%d (%p))\n",
+            _symRef->getReferenceNumber(), _symRef->getSymbol(), info->_symRef->getReferenceNumber(),
+            info->_symRef->getSymbol());
 
         return TR_NoOverlap; // separately directly mapped autos from loadaddrs or direct stores/loads
     } else if (symbolMismatch && _class == TR_DirectMappedStatic && info->_class == TR_DirectMappedStatic) {
-        if (traceBCDCodeGen)
-            log->printf("\t\toverlap=false : staticDirectMapped and diff symbols (#%d (%p) and #%d (%p))\n",
-                _symRef->getReferenceNumber(), _symRef->getSymbol(), info->_symRef->getReferenceNumber(),
-                info->_symRef->getSymbol());
+        logprintf(traceBCDCodeGen, log,
+            "\t\toverlap=false : staticDirectMapped and diff symbols (#%d (%p) and #%d (%p))\n",
+            _symRef->getReferenceNumber(), _symRef->getSymbol(), info->_symRef->getReferenceNumber(),
+            info->_symRef->getSymbol());
 
         return TR_NoOverlap; // separately directly mapped autos from loadaddrs or cached static aloads
     } else if ((_class == TR_DirectMappedAuto && info->_class == TR_DirectMappedStatic)
@@ -179,8 +179,8 @@ TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
 
         (_class == TR_PrivateStaticBaseAddress && info->_class == TR_DirectMappedAuto)
         || (_class == TR_PrivateStaticBaseAddress && info->_class == TR_StaticBaseAddress)) {
-        if (traceBCDCodeGen)
-            log->printf("\t\toverlap=false : diff storage classes (%s and %s)\n", getName(), info->getName());
+        logprintf(traceBCDCodeGen, log, "\t\toverlap=false : diff storage classes (%s and %s)\n", getName(),
+            info->getName());
 
         return TR_NoOverlap; // directly mapped autos from loadaddrs or direct stores cannot interfere with static
                              // addresses note that aload from autos and static addresses certainly can as the aload may
@@ -194,8 +194,7 @@ TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
 
     if (_length == 0 || info->_length == 0) // unknown lengths, can do no more
     {
-        if (traceBCDCodeGen)
-            log->printf("\t\toverlap=true : unknown lengths (%d and %d)\n", _length, info->_length);
+        logprintf(traceBCDCodeGen, log, "\t\toverlap=true : unknown lengths (%d and %d)\n", _length, info->_length);
 
         return TR_MayOverlap; // Possible overlap
     }
@@ -204,29 +203,24 @@ TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
     bool compareRanges = false;
     if (_symRef && info->_symRef && _symRef == info->_symRef) {
         if (_class == TR_StaticBaseAddress && info->_class == TR_StaticBaseAddress) {
-            if (traceBCDCodeGen)
-                log->prints("\t\t\tcompareRanges : staticBaseAddress case\n");
+            logprints(traceBCDCodeGen, log, "\t\t\tcompareRanges : staticBaseAddress case\n");
             compareRanges = true;
         } else if (_class == TR_PrivateStaticBaseAddress && info->_class == TR_PrivateStaticBaseAddress) {
-            if (traceBCDCodeGen)
-                log->prints("\t\t\tcompareRanges : privateStaticBaseAddress case\n");
+            logprints(traceBCDCodeGen, log, "\t\t\tcompareRanges : privateStaticBaseAddress case\n");
             compareRanges = true;
         } else if (_class == TR_DirectMappedStatic && info->_class == TR_DirectMappedStatic) {
-            if (traceBCDCodeGen)
-                log->prints("\t\t\tcompareRanges : directMappedStatic case\n");
+            logprints(traceBCDCodeGen, log, "\t\t\tcompareRanges : directMappedStatic case\n");
             compareRanges = true;
         } else if (_class == TR_DirectMappedAuto && info->_class == TR_DirectMappedAuto) {
-            if (traceBCDCodeGen)
-                log->prints("\t\t\tcompareRanges : directMappedAuto case\n");
+            logprints(traceBCDCodeGen, log, "\t\t\tcompareRanges : directMappedAuto case\n");
             compareRanges = true;
         }
     }
 
     // finally just compare address nodes (of any kind)
     if (!compareRanges && _address && info->_address && comp()->cg()->nodeMatches(_address, info->_address)) {
-        if (traceBCDCodeGen)
-            log->printf("\t\t\tcompareRanges : nodes match case (%s (%p) and %s (%p))\n",
-                _address->getOpCode().getName(), _address, info->_address->getOpCode().getName(), info->_address);
+        logprintf(traceBCDCodeGen, log, "\t\t\tcompareRanges : nodes match case (%s (%p) and %s (%p))\n",
+            _address->getOpCode().getName(), _address, info->_address->getOpCode().getName(), info->_address);
         compareRanges = true;
     }
 
@@ -240,9 +234,9 @@ TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
         intptr_t overlapStart = std::max(startOne, startTwo);
         intptr_t overlapEnd = std::min(endOne, endTwo);
 
-        if (traceBCDCodeGen)
-            log->printf("\t\t\tcompareRanges : range1 %d->%d vs range2 %d->%d --> overlap range %d->%d\n", startOne,
-                endOne, startTwo, endTwo, overlapStart, overlapEnd);
+        logprintf(traceBCDCodeGen, log,
+            "\t\t\tcompareRanges : range1 %d->%d vs range2 %d->%d --> overlap range %d->%d\n", startOne, endOne,
+            startTwo, endTwo, overlapStart, overlapEnd);
 
         TR_StorageOverlapKind overlap = TR_NoOverlap;
 
@@ -283,15 +277,13 @@ TR_StorageOverlapKind TR_StorageInfo::mayOverlapWith(TR_StorageInfo *info)
             }
         }
 
-        if (traceBCDCodeGen)
-            log->printf("\t\toverlap=%s (%s) : overlap range %d->%d is %spossible\n", overlap ? "true" : "false",
-                getName(overlap), overlapStart, overlapEnd, overlap ? "" : "im");
+        logprintf(traceBCDCodeGen, log, "\t\toverlap=%s (%s) : overlap range %d->%d is %spossible\n",
+            overlap ? "true" : "false", getName(overlap), overlapStart, overlapEnd, overlap ? "" : "im");
 
         return overlap;
     }
 
-    if (traceBCDCodeGen)
-        log->prints("\t\toverlap=true : no pattern matched case\n");
+    logprints(traceBCDCodeGen, log, "\t\toverlap=true : no pattern matched case\n");
 
     return TR_MayOverlap; // Possible overlap
 }

@@ -512,9 +512,9 @@ TR::Register *OMR::RV::TreeEvaluator::iselectEvaluator(TR::Node *node, TR::CodeG
     TR_ASSERT_FATAL_WITH_NODE(node, !trueReg->containsInternalPointer() && !falseReg->containsInternalPointer(),
         "Select nodes cannot have children that are internal pointers");
     if (falseReg->containsCollectedReference()) {
-        if (cg->comp()->getOption(TR_TraceCG))
-            cg->comp()->log()->printf("Setting containsCollectedReference on result of select node in register %s\n",
-                cg->getDebug()->getName(trueReg));
+        logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+            "Setting containsCollectedReference on result of select node in register %s\n",
+            cg->getDebug()->getName(trueReg));
         trueReg->setContainsCollectedReference();
     }
 

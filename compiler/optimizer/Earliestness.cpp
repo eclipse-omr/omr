@@ -62,15 +62,13 @@ TR_Earliestness::TR_Earliestness(TR::Compilation *comp, TR::Optimizer *optimizer
     OMR::Logger *log = comp->log();
     _globalAnticipatability = new (comp->allocator()) TR_GlobalAnticipatability(comp, optimizer, rootStructure, trace);
 
-    if (trace)
-        log->prints("Starting Earliestness\n");
+    logprints(trace, log, "Starting Earliestness\n");
 
     _supportedNodesAsArray = _globalAnticipatability->_supportedNodesAsArray;
 
     _temp = NULL;
     performAnalysis(rootStructure, false);
-    if (trace)
-        log->printf("Earl # bits %d, %d\n", _numberOfBits, _globalAnticipatability->_numberOfBits);
+    logprintf(trace, log, "Earl # bits %d, %d\n", _numberOfBits, _globalAnticipatability->_numberOfBits);
     if (trace) {
         int32_t i;
         for (i = 0; i < _numberOfNodes; i++) {
@@ -124,13 +122,6 @@ void TR_Earliestness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockSt
 
     *(_blockAnalysisInfo[blockStructure->getNumber()]) |= *_temp;
     copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
-
-    if (trace()) {
-        /////comp()->log()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
-        /////_inSetInfo[blockStructure->getNumber()]->print(comp()->log());
-        /////comp()->log()->printf("\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(comp()->log());
-    }
 
     TR::Block *block = blockStructure->getBlock();
     TR::TreeTop *currentTree = block->getEntry();

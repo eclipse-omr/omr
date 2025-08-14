@@ -241,8 +241,8 @@ static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPFAIL, "%s failed compilation", comp->signature());
         }
 
-        if (comp->getOption(TR_TraceAll))
-            comp->log()->prints("<result success=\"false\">exception thrown by the compiler</result>\n");
+        logprints(comp->getOption(TR_TraceAll), comp->log(),
+            "<result success=\"false\">exception thrown by the compiler</result>\n");
     }
 }
 
@@ -323,10 +323,12 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPSTART, "compiling %s", signature);
         }
 
-        if (compiler.getOption(TR_TraceAll)) {
-            const char *signature = compilee.signature(&trMemory);
+        OMR::Logger *log = compiler.log();
+        bool trace = compiler.getOption(TR_TraceAll);
 
-            compiler.log()->printf("<compile hotness=\"%s\" method=\"%s\">\n",
+        if (trace) {
+            const char *signature = compilee.signature(&trMemory);
+            log->printf("<compile hotness=\"%s\" method=\"%s\">\n",
                 compiler.getHotnessName(compiler.getMethodHotness()), signature);
         }
 
@@ -379,9 +381,8 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
                 }
             }
 
-            if (compiler.getOption(TR_TraceAll))
-                compiler.log()->printf("<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n", startPC,
-                    translationTime / 1000, translationTime % 1000);
+            logprintf(trace, log, "<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n", startPC,
+                translationTime / 1000, translationTime % 1000);
         } else /* of rc == COMPILATION_SUCCEEDED */
         {
             TR_ASSERT(false, "compiler error code %d returned\n", rc);

@@ -357,6 +357,8 @@ bool OMR::Power::Peephole::tryToRemoveRedundantMoveRegister()
         return false;
 
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     int32_t windowSize = 0;
     const int32_t maxWindowSize = comp->isOptServer() ? 16 : 8;
@@ -631,12 +633,10 @@ bool OMR::Power::Peephole::tryToRemoveRedundantMoveRegister()
                 // Adjust any register maps that will be invalidated by the removal
                 if (!stackMaps.empty()) {
                     for (auto stackMapIter = stackMaps.begin(); stackMapIter != stackMaps.end(); ++stackMapIter) {
-                        if (self()->cg()->getDebug())
-                            if (comp->getOption(TR_TraceCG))
-                                comp->log()->printf(
-                                    "Adjusting register map %p; removing %s, adding %s due to removal of mr %p\n",
-                                    *stackMapIter, self()->cg()->getDebug()->getName(mrTargetReg),
-                                    self()->cg()->getDebug()->getName(mrSourceReg), mrInstruction);
+                        logprintf(trace, log,
+                            "Adjusting register map %p; removing %s, adding %s due to removal of mr %p\n",
+                            *stackMapIter, self()->cg()->getDebug()->getName(mrTargetReg),
+                            self()->cg()->getDebug()->getName(mrSourceReg), mrInstruction);
                         (*stackMapIter)
                             ->resetRegistersBits(
                                 self()->cg()->registerBitMask(toRealRegister(mrTargetReg)->getRegisterNumber()));

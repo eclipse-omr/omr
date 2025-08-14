@@ -62,12 +62,12 @@ int32_t TR_Latestness::getNumberOfBits() { return _delayedness->_numberOfBits; }
 TR_Latestness::TR_Latestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure, bool trace)
     : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
 {
+    OMR::Logger *log = comp->log();
     _delayedness = new (comp->allocator()) TR_Delayedness(comp, optimizer, rootStructure, trace);
 
     _supportedNodesAsArray = _delayedness->_supportedNodesAsArray;
 
-    if (trace)
-        comp->log()->prints("Starting Latestness\n");
+    logprints(trace, log, "Starting Latestness\n");
 
     TR::CFG *cfg = comp->getFlowGraph();
     _numberOfNodes = cfg->getNextNodeNumber();
@@ -118,13 +118,12 @@ TR_Latestness::TR_Latestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR
         *(_inSetInfo[blockStructure->getNumber()]) &= *(_delayedness->_inSetInfo[blockStructure->getNumber()]);
 
         if (trace) {
-            comp->log()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
-            _inSetInfo[blockStructure->getNumber()]->print(comp->log(), comp);
+            log->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
+            _inSetInfo[blockStructure->getNumber()]->print(log, comp);
         }
     }
 
-    if (trace)
-        comp->log()->prints("\nEnding Latestness\n");
+    logprints(trace, log, "\nEnding Latestness\n");
 
     // Null out info that will not be used by callers
     _delayedness->_inSetInfo = NULL;

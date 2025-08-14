@@ -203,10 +203,10 @@ void OMR::X86::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
         if (localCursor->getGCMapIndex() >= 0) {
             int32_t newOffset = stackIndex + pointerSize * (localCursor->getGCMapIndex() - firstLocalGCIndex);
 
-            if (comp->getOption(TR_TraceRA))
-                comp->log()->printf("\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
-                    comp->getDebug()->getName(localCursor), localCursor->getGCMapIndex(), localCursor->getOffset(),
-                    newOffset);
+            logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                "\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
+                comp->getDebug()->getName(localCursor), localCursor->getGCMapIndex(), localCursor->getOffset(),
+                newOffset);
 
             localCursor->setOffset(newOffset);
 
@@ -471,9 +471,8 @@ void OMR::X86::Linkage::mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t size
     p->setOffset(stackIndex);
 
     TR::Compilation *comp = self()->cg()->comp();
-    if (comp->getOption(TR_TraceRA))
-        comp->log()->printf("\nmapSingleAutomatic(%s, %d) = %d", self()->cg()->getDebug()->getName(p), size,
-            stackIndex);
+    logprintf(comp->getOption(TR_TraceRA), comp->log(), "\nmapSingleAutomatic(%s, %d) = %d",
+        self()->cg()->getDebug()->getName(p), size, stackIndex);
 }
 
 void OMR::X86::Linkage::stopUsingKilledRegisters(TR::RegisterDependencyConditions *deps, TR::Register *returnRegister)

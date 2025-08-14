@@ -500,8 +500,7 @@ void OMR::Block::redirectFlowToNewDestination(TR::Compilation *comp, TR::CFGEdge
                 bool doTrace = comp->getOptions()->getAnyOption(TR_TraceAll);
                 OMR::Logger *log = comp->log();
 
-                if (doTrace)
-                    log->prints("Jump with multiple targets, with non fall through path to empty block\n");
+                logprints(doTrace, log, "Jump with multiple targets, with non fall through path to empty block\n");
                 TR::TreeTop *origToEntry = origTo->getEntry();
                 TR::TreeTop *newToEntry = newTo->getEntry();
                 if (doTrace) {
@@ -514,9 +513,8 @@ void OMR::Block::redirectFlowToNewDestination(TR::Compilation *comp, TR::CFGEdge
                 for (int32_t i = 0; i < lastNode->getNumChildren() - 1; i++) {
                     TR::Node *child = lastNode->getChild(i);
 
-                    if (doTrace)
-                        log->printf("considering node %p with branch destination %p \n", child,
-                            child->getBranchDestination() ? child->getBranchDestination()->getNode() : 0);
+                    logprintf(doTrace, log, "considering node %p with branch destination %p \n", child,
+                        child->getBranchDestination() ? child->getBranchDestination()->getNode() : 0);
                     if (child->getBranchDestination() == origToEntry) {
                         child->setBranchDestination(newToEntry);
                         if (!from->hasSuccessor(newTo))
@@ -1861,7 +1859,6 @@ void OMR::Block::collectReferencedAutoSymRefsIn(TR::Compilation *comp, TR::Node 
 TR::Block *OMR::Block::splitEdge(TR::Block *from, TR::Block *to, TR::Compilation *c, TR::TreeTop **lastTreeTop,
     bool findOptimalInsertionPoint)
 {
-    // c->log()->printf("Splitting edge (%d,%d)\n", from->getNumber(), to->getNumber());
     TR_ASSERT(!to->isOSRCatchBlock(), "Splitting edge to OSRCatchBlock (block_%d -> block_%d) is not supported\n",
         from->getNumber(), to->getNumber());
     TR::Node *exitNode = from->getExit()->getNode();

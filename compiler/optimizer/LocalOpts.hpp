@@ -598,10 +598,9 @@ private:
             int i;
 
             for (i = _nextIndex; i > 0 && _array[i / 2]->objectGT(t->getObject()); i /= 2) {
-                // comp->log()->printf("\tMoving %d to %d\n", i, i/2);
                 _array[i] = _array[i / 2];
             }
-            // comp->log()->printf("Storing new item at location %d, _nextIndex is %d\n", i, _nextIndex);
+
             _array[i] = t;
 
             return _nextIndex++;

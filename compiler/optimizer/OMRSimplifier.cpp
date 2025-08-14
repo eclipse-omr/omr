@@ -295,6 +295,7 @@ OMR::TR_ConditionCodeNumber OMR::Simplifier::getCC(TR::Node *node)
 
 TR::TreeTop *OMR::Simplifier::simplifyExtendedBlock(TR::TreeTop *treeTop)
 {
+    OMR::Logger *log = comp()->log();
     TR::Block *block = 0;
 
     _containingStructure = NULL;
@@ -334,16 +335,14 @@ TR::TreeTop *OMR::Simplifier::simplifyExtendedBlock(TR::TreeTop *treeTop)
 
         block = b;
 
-        if (trace())
-            comp()->log()->printf("simplifying block_%d\n", block->getNumber());
+        logprintf(trace(), log, "simplifying block_%d\n", block->getNumber());
 
         simplify(block);
 
         for (auto cursor = _performLowerTreeNodePairs.begin(); cursor != _performLowerTreeNodePairs.end(); ++cursor) {
             auto treeNodePair = *cursor;
-            if (trace())
-                comp()->log()->printf("process _performLowerTreeNodePairs treetop %p node %p\n", treeNodePair.first,
-                    treeNodePair.second);
+            logprintf(trace(), log, "process _performLowerTreeNodePairs treetop %p node %p\n", treeNodePair.first,
+                treeNodePair.second);
             TR::Node *performLowerNode
                 = postWalkLowerTreeSimplifier(treeNodePair.first, treeNodePair.second, block, (TR::Simplifier *)this);
             treeNodePair.first->setNode(performLowerNode);
@@ -511,6 +510,8 @@ TR::Node *OMR::Simplifier::simplify(TR::Node *node, TR::Block *block)
 TR::Node *OMR::Simplifier::unaryCancelOutWithChild(TR::Node *node, TR::Node *firstChild, TR::TreeTop *anchorTree,
     TR::ILOpCodes opcode, bool anchorChildren)
 {
+    OMR::Logger *log = comp()->log();
+
     if (!isLegalToUnaryCancel(node, firstChild, opcode))
         return NULL;
 
@@ -547,20 +548,20 @@ TR::Node *OMR::Simplifier::unaryCancelOutWithChild(TR::Node *node, TR::Node *fir
                 && grandChild->getSecondChild()->getOpCode().isLoadConst()
                 && (grandChild->getSecondChild()->get64bitIntegralValue() == truncatedBits)) {
                 disallow = false;
-                if (trace())
-                    comp()->log()->printf("do allow unaryCancel of node %s (%p) and firstChild %s (%p) as grandChild "
-                                          "%s (%p) zeros the %d truncated bytes\n",
-                        node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild,
-                        grandChild->getOpCode().getName(), grandChild, truncatedBits / 8);
+                logprintf(trace(), log,
+                    "do allow unaryCancel of node %s (%p) and firstChild %s (%p) as grandChild %s (%p) zeros the %d "
+                    "truncated bytes\n",
+                    node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild,
+                    grandChild->getOpCode().getName(), grandChild, truncatedBits / 8);
             }
         }
 
         if (disallow) {
-            if (trace())
-                comp()->log()->printf("disallow unaryCancel of node %s (%p) and firstChild %s (%p) due to unequal "
-                                      "sizes (nodeSize %d, firstChildSize %d, firstChild->childSize %d)\n",
-                    node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild, node->getSize(),
-                    firstChild->getSize(), firstChild->getFirstChild()->getSize());
+            logprintf(trace(), log,
+                "disallow unaryCancel of node %s (%p) and firstChild %s (%p) due to unequal sizes (nodeSize %d, "
+                "firstChildSize %d, firstChild->childSize %d)\n",
+                node->getOpCode().getName(), node, firstChild->getOpCode().getName(), firstChild, node->getSize(),
+                firstChild->getSize(), firstChild->getFirstChild()->getSize());
             return NULL;
         }
     }
@@ -623,8 +624,7 @@ void OMR::Simplifier::anchorOrderDependentNodesInSubtree(TR::Node *node, TR::Nod
         return;
 
     if (nodeIsOrderDependent(node, 0, false)) {
-        if (trace())
-            comp()->log()->printf("anchor detached node %p\n", node);
+        logprintf(trace(), comp()->log(), "anchor detached node %p\n", node);
 
         generateAnchor(node, anchorTree);
     } else

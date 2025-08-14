@@ -1699,6 +1699,7 @@ void OMR::Power::Machine::decFutureUseCountAndUnlatch(TR::Register *virtualRegis
 {
     TR::CodeGenerator *cg = self()->cg();
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
     bool trace = comp->getOption(TR_TraceRA);
 
     virtualRegister->decFutureUseCount();
@@ -1720,10 +1721,8 @@ void OMR::Power::Machine::decFutureUseCountAndUnlatch(TR::Register *virtualRegis
         || (self()->cg()->isOutOfLineHotPath()
             && virtualRegister->getFutureUseCount() == virtualRegister->getOutOfLineUseCount())) {
         if (virtualRegister->getFutureUseCount() != 0) {
-            if (trace) {
-                comp->log()->printf("\nOOL: %s's remaining uses are out-of-line, unlatching\n",
-                    self()->cg()->getDebug()->getName(virtualRegister));
-            }
+            logprintf(trace, log, "\nOOL: %s's remaining uses are out-of-line, unlatching\n",
+                self()->cg()->getDebug()->getName(virtualRegister));
         }
         virtualRegister->getAssignedRealRegister()->setState(TR::RealRegister::Unlatched);
         virtualRegister->setAssignedRegister(NULL);
@@ -1736,9 +1735,8 @@ void OMR::Power::Machine::decFutureUseCountAndUnlatch(TR::Register *virtualRegis
     if (virtualRegister->getFutureUseCount() == 0 && location != NULL && self()->cg()->isOutOfLineColdPath()) {
         TR_ASSERT(cg->isFreeSpillListLocked(), "Expecting the free spill list to be locked on this path");
         int32_t size = spillSizeForRegister(virtualRegister);
-        if (trace)
-            comp->log()->printf("\nFreeing backing storage " POINTER_PRINTF_FORMAT " of size %u from dead virtual %s\n",
-                location, size, cg->getDebug()->getName(virtualRegister));
+        logprintf(trace, log, "\nFreeing backing storage " POINTER_PRINTF_FORMAT " of size %u from dead virtual %s\n",
+            location, size, cg->getDebug()->getName(virtualRegister));
         cg->unlockFreeSpillList();
         cg->freeSpill(location, size, 0);
         virtualRegister->setBackingStorage(NULL);
@@ -1766,6 +1764,7 @@ void OMR::Power::Machine::disassociateUnspilledBackingStorage()
 {
     TR::CodeGenerator *cg = self()->cg();
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
     bool trace = comp->getOption(TR_TraceRA);
 
     TR_ASSERT(!cg->isOutOfLineHotPath() && !cg->isOutOfLineColdPath(),
@@ -1782,10 +1781,9 @@ void OMR::Power::Machine::disassociateUnspilledBackingStorage()
 
             if (location != NULL) {
                 int32_t size = spillSizeForRegister(virtReg);
-                if (trace)
-                    comp->log()->printf("\nDisassociating backing storage " POINTER_PRINTF_FORMAT
-                                        " of size %u from assigned virtual %s\n",
-                        location, size, cg->getDebug()->getName(virtReg));
+                logprintf(trace, log,
+                    "\nDisassociating backing storage " POINTER_PRINTF_FORMAT " of size %u from assigned virtual %s\n",
+                    location, size, cg->getDebug()->getName(virtReg));
                 cg->freeSpill(location, size, 0);
                 virtReg->setBackingStorage(NULL);
                 location->setMaxSpillDepth(0);

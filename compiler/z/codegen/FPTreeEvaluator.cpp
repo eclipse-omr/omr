@@ -583,8 +583,6 @@ inline TR::Register *floadHelper(TR::Node *node, TR::CodeGenerator *cg, TR::Memo
     TR::MemoryReference *tempMR = srcMR;
     if (tempMR == NULL) {
         tempMR = TR::MemoryReference::create(cg, node);
-        // cg->comp()->log()->printf("Generated memory reference %p for node %p with offset
-        // %d",tempMR,node,tempMR->getOffset());
     }
     generateRXEInstruction(cg, TR::InstOpCode::LDE, node, tempReg, tempMR);
     tempMR->stopUsingMemRefRegister(cg);
@@ -651,8 +649,8 @@ TR::Register *OMR::Z::TreeEvaluator::faddEvaluator(TR::Node *node, TR::CodeGener
     TR::Compilation *comp = cg->comp();
     if ((canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MAEBR)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("Successfully changed fadd to fused multiply and add operation\n");
+        logprints(comp->getOption(TR_TraceCG), comp->log(),
+            "Successfully changed fadd to fused multiply and add operation\n");
     } else {
         TR_S390BinaryCommutativeAnalyser temp(cg);
         temp.floatBinaryCommutativeAnalyser(node, TR::InstOpCode::AEBR, TR::InstOpCode::AEB);
@@ -668,8 +666,8 @@ TR::Register *OMR::Z::TreeEvaluator::daddEvaluator(TR::Node *node, TR::CodeGener
     TR::Compilation *comp = cg->comp();
     if ((canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MADBR)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("Successfully changed dadd to fused multiply and add operation\n");
+        logprints(comp->getOption(TR_TraceCG), comp->log(),
+            "Successfully changed dadd to fused multiply and add operation\n");
     } else {
         TR_S390BinaryCommutativeAnalyser temp(cg);
         temp.doubleBinaryCommutativeAnalyser(node, TR::InstOpCode::ADBR, TR::InstOpCode::ADB);
@@ -708,15 +706,15 @@ TR::Register *OMR::Z::TreeEvaluator::dmulEvaluator(TR::Node *node, TR::CodeGener
 TR::Register *OMR::Z::TreeEvaluator::fsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     if (canUseNodeForFusedMultiply(node->getFirstChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MSEBR)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("Successfully changed fsub to fused multiply and sub operation\n");
+        logprints(trace, log, "Successfully changed fsub to fused multiply and sub operation\n");
     } else if (canUseNodeForFusedMultiply(node->getSecondChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MAEBR, TR::InstOpCode::LCEBR)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("Successfully changed fsub to fused multiply, negate, and add operation\n");
+        logprints(trace, log, "Successfully changed fsub to fused multiply, negate, and add operation\n");
     } else {
         TR_S390BinaryAnalyser temp(cg);
         temp.floatBinaryAnalyser(node, TR::InstOpCode::SEBR, TR::InstOpCode::SEB);
@@ -728,15 +726,15 @@ TR::Register *OMR::Z::TreeEvaluator::fsubEvaluator(TR::Node *node, TR::CodeGener
 TR::Register *OMR::Z::TreeEvaluator::dsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     if (canUseNodeForFusedMultiply(node->getFirstChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MSDBR)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("Successfully changed dsub to fused multiply and subtract operation\n");
+        logprints(trace, log, "Successfully changed dsub to fused multiply and subtract operation\n");
     } else if (canUseNodeForFusedMultiply(node->getSecondChild())
         && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::MADBR, TR::InstOpCode::LCDBR)) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->prints("Successfully changed dsub to fused multiply, negate, and add operation\n");
+        logprints(trace, log, "Successfully changed dsub to fused multiply, negate, and add operation\n");
     } else {
         TR_S390BinaryAnalyser temp(cg);
         temp.doubleBinaryAnalyser(node, TR::InstOpCode::SDBR, TR::InstOpCode::SDB);

@@ -193,9 +193,8 @@ bool TR::BenefitInlinerBase::inlineCallTargets(TR::ResolvedMethodSymbol *symbol,
     if (!_nextIDTNodeToInlineInto)
         return false;
 
-    if (comp()->getOption(TR_TraceBIProposal))
-        comp()->log()->printf("#BenefitInliner: inlining into %s\n",
-            _nextIDTNodeToInlineInto->getName(comp()->trMemory()));
+    logprintf(comp()->getOption(TR_TraceBIProposal), comp()->log(), "#BenefitInliner: inlining into %s\n",
+        _nextIDTNodeToInlineInto->getName(comp()->trMemory()));
 
     TR_CallStack callStack(comp(), symbol, symbol->getResolvedMethod(), prevCallStack, 1500, true);
 

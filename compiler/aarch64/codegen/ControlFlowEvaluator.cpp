@@ -125,8 +125,9 @@ static uint32_t countIntegerAndAddressTypesInGlRegDeps(TR::Node *glRegDepsNode, 
             numIntNodes++;
         }
     }
-    if (cg->comp()->getOption(TR_TraceCG))
-        cg->comp()->log()->printf("%d integer/address nodes found in GlRegDeps node %p\n", numIntNodes, glRegDepsNode);
+
+    logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+        "%d integer/address nodes found in GlRegDeps node %p\n", numIntNodes, glRegDepsNode);
 
     return numIntNodes;
 }
@@ -824,9 +825,9 @@ TR::Register *OMR::ARM64::TreeEvaluator::iselectEvaluator(TR::Node *node, TR::Co
     TR_ASSERT_FATAL_WITH_NODE(node, !trueReg->containsInternalPointer() && !falseReg->containsInternalPointer(),
         "Select nodes cannot have children that are internal pointers");
     if (falseReg->containsCollectedReference()) {
-        if (cg->comp()->getOption(TR_TraceCG))
-            cg->comp()->log()->printf("Setting containsCollectedReference on result of select node in register %s\n",
-                cg->getDebug()->getName(resultReg));
+        logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+            "Setting containsCollectedReference on result of select node in register %s\n",
+            cg->getDebug()->getName(resultReg));
         resultReg->setContainsCollectedReference();
     }
 

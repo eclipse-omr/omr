@@ -273,8 +273,7 @@ static bool tryFoldCompileTimeLoad(OMR::ValuePropagation *vp, TR::Node *node, bo
     OMR::Logger *log = vp->comp()->log();
 
     if (node->getOpCode().isIndirect()) {
-        if (vp->trace())
-            log->printf("  constrainCompileTimeLoad inspecting %s %p\n", node->getOpCode().getName(), node);
+        logprintf(vp->trace(), log, "  constrainCompileTimeLoad inspecting %s %p\n", node->getOpCode().getName(), node);
 
         TR::KnownObjectTable *knot = vp->comp()->getKnownObjectTable();
         TR::Node *baseExpression = NULL;
@@ -297,12 +296,11 @@ static bool tryFoldCompileTimeLoad(OMR::ValuePropagation *vp, TR::Node *node, bo
             if (!curIsGlobal)
                 isGlobal = false;
             if (!constraint) {
-                if (vp->trace())
-                    log->printf("  - FAIL: %s %p has no constraint\n", curNode->getOpCode().getName(), curNode);
+                logprintf(vp->trace(), log, "  - FAIL: %s %p has no constraint\n", curNode->getOpCode().getName(),
+                    curNode);
                 break;
             } else if (curNode->getOpCode().hasSymbolReference() && curNode->getSymbolReference()->isUnresolved()) {
-                if (vp->trace())
-                    log->printf("  - FAIL: %s %p is unresolved\n", curNode->getOpCode().getName(), curNode);
+                logprintf(vp->trace(), log, "  - FAIL: %s %p is unresolved\n", curNode->getOpCode().getName(), curNode);
                 break;
             } else if (constraint->getKnownObject()) {
                 TR::Symbol *prevNodeSym = prevNode->getSymbol();
@@ -317,9 +315,8 @@ static bool tryFoldCompileTimeLoad(OMR::ValuePropagation *vp, TR::Node *node, bo
                         TR::SymbolReference *improvedSymRef
                             = vp->comp()->getSymRefTab()->findOrCreateImmutableArrayShadowSymbolRef(
                                 prevNodeSym->getDataType());
-                        if (vp->trace())
-                            log->printf("Found arrayShadow load %p from array with constant elements %p\n", prevNode,
-                                curNode);
+                        logprintf(vp->trace(), log, "Found arrayShadow load %p from array with constant elements %p\n",
+                            prevNode, curNode);
                         if (performTransformation(vp->comp(), "%sUsing ImmutableArrayShadow symref #%d for node %p\n",
                                 OPT_DETAILS, improvedSymRef->getReferenceNumber(), prevNode))
                             prevNode->setSymbolReference(improvedSymRef);
@@ -334,9 +331,8 @@ static bool tryFoldCompileTimeLoad(OMR::ValuePropagation *vp, TR::Node *node, bo
 
                 baseExpression = curNode;
                 baseKnownObject = constraint->getKnownObject()->getIndex();
-                if (vp->trace())
-                    log->printf("  - %s %p is obj%d\n", baseExpression->getOpCode().getName(), baseExpression,
-                        baseKnownObject);
+                logprintf(vp->trace(), log, "  - %s %p is obj%d\n", baseExpression->getOpCode().getName(),
+                    baseExpression, baseKnownObject);
                 break;
             } else if (knot && constraint->isConstString()) {
                 baseExpression = curNode;
@@ -345,14 +341,13 @@ static bool tryFoldCompileTimeLoad(OMR::ValuePropagation *vp, TR::Node *node, bo
                                                                ->getSymbol()
                                                                ->castToStaticSymbol()
                                                                ->getStaticAddress());
-                if (vp->trace())
-                    log->printf("  - %s %p is string obj%d\n", baseExpression->getOpCode().getName(), baseExpression,
-                        baseKnownObject);
+                logprintf(vp->trace(), log, "  - %s %p is string obj%d\n", baseExpression->getOpCode().getName(),
+                    baseExpression, baseKnownObject);
                 break;
             } else if (constraint->isJ9ClassObject() == TR_yes && constraint->isNonNullObject()
                 && constraint->getClassType() && constraint->getClassType()->asFixedClass() && constraint->getClass()) {
-                if (vp->trace())
-                    log->printf(" - %s %p is class object - transforming\n", curNode->getOpCode().getName(), curNode);
+                logprintf(vp->trace(), log, " - %s %p is class object - transforming\n", curNode->getOpCode().getName(),
+                    curNode);
                 TR::Node *nodeToRemove = NULL;
                 uintptr_t clazz = (uintptr_t)constraint->getClass();
                 bool didSomething
@@ -414,31 +409,28 @@ static bool tryFoldCompileTimeLoad(OMR::ValuePropagation *vp, TR::Node *node, bo
                     }
                     return didSomething;
                 } else {
-                    if (vp->trace())
-                        log->printf("  - FAIL: %s %p is not an indirect load and has insufficient constraints\n",
-                            curNode->getOpCode().getName(), curNode);
+                    logprintf(vp->trace(), log,
+                        "  - FAIL: %s %p is not an indirect load and has insufficient constraints\n",
+                        curNode->getOpCode().getName(), curNode);
                     break;
                 }
             }
 #ifdef J9_PROJECT_SPECIFIC
             else if (vp->comp()->fej9()->isFinalFieldPointingAtJ9Class(curNode->getSymbolReference(), vp->comp())) {
-                if (vp->trace())
-                    log->printf(" - FAIL: %s %p points to a j9class but has insufficient constraints\n",
-                        curNode->getOpCode().getName(), curNode);
+                logprintf(vp->trace(), log, " - FAIL: %s %p points to a j9class but has insufficient constraints\n",
+                    curNode->getOpCode().getName(), curNode);
                 baseExpression = NULL;
                 break;
             } else if (vp->comp()->fej9()->canDereferenceAtCompileTime(curNode->getSymbolReference(), vp->comp())) {
                 // we can continue up the dereference chain
-                if (vp->trace())
-                    log->printf("  - %s %p is %s\n", curNode->getOpCode().getName(), curNode,
-                        curNode->getSymbolReference()->getName(vp->comp()->getDebug()));
+                logprintf(vp->trace(), log, "  - %s %p is %s\n", curNode->getOpCode().getName(), curNode,
+                    curNode->getSymbolReference()->getName(vp->comp()->getDebug()));
                 continue;
             }
 #endif
             else {
-                if (vp->trace())
-                    log->printf("  - FAIL: %s %p is %s\n", curNode->getOpCode().getName(), curNode,
-                        curNode->getSymbolReference()->getName(vp->comp()->getDebug()));
+                logprintf(vp->trace(), log, "  - FAIL: %s %p is %s\n", curNode->getOpCode().getName(), curNode,
+                    curNode->getSymbolReference()->getName(vp->comp()->getDebug()));
                 break;
             }
         }
@@ -610,10 +602,8 @@ static bool findConstant(OMR::ValuePropagation *vp, TR::Node *node)
 
 static bool refuseToConstrainUnsafe(OMR::ValuePropagation *vp, TR::Node *node, const char *why)
 {
-    if (vp->trace()) {
-        vp->comp()->log()->printf("Refusing to constrain unsafe access n%un [%p]: %s\n", node->getGlobalIndex(), node,
-            why);
-    }
+    logprintf(vp->trace(), vp->comp()->log(), "Refusing to constrain unsafe access n%un [%p]: %s\n",
+        node->getGlobalIndex(), node, why);
 
     return true;
 }
@@ -625,6 +615,7 @@ static bool refineUnsafeAccess(OMR::ValuePropagation *vp, TR::Node *node)
 {
     const bool okToConstrainNormally = false;
     TR::Compilation *comp = vp->comp();
+    OMR::Logger *log = comp->log();
 
     TR::SymbolReference *symRef = node->getSymbolReference();
     if (symRef->isLitPoolReference())
@@ -655,9 +646,7 @@ static bool refineUnsafeAccess(OMR::ValuePropagation *vp, TR::Node *node)
     if (!sym->isTransparent() && !sym->isVolatile())
         return refuseToConstrainUnsafe(vp, node, "non-transparent non-volatile symbol");
 
-    if (vp->trace()) {
-        comp->log()->printf("Found unsafe shadow access n%un [%p]\n", node->getGlobalIndex(), node);
-    }
+    logprintf(vp->trace(), log, "Found unsafe shadow access n%un [%p]\n", node->getGlobalIndex(), node);
 
     if (comp->compileRelocatableCode() && !comp->getOption(TR_UseSymbolValidationManager)) {
         return refuseToConstrainUnsafe(vp, node, "AOT without SVM");
@@ -696,16 +685,13 @@ static bool refineUnsafeAccess(OMR::ValuePropagation *vp, TR::Node *node)
     int32_t objClassSigLen = 0;
     const char *objClassSig = TR::VPResolvedClass::create(vp, objClass)->getClassSignature(objClassSigLen);
 
-    if (vp->trace()) {
-        comp->log()->printf("Base object type is %p %.*s\n", objClass, objClassSigLen, objClassSig);
-    }
+    logprintf(vp->trace(), log, "Base object type is %p %.*s\n", objClass, objClassSigLen, objClassSig);
 
     TR::DataTypes nodeType = node->getOpCode().getDataType().getDataType();
     TR::SymbolReferenceTable *srTab = comp->getSymRefTab();
 
     if (TR::Compiler->cls.isClassArray(comp, objClass)) {
-        if (vp->trace())
-            comp->log()->prints("Base object is an array\n");
+        logprints(vp->trace(), log, "Base object is an array\n");
 
         TR::DataTypes elemType = TR::NoType;
         if (TR::Compiler->cls.isPrimitiveArray(comp, objClass))
@@ -1058,23 +1044,20 @@ TR::Node *constrainBCDSign(OMR::ValuePropagation *vp, TR::Node *node)
     {
         TR_RawBCDSignCode rawSign = node->getKnownSignCode();
         sign = TR::DataType::getValue(rawSign);
-        if (vp->trace())
-            log->printf("\tconstrainBCDSign from knownSign : %s (%p) sign %s (0x%x)\n", node->getOpCode().getName(),
-                node, TR::DataType::getName(rawSign), sign);
+        logprintf(vp->trace(), log, "\tconstrainBCDSign from knownSign : %s (%p) sign %s (0x%x)\n",
+            node->getOpCode().getName(), node, TR::DataType::getName(rawSign), sign);
     } else if (node->getOpCode().isSetSignOnNode()) {
         TR_RawBCDSignCode rawSign = node->getSetSign();
         sign = TR::DataType::getValue(rawSign);
-        if (vp->trace())
-            log->printf("\tconstrainBCDSign from setSignOnNode : %s (%p) sign %s (0x%x)\n", node->getOpCode().getName(),
-                node, TR::DataType::getName(rawSign), sign);
+        logprintf(vp->trace(), log, "\tconstrainBCDSign from setSignOnNode : %s (%p) sign %s (0x%x)\n",
+            node->getOpCode().getName(), node, TR::DataType::getName(rawSign), sign);
     } else if (node->getOpCode().isSetSign()) {
         TR::Node *setSignValue = node->getSetSignValueNode();
         if (setSignValue->getOpCode().isLoadConst() && setSignValue->getType().isIntegral()
             && setSignValue->getSize() <= 4) {
             sign = setSignValue->get32bitIntegralValue();
-            if (vp->trace())
-                log->printf("\tconstrainBCDSign from setSignOp : %s (%p) sign 0x%x\n", node->getOpCode().getName(),
-                    node, sign);
+            logprintf(vp->trace(), log, "\tconstrainBCDSign from setSignOp : %s (%p) sign 0x%x\n",
+                node->getOpCode().getName(), node, sign);
         }
     }
 
@@ -1089,24 +1072,21 @@ TR::Node *constrainBCDSign(OMR::ValuePropagation *vp, TR::Node *node)
             constraintType = TR_Sign_Preferred;
 
         if (constraintType != TR_Sign_Unknown) {
-            if (vp->trace())
-                log->printf("\tnode %s (%p) got clean or preferred constraintType %s\n", node->getOpCode().getName(),
-                    node, TR::VP_BCDSign::getName(constraintType));
+            logprintf(vp->trace(), log, "\tnode %s (%p) got clean or preferred constraintType %s\n",
+                node->getOpCode().getName(), node, TR::VP_BCDSign::getName(constraintType));
             vp->addGlobalConstraint(node, TR::VP_BCDSign::create(vp, constraintType, node->getDataType()));
         }
     } else {
         TR_BCDSignCode normalizedSign = TR::DataType::getNormalizedSignCode(node->getDataType(), sign);
         TR_BCDSignConstraint constraintType = TR::VP_BCDSign::getSignConstraintFromBCDSign(normalizedSign);
 
-        if (vp->trace())
-            log->printf("\tnode %s (%p) got constraintType %s for sign 0x%x\n", node->getOpCode().getName(), node,
-                TR::VP_BCDSign::getName(constraintType), sign);
+        logprintf(vp->trace(), log, "\tnode %s (%p) got constraintType %s for sign 0x%x\n", node->getOpCode().getName(),
+            node, TR::VP_BCDSign::getName(constraintType), sign);
 
         if (constraintType == TR_Sign_Minus && node->hasKnownCleanSign()) {
-            if (vp->trace())
-                log->printf("\tpromote constraintType %s->%s as node %s (%p) is clean\n",
-                    TR::VP_BCDSign::getName(constraintType), TR::VP_BCDSign::getName(TR_Sign_Minus_Clean),
-                    node->getOpCode().getName(), node);
+            logprintf(vp->trace(), log, "\tpromote constraintType %s->%s as node %s (%p) is clean\n",
+                TR::VP_BCDSign::getName(constraintType), TR::VP_BCDSign::getName(TR_Sign_Minus_Clean),
+                node->getOpCode().getName(), node);
             constraintType = TR_Sign_Minus_Clean;
         }
 
@@ -1122,6 +1102,7 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
 {
 #ifdef J9_PROJECT_SPECIFIC
     OMR::Logger *log = vp->comp()->log();
+    bool trace = vp->comp()->cg()->traceBCDCodeGen();
     TR::Node *parent = vp->getCurrentParent();
 
     if (findConstant(vp, node))
@@ -1138,9 +1119,8 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
                 if (!node->hasKnownCleanSign()
                     && performTransformation(vp->comp(), "%sTransfer sign constraint %s to %s (0x%p)\n", OPT_DETAILS,
                         signConstraint->getName(), node->getOpCode().getName(), node)) {
-                    if (vp->comp()->cg()->traceBCDCodeGen())
-                        log->printf("y^y: VP: Transfer sign constraint %s to %s (0x%p)\n", signConstraint->getName(),
-                            node->getOpCode().getName(), node);
+                    logprintf(trace, log, "y^y: VP: Transfer sign constraint %s to %s (0x%p)\n",
+                        signConstraint->getName(), node->getOpCode().getName(), node);
                     node->setHasKnownCleanSign(true);
                 }
                 break;
@@ -1148,9 +1128,8 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
                 if (!node->hasKnownPreferredSign()
                     && performTransformation(vp->comp(), "%sTransfer sign constraint %s to %s (0x%p)\n", OPT_DETAILS,
                         signConstraint->getName(), node->getOpCode().getName(), node)) {
-                    if (vp->comp()->cg()->traceBCDCodeGen())
-                        log->printf("y^y: VP: Transfer sign constraint %s to %s (0x%p)\n", signConstraint->getName(),
-                            node->getOpCode().getName(), node);
+                    logprintf(trace, log, "y^y: VP: Transfer sign constraint %s to %s (0x%p)\n",
+                        signConstraint->getName(), node->getOpCode().getName(), node);
                     node->setHasKnownPreferredSign(true);
                 }
                 break;
@@ -1158,9 +1137,8 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
                 if (!node->knownSignCodeIs(bcd_plus)
                     && performTransformation(vp->comp(), "%sTransfer sign constraint %s to %s (0x%p)\n", OPT_DETAILS,
                         signConstraint->getName(), node->getOpCode().getName(), node)) {
-                    if (vp->comp()->cg()->traceBCDCodeGen())
-                        log->printf("y^y: VP: Transfer sign constraint %s to %s (0x%p)\n", signConstraint->getName(),
-                            node->getOpCode().getName(), node);
+                    logprintf(trace, log, "y^y: VP: Transfer sign constraint %s to %s (0x%p)\n",
+                        signConstraint->getName(), node->getOpCode().getName(), node);
                     node->setKnownSignCode(bcd_plus);
                 }
                 break;
@@ -1168,9 +1146,8 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
                 if (!node->knownSignCodeIs(bcd_minus)
                     && performTransformation(vp->comp(), "%sTransfer sign constraint %s to %s (0x%p)\n", OPT_DETAILS,
                         signConstraint->getName(), node->getOpCode().getName(), node)) {
-                    if (vp->comp()->cg()->traceBCDCodeGen())
-                        log->printf("y^y: VP: Transfer sign constraint %s to %s (0x%p)\n", signConstraint->getName(),
-                            node->getOpCode().getName(), node);
+                    logprintf(trace, log, "y^y: VP: Transfer sign constraint %s to %s (0x%p)\n",
+                        signConstraint->getName(), node->getOpCode().getName(), node);
                     node->setKnownSignCode(bcd_minus);
                 }
                 break;
@@ -1178,9 +1155,8 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
                 if (!node->knownSignCodeIs(bcd_unsigned)
                     && performTransformation(vp->comp(), "%sTransfer sign constraint %s to %s (0x%p)\n", OPT_DETAILS,
                         signConstraint->getName(), node->getOpCode().getName(), node)) {
-                    if (vp->comp()->cg()->traceBCDCodeGen())
-                        log->printf("y^y: VP: Transfer sign constraint %s to %s (0x%p)\n", signConstraint->getName(),
-                            node->getOpCode().getName(), node);
+                    logprintf(trace, log, "y^y: VP: Transfer sign constraint %s to %s (0x%p)\n",
+                        signConstraint->getName(), node->getOpCode().getName(), node);
                     node->setKnownSignCode(bcd_unsigned);
                 }
                 break;
@@ -1188,9 +1164,8 @@ TR::Node *constrainBCDAggrLoad(OMR::ValuePropagation *vp, TR::Node *node)
                 if (!(node->knownSignCodeIs(bcd_minus) && node->hasKnownCleanSign())
                     && performTransformation(vp->comp(), "%sTransfer sign constraint %s to %s (0x%p)\n", OPT_DETAILS,
                         signConstraint->getName(), node->getOpCode().getName(), node)) {
-                    if (vp->comp()->cg()->traceBCDCodeGen())
-                        log->printf("y^y: VP: Transfer sign constraint %s to %s (0x%p)\n", signConstraint->getName(),
-                            node->getOpCode().getName(), node);
+                    logprintf(trace, log, "y^y: VP: Transfer sign constraint %s to %s (0x%p)\n",
+                        signConstraint->getName(), node->getOpCode().getName(), node);
                     node->setKnownSignCode(bcd_minus);
                     node->setHasKnownCleanSign(true);
                 }
@@ -1630,9 +1605,9 @@ TR::Node *constrainAload(OMR::ValuePropagation *vp, TR::Node *node)
                                 if (sig && (len > 0) && (sig[0] == '[' || sig[0] == 'L')) {
                                     int32_t elementSize = arrayElementSize(sig, len, node, vp);
                                     if (elementSize != 0) {
-                                        if (vp->trace())
-                                            vp->comp()->log()->prints("Using class lookahead info to find out non "
-                                                                      "null, array dimension, and object location\n");
+                                        logprints(vp->trace(), vp->comp()->log(),
+                                            "Using class lookahead info to find out non null, array dimension, and "
+                                            "object location\n");
                                         vp->addGlobalConstraint(node,
                                             TR::VPArrayInfo::create(vp, firstDimension, firstDimension, elementSize));
                                         vp->addGlobalConstraint(node,
@@ -1969,7 +1944,8 @@ TR::Node *constrainAloadi(OMR::ValuePropagation *vp, TR::Node *node)
                                 cpg->addEdge(cpg->knownObject(base->getKnownObject()->getIndex()), fieldObjectClazz);
 
                                 if (!TR::Compiler->cls.isClassArray(vp->comp(), fieldObjectClazz)) {
-                                    log->printf("Recognized known object field node %p \n", node);
+                                    logprintf(vp->trace(), vp->comp()->log(),
+                                        "Recognized known object field node %p \n", node);
                                     TR::KnownObjectTable::Index fieldObjectKnotIndex
                                         = knot->getOrCreateIndex(fieldObject);
                                     cpg->addEdge(cpg->knownObject(base->getKnownObject()->getIndex()),
@@ -1984,7 +1960,8 @@ TR::Node *constrainAloadi(OMR::ValuePropagation *vp, TR::Node *node)
                                 } else {
                                     int32_t arrLength
                                         = TR::Compiler->om.getArrayLengthInElements(vp->comp(), fieldObject);
-                                    log->printf("Recognized known array field node %p length %d\n", node, arrLength);
+                                    logprintf(vp->trace(), vp->comp()->log(),
+                                        "Recognized known array field node %p length %d\n", node, arrLength);
                                     // Global constraints should work here, as field loads get fresh value numbers
                                     vp->addGlobalConstraint(node, TR::VPFixedClass::create(vp, fieldObjectClazz));
                                     vp->addGlobalConstraint(node, TR::VPNonNullObject::create(vp));
@@ -2143,10 +2120,8 @@ TR::Node *constrainAloadi(OMR::ValuePropagation *vp, TR::Node *node)
                                             *siteLocation);
                                     }
                                 } else {
-                                    if (vp->trace())
-                                        log->printf(
-                                            "[%p] Unable to acquire VM access.  Not attempting to bypass CallSite\n",
-                                            node);
+                                    logprintf(vp->trace(), log,
+                                        "[%p] Unable to acquire VM access.  Not attempting to bypass CallSite\n", node);
                                 }
                             }
 
@@ -2372,9 +2347,8 @@ TR::Node *constrainAloadi(OMR::ValuePropagation *vp, TR::Node *node)
             char *className = node->getSymbolReference()->getOwningMethod(vp->comp())->classNameChars();
             uint16_t classNameLen = node->getSymbolReference()->getOwningMethod(vp->comp())->classNameLength();
             if (fieldName && !strncmp(fieldName, "this$0", 6) && className && !strncmp(className, "java/util/", 10)) {
-                if (vp->trace())
-                    log->printf("NonNull node %d className %.*s fieldSig %.*s fieldName %.*s\n", node->getGlobalIndex(),
-                        classNameLen, className, fieldSigLen, fieldSig, fieldNameLen, fieldName);
+                logprintf(vp->trace(), log, "NonNull node %d className %.*s fieldSig %.*s fieldName %.*s\n",
+                    node->getGlobalIndex(), classNameLen, className, fieldSigLen, fieldSig, fieldNameLen, fieldName);
                 vp->addBlockConstraint(node, TR::VPNonNullObject::create(vp));
             }
         }
@@ -2395,6 +2369,8 @@ TR::Node *constrainAloadi(OMR::ValuePropagation *vp, TR::Node *node)
 
 TR::Node *constrainStore(OMR::ValuePropagation *vp, TR::Node *node)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     constrainChildren(vp, node);
 
     // storage access here, sync region ends
@@ -2417,15 +2393,13 @@ TR::Node *constrainStore(OMR::ValuePropagation *vp, TR::Node *node)
         if (sync && sync->syncEmitted() == TR_yes) {
             vp->addConstraintToList(NULL, vp->_syncValueNumber, vp->AbsoluteConstraint,
                 TR::VPSync::create(vp, TR_maybe), &vp->_curConstraints);
-            if (vp->trace()) {
-                vp->comp()->log()->printf("Setting syncRequired due to node [%p]\n", node);
-            }
+            logprintf(vp->trace(), log, "Setting syncRequired due to node [%p]\n", node);
         } else {
             if (vp->trace()) {
                 if (sync)
-                    vp->comp()->log()->printf("syncRequired is already setup at node [%p]\n", node);
+                    log->printf("syncRequired is already setup at node [%p]\n", node);
                 else
-                    vp->comp()->log()->printf("No sync constraint found at node [%p]!\n", node);
+                    log->printf("No sync constraint found at node [%p]!\n", node);
             }
         }
     }
@@ -2816,16 +2790,12 @@ TR::Node *constrainWrtBar(OMR::ValuePropagation *vp, TR::Node *node)
             if (constraint->isHeapObject() == TR_yes
                 && performTransformation(vp->comp(), "%sMarking the wrtbar node [%p] - destination is a heap object\n",
                     OPT_DETAILS, node)) {
-                // printf("--wbar-- heap wrtbar in %s\n", vp->comp()->signature());
                 node->setIsHeapObjectWrtBar(true);
             } else if (constraint->isHeapObject() == TR_no
                 && performTransformation(vp->comp(),
                     "%sMarking the wrtbar node [%p] - destination is a non-heap object\n", OPT_DETAILS, node)) {
-                // printf("--wbar-- nonheap wrtbar in %s\n", vp->comp()->signature());
                 node->setIsNonHeapObjectWrtBar(true);
             }
-            // else
-            //  printf("--wbar-- no idea in %s\n", vp->comp()->signature());
         }
     }
 
@@ -2836,10 +2806,10 @@ TR::Node *constrainGoto(OMR::ValuePropagation *vp, TR::Node *node)
 {
     // Put the current list of block constraints on to the edge
     //
+    OMR::Logger *log = vp->comp()->log();
     TR::Block *target = node->getBranchDestination()->getNode()->getBlock();
-    if (vp->trace())
-        vp->comp()->log()->printf("   unconditional branch on node %s (%p), vp->_curBlock block_%d target block_%d\n",
-            node->getOpCode().getName(), node, vp->_curBlock->getNumber(), target->getNumber());
+    logprintf(vp->trace(), log, "   unconditional branch on node %s (%p), vp->_curBlock block_%d target block_%d\n",
+        node->getOpCode().getName(), node, vp->_curBlock->getNumber(), target->getNumber());
 
     // Find the output edge from the current block that corresponds to this
     // branch
@@ -2847,7 +2817,7 @@ TR::Node *constrainGoto(OMR::ValuePropagation *vp, TR::Node *node)
     TR::CFGEdge *edge = vp->findOutEdge(vp->_curBlock->getSuccessors(), target);
     OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, false);
     if (vp->trace())
-        vp->printEdgeConstraints(vp->comp()->log(), ec);
+        vp->printEdgeConstraints(log, ec);
 
     vp->setUnreachablePath();
 
@@ -2972,13 +2942,11 @@ TR::Node *constrainMonexit(OMR::ValuePropagation *vp, TR::Node *node)
     if (sync) {
         if (sync->syncEmitted() == TR_no) {
             syncRequired = true;
-            if (vp->trace())
-                log->printf("Going to emit sync at monexit [%p]\n", node);
+            logprintf(vp->trace(), log, "Going to emit sync at monexit [%p]\n", node);
         } else if (sync->syncEmitted() == TR_yes) {
             syncReset = true;
             node->setSkipSync(true);
-            if (vp->trace())
-                log->printf("syncRequired is already setup at monexit [%p]\n", node);
+            logprintf(vp->trace(), log, "syncRequired is already setup at monexit [%p]\n", node);
         }
         vp->comp()->setSyncsMarked();
     } else {
@@ -2997,9 +2965,7 @@ TR::Node *constrainMonexit(OMR::ValuePropagation *vp, TR::Node *node)
         if (!syncReset)
             vp->addConstraintToList(NULL, vp->_syncValueNumber, vp->AbsoluteConstraint,
                 TR::VPSync::create(vp, TR_maybe), &vp->_curConstraints);
-        if (vp->trace()) {
-            log->printf("Resetting syncRequired at monexit [%p]\n", node);
-        }
+        logprintf(vp->trace(), log, "Resetting syncRequired at monexit [%p]\n", node);
     }
 
     return node;
@@ -3116,6 +3082,7 @@ TR::Node *constrainThrow(OMR::ValuePropagation *vp, TR::Node *node)
 
 TR::Node *constrainInstanceOf(OMR::ValuePropagation *vp, TR::Node *node)
 {
+    OMR::Logger *log = vp->comp()->log();
     constrainChildren(vp, node);
 
     // If the instance object is null, this node becomes a constant 0.
@@ -3203,8 +3170,7 @@ TR::Node *constrainInstanceOf(OMR::ValuePropagation *vp, TR::Node *node)
                         // objectConstraint->isNonNullObject() &&
                         (objectConstraint->isClassObject() == TR_yes)) {
                         result = 0;
-                        if (vp->trace())
-                            vp->comp()->log()->prints("object is a classobject but cast is not java/lang/Class\n");
+                        logprints(vp->trace(), log, "object is a classobject but cast is not java/lang/Class\n");
                     } else if ((castIsClassObject == TR_no) && !objectConstraint->getClassType() &&
                         // objectConstraint->isNonNullObject() &&
                         (objectConstraint->isClassObject() == TR_no)) {
@@ -3212,8 +3178,7 @@ TR::Node *constrainInstanceOf(OMR::ValuePropagation *vp, TR::Node *node)
                         // objectConstraint->isNonNullObject() &&
                         (objectConstraint->isClassObject() == TR_no)) {
                         result = 0;
-                        if (vp->trace())
-                            vp->comp()->log()->prints("object is not a classobject but cast is java/lang/Class\n");
+                        logprints(vp->trace(), log, "object is not a classobject but cast is java/lang/Class\n");
                     }
                     // probably cannot get here
                     //
@@ -3222,9 +3187,8 @@ TR::Node *constrainInstanceOf(OMR::ValuePropagation *vp, TR::Node *node)
                         (objectConstraint->isClassObject() == TR_yes)) {
                         if (objectConstraint->isNonNullObject()) {
                             result = 1;
-                            if (vp->trace())
-                                vp->comp()->log()->prints(
-                                    "object is a non-null classobject and cast is java/lang/Class\n");
+                            logprints(vp->trace(), log,
+                                "object is a non-null classobject and cast is java/lang/Class\n");
                         } else {
                             TR::Node::recreate(node, TR::acmpne);
                             vp->removeNode(node->getChild(1), true);
@@ -3259,6 +3223,7 @@ TR::Node *constrainInstanceOf(OMR::ValuePropagation *vp, TR::Node *node)
 
 TR::Node *constrainCheckcast(OMR::ValuePropagation *vp, TR::Node *node)
 {
+    OMR::Logger *log = vp->comp()->log();
     constrainChildren(vp, node);
 
     // If the object is null, this node can be removed.
@@ -3354,8 +3319,7 @@ TR::Node *constrainCheckcast(OMR::ValuePropagation *vp, TR::Node *node)
                     if ((castIsClassObject == TR_no) && !objectConstraint->getClassType()
                         && (objectConstraint->isClassObject() == TR_yes)) {
                         result = 0;
-                        if (vp->trace())
-                            vp->comp()->log()->prints("object is a classobject but cast is not java/lang/Class\n");
+                        logprints(vp->trace(), log, "object is a classobject but cast is not java/lang/Class\n");
                     } else if ((castIsClassObject == TR_no) && !objectConstraint->getClassType() &&
                         // objectConstraint->isNonNullObject() &&
                         (objectConstraint->isClassObject() == TR_no)) {
@@ -3363,8 +3327,7 @@ TR::Node *constrainCheckcast(OMR::ValuePropagation *vp, TR::Node *node)
                         // objectConstraint->isNonNullObject() &&
                         (objectConstraint->isClassObject() == TR_no)) {
                         result = 0;
-                        if (vp->trace())
-                            vp->comp()->log()->prints("object is not a classobject but cast is java/lang/Class\n");
+                        logprints(vp->trace(), log, "object is not a classobject but cast is java/lang/Class\n");
                     }
                     // probably cannot get here
                     //
@@ -3372,8 +3335,7 @@ TR::Node *constrainCheckcast(OMR::ValuePropagation *vp, TR::Node *node)
                         // objectConstraint->isNonNullObject() &&
                         (objectConstraint->isClassObject() == TR_yes)) {
                         result = 1;
-                        if (vp->trace())
-                            vp->comp()->log()->prints("object is a non-null classobject and cast is java/lang/Class\n");
+                        logprints(vp->trace(), log, "object is a non-null classobject and cast is java/lang/Class\n");
                     } else if (!objectConstraint->intersect(intersectConstraint, vp))
                         result = 0;
                 }
@@ -4012,10 +3974,8 @@ void addValidRangeBlockOrGlobalConstraint(OMR::ValuePropagation *vp, TR::Node *n
         std::swap(pLow, pHigh);
     }
 
-    if (vp->trace()) {
-        vp->comp()->log()->printf("Adding a %s range constraint %lld .. %lld on the node %p\n",
-            (childGlobal) ? "global" : "block", pLow, pHigh, node);
-    }
+    logprintf(vp->trace(), vp->comp()->log(), "Adding a %s range constraint %lld .. %lld on the node %p\n",
+        (childGlobal) ? "global" : "block", pLow, pHigh, node);
 
     vp->addBlockOrGlobalConstraint(node, createRange(vp, pLow, pHigh), childGlobal);
 }
@@ -4024,12 +3984,11 @@ template<typename A, typename B, typename C, typename D, typename E, typename F,
 static TR::Node *constrainHighestOneBitAndLeadingZerosHelper(OMR::ValuePropagation *vp, TR::Node *node, A getConst,
     B getRange, C getValue, D getValues, E createConst, F createRange, G processValue, T MIN_VALUE, T MAX_VALUE)
 {
+    OMR::Logger *log = vp->comp()->log();
     TR_ASSERT(node->getNumChildren() == 1, "Node has a wrong number of children (i.e. !=1 )! ");
     constrainChildren(vp, node);
 
-    if (vp->trace()) {
-        vp->comp()->log()->printf("calling constrainHighestOneBitAndLeadingZerosHelper for node %p\n", node);
-    }
+    logprintf(vp->trace(), log, "calling constrainHighestOneBitAndLeadingZerosHelper for node %p\n", node);
 
     bool childGlobal;
     TR::VPConstraint *childConstraint = vp->getConstraint(node->getFirstChild(), childGlobal);
@@ -4043,10 +4002,8 @@ static TR::Node *constrainHighestOneBitAndLeadingZerosHelper(OMR::ValuePropagati
             MIN_VALUE = value;
             MAX_VALUE = value;
 
-            if (vp->trace()) {
-                vp->comp()->log()->printf("The first child's value of %p %lld is replaced with %lld \n", node, value,
-                    processValue(value));
-            }
+            logprintf(vp->trace(), log, "The first child's value of %p %lld is replaced with %lld \n", node, value,
+                processValue(value));
 
         } else if (getRange(childConstraint)) {
             T low = 0, high = 0;
@@ -4055,11 +4012,9 @@ static TR::Node *constrainHighestOneBitAndLeadingZerosHelper(OMR::ValuePropagati
                 // RangeConstraint with the same low and high should be folded into a const constraint.
                 // All negative numbers have the highest bit set
                 MIN_VALUE = MAX_VALUE;
-                if (vp->trace()) {
-                    vp->comp()->log()->printf(
-                        "Constraint %lld .. %lld of %p 's first child is negative and folded into %lld \n", low, high,
-                        node, processValue(MAX_VALUE));
-                }
+                logprintf(vp->trace(), log,
+                    "Constraint %lld .. %lld of %p 's first child is negative and folded into %lld \n", low, high, node,
+                    processValue(MAX_VALUE));
             } else if (low >= 0 && high >= 0) {
                 MIN_VALUE = low;
                 MAX_VALUE = high;
@@ -4079,9 +4034,8 @@ static TR::Node *constrainLowestOneBitAndTrailingZerosHelper(OMR::ValuePropagati
     TR_ASSERT(node->getNumChildren() == 1, "Node has a wrong number of children (i.e. !=1 )! ");
     constrainChildren(vp, node);
 
-    if (vp->trace()) {
-        vp->comp()->log()->printf("calling constrainLowestOneBitAndTrailingZerosHelper for node %p\n", node);
-    }
+    logprintf(vp->trace(), vp->comp()->log(), "calling constrainLowestOneBitAndTrailingZerosHelper for node %p\n",
+        node);
 
     bool childGlobal;
     TR::VPConstraint *childConstraint = vp->getConstraint(node->getFirstChild(), childGlobal);
@@ -4303,8 +4257,8 @@ static TR::MethodSymbol *refineMethodSymbolInCall(OMR::ValuePropagation *vp, TR:
     newSymRef->setOffset(offset);
     TR::MethodSymbol *methodSymbol = newSymRef->getSymbol()->castToMethodSymbol();
     node->setSymbolReference(newSymRef);
-    if (vp->trace())
-        vp->comp()->log()->printf("Refined method symbol to %s\n", resolvedMethod->signature(vp->trMemory()));
+    logprintf(vp->trace(), vp->comp()->log(), "Refined method symbol to %s\n",
+        resolvedMethod->signature(vp->trMemory()));
     return methodSymbol;
 }
 
@@ -4316,8 +4270,8 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
     bool interfaceCall = methodSymbol->isInterface();
 
     if (!methodSymbol->firstArgumentIsReceiver()) {
-        if (vp->trace())
-            log->printf("Not attempting to de-virtualize call [%p] without first argument receiver\n", node);
+        logprintf(vp->trace(), log, "Not attempting to de-virtualize call [%p] without first argument receiver\n",
+            node);
         return;
     }
 
@@ -4329,9 +4283,8 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
     TR::VPConstraint *constraint = vp->getConstraint(node->getChild(firstArgIndex), isGlobal);
     TR_OpaqueClassBlock *thisType = NULL;
     if (!constraint || !(thisType = constraint->getClass())) {
-        if (vp->trace())
-            log->printf("Interface call [%p] to %s with unknown object type in %s\n", node,
-                methodSymbol->getMethod()->signature(vp->trMemory(), stackAlloc), vp->comp()->signature());
+        logprintf(vp->trace(), log, "Interface call [%p] to %s with unknown object type in %s\n", node,
+            methodSymbol->getMethod()->signature(vp->trMemory(), stackAlloc), vp->comp()->signature());
 
         static bool dontProfileMore = feGetEnv("TR_DontProfileMoreAtHot") ? true : false;
 
@@ -4350,8 +4303,7 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
 #ifdef J9_PROJECT_SPECIFIC
         thisType = vp->comp()->getObjectClassPointer();
         if (!thisType) {
-            if (vp->trace())
-                log->printf("Not attempting to de-virtualize call [%p] with array receiver\n", node);
+            logprintf(vp->trace(), log, "Not attempting to de-virtualize call [%p] with array receiver\n", node);
             return;
         }
         constraint = TR::VPFixedClass::create(vp, thisType);
@@ -4363,8 +4315,7 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
 #ifdef J9_PROJECT_SPECIFIC
         thisType = vp->comp()->getClassClassPointer();
         if (!thisType) {
-            if (vp->trace())
-                log->printf("Not attempting to de-virtualize call [%p] with class object receiver\n", node);
+            logprintf(vp->trace(), log, "Not attempting to de-virtualize call [%p] with class object receiver\n", node);
             return;
         }
         constraint = TR::VPFixedClass::create(vp, thisType);
@@ -4394,9 +4345,9 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
         TR::Symbol *argSym = argNode->getSymbol();
         if (argSym->isParm()) {
             if (!vp->isParmInvariant(argSym)) {
-                if (vp->trace())
-                    log->printf("Not attempting to de-virtualize call [%p] because receiver [%p] is not invariant\n",
-                        node, argNode);
+                logprintf(vp->trace(), log,
+                    "Not attempting to de-virtualize call [%p] because receiver [%p] is not invariant\n", node,
+                    argNode);
                 return;
             }
         }
@@ -4424,32 +4375,29 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
                         return;
                     }
                     if (vp->optimizer()->getOptimization(OMR::methodHandleInvokeInliningGroup)->requested()) {
-                        if (vp->trace())
-                            log->printf("Not inlining call [%p] because the MethodHandle.invoke inlining group will do "
-                                        "a better job\n",
-                                node);
+                        logprintf(vp->trace(), log,
+                            "Not inlining call [%p] because the MethodHandle.invoke inlining group will do a better "
+                            "job\n",
+                            node);
                         return;
                     }
                 } else {
-                    if (vp->trace())
-                        log->printf(
-                            "Not inlining call [%p] because there is no more specific method symbol for obj%d\n", node,
-                            constraint->getKnownObject()->getIndex());
+                    logprintf(vp->trace(), log,
+                        "Not inlining call [%p] because there is no more specific method symbol for obj%d\n", node,
+                        constraint->getKnownObject()->getIndex());
                     return;
                 }
             } else {
-                if (vp->trace())
-                    log->printf("Not inlining call [%p] because unable to substitute object-specific method symbol\n",
-                        node);
+                logprintf(vp->trace(), log,
+                    "Not inlining call [%p] because unable to substitute object-specific method symbol\n", node);
                 return;
             }
         }
 #endif
     } else if (methodSymbol->isInterface()) {
         if (TR::Compiler->cls.isInterfaceClass(vp->comp(), thisType)) {
-            if (vp->trace())
-                log->printf("Not attempting to de-virtualize interface call [%p] with interface-class receiver\n",
-                    node);
+            logprintf(vp->trace(), log,
+                "Not attempting to de-virtualize interface call [%p] with interface-class receiver\n", node);
             return;
         }
 
@@ -4461,18 +4409,16 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
         originalMethodClass = vp->fe()->getClassFromSignature(s, len, owningMethod);
 
         if (!originalMethodClass) {
-            if (vp->trace())
-                log->printf(
-                    "Not attempting to de-virtualize interface call [%p] with receiver class %.*s not yet loaded\n",
-                    node, len, s);
+            logprintf(vp->trace(), log,
+                "Not attempting to de-virtualize interface call [%p] with receiver class %.*s not yet loaded\n", node,
+                len, s);
             return;
         }
 
         resolvedMethod = owningMethod->getResolvedInterfaceMethod(vp->comp(), thisType, cpIndex);
         if (!resolvedMethod) {
-            if (vp->trace())
-                log->printf("Not attempting to de-virtualize interface call [%p] with no resolved method\n", node, len,
-                    s);
+            logprintf(vp->trace(), log, "Not attempting to de-virtualize interface call [%p] with no resolved method\n",
+                node, len, s);
             return;
         }
 
@@ -4588,9 +4534,8 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
         = new (vp->trStackMemory()) TR_PrexArgInfo(node->getNumChildren() - firstArgIndex, vp->trMemory());
     bool tracePrex
         = vp->trace() || vp->comp()->trace(OMR::inlining) || vp->comp()->trace(OMR::invariantArgumentPreexistence);
-    if (tracePrex)
-        log->printf("PREX.vp: Value propagation populating prex argInfo for %s %p\n", node->getOpCode().getName(),
-            node);
+    logprintf(tracePrex, log, "PREX.vp: Value propagation populating prex argInfo for %s %p\n",
+        node->getOpCode().getName(), node);
     for (int32_t c = node->getNumChildren() - 1; c >= firstArgIndex; --c) {
         TR::Node *argument = node->getChild(c);
         if (argument->getDataType() == TR::Address) {
@@ -4607,9 +4552,8 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
                 if (constr->asKnownObject() && constr->isNonNullObject()) {
                     argInfo->set(c - firstArgIndex,
                         new (vp->trStackMemory()) TR_PrexArgument(constr->asKnownObject()->getIndex(), vp->comp()));
-                    if (tracePrex)
-                        log->printf("PREX.vp:    Child %d [%p] arg %p is known object obj%d\n", c, argument,
-                            argInfo->get(c - firstArgIndex), constr->asKnownObject()->getIndex());
+                    logprintf(tracePrex, log, "PREX.vp:    Child %d [%p] arg %p is known object obj%d\n", c, argument,
+                        argInfo->get(c - firstArgIndex), constr->asKnownObject()->getIndex());
                 } else if (constr->isFixedClass()) {
                     argInfo->set(c - firstArgIndex,
                         new (vp->trStackMemory()) TR_PrexArgument(TR_PrexArgument::ClassIsFixed, constr->getClass()));
@@ -4622,15 +4566,13 @@ static void devirtualizeCall(OMR::ValuePropagation *vp, TR::Node *node)
                 } else if (constr->isPreexistentObject()) {
                     argInfo->set(c - firstArgIndex,
                         new (vp->trStackMemory()) TR_PrexArgument(TR_PrexArgument::ClassIsPreexistent));
-                    if (tracePrex)
-                        log->printf("PREX.vp:    Child %d [%p] arg %p is preexistent\n", c, argument,
-                            argInfo->get(c - firstArgIndex));
+                    logprintf(tracePrex, log, "PREX.vp:    Child %d [%p] arg %p is preexistent\n", c, argument,
+                        argInfo->get(c - firstArgIndex));
                 }
             }
         }
     }
-    if (tracePrex)
-        log->printf("PREX.vp: Done populating prex argInfo for %s %p\n", node->getOpCode().getName(), node);
+    logprintf(tracePrex, log, "PREX.vp: Done populating prex argInfo for %s %p\n", node->getOpCode().getName(), node);
 
     if ((vp->lastTimeThrough() || !node->getOpCode().isIndirect()) && (vp->_isGlobalPropagation || !vp->getLastRun())
         && !methodSymbol->isInterface())
@@ -4670,6 +4612,7 @@ static bool canFoldNonOverriddenGuard(OMR::ValuePropagation *vp, TR::Node *callN
 
 TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node)
 {
+    OMR::Logger *log = vp->comp()->log();
     constrainChildren(vp, node);
 
     if (vp->lastTimeThrough() && vp->_isGlobalPropagation) {
@@ -4727,8 +4670,6 @@ TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node)
                 && vp->comp()->getOption(TR_EnableInliningOfUnsafeForArraylets))))
 
     {
-        // printf("adding method %s to inline to list - found in %s\n",
-        // resolvedMethod->signature(vp->comp()->trMemory()),vp->comp()->signature());fflush(stdout);
         bool operandGlobal;
         TR::VPConstraint *operand = vp->getConstraint(node->getChild(1), operandGlobal);
         if (operand
@@ -4738,9 +4679,8 @@ TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node)
                         || (operand->getClassType()->isClassObject() == TR_yes))))) {
             vp->_unsafeCallsToInline.add(new (vp->trStackMemory()) OMR::ValuePropagation::CallInfo(vp, NULL, NULL));
             node->setUnsafeGetPutCASCallOnNonArray();
-            // printf("change flag for node  %p\n",node);fflush(stdout);
-            if (vp->trace())
-                vp->comp()->log()->printf("change unsafe flag for node  [%p]\n", node);
+
+            logprintf(vp->trace(), log, "change unsafe flag for node  [%p]\n", node);
         }
     }
 #endif
@@ -4959,15 +4899,13 @@ TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node)
     if (sync && sync->syncEmitted() == TR_yes) {
         vp->addConstraintToList(NULL, vp->_syncValueNumber, vp->AbsoluteConstraint, TR::VPSync::create(vp, TR_maybe),
             &vp->_curConstraints);
-        if (vp->trace()) {
-            vp->comp()->log()->printf("Setting syncRequired due to node [%p]\n", node);
-        }
+        logprintf(vp->trace(), log, "Setting syncRequired due to node [%p]\n", node);
     } else {
         if (vp->trace()) {
             if (sync)
-                vp->comp()->log()->printf("syncRequired is already setup at node [%p]\n", node);
+                log->printf("syncRequired is already setup at node [%p]\n", node);
             else
-                vp->comp()->log()->printf("No sync constraint found at node [%p]!\n", node);
+                log->printf("No sync constraint found at node [%p]!\n", node);
         }
     }
 
@@ -6196,6 +6134,9 @@ static TR::Node *distributeShift(OMR::ValuePropagation *vp, TR::Node *node, int3
     // FIXME: temporarily disabled
     //
     return NULL;
+
+    OMR::Logger *log = vp->comp()->log();
+
     // check if the distributive property can be applied
     // (a + b) >> amount ==> a >> amount or b >> amount if
     // it can be proven that the a (or b) >= 2^amt
@@ -6234,8 +6175,7 @@ static TR::Node *distributeShift(OMR::ValuePropagation *vp, TR::Node *node, int3
             }
         }
 
-        if (vp->trace())
-            vp->comp()->log()->printf("found replaceNode is [%p]\n", replaceNode);
+        logprintf(vp->trace(), log, "found replaceNode is [%p]\n", replaceNode);
 
         if (replaceNode) {
             int64_t pow2Val = int64_t(1) << shiftAmount;
@@ -6249,20 +6189,17 @@ static TR::Node *distributeShift(OMR::ValuePropagation *vp, TR::Node *node, int3
                 int32_t low = lhsORrhs->getLowInt();
                 int32_t high = lhsORrhs->getHighInt();
                 if ((low <= 0) && (((int64_t)(high + 1) & (pow2Val - 1))) == 0) {
-                    if (vp->trace())
-                        vp->comp()->log()->printf(
-                            "found opportunity to distribute shift in node [%p] replaceNode [%p]\n", node, replaceNode);
+                    logprintf(vp->trace(), log, "found opportunity to distribute shift in node [%p] replaceNode [%p]\n",
+                        node, replaceNode);
                 } else {
-                    if (vp->trace())
-                        vp->comp()->log()->printf(
-                            "failed additive expr constraint is not within range, node [%p] replaceNode [%p]\n", node,
-                            replaceNode);
+                    logprintf(vp->trace(), log,
+                        "failed additive expr constraint is not within range, node [%p] replaceNode [%p]\n", node,
+                        replaceNode);
                     replaceNode = NULL;
                 }
             } else {
-                if (vp->trace())
-                    vp->comp()->log()->printf("failed no constraint found, node [%p] replaceNode [%p]\n", node,
-                        replaceNode);
+                logprintf(vp->trace(), log, "failed no constraint found, node [%p] replaceNode [%p]\n", node,
+                    replaceNode);
                 replaceNode = NULL;
             }
         }
@@ -6630,8 +6567,7 @@ TR::Node *constrainIand(OMR::ValuePropagation *vp, TR::Node *node)
                     if (node->getReferenceCount() == 0)
                         node->getSecondChild()->decReferenceCount();
 
-                    // printf("remove andi 255 opportunity found in %s\n", vp->comp()->signature());
-                    //  invalidate its use def info
+                    // invalidate its use def info
                     int32_t useIndex = node->getUseDefIndex();
                     TR_UseDefInfo *info = vp->optimizer()->getUseDefInfo();
                     if (info && (info->isDefIndex(useIndex) || info->isUseIndex(useIndex))) {
@@ -6674,8 +6610,7 @@ TR::Node *constrainIand(OMR::ValuePropagation *vp, TR::Node *node)
                     && (firstChild->getSymbolReference()
                         == vp->comp()->getSymRefTab()->findClassDepthAndFlagsSymbolRef())
                     && (rhs->getLowInt() == TR::Compiler->cls.flagValueForArrayCheck(vp->comp()))) {
-                    if (vp->trace())
-                        vp->comp()->log()->printf("Found isArray test on node %p\n", node);
+                    logprintf(vp->trace(), vp->comp()->log(), "Found isArray test on node %p\n", node);
 
                     TR::Node *classNode = firstChild->getFirstChild();
 
@@ -6719,8 +6654,7 @@ TR::Node *constrainIand(OMR::ValuePropagation *vp, TR::Node *node)
                     //                else
                     if (lhs && lhs->getLowInt() >= 0 && lhs->getHighInt() <= mask) {
                         canBeRemoved = true;
-                        if (vp->trace())
-                            vp->comp()->log()->printf("Removing redundant iand [%p] due to range\n", node);
+                        logprintf(vp->trace(), vp->comp()->log(), "Removing redundant iand [%p] due to range\n", node);
 
                         if (lhs->getLowInt() > 0)
                             low = lhs->getLowInt();
@@ -6835,9 +6769,6 @@ TR::Node *constrainIand(OMR::ValuePropagation *vp, TR::Node *node)
                 low = 0;
 
             constraint = TR::VPIntRange::create(vp, low, high);
-
-            // printf("new constraint opportunity %d-%d (%x to %x)found in %s\n",
-            // low,high,low,high,vp->comp()->signature());
         }
     }
 
@@ -7479,9 +7410,6 @@ static bool constrainWidenToInt(OMR::ValuePropagation *vp, TR::Node *&node, int3
         yankConversionPair) {
         // have to increment the reference count of the grandchild to keep it from
         // being completele removed by removeNode
-        // printf("found one (sign extension conversion removal) in method %s, node %p, low was %d, high was %d\n",
-        // vp->comp()->signature(), grandChild, preNarrowingConstraint->getLowInt(),
-        // preNarrowingConstraint->getHighInt());
         grandChild->incReferenceCount();
         vp->removeNode(node, false);
         node = grandChild;
@@ -8101,9 +8029,8 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
     // Quick check for the same value number
     //
     if (vp->getValueNumber(lhsChild) == vp->getValueNumber(rhsChild) && ignoreVirtualGuard) {
-        if (vp->trace())
-            log->printf("   cmp children have same value number: %p = %p = %d\n", lhsChild, rhsChild,
-                vp->getValueNumber(lhsChild));
+        logprintf(vp->trace(), log, "   cmp children have same value number: %p = %p = %d\n", lhsChild, rhsChild,
+            vp->getValueNumber(lhsChild));
         if (branchOnEqual)
             cannotFallThrough = true;
         else
@@ -8125,17 +8052,15 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                 log->println();
             }
             if (lhs->mustBeEqual(rhs, vp) && ignoreVirtualGuard) {
-                if (vp->trace())
-                    log->printf("   cmp children must be equal by absolute constraints: %p == %p\n", lhsChild,
-                        rhsChild);
+                logprintf(vp->trace(), log, "   cmp children must be equal by absolute constraints: %p == %p\n",
+                    lhsChild, rhsChild);
                 if (branchOnEqual)
                     cannotFallThrough = true;
                 else
                     cannotBranch = true;
             } else if (lhs->mustBeNotEqual(rhs, vp) && ignoreVirtualGuard) {
-                if (vp->trace())
-                    log->printf("   cmp children must be not equal by absolute constraints: %p != %p\n", lhsChild,
-                        rhsChild);
+                logprintf(vp->trace(), log, "   cmp children must be not equal by absolute constraints: %p != %p\n",
+                    lhsChild, rhsChild);
                 if (branchOnEqual)
                     cannotBranch = true;
                 else
@@ -8155,16 +8080,15 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                 log->println();
             }
             if (rel->mustBeEqual()) {
-                if (vp->trace())
-                    log->printf("   cmp children must be equal by relative constraint: %p == %p\n", lhsChild, rhsChild);
+                logprintf(vp->trace(), log, "   cmp children must be equal by relative constraint: %p == %p\n",
+                    lhsChild, rhsChild);
                 if (branchOnEqual)
                     cannotFallThrough = true;
                 else
                     cannotBranch = true;
             } else if (rel->mustBeNotEqual()) {
-                if (vp->trace())
-                    log->printf("   cmp children must be not equal by relative constraint: %p != %p\n", lhsChild,
-                        rhsChild);
+                logprintf(vp->trace(), log, "   cmp children must be not equal by relative constraint: %p != %p\n",
+                    lhsChild, rhsChild);
                 if (branchOnEqual)
                     cannotBranch = true;
                 else
@@ -8215,9 +8139,8 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                             = vp->comp()->getPersistentInfo()->getPersistentCHTable()->findClassInfoAfterLocking(clazz,
                                 vp->comp(), allowForAOT);
 
-                        if (vp->trace())
-                            log->printf("MyDebug: clazz %p classInfo %p classInfo->isInitialized() %d\n", clazz,
-                                classInfo, classInfo ? classInfo->isInitialized() : -1);
+                        logprintf(vp->trace(), log, "MyDebug: clazz %p classInfo %p classInfo->isInitialized() %d\n",
+                            clazz, classInfo, classInfo ? classInfo->isInitialized() : -1);
                         if (!classInfo || !classInfo->isInitialized()) {
                             int32_t len;
                             const char *sig = resolvedTypeConstraint->getClassSignature(len);
@@ -8242,9 +8165,9 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                                               ->getPersistentCHTable()
                                               ->findClassInfoAfterLocking(clazz, vp->comp(), allowForAOT);
 
-                                    if (vp->trace())
-                                        log->printf("MyDebug: clazz %p classInfo %p classInfo->isInitialized() %d\n",
-                                            clazz, classInfo, classInfo ? classInfo->isInitialized() : -1);
+                                    logprintf(vp->trace(), log,
+                                        "MyDebug: clazz %p classInfo %p classInfo->isInitialized() %d\n", clazz,
+                                        classInfo, classInfo ? classInfo->isInitialized() : -1);
                                     if (!classInfo || !classInfo->isInitialized()) {
                                         clazzToBeInitialized = sig;
                                         clazzNameLen = len;
@@ -8281,8 +8204,7 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
 
     // Propagate current constraints to the branch target
     //
-    if (vp->trace())
-        log->prints("   Conditional branch\n");
+    logprints(vp->trace(), log, "   Conditional branch\n");
     OMR::ValuePropagation::EdgeConstraints *edgeConstraints = vp->createEdgeConstraints(edge, true);
 
     // Find constraints to apply to the not-equal edge
@@ -8590,8 +8512,7 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                 // if intersection fails, result = 0
                 vp->checkTypeRelationship(lhs, rhs, result, false, false);
                 if (!result) {
-                    if (vp->trace())
-                        log->prints("   types are inconsistent, result will not be propagated\n");
+                    logprints(vp->trace(), log, "   types are inconsistent, result will not be propagated\n");
                 }
             }
             if (result && !isVirtualGuardNopable && !vp->addEdgeConstraint(rhsChild, lhs, edgeConstraints)) {
@@ -8609,8 +8530,7 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                 // if intersection fails, result = 0
                 vp->checkTypeRelationship(lhs, rhs, result, false, false);
                 if (!result) {
-                    if (vp->trace())
-                        log->prints("   types are inconsistent, result will not be propagated\n");
+                    logprints(vp->trace(), log, "   types are inconsistent, result will not be propagated\n");
                 }
             }
             if (result && !isVirtualGuardNopable && !vp->addEdgeConstraint(lhsChild, rhs, edgeConstraints)) {
@@ -8689,8 +8609,7 @@ static TR::Node *constrainIfcmpeqne(OMR::ValuePropagation *vp, TR::Node *node, b
                 // if intersection fails, result = 0
                 vp->checkTypeRelationship(lhs, rhs, result, false, false);
                 if (!result) {
-                    if (vp->trace())
-                        log->prints("   types are inconsistent, result will not be propagated\n");
+                    logprints(vp->trace(), log, "   types are inconsistent, result will not be propagated\n");
                 }
             }
 
@@ -8943,6 +8862,7 @@ static int64_t clippedDifference(int64_t left, int64_t right)
 static TR::Node *constrainIfcmplessthan(OMR::ValuePropagation *vp, TR::Node *node, TR::Node *lhsChild,
     TR::Node *rhsChild, bool orEqual)
 {
+    OMR::Logger *log = vp->comp()->log();
     bool isUnsigned = node->getOpCode().isUnsignedCompare();
 
     // Note that if the comparison is gt or ge, the children have been swapped so
@@ -9069,13 +8989,11 @@ static TR::Node *constrainIfcmplessthan(OMR::ValuePropagation *vp, TR::Node *nod
                     }
                 }
 
-                if (vp->trace()) {
-                    vp->comp()->log()->printf(
-                        "   Conditional relation check on %s [%p]: increment=%d, absIncrement=" INT64_PRINTF_FORMAT
-                        ", maxIncrement=" INT64_PRINTF_FORMAT ", orEqual=%s\n",
-                        node->getOpCode().getName(), node, increment, absIncrement, maxIncrement,
-                        orEqual ? "true" : "false");
-                }
+                logprintf(vp->trace(), log,
+                    "   Conditional relation check on %s [%p]: increment=%d, absIncrement=" INT64_PRINTF_FORMAT
+                    ", maxIncrement=" INT64_PRINTF_FORMAT ", orEqual=%s\n",
+                    node->getOpCode().getName(), node, increment, absIncrement, maxIncrement,
+                    orEqual ? "true" : "false");
 
                 // At this point we have: TR::getMinSigned<TR::Int32>() <= absIncrement <=
                 // -TR::getMinSigned<TR::Int32>(), and maxIncrement comes from clippedDifference, so by the definition
@@ -9120,15 +9038,14 @@ static TR::Node *constrainIfcmplessthan(OMR::ValuePropagation *vp, TR::Node *nod
             node->getOpCode().getName())) {
         OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, false);
         if (vp->trace())
-            vp->printEdgeConstraints(vp->comp()->log(), ec);
+            vp->printEdgeConstraints(log, ec);
         changeConditionalToGoto(vp, node, edge);
         return node;
     }
 
     // Propagate current constraints to the branch target
     //
-    if (vp->trace())
-        vp->comp()->log()->prints("   Conditional branch\n");
+    logprints(vp->trace(), log, "   Conditional branch\n");
     OMR::ValuePropagation::EdgeConstraints *edgeConstraints = vp->createEdgeConstraints(edge, true);
 
     // Find extra constraints to apply to the two edges
@@ -9232,7 +9149,7 @@ static TR::Node *constrainIfcmplessthan(OMR::ValuePropagation *vp, TR::Node *nod
     //   cannotBranch = true;
 
     if (vp->trace() && !cannotBranch)
-        vp->printEdgeConstraints(vp->comp()->log(), edgeConstraints);
+        vp->printEdgeConstraints(log, edgeConstraints);
 
     if (lhsChild->getOpCode().isLong() && !isUnsigned) {
         // Create extra constraints for lhs and rhs on the fall through edge
@@ -9363,14 +9280,14 @@ TR::Node *constrainCondBranch(OMR::ValuePropagation *vp, TR::Node *node)
     // TODO - handle the special cases for conditional branches:
     //    integer compares, long compares, ref compares
     //
+    OMR::Logger *log = vp->comp()->log();
 
     constrainChildren(vp, node);
 
     // Put the current list of block constraints on to the edge
     //
     TR::Block *target = node->getBranchDestination()->getNode()->getBlock();
-    if (vp->trace())
-        vp->comp()->log()->prints("   Conditional branch\n");
+    logprints(vp->trace(), log, "   Conditional branch\n");
 
     // Find the output edge from the current block that corresponds to this
     // branch
@@ -9378,7 +9295,7 @@ TR::Node *constrainCondBranch(OMR::ValuePropagation *vp, TR::Node *node)
     TR::CFGEdge *edge = vp->findOutEdge(vp->_curBlock->getSuccessors(), target);
     OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, true);
     if (vp->trace())
-        vp->printEdgeConstraints(vp->comp()->log(), ec);
+        vp->printEdgeConstraints(log, ec);
     return node;
 }
 
@@ -9617,6 +9534,7 @@ TR::Node *constrainSwitch(OMR::ValuePropagation *vp, TR::Node *node)
 {
     // Process the switch expression before the switch cases
     //
+    OMR::Logger *log = vp->comp()->log();
     TR::Node *myParent = vp->getCurrentParent();
     vp->setCurrentParent(node);
     vp->launchNode(node->getFirstChild(), node, 0);
@@ -9649,9 +9567,7 @@ TR::Node *constrainSwitch(OMR::ValuePropagation *vp, TR::Node *node)
                 int32_t value = node->getChild(i)->getCaseConstant();
                 if (/*!isUnsigned &&*/ ((low < value && high < value) || (low > value && high > value))) {
                     TR::Block *target = node->getChild(i)->getBranchDestination()->getNode()->getBlock();
-                    if (vp->trace())
-                        vp->comp()->log()->printf("   Case %d (target %d) is unreachable\n", value,
-                            target->getNumber());
+                    logprintf(vp->trace(), log, "   Case %d (target %d) is unreachable\n", value, target->getNumber());
                     node->removeChild(i);
                     casesRemoved = true;
                 } else {
@@ -9694,9 +9610,7 @@ TR::Node *constrainSwitch(OMR::ValuePropagation *vp, TR::Node *node)
                 int64_t value = node->getChild(i)->getCaseConstant();
                 if (/*!isUnsigned &&*/ ((low < value && high < value) || (low > value && high > value))) {
                     TR::Block *target = node->getChild(i)->getBranchDestination()->getNode()->getBlock();
-                    if (vp->trace())
-                        vp->comp()->log()->printf("   Case %d (target %d) is unreachable\n", value,
-                            target->getNumber());
+                    logprintf(vp->trace(), log, "   Case %d (target %d) is unreachable\n", value, target->getNumber());
                     node->removeChild(i);
                     casesRemoved = true;
                 } else {
@@ -9742,9 +9656,9 @@ TR::Node *constrainCase(OMR::ValuePropagation *vp, TR::Node *node)
 {
     // Put the current list of block constraints on to the edge
     //
+    OMR::Logger *log = vp->comp()->log();
     TR::Block *target = node->getBranchDestination()->getNode()->getBlock();
-    if (vp->trace())
-        vp->comp()->log()->prints("   Switch case branch\n");
+    logprints(vp->trace(), log, "   Switch case branch\n");
 
     // Find the output edge from the current block that corresponds to this
     // branch
@@ -9752,7 +9666,7 @@ TR::Node *constrainCase(OMR::ValuePropagation *vp, TR::Node *node)
     TR::CFGEdge *edge = vp->findOutEdge(vp->_curBlock->getSuccessors(), target);
     OMR::ValuePropagation::EdgeConstraints *ec = vp->createEdgeConstraints(edge, true);
     if (vp->trace())
-        vp->printEdgeConstraints(vp->comp()->log(), ec);
+        vp->printEdgeConstraints(log, ec);
     return node;
 }
 
@@ -9860,10 +9774,10 @@ void constrainNewlyFoldedConst(OMR::ValuePropagation *vp, TR::Node *node, bool i
             if (node->getDataType() == TR::Address && node->getOpCode().hasSymbolReference()
                 && node->getSymbolReference()->hasKnownObjectIndex()) {
                 addKnownObjectConstraints(vp, node, isGlobal);
-            } else if (vp->trace()) {
-                vp->comp()->log()->printf("constrainNewlyFoldedConst does not recognize n%un %s\n",
+            } else
+                logprintf(vp->trace(), vp->comp()->log(), "constrainNewlyFoldedConst does not recognize n%un %s\n",
                     node->getGlobalIndex(), node->getOpCode().getName());
-            }
+
             break;
     }
 }
@@ -10148,9 +10062,7 @@ TR::Node *constrainResolveChk(OMR::ValuePropagation *vp, TR::Node *node)
     if (sync && sync->syncEmitted() == TR_yes) {
         vp->addConstraintToList(NULL, vp->_syncValueNumber, vp->AbsoluteConstraint, TR::VPSync::create(vp, TR_maybe),
             &vp->_curConstraints);
-        if (vp->trace()) {
-            log->printf("Setting syncRequired due to node [%p]\n", node);
-        }
+        logprintf(vp->trace(), log, "Setting syncRequired due to node [%p]\n", node);
     } else {
         if (vp->trace()) {
             if (sync)
@@ -10818,16 +10730,12 @@ TR::Node *constrainArrayStoreChk(OMR::ValuePropagation *vp, TR::Node *node)
     }
 
     if (storeClassForCheck != NULL) {
-        if (vp->trace()) {
-            vp->comp()->log()->printf("Setting arrayStoreClass on ArrayStoreChk node [%p] to [%p]\n", node,
-                storeClassForCheck);
-        }
+        logprintf(vp->trace(), vp->comp()->log(), "Setting arrayStoreClass on ArrayStoreChk node [%p] to [%p]\n", node,
+            storeClassForCheck);
         node->setArrayStoreClassInNode(storeClassForCheck);
     } else if (componentClassForCheck != NULL) {
-        if (vp->trace()) {
-            vp->comp()->log()->printf("Setting arrayComponentClass on ArrayStoreChk node [%p] to [%p]\n", node,
-                componentClassForCheck);
-        }
+        logprintf(vp->trace(), vp->comp()->log(), "Setting arrayComponentClass on ArrayStoreChk node [%p] to [%p]\n",
+            node, componentClassForCheck);
         node->setArrayComponentClassInNode(componentClassForCheck);
     }
 

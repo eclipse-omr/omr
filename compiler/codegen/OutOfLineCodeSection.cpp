@@ -230,9 +230,9 @@ void TR_OutOfLineCodeSection::assignRegisters(TR_RegisterKinds kindsToBeAssigned
     for (auto li = firstTimeLiveOOLRegisterList->begin(); li != firstTimeLiveOOLRegisterList->end(); ++li) {
         if ((*li)->getBackingStorage()) {
             (*li)->getBackingStorage()->setMaxSpillDepth(1);
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("Adding virtReg:%s from _firstTimeLiveOOLRegisterList to _spilledRegisterList \n",
-                    _cg->getDebug()->getName((*li)));
+            logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                "Adding virtReg:%s from _firstTimeLiveOOLRegisterList to _spilledRegisterList \n",
+                _cg->getDebug()->getName((*li)));
             spilledRegisterList->push_front((*li));
         }
     }

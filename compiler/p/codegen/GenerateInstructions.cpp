@@ -556,6 +556,9 @@ TR::Instruction *generateTrg1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::
 int estimateLikeliness(TR::CodeGenerator *cg, TR::Node *n)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
     static char *TR_PredictBranchRatio = feGetEnv("TR_PredictBranchRatio");
 
     if (TR_PredictBranchRatio) {
@@ -569,16 +572,14 @@ int estimateLikeliness(TR::CodeGenerator *cg, TR::Node *n)
             float targetBlockFreq = std::max<float>(destBlock->getFrequency(), 1.0f);
             float fallThroughBlockFreq = std::max<float>(fallThroughBlock->getFrequency(), 1.0f);
 
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("target block: %d, fall through block: %d\n", destBlock->getNumber(),
-                    fallThroughBlock->getNumber());
+            logprintf(trace, log, "target block: %d, fall through block: %d\n", destBlock->getNumber(),
+                fallThroughBlock->getNumber());
 
             bool biased = false;
             bool likeliness;
 
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("targetBlockFreq: %f, fallThroughBlockFreq: %f\n", targetBlockFreq,
-                    fallThroughBlockFreq);
+            logprintf(trace, log, "targetBlockFreq: %f, fallThroughBlockFreq: %f\n", targetBlockFreq,
+                fallThroughBlockFreq);
 
             if (fallThroughBlockFreq / targetBlockFreq > predictBranchRatio)
                 return -1;

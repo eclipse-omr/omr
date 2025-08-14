@@ -429,6 +429,7 @@ static TR::Instruction *findPreviousAGIDef(TR::Instruction *prev, uint32_t searc
     TR::Compilation *comp)
 {
     bool trace = false;
+    OMR::Logger *log = comp->log();
 
     static char *skipit = feGetEnv("TR_NOLAYOPT");
     if (skipit)
@@ -437,23 +438,20 @@ static TR::Instruction *findPreviousAGIDef(TR::Instruction *prev, uint32_t searc
     TR::Instruction *curInsn = prev;
     TR_ASSERT(useA, "null\n");
     TR_ASSERT(prev, "prev is null\n");
-    if (trace)
-        comp->log()->printf("in find at %p, looking for %p for %d\n", prev, useA, searchLimit);
+    logprintf(trace, log, "in find at %p, looking for %p for %d\n", prev, useA, searchLimit);
     while (searchLimit-- && curInsn) {
-        if (trace)
-            comp->log()->printf("Looking at %p %d\n", curInsn, searchLimit);
+        logprintf(trace, log, "Looking at %p %d\n", curInsn, searchLimit);
         TR::InstOpCode op = curInsn->getOpCode();
         if (op.isAdmin() || op.isLabel()) {
             ++searchLimit; // skip this guy
         } else if (!op.hasBypass() && !noAGI(op) && (useA && curInsn->defsRegister(useA))) {
-            if (trace)
-                comp->log()->printf("Def found:%p\n", curInsn);
+            logprintf(trace, log, "Def found:%p\n", curInsn);
             return curInsn;
         }
 
         curInsn = curInsn->getPrev();
     }
-    // comp->log()->prints("none found\n");
+
     return NULL;
 }
 
@@ -1453,6 +1451,8 @@ TR::Register *genericRotateAndInsertHelper(TR::Node *node, TR::CodeGenerator *cg
     TR::Node *secondChild = node->getSecondChild();
     TR::Node *skipedConversion = NULL;
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     if (firstChild->getOpCode().isConversion()) {
         if (firstChild->getReferenceCount() > 1) {
@@ -1535,17 +1535,15 @@ TR::Register *genericRotateAndInsertHelper(TR::Node *node, TR::CodeGenerator *cg
                 || firstChild->getOpCodeValue() == TR::lushr)
                 msBit = shiftMsBit;
             else {
-                if (comp->getOption(TR_TraceCG))
-                    comp->log()->prints(
-                        "Cannot use RISBG, number could be negative, no sign extension available for RISBG\n");
+                logprints(trace, log,
+                    "Cannot use RISBG, number could be negative, no sign extension available for RISBG\n");
                 return NULL;
             }
         }
         if (lsBit > shiftLsBit)
             lsBit = shiftLsBit;
 
-        if (comp->getOption(TR_TraceCG)) {
-            OMR::Logger *log = comp->log();
+        if (trace) {
             log->printf("[%p] and/sh[r,l] => rotated-and-insert: tZeros %d, lZeros %d, popCnt %d\n", node, tZeros,
                 lZeros, popCnt);
             log->printf("\t               => rotated-and-insert: shiftMsBit %d, shiftLsBit %d \n", shiftMsBit,
@@ -2003,8 +2001,7 @@ TR::Register *OMR::Z::TreeEvaluator::dualMulEvaluator(TR::Node *node, TR::CodeGe
         TR::Node *lmulNode;
         TR::Node *lumulhNode;
         if (!needsUnsignedHighMulOnly) {
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("Found lmul/lumulh for node = %p\n", node);
+            logprintf(comp->getOption(TR_TraceCG), comp->log(), "Found lmul/lumulh for node = %p\n", node);
             lmulNode = (node->getOpCodeValue() == TR::lmul) ? node : node->getChild(2);
             lumulhNode = lmulNode->getChild(2);
             TR_ASSERT((lumulhNode->getReferenceCount() > 1) && (lmulNode->getReferenceCount() > 1),

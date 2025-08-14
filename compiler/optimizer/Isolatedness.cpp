@@ -61,13 +61,7 @@ TR_Isolatedness::TR_Isolatedness(TR::Compilation *comp, TR::Optimizer *optimizer
     //_temp = NULL;
 
     /*
-    if (trace())
-       comp()->log()->prints("Starting Isolatedness\n");
-
     performAnalysis(rootStructure, false);
-
-    if (trace())
-       comp()->log()->prints("\nEnding Isolatedness\n");
     */
 }
 

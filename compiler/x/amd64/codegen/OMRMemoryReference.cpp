@@ -636,11 +636,9 @@ uint8_t *OMR::X86::AMD64::MemoryReference::generateBinaryEncoding(uint8_t *modRM
         //
         if (self()->getUnresolvedDataSnippet()) {
             self()->getUnresolvedDataSnippet()->setAddressOfDataReference(cursor);
-            if (comp->getOption(TR_TraceCG)) {
-                comp->log()->printf(
-                    "found unresolved shadow with NULL base object : data reference instruction=%p, cursor=%p\n",
-                    self()->getUnresolvedDataSnippet()->getDataReferenceInstruction(), cursor);
-            }
+            logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                "found unresolved shadow with NULL base object : data reference instruction=%p, cursor=%p\n",
+                self()->getUnresolvedDataSnippet()->getDataReferenceInstruction(), cursor);
         }
 
         return cursor + 4;
