@@ -1125,6 +1125,7 @@ int32_t OMR::Power::Instruction::estimateBinaryLength(int32_t currentEstimate)
 uint8_t *TR::PPCAlignmentNopInstruction::generateBinaryEncoding()
 {
     TR::Compilation *comp = cg()->comp();
+    OMR::Logger *log = comp->log();
     bool trace = comp->getOption(TR_TraceCG);
     uint32_t currentMisalign = reinterpret_cast<uintptr_t>(cg()->getBinaryBufferCursor()) % _alignment;
 
@@ -1137,23 +1138,18 @@ uint8_t *TR::PPCAlignmentNopInstruction::generateBinaryEncoding()
         TR::Instruction *lastNop = generateInstruction(cg(), getOpCodeValue(), getNode(), self());
         lastNop->setEstimatedBinaryLength(PPC_INSTRUCTION_LENGTH);
 
-        if (trace)
-            comp->log()->printf("Expanding alignment nop %p into %u instructions: [ %p ", self(), nopsToAdd, lastNop);
+        logprintf(trace, log, "Expanding alignment nop %p into %u instructions: [ %p ", self(), nopsToAdd, lastNop);
 
         for (uint32_t i = 1; i < nopsToAdd; i++) {
             TR::Instruction *nop = generateInstruction(cg(), TR::InstOpCode::nop, getNode(), self());
             nop->setEstimatedBinaryLength(PPC_INSTRUCTION_LENGTH);
 
-            if (trace)
-                comp->log()->printf("%p ", nop);
+            logprintf(trace, log, "%p ", nop);
         }
 
-        if (trace)
-            comp->log()->prints("]\n");
+        logprints(trace, log, "]\n");
     } else {
-        if (trace)
-            comp->log()->printf("Eliminating alignment nop %p, since the next instruction is already aligned\n",
-                self());
+        logprintf(trace, log, "Eliminating alignment nop %p, since the next instruction is already aligned\n", self());
     }
 
     cg()->addAccumulatedInstructionLengthError(getEstimatedBinaryLength() - currentMisalign);
@@ -1265,8 +1261,8 @@ void TR::PPCConditionalBranchInstruction::expandIntoFarBranch()
 {
     TR_ASSERT_FATAL_WITH_INSTRUCTION(self(), getLabelSymbol(), "Cannot expand conditional branch without a label");
 
-    if (comp()->getOption(TR_TraceCG))
-        comp()->log()->printf("Expanding conditional branch instruction %p into a far branch\n", self());
+    logprintf(comp()->getOption(TR_TraceCG), comp()->log(),
+        "Expanding conditional branch instruction %p into a far branch\n", self());
 
     TR::InstOpCode::Mnemonic newOpCode;
     bool wasLinkForm = reversedConditionalBranchOpCode(getOpCodeValue(), &newOpCode);

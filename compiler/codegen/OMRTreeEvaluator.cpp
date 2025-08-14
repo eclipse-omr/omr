@@ -603,6 +603,9 @@ bool OMR::TreeEvaluator::nodeIsLSubOverflowCheck(TR::Node *node, TR_ArithmeticOv
 void OMR::TreeEvaluator::evaluateNodesWithFutureUses(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
     if (node->getRegister() != NULL) {
         // Node has already been evaluated outside this tree.
         //
@@ -624,8 +627,7 @@ void OMR::TreeEvaluator::evaluateNodesWithFutureUses(TR::Node *node, TR::CodeGen
             // These types of nodes are likey specific to one path or another and may cause
             // a failure if evaluated on a common path. Except array accesses if already evaluated.
             //
-            if (comp->getOption(TR_TraceCG)) {
-                OMR::Logger *log = comp->log();
+            if (trace) {
                 log->printf(
                     "avoiding escaping commoned subtree %p [RealLoad/Store: %p], but processing its children: node is ",
                     node, actualLoadOrStoreChild);
@@ -643,8 +645,7 @@ void OMR::TreeEvaluator::evaluateNodesWithFutureUses(TR::Node *node, TR::CodeGen
                 }
             }
         } else {
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("O^O pre-evaluating escaping commoned subtree %p\n", node);
+            logprintf(trace, log, "O^O pre-evaluating escaping commoned subtree %p\n", node);
 
             (void)cg->evaluate(node);
 

@@ -77,8 +77,7 @@ TR_GlobalAnticipatability::TR_GlobalAnticipatability(TR::Compilation *comp, TR::
     , _localAnticipatability(_localAnalysisInfo, &_localTransparency, trace)
 {
     OMR::Logger *log = comp->log();
-    if (trace)
-        log->prints("Starting GlobalAnticipatability\n");
+    logprints(trace, log, "Starting GlobalAnticipatability\n");
 
     _supportedNodesAsArray = _localAnalysisInfo._supportedNodesAsArray;
 
@@ -153,6 +152,8 @@ static bool isFieldAccess(TR::Node *nextNode)
 static bool nodeCanSurvive(TR::Node *nextNode, TR::Node *lastNodeFirstChild, TR::Node *lastNodeSecondChild,
     TR::Compilation *comp, bool trace)
 {
+    OMR::Logger *log = comp->log();
+
     if (isFieldAccess(nextNode)) {
         intptr_t similarOffset = -1;
         bool seenSimilarAccess = false;
@@ -173,8 +174,7 @@ static bool nodeCanSurvive(TR::Node *nextNode, TR::Node *lastNodeFirstChild, TR:
             }
         }
 
-        if (trace)
-            comp->log()->printf("seen similar access %d\n", seenSimilarAccess);
+        logprintf(trace, log, "seen similar access %d\n", seenSimilarAccess);
 
         if (seenSimilarAccess) {
             if (similarOffset >= nextNode->getSymbolReference()->getOffset())
@@ -200,8 +200,7 @@ static bool nodeCanSurvive(TR::Node *nextNode, TR::Node *lastNodeFirstChild, TR:
                     = comp->fe()->getClassFromSignature(otherSig, otherLen, otherSymRef->getOwningMethod(comp));
             }
 
-            if (trace)
-                comp->log()->printf("cl %p other cl %p\n", cl, otherClassObject);
+            logprintf(trace, log, "cl %p other cl %p\n", cl, otherClassObject);
 
             if (cl && otherClassObject && (comp->fe()->isInstanceOf(cl, otherClassObject, true) == TR_yes))
                 return true;
@@ -366,16 +365,12 @@ void TR_GlobalAnticipatability::analyzeTreeTopsInBlockStructure(TR_BlockStructur
                     //*_scratch2 &= *(_localAnticipatability.getAnalysisInfo(next->getNumber()));
                     _scratch3->empty();
 
-                    if (trace()) {
-                        //_scratch2->print(log, comp());
-                    }
                     if ((lastNodeFirstChild || lastNodeSecondChild) && !_scratch2->isEmpty()) {
                         ContainerType::Cursor bvi(*_scratch2);
                         for (bvi.SetToFirstOne(); bvi.Valid(); bvi.SetToNextOne()) {
                             int32_t nextExpression = bvi;
                             TR::Node *nextNode = _supportedNodesAsArray[nextExpression];
-                            if (trace())
-                                log->printf("next expression %d\n", nextExpression);
+                            logprintf(trace(), log, "next expression %d\n", nextExpression);
                             if (nodeCanSurvive(nextNode, lastNodeFirstChild, lastNodeSecondChild, comp(), trace())) {
                                 _scratch3->set(nextExpression);
                             }

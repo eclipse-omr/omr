@@ -155,8 +155,7 @@ TR::Register *OMR::X86::TreeEvaluator::SIMDloadEvaluator(TR::Node *node, TR::Cod
     OMR::X86::Encoding encoding = opCode.getSIMDEncoding(&comp->target().cpu, node->getType().getVectorLength());
 
     if (node->getSize() != 16 && node->getSize() != 32 && node->getSize() != 64) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->printf("Unsupported fill size: Node = %p\n", node);
+        logprintf(comp->getOption(TR_TraceCG), comp->log(), "Unsupported fill size: Node = %p\n", node);
         TR_ASSERT_FATAL(false, "Unsupported fill size");
     }
 
@@ -213,8 +212,7 @@ TR::Register *OMR::X86::TreeEvaluator::SIMDstoreEvaluator(TR::Node *node, TR::Co
             encoding = EVEX_L512;
             break;
         default:
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("Unsupported fill size: Node = %p\n", node);
+            logprintf(comp->getOption(TR_TraceCG), comp->log(), "Unsupported fill size: Node = %p\n", node);
             TR_ASSERT_FATAL(false, "Unsupported fill size");
             break;
     }
@@ -326,8 +324,7 @@ TR::Register *OMR::X86::TreeEvaluator::SIMDsplatsEvaluator(TR::Node *node, TR::C
             generateRegRegInstruction(TR::InstOpCode::MOVSDRegReg, node, resultReg, childReg, cg);
             break;
         default:
-            if (comp->getOption(TR_TraceCG))
-                comp->log()->printf("Unsupported data type, Node = %p\n", node);
+            logprintf(comp->getOption(TR_TraceCG), comp->log(), "Unsupported data type, Node = %p\n", node);
             TR_ASSERT_FATAL(false, "Unsupported data type");
             break;
     }

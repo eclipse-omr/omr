@@ -409,9 +409,9 @@ void TR_ForwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfoForRegion(
 
     this->_nodesInCycle->empty();
 
-    if (this->traceBVA())
-        this->comp()->log()->printf("\nGen : Analyzing REGION : %p NUMBER : %d ITERATION NUMBER : %d\n", region,
-            region->getNumber(), numIterations);
+    logprintf(this->traceBVA(), this->comp()->log(),
+        "\nGen : Analyzing REGION : %p NUMBER : %d ITERATION NUMBER : %d\n", region, region->getNumber(),
+        numIterations);
 
     numIterations++;
     this->addToAnalysisQueue(region->getEntry(), 0);
@@ -554,9 +554,8 @@ void TR_ForwardDFSetAnalysis<Container *>::initializeGenAndKillSetInfo(TR_Region
             continue;
         }
 
-        if (this->traceBVA())
-            log->printf("Gen : Begin analyzing node %p numbered %d in region %p (%d)\n", nodeStructure->getStructure(),
-                node->getNumber(), regionStructure, regionStructure->getNumber());
+        logprintf(this->traceBVA(), log, "Gen : Begin analyzing node %p numbered %d in region %p (%d)\n",
+            nodeStructure->getStructure(), node->getNumber(), regionStructure, regionStructure->getNumber());
 
         bool alreadyVisitedNode = false;
         if (this->_nodesInCycle->get(nodeStructure->getNumber()))
@@ -955,6 +954,8 @@ template<class Container>
 bool TR_ForwardDFSetAnalysis<Container *>::analyzeRegionStructure(TR_RegionStructure *regionStructure,
     bool checkForChange)
 {
+    OMR::Logger *log = this->comp()->log();
+
     // Use information from last time we analyzed this structure; if
     // analyzing for the first time, initialize information
     //
@@ -969,10 +970,8 @@ bool TR_ForwardDFSetAnalysis<Container *>::analyzeRegionStructure(TR_RegionStruc
         analysisInfo = this->getAnalysisInfo(regionStructure);
         bool tryEarlyExit = (*this->_currentInSetInfo == *analysisInfo->_inSetInfo);
         if (tryEarlyExit) {
-            if (this->traceBVA()) {
-                this->comp()->log()->printf("\nSkipping re-analysis of Region : %p numbered %d\n", regionStructure,
-                    regionStructure->getNumber());
-            }
+            logprintf(this->traceBVA(), log, "\nSkipping re-analysis of Region : %p numbered %d\n", regionStructure,
+                regionStructure->getNumber());
             return false;
         }
     }
@@ -1002,9 +1001,8 @@ bool TR_ForwardDFSetAnalysis<Container *>::analyzeRegionStructure(TR_RegionStruc
 
         changed = false;
 
-        if (this->traceBVA())
-            this->comp()->log()->printf("\nAnalyzing REGION : %p NUMBER : %d ITERATION NUMBER : %d\n", regionStructure,
-                regionStructure->getNumber(), numIterations);
+        logprintf(this->traceBVA(), log, "\nAnalyzing REGION : %p NUMBER : %d ITERATION NUMBER : %d\n", regionStructure,
+            regionStructure->getNumber(), numIterations);
 
         numIterations++;
 
@@ -1097,8 +1095,7 @@ bool TR_ForwardDFSetAnalysis<Container *>::analyzeNodeIfPredecessorsAnalyzed(TR_
             continue;
         }
 
-        if (this->traceBVA())
-            log->printf("Begin analyzing node %p numbered %d\n", node, node->getNumber());
+        logprintf(this->traceBVA(), log, "Begin analyzing node %p numbered %d\n", node, node->getNumber());
 
         bool alreadyVisitedNode = false;
         if (this->_nodesInCycle->get(nodeStructure->getNumber()))
@@ -1292,6 +1289,8 @@ bool TR_ForwardDFSetAnalysis<Container *>::analyzeNodeIfPredecessorsAnalyzed(TR_
 template<class Container>
 bool TR_ForwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStructure *blockStructure, bool checkForChange)
 {
+    OMR::Logger *log = this->comp()->log();
+
     if (this->supportsGenAndKillSets() && canGenAndKillForStructure(blockStructure)) {
         blockStructure->setAnalyzedStatus(true);
         typename TR_BasicDFSetAnalysis<Container *>::ExtraAnalysisInfo *analysisInfo
@@ -1331,10 +1330,8 @@ bool TR_ForwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStructu
     } else if (!this->supportsGenAndKillSets() || !canGenAndKillForStructure(blockStructure)) {
         bool tryEarlyExit = (*_currentInSetInfo == *analysisInfo->_inSetInfo);
         if (tryEarlyExit) {
-            if (this->traceBVA()) {
-                this->comp()->log()->printf("\nSkipping re-analysis of Block : %p numbered %d\n", blockStructure,
-                    blockStructure->getNumber());
-            }
+            logprintf(this->traceBVA(), log, "\nSkipping re-analysis of Block : %p numbered %d\n", blockStructure,
+                blockStructure->getNumber());
             return false;
         }
     }
@@ -1385,7 +1382,6 @@ bool TR_ForwardDFSetAnalysis<Container *>::analyzeBlockStructure(TR_BlockStructu
     }
 
     if (this->traceBVA()) {
-        OMR::Logger *log = this->comp()->log();
         log->printf("\nIn Set Info for Block : %p numbered %d is : \n", blockStructure, blockStructure->getNumber());
         analysisInfo->_inSetInfo->print(log, this->comp());
         log->printf("\nOut Set Info for Block : %p numbered %d is : \n", blockStructure, blockStructure->getNumber());

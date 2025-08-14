@@ -68,8 +68,7 @@ void TR_Liveness::perform(TR_Structure *rootStructure)
 {
     OMR::Logger *log = comp()->log();
 
-    if (traceLiveness())
-        log->prints("Starting Liveness analysis\n");
+    logprints(traceLiveness(), log, "Starting Liveness analysis\n");
 
     if (_liveVariableInfo->numLocals() == 0)
         return; // Nothing to do if there are no locals
@@ -108,19 +107,19 @@ bool TR_Liveness::postInitializationProcessing()
             log->printf("\nGen and kill sets for block_%d: ", i);
             if (_regularGenSetInfo[i]) {
                 log->prints(" gen set ");
-                _regularGenSetInfo[i]->print(comp()->log(), comp());
+                _regularGenSetInfo[i]->print(log, comp());
             }
             if (_regularKillSetInfo[i]) {
                 log->prints(" kill set ");
-                _regularKillSetInfo[i]->print(comp()->log(), comp());
+                _regularKillSetInfo[i]->print(log, comp());
             }
             if (_exceptionGenSetInfo[i]) {
                 log->prints(" exception gen set ");
-                _exceptionGenSetInfo[i]->print(comp()->log(), comp());
+                _exceptionGenSetInfo[i]->print(log, comp());
             }
             if (_exceptionKillSetInfo[i]) {
                 log->prints(" exception kill set ");
-                _exceptionKillSetInfo[i]->print(comp()->log(), comp());
+                _exceptionKillSetInfo[i]->print(log, comp());
             }
         }
     }

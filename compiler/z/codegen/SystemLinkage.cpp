@@ -274,8 +274,8 @@ void TR::SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method, uint32_t stac
         setOffsetToLongDispSlot(stackIndex -= 16);
     }
 
-    if (comp()->getOption(TR_TraceCG))
-        comp()->log()->printf("\n\nOffsetToLongDispSlot = %d\n", getOffsetToLongDispSlot());
+    logprintf(comp()->getOption(TR_TraceCG), comp()->log(), "\n\nOffsetToLongDispSlot = %d\n",
+        getOffsetToLongDispSlot());
 
     if (isZLinuxLinkageType()) {
         initParamOffset(method, getOutgoingParmAreaBeginOffset() + stackIndex);

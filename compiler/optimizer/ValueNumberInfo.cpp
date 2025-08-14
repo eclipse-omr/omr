@@ -75,8 +75,7 @@ TR_ValueNumberInfo::TR_ValueNumberInfo(TR::Compilation *comp, TR::Optimizer *opt
     //
     TR_ASSERT(!(requiresGlobals || prefersGlobals), "Don't do global value numbering");
 
-    if (trace())
-        log->printf("Starting ValueNumbering %s\n", noUseDefInfo ? "without UseDefInfo" : "");
+    logprintf(trace(), log, "Starting ValueNumbering %s\n", noUseDefInfo ? "without UseDefInfo" : "");
 
     if (noUseDefInfo) {
         _useDefInfo = NULL;
@@ -102,8 +101,7 @@ TR_ValueNumberInfo::TR_ValueNumberInfo(TR::Compilation *comp, TR::Optimizer *opt
         }
 
         if (_useDefInfo == NULL) {
-            if (trace())
-                log->prints("Can't perform ValueNumbering, no use/def info\n");
+            logprints(trace(), log, "Can't perform ValueNumbering, no use/def info\n");
             _infoIsValid = false;
             _optimizer->setCantBuildGlobalsValueNumberInfo(true);
             if (!requiresGlobals)
@@ -253,33 +251,32 @@ bool TR_ValueNumberInfo::congruentNodes(TR::Node *node, TR::Node *entryNode)
 
     if (node->getType().isBCD()) {
         if (!node->isDecimalSizeAndShapeEquivalent(entryNode)) {
-            if (trace())
-                log->printf("BCD node %s (%p) and BCD entryNode %s (%p) have size/shape mismatch -- do not consider as "
-                            "matching\n",
-                    node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+            logprintf(trace(), log,
+                "BCD node %s (%p) and BCD entryNode %s (%p) have size/shape mismatch -- do not consider as matching\n",
+                node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
             return false;
         }
 
         if (!node->isSignStateEquivalent(entryNode)) {
-            if (trace() || comp()->cg()->traceBCDCodeGen())
-                log->printf("x^x : BCD node %s (%p) and BCD entryNode %s (%p) have sign state mismatch -- do not "
-                            "consider as matching\n",
-                    node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+            logprintf((trace() || comp()->cg()->traceBCDCodeGen()), log,
+                "x^x : BCD node %s (%p) and BCD entryNode %s (%p) have sign state mismatch -- do not consider as "
+                "matching\n",
+                node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
             return false;
         }
     } else if (node->getOpCode().isConversionWithFraction()
         && node->getDecimalFraction() != entryNode->getDecimalFraction()) {
-        if (trace())
-            log->printf("fracConv node %s (%p) and fracConv entryNode %s (%p) have fraction mismatch -- do not "
-                        "consider as matching\n",
-                node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+        logprintf(trace(), log,
+            "fracConv node %s (%p) and fracConv entryNode %s (%p) have fraction mismatch -- do not consider as "
+            "matching\n",
+            node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
         return false;
     } else if (node->chkOpsCastedToBCD() && node->castedToBCD() != entryNode->castedToBCD()) {
-        if (trace())
-            log->printf("castedToBCD mismatch : node %s (%p) castedToBCD %d and entryNode %s (%p) castedToBCD %d -- do "
-                        "not consider as matching\n",
-                node->getOpCode().getName(), node, node->castedToBCD(), entryNode->getOpCode().getName(), entryNode,
-                entryNode->castedToBCD());
+        logprintf(trace(), log,
+            "castedToBCD mismatch : node %s (%p) castedToBCD %d and entryNode %s (%p) castedToBCD %d -- do not "
+            "consider as matching\n",
+            node->getOpCode().getName(), node, node->castedToBCD(), entryNode->getOpCode().getName(), entryNode,
+            entryNode->castedToBCD());
         return false;
     }
 #endif
@@ -414,42 +411,42 @@ void TR_ValueNumberInfo::initializeNode(TR::Node *node, int32_t &negativeValueNu
             continue;
 #ifdef J9_PROJECT_SPECIFIC
         if (node->getOpCode().isSetSignOnNode() && node->getSetSign() != entryNode->getSetSign()) {
-            if (trace())
-                log->printf("Nodes %s (%p) and entryNode %s (%p) with setSignOnNode have sign mismatch -- do not "
-                            "consider as matching\n",
-                    node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+            logprintf(trace(), log,
+                "Nodes %s (%p) and entryNode %s (%p) with setSignOnNode have sign mismatch -- do not consider as "
+                "matching\n",
+                node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
             continue;
         }
 
         if (node->getType().isBCD()) {
             if (!node->isDecimalSizeAndShapeEquivalent(entryNode)) {
-                if (trace())
-                    log->printf("BCD node %s (%p) and BCD entryNode %s (%p) have size/shape mismatch -- do not "
-                                "consider as matching\n",
-                        node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+                logprintf(trace(), log,
+                    "BCD node %s (%p) and BCD entryNode %s (%p) have size/shape mismatch -- do not consider as "
+                    "matching\n",
+                    node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
                 continue;
             }
 
             if (!node->isSignStateEquivalent(entryNode)) {
-                if (trace() || comp()->cg()->traceBCDCodeGen())
-                    log->printf("x^x : BCD node %s (%p) and BCD entryNode %s (%p) have sign state mismatch -- do not "
-                                "consider as matching\n",
-                        node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+                logprintf((trace() || comp()->cg()->traceBCDCodeGen()), log,
+                    "x^x : BCD node %s (%p) and BCD entryNode %s (%p) have sign state mismatch -- do not consider as "
+                    "matching\n",
+                    node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
                 continue;
             }
         } else if (node->getOpCode().isConversionWithFraction()
             && node->getDecimalFraction() != entryNode->getDecimalFraction()) {
-            if (trace())
-                log->printf("fracConv node %s (%p) and fracConv entryNode %s (%p) have fraction mismatch -- do not "
-                            "consider as matching\n",
-                    node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
+            logprintf(trace(), log,
+                "fracConv node %s (%p) and fracConv entryNode %s (%p) have fraction mismatch -- do not consider as "
+                "matching\n",
+                node->getOpCode().getName(), node, entryNode->getOpCode().getName(), entryNode);
             continue;
         } else if (node->chkOpsCastedToBCD() && node->castedToBCD() != entryNode->castedToBCD()) {
-            if (trace())
-                log->printf("castedToBCD mismatch : node %s (%p) castedToBCD %d and entryNode %s (%p) castedToBCD %d "
-                            "-- do not consider as matching\n",
-                    node->getOpCode().getName(), node, node->castedToBCD(), entryNode->getOpCode().getName(), entryNode,
-                    entryNode->castedToBCD());
+            logprintf(trace(), log,
+                "castedToBCD mismatch : node %s (%p) castedToBCD %d and entryNode %s (%p) castedToBCD %d -- do not "
+                "consider as matching\n",
+                node->getOpCode().getName(), node, node->castedToBCD(), entryNode->getOpCode().getName(), entryNode,
+                entryNode->castedToBCD());
             continue;
         }
 #endif
@@ -687,9 +684,7 @@ void TR_ValueNumberInfo::allocateValueNumber(TR::Node *node)
     _valueNumbers.ElementAt(index) = -2;
 
 #if DEBUG
-    if (trace()) {
-        log->printf("Processing node %d at depth %d\n", index, _recursionDepth);
-    }
+    logprintf(trace(), log, "Processing node %d at depth %d\n", index, _recursionDepth);
 #endif
     ++_recursionDepth;
 
@@ -706,9 +701,8 @@ void TR_ValueNumberInfo::allocateValueNumber(TR::Node *node)
     if (_valueNumbers.ElementAt(index) >= 0) {
         --_recursionDepth;
 #if DEBUG
-        if (trace()) {
-            log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth, _valueNumbers.ElementAt(index));
-        }
+        logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+            _valueNumbers.ElementAt(index));
 #endif
         return;
     }
@@ -730,10 +724,8 @@ void TR_ValueNumberInfo::allocateValueNumber(TR::Node *node)
         if (_valueNumbers.ElementAt(index) >= 0) {
             --_recursionDepth;
 #if DEBUG
-            if (trace()) {
-                log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth,
-                    _valueNumbers.ElementAt(index));
-            }
+            logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+                _valueNumbers.ElementAt(index));
 #endif
             return;
         }
@@ -764,10 +756,8 @@ void TR_ValueNumberInfo::allocateValueNumber(TR::Node *node)
         if (_valueNumbers.ElementAt(index) >= 0) {
             --_recursionDepth;
 #if DEBUG
-            if (trace()) {
-                log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth,
-                    _valueNumbers.ElementAt(index));
-            }
+            logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+                _valueNumbers.ElementAt(index));
 #endif
             return;
         }
@@ -826,10 +816,8 @@ void TR_ValueNumberInfo::allocateValueNumber(TR::Node *node)
             entry->_next = next->_next;
             --_recursionDepth;
 #if DEBUG
-            if (trace()) {
-                log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth,
-                    _valueNumbers.ElementAt(index));
-            }
+            logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+                _valueNumbers.ElementAt(index));
 #endif
             return;
         }
@@ -858,9 +846,8 @@ void TR_ValueNumberInfo::allocateValueNumber(TR::Node *node)
 
     --_recursionDepth;
 #if DEBUG
-    if (trace()) {
-        log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth, _valueNumbers.ElementAt(index));
-    }
+    logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+        _valueNumbers.ElementAt(index));
 #endif
 }
 
@@ -897,18 +884,17 @@ TR::Node *TR_ValueNumberInfo::getValueNumberForLoad(TR::Node *node)
                 defValue = getVN(defNode);
                 if (value != defValue)
                     changeValueNumber(node, defValue);
-                if (trace()) {
-                    log->printf(
-                        "  Change value number for load %d at [%p] to value number %d of dominating load %d at [%p]\n",
-                        node->getGlobalIndex(), node, defValue, defNode->getGlobalIndex(), defNode);
-                }
+
+                logprintf(trace(), log,
+                    "  Change value number for load %d at [%p] to value number %d of dominating load %d at [%p]\n",
+                    node->getGlobalIndex(), node, defValue, defNode->getGlobalIndex(), defNode);
+
                 return NULL;
             }
 
-            if (trace()) {
-                log->printf("  Use value number %d of dominating load %d at [%p] for load %d at [%p]\n", getVN(defNode),
-                    defNode->getGlobalIndex(), defNode, node->getGlobalIndex(), node);
-            }
+            logprintf(trace(), log, "  Use value number %d of dominating load %d at [%p] for load %d at [%p]\n",
+                getVN(defNode), defNode->getGlobalIndex(), defNode, node->getGlobalIndex(), node);
+
             return defNode;
         }
     }
@@ -933,8 +919,7 @@ TR::Node *TR_ValueNumberInfo::getValueNumberForLoad(TR::Node *node)
                 TR_ASSERT(defNode->getOpCode().isLoadVar(), "Defining load is not a load");
                 allocateValueNumber(defNode);
                 int32_t newDefValue = getVN(defNode);
-                if (trace())
-                    log->printf("node %p defNode %p newDefValue %d\n", node, defNode, newDefValue);
+                logprintf(trace(), log, "node %p defNode %p newDefValue %d\n", node, defNode, newDefValue);
                 if (newDefValue < 0) {
                     defValue = -1;
                     break;
@@ -957,17 +942,15 @@ TR::Node *TR_ValueNumberInfo::getValueNumberForLoad(TR::Node *node)
             if (value >= 0) {
                 if (value != defValue)
                     changeValueNumber(node, defValue);
-                if (trace()) {
-                    log->printf("  Change value number for load %d at [%p] to value number %d of dominating loads\n",
-                        node->getGlobalIndex(), node, defValue);
-                }
+                logprintf(trace(), log,
+                    "  Change value number for load %d at [%p] to value number %d of dominating loads\n",
+                    node->getGlobalIndex(), node, defValue);
 
                 return NULL;
             } else {
-                if (trace()) {
-                    log->printf("  2Use value number %d of dominating load %d at [%p] for load %d at [%p]\n",
-                        getVN(defNode), defNode->getGlobalIndex(), defNode, node->getGlobalIndex(), node);
-                }
+                logprintf(trace(), log, "  2Use value number %d of dominating load %d at [%p] for load %d at [%p]\n",
+                    getVN(defNode), defNode->getGlobalIndex(), defNode, node->getGlobalIndex(), node);
+
                 return defNode;
             }
         }
@@ -983,14 +966,13 @@ TR::Node *TR_ValueNumberInfo::getValueNumberForLoad(TR::Node *node)
         for (cursor.SetToFirstOne(); cursor.Valid(); cursor.SetToNextOne()) {
             int32_t index = cursor;
             TR_UseDefInfo::BitVector usesFromDefs(comp()->allocator());
-            // log->printf("def %d uses from defs %p\n", index, usesFromDefs);
+
             if (_useDefInfo->getUsesFromDef(usesFromDefs, index, true)) {
-                // log->printf("2looking at use node %p\n", node);
                 TR_UseDefInfo::BitVector::Cursor cursor2(usesFromDefs);
                 for (cursor2.SetToFirstOne(); cursor2.Valid(); cursor2.SetToNextOne()) {
                     int32_t useIndex = cursor2;
                     TR::Node *useNode = _useDefInfo->getNode(useIndex + _useDefInfo->getFirstUseIndex());
-                    // log->printf("3compare with use node %p\n", useNode);
+
                     if (useNode && (useNode != node) && useNode->getOpCode().isLoadVar()) {
                         TR_UseDefInfo::BitVector otherUseDefiningLoads(comp()->allocator());
                         if (_useDefInfo->getDefiningLoads(otherUseDefiningLoads, useNode)
@@ -1011,20 +993,19 @@ TR::Node *TR_ValueNumberInfo::getValueNumberForLoad(TR::Node *node)
                                     int32_t useValue = getVN(useNode);
                                     if (value != useValue)
                                         changeValueNumber(node, useValue);
-                                    if (trace()) {
-                                        log->printf("  Change value number for load %d at [%p] to value number %d of "
-                                                    "load %d at [%p] reached by same dominating loads (defs)\n",
-                                            node->getGlobalIndex(), node, useValue, useNode->getGlobalIndex(), useNode);
-                                    }
+
+                                    logprintf(trace(), log,
+                                        "  Change value number for load %d at [%p] to value number %d of load %d at "
+                                        "[%p] reached by same dominating loads (defs)\n",
+                                        node->getGlobalIndex(), node, useValue, useNode->getGlobalIndex(), useNode);
+
                                     return NULL;
                                 }
 
-                                if (trace()) {
-                                    log->printf(
-                                        "  Use value number %d of dominating load %d at [%p] for load %d at [%p]\n",
-                                        getVN(useNode), useNode->getGlobalIndex(), useNode, node->getGlobalIndex(),
-                                        node);
-                                }
+                                logprintf(trace(), log,
+                                    "  Use value number %d of dominating load %d at [%p] for load %d at [%p]\n",
+                                    getVN(useNode), useNode->getGlobalIndex(), useNode, node->getGlobalIndex(), node);
+
                                 return useNode;
                             }
                         }
@@ -1340,8 +1321,7 @@ TR_HashValueNumberInfo::TR_HashValueNumberInfo(TR::Compilation *comp, TR::Optimi
     //
     TR_ASSERT(!(requiresGlobals || prefersGlobals), "Don't do global value numbering");
 
-    if (trace())
-        log->printf("Starting ValueNumbering %s\n", noUseDefInfo ? "without UseDefInfo" : "");
+    logprintf(trace(), log, "Starting ValueNumbering %s\n", noUseDefInfo ? "without UseDefInfo" : "");
 
     if (noUseDefInfo) {
         _useDefInfo = NULL;
@@ -1366,8 +1346,7 @@ TR_HashValueNumberInfo::TR_HashValueNumberInfo(TR::Compilation *comp, TR::Optimi
         }
 
         if (_useDefInfo == NULL) {
-            if (trace())
-                log->prints("Can't perform ValueNumbering, no use/def info\n");
+            logprints(trace(), log, "Can't perform ValueNumbering, no use/def info\n");
             _infoIsValid = false;
             _optimizer->setCantBuildGlobalsValueNumberInfo(true);
             if (!requiresGlobals)
@@ -1484,9 +1463,7 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
     _valueNumbers.ElementAt(index) = -2;
 
 #if DEBUG
-    if (trace()) {
-        log->printf("Processing node %d at depth %d\n", index, _recursionDepth);
-    }
+    logprintf(trace(), log, "Processing node %d at depth %d\n", index, _recursionDepth);
 #endif
     ++_recursionDepth;
 
@@ -1495,13 +1472,8 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
     int32_t i;
     for (i = node->getNumChildren() - 1; i >= 0; --i) {
         if (_valueNumbers.ElementAt(node->getChild(i)->getGlobalIndex()) != -2) {
-            // log->printf("About to recurse on node %p\n",node->getChild(i));
             allocateValueNumber(node->getChild(i));
         }
-        //         else
-        //            {
-        //            log->printf("Did not recurse on node %p because getGloblalIndex = -2\n",node->getChild(i));
-        //            }
     }
 
     // This node may now have been given a value due to recursion
@@ -1509,9 +1481,8 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
     if (_valueNumbers.ElementAt(index) >= 0) {
         --_recursionDepth;
 #if DEBUG
-        if (trace()) {
-            log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth, _valueNumbers.ElementAt(index));
-        }
+        logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+            _valueNumbers.ElementAt(index));
 #endif
         return;
     }
@@ -1529,10 +1500,8 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
         if (_valueNumbers.ElementAt(index) >= 0) {
             --_recursionDepth;
 #if DEBUG
-            if (trace()) {
-                log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth,
-                    _valueNumbers.ElementAt(index));
-            }
+            logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+                _valueNumbers.ElementAt(index));
 #endif
             return;
         }
@@ -1559,22 +1528,16 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
         if (_valueNumbers.ElementAt(index) >= 0) {
             --_recursionDepth;
 #if DEBUG
-            if (trace()) {
-                log->printf("Value of node %d at depth %d is %d\n", index, _recursionDepth,
-                    _valueNumbers.ElementAt(index));
-            }
+            logprintf(trace(), log, "Value of node %d at depth %d is %d\n", index, _recursionDepth,
+                _valueNumbers.ElementAt(index));
 #endif
             return;
         }
 
         if (defNode) {
             setValueNumber(node, defNode);
-            // log->printf("For load node %p found defNode %p, setting value number of node to %d
-            // ",node,defNode,_valueNumbers.ElementAt(index));
         } else {
             changeValueNumber(node, _nextValue++);
-            // log->printf("For load node %p found no defNode , setting value number of node to %d
-            // ",node,defNode,_valueNumbers.ElementAt(index));
         }
     }
 
@@ -1588,9 +1551,6 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
                 isValidToLookIntoHash = false;
                 break;
             }
-
-            // log->printf("JIAG: for node %p, value number =
-            // %d\n",node->getChild(k),_valueNumbers.ElementAt(node->getChild(k)->getGlobalIndex()));
         }
         if (isValidToLookIntoHash) {
             VNHashKey nodeKey(node, this);
@@ -1600,8 +1560,6 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
                 TR::Node *otherNode = _nodes.ElementAt(otherNodeIndex);
                 TR_ASSERT((otherNode != NULL), "HASHVN :Non-null nodeTable entry expected for globalIndex:%d",
                     otherNodeIndex);
-
-                // log->printf("JIAG1: Setting node %p value number to same number at node %p\n",node,otherNode);
 
                 setValueNumber(node, otherNode);
             } else {
@@ -1615,10 +1573,8 @@ void TR_HashValueNumberInfo::allocateValueNumber(TR::Node *node)
     }
 
 #if DEBUG
-    if (trace()) {
-        log->printf("Done processing node %p Value of node %d at depth %d is %d\n", node, index, _recursionDepth,
-            _valueNumbers.ElementAt(index));
-    }
+    logprintf(trace(), log, "Done processing node %p Value of node %d at depth %d is %d\n", node, index,
+        _recursionDepth, _valueNumbers.ElementAt(index));
 #endif
 
     --_recursionDepth;

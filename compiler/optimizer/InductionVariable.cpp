@@ -318,8 +318,7 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
 
         _parmAutoPairs = NULL;
 
-        if (trace())
-            log->printf("\nChecking loop %d for predictability\n", loopStructure->getNumber());
+        logprintf(trace(), log, "\nChecking loop %d for predictability\n", loopStructure->getNumber());
 
         _isAddition = false;
         TR::SymbolReferenceTable *symRefTab = comp()->getSymRefTab();
@@ -382,10 +381,6 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
                 _loadUsedInLoopIncrement = NULL;
                 bool storeInRequiredForm = isStoreInRequiredForm(nextInductionVariableNumber, loopStructure);
 
-                //            log->printf("storeInRequiredForm=%d for ind var=%d symRef=#%d\n", storeInRequiredForm,
-                //            nextInductionVariableNumber,
-                //                  symRefTab->getSymRef(nextInductionVariableNumber)->getReferenceNumber());
-
                 //
                 // TODO: If there is a use of an induction variable that refers back to a load
                 //       that occurs in a tree PRIOR to the increment/decrement,
@@ -405,10 +400,8 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
                             ListIterator<TR_StoreTreeInfo> si(storeTreesList);
                             TR_StoreTreeInfo *storeTree;
                             for (storeTree = si.getCurrent(); storeTree != NULL; storeTree = si.getNext()) {
-                                // log->printf("store tree %p\n", storeTree->_tt->getNode());
                                 storeInRequiredForm = foundLoad(storeTree->_tt, nextInductionVariableNumber, comp());
                                 if (!storeInRequiredForm) {
-                                    // log->printf("reject store tree %p\n", storeTree->_tt->getNode());
                                     break;
                                 }
                             }
@@ -422,9 +415,6 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
                 int32_t maxFactorAllowed = 1;
                 TR::Node *storeOfDerivedInductionVariable = NULL;
                 int32_t loopTestHasSymRef = -1;
-
-                // log->printf("store in reqd form %d for ind var %d\n", storeInRequiredForm,
-                // nextInductionVariableNumber);
 
                 if (_loopTestTree->getNode()->getNumChildren() == 2) {
                     TR::SymbolReference *indexSymRef = NULL;
@@ -759,8 +749,7 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
                                 }
                             }
 
-                            if (trace())
-                                log->printf("Found an induction var chance in %s\n", comp()->signature());
+                            logprintf(trace(), log, "Found an induction var chance in %s\n", comp()->signature());
 
                         } // for loop over all linear expressions
 
@@ -806,9 +795,7 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
         if (!reassociateAndHoistNonPacked())
             return 0;
 
-        if (trace()) {
-            log->printf("Found an induction var chance in %s\n", comp()->signature());
-        }
+        logprintf(trace(), log, "Found an induction var chance in %s\n", comp()->signature());
 
         TR::Block *b = loopInvariantBlock->getBlock();
         reassociateAndHoistComputations(b, loopStructure);
@@ -827,8 +814,7 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
             if (reassociatedAuto) {
                 // dumpOptDetails(comp(), "j = %d reassociated auto = %d (%p)\n", j,
                 //        reassociatedAuto->getReferenceNumber(), reassociatedAuto);
-                if (trace())
-                    log->printf("Found an reassociated induction var chance in %s\n", comp()->signature());
+                logprintf(trace(), log, "Found an reassociated induction var chance in %s\n", comp()->signature());
 
                 TR::SymbolReference *origAuto = symRefTab->getSymRef(j);
                 TR::Node *newArrayObjNode = TR::Node::createWithSymRef(byteCodeInfoNode, TR::aload, 0, origAuto);
@@ -878,8 +864,7 @@ int32_t TR_LoopStrider::detectCanonicalizedPredictableLoops(TR_Structure *loopSt
                 = symRefPairSearchResult != _hoistedAutos->end() ? symRefPairSearchResult->second : NULL;
 
             if (symRefPair) {
-                if (trace())
-                    log->printf("Found an internal pointer hoisting chance in %s\n", comp()->signature());
+                logprintf(trace(), log, "Found an internal pointer hoisting chance in %s\n", comp()->signature());
 
                 TR::SymbolReference *origAuto = symRefTab->getSymRef(j);
 
@@ -1425,8 +1410,7 @@ void TR_LoopStrider::examineOpCodesForInductionVariableUse(TR::Node *node, TR::N
 
         if (_usesLoadUsedInLoopIncrement) {
             TR::Node *newLoad = getNewLoopIncrement(_storeTreeInfoForLoopIncrement, index);
-            // comp()->log()->printf("33 newLoad %p load %p index %d\n", newLoad, _storeTreeInfoForLoopIncrement->_load,
-            // index);
+
             if (newLoad) {
                 TR::Node *oldNode = parent->getChild(childNum);
 
@@ -1498,8 +1482,7 @@ void TR_LoopStrider::examineOpCodesForInductionVariableUse(TR::Node *node, TR::N
         TR::Node *newLoad = NULL;
         if (_usesLoadUsedInLoopIncrement) {
             newLoad = getNewLoopIncrement(_storeTreeInfoForLoopIncrement, index);
-            // comp()->log()->printf("22 at node %p newLoad %p load %p index %d\n", node, newLoad,
-            // _storeTreeInfoForLoopIncrement->_load, index);
+
             if (!newLoad) {
                 newLoad = genLoad(node, *newSymbolReference, isInternalPointer);
                 nodeRememberedInLoadUsed = true;
@@ -1655,7 +1638,6 @@ void TR_LoopStrider::examineOpCodesForInductionVariableUse(TR::Node *node, TR::N
             prevTree->join(newStoreTreeTop);
             newStoreTreeTop->join(placeHolderTree);
 
-            // printf("Reached here in %s\n", comp()->signature());
             dumpOptDetails(comp(),
                 "\nO^O INDUCTION VARIABLE ANALYSIS: Induction variable analysis inserted initialization tree : %p for "
                 "new loop invariant symRef #%d\n",
@@ -1708,8 +1690,6 @@ bool TR_LoopStrider::examineTreeForInductionVariableUse(TR::Block *loopInvariant
 
     node->setVisitCount(visitCount);
 
-    // comp()->log()->printf("Examining node %p\n", node);
-
     bool isInternalPointer = false;
     int32_t internalPointerSymbol = -1;
     TR::AutomaticSymbol *pinningArrayPointer = NULL;
@@ -1720,7 +1700,6 @@ bool TR_LoopStrider::examineTreeForInductionVariableUse(TR::Block *loopInvariant
         // node->getFirstChild()->getSymbolReference()->getSymbol()->isAuto() &&
         _neverWritten->get(node->getFirstChild()->getSymbolReference()->getReferenceNumber())
         && (comp()->getStartBlock()->getFrequency() < 500)) {
-        // printf("Creating internal ptr in %s\n", comp()->signature());
         isInternalPointer = true;
         internalPointerSymbol = node->getFirstChild()->getSymbolReference()->getReferenceNumber();
         if (node->getFirstChild()->getSymbolReference()->getSymbol()->isAuto())
@@ -1764,8 +1743,6 @@ bool TR_LoopStrider::examineTreeForInductionVariableUse(TR::Block *loopInvariant
                 bool downcastNode = (node->getType().isInt32()) ? true : false;
                 _usesLoadUsedInLoopIncrement = false;
                 _storeTreeInfoForLoopIncrement = NULL;
-
-                // comp()->log()->printf("looking for store at node = %p\n", node);
 
                 TR::Node *replacingNode = NULL, *mulTerm = NULL, *linearTerm = NULL;
                 if ((replacingNode = findReplacingNode(node->getFirstChild()->getFirstChild(), usingAladd, -1))) {
@@ -2005,8 +1982,6 @@ bool TR_LoopStrider::examineTreeForInductionVariableUse(TR::Block *loopInvariant
 void TR_LoopStrider::populateLinearEquation(TR::Node *node, int32_t loopDrivingInductionVar,
     int32_t derivedInductionVar, int32_t internalPointerSymbol, TR::Node *invariantMultiplicationTerm)
 {
-    // comp()->log()->printf("populate node %p number %d\n", node, _nextExpression);
-
     TR_ASSERT(_nextExpression < _numberOfLinearExprs, "Number of linear expressions exceeded the estimate\n");
 
     _linearEquations[_nextExpression][0] = loopDrivingInductionVar;
@@ -2272,8 +2247,6 @@ TR::Node *TR_LoopStrider::placeNewInductionVariableIncrementTree(TR_BlockStructu
             TR_NodeIndexPair *loadPair = storeTree->getData()->_loads;
             while (loadPair) {
                 if (loadPair->_index == k) {
-                    // comp()->log()->printf("store %p old %p\n", storeTree->getData()->_tt->getNode(),
-                    // storeTree->getData()->_loadUsedInLoopIncrement);
                     seenLoads.add(storeTree->getData()->_loadUsedInLoopIncrement);
                     seenLoadPairs.add(loadPair);
                 }
@@ -2291,8 +2264,6 @@ TR::Node *TR_LoopStrider::placeNewInductionVariableIncrementTree(TR_BlockStructu
             ListElement<TR::Node> *seenLoad = seenLoads.getListHead();
             ListElement<TR_NodeIndexPair> *seenLoadPair = seenLoadPairs.getListHead();
             while (seenLoad) {
-                // comp()->log()->printf("store %p old %p seen load %p\n", storeTree->getData()->_tt->getNode(),
-                // storeTree->getData()->_loadUsedInLoopIncrement, seenLoad->getData());
                 if (seenLoad->getData() == storeTree->getData()->_loadUsedInLoopIncrement) {
                     loadNode = seenLoadPair->getData()->_node;
                     break;
@@ -2305,9 +2276,6 @@ TR::Node *TR_LoopStrider::placeNewInductionVariableIncrementTree(TR_BlockStructu
             if (!loadNode) {
                 TR_NodeIndexPair *loadPair = storeTree->getData()->_loads;
                 while (loadPair) {
-                    // comp()->log()->printf("store %p old %p seen load %p\n", storeTree->getData()->_tt->getNode(),
-                    // storeTree->getData()->_loadUsedInLoopIncrement, loadPair->_node);
-
                     if (loadPair->_index == k) {
                         // seenLoads.add(storeTree->getData()->_loadUsedInLoopIncrement);
                         // seenLoadPairs.add(loadPair);
@@ -2383,9 +2351,6 @@ TR::Node *TR_LoopStrider::placeNewInductionVariableIncrementTree(TR_BlockStructu
     TR::Node *constNode, bool isAddition)
 {
     bool usingAladd = (comp()->target().is64Bit()) ? true : false;
-
-    // comp()->log()->printf("For new sym ref %d _constNode is %x (value %d)\n",
-    // newSymbolReference->getReferenceNumber(), constNode, constNode->getInt());
 
     // Create the multiply for (usually) constant increment;
     // e.g. of the form 4*1
@@ -2492,7 +2457,6 @@ TR::Node *TR_LoopStrider::placeNewInductionVariableIncrementTree(TR_BlockStructu
                 newMulNode->setLocalIndex(~0);
             }
 
-            // comp()->log()->printf("constNode : %x has value %d\n", constNode, constNode->getInt());
             TR::Node *newIvLoad = newLoad;
             if (newLoad->getOpCodeValue() == TR::l2i)
                 newIvLoad = newLoad->getFirstChild();
@@ -2731,7 +2695,6 @@ bool TR_LoopStrider::identifyExpressionLinearInInductionVariable(TR::Node *node,
 
                 if (isLinearInInductionVariable && isExprLoopInvariant(mulTermNode)) {
                     _numberOfLinearExprs++;
-                    // comp()->log()log->printf("identified node %p number %d\n", node, _numberOfLinearExprs);
                     needToVisitChild = false;
                 } else // if (!isLinearInInductionVariable)
                 {
@@ -2742,12 +2705,8 @@ bool TR_LoopStrider::identifyExpressionLinearInInductionVariable(TR::Node *node,
                     mulTermNode = node->getFirstChild()->getFirstChild();
                     isLinearInInductionVariable = isExpressionLinearInSomeInductionVariable(linearNode);
 
-                    // comp()->log()->printf("identifying node %p is linear %d mulTermNode %p\n", node,
-                    // isLinearInInductionVariable, mulTermNode);
-
                     if (isLinearInInductionVariable && isExprLoopInvariant(mulTermNode)) {
                         _numberOfLinearExprs++;
-                        // comp()->log()->printf("identified node %p number %d\n", node, _numberOfLinearExprs);
                         needToVisitChild = false;
                     }
                 }
@@ -2766,12 +2725,8 @@ bool TR_LoopStrider::identifyExpressionLinearInInductionVariable(TR::Node *node,
         isLinearInInductionVariable = isExpressionLinearInSomeInductionVariable(linearNode);
         mulTermNode = node->getSecondChild();
 
-        // comp()->log()->printf("identifying node %p is linear %d linearNode %p mulTermNode %p\n", node,
-        // isLinearInInductionVariable, linearNode, mulTermNode);
-
         if (isLinearInInductionVariable && isExprLoopInvariant(mulTermNode)) {
             _numberOfLinearExprs++;
-            // comp()->log()->printf("identified node %p number %d\n", node, _numberOfLinearExprs);
             needToVisitChild = false;
         } else // if (!isLinearInInductionVariable)
         {
@@ -2782,12 +2737,8 @@ bool TR_LoopStrider::identifyExpressionLinearInInductionVariable(TR::Node *node,
             isLinearInInductionVariable = isExpressionLinearInSomeInductionVariable(linearNode);
             mulTermNode = node->getFirstChild();
 
-            // comp()->log()->printf("identifying node %p is linear %d linearNode %p mulTermNode %p\n", node,
-            // isLinearInInductionVariable, linearNode, mulTermNode);
-
             if (isLinearInInductionVariable && isExprLoopInvariant(mulTermNode)) {
                 _numberOfLinearExprs++;
-                // comp()->log()->printf("identified node %p number %d\n", node, _numberOfLinearExprs);
                 needToVisitChild = false;
             }
         }
@@ -2902,12 +2853,8 @@ TR::Node *TR_LoopStrider::isExpressionLinearInInductionVariable(TR::Node *node, 
 
 bool TR_LoopStrider::isExpressionLinearInSomeInductionVariable(TR::Node *node)
 {
-    // comp()->log()->printf("00 identifying node %p in some \n", node);
     if ((node->getOpCodeValue() == TR::iload) || (node->getOpCodeValue() == TR::lload)) {
-        // comp()->log()->printf("11 identifying node %p in some \n", node);
-
         if (_storeTreesList || _writtenExactlyOnce.ValueAt(node->getSymbolReference()->getReferenceNumber())) {
-            // comp()->log()->printf("22 identifying node %p in some \n", node);
             return true;
         }
     } else if ((node->getOpCodeValue() == TR::iadd) || (node->getOpCodeValue() == TR::ladd)) {
@@ -3105,7 +3052,6 @@ bool TR_LoopStrider::reassociateAndHoistComputations(TR::Block *loopInvariantBlo
                     TR::TreeTop *newStoreTreeTop = TR::TreeTop::create(comp(), newStore);
                     placeHolderTree->join(newStoreTreeTop);
                     newStoreTreeTop->join(nextTree);
-                    // printf("Reached here in %s\n", comp()->signature());
                     dumpOptDetails(comp(),
                         "\nO^O INDUCTION VARIABLE ANALYSIS: Induction variable analysis inserted initialization tree : "
                         "%p for new symRef #%d\n",
@@ -3511,9 +3457,8 @@ bool TR_LoopStrider::isStoreInRequiredForm(TR::Node *storeNode, int32_t symRefNu
         if ((_constNode->getOpCode().isLoadConst()) && (low < 0))
             _isAddition = !_isAddition;
 
-        if (trace()) {
-            comp()->log()->printf("Found loop induction variable #%d incremented indirectly by %lld\n", symRefNum, low);
-        }
+        logprintf(trace(), comp()->log(), "Found loop induction variable #%d incremented indirectly by %lld\n",
+            symRefNum, low);
     } else {
         TR::Node *secondChild = _constNode;
         if (secondChild->getOpCode().isLoadVarDirect()) {
@@ -3552,8 +3497,6 @@ bool TR_LoopStrider::isStoreInRequiredForm(TR::Node *storeNode, int32_t symRefNu
             ListIterator<TR_StoreTreeInfo> si(storeTreesList);
             TR_StoreTreeInfo *storeTree;
             for (storeTree = si.getCurrent(); storeTree != NULL; storeTree = si.getNext()) {
-                // comp()->log()->printf("storeTree %p storeNode = %p cursor %p\n", storeTree, storeNode,
-                // storeTree->_tt->getNode());
                 if (storeNode == storeTree->_tt->getNode()) {
                     storeTree->_insertionTreeTop = storeTree->_tt;
                     storeTree->_constNode = _constNode;
@@ -3872,10 +3815,9 @@ void TR_LoopStrider::detectLoopsForIndVarConversion(TR_Structure *loopStructure,
             for (TR::CFGEdge *e = sit.getFirst(); e != NULL; e = sit.getNext()) {
                 TR::Block *dest = toBlock(e->getTo());
                 if (dest->isOSRCatchBlock()) {
-                    if (trace())
-                        comp()->log()->printf(
-                            "reject loop %d because dest (block_%d) of an exit edge is OSRCatchBlock\n",
-                            loopStructure->getNumber(), dest->getNumber());
+                    logprintf(trace(), comp()->log(),
+                        "reject loop %d because dest (block_%d) of an exit edge is OSRCatchBlock\n",
+                        loopStructure->getNumber(), dest->getNumber());
                     return;
                 }
             }
@@ -4704,9 +4646,8 @@ TR_LoopStrider::SignExtEntry TR_LoopStrider::signExtend(TR::Node *node, TR::Node
     if (result.extended != NULL) {
         result.extended->incReferenceCount();
         memo.insert(std::make_pair(node->getGlobalIndex(), result));
-        if (trace())
-            comp()->log()->printf("[Sign-Extn] sign-extended n%un %s into n%un %s\n", node->getGlobalIndex(),
-                node->getOpCode().getName(), result.extended->getGlobalIndex(), result.extended->getOpCode().getName());
+        logprintf(trace(), comp()->log(), "[Sign-Extn] sign-extended n%un %s into n%un %s\n", node->getGlobalIndex(),
+            node->getOpCode().getName(), result.extended->getGlobalIndex(), result.extended->getOpCode().getName());
     }
 
     TR_ASSERT((result.extended != NULL) == (result.cancelsExt || result.cancelsTrunc),
@@ -5107,8 +5048,7 @@ void TR_InductionVariableAnalysis::analyzeNaturalLoop(TR_RegionStructure *loop)
     {
         TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
-        if (trace())
-            comp()->log()->printf("<analyzeNaturalLoop loop=%d addr=%p>\n", loop->getNumber(), loop);
+        logprintf(trace(), comp()->log(), "<analyzeNaturalLoop loop=%d addr=%p>\n", loop->getNumber(), loop);
 
         // Initialize the block Info Array
         //
@@ -5164,8 +5104,7 @@ void TR_InductionVariableAnalysis::analyzeNaturalLoop(TR_RegionStructure *loop)
 
     } // scope of the stack memory region
 
-    if (trace())
-        comp()->log()->prints("</analyzeNaturalLoop>\n");
+    logprints(trace(), comp()->log(), "</analyzeNaturalLoop>\n");
 }
 
 void TR_InductionVariableAnalysis::analyzeAcyclicRegion(TR_RegionStructure *region, TR_RegionStructure *loop)
@@ -5230,8 +5169,7 @@ void TR_InductionVariableAnalysis::analyzeBlock(TR_BlockStructure *structure, TR
     DeltaInfo **inSet = getBlockInfo(block);
     TR_BitVector *candidates = ((AnalysisInfo *)loop->getAnalysisInfo())->getLoopLocalDefs();
 
-    if (trace())
-        log->printf("analyzeBlock %d\n", block->getNumber());
+    logprintf(trace(), log, "analyzeBlock %d\n", block->getNumber());
 
     TR_ASSERT(inSet, "no info available for block_%d");
 
@@ -5266,9 +5204,8 @@ void TR_InductionVariableAnalysis::analyzeBlock(TR_BlockStructure *structure, TR
             uint32_t refIndex = symRef->getSymbol()->getLocalIndex();
 
             if (candidates->isSet(refNum)) {
-                if (trace())
-                    log->printf("node %p effects candidate %d (refNum: %d) symRef=%p symbol=%p\n", node, refIndex,
-                        refNum, symRef, symRef->getSymbol());
+                logprintf(trace(), log, "node %p effects candidate %d (refNum: %d) symRef=%p symbol=%p\n", node,
+                    refIndex, refNum, symRef, symRef->getSymbol());
 
                 DeltaInfo *inSymbol = inSet[refIndex];
 
@@ -5288,8 +5225,6 @@ void TR_InductionVariableAnalysis::analyzeBlock(TR_BlockStructure *structure, TR
                     else if (kind == Geometric)
                         inSymbol->geometricDelta((int32_t)delta);
                 } else {
-                    // log->printf("In analyze block loop %d block %d, setting inSymbol %d to unknown value
-                    // \n",loop->getNumber(),block->getNumber(),symRef->getReferenceNumber());
                     inSymbol->setUnknownValue();
                 }
 
@@ -5315,8 +5250,7 @@ void TR_InductionVariableAnalysis::analyzeBlock(TR_BlockStructure *structure, TR
             mergeWithBlock(succ, outSet, loop);
     }
 
-    if (trace())
-        log->println();
+    logprintln(trace(), log);
 }
 
 void TR_InductionVariableAnalysis::analyzeCyclicRegion(TR_RegionStructure *region, TR_RegionStructure *loop)
@@ -5343,8 +5277,6 @@ void TR_InductionVariableAnalysis::analyzeCyclicRegion(TR_RegionStructure *regio
             if (!inSymbol)
                 inSymbol = inSet[refIndex] = new (trStackMemory()) DeltaInfo(0);
 
-            // comp()->log()->printf("For loop %d setting symref %d to unknown
-            // value\n",loop->getNumber(),symRef->getReferenceNumber());
             inSymbol->setUnknownValue();
         }
     }
@@ -5428,38 +5360,29 @@ bool TR_InductionVariableAnalysis::isProgressionalStore(TR::Node *node, TR_Progr
 
     // skip over conversion nodes
     //
-
-    // comp()->log()->printf("In isProgressionalStore considering node %p\n",node);
-
     while (cursor->getOpCode().isConversion())
         cursor = cursor->getFirstChild();
 
     if (!(cursor->getOpCode().isAdd() || cursor->getOpCode().isSub() || cursor->getOpCode().isLeftShift()
             || cursor->getOpCode().isRightShift())) {
-        // comp()->log()->printf("In isProgressionalStore cursor node %p returning false. its not
-        // add/sub/shift\n",cursor);
         return false;
     }
 
     TR::SymbolReference *symRef;
     if (!getProgression(cursor, storeRef, &symRef, kind, incr)) {
-        // comp()->log()->printf("In isProgressionalStore cursor node %p returning false. getProgression returned
-        // false\n",cursor);
         return false;
     }
 
     if (symRef != storeRef) // must be an increment
     {
-        // comp()->log()->printf("In isProgressionalStore cursor node %p returning false. symRef = %p(%d) is not equal
-        // to storeRef %p(%d)\n",cursor,symRef,symRef->getReferenceNumber(),storeRef,storeRef->getReferenceNumber());
         return false;
     }
+
     // Make sure the delta is representable in 32bits
     if (((int64_t)(int32_t)(*incr)) != *incr) {
-        // comp()->log()->printf("In isProgressionalStore cursor node %p, delta is not representable in
-        // 32bits\n",cursor);
         return false;
     }
+
     return true;
 }
 
@@ -5474,16 +5397,14 @@ bool TR_InductionVariableAnalysis::branchContainsInductionVariable(TR_RegionStru
     TR_ArrayIterator<TR_BasicInductionVariable> it(&basicIVs);
     bool result = false;
     TR_BasicInductionVariable *iv;
-    // log->printf("\tloop %d basicivs: ", loop->getNumber());
+
     for (iv = it.getFirst(); iv; iv = it.getNext()) {
         int32_t index = iv->getSymRef()->getReferenceNumber();
-        if (trace())
-            log->printf("\t considering branchnode [%p] and basiciv [%d]\n", branchNode, index);
+        logprintf(trace(), log, "\t considering branchnode [%p] and basiciv [%d]\n", branchNode, index);
         // setting a node count budget for walking the nodes
         int32_t nodeBudget = 100;
         if (branchContainsInductionVariable(branchNode, iv->getSymRef(), &nodeBudget)) {
-            if (trace())
-                log->printf("\tbranchnode [%p] contains basiciv [%d]\n", branchNode, index);
+            logprintf(trace(), log, "\tbranchnode [%p] contains basiciv [%d]\n", branchNode, index);
             result = true;
             TR::Node *firstChild = branchNode->getFirstChild();
             if (firstChild->getOpCode().isConversion())
@@ -5493,12 +5414,10 @@ bool TR_InductionVariableAnalysis::branchContainsInductionVariable(TR_RegionStru
                 // the expr is in some recognized form
             } else {
                 result = false;
-                if (trace())
-                    log->printf("\tbut branch expr [%p] is not in recognized form\n", firstChild);
+                logprintf(trace(), log, "\tbut branch expr [%p] is not in recognized form\n", firstChild);
             }
         } else {
-            if (trace())
-                log->printf("\tbranchnode [%p] does not contain basiciv [%d]\n", branchNode, index);
+            logprintf(trace(), log, "\tbranchnode [%p] does not contain basiciv [%d]\n", branchNode, index);
         }
     }
     return result;
@@ -5630,20 +5549,17 @@ void TR_InductionVariableAnalysis::analyzeLoopExpressions(TR_RegionStructure *lo
         if (!info)
             continue;
         if (info->isUnknownValue()) {
-            if (trace())
-                log->printf("----> symRef #%d[%p] is unknown\n", refNum, symRef);
+            logprintf(trace(), log, "----> symRef #%d[%p] is unknown\n", refNum, symRef);
         } else if (info->getKind() == Identity) {
-            if (trace())
-                log->printf("----> symRef #%d[%p] is using an identity progression\n", refNum, symRef);
+            logprintf(trace(), log, "----> symRef #%d[%p] is using an identity progression\n", refNum, symRef);
         } else if (info->getKind() == Arithmetic) {
             if (info->getDelta() == 0) {
-                if (trace())
-                    log->printf("----> symRef #%d[%p] is using an identity progression\n", refNum, symRef);
+                logprintf(trace(), log, "----> symRef #%d[%p] is using an identity progression\n", refNum, symRef);
             } else {
                 // basic linear induction variable
-                if (trace())
-                    log->printf("====> Found basic linear induction variable symRef #%d[%p] with increment %d\n",
-                        refNum, symRef, info->getDelta());
+                logprintf(trace(), log,
+                    "====> Found basic linear induction variable symRef #%d[%p] with increment %d\n", refNum, symRef,
+                    info->getDelta());
 
                 TR_BasicInductionVariable *biv = new (trHeapMemory()) TR_BasicInductionVariable(comp(), loop, symRef);
                 biv->setDeltaOnBackEdge(info->getDelta());
@@ -5653,9 +5569,8 @@ void TR_InductionVariableAnalysis::analyzeLoopExpressions(TR_RegionStructure *lo
             }
         } else if (info->getKind() == Geometric) {
             // basic geometric induction variable
-            if (trace())
-                log->printf("====> Found basic geometric induction variable symRef #%d[%p] with increment %d\n", refNum,
-                    symRef, info->getDelta());
+            logprintf(trace(), log, "====> Found basic geometric induction variable symRef #%d[%p] with increment %d\n",
+                refNum, symRef, info->getDelta());
             // TODO - need to write this at some point
         } else
             TR_ASSERT(0, "illegal type for the loop expression\n");
@@ -5663,7 +5578,6 @@ void TR_InductionVariableAnalysis::analyzeLoopExpressions(TR_RegionStructure *lo
 
     // now we need to find the entry and exit values of the induction variables
 
-    // log->printf("Before findEntryValues basicIVs->isEmpty() = %d\n",basicIVs.isEmpty());
     bool success1 = findEntryValues(loop, basicIVs);
 
     bool success2 = analyzeExitEdges(loop, candidates, basicIVs);
@@ -5742,15 +5656,13 @@ bool TR_InductionVariableAnalysis::isIVUnchangedInLoop(TR_RegionStructure *loop,
 
     OMR::Logger *log = comp()->log();
     if (disable) {
-        if (trace())
-            log->prints("\tintermediate value check disabled; assuming no earlier modifications\n");
+        logprints(trace(), log, "\tintermediate value check disabled; assuming no earlier modifications\n");
         return true;
     }
 
     static char *verboseIVTrace = feGetEnv("TR_verboseInductionVariableTracing");
 
-    if (trace())
-        log->prints("\tTrying to make sure that candidate IV hasn't been modified elsewhere in the loop\n");
+    logprints(trace(), log, "\tTrying to make sure that candidate IV hasn't been modified elsewhere in the loop\n");
 
     WorkQueue workQueue(comp()->allocator());
 
@@ -5788,9 +5700,8 @@ bool TR_InductionVariableAnalysis::isIVUnchangedInLoop(TR_RegionStructure *loop,
             if (curNode->getOpCode().isStoreDirect()
                 && curNode->getSymbolReference()->getReferenceNumber()
                     == candidateIV->getSymbolReference()->getReferenceNumber()) {
-                if (trace())
-                    log->printf("\t\tFound store %p of symRef %p in block %d, which is not a loop test block\n",
-                        curNode, candidateIV->getSymbolReference()->getSymbol(), curBlock->getNumber());
+                logprintf(trace(), log, "\t\tFound store %p of symRef %p in block %d, which is not a loop test block\n",
+                    curNode, candidateIV->getSymbolReference()->getSymbol(), curBlock->getNumber());
                 return false;
             }
         }
@@ -5800,8 +5711,7 @@ bool TR_InductionVariableAnalysis::isIVUnchangedInLoop(TR_RegionStructure *loop,
             appendPredecessors(workQueue, curBlock);
     }
 
-    if (trace())
-        log->prints("\tIV hasn't been modified in the loop body\n");
+    logprints(trace(), log, "\tIV hasn't been modified in the loop body\n");
 
     return true;
 }
@@ -5819,8 +5729,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
     //     if the RHS is not known, exit value is symbolic
     //     if the RHS is known to be constant - exit value is that
 
-    if (trace())
-        log->prints("Trying to analyze the exit edges to determine if this is a counted loop\n");
+    logprints(trace(), log, "Trying to analyze the exit edges to determine if this is a counted loop\n");
 
     TR_Array<DeltaInfo *> exitInfos(trMemory(), candidates->elementCount(), true, stackAlloc);
     TR_Array<TR::Node *> bounds(trMemory(), candidates->elementCount(), true, stackAlloc);
@@ -5836,8 +5745,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
     for (edge = eit.getFirst(); edge; edge = eit.getNext()) {
         TR_StructureSubGraphNode *subNode = edge->getFrom()->asStructureSubGraphNode();
 
-        if (trace())
-            log->printf("\tLook at node %d exiting the loop\n", subNode->getStructure()->getNumber());
+        logprintf(trace(), log, "\tLook at node %d exiting the loop\n", subNode->getStructure()->getNumber());
 
         if (subNode->getStructure()->asRegion()) {
             // OSR blocks can be ignored here as they will not be impacted by a loop controlling
@@ -5871,13 +5779,11 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
                 osrInduceExitEdge = (_isOSRInduceBlock.get(toNum) != 0);
 
             if (osrInduceExitEdge) {
-                if (trace())
-                    log->prints("\tbranch from inner region is to OSR block, ignoring\n");
+                logprints(trace(), log, "\tbranch from inner region is to OSR block, ignoring\n");
                 continue;
             }
 
-            if (trace())
-                log->prints("\tReject - exit edge from inner region\n");
+            logprints(trace(), log, "\tReject - exit edge from inner region\n");
             return false;
         }
 
@@ -5894,8 +5800,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
                 break;
         }
 
-        if (trace())
-            log->printf("\t=>Look at branch block_%d\n", block->getNumber());
+        logprintf(trace(), log, "\t=>Look at branch block_%d\n", block->getNumber());
 
         TR::TreeTop *branchTree = block->getLastRealTreeTop();
         TR::Node *node = branchTree->getNode();
@@ -5907,8 +5812,8 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
             || (node->getOpCode().isJumpWithMultipleTargets() && !node->getOpCode().hasBranchChildren())
             || // allow tstarts to continue
             node->getOpCode().isSwitch()) {
-            if (trace())
-                log->prints("\tReject - branch block not ending with a branch\n"); // FIXME: can improve a bit here
+            logprints(trace(), log,
+                "\tReject - branch block not ending with a branch\n"); // FIXME: can improve a bit here
             return false;
         }
 
@@ -5917,9 +5822,8 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
                     && node->getSecondChild()->isInternalPointer() && node->getOpCodeValue() != TR::ifacmpeq
                     && node->getOpCodeValue() != TR::ifacmpne))
             && !node->getOpCode().isJumpWithMultipleTargets()) {
-            if (trace())
-                log->prints(
-                    "\tReject - Branch node is not integral nor ordered comparison between internal pointers\n");
+            logprints(trace(), log,
+                "\tReject - Branch node is not integral nor ordered comparison between internal pointers\n");
             return false;
         }
 
@@ -5941,20 +5845,16 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
             // TM: a jump with multiple target (this case, a tstart) is not a 'controlling branch to exit' in terms of
             // the temp induction variable, so we can continue
 
-            if (trace())
-                log->prints("\tbranch is a tstart, not a controlling branch. Ignoring\n");
+            logprints(trace(), log, "\tbranch is a tstart, not a controlling branch. Ignoring\n");
 
             continue;
         }
-
-        // log->printf("Before branchContainsInductionVariable basicIVs->isEmpty() = %d\n",basicIVs.isEmpty());
 
         if (!branchContainsInductionVariable(loop, node, basicIVs)) {
             // Doesn't the possibility of taking this branch mean that we can't in
             // general know the precise exit value of any IV? Maybe PIV should
             // only provide a bound on the exit value.
-            if (trace())
-                log->printf("\tBranch [%p] does not involve basic ivs, ignoring\n", node);
+            logprintf(trace(), log, "\tBranch [%p] does not involve basic ivs, ignoring\n", node);
             continue;
         }
 
@@ -5990,8 +5890,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
         TR_ProgressionKind kind;
         int64_t incr;
         if (!getProgression(node->getFirstChild(), 0, &symRef, &kind, &incr)) {
-            if (trace())
-                log->printf("\tReject - branch node %p in unrecognized form\n", node);
+            logprintf(trace(), log, "\tReject - branch node %p in unrecognized form\n", node);
             return false;
         }
 
@@ -6000,8 +5899,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
         int32_t index = symRef->getSymbol()->getLocalIndex();
         TR_BasicInductionVariable *biv = basicIVs[index];
         if (!biv) {
-            if (trace())
-                log->printf("\tReject - test (node %p) on unknown symRef\n", node);
+            logprintf(trace(), log, "\tReject - test (node %p) on unknown symRef\n", node);
             return false;
         }
 
@@ -6013,8 +5911,8 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
             controllingBranchToExit = branchToExit;
         } else if (controllingIV != index || controllingBranchToExit != branchToExit
             || !identicalBranchTrees(controllingBranch->getNode(), branchTree->getNode())) {
-            if (trace())
-                log->printf("\tReject - more than one loop test %p and %p\n", node, controllingBranch->getNode());
+            logprintf(trace(), log, "\tReject - more than one loop test %p and %p\n", node,
+                controllingBranch->getNode());
             return false;
         }
         legitimateBranches++;
@@ -6023,8 +5921,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
     // Make sure we have found a loop driving induction variable
     //
     if (controllingIV == -1) {
-        if (trace())
-            log->prints("\tReject - could not find a loop controlling test\n");
+        logprints(trace(), log, "\tReject - could not find a loop controlling test\n");
         return false;
     }
 
@@ -6067,8 +5964,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
         opCode = op.getOpCodeForReverseBranch();
     int32_t delta = biv->getDeltaOnExitEdge();
     if ((TR::ILOpCode::isLessCmp(opCode) && delta > 0) || (TR::ILOpCode::isGreaterCmp(opCode) && delta < 0)) {
-        if (trace())
-            log->prints("\tReject - uninteresting direction of the loop test\n");
+        logprints(trace(), log, "\tReject - uninteresting direction of the loop test\n");
         return false;
     }
 
@@ -6093,10 +5989,9 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
             // The load might be evaluated earlier. Now we require that it is
             // either evaluated after each store of the same variable in this
             // extended block, or before each such store.
-            if (trace()) {
-                log->printf("\twalking EBB to determine when n%un %s #%d is evaluated\n", valueNode->getGlobalIndex(),
-                    valueNode->getOpCode().getName(), valueNode->getSymbolReference()->getReferenceNumber());
-            }
+            logprintf(trace(), log, "\twalking EBB to determine when n%un %s #%d is evaluated\n",
+                valueNode->getGlobalIndex(), valueNode->getOpCode().getName(),
+                valueNode->getSymbolReference()->getReferenceNumber());
 
             bool loadFirst = false;
             bool loadLast = false;
@@ -6110,10 +6005,9 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
                 if (node == valueNode) {
                     loadFirst = !seenStore;
                     loadLast = true; // so far
-                    if (trace()) {
-                        log->printf("\t\tn%un %s #%d\n", node->getGlobalIndex(), node->getOpCode().getName(),
-                            node->getSymbolReference()->getReferenceNumber());
-                    }
+                    logprintf(trace(), log, "\t\tn%un %s #%d\n", node->getGlobalIndex(), node->getOpCode().getName(),
+                        node->getSymbolReference()->getReferenceNumber());
+
                     continue;
                 }
 
@@ -6129,10 +6023,8 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
                 // At this point node is a relevant store.
                 seenStore = true;
                 loadLast = false; // so far
-                if (trace()) {
-                    log->printf("\t\tn%un %s #%d\n", node->getGlobalIndex(), node->getOpCode().getName(),
-                        node->getSymbolReference()->getReferenceNumber());
-                }
+                logprintf(trace(), log, "\t\tn%un %s #%d\n", node->getGlobalIndex(), node->getOpCode().getName(),
+                    node->getSymbolReference()->getReferenceNumber());
             }
 
             // With forceILWalk, we may have !valueCouldBeEvaluatedBeforeTest. If
@@ -6146,28 +6038,24 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
             // Determine the results based on loadFirst, loadLast, seenStore.
             if (!seenStore) {
                 usesUnchangedValueInLoopTest = false;
-                if (trace())
-                    log->prints("\tno stores => value is latest at test\n");
+                logprints(trace(), log, "\tno stores => value is latest at test\n");
             } else if (loadLast) {
                 usesUnchangedValueInLoopTest = false;
-                if (trace())
-                    log->prints("\tload last => value is latest at test\n");
+                logprints(trace(), log, "\tload last => value is latest at test\n");
             } else if (loadFirst) {
                 usesUnchangedValueInLoopTest = true;
-                if (trace())
-                    log->prints("\tload first => value is from before test EBB\n");
+                logprints(trace(), log, "\tload first => value is from before test EBB\n");
             } else {
-                if (trace())
-                    log->prints("\tRejected - tested value evaluated between stores\n");
+                logprints(trace(), log, "\tRejected - tested value evaluated between stores\n");
                 return false;
             }
 
             if (usesUnchangedValueInLoopTest) {
                 if (!isIVUnchangedInLoop(loop, controllingBranch->getEnclosingBlock(), valueNode)) {
                     // The loop test may be looking at an intermediate value.
-                    if (trace())
-                        log->prints("\tReject - IV node has been changed in one of the blocks that is not part of the "
-                                    "loop test in the loop\n");
+                    logprints(trace(), log,
+                        "\tReject - IV node has been changed in one of the blocks that is not part of the loop test in "
+                        "the loop\n");
                     return false;
                 }
             }
@@ -6180,16 +6068,14 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
         for (tt = controllingBranch;; tt = tt->getPrevTreeTop()) {
             TR::Node *curNode = tt->getNode();
             if (curNode->getOpCodeValue() == TR::BBStart && !curNode->getBlock()->isExtensionOfPreviousBlock()) {
-                if (trace())
-                    log->prints("\tRejected - description needed here\n");
+                logprints(trace(), log, "\tRejected - description needed here\n");
                 return false; // FIXME: make this not this pessimistic
             }
 
             if (curNode->getOpCode().isStoreDirect() && curNode->getSymbolReference() == biv->getSymRef()) {
                 if (curNode->getFirstChild() != valueNode) {
-                    if (trace())
-                        log->printf("\tRejected - exit value %p maybe not same as tested value %p\n", curNode,
-                            valueNode);
+                    logprintf(trace(), log, "\tRejected - exit value %p maybe not same as tested value %p\n", curNode,
+                        valueNode);
                     return false; // FIXME: make this less pessimistic
                 } else
                     break;
@@ -6202,8 +6088,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
         boundNode = boundNode->getFirstChild();
     loop->resetInvariance();
     if (!loop->isExprInvariant(boundNode)) {
-        if (trace())
-            log->prints("\tReject - loop bound node is not invariant\n");
+        logprints(trace(), log, "\tReject - loop bound node is not invariant\n");
         return false;
     }
 
@@ -6213,8 +6098,7 @@ bool TR_InductionVariableAnalysis::analyzeExitEdges(TR_RegionStructure *loop, TR
             boundNode = actualValue;
     }
 
-    if (trace())
-        log->printf("Found Loop Controlling Induction Variable: %d\n", biv->getSymRef()->getReferenceNumber());
+    logprintf(trace(), log, "Found Loop Controlling Induction Variable: %d\n", biv->getSymRef()->getReferenceNumber());
 
     // If the entry/exit is non-constant - try to do some pattern matching to detect
     // 1- internal pointer induction variables
@@ -6427,9 +6311,8 @@ bool TR_InductionVariableAnalysis::findEntryValues(TR_RegionStructure *loop,
         TR::Node *entryValue = findEntryValueForSymRef(loop, symRef);
 
         if (entryValue) {
-            if (trace())
-                comp()->log()->printf("\tFound entry value of BIV %d: %p\n", biv->getSymRef()->getReferenceNumber(),
-                    entryValue);
+            logprintf(trace(), comp()->log(), "\tFound entry value of BIV %d: %p\n",
+                biv->getSymRef()->getReferenceNumber(), entryValue);
             biv->setEntryValue(entryValue);
         }
     }
@@ -6592,14 +6475,16 @@ void TR_InductionVariableAnalysis::printDeltaInfo(DeltaInfo *info)
     if (!trace())
         return;
 
+    OMR::Logger *log = comp()->log();
+
     if (info->isUnknownValue())
-        comp()->log()->prints("[unknown]\n");
+        log->prints("[unknown]\n");
     else if (info->getKind() == Identity)
-        comp()->log()->prints("[unmodified]\n");
+        log->prints("[unmodified]\n");
     else if (info->getKind() == Arithmetic)
-        comp()->log()->printf("[arithmetic increment of %d]\n", info->getDelta());
+        log->printf("[arithmetic increment of %d]\n", info->getDelta());
     else
-        comp()->log()->printf("[geometric shift = %d]\n", info->getDelta());
+        log->printf("[geometric shift = %d]\n", info->getDelta());
 }
 
 TR_PrimaryInductionVariable::TR_PrimaryInductionVariable(TR_BasicInductionVariable *biv, TR::Block *branchBlock,
@@ -6643,7 +6528,6 @@ TR_PrimaryInductionVariable::TR_PrimaryInductionVariable(TR_BasicInductionVariab
         else
             _iterCount = (int32_t)ceiling(diff, getDeltaOnBackEdge());
     } else {
-        // fprintf(stderr, "--secs-- PIV (??) in %s\n", comp()->signature());
         // maybe we still have hope simplifying?
         // say how about looking at the type signature and guessing the max value based
         // on the return type?
@@ -6699,10 +6583,11 @@ TR::Node *TR_DerivedInductionVariable::getExitValue()
 int32_t TR_IVTypeTransformer::perform()
 {
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
+    OMR::Logger *log = comp()->log();
 
     _cfg = comp()->getFlowGraph();
     if (!_cfg || !(_rootStructure = _cfg->getStructure())) {
-        comp()->log()->prints("IVTT: requires structure!\n");
+        logprints(trace(), log, "IVTT: requires structure!\n");
         return 1;
     }
 
@@ -6718,16 +6603,13 @@ int32_t TR_IVTypeTransformer::perform()
     detectWhileLoops(whileLoopsInnerFirst, whileLoops, doWhileLoopsInnerFirst, doWhileLoops, _rootStructure, true);
 
     if (whileLoops.isEmpty() && doWhileLoops.isEmpty()) {
-        if (trace())
-            comp()->log()->prints("No while or doWhile loops detected\n");
+        logprints(trace(), log, "No while or doWhile loops detected\n");
         return 1;
     }
 
-    if (trace())
-        comp()->log()->printf("Number of WhileLoops = %d\n", whileLoops.getSize());
+    logprintf(trace(), log, "Number of WhileLoops = %d\n", whileLoops.getSize());
 
-    if (trace())
-        comp()->log()->printf("Number of DoWhileLoops = %d\n", doWhileLoops.getSize());
+    logprintf(trace(), log, "Number of DoWhileLoops = %d\n", doWhileLoops.getSize());
 
     ListIterator<TR_Structure> whileLoopsIt(&whileLoops);
     TR_Structure *nextWhileLoop;
@@ -6765,8 +6647,7 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
 
     auto cm = comp();
     if (!natLoop->isCanonicalizedLoop()) {
-        if (trace())
-            log->prints("Not a canonicalized loop. Preheader is needed for transformation\n");
+        logprints(trace(), log, "Not a canonicalized loop. Preheader is needed for transformation\n");
         return;
     }
 
@@ -6774,17 +6655,14 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
     ListIterator<TR::CFGEdge> it(&exitEdges);
     auto exitEdge = it.getFirst();
 
-    if (trace())
-        log->printf("Looking at Loop %i\n", natLoop->getNumber());
+    logprintf(trace(), log, "Looking at Loop %i\n", natLoop->getNumber());
 
     if (!exitEdge) {
-        if (trace())
-            log->prints("exitEdge is null\n");
+        logprints(trace(), log, "exitEdge is null\n");
         return;
     }
     if (it.getNext()) {
-        if (trace())
-            log->prints("Not handling multiple exit edges\n"); // TODO: handle them
+        logprints(trace(), log, "Not handling multiple exit edges\n"); // TODO: handle them
         return;
     }
 
@@ -6793,14 +6671,12 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
     if (auto blockStructure = exitSGN->getStructure()->asBlock())
         backEdgeTT = blockStructure->getBlock()->getExit()->getPrevTreeTop();
     if (!backEdgeTT) {
-        if (trace())
-            log->prints("Couldn't find backedge\n");
+        logprints(trace(), log, "Couldn't find backedge\n");
         return;
     }
     auto backEdgeIfNode = backEdgeTT->getNode();
     if (!(backEdgeIfNode->getOpCode().isIf() && backEdgeIfNode->getChild(0)->getOpCode().isRef())) {
-        if (trace())
-            log->prints("Backedge is not a if address test node\n");
+        logprints(trace(), log, "Backedge is not a if address test node\n");
         return;
     }
 
@@ -6828,8 +6704,7 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
             || (tt->getNode()->getBlock()->getPredecessors().size() == 1))
         && (tt = tt->getPrevTreeTop()));
     if (!astoreNode) {
-        if (trace())
-            log->prints("Couldn't find astore near back-edge\n");
+        logprints(trace(), log, "Couldn't find astore near back-edge\n");
         return;
     }
 
@@ -6859,8 +6734,7 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
         auto structure = SGNode->getStructure();
         if (!structure) // null structure could mean invalidated structure... let's be pessimistic for now.
         {
-            if (trace())
-                log->printf("Null structure encountered at graph node %i\n", SGNode->getNumber());
+            logprintf(trace(), log, "Null structure encountered at graph node %i\n", SGNode->getNumber());
             return;
         }
 
@@ -6883,8 +6757,7 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
                     TR::SparseBitVector useDefAliases(cm->allocator());
                     symref->getUseDefAliases().getAliases(useDefAliases);
                     if (useDefAliases[astoreNode->getSymbolReference()->getReferenceNumber()]) {
-                        if (trace())
-                            log->prints("Address symbol killed more than once in loop\n");
+                        logprints(trace(), log, "Address symbol killed more than once in loop\n");
                         return;
                     }
                 }
@@ -6926,8 +6799,7 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
                                                                                : backEdgeIfNode->getChild(1);
 
     if (!isIdentityExpr(ptrTestChild, astoreNode->getSymbolReference())) {
-        if (trace())
-            log->prints("if test containing address IV is not identity expression\n");
+        logprints(trace(), log, "if test containing address IV is not identity expression\n");
         return;
     }
     auto itTT = backEdgeTT->getNextTreeTop()->getNode()->getBlock()->startOfExtendedBlock()->getEntry();
@@ -6945,8 +6817,7 @@ void TR_IVTypeTransformer::changeIVTypeFromAddrToInt(TR_RegionStructure *natLoop
     }
 
     // Transform addr accesses to base addr + int
-    if (trace())
-        log->prints("all ok! Transforming addr accesses to arrayRef form of base addr + int\n");
+    logprints(trace(), log, "all ok! Transforming addr accesses to arrayRef form of base addr + int\n");
 
     // Create copy symbol holding base address
     auto preheaderBlock = natLoop->getEntryBlock()->getPrevBlock();
@@ -7157,8 +7028,7 @@ bool TR_IVTypeTransformer::isInAddrIncrementForm(TR::Node *node, int32_t &increm
         increment = incChild->getConst<int32_t>();
         return true;
     }
-    if (trace())
-        comp()->log()->prints("Not in address increment form\n");
+    logprints(trace(), comp()->log(), "Not in address increment form\n");
     return false;
 }
 

@@ -216,8 +216,7 @@ int32_t TR_CompactLocals::perform()
         tt = block->getExit();
         lastBlock = block;
 
-        if (trace())
-            log->printf("Now in block_%d\n", block->getNumber());
+        logprintf(trace(), log, "Now in block_%d\n", block->getNumber());
 
         bool extendedByNextBlock = false;
         for (; tt != firstTT; tt = tt->getPrevTreeTop()) {
@@ -225,9 +224,7 @@ int32_t TR_CompactLocals::perform()
                 extendedByNextBlock = block->isExtensionOfPreviousBlock() ? true : false;
                 block = block->getPrevBlock();
 
-                if (trace())
-                    log->printf("Now in block_%d\n", block->getNumber());
-
+                logprintf(trace(), log, "Now in block_%d\n", block->getNumber());
             } else if (tt->getNode()->getOpCodeValue() == TR::BBEnd) {
                 // Compose the live-on-exit vector from the union of the live-on-entry
                 // vectors of this block's successors.
@@ -283,6 +280,8 @@ int32_t TR_CompactLocals::perform()
 void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount, TR_Liveness *liveLocals,
     TR::Block *block, bool directChildOfTreeTop)
 {
+    OMR::Logger *log = comp()->log();
+
     // First time this node has been encountered.
     //
     if (node->getVisitCount() != visitCount) {
@@ -290,9 +289,7 @@ void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount
         node->setLocalIndex(node->getReferenceCount());
     }
 
-    if (trace()) {
-        comp()->log()->printf("---> visiting tt node %p\n", node);
-    }
+    logprintf(trace(), log, "---> visiting tt node %p\n", node);
 
     if (node->getOpCode().isStoreDirect() /* && directChildOfTreeTop */) {
         TR::AutomaticSymbol *local = node->getSymbolReference()->getSymbol()->getAutoSymbol();
@@ -310,9 +307,7 @@ void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount
             //
             if (local->getLocalIndex() == 0) {
                 _liveVars->reset(localIndex);
-                if (trace()) {
-                    comp()->log()->printf("--- local index %d KILLED\n", localIndex);
-                }
+                logprintf(trace(), log, "--- local index %d KILLED\n", localIndex);
             }
         }
     } else if (node->getOpCode().isLoadVarDirect() || node->getOpCodeValue() == TR::loadaddr) {
@@ -335,15 +330,11 @@ void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount
                 createInterferenceBetweenLocals(localIndex);
                 _liveVars->set(localIndex);
 
-                if (trace()) {
-                    comp()->log()->printf("+++ local index %d LIVE\n", localIndex);
-                }
+                logprintf(trace(), log, "+++ local index %d LIVE\n", localIndex);
             } else if (node->getOpCodeValue() == TR::loadaddr) {
                 createInterferenceBetweenLocals(localIndex);
 
-                if (trace()) {
-                    comp()->log()->printf("+++ local index %d address taken\n", localIndex);
-                }
+                logprintf(trace(), log, "+++ local index %d address taken\n", localIndex);
             }
 
             local->setLocalIndex(local->getLocalIndex() - 1);

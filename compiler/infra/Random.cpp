@@ -80,13 +80,14 @@ void TR_RandomGenerator::exercise(int32_t period, TR::Compilation *comp)
     // Don't use the actual random generator because we don't want to perturb it
     RandomExercizer ex(comp);
 
-    if (comp->getLoggingEnabled())
-        comp->log()->printf("  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)",
-            "Boolean", "Boolean(5)");
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceAll);
+
+    logprintf(trace, log, "  %12s %12s %12s %12s %12s %12s\n", "Int", "Int(-5,5)", "Int(1,1)", "Int(MIN,MAX)",
+        "Boolean", "Boolean(5)");
 
     for (int32_t i = 0; i < period; i++) {
-        if (comp->getLoggingEnabled())
-            comp->log()->printf("  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5),
-                ex.randomInt(1, 1), ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
+        logprintf(trace, log, "  %12d %12d %12d %12d %12d %12d\n", ex.randomInt(), ex.randomInt(-5, 5),
+            ex.randomInt(1, 1), ex.randomInt(INT_MIN, INT_MAX), ex.randomBoolean(), ex.randomBoolean(5));
     }
 }

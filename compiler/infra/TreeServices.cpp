@@ -292,15 +292,15 @@ bool TR_AddressTree::process(TR::Node *elementAddrNode, bool onlyConsiderConstAi
     return validAiaddSubTree;
 }
 
-void TR_Pattern::tracePattern(TR::Node *node)
+void TR_Pattern::tracePattern(TR::Node *node, TR::Compilation *comp)
 {
-    TR::comp()->log()->printf("{ Trying %s pattern on %s n%dn\n", getName(), node->getOpCode().getName(),
+    comp->log()->printf("{ Trying %s pattern on %s n%dn\n", getName(), node->getOpCode().getName(),
         node->getGlobalIndex());
 }
 
-void TR_OpCodePattern::tracePattern(TR::Node *node)
+void TR_OpCodePattern::tracePattern(TR::Node *node, TR::Compilation *comp)
 {
-    TR::comp()->log()->printf("{ Trying %s [%s] pattern on %s n%dn\n", getName(), TR::ILOpCode(_opCode).getName(),
+    comp->log()->printf("{ Trying %s [%s] pattern on %s n%dn\n", getName(), TR::ILOpCode(_opCode).getName(),
         node->getOpCode().getName(), node->getGlobalIndex());
 }
 
@@ -319,7 +319,7 @@ bool TR_Pattern::matches(TR::Node *node, TR_Unification &uni, TR::Compilation *c
     // On failure, uni is restored to its original state.
 
     if (comp->getOption(TR_TraceTreePatternMatching))
-        tracePattern(node);
+        tracePattern(node, comp);
 
     bool result = false;
     TR_Unification::TR_Mark mark = uni.mark();
@@ -328,8 +328,7 @@ bool TR_Pattern::matches(TR::Node *node, TR_Unification &uni, TR::Compilation *c
     else
         uni.undoTo(mark);
 
-    if (comp->getOption(TR_TraceTreePatternMatching))
-        comp->log()->printf("} result: %s\n", result ? "true" : "false");
+    logprintf(comp->getOption(TR_TraceTreePatternMatching), comp->log(), "} result: %s\n", result ? "true" : "false");
 
     return result;
 }
@@ -337,9 +336,10 @@ bool TR_Pattern::matches(TR::Node *node, TR_Unification &uni, TR::Compilation *c
 bool TR_UnifyPattern::thisMatches(TR::Node *node, TR_Unification &uni, TR::Compilation *comp)
 {
     if (comp->getOption(TR_TraceTreePatternMatching)) {
-        comp->log()->printf("Unify %d with %s in state ", _index, comp->getDebug()->getName(node));
+        OMR::Logger *log = comp->log();
+        log->printf("Unify %d with %s in state ", _index, comp->getDebug()->getName(node));
         uni.dump(comp);
-        comp->log()->println();
+        log->println();
     }
 
     if (uni.node(_index)) {

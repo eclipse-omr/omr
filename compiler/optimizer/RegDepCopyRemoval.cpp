@@ -65,10 +65,9 @@ int32_t TR::RegDepCopyRemoval::perform()
         switch (node->getOpCodeValue()) {
             case TR::BBStart:
                 if (!node->getBlock()->isExtensionOfPreviousBlock()) {
-                    if (trace())
-                        comp()->log()->printf(
-                            "clearing remembered node choices at start of extended block at block_%d\n",
-                            node->getBlock()->getNumber());
+                    logprintf(trace(), comp()->log(),
+                        "clearing remembered node choices at start of extended block at block_%d\n",
+                        node->getBlock()->getNumber());
                     discardAllNodeChoices();
                 }
                 if (node->getNumChildren() > 0)
@@ -162,8 +161,7 @@ void TR::RegDepCopyRemoval::rememberNodeChoice(TR_GlobalRegisterNumber reg, TR::
 
 void TR::RegDepCopyRemoval::processRegDeps(TR::Node *deps, TR::TreeTop *depTT)
 {
-    if (trace())
-        comp()->log()->printf("processing GlRegDeps n%un\n", deps->getGlobalIndex());
+    logprintf(trace(), comp()->log(), "processing GlRegDeps n%un\n", deps->getGlobalIndex());
 
     TR_ASSERT(deps->getOpCodeValue() == TR::GlRegDeps, "processDeps: deps is not GlRegDeps\n");
 
@@ -260,9 +258,8 @@ void TR::RegDepCopyRemoval::selectNodesToReuse(TR::NodeChecklist &usedNodes)
             continue; // can't reuse
 
         // Reuse our previous choice!
-        if (trace())
-            comp()->log()->printf("\t%s: prefer to reuse previous choice n%un\n", registerName(reg),
-                prevChoice.selected->getGlobalIndex());
+        logprintf(trace(), comp()->log(), "\t%s: prefer to reuse previous choice n%un\n", registerName(reg),
+            prevChoice.selected->getGlobalIndex());
 
         TR_ASSERT(!usedNodes.contains(prevChoice.selected), "attempted to reuse the same node more than once\n");
         if (prevChoice.selected == dep.value) {
@@ -276,6 +273,7 @@ void TR::RegDepCopyRemoval::selectNodesToReuse(TR::NodeChecklist &usedNodes)
 
 void TR::RegDepCopyRemoval::selectNodesToCopy(TR::NodeChecklist &usedNodes)
 {
+    OMR::Logger *log = comp()->log();
     for (TR_GlobalRegisterNumber reg = _regBegin; reg < _regEnd; reg++) {
         RegDepInfo &dep = getRegDepInfo(reg);
         if (dep.state != REGDEP_UNDECIDED)
@@ -284,14 +282,12 @@ void TR::RegDepCopyRemoval::selectNodesToCopy(TR::NodeChecklist &usedNodes)
         if (!usedNodes.contains(dep.value)) {
             dep.state = REGDEP_NODE_ORIGINAL;
             usedNodes.add(dep.value);
-            if (trace())
-                comp()->log()->printf("\t%s: prefer to keep the original node n%un\n", registerName(reg),
-                    dep.value->getGlobalIndex());
+            logprintf(trace(), log, "\t%s: prefer to keep the original node n%un\n", registerName(reg),
+                dep.value->getGlobalIndex());
         } else {
             dep.state = REGDEP_NODE_FRESH_COPY;
-            if (trace())
-                comp()->log()->printf("\t%s: prefer to make a new copy of n%un\n", registerName(reg),
-                    dep.value->getGlobalIndex());
+            logprintf(trace(), log, "\t%s: prefer to make a new copy of n%un\n", registerName(reg),
+                dep.value->getGlobalIndex());
         }
     }
 }
@@ -365,9 +361,8 @@ void TR::RegDepCopyRemoval::makeFreshCopy(TR_GlobalRegisterNumber reg)
             newNode->setChild(0, _regDeps);
             newNode->setNumChildren(1);
             curNode->setNumChildren(0);
-            if (trace())
-                comp()->log()->printf("\tsplit fallthrough edge to insert copy, created block_%d\n",
-                    fallthrough->getNumber());
+            logprintf(trace(), comp()->log(), "\tsplit fallthrough edge to insert copy, created block_%d\n",
+                fallthrough->getNumber());
         }
     }
 
@@ -404,8 +399,7 @@ void TR::RegDepCopyRemoval::makeFreshCopy(TR_GlobalRegisterNumber reg)
         choice.regStoreNode->setAndIncChild(0, copyNode);
         dep.value->recursivelyDecReferenceCount();
     }
-    if (trace())
-        comp()->log()->printf("\tcopy is n%un\n", copyNode->getGlobalIndex());
+    logprintf(trace(), comp()->log(), "\tcopy is n%un\n", copyNode->getGlobalIndex());
 
     updateSingleRegDep(reg, copyNode);
 }

@@ -309,8 +309,8 @@ void OMR::ARM::RegisterDependencyGroup::assignRegisters(TR::Instruction *current
                 // this happens when the register was first spilled in main line path then was reverse spilled
                 // and assigned to a real register in OOL path. We protected the backing store when doing
                 // the reverse spill so we could re-spill to the same slot now
-                if (comp->getOption(TR_TraceCG))
-                    comp->log()->prints("\nOOL: Found register spilled in main line and re-assigned inside OOL");
+                logprints(comp->getOption(TR_TraceCG), comp->log(),
+                    "\nOOL: Found register spilled in main line and re-assigned inside OOL");
                 TR::Node *currentNode = currentInstruction->getNode();
                 TR::RealRegister *assignedReg = toRealRegister(virtReg->getAssignedRegister());
                 TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(currentNode,
@@ -352,8 +352,8 @@ void OMR::ARM::RegisterDependencyGroup::assignRegisters(TR::Instruction *current
             TR_RegisterKinds rk = virtReg->getKind();
             int32_t dataSize;
             if (labelInstr->getLabelSymbol()->isStartOfColdInstructionStream() && location) {
-                if (comp->getOption(TR_TraceCG))
-                    comp->log()->printf("\nOOL: Releasing backing storage (%p)\n", location);
+                logprintf(comp->getOption(TR_TraceCG), comp->log(), "\nOOL: Releasing backing storage (%p)\n",
+                    location);
                 if (rk == TR_GPR)
                     dataSize = TR::Compiler->om.sizeofReferenceAddress();
                 else

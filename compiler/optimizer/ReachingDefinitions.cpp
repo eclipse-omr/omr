@@ -64,8 +64,7 @@ TR_ReachingDefinitions::TR_ReachingDefinitions(TR::Compilation *comp, TR::CFG *c
 int32_t TR_ReachingDefinitions::perform()
 {
     LexicalTimer tlex("reachingDefs_perform", comp()->phaseTimer());
-    if (traceRD())
-        comp()->log()->prints("Starting ReachingDefinitions\n");
+    logprints(traceRD(), comp()->log(), "Starting ReachingDefinitions\n");
 
     // Allocate the block info, allowing the bit vectors to be allocated on the fly
     //
@@ -77,8 +76,7 @@ int32_t TR_ReachingDefinitions::perform()
         TR_Structure *rootStructure = _cfg->getStructure();
         performAnalysis(rootStructure, false);
 
-        if (traceRD())
-            comp()->log()->prints("\nEnding ReachingDefinitions\n");
+        logprints(traceRD(), comp()->log(), "\nEnding ReachingDefinitions\n");
 
     } // scope of the stack memory region
 
@@ -119,8 +117,7 @@ void TR_ReachingDefinitions::initializeGenAndKillSetInfo()
             block = node->getBlock();
             blockNum = block->getNumber();
             seenException = false;
-            if (traceRD())
-                log->printf("\nNow generating gen and kill information for block_%d\n", blockNum);
+            logprintf(traceRD(), log, "\nNow generating gen and kill information for block_%d\n", blockNum);
             continue;
         }
 

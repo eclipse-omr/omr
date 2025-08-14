@@ -169,9 +169,8 @@ OMR::X86::RegisterDependencyConditions::RegisterDependencyConditions(TR::Node *n
                 if (prevInstr && prevInstr->getOpCode().isFusableCompare()) {
                     TR::Instruction *prevPrevInstr = prevInstr->getPrev();
                     if (prevPrevInstr) {
-                        if (comp->getOption(TR_TraceCG))
-                            comp->log()->printf("Moving reg reg copy earlier (after %p) in %s\n", prevPrevInstr,
-                                comp->signature());
+                        logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                            "Moving reg reg copy earlier (after %p) in %s\n", prevPrevInstr, comp->signature());
                         placeToAdd = prevPrevInstr;
                     }
                 }

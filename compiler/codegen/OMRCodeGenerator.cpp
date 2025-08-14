@@ -335,10 +335,8 @@ void OMR::CodeGenerator::insertGotoIntoLastBlock(TR::Block *lastBlock)
 
     if (!(node->getOpCode().isGoto() || node->getOpCode().isJumpWithMultipleTargets()
             || node->getOpCode().isReturn())) {
-        if (comp->getOption(TR_TraceCG)) {
-            comp->log()->printf("%s Inserting goto at the end of block_%d\n", SPLIT_WARM_COLD_STRING,
-                lastBlock->getNumber());
-        }
+        logprintf(comp->getOption(TR_TraceCG), comp->log(), "%s Inserting goto at the end of block_%d\n",
+            SPLIT_WARM_COLD_STRING, lastBlock->getNumber());
 
         // Find the block to be branched to
         //
@@ -444,10 +442,12 @@ void OMR::CodeGenerator::prepareLastWarmBlockForCodeSplitting()
     lastWarmBlock->setIsLastWarmBlock();
 
     if (comp->getOption(TR_TraceCG)) {
-        comp->log()->printf("%s Last warm block is block_%d\n", SPLIT_WARM_COLD_STRING, lastWarmBlock->getNumber());
+        OMR::Logger *log = comp->log();
+
+        log->printf("%s Last warm block is block_%d\n", SPLIT_WARM_COLD_STRING, lastWarmBlock->getNumber());
 
         if (numColdBlocks > 0)
-            comp->log()->printf("%s Moved to cold code cache %d out of %d cold blocks (%d%%)\n", SPLIT_WARM_COLD_STRING,
+            log->printf("%s Moved to cold code cache %d out of %d cold blocks (%d%%)\n", SPLIT_WARM_COLD_STRING,
                 numColdBlocks - numNonOutlinedColdBlocks, numColdBlocks,
                 (numColdBlocks - numNonOutlinedColdBlocks) * 100 / numColdBlocks);
     }
@@ -466,7 +466,9 @@ void OMR::CodeGenerator::prepareLastWarmBlockForCodeSplitting()
 
 void OMR::CodeGenerator::lowerTrees()
 {
-    TR::Delimiter d(self()->comp(), self()->comp()->getOption(TR_TraceCG), "LowerTrees");
+    TR::Compilation *comp = self()->comp();
+
+    TR::Delimiter d(comp, comp->getOption(TR_TraceCG), "LowerTrees");
 
     // Go through the trees and lower any nodes that need to be lowered. This
     // involves a call to the VM to replace the trees with other trees.
@@ -487,9 +489,9 @@ void OMR::CodeGenerator::lowerTrees()
     TR::TreeTop *tt;
     TR::Node *node;
 
-    vcount_t visitCount = self()->comp()->incVisitCount();
+    vcount_t visitCount = comp->incVisitCount();
 
-    for (tt = self()->comp()->getStartTree(); tt; tt = tt->getNextTreeTop()) {
+    for (tt = comp->getStartTree(); tt; tt = tt->getNextTreeTop()) {
         node = tt->getNode();
 
         TR_ASSERT(node->getVisitCount() != visitCount, "Code Gen: error in lowering trees");
@@ -550,9 +552,9 @@ void OMR::CodeGenerator::lowerTreesPropagateBlockToNode(TR::Node *node)
 
 void OMR::CodeGenerator::preLowerTrees()
 {
-    int32_t symRefCount = self()->comp()->getSymRefCount();
-    _localsThatAreStored
-        = new (self()->comp()->trHeapMemory()) TR_BitVector(symRefCount, self()->comp()->trMemory(), heapAlloc);
+    TR::Compilation *comp = self()->comp();
+    int32_t symRefCount = comp->getSymRefCount();
+    _localsThatAreStored = new (comp->trHeapMemory()) TR_BitVector(symRefCount, comp->trMemory(), heapAlloc);
     _numLocalsWhenStoreAnalysisWasDone = symRefCount;
 }
 
@@ -659,9 +661,10 @@ void OMR::CodeGenerator::setUpForInstructionSelection()
 void OMR::CodeGenerator::uncommonCallConstNodes()
 {
     TR::Compilation *comp = self()->comp();
-    if (comp->getOption(TR_TraceCG)) {
-        comp->log()->prints("Performing uncommon call constant nodes\n");
-    }
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
+    logprints(trace, log, "Performing uncommon call constant nodes\n");
 
     TR::NodeChecklist checklist(comp);
 
@@ -670,9 +673,7 @@ void OMR::CodeGenerator::uncommonCallConstNodes()
         if (node->getNumChildren() >= 1 && node->getFirstChild()->getOpCode().isFunctionCall()) {
             TR::Node *callNode = node->getFirstChild();
             if (checklist.contains(callNode)) {
-                if (comp->getOption(TR_TraceCG)) {
-                    comp->log()->printf("Skipping previously visited call node %d\n", callNode->getGlobalIndex());
-                }
+                logprintf(trace, log, "Skipping previously visited call node %d\n", callNode->getGlobalIndex());
                 continue;
             }
 
@@ -682,9 +683,7 @@ void OMR::CodeGenerator::uncommonCallConstNodes()
                 TR::Node *paramNode = callNode->getChild(i);
                 if (paramNode->getReferenceCount() > 1 && paramNode->getOpCode().isLoadConst()
                     && !self()->isMaterialized(paramNode)) {
-                    if (self()->comp()->getOption(TR_TraceCG)) {
-                        comp->log()->printf("Uncommon const node %X [n%dn]\n", paramNode, paramNode->getGlobalIndex());
-                    }
+                    logprintf(trace, log, "Uncommon const node %X [n%dn]\n", paramNode, paramNode->getGlobalIndex());
 
                     TR::Node *newConstNode = TR::Node::create(paramNode->getOpCodeValue(), 0);
                     newConstNode->setConstValue(paramNode->getConstValue());
@@ -699,17 +698,15 @@ void OMR::CodeGenerator::uncommonCallConstNodes()
 void OMR::CodeGenerator::doInstructionSelection()
 {
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     // Set default value for pre-prologue size
     //
     self()->setPrePrologueSize(0);
 
-    if (comp->getOption(TR_TraceCG)) {
-        diagnostic("\n<selection>");
-    }
-
-    if (comp->getOption(TR_TraceCG)) {
-        self()->getDebug()->setupToDumpTreesAndInstructions(comp->log(), "Performing Instruction Selection");
+    if (trace) {
+        self()->getDebug()->setupToDumpTreesAndInstructions(log, "Performing Instruction Selection");
     }
 
     self()->beginInstructionSelection();
@@ -761,12 +758,12 @@ void OMR::CodeGenerator::doInstructionSelection()
 
         self()->setLiveLocals(liveLocals);
 
-        if (comp->getOption(TR_TraceCG)) {
+        if (trace) {
             // any evaluator that handles multiple trees will need to dump
             // the others
             self()->getDebug()->saveNodeChecklist(nodeChecklistBeforeDump);
             self()->getDebug()->dumpSingleTreeWithInstrs(comp->log(), tt, NULL, true, false, true, true);
-            comp->log()->prints("\n------------------------------\n");
+            log->prints("\n------------------------------\n");
         }
 
         self()->setCurrentEvaluationTreeTop(tt);
@@ -777,7 +774,7 @@ void OMR::CodeGenerator::doInstructionSelection()
         //
         self()->evaluate(node);
 
-        if (comp->getOption(TR_TraceCG) || debug("traceGRA")) {
+        if (trace || debug("traceGRA")) {
             TR::Instruction *lastInstr = self()->getAppendInstruction();
             tt->setLastInstruction(lastInstr == prevInstr ? 0 : lastInstr);
         }
@@ -833,18 +830,16 @@ void OMR::CodeGenerator::doInstructionSelection()
         }
 
         if (comp->getOption(TR_TraceCG)) {
-            OMR::Logger *log = comp->log();
-
             self()->getDebug()->restoreNodeChecklist(nodeChecklistBeforeDump);
             if (tt == self()->getCurrentEvaluationTreeTop()) {
-                comp->log()->prints("------------------------------\n");
+                log->prints("------------------------------\n");
                 self()->getDebug()->dumpSingleTreeWithInstrs(log, tt, prevInstr->getNext(), true, true, true, false);
             } else {
                 // dump all the trees that the evaluator handled
-                comp->log()->prints("------------------------------");
+                log->prints("------------------------------");
                 for (TR::TreeTop *dumptt = tt; dumptt != self()->getCurrentEvaluationTreeTop()->getNextTreeTop();
                      dumptt = dumptt->getNextTreeTop()) {
-                    comp->log()->println();
+                    log->println();
                     self()->getDebug()->dumpSingleTreeWithInstrs(log, dumptt, NULL, true, false, true, false);
                 }
 
@@ -872,10 +867,6 @@ void OMR::CodeGenerator::doInstructionSelection()
     }
 
     self()->endInstructionSelection();
-
-    if (comp->getOption(TR_TraceCG)) {
-        diagnostic("</selection>\n");
-    }
 }
 
 void OMR::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssign)
@@ -1046,14 +1037,12 @@ bool OMR::CodeGenerator::traceBCDCodeGen() { return self()->comp()->getOption(TR
 
 void OMR::CodeGenerator::traceBCDEntry(char *str, TR::Node *node)
 {
-    if (self()->traceBCDCodeGen())
-        self()->comp()->log()->printf("EVAL: %s 0x%p - start\n", str, node);
+    logprintf(self()->traceBCDCodeGen(), self()->comp()->log(), "EVAL: %s 0x%p - start\n", str, node);
 }
 
 void OMR::CodeGenerator::traceBCDExit(char *str, TR::Node *node)
 {
-    if (self()->traceBCDCodeGen())
-        self()->comp()->log()->printf("EVAL: %s 0x%p - end\n", str, node);
+    logprintf(self()->traceBCDCodeGen(), self()->comp()->log(), "EVAL: %s 0x%p - end\n", str, node);
 }
 
 bool OMR::CodeGenerator::traceSimulateTreeEvaluation()
@@ -1101,10 +1090,11 @@ bool OMR::CodeGenerator::mulDecompositionCostIsJustified(int numOfOperations, ch
     TR::Compilation *comp = self()->comp();
 
     if (comp->getOptions()->trace(OMR::treeSimplification)) {
+        OMR::Logger *log = comp->log();
         if (numOfOperations <= 3)
-            comp->log()->prints("MulDecomp cost is justified\n");
+            log->prints("MulDecomp cost is justified\n");
         else
-            comp->log()->printf("MulDecomp cost is too high. numCycle=%i(max:3)\n", numOfOperations);
+            log->printf("MulDecomp cost is too high. numCycle=%i(max:3)\n", numOfOperations);
     }
     return numOfOperations <= 3 && numOfOperations != 0;
 }
@@ -1145,8 +1135,9 @@ bool OMR::CodeGenerator::isGlobalVRF(TR_GlobalRegisterNumber n)
 
 bool OMR::CodeGenerator::supportsMergingGuards()
 {
-    return !self()->comp()->getOption(TR_DisableOSRGuardMerging) && self()->getSupportsVirtualGuardNOPing()
-        && self()->comp()->performVirtualGuardNOPing() && !self()->comp()->compileRelocatableCode();
+    TR::Compilation *comp = self()->comp();
+    return !comp->getOption(TR_DisableOSRGuardMerging) && self()->getSupportsVirtualGuardNOPing()
+        && comp->performVirtualGuardNOPing() && !comp->compileRelocatableCode();
 }
 
 bool OMR::CodeGenerator::isGlobalFPR(TR_GlobalRegisterNumber n) { return !self()->isGlobalGPR(n); }
@@ -1362,10 +1353,9 @@ TR_StorageOverlapKind OMR::CodeGenerator::storageMayOverlap(TR::Node *node1, siz
 
         return node1Info.mayOverlapWith(&node2Info);
     } else {
-        if (self()->traceBCDCodeGen())
-            self()->comp()->log()->printf(
-                "overlap=true : node1 %s (%p) and/or node2 %s (%p) are not valid load/store/address nodes\n",
-                node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
+        logprintf(self()->traceBCDCodeGen(), self()->comp()->log(),
+            "overlap=true : node1 %s (%p) and/or node2 %s (%p) are not valid load/store/address nodes\n",
+            node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
 
         return TR_MayOverlap;
     }
@@ -1556,13 +1546,7 @@ bool OMR::CodeGenerator::additionsMatch(TR::Node *addr1, TR::Node *addr2, bool a
         int64_t offsetOne
             = addr1ChildOne->getSecondChild()->get64bitIntegralValue() + addr1ChildTwo->get64bitIntegralValue();
         int64_t offsetTwo = addr2ChildTwo->get64bitIntegralValue();
-        /*
-              comp()->log()->printf("adding offsets from %p and %p (%lld + %lld) and %p (%lld) (found base match %s
-           %p)\n", addr1ChildOne->getSecondChild(),addr1ChildTwo,
-                 addr1ChildOne->getSecondChild()->get64bitIntegralValue(),addr1ChildTwo->get64bitIntegralValue(),
-                 addr2ChildTwo,addr2ChildTwo->get64bitIntegralValue(),
-                 addr2ChildOne->getOpCode().getName(),addr2ChildOne);
-        */
+
         if (offsetOne == offsetTwo) {
             foundMatch = true;
         }
@@ -1616,10 +1600,10 @@ bool OMR::CodeGenerator::addressesMatch(TR::Node *addr1, TR::Node *addr2, bool a
             addr1 = addr1->getFirstChild();
             addr2 = addr2->getFirstChild();
 #ifdef INPSECT_SUPPORT
-            if (traceInspect())
-                comp()->log()->printf("\t\tfound possibly matching additions : update addr1 to %s (%p), addr2 to %s "
-                                      "(%p) and continue matching\n",
-                    addr1->getOpCode().getName(), addr1, addr2->getOpCode().getName(), addr2);
+            logprintf(traceInspect(), comp()->log(),
+                "\t\tfound possibly matching additions : update addr1 to %s (%p), addr2 to %s (%p) and continue "
+                "matching\n",
+                addr1->getOpCode().getName(), addr1, addr2->getOpCode().getName(), addr2);
 #endif
         }
 
@@ -2353,12 +2337,12 @@ TR::Instruction *OMR::CodeGenerator::getVirtualGuardForPatching(TR::Instruction 
         }
     }
     if (toReturn != vgnop) {
-        TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-            TR::DebugCounter::debugCounterName(self()->comp(), "guardMerge/(%s)", self()->comp()->signature()));
-        if (self()->comp()->getOption(TR_TraceCG))
-            self()->comp()->log()->printf(
-                "vgnop instruction [%p] begins scanning for patch instructions for mergeable guard [%p]\n", vgnop,
-                toReturn);
+        TR::Compilation *comp = self()->comp();
+        TR::DebugCounter::incStaticDebugCounter(comp,
+            TR::DebugCounter::debugCounterName(comp, "guardMerge/(%s)", comp->signature()));
+        logprintf(comp->getOption(TR_TraceCG), comp->log(),
+            "vgnop instruction [%p] begins scanning for patch instructions for mergeable guard [%p]\n", vgnop,
+            toReturn);
     }
     return toReturn;
 }
@@ -3079,6 +3063,9 @@ uint32_t OMR::CodeGenerator::getCodeSnippetsSize()
 
 void OMR::CodeGenerator::getMethodStats(MethodStats &methodStats)
 {
+    TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+
     auto &codeSize = methodStats.codeSize;
     auto &warmBlocks = methodStats.warmBlocks;
     auto &coldBlocks = methodStats.coldBlocks;
@@ -3152,14 +3139,13 @@ void OMR::CodeGenerator::getMethodStats(MethodStats &methodStats)
     unaccounted = codeSize - allBlocks - sizeBeforeFirstBlock - outOfLine - snippets;
     prologue = sizeBeforeFirstBlock;
 
-    if (self()->comp()->getOption(TR_TraceCG)) {
+    if (comp->getOption(TR_TraceCG)) {
         uint32_t known_cold_blocks = 0;
         for (int i = 0; i < NUMBER_BLOCK_FREQUENCIES; i++) {
-            self()->comp()->log()->printf("FOOTPRINT: COLD BLOCK TYPE: %s = %d\n", OMR::CFG::blockFrequencyNames[i],
+            log->printf("FOOTPRINT: COLD BLOCK TYPE: %s = %d\n", OMR::CFG::blockFrequencyNames[i],
                 cold_frequence_size[i]);
-
             known_cold_blocks += cold_frequence_size[i];
         }
-        self()->comp()->log()->printf("FOOTPRINT: COLD BLOCK TYPE: OTHER = %d\n", coldBlocks - known_cold_blocks);
+        log->printf("FOOTPRINT: COLD BLOCK TYPE: OTHER = %d\n", coldBlocks - known_cold_blocks);
     }
 }

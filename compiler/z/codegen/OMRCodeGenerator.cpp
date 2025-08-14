@@ -221,8 +221,8 @@ void OMR::Z::CodeGenerator::checkIsUnneededAloadi(TR::Node *parent, TR::Node *no
                 }
             }
         } else if (parent->getOpCode().isNullCheck()) {
-            if (self()->comp()->getOption(TR_TraceCG))
-                self()->comp()->log()->printf("parent %p appears to be a nullcheck over node: %p\n", parent, node);
+            logprintf(self()->comp()->getOption(TR_TraceCG), self()->comp()->log(),
+                "parent %p appears to be a nullcheck over node: %p\n", parent, node);
         } else if (node->getOpCodeValue() == TR::aloadi
                 && !(node->isClassPointerConstant() || node->isMethodPointerConstant())
             || parent->getOpCode().isNullCheck()) {
@@ -248,7 +248,6 @@ void OMR::Z::CodeGenerator::lowerTreeIfNeeded(TR::Node *node, int32_t childNumbe
 {
     OMR::CodeGenerator::lowerTreeIfNeeded(node, childNumberOfNode, parent, tt);
 
-    // Z
     if (self()->comp()->target().cpu.isZ() && (node->getOpCode().isLoadVar() || node->getOpCode().isStore())
         && node->getOpCode().isIndirect()) {
         TR::Node *add1 = NULL;
@@ -324,9 +323,6 @@ void OMR::Z::CodeGenerator::lowerTreeIfNeeded(TR::Node *node, int32_t childNumbe
         if (add1 && add2 && const1
             && performTransformation(self()->comp(), "%sBase/index/displacement form addressing prep for node [%p]\n",
                 OPT_DETAILS, node)) {
-            // comp()->log()->printf("&&& Found pattern root=%llx add1=%llx add2=%llx const1=%llx sub=%llx
-            // const2=%llx\n", node, add1, add2, const1, sub, const2);
-
             intptr_t offset = 0;
             if (self()->comp()->target().is64Bit()) {
                 offset = const1->getLongInt();
@@ -873,6 +869,7 @@ bool OMR::Z::CodeGenerator::mulDecompositionCostIsJustified(int32_t numOfOperati
     char operationType[], int64_t value)
 {
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
     bool trace = comp->getOptions()->trace(OMR::treeSimplification);
 
     if (comp->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z196)) {
@@ -883,9 +880,9 @@ bool OMR::Z::CodeGenerator::mulDecompositionCostIsJustified(int32_t numOfOperati
         }
         if (trace)
             if (numCycles <= 3)
-                comp->log()->prints("MulDecomp cost is justified\n");
+                log->prints("MulDecomp cost is justified\n");
             else
-                comp->log()->printf("MulDecomp cost is too high. numCycle=%i(max:3)\n", numCycles);
+                log->printf("MulDecomp cost is too high. numCycle=%i(max:3)\n", numCycles);
         return numCycles <= 3;
     } else {
         int32_t numCycles = 0;
@@ -895,9 +892,9 @@ bool OMR::Z::CodeGenerator::mulDecompositionCostIsJustified(int32_t numOfOperati
         }
         if (trace)
             if (numCycles <= 9)
-                comp->log()->prints("MulDecomp cost is justified\n");
+                log->prints("MulDecomp cost is justified\n");
             else
-                comp->log()->printf("MulDecomp cost is too high. numCycle=%i(max:10)\n", numCycles);
+                log->printf("MulDecomp cost is too high. numCycle=%i(max:10)\n", numCycles);
         return numCycles <= 9;
     }
 }
@@ -2081,6 +2078,8 @@ TR::RegisterPair *OMR::Z::CodeGenerator::allocateConsecutiveRegisterPair(TR::Reg
 void OMR::Z::CodeGenerator::processUnusedNodeDuringEvaluation(TR::Node *node)
 {
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = self()->traceBCDCodeGen();
 
     // to ensure that if the node is already evaluated we don't call processUnusedStorageRef twice
     bool alreadyProcessedUnusedStorageRef = false;
@@ -2093,13 +2092,13 @@ void OMR::Z::CodeGenerator::processUnusedNodeDuringEvaluation(TR::Node *node)
         if (node->getOpaquePseudoRegister()) {
             TR_OpaquePseudoRegister *reg = node->getOpaquePseudoRegister();
             TR_StorageReference *ref = reg->getStorageReference();
-            if (self()->traceBCDCodeGen())
-                comp->log()->printf("\tprocessUnusedNodeDuringEvaluation : bcd/aggr const/ixload %s (%p) reg %s - "
-                                    "handle extra ref to addr child (ref is node based %s - %s %p)\n",
-                    node->getOpCode().getName(), node, self()->getDebug()->getName(reg),
-                    ref && ref->isNodeBased() ? "yes" : "no",
-                    ref->isNodeBased() ? ref->getNode()->getOpCode().getName() : "",
-                    ref->isNodeBased() ? ref->getNode() : NULL);
+            logprintf(trace, log,
+                "\tprocessUnusedNodeDuringEvaluation : bcd/aggr const/ixload %s (%p) reg %s - handle extra ref to addr "
+                "child (ref is node based %s - %s %p)\n",
+                node->getOpCode().getName(), node, self()->getDebug()->getName(reg),
+                ref && ref->isNodeBased() ? "yes" : "no",
+                ref->isNodeBased() ? ref->getNode()->getOpCode().getName() : "",
+                ref->isNodeBased() ? ref->getNode() : NULL);
             self()->processUnusedStorageRef(ref);
             alreadyProcessedUnusedStorageRef = true;
         }
@@ -2121,14 +2120,13 @@ void OMR::Z::CodeGenerator::processUnusedNodeDuringEvaluation(TR::Node *node)
             if (node->getOpaquePseudoRegister() && !alreadyProcessedUnusedStorageRef) {
                 TR_OpaquePseudoRegister *reg = node->getOpaquePseudoRegister();
                 TR_StorageReference *ref = reg->getStorageReference();
-                if (self()->traceBCDCodeGen())
-                    comp->log()->printf("\tprocessUnusedNodeDuringEvaluation : bcd/aggr const/ixload %s (%p) reg %s - "
-                                        "handle extra ref to addr child (ref is node based %s - %s %p)\n",
-                        node->getOpCode().getName(), node,
-                        self()->getDebug()->getName(static_cast<TR::Register *>(reg)),
-                        ref && ref->isNodeBased() ? "yes" : "no",
-                        ref->isNodeBased() ? ref->getNode()->getOpCode().getName() : "",
-                        ref->isNodeBased() ? ref->getNode() : NULL);
+                logprintf(trace, log,
+                    "\tprocessUnusedNodeDuringEvaluation : bcd/aggr const/ixload %s (%p) reg %s - handle extra ref to "
+                    "addr child (ref is node based %s - %s %p)\n",
+                    node->getOpCode().getName(), node, self()->getDebug()->getName(static_cast<TR::Register *>(reg)),
+                    ref && ref->isNodeBased() ? "yes" : "no",
+                    ref->isNodeBased() ? ref->getNode()->getOpCode().getName() : "",
+                    ref->isNodeBased() ? ref->getNode() : NULL);
                 self()->processUnusedStorageRef(ref);
             }
 #endif
@@ -2306,7 +2304,6 @@ int32_t OMR::Z::CodeGenerator::getMaximumNumberOfAssignableGPRs()
 
     maxGPRs = 12 + (self()->isLiteralPoolOnDemandOn() ? 1 : 0);
 
-    // comp()->log()->printf(" getMaximumNumberOfAssignableGPRs: %d\n",  maxGPRs);
     return maxGPRs;
 }
 
@@ -2532,6 +2529,9 @@ TR_OpaquePseudoRegister *OMR::Z::CodeGenerator::ssrClobberEvaluate(TR::Node *nod
 {
     TR::CodeGenerator *cg = self();
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = self()->traceBCDCodeGen();
+
     bool isBCD = node->getType().isBCD();
     TR_OpaquePseudoRegister *srcRegister = cg->evaluateOPRNode(node);
     TR_PseudoRegister *bcdSrcRegister = NULL;
@@ -2543,43 +2543,35 @@ TR_OpaquePseudoRegister *OMR::Z::CodeGenerator::ssrClobberEvaluate(TR::Node *nod
 
     TR_StorageReference *srcStorageReference = srcRegister->getStorageReference();
 
-    if (self()->traceBCDCodeGen())
-        comp->log()->printf(
-            "\tneedsClobberEval : %s (%p), storageRef #%d (%p) (isBCD = %s, isReadOnlyTemp = %s, tempRefCount = %d)\n",
-            node->getOpCode().getName(), node, srcStorageReference->getReferenceNumber(),
-            srcStorageReference->getSymbol(), isBCD ? "yes" : "no",
-            srcStorageReference->isReadOnlyTemporary() ? "yes" : "no",
-            srcStorageReference->getTemporaryReferenceCount());
+    logprintf(trace, log,
+        "\tneedsClobberEval : %s (%p), storageRef #%d (%p) (isBCD = %s, isReadOnlyTemp = %s, tempRefCount = %d)\n",
+        node->getOpCode().getName(), node, srcStorageReference->getReferenceNumber(), srcStorageReference->getSymbol(),
+        isBCD ? "yes" : "no", srcStorageReference->isReadOnlyTemporary() ? "yes" : "no",
+        srcStorageReference->getTemporaryReferenceCount());
 
     bool needsClobberDueToRefCount = false;
     bool needsClobberDueToRegCount = false;
     bool needsClobberDueToReuse = false;
     if (node->getReferenceCount() > 1) {
         needsClobberDueToRefCount = true;
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\t\t-->needsClobber=true due to node->refCount %d\n", node->getReferenceCount());
+        logprintf(trace, log, "\t\t-->needsClobber=true due to node->refCount %d\n", node->getReferenceCount());
     } else if (srcStorageReference->getOwningRegisterCount() > 1) {
         needsClobberDueToRegCount = true;
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\t\t-->needsClobber=true due to srcStorageReference #%d (%s) owningRegCount %d\n",
-                srcStorageReference->getReferenceNumber(),
-                self()->getDebug()->getName(srcStorageReference->getSymbol()),
-                srcStorageReference->getOwningRegisterCount());
+        logprintf(trace, log, "\t\t-->needsClobber=true due to srcStorageReference #%d (%s) owningRegCount %d\n",
+            srcStorageReference->getReferenceNumber(), self()->getDebug()->getName(srcStorageReference->getSymbol()),
+            srcStorageReference->getOwningRegisterCount());
     } else if (srcStorageReference->isReadOnlyTemporary() && srcStorageReference->getTemporaryReferenceCount() > 1) {
         needsClobberDueToReuse = true;
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\t\t-->needsClobber=true due to reuse of readOnlyTemp %s with refCount %d > 1\n",
-                self()->getDebug()->getName(srcStorageReference->getSymbol()),
-                srcStorageReference->getTemporaryReferenceCount());
+        logprintf(trace, log, "\t\t-->needsClobber=true due to reuse of readOnlyTemp %s with refCount %d > 1\n",
+            self()->getDebug()->getName(srcStorageReference->getSymbol()),
+            srcStorageReference->getTemporaryReferenceCount());
         // all these needsClobberDueToReuse cases should now be caught by the more general getOwningRegisterCount() > 1
         // above
         TR_ASSERT(false, "needsClobberDueToReuse should not be true for node %p\n", node);
     } else {
-        if (self()->traceBCDCodeGen()) {
-            comp->log()->printf("\t\t-->needsClobber=false, srcStorageReference ref #%d (%s) owningRegCount=%d)\n",
-                srcStorageReference->getReferenceNumber(), comp->getDebug()->getName(srcStorageReference->getSymbol()),
-                srcStorageReference->getOwningRegisterCount());
-        }
+        logprintf(trace, log, "\t\t-->needsClobber=false, srcStorageReference ref #%d (%s) owningRegCount=%d)\n",
+            srcStorageReference->getReferenceNumber(), comp->getDebug()->getName(srcStorageReference->getSymbol()),
+            srcStorageReference->getOwningRegisterCount());
     }
 
     if (needsClobberDueToRefCount || needsClobberDueToRegCount || needsClobberDueToReuse) {
@@ -2588,23 +2580,21 @@ TR_OpaquePseudoRegister *OMR::Z::CodeGenerator::ssrClobberEvaluate(TR::Node *nod
         // wrong
         TR_ASSERT(srcStorageReference->isTemporaryBased() || srcStorageReference->isNodeBasedHint(),
             "expecting the srcStorageReference to be either a temporary or a node based hint in bcdClobberEvaluate\n");
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("ssrClobberEvaluate: node %s (%p) with srcReg %s (srcRegSize %d, srcReg->validSymSize "
-                                "%d, srcReg->liveSymSize %d) and srcStorageReference #%d with %s (symSize %d)\n",
-                node->getOpCode().getName(), node, self()->getDebug()->getName(srcRegister), srcRegister->getSize(),
-                srcRegister->getValidSymbolSize(), srcRegister->getLiveSymbolSize(),
-                srcStorageReference->getReferenceNumber(),
-                self()->getDebug()->getName(srcStorageReference->getSymbol()), srcStorageReference->getSymbolSize());
+        logprintf(trace, log,
+            "ssrClobberEvaluate: node %s (%p) with srcReg %s (srcRegSize %d, srcReg->validSymSize %d, "
+            "srcReg->liveSymSize %d) and srcStorageReference #%d with %s (symSize %d)\n",
+            node->getOpCode().getName(), node, self()->getDebug()->getName(srcRegister), srcRegister->getSize(),
+            srcRegister->getValidSymbolSize(), srcRegister->getLiveSymbolSize(),
+            srcStorageReference->getReferenceNumber(), self()->getDebug()->getName(srcStorageReference->getSymbol()),
+            srcStorageReference->getSymbolSize());
 
         int32_t byteLength = srcRegister->getValidSymbolSize();
         TR_StorageReference *copyStorageReference
             = TR_StorageReference::createTemporaryBasedStorageReference(byteLength, comp);
         copyStorageReference->setTemporaryReferenceCount(1); // so the temp will be alive for the MVC below
 
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\tgot copyStorageReference #%d with %s for clobberEvaluate\n",
-                copyStorageReference->getReferenceNumber(),
-                self()->getDebug()->getName(copyStorageReference->getSymbol()));
+        logprintf(trace, log, "\tgot copyStorageReference #%d with %s for clobberEvaluate\n",
+            copyStorageReference->getReferenceNumber(), self()->getDebug()->getName(copyStorageReference->getSymbol()));
 
         if (isBCD) {
             if (sourceMR == NULL)
@@ -2624,17 +2614,15 @@ TR_OpaquePseudoRegister *OMR::Z::CodeGenerator::ssrClobberEvaluate(TR::Node *nod
             // field (via copyStorageReference) will adjust based on the owning registers' ignoredBytes/deadBytes
             // setting
             int32_t regIgnoredBytes = srcRegister->getRightAlignedIgnoredBytes();
-            if (self()->traceBCDCodeGen())
-                comp->log()->printf(
-                    "\tremove %d ignoredBytes from sourceMR->_offset (%d->%d) for readOnlyTemp #%d (%s)\n",
-                    regIgnoredBytes, sourceMR->getOffset(), sourceMR->getOffset() + regIgnoredBytes,
-                    srcStorageReference->getReferenceNumber(),
-                    self()->getDebug()->getName(srcStorageReference->getSymbol()));
+            logprintf(trace, log,
+                "\tremove %d ignoredBytes from sourceMR->_offset (%d->%d) for readOnlyTemp #%d (%s)\n", regIgnoredBytes,
+                sourceMR->getOffset(), sourceMR->getOffset() + regIgnoredBytes,
+                srcStorageReference->getReferenceNumber(),
+                self()->getDebug()->getName(srcStorageReference->getSymbol()));
             sourceMR->addToOffset(regIgnoredBytes);
         }
 
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\tgen MVC or memcpy sequence for copy with size %d\n", byteLength);
+        logprintf(trace, log, "\tgen MVC or memcpy sequence for copy with size %d\n", byteLength);
 
         TR::MemoryReference *copyMR = NULL;
         if (isBCD)
@@ -2656,18 +2644,17 @@ TR_OpaquePseudoRegister *OMR::Z::CodeGenerator::ssrClobberEvaluate(TR::Node *nod
         int32_t digitsToClear
             = srcRegister->getLeftAlignedZeroDigits() > 0 ? srcRegister->getDigitsToClear(0, digitsInSrc) : digitsInSrc;
         int32_t alreadyClearedDigits = digitsInSrc - digitsToClear;
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\tupdate srcRegister %s with copy ref #%d (%s)\n",
-                self()->getDebug()->getName(srcRegister), copyStorageReference->getReferenceNumber(),
-                self()->getDebug()->getName(copyStorageReference->getSymbol()));
+        logprintf(trace, log, "\tupdate srcRegister %s with copy ref #%d (%s)\n",
+            self()->getDebug()->getName(srcRegister), copyStorageReference->getReferenceNumber(),
+            self()->getDebug()->getName(copyStorageReference->getSymbol()));
         srcRegister->setStorageReference(copyStorageReference,
             node); // clears leftAlignedZeroDigits so query getDigitsToClear above
-        if (self()->traceBCDCodeGen() && alreadyClearedDigits) {
-            comp->log()->printf("\tsrcRegister %s had leftAlignedZeroDigits %d on original ref #%d\n",
+        if (trace && alreadyClearedDigits) {
+            log->printf("\tsrcRegister %s had leftAlignedZeroDigits %d on original ref #%d\n",
                 self()->getDebug()->getName(srcRegister), srcRegister->getLeftAlignedZeroDigits(),
                 srcStorageReference->getReferenceNumber());
-            comp->log()->printf("\t\t* setting surviving leftAlignedZeroDigits %d on srcRegister %s with new copy ref "
-                                "#%d (digitsInSrc - digitsToClear = %d - %d = %d)\n",
+            log->printf("\t\t* setting surviving leftAlignedZeroDigits %d on srcRegister %s with new copy ref #%d "
+                        "(digitsInSrc - digitsToClear = %d - %d = %d)\n",
                 alreadyClearedDigits, self()->getDebug()->getName(srcRegister),
                 copyStorageReference->getReferenceNumber(), digitsInSrc, digitsToClear, alreadyClearedDigits);
         }
@@ -2732,25 +2719,23 @@ TR_OpaquePseudoRegister *OMR::Z::CodeGenerator::ssrClobberEvaluate(TR::Node *nod
                         // if the update is done then the last pdModPrecA ref is now using VTS_3 and the final
                         // decReferenceCount of the symA aload is never done (live reg alive bug)
                         //
-                        if (self()->traceBCDCodeGen())
-                            comp->log()->printf("\ty^y : skip update on reg %s node %s (%p), storageRef has already "
-                                                "changed -- was #%d (%s), now #%d (%s)\n",
-                                self()->getDebug()->getName(listReg), listNode->getOpCode().getName(), listNode,
-                                srcStorageReference->getReferenceNumber(),
-                                self()->getDebug()->getName(srcStorageReference->getSymbol()),
-                                listReg->getStorageReference()->getReferenceNumber(),
-                                self()->getDebug()->getName(listReg->getStorageReference()->getSymbol()));
+                        logprintf(trace, log,
+                            "\ty^y : skip update on reg %s node %s (%p), storageRef has already changed -- was #%d "
+                            "(%s), now #%d (%s)\n",
+                            self()->getDebug()->getName(listReg), listNode->getOpCode().getName(), listNode,
+                            srcStorageReference->getReferenceNumber(),
+                            self()->getDebug()->getName(srcStorageReference->getSymbol()),
+                            listReg->getStorageReference()->getReferenceNumber(),
+                            self()->getDebug()->getName(listReg->getStorageReference()->getSymbol()));
                     } else {
-                        if (self()->traceBCDCodeGen())
-                            comp->log()->printf(
-                                "\ty^y : update reg %s with ref #%d (%s) on node %s (%p) refCount %d from "
-                                "_nodesToUpdateOnClobber with copy ref #%d (%s) (skip if refCount == 0)\n",
-                                self()->getDebug()->getName(listReg),
-                                listReg->getStorageReference()->getReferenceNumber(),
-                                self()->getDebug()->getName(listReg->getStorageReference()->getSymbol()),
-                                listNode->getOpCode().getName(), listNode, listNode->getReferenceCount(),
-                                copyStorageReference->getReferenceNumber(),
-                                self()->getDebug()->getName(copyStorageReference->getSymbol()));
+                        logprintf(trace, log,
+                            "\ty^y : update reg %s with ref #%d (%s) on node %s (%p) refCount %d from "
+                            "_nodesToUpdateOnClobber with copy ref #%d (%s) (skip if refCount == 0)\n",
+                            self()->getDebug()->getName(listReg), listReg->getStorageReference()->getReferenceNumber(),
+                            self()->getDebug()->getName(listReg->getStorageReference()->getSymbol()),
+                            listNode->getOpCode().getName(), listNode, listNode->getReferenceCount(),
+                            copyStorageReference->getReferenceNumber(),
+                            self()->getDebug()->getName(copyStorageReference->getSymbol()));
                         if (listNode->getReferenceCount() > 0)
                             listReg->setStorageReference(copyStorageReference,
                                 listNode); // TODO: safe to transfer alreadyClearedDigits in this case too?
@@ -3948,9 +3933,6 @@ void OMR::Z::CodeGenerator::removeUnavailableRegisters(TR::RegisterCandidate *rc
         TR::Block *b = blocks[blockNumber];
         TR::Node *lastTreeTopNode = b->getLastRealTreeTop()->getNode();
 
-        //      comp()->log()->printf("For register candidate %d, considering block %d.  Looking at node
-        //      %p\n",rc->getSymbolReference()->getReferenceNumber(),blockNumber,lastTreeTopNode);
-
         if (lastTreeTopNode->getNumChildren() > 0 && lastTreeTopNode->getFirstChild()->getOpCode().isFunctionCall()
             && lastTreeTopNode->getFirstChild()
                    ->getOpCode()
@@ -3962,15 +3944,7 @@ void OMR::Z::CodeGenerator::removeUnavailableRegisters(TR::RegisterCandidate *rc
 
             TR_BitVector *volatileRegs = self()->getGlobalRegisters(TR_volatileSpill, callLinkage);
 
-            //         comp()->log()->prints("volatileRegs = \n");
-            //         volatileRegs->print(comp());
-            //         comp()->log()->prints("availableRegs before = \n");
-            //         availableRegisters.print(comp());
-
             availableRegisters -= *volatileRegs;
-
-            //         comp()->log()->prints("availableRegs after = \n");
-            //         availableRegisters.print(comp());
         }
     }
 }
@@ -4052,6 +4026,8 @@ bool OMR::Z::CodeGenerator::usesImplicit64BitGPRs(TR::Node *node) { return false
 bool OMR::Z::CodeGenerator::nodeRequiresATemporary(TR::Node *node)
 {
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = self()->traceBCDCodeGen();
 
 #ifdef J9_PROJECT_SPECIFIC
     if (node->getOpCode().isPackedRightShift()) {
@@ -4064,30 +4040,26 @@ bool OMR::Z::CodeGenerator::nodeRequiresATemporary(TR::Node *node)
         int32_t shiftAmount = -node->getDecimalAdjust();
         int32_t roundAmount = node->getDecimalRound();
         if (roundAmount == 0 && shiftAmount != 0 && ((shiftAmount & 0x1) == 0)) {
-            if (self()->traceBCDCodeGen())
-                comp->log()->printf("\tnodeRequiresATemporary = true for packedShiftRight %s (%p)\n",
-                    node->getOpCode().getName(), node);
+            logprintf(trace, log, "\tnodeRequiresATemporary = true for packedShiftRight %s (%p)\n",
+                node->getOpCode().getName(), node);
             return true;
         }
     } else if (node->getOpCodeValue() == TR::pddiv) {
         // The DP instruction places the quotient left aligned in the result field so a temporary must be used.
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\tnodeRequiresATemporary = true for packedDivide %s (%p)\n",
-                node->getOpCode().getName(), node);
+        logprintf(trace, log, "\tnodeRequiresATemporary = true for packedDivide %s (%p)\n", node->getOpCode().getName(),
+            node);
         return true;
     } else if (node->getOpCode().isConversion() && node->getType().isAnyZoned()
         && node->getFirstChild()->getType().isZonedSeparateSign()) {
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\tnodeRequiresATemporary = true for zonedSepToZoned %s (%p)\n",
-                node->getOpCode().getName(), node);
+        logprintf(trace, log, "\tnodeRequiresATemporary = true for zonedSepToZoned %s (%p)\n",
+            node->getOpCode().getName(), node);
         return true;
     } else
 #endif
         if (TR::MemoryReference::typeNeedsAlignment(node) && node->getType().isAggregate()
             && node->getOpCode().isRightShift()) {
-        if (self()->traceBCDCodeGen())
-            comp->log()->printf("\tnodeRequiresATemporary = true for aggrShiftRight %s (%p)\n",
-                node->getOpCode().getName(), node);
+        logprintf(trace, log, "\tnodeRequiresATemporary = true for aggrShiftRight %s (%p)\n",
+            node->getOpCode().getName(), node);
         return true;
     }
     return false;
@@ -4500,9 +4472,8 @@ bool OMR::Z::CodeGenerator::directLoadAddressMatch(TR::Node *load1, TR::Node *lo
 bool OMR::Z::CodeGenerator::isOutOf32BitPositiveRange(int64_t value, bool trace)
 {
     if (value < 0 || value > INT_MAX) {
-        if (trace)
-            self()->comp()->log()->printf("\tisOutOf32BitPositiveRange = true : value %lld < 0 (or > INT_MAX)\n",
-                value);
+        logprintf(trace, self()->comp()->log(), "\tisOutOf32BitPositiveRange = true : value %lld < 0 (or > INT_MAX)\n",
+            value);
         return true;
     }
     return false;
@@ -4561,25 +4532,24 @@ int32_t OMR::Z::CodeGenerator::getMaskSize(int32_t leftMostNibble, int32_t nibbl
 // The fix for both of these problems is to disallow a hint to break the evaluation relationship/dependency between the
 // value child and address child
 
-// Z
 bool OMR::Z::CodeGenerator::possiblyConflictingNode(TR::Node *node)
 {
+    OMR::Logger *log = self()->comp()->log();
+    bool trace = self()->traceBCDCodeGen();
+
     bool possiblyConflicting = false;
 #ifdef J9_PROJECT_SPECIFIC
     if (node->getReferenceCount() > 1) {
         if (node->getRegister() == NULL && node->getOpCode().canHaveStorageReferenceHint()) {
-            if (self()->traceBCDCodeGen())
-                self()->comp()->log()->printf(
-                    "\t\t\tpossiblyConflicting=true %s (%p) : reg==NULL and storageRefHint_Case, refCount %d\n",
-                    node->getOpCode().getName(), node, node->getReferenceCount());
+            logprintf(trace, log,
+                "\t\t\tpossiblyConflicting=true %s (%p) : reg==NULL and storageRefHint_Case, refCount %d\n",
+                node->getOpCode().getName(), node, node->getReferenceCount());
             possiblyConflicting = true;
         } else if (node->getType().isBCD()) {
-            if (self()->traceBCDCodeGen())
-                self()->comp()->log()->printf(
-                    "\t\t\tpossiblyConflicting=true %s (%p) : BCDOrAggrType_Case, reg=%s, refCount %d\n",
-                    node->getOpCode().getName(), node,
-                    node->getRegister() ? self()->getDebug()->getName(node->getRegister()) : "NULL",
-                    node->getReferenceCount());
+            logprintf(trace, log, "\t\t\tpossiblyConflicting=true %s (%p) : BCDOrAggrType_Case, reg=%s, refCount %d\n",
+                node->getOpCode().getName(), node,
+                node->getRegister() ? self()->getDebug()->getName(node->getRegister()) : "NULL",
+                node->getReferenceCount());
             possiblyConflicting = true;
         }
     }
@@ -4587,7 +4557,6 @@ bool OMR::Z::CodeGenerator::possiblyConflictingNode(TR::Node *node)
     return possiblyConflicting;
 }
 
-// Z
 bool OMR::Z::CodeGenerator::foundConflictingNode(TR::Node *node, TR::list<TR::Node *> *conflictingAddressNodes)
 {
     bool foundConflicting = false;
@@ -4599,18 +4568,18 @@ bool OMR::Z::CodeGenerator::foundConflictingNode(TR::Node *node, TR::list<TR::No
     return foundConflicting;
 }
 
-// Z
 void OMR::Z::CodeGenerator::collectConflictingAddressNodes(TR::Node *parent, TR::Node *node,
     TR::list<TR::Node *> *conflictingAddressNodes)
 {
-    if (self()->traceBCDCodeGen())
-        self()->comp()->log()->printf("\t\texamining node %s (%p) : register %s\n", node->getOpCode().getName(), node,
-            node->getRegister() ? self()->getDebug()->getName(node->getRegister()) : "NULL");
+    OMR::Logger *log = self()->comp()->log();
+    bool trace = self()->traceBCDCodeGen();
+
+    logprintf(trace, log, "\t\texamining node %s (%p) : register %s\n", node->getOpCode().getName(), node,
+        node->getRegister() ? self()->getDebug()->getName(node->getRegister()) : "NULL");
 
     if (self()->possiblyConflictingNode(node)) {
-        if (self()->traceBCDCodeGen())
-            self()->comp()->log()->printf("\t\t\tadd %s (%p) to conflicting nodes list (refCount %d)\n",
-                node->getOpCode().getName(), node, node->getReferenceCount());
+        logprintf(trace, log, "\t\t\tadd %s (%p) to conflicting nodes list (refCount %d)\n",
+            node->getOpCode().getName(), node, node->getReferenceCount());
         conflictingAddressNodes->push_front(node);
     }
 
@@ -4625,6 +4594,8 @@ void OMR::Z::CodeGenerator::collectConflictingAddressNodes(TR::Node *parent, TR:
 bool OMR::Z::CodeGenerator::loadOrStoreAddressesMatch(TR::Node *node1, TR::Node *node2)
 {
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     TR_ASSERT(node1->getOpCode().isLoadVar() || node1->getOpCode().isStore(),
         "node1 %s (%p) should be a loadVar or a store\n", node1->getOpCode().getName(), node1);
@@ -4634,11 +4605,11 @@ bool OMR::Z::CodeGenerator::loadOrStoreAddressesMatch(TR::Node *node1, TR::Node 
     bool foundMatch = false;
 
     if (node1->getSize() != node2->getSize()) {
-        if (comp->getOption(TR_TraceCG))
-            comp->log()->printf("\t\tloadOrStoreAddressesMatch = false (sizes differ) : node1 %s (%p) size = %d and "
-                                "node2 %s (%p) size = %d\n",
-                node1->getOpCode().getName(), node1, node1->getSize(), node2->getOpCode().getName(), node2,
-                node2->getSize());
+        logprintf(trace, log,
+            "\t\tloadOrStoreAddressesMatch = false (sizes differ) : node1 %s (%p) size = %d and node2 %s (%p) size = "
+            "%d\n",
+            node1->getOpCode().getName(), node1, node1->getSize(), node2->getOpCode().getName(), node2,
+            node2->getSize());
         return false;
     }
 
@@ -4655,9 +4626,10 @@ bool OMR::Z::CodeGenerator::loadOrStoreAddressesMatch(TR::Node *node1, TR::Node 
             foundMatch = true;
         }
     }
-    if (comp->getOption(TR_TraceCG))
-        comp->log()->printf("\t\tloadOrStoreAddressesMatch = %s : node1 %s (%p) and node2 %s (%p)\n",
-            foundMatch ? "true" : "false", node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
+
+    logprintf(trace, log, "\t\tloadOrStoreAddressesMatch = %s : node1 %s (%p) and node2 %s (%p)\n",
+        foundMatch ? "true" : "false", node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
+
     return foundMatch;
 }
 
@@ -4771,8 +4743,6 @@ TR_StorageDestructiveOverlapInfo OMR::Z::CodeGenerator::getStorageDestructiveOve
     return overlapInfo;
 }
 
-// Z
-//
 // Recursively set the futureUseCount for add and sub nodes
 void setIntegralAddSubFutureUseCount(TR::Node *node, vcount_t visitCount)
 {
@@ -4793,8 +4763,6 @@ void setIntegralAddSubFutureUseCount(TR::Node *node, vcount_t visitCount)
     }
 }
 
-// Z
-//
 // Flag any add or sub nodes that could be candidates for a branch on count operation
 // Matching a tree like the following:
 // ificmpgt
@@ -4892,7 +4860,6 @@ void OMR::Z::CodeGenerator::setBranchOnCountFlag(TR::Node *node, vcount_t visitC
     addNode->setIsUseBranchOnCount(true);
 }
 
-// Z only
 bool OMR::Z::CodeGenerator::isCompressedClassPointerOfObjectHeader(TR::Node *node)
 {
     return (TR::Compiler->om.generateCompressedObjectHeaders() && node->getOpCode().hasSymbolReference()

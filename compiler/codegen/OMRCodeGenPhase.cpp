@@ -139,6 +139,7 @@ int OMR::CodeGenPhase::getNumPhases() { return static_cast<int>(TR::CodeGenPhase
 void OMR::CodeGenPhase::performProcessRelocationsPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *phase)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
 
     if (comp->getPersistentInfo()->isRuntimeInstrumentationEnabled()) {
         // This must be called before relocations to generate the relocation data for the profiled instructions.

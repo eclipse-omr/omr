@@ -47,15 +47,14 @@ TR_CatchBlockRemover::TR_CatchBlockRemover(TR::OptimizationManager *manager)
 
 int32_t TR_CatchBlockRemover::perform()
 {
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     if (cfg == NULL) {
-        if (trace())
-            comp()->log()->prints("Can't do Catch Block Removal, no CFG\n");
+        logprints(trace(), log, "Can't do Catch Block Removal, no CFG\n");
         return 0;
     }
 
-    if (trace())
-        comp()->log()->prints("Starting Catch Block Removal\n");
+    logprints(trace(), log, "Starting Catch Block Removal\n");
 
     bool thereMayBeRemovableCatchBlocks = false;
 
@@ -150,8 +149,7 @@ int32_t TR_CatchBlockRemover::perform()
 
     } // scope of the stack memory region
 
-    if (trace())
-        comp()->log()->prints("\nEnding Catch Block Removal\n");
+    logprints(trace(), log, "\nEnding Catch Block Removal\n");
 
     return 1; // actual cost
 }
