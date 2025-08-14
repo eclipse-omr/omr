@@ -25,6 +25,62 @@
 #include <stdint.h>
 #include "env/FilePointerDecl.hpp"
 
+/**
+ * @brief Convenience macro to perform a conditionally guarded print to the
+ *     given log of a `\0`-terminated string with format specifiers.
+ *
+ * @param[in] cond : boolean condition guarding the print
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] fmt : `\0`-terminated string to print with format specifiers
+ * @param[in] ... : variable arguments
+ */
+#define logprintf(cond, log, fmt, ...)       \
+    do {                                     \
+        if (cond)                            \
+            log->printf(fmt, ##__VA_ARGS__); \
+    } while (0)
+
+/**
+ * @brief Convenience macro to perform a conditionally guarded print to the
+ *     given log of a `\0`-terminated string.
+ *
+ * @param[in] cond : boolean condition guarding the print
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] str : `\0`-terminated string to print
+ */
+#define logprints(cond, log, str) \
+    do {                          \
+        if (cond)                 \
+            log->prints(str);     \
+    } while (0)
+
+/**
+ * @brief Convenience macro to perform a conditionally guarded print to the
+ *     given log of a single char.
+ *
+ * @param[in] cond : boolean condition guarding the print
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] c : char to print
+ */
+#define logprintc(cond, log, c) \
+    do {                        \
+        if (cond)               \
+            log->printc(c);     \
+    } while (0)
+
+/**
+ * @brief Convenience macro to perform a conditionally guarded print to the
+ *     given log of a newline char.
+ *
+ * @param[in] cond : boolean condition guarding the print
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ */
+#define logprintln(cond, log) \
+    do {                      \
+        if (cond)             \
+            log->println();   \
+    } while (0)
+
 namespace OMR {
 
 /**
