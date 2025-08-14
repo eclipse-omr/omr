@@ -35,6 +35,7 @@
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
 #include "optimizer/Structure.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Optimizer;
@@ -118,7 +119,7 @@ TR_Latestness::TR_Latestness(TR::Compilation *comp, TR::Optimizer *optimizer, TR
 
         if (trace) {
             traceMsg(comp, "\nIn Set of Block : %d\n", blockStructure->getNumber());
-            _inSetInfo[blockStructure->getNumber()]->print(comp);
+            _inSetInfo[blockStructure->getNumber()]->print(comp->getLogger(), comp);
         }
     }
 

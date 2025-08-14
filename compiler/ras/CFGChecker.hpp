@@ -32,6 +32,7 @@ class TR_Debug;
 
 namespace TR {
 class Block;
+class Logger;
 class Node;
 class ResolvedMethodSymbol;
 class TreeTop;
@@ -57,12 +58,12 @@ public:
     TR_ALLOC(TR_Memory::CFGChecker)
 
     TR_CFGChecker(TR::ResolvedMethodSymbol *, TR_Debug *);
-    TR_CFGChecker(TR::CFG *cfg, TR::FILE *pOutFile)
-        : _cfg(cfg)
-        , _fe(cfg->comp()->fe())
-        , _outFile(pOutFile) {};
 
     void check();
+
+    TR::Logger *getLogger() { return _logger; }
+
+    bool getLoggingEnabled() { return _loggingEnabled; }
 
 protected:
     void markCFGNodes();
@@ -81,8 +82,9 @@ protected:
     int32_t _numRealBlocks;
     bool _successorsCorrect;
     bool _isCFGConsistent;
+    bool _loggingEnabled;
     TR_BitVector _blockChecklist;
-    TR::FILE *_outFile;
+    TR::Logger *_logger;
     TR_FrontEnd *_fe;
 };
 

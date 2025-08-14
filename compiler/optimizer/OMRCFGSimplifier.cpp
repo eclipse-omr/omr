@@ -47,6 +47,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/TransformUtil.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 #include "infra/Checklist.hpp"
 
 // Set to 0 to disable the special-case pattern matching using the
@@ -93,7 +94,7 @@ int32_t OMR::CFGSimplifier::perform()
 
     if (trace()) {
         traceMsg(comp(), "\nEnding CFG Simplification\n");
-        comp()->dumpMethodTrees("\nTrees after CFG Simplification\n");
+        comp()->dumpMethodTrees(comp()->getLogger(), "\nTrees after CFG Simplification\n");
     }
 
     return 1; // actual cost

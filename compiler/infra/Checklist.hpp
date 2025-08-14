@@ -34,6 +34,7 @@ namespace TR {
 
 class Block;
 class Compilation;
+class Logger;
 class Node;
 
 class Checklist {
@@ -58,7 +59,7 @@ public:
 
     void clear() { _v->empty(); }
 
-    void print() const { _v->print(_comp); }
+    void print(TR::Logger *log) const { _v->print(log, _comp); }
 };
 
 class NodeChecklist : public Checklist {

@@ -63,6 +63,7 @@
 #include "optimizer/UseDefInfo.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class RegisterMappedSymbol;
@@ -147,7 +148,7 @@ int32_t TR_LoopCanonicalizer::perform()
         if (trace()) {
             traceMsg(comp(), "Starting LoopCanonicalizer\n");
             traceMsg(comp(), "\nCFG before loop canonicalization:\n");
-            getDebug()->print(comp()->getOutFile(), _cfg);
+            getDebug()->print(comp()->getLogger(), _cfg);
         }
 
         // printTrees();
@@ -200,8 +201,6 @@ int32_t TR_LoopCanonicalizer::perform()
                 continue;
             canonicalizeNaturalLoop(naturalLoop);
         }
-
-        /// comp()->dumpMethodTrees("Trees now\n");
 
         if (trace())
             traceMsg(comp(), "Number of cleansed blocks : %d\n", _blocksToBeCleansed.getSize());
@@ -275,17 +274,14 @@ int32_t TR_LoopCanonicalizer::perform()
 
         if (trace()) {
             traceMsg(comp(), "\nCFG after loop canonicalization:\n");
-            getDebug()->print(comp()->getOutFile(), _cfg);
+            getDebug()->print(comp()->getLogger(), _cfg);
             traceMsg(comp(), "Ending LoopCanonicalizer\n");
         }
 
     } // scope of the stack memory region
 
-    // if (trace())
-    {
-        if (trace())
-            comp()->dumpMethodTrees("Trees after canonicalization\n");
-    }
+    if (trace())
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after canonicalization\n");
 
     return 1; // actual cost
 }
@@ -815,7 +811,7 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
         return;
 
     if (trace())
-        comp()->dumpMethodTrees("Trees at this stage");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees at this stage");
 
     TR_StructureSubGraphNode *entryGraphNode = whileLoop->getEntry();
     TR_ASSERT(entryGraphNode->getStructure()->asBlock(), "Loop canonicalizer, header is not a block");
@@ -1043,7 +1039,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
             TR::TreeTop *predNext = predExit->getNextTreeTop();
             predExit->join(entryTree);
             exitTree->join(predNext);
-            // printf("Changing layout in %s\n", comp()->signature());
         } else {
             _startOfHeader->join(entryTree);
             exitTree->join(nextTreeAfterHeader);
@@ -1072,9 +1067,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
             TR::Node *duplicateChildNode
                 = duplicateExact(currentTree->getNode()->getChild(childNum), &seenNodes, &duplicateNodes);
             newCurrentNode->setChild(childNum, duplicateChildNode);
-
-            /////if (trace())
-            /////   traceMsg(comp(), "Cloned a treetop \n");
         }
 
         TR::TreeTop *newCurrentTree = TR::TreeTop::create(comp(), newCurrentNode, NULL, NULL);
@@ -1083,8 +1075,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
 
         currentTree = currentTree->getNextTreeTop();
         newPrevTree = newCurrentTree;
-        /////if (trace())
-        /////   newCurrentTree->print(comp()->getOutFile());
     }
 
     // If the duplicate header falls through to the loop body
@@ -1437,9 +1427,9 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
 
     if (trace()) {
         traceMsg(comp(), "Structure after canonicalizing natural loop %d:\n", properRegion->getNumber());
-        getDebug()->print(comp()->getOutFile(), _rootStructure, 6);
-        getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph());
-        comp()->dumpMethodTrees("Trees at this stage");
+        getDebug()->print(comp()->getLogger(), _rootStructure, 6);
+        getDebug()->print(comp()->getLogger(), comp()->getFlowGraph());
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees at this stage");
     }
 }
 
@@ -1723,7 +1713,7 @@ void TR_LoopCanonicalizer::canonicalizeDoWhileLoop(TR_RegionStructure *doWhileLo
         traceMsg(comp(), "Structure after canonicalizing do while loop %p: number: %d\n", doWhileLoop,
             doWhileLoop->getNumber());
         if (comp()->getFlowGraph()->getStructure())
-            getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph()->getStructure(), 6);
+            getDebug()->print(comp()->getLogger(), comp()->getFlowGraph()->getStructure(), 6);
     }
 
     return;
@@ -2897,17 +2887,19 @@ void TR_LoopTransformer::adjustTreesInBlock(TR::Block *block)
 
 void TR_LoopTransformer::printTrees()
 {
+    if (!trace()) {
+        return;
+    }
+
     comp()->incVisitCount();
     TR::TreeTop *currentTree = comp()->getStartTree();
 
     while (!(currentTree == NULL)) {
-        if (trace())
-            getDebug()->print(comp()->getOutFile(), currentTree);
-
+        getDebug()->print(comp()->getLogger(), currentTree);
         currentTree = currentTree->getNextTreeTop();
     }
-    if (trace())
-        getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph());
+
+    getDebug()->print(comp()->getLogger(), comp()->getFlowGraph());
 }
 
 /**
@@ -3213,7 +3205,6 @@ int32_t TR_LoopTransformer::checkLoopForPredictability(TR_Structure *loopStructu
 
 void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateInfo_tables &uinfo)
 {
-    // traceMsg(comp(), "TR_LoopTransformer::updateInfo node=%p\n", node);
     if (node->getVisitCount() == visitCount)
         return;
 
@@ -3225,21 +3216,11 @@ void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateI
         _allSymRefs[refNo] = true;
     }
 
-    //   traceMsg(comp(), "bf _allKilledSymRefs = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_allKilledSymRefs);
-    //   traceMsg(comp(), "\n");
     TR::BitVector mayKillAliases(comp()->allocator());
     node->mayKill().getAliases(mayKillAliases);
     if (refNo != 0)
         mayKillAliases[refNo] = false;
-    //   traceMsg(comp(), "mayKillAliases(w/o self) = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &mayKillAliases);
-    //   traceMsg(comp(), "\n");
     _allKilledSymRefs.Or(mayKillAliases);
-
-    //   traceMsg(comp(), "af _allKilledSymRefs = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_allKilledSymRefs);
-    //   traceMsg(comp(), "\n");
 
     TR::BitVector defAliases(comp()->allocator());
 
@@ -3251,15 +3232,6 @@ void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateI
     // update writes
     *_neverWritten -= defAliases;
 
-    //   traceMsg(comp(), "defAliases = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &defAliases);
-    //   traceMsg(comp(), "\n");
-    //   traceMsg(comp(), "bf _writtenExactlyOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
-    //   traceMsg(comp(), "\n");
-    //   traceMsg(comp(), "bf uinfo.currentlyWrittenOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &(uinfo.currentlyWrittenOnce));
-    //   traceMsg(comp(), "\n");
     // For most store operations
     if (refNo && node->getOpCode().isLikeDef() && defAliases.PopulationCount() > 1) {
         // FIXME: there seems to be an assumption that for every symbol
@@ -3288,13 +3260,6 @@ void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateI
         _readExactlyOnce -= defAliases;
         _writtenExactlyOnce -= defAliases;
     }
-
-    //   traceMsg(comp(), "af _writtenExactlyOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
-    //   traceMsg(comp(), "\n");
-    //   traceMsg(comp(), "af uinfo.currentlyWrittenOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &(uinfo.currentlyWrittenOnce));
-    //   traceMsg(comp(), "\n");
 
     // update reads
     TR::BitVector useAliases(comp()->allocator());
@@ -3368,7 +3333,6 @@ void TR_LoopTransformer::collectSymbolsWrittenAndReadExactlyOnce(TR_Structure *s
         TR::TreeTop *currentTree = block->getEntry();
 
         while (currentTree != exitTree) {
-            // traceMsg(comp(), "Looking at node %p in block_%d\n", currentTree->getNode(), block->getNumber());
             TR::Node *currentNode = currentTree->getNode();
             _currTree = currentTree;
             _numberOfTreesInLoop++;
@@ -3918,7 +3882,7 @@ int32_t TR_LoopInverter::detectCanonicalizedPredictableLoops(TR_Structure *loopS
     if (trace()) {
         traceMsg(comp(), "\nDetected a predictable loop %d\n", loopStructure->getNumber());
         traceMsg(comp(), "Possible new induction variable candidates :\n");
-        comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
+        comp()->getDebug()->print(comp()->getLogger(), &_writtenExactlyOnce);
         traceMsg(comp(), "\n");
     }
 

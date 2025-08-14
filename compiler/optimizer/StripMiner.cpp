@@ -54,6 +54,7 @@
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/OptimizationManager.hpp"
 #include "optimizer/Structure.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O STRIP MINER: "
 
@@ -108,8 +109,7 @@ int32_t TR_StripMiner::perform()
 
     if (trace()) {
         traceMsg(comp(), "Starting StripMining\n");
-        comp()->dumpMethodTrees("Before strip mining");
-        /// getDebug()->print(comp()->getOutFile(), _cfg);
+        comp()->dumpMethodTrees(comp()->getLogger(), "Before strip mining");
     }
 
     // Collect and analyze information about loops
@@ -593,8 +593,7 @@ void TR_StripMiner::duplicateLoop(LoopInfo *li, TR_ClonedLoopType type)
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees("stripMining: trees after loop duplication");
-        /// comp()->getDebug()->print(comp()->getOutFile(), _cfg);
+        comp()->dumpMethodTrees(comp()->getLogger(), "stripMining: trees after loop duplication");
     }
 }
 
@@ -853,8 +852,7 @@ void TR_StripMiner::transformLoop(LoopInfo *li)
     }
 
     if (trace()) {
-        comp()->dumpMethodTrees("stripMining: trees after loop transformation");
-        /// comp()->getDebug()->print(comp()->getOutFile(), _cfg);
+        comp()->dumpMethodTrees(comp()->getLogger(), "stripMining: trees after loop transformation");
     }
 }
 

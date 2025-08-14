@@ -44,6 +44,7 @@
 #include "infra/Cfg.hpp"
 #include "infra/CfgNode.hpp"
 #include "optimizer/LocalAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 TR_LocalTransparency::TR_LocalTransparency(TR_LocalAnalysisInfo &info, bool t)
     : TR_LocalAnalysis(info, t)
@@ -352,13 +353,13 @@ TR_LocalTransparency::TR_LocalTransparency(TR_LocalAnalysisInfo &info, bool t)
                 if (_hasTransparencyInfoFor->get(nextDefinedSymbolReference)) {
                     if (trace()) {
                         traceMsg(comp(), "\nMerging with : ");
-                        _transparencyInfo[nextDefinedSymbolReference]->print(comp());
+                        _transparencyInfo[nextDefinedSymbolReference]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\nDefined : ");
-                        definedSymbolReferencesInBlock[nextBlock->getNumber()]->print(comp());
+                        definedSymbolReferencesInBlock[nextBlock->getNumber()]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\nDefined after stored : ");
-                        symRefsDefinedAfterStoredInBlock[nextBlock->getNumber()]->print(comp());
+                        symRefsDefinedAfterStoredInBlock[nextBlock->getNumber()]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\nUsed after defined : ");
-                        symRefsUsedAfterDefinedInBlock[nextBlock->getNumber()]->print(comp());
+                        symRefsUsedAfterDefinedInBlock[nextBlock->getNumber()]->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                     }
 
@@ -437,7 +438,7 @@ TR_LocalTransparency::TR_LocalTransparency(TR_LocalAnalysisInfo &info, bool t)
 
             if (trace()) {
                 traceMsg(comp(), "\nSolution for block number : %d\n", nextBlock->getNumber());
-                _info[nextBlock->getNumber()]._analysisInfo->print(comp());
+                _info[nextBlock->getNumber()]._analysisInfo->print(comp()->getLogger(), comp());
             }
         }
 

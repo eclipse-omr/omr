@@ -61,6 +61,7 @@
 #include "optimizer/UseDefInfo.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 TR_IsolatedStoreElimination::TR_IsolatedStoreElimination(TR::OptimizationManager *manager)
     : TR::Optimization(manager)
@@ -1268,7 +1269,7 @@ void TR_IsolatedStoreElimination::analyzeSingleBlockLoop(TR_RegionStructure *reg
                         if (trace()) {
                             traceMsg(comp(), "treeTop : %p\n", treeTop->getNode());
                             traceMsg(comp(), "PREDICTABLE COMPUTATION : \n");
-                            comp()->getDebug()->print(comp()->getOutFile(), treeTop);
+                            comp()->getDebug()->print(comp()->getLogger(), treeTop);
                         }
                     }
                 }

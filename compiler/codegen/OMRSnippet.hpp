@@ -48,6 +48,7 @@ class Block;
 class CodeGenerator;
 class Node;
 class LabelSymbol;
+class Logger;
 class Snippet;
 } // namespace TR
 
@@ -80,7 +81,7 @@ public:
     virtual uint32_t getLength(int32_t estimatedSnippetStart) = 0;
     virtual uint8_t *emitSnippetBody() = 0;
 
-    virtual void print(TR::FILE *, TR_Debug *debug);
+    virtual void print(TR::Logger *log, TR_Debug *debug);
 
     void prepareSnippetForGCSafePoint();
 

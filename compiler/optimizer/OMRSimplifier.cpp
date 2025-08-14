@@ -77,6 +77,7 @@
 #include "optimizer/Structure.hpp"
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 extern const SimplifierPointerTable simplifierOpts;
 
@@ -187,14 +188,14 @@ void OMR::Simplifier::prePerformOnBlocks()
     _ccHashTab.init(64, true);
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees before simplification");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees before simplification");
     }
 }
 
 void OMR::Simplifier::postPerformOnBlocks()
 {
     if (trace())
-        comp()->dumpMethodTrees("Trees after simplification");
+        comp()->dumpMethodTrees(comp()->getLogger(), "Trees after simplification");
 
     // Invalidate usedef and value number information if necessary
     //

@@ -49,6 +49,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/UseDefInfo.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 TR_ValueNumberInfo::TR_ValueNumberInfo(TR::Compilation *comp)
     : _compilation(comp)
@@ -122,7 +123,7 @@ TR_ValueNumberInfo::TR_ValueNumberInfo(TR::Compilation *comp, TR::Optimizer *opt
         traceMsg(comp, "\nTrees for value numbering\n\n");
         comp->incVisitCount();
         for (treeTop = comp->getStartTree(); treeTop; treeTop = treeTop->getNextTreeTop()) {
-            comp->getDebug()->print(comp->getOutFile(), treeTop);
+            comp->getDebug()->print(comp->getLogger(), treeTop);
         }
         traceMsg(comp, "\n\n");
     }
@@ -1388,7 +1389,7 @@ TR_HashValueNumberInfo::TR_HashValueNumberInfo(TR::Compilation *comp, TR::Optimi
         traceMsg(comp, "\nTrees for value numbering\n\n");
         comp->incVisitCount();
         for (treeTop = comp->getStartTree(); treeTop; treeTop = treeTop->getNextTreeTop()) {
-            comp->getDebug()->print(comp->getOutFile(), treeTop);
+            comp->getDebug()->print(comp->getLogger(), treeTop);
         }
         traceMsg(comp, "\n\n");
     }

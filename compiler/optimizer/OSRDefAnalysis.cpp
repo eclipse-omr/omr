@@ -60,6 +60,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/UseDefInfo.hpp"
 #include "runtime/Runtime.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O OSR LIVE RANGE ANALYSIS: "
 
@@ -324,7 +325,7 @@ void TR_OSRDefInfo::buildOSRDefs(void *vblockInfo, AuxiliaryData &aux)
        reachingDefinitions._blockAnalysisInfo[block->getNumber()]; if (trace())
                 {
                 traceMsg(comp(), "analysisInfo at node %p \n", node);
-                analysisInfo->print(comp());
+                analysisInfo->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
                 }
              continue;
@@ -426,7 +427,7 @@ void TR_OSRDefInfo::buildOSRDefs(void *vblockInfo, AuxiliaryData &aux)
             TR_ByteCodeInfo &bcinfo = _methodSymbol->getOSRPoints()[i]->getByteCodeInfo();
             traceMsg(comp(), "OSR defs at index %d bcIndex %d callerIndex %d\n", i, bcinfo.getByteCodeIndex(),
                 bcinfo.getCallerIndex());
-            info->print(comp());
+            info->print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n");
         }
     }
@@ -458,7 +459,7 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
             && !sym->isMethod()) {
             if (trace()) {
                 traceMsg(comp(), "defs for symbol %d with symref index %d\n", symIndex, symRef->getReferenceNumber());
-                defsForSymbol->print(comp());
+                defsForSymbol->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
             *analysisInfo -= *defsForSymbol;
@@ -469,7 +470,7 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
     if (parent == NULL) {
         if (trace()) {
             traceMsg(comp(), "analysisInfo at node %p \n", node);
-            analysisInfo->print(comp());
+            analysisInfo->print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n");
         }
 
@@ -479,7 +480,7 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
             *aux._defsForOSR[osrIndex] |= *analysisInfo;
             if (trace()) {
                 traceMsg(comp(), "_defsForOSR[%d] at node %p \n", osrIndex, node);
-                aux._defsForOSR[osrIndex]->print(comp());
+                aux._defsForOSR[osrIndex]->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
         }
@@ -489,7 +490,7 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
             *aux._defsForOSR[osrIndex] |= *analysisInfo;
             if (trace()) {
                 traceMsg(comp(), "_defsForOSR[%d] after node %p \n", osrIndex, node);
-                aux._defsForOSR[osrIndex]->print(comp());
+                aux._defsForOSR[osrIndex]->print(comp()->getLogger(), comp());
                 traceMsg(comp(), "\n");
             }
         }
@@ -569,7 +570,8 @@ int32_t TR_OSRDefAnalysis::perform()
 
     if (trace()) {
         traceMsg(comp(), "Starting OSR reaching definitions analysis\n");
-        comp()->dumpMethodTrees("Before OSR reaching definitions analysis", optimizer()->getMethodSymbol());
+        comp()->dumpMethodTrees(comp()->getLogger(), "Before OSR reaching definitions analysis",
+            optimizer()->getMethodSymbol());
     }
 
     {
@@ -810,7 +812,7 @@ int32_t TR_OSRLiveRangeAnalysis::partialAnalysis()
             if (comp()->getOption(TR_TraceOSR)) {
                 traceMsg(comp(), "Existing liveness information:\n");
                 if (ppInfo)
-                    ppInfo->print(comp());
+                    ppInfo->print(comp()->getLogger(), comp());
                 else
                     traceMsg(comp(), "NULL");
                 traceMsg(comp(), "\n");
@@ -833,7 +835,7 @@ int32_t TR_OSRLiveRangeAnalysis::partialAnalysis()
             if (comp()->getOption(TR_TraceOSR)) {
                 traceMsg(comp(), "Existing liveness information:\n");
                 if (ppInfo)
-                    ppInfo->print(comp());
+                    ppInfo->print(comp()->getLogger(), comp());
                 else
                     traceMsg(comp(), "NULL");
                 traceMsg(comp(), "\n");
@@ -891,7 +893,7 @@ void TR_OSRLiveRangeAnalysis::pendingPushLiveRangeInfo(TR::Node *node, TR_BitVec
         if (!liveSymRefs)
             traceMsg(comp(), " NULL");
         else
-            liveSymRefs->print(comp());
+            liveSymRefs->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 }
@@ -992,7 +994,7 @@ void TR_OSRLiveRangeAnalysis::buildDeadPendingPushSlotsInfo(TR::Node *node, TR_B
     if (deadPPSSlots && trace()) {
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
         traceMsg(comp(), "deadppslots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
-        deadPPSSlots->print(comp());
+        deadPPSSlots->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 
@@ -1028,11 +1030,11 @@ void TR_OSRLiveRangeAnalysis::intersectWithExistingDeadSlots(TR_OSRPoint *osrPoi
     existingDeadAutoSlots.empty();
     if (deadPPSSlots) {
         traceMsg(comp(), "deadPPSSlots:");
-        deadPPSSlots->print(comp());
+        deadPPSSlots->print(comp()->getLogger(), comp());
     }
     if (deadAutoSlots) {
         traceMsg(comp(), "deadAutoSlots:");
-        deadAutoSlots->print(comp());
+        deadAutoSlots->print(comp()->getLogger(), comp());
     }
 
     if (slotsInfo) // remove every dead slot that's not in the current dead symbols bit vector from slotInfos
@@ -1142,7 +1144,7 @@ void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *l
     if (deadPPSSlots && trace()) {
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
         traceMsg(comp(), "deadppslots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
-        deadPPSSlots->print(comp());
+        deadPPSSlots->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 
@@ -1164,7 +1166,7 @@ void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *l
     if (deadAutoSlots && trace()) {
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
         traceMsg(comp(), "deadAutoSlots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
-        deadAutoSlots->print(comp());
+        deadAutoSlots->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 
@@ -1190,7 +1192,8 @@ int32_t TR_OSRLiveRangeAnalysis::fullAnalysis(bool includeParms, bool containsPe
 
     if (comp()->getOption(TR_TraceOSR)) {
         traceMsg(comp(), "Starting full OSRLiveRangeAnalysis\n");
-        comp()->dumpMethodTrees("Before full OSRLiveRangeAnalysis", optimizer()->getMethodSymbol());
+        comp()->dumpMethodTrees(comp()->getLogger(), "Before full OSRLiveRangeAnalysis",
+            optimizer()->getMethodSymbol());
     }
 
     {
@@ -1330,7 +1333,7 @@ int32_t TR_OSRLiveRangeAnalysis::fullAnalysis(bool includeParms, bool containsPe
 
                     if (comp()->getOption(TR_TraceOSR)) {
                         traceMsg(comp(), "BB_End for block_%d: live vars = ", block->getNumber());
-                        _liveVars->print(comp());
+                        _liveVars->print(comp()->getLogger(), comp());
                         traceMsg(comp(), "\n");
                     }
                 }
@@ -1664,7 +1667,7 @@ void TR_OSRLiveRangeAnalysis::buildOSRLiveRangeInfo(TR::Node *node, TR_BitVector
         traceMsg(comp(), "Dead variables at OSR point %p of %p bytecode offset %d\n", node, osrMethodData,
             osrPoint->getByteCodeInfo().getByteCodeIndex());
         if (deadSymRefs)
-            deadSymRefs->print(comp());
+            deadSymRefs->print(comp()->getLogger(), comp());
         else
             traceMsg(comp(), " NULL");
         traceMsg(comp(), "\n");
@@ -1697,9 +1700,9 @@ bool TR_OSRExceptionEdgeRemoval::addDeadStores(TR::Block *osrBlock, TR_BitVector
 
     if (comp()->getOption(TR_TraceOSR)) {
         traceMsg(comp(), "Identified dead stores for block_%d:\n", osrBlock->getNumber());
-        _seenDeadStores->print(comp());
+        _seenDeadStores->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\nRemaining dead stores:\n");
-        dead.print(comp());
+        dead.print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 

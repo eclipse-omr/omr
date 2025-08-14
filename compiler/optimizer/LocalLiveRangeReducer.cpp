@@ -43,6 +43,7 @@
 #include "infra/Assert.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
 #include "env/StackMemoryRegion.hpp"
@@ -911,10 +912,10 @@ void TR_LocalLiveRangeReduction::printRefInfo(TR_TreeRefInfo *treeRefInfo)
 
         if (treeRefInfo->getUseSym() && treeRefInfo->getDefSym()) {
             traceMsg(comp(), "[%p]:use = ", treeRefInfo->getTreeTop()->getNode());
-            treeRefInfo->getUseSym()->print(comp());
+            treeRefInfo->getUseSym()->print(comp()->getLogger(), comp());
 
             traceMsg(comp(), "  def = ");
-            treeRefInfo->getDefSym()->print(comp());
+            treeRefInfo->getDefSym()->print(comp()->getLogger(), comp());
             traceMsg(comp(), "\n");
         }
     }
@@ -949,7 +950,7 @@ void TR_LocalLiveRangeReduction::printOnVerifyError(TR_TreeRefInfo *optRefInfo, 
         printRefInfo(optRefInfo);
         traceMsg(comp(), "verifyer:");
         printRefInfo(verifier);
-        comp()->dumpMethodTrees("For verifying\n");
+        comp()->dumpMethodTrees(comp()->getLogger(), "For verifying\n");
         comp()->incVisitCount();
     }
 }

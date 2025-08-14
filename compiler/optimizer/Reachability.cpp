@@ -33,6 +33,7 @@
 #include "infra/Cfg.hpp"
 #include "infra/List.hpp"
 #include "infra/CfgEdge.hpp"
+#include "ras/Logger.hpp"
 
 TR_ReachabilityAnalysis::TR_ReachabilityAnalysis(TR::Compilation *comp)
     : _comp(comp)
@@ -67,7 +68,7 @@ void TR_ReachabilityAnalysis::perform(TR_BitVector *result)
 
     if (comp()->getOption(TR_TraceReachability)) {
         traceMsg(comp(), "END REACHABILITY.  Result:\n");
-        result->print(comp(), comp()->getOutFile());
+        result->print(comp()->getLogger(), comp());
         traceMsg(comp(), "\n");
     }
 }

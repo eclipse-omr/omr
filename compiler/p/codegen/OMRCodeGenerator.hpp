@@ -66,6 +66,7 @@ class TR_PPCScratchRegisterManager;
 namespace TR {
 class CodeGenerator;
 class ConstantDataSnippet;
+class Logger;
 class PPCImmInstruction;
 class Snippet;
 struct PPCLinkageProperties;
@@ -181,7 +182,7 @@ public:
     int32_t setEstimatedLocationsForDataSnippetLabels(int32_t estimatedSnippetStart);
 
 #ifdef DEBUG
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(TR::Logger *log);
 #endif
 
     bool considerTypeForGRA(TR::Node *node);

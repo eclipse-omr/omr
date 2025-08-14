@@ -406,7 +406,7 @@ bool TR_InterferenceGraph::select()
 
         if (debug("traceIG")) {
             diagnostic("SELECT:  For IG node #%d (%p), available colours = ", igNode->getIndex(), igNode);
-            availableColours->print(_compilation);
+            availableColours->print(_compilation->getLogger(), _compilation);
             diagnostic("\n");
         }
 
