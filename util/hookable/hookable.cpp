@@ -60,10 +60,12 @@ static const J9HookInterface hookFunctionTable = {
 };
 
 /* flags are stored at the beginning of the interface just after the common interface fields in ascending order */
-#define HOOK_FLAGS(interface, event) (((uint8_t*)((interface) + 1))[event])
+#define HOOK_FLAGS(interface, event) \
+	(((uint8_t *)((interface) + 1))[event])
 
 /* records are stored at the END of the interface in descending order */
-#define HOOK_RECORD(interface, event) (((J9HookRecord**)( (uint8_t*)(interface) + (interface)->size ))[ -1 - (event)])
+#define HOOK_RECORD(interface, event) \
+	(((J9HookRecord **)((uint8_t *)(interface) + (interface)->size))[~(intptr_t)(event)])
 
 /* e.g.
  0: J9CommonInterface::interface
@@ -87,7 +89,6 @@ static const J9HookInterface hookFunctionTable = {
 #define HOOK_IS_VALID_ID(id) ( ((id) & 1) == 0)
 #define HOOK_INVALID_ID(id) ((id) | 1)
 #define HOOK_VALID_ID(id) ( (((id) | 1) + 1) )
-
 
 intptr_t
 omrhook_lib_control(const char *key, uintptr_t value)
@@ -168,7 +169,6 @@ J9HookShutdownInterface(struct J9HookInterface **hookInterface)
 	}
 }
 
-
 /*
  * Inform all registered listeners that the specified event has occurred. Details about the
  * event should be available through eventData.
@@ -231,7 +231,7 @@ J9HookDispatch(struct J9HookInterface **hookInterface, uintptr_t taggedEventNum,
 				}
 				OMRPORT_ACCESS_FROM_OMRPORT(commonInterface->portLib);
 				if (sampling) {
-					startTime = omrtime_usec_clock(); 
+					startTime = omrtime_usec_clock();
 				}
 
 				function(hookInterface, eventNum, eventData, userData);
@@ -275,8 +275,6 @@ J9HookDispatch(struct J9HookInterface **hookInterface, uintptr_t taggedEventNum,
 	}
 }
 
-
-
 /*
  * Mark this event as disabled. Any future attempts to add a hook for this event
  * will result in an error.
@@ -312,8 +310,6 @@ J9HookDisable(struct J9HookInterface **hookInterface, uintptr_t taggedEventNum)
 		return rc;
 	}
 }
-
-
 
 /*
  * Use J9HookReserve to indicate your intention to hook an event in the future.
@@ -516,7 +512,6 @@ J9HookRegisterWithCallSite(struct J9HookInterface **hookInterface, uintptr_t tag
 	}
 	return J9HookRegisterWithCallSitePrivate(hookInterface, taggedEventNum, function, callsite, userData, agentID);
 }
-
 
 /*
  * Remove the specified function from the listeners for eventNum.
