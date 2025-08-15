@@ -557,7 +557,6 @@ void OMR::X86::CodeGenerator::initializeX86(TR::Compilation *comp)
 
 OMR::X86::CodeGenerator::CodeGenerator(TR::Compilation *comp)
     : OMR::CodeGenerator(comp)
-    , _assignmentDirection(Backward)
     , _lastCatchAppendInstruction(NULL)
     , _betterSpillPlacements(NULL)
     , _dataSnippetList(getTypedAllocator<TR::X86DataSnippet *>(comp->allocator()))
@@ -1632,7 +1631,7 @@ void OMR::X86::CodeGenerator::doBackwardsRegisterAssignment(TR_RegisterKinds kin
     }
 
     if (self()->getDebug())
-        self()->getDebug()->startTracingRegisterAssignment("backward", kindsToAssign);
+        self()->getDebug()->startTracingRegisterAssignment(kindsToAssign);
 
     while (instructionCursor && instructionCursor != appendInstruction) {
         TR::Instruction *inst = instructionCursor;
@@ -1713,7 +1712,6 @@ void OMR::X86::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssig
     kindsToAssign = TR_RegisterKinds(kindsToAssign & (TR_GPR_Mask | TR_VMR_Mask | TR_FPR_Mask | TR_VRF_Mask));
     if (kindsToAssign) {
         self()->getVMThreadRegister()->setFutureUseCount(self()->getVMThreadRegister()->getTotalUseCount());
-        self()->setAssignmentDirection(Backward);
         self()->getFrameRegister()->setFutureUseCount(self()->getFrameRegister()->getTotalUseCount());
 
         if (self()->enableRematerialisation())
