@@ -378,5 +378,6 @@ typedef struct J9AbstractThread {
 #define J9THREAD_INVALID_ARGUMENT  7
 #define J9THREAD_WOULD_BLOCK  8
 #define J9THREAD_INTERRUPTED_MONITOR_ENTER  9
+#define J9THREAD_UNPARKED  10
 
 #endif

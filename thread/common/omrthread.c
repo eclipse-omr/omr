@@ -189,6 +189,7 @@ omrthread_t global_lock_owner = UNOWNED;
 	} while (0)
 #endif /* defined(OMR_OS_WINDOWS) || !defined(OMR_NOTIFY_POLICY_CONTROL) */
 
+
 /*
  * Thread Library
  */
@@ -657,6 +658,31 @@ init_spinParameters(omrthread_library_t lib)
 	}
 	lib->yieldUsleepMultiplier = 0;
 	if (init_threadParam("yieldUsleepMultiplier", &lib->yieldUsleepMultiplier)) {
+		return -1;
+	}
+
+	lib->parkPolicy = 0;
+	if (init_threadParam("parkPolicy", &lib->parkPolicy)) {
+		return -1;
+	}
+
+	lib->parkSleepMultiplier = 0;
+	if (init_threadParam("parkSleepMultiplier", &lib->parkSleepMultiplier)) {
+		return -1;
+	}
+
+	lib->parkSleepTime = 0;
+	if (init_threadParam("parkSleepTime", &lib->parkSleepTime)) {
+		return -1;
+	}
+
+	lib->parkSpinCount = 0;
+	if (init_threadParam("parkSpinCount", &lib->parkSpinCount)) {
+		return -1;
+	}
+
+	lib->parkSleepCount = 0;
+	if (init_threadParam("parkSleepCount", &lib->parkSleepCount)) {
 		return -1;
 	}
 #endif
@@ -3276,50 +3302,62 @@ omrthread_park(int64_t millis, intptr_t nanos)
 {
 	intptr_t rc = 0;
 	omrthread_t self = MACRO_SELF();
+#if defined(OMR_THR_YIELD_ALG)
+	uintptr_t sleepedDuration = 0;
+#endif /* defined(OMR_THR_YIELD_ALG) */
 	ASSERT(self);
 
+	rc = omrthread_park_check_flags(self);
+#if defined(OMR_THR_YIELD_ALG)
+	if (rc == 0) {
+		rc = omrthread_park_spin(self, millis, nanos, &sleepedDuration);
+	}
+#endif /* defined(OMR_THR_YIELD_ALG) */
+
 	THREAD_LOCK(self, CALLER_PARK);
+	rc = omrthread_park_check_flags(self);
 
-	if (self->flags & J9THREAD_FLAG_UNPARKED) {
+	if (J9THREAD_UNPARKED == rc) {
 		self->flags &= ~J9THREAD_FLAG_UNPARKED;
-	} else if (self->flags & J9THREAD_FLAG_INTERRUPTED) {
-		rc = J9THREAD_INTERRUPTED;
-	} else if (self->flags & (J9THREAD_FLAG_PRIORITY_INTERRUPTED | J9THREAD_FLAG_ABORTED)) {
-		rc = J9THREAD_PRIORITY_INTERRUPTED;
-	} else {
+		rc = 0;
+	} else if (0 == rc) {
 		self->flags |= J9THREAD_FLAGM_PARKED_INTERRUPTIBLE;
-
 		if (millis || nanos) {
 			intptr_t boundedMillis = BOUNDED_I64_TO_IDATA(millis);
+#if defined(OMR_THR_YIELD_ALG)
+			ldiv_t sleepedMillis = ldiv(sleepedDuration, 1000);
+			uintptr_t sleepedNanos = sleepedMillis.rem * 1000;
+			if (sleepedNanos > nanos) {
+				nanos = nanos + 1000000 - sleepedNanos;
+				boundedMillis = boundedMillis - 1 - sleepedMillis.quot;
+			} else {
+				nanos -= sleepedNanos;
+				boundedMillis -= sleepedMillis.quot;
+			}
+#endif /* defined(OMR_THR_YIELD_ALG) */
 
 			self->flags |= J9THREAD_FLAG_TIMER_SET;
 
 			OMROSCOND_WAIT_IF_TIMEDOUT(self->condition, self->mutex, boundedMillis, nanos) {
 				rc = J9THREAD_TIMED_OUT;
 				break;
-			} else if (self->flags & J9THREAD_FLAG_UNPARKED) {
-				self->flags &= ~J9THREAD_FLAG_UNPARKED;
-				break;
-			} else if (self->flags & J9THREAD_FLAG_INTERRUPTED) {
-				rc = J9THREAD_INTERRUPTED;
-				break;
-			} else if (self->flags & (J9THREAD_FLAG_PRIORITY_INTERRUPTED | J9THREAD_FLAG_ABORTED)) {
-				rc = J9THREAD_PRIORITY_INTERRUPTED;
+			} else {
+				rc = omrthread_park_check_flags(self);
+				if (J9THREAD_UNPARKED == rc) {
+					self->flags &= ~J9THREAD_FLAG_UNPARKED;
+					rc = 0;
+				}
 				break;
 			}
 			OMROSCOND_WAIT_TIMED_LOOP();
 		} else {
 			OMROSCOND_WAIT(self->condition, self->mutex);
-				if (self->flags & J9THREAD_FLAG_UNPARKED) {
+				rc = omrthread_park_check_flags(self);
+				if (J9THREAD_UNPARKED == rc) {
 					self->flags &= ~J9THREAD_FLAG_UNPARKED;
-					break;
-				} else if (self->flags & J9THREAD_FLAG_INTERRUPTED) {
-					rc = J9THREAD_INTERRUPTED;
-					break;
-				} else if (self->flags & (J9THREAD_FLAG_PRIORITY_INTERRUPTED | J9THREAD_FLAG_ABORTED)) {
-					rc = J9THREAD_PRIORITY_INTERRUPTED;
-					break;
+					rc = 0;
 				}
+				break;
 			OMROSCOND_WAIT_LOOP();
 		}
 	}
