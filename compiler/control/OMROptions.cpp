@@ -1473,6 +1473,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
         "heuristic kicks in", TR::Options::set32BitNumeric, offsetof(OMR::Options, _inlinerArgumentHeuristicFractionUpToWarm), 0, "F%d" },
     { "inlinerBorderFrequency=", "O<nnn>\tblock frequency threshold for not inlining at warm",
      TR::Options::set32BitNumeric, offsetof(OMR::Options, _inlinerBorderFrequency), 0, "F%d" },
+    { "inlinerBorderFrequencySmall=", "O<nnn>\tblock frequency threshold for not inlining at warm",
+     TR::Options::set32BitNumeric, offsetof(OMR::Options, _smallInlinerBorderFrequency), 0, "F%d" },
     { "inlinerCGBorderFrequency=", "O<nnn>\tblock frequency threshold for not inlining at warm",
      TR::Options::set32BitNumeric, offsetof(OMR::Options, _inlinerCGBorderFrequency), 0, "F%d" },
     { "inlinerCGColdBorderFrequency=", "O<nnn>\tblock frequency threshold for not inlining at warm",
@@ -1487,6 +1489,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      TR::Options::set32BitNumeric, offsetof(OMR::Options, _inlinerVeryColdBorderFrequency), 0, "F%d" },
     { "inlinerVeryColdBorderFrequencyAtCold=", "O<nnn>\tblock frequency threshold for not inlining at cold",
      TR::Options::set32BitNumeric, offsetof(OMR::Options, _inlinerVeryColdBorderFrequencyAtCold), 0, "F%d" },
+    { "inlinerVeryColdBorderFrequencySmall=", "O<nnn>\tblock frequency threshold for not inlining at warm",
+     TR::Options::set32BitNumeric, offsetof(OMR::Options, _smallInlinerVeryColdBorderFrequency), 0, "F%d" },
     { "inlinerVeryLargeCompiledMethodAdjustFactor=", "O<nnn>\tFactor to multiply the perceived size of the method",
      TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_inlinerVeryLargeCompiledMethodAdjustFactor, 0, "F%d",
      NOT_IN_SUBSET },
@@ -3372,6 +3376,9 @@ void OMR::Options::jitPreProcess()
     _blockShufflingSequence = (char *)"S";
     _delayCompileWithCPUBurn = 0;
     _largeNumberOfLoops = 6500;
+
+    _smallInlinerBorderFrequency = -1;
+    _smallInlinerVeryColdBorderFrequency = -1;
 
     // The entry block is under this threshold in methods containing a block
     // expected to run >=100 times per method entry, which should be sure to
