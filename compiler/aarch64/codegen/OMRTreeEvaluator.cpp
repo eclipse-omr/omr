@@ -5525,9 +5525,37 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
     TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
     tempMR->validateImmediateOffsetAlignment(node, size, cg);
 
-    generateTrg1MemInstruction(cg, op, node, targetReg, tempMR);
+    if (needSync && tempMR->getUnresolvedSnippet() == NULL) {
+        TR_ASSERT_FATAL_WITH_NODE(node, (size == 1) || (size == 2) || (size == 4) || (size == 8),
+            "operand size for ldar must be 1, 2, 4, or 8 bytes");
+        int numberOfBytesLog2 = trailingZeroes(size);
 
-    if (needSync) {
+        static const TR::InstOpCode::Mnemonic ldarOpCodes[]
+            = { TR::InstOpCode::ldarb, TR::InstOpCode::ldarh, TR::InstOpCode::ldarw, TR::InstOpCode::ldarx };
+
+        tempMR->simplify(node, cg);
+
+        TR::Register *targetGPR = targetReg;
+        if (targetReg->getKind() != TR_GPR) {
+            // ldar only operates on GPRs, so we need to load into a GPR then shuffle into targetReg
+            targetGPR = cg->allocateRegister();
+        }
+
+        generateTrg1MemInstruction(cg, ldarOpCodes[numberOfBytesLog2], node, targetGPR, tempMR);
+
+        if (targetReg->getKind() != TR_GPR) {
+            generateTrg1Src1Instruction(cg,
+                targetReg->isSinglePrecision() ? TR::InstOpCode::fmov_wtos : TR::InstOpCode::fmov_xtod, node, targetGPR,
+                targetReg);
+            cg->stopUsingRegister(targetGPR);
+        } else if (size < 4) {
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmx, node, targetReg, targetReg, size * 8 - 1);
+        }
+    } else {
+        generateTrg1MemInstruction(cg, op, node, targetReg, tempMR);
+    }
+
+    if (needSync && tempMR->getUnresolvedSnippet() != NULL) {
         generateSynchronizationInstruction(cg, TR::InstOpCode::dmb, node, TR::InstOpCode::ishld);
     }
 
@@ -5638,7 +5666,8 @@ TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, 
         valueChild = node->getFirstChild();
     }
 
-    if (cg->comp()->target().isSMP() && sym->isAtLeastOrStrongerThanAcquireRelease()) {
+    if (cg->comp()->target().isSMP() && sym->isAtLeastOrStrongerThanAcquireRelease()
+        && tempMR->getUnresolvedSnippet() != NULL) {
         generateSynchronizationInstruction(cg, TR::InstOpCode::dmb, node, TR::InstOpCode::ishst);
     }
 
@@ -5674,21 +5703,54 @@ TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, 
      * if valueChild is a compressed refs sequence of address constant NULL,
      * or valueChild is a zero constant integer.
      */
+    bool inZeroReg = false;
+    TR::Register *srcReg;
     if ((valueChildRoot != NULL)
         || (valueChild->getDataType().isIntegral() && valueChild->isConstZeroValue()
             && (valueChild->getRegister() == NULL))) {
-        TR::Register *zeroReg = cg->allocateRegister();
-        generateMemSrc1Instruction(cg, op, node, tempMR, zeroReg);
-        TR::RegisterDependencyConditions *deps
-            = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 1, cg->trMemory());
-        deps->addPostCondition(zeroReg, TR::RealRegister::xzr);
-        generateLabelInstruction(cg, TR::InstOpCode::label, node, generateLabelSymbol(cg), deps);
-        cg->stopUsingRegister(zeroReg);
+        srcReg = cg->allocateRegister();
+        inZeroReg = true;
     } else {
-        generateMemSrc1Instruction(cg, op, node, tempMR, cg->evaluate(valueChild));
+        srcReg = cg->evaluate(valueChild);
     }
 
-    if (cg->comp()->target().isSMP() && sym->isVolatile()) {
+    if (sym->isAtLeastOrStrongerThanAcquireRelease() && tempMR->getUnresolvedSnippet() == NULL) {
+        TR_ASSERT_FATAL_WITH_NODE(node, (size == 1) || (size == 2) || (size == 4) || (size == 8),
+            "operand size for stlr must be 1, 2, 4, or 8 bytes");
+        int numberOfBytesLog2 = trailingZeroes(size);
+
+        static const TR::InstOpCode::Mnemonic stlrOpCodes[]
+            = { TR::InstOpCode::stlrb, TR::InstOpCode::stlrh, TR::InstOpCode::stlrw, TR::InstOpCode::stlrx };
+
+        tempMR->simplify(node, cg);
+
+        TR::Register *srcGPR = srcReg;
+        if (srcReg->getKind() != TR_GPR) {
+            // stlr only operates on GPRs, so we need to shuffle srcReg into a GPR before store
+            srcGPR = cg->allocateRegister();
+            generateTrg1Src1Instruction(cg,
+                srcReg->isSinglePrecision() ? TR::InstOpCode::fmov_stow : TR::InstOpCode::fmov_dtox, node, srcGPR,
+                srcReg);
+        }
+
+        generateMemSrc1Instruction(cg, stlrOpCodes[numberOfBytesLog2], node, tempMR, srcGPR);
+
+        if (srcReg->getKind() != TR_GPR) {
+            cg->stopUsingRegister(srcGPR);
+        }
+    } else {
+        generateMemSrc1Instruction(cg, op, node, tempMR, srcReg);
+    }
+
+    if (inZeroReg) {
+        TR::RegisterDependencyConditions *deps
+            = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 1, cg->trMemory());
+        deps->addPostCondition(srcReg, TR::RealRegister::xzr);
+        generateLabelInstruction(cg, TR::InstOpCode::label, node, generateLabelSymbol(cg), deps);
+        cg->stopUsingRegister(srcReg);
+    }
+
+    if (cg->comp()->target().isSMP() && sym->isVolatile() && tempMR->getUnresolvedSnippet() != NULL) {
         generateSynchronizationInstruction(cg, TR::InstOpCode::dmb, node, TR::InstOpCode::ish);
     }
 
