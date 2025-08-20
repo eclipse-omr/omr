@@ -84,6 +84,7 @@ main(int argc, char *argv[])
 	omrthread_attach(NULL);
 
 	OMRPortLibrary portLibrary;
+	printf("ddrgen-main start...\n");
 
 	if (0 != omrport_init_library(&portLibrary, sizeof(portLibrary))) {
 		fprintf(stderr, "failed to initalize port library\n");
@@ -127,7 +128,7 @@ main(int argc, char *argv[])
 #if defined(DEBUG_PRINT_TYPES)
 	const TypePrinter printer(&portLibrary, TypePrinter::FIELDS | TypePrinter::LITERALS | TypePrinter::MACROS);
 #endif /* DEBUG_PRINT_TYPES */
-
+printf("about to startScan: \n");
 	if ((DDR_RC_OK == rc) && !options.debugFiles.empty()) {
 		rc = scanner.startScan(&portLibrary, &ir, &options.debugFiles, options.excludesFile);
 

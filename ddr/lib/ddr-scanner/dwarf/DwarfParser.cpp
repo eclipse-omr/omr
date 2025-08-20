@@ -134,6 +134,7 @@ dwarf_init(int fd,
 	) {
 		stringstream command;
 		command << toolpath << " " << DwarfScanner::getScanFileName() << " 2>&1";
+		printf("DwarfParser running command: %s\n", command.str().c_str());
 		fp = popen(command.str().c_str(), "r");
 	}
 	if (NULL != toolpath) {
