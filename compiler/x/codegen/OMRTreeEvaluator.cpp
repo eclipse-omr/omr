@@ -5075,11 +5075,11 @@ TR::InstOpCode OMR::X86::TreeEvaluator::getNativeSIMDOpcode(TR::ILOpCodes opcode
                 break;
             case TR::vmshr:
             case TR::vshr:
-                binaryOp = BinaryLogicalShiftRight;
+                binaryOp = BinaryArithmeticShiftRight;
                 break;
             case TR::vmushr:
             case TR::vushr:
-                binaryOp = BinaryArithmeticShiftRight;
+                binaryOp = BinaryLogicalShiftRight;
                 break;
             case TR::vmadd:
             case TR::vadd:
@@ -7266,12 +7266,112 @@ TR::Register *OMR::X86::TreeEvaluator::vmushrEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *OMR::X86::TreeEvaluator::vrolEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::vectorBinaryArithmeticEvaluator(node, cg);
+    TR::DataType type = node->getType();
+    TR::DataType et = type.getVectorElementType();
+    TR::VectorLength vl = type.getVectorLength();
+
+    TR_ASSERT_FATAL(et != TR::Int8 && !et.isFloatingPoint(),
+        "Vector rotate evaluator does not support 8-bit types nor floating-point types");
+
+    if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F) && et != TR::Int16) {
+        return TR::TreeEvaluator::vectorBinaryArithmeticEvaluator(node, cg);
+    } else if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX2)) {
+        TR_ASSERT_FATAL(vl != TR::VectorLength512 || cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F),
+            "512-bit vector rotate not supported without AVX-512");
+
+        TR::Node *valueNode = node->getChild(0);
+        TR::Node *rotateNode = node->getChild(1);
+        TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getChild(2) : NULL;
+
+        TR::Register *valueReg = cg->evaluate(valueNode);
+        TR::Register *rotateReg = cg->evaluate(rotateNode);
+        TR::Register *maskReg = maskNode != NULL ? cg->evaluate(maskNode) : NULL;
+        TR::Register *gprTmpReg = cg->allocateRegister();
+        TR::Register *vecTmpReg = cg->allocateRegister(TR_VRF);
+        TR::Register *vecTmp2Reg = cg->allocateRegister(TR_VRF);
+        TR::Register *vecZeroReg = cg->allocateRegister(TR_VRF);
+        TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+
+        // Compute rotate using shift opcodes
+        //
+        // rotateAmount = rotateAmount & mask;
+        // result = (value << rotateAmount) | (value >> ((0 - rotateAmount) & mask));
+
+        generateRegRegInstruction(TR::InstOpCode::PXORRegReg, node, vecZeroReg, vecZeroReg, cg, OMR::X86::VEX_L128);
+
+        // Broadcast mask constant from GPR into each vector lane.
+        uint32_t rotateMask = TR::DataType::getSize(et) * 8 - 1;
+        TR::TreeEvaluator::loadConstant(node, rotateMask, TR_RematerializableInt, cg, gprTmpReg);
+        TR::InstOpCode::Mnemonic gpr2XMMOpcode
+            = et.isDouble() || et.isInt64() ? TR::InstOpCode::MOVQRegReg8 : TR::InstOpCode::MOVDRegReg4;
+        generateRegRegInstruction(gpr2XMMOpcode, node, vecTmpReg, gprTmpReg, cg);
+        TR::TreeEvaluator::broadcastHelper(node, vecTmpReg, vl, et, cg);
+
+        TR::InstOpCode movOpcode = TR::InstOpCode::MOVDQURegReg;
+        TR::InstOpCode andOpcode = TR::InstOpCode::PANDRegReg;
+        TR::InstOpCode orOpcode = TR::InstOpCode::PORRegReg;
+        TR::InstOpCode shlOpcode = VectorBinaryArithmeticOpCodesForReg[BinaryLogicalShiftLeft][et - 1];
+        ;
+        TR::InstOpCode shrOpcode = VectorBinaryArithmeticOpCodesForReg[BinaryLogicalShiftRight][et - 1];
+        ;
+        TR::InstOpCode subOpcode = VectorBinaryArithmeticOpCodesForReg[BinaryArithmeticSub][et - 1];
+
+        OMR::X86::Encoding movEncoding = movOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding andEncoding = andOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding orEncoding = orOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding shlEncoding = shlOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding shrEncoding = shrOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding subEncoding = subOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+
+        // rotateAmount & mask
+        generateRegRegRegInstruction(andOpcode.getMnemonic(), node, vecTmp2Reg, rotateReg, vecTmpReg, cg, andEncoding);
+
+        // Left Shift
+        generateRegRegRegInstruction(shlOpcode.getMnemonic(), node, resultReg, valueReg, vecTmp2Reg, cg, shlEncoding);
+
+        // Right Shift
+        generateRegRegRegInstruction(subOpcode.getMnemonic(), node, vecTmp2Reg, vecZeroReg, vecTmp2Reg, cg,
+            subEncoding);
+        generateRegRegInstruction(andOpcode.getMnemonic(), node, vecTmp2Reg, vecTmpReg, cg, andEncoding);
+
+        generateRegRegRegInstruction(shrOpcode.getMnemonic(), node, vecTmp2Reg, valueReg, vecTmp2Reg, cg, shrEncoding);
+
+        if (maskReg) {
+            // vecTmp2Reg = leftShift | rightShift
+            generateRegRegRegInstruction(orOpcode.getMnemonic(), node, vecTmp2Reg, resultReg, vecTmp2Reg, cg,
+                orEncoding);
+
+            // result = valueReg
+            generateRegRegInstruction(movOpcode.getMnemonic(), node, resultReg, valueReg, cg, movEncoding);
+
+            // result = write vecTmp2Reg into result under write mask
+            vectorMergeMaskHelper(node, resultReg, vecTmp2Reg, maskReg, cg);
+
+            cg->decReferenceCount(maskNode);
+        } else {
+            // result = leftShift | rightShift
+            generateRegRegInstruction(orOpcode.getMnemonic(), node, resultReg, vecTmp2Reg, cg, orEncoding);
+        }
+
+        cg->stopUsingRegister(gprTmpReg);
+        cg->stopUsingRegister(vecTmpReg);
+        cg->stopUsingRegister(vecTmp2Reg);
+        cg->stopUsingRegister(vecZeroReg);
+
+        cg->decReferenceCount(valueNode);
+        cg->decReferenceCount(rotateNode);
+
+        node->setRegister(resultReg);
+
+        return resultReg;
+    } else {
+        TR_ASSERT_FATAL(false, "Vector rotate not supported without AVX2");
+    }
 }
 
 TR::Register *OMR::X86::TreeEvaluator::vmrolEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::vectorBinaryArithmeticEvaluator(node, cg);
+    return TR::TreeEvaluator::vrolEvaluator(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::CodeGenerator *cg)
