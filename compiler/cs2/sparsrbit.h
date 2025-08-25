@@ -26,6 +26,7 @@
 #include "cs2/allocator.h"
 #include "cs2/bitmanip.h"
 #include "cs2/bitvectr.h"
+#include "infra/Assert.hpp"
 
 #ifdef CS2_ALLOCINFO
 #define allocate(x) allocate(x, __FILE__, __LINE__)
@@ -1289,7 +1290,34 @@ inline bool ASparseBitVector<Allocator>::AddSegmentInner(SparseBitIndex highBits
         base = (Segment *)Allocator::allocate((n + 1) * sizeof(Segment));
     }
 
-    base[i].allocate(count, *this);
+    try {
+        base[i].allocate(count, *this);
+    } catch (...) {
+        if (n == 0) {
+            Allocator::deallocate(base, (n + 1) * sizeof(Segment));
+        } else {
+            // We did reallocate() and memmove(). If reallocate() extended the existing allocation, then fBase points to
+            // the same memory as base, and at the moment fBase[i] and fBase[i + 1] are bitwise identical, which could
+            // lead to corruption because they're supposed to own separate memory. Most likely the stack will unwind and
+            // this sparse bit-vector will be destroyed, which would double-free. Reverse the memmove() to ensure that
+            // fBase has its original contents restored in this case to avoid problems.
+            memmove(&base[i], &base[i + 1], (n - i) * sizeof(Segment));
+
+            // If reallocate() didn't reuse the existing allocation, then fBase is now dangling. We can't just set it to
+            // base because base is an allocation of size (n + 1) * sizeof(Segment), but fBase is expected to have size
+            // n * sizeof(Segment). Reallocate back to the original size. Unfortunately, reallocation might fail too...
+            // Hopefully it should usually (or maybe even always?) succeed because if fBase is dangling, then we've just
+            // freed an allocation of the exact size that we're requesting here.
+            try {
+                fBase = (Segment *)Allocator::reallocate(n * sizeof(Segment), base, (n + 1) * sizeof(Segment));
+            } catch (...) {
+                TR_ASSERT_FATAL(false, "failed to restore original fBase allocation size"); // not much for it...
+            }
+        }
+
+        throw;
+    }
+
     base[i].fHighBits = highBits;
     base[i].fNumValues = 0;
 
