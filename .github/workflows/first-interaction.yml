@@ -5,7 +5,7 @@ on:
 
 jobs:
   triage:
-    if: github.repository == 'eclipse/omr'
+    if: github.repository == 'eclipse-omr/omr'
     runs-on: ubuntu-latest
     steps:
     - uses: fjeremic/cron-first-interaction@0.2.0
