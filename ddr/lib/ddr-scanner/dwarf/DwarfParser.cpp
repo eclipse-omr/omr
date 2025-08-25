@@ -122,25 +122,41 @@ dwarf_init(int fd,
 	 */
 	char *toolpath = NULL;
 
-	if (
 #if defined(AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__))
+DEBUGPRINTF("hit this code");
+#endif
+
+#if defined(J9ZOS390)
+#pragma convlit(suspend)
+#endif
+//	if (
+//#if defined(AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__))
 		// AIX with OpenXL
-		findTool(&toolpath, "which llvm-dwarfdump 2>/dev/null")
-#else /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
+		findTool(&toolpath, "which llvm-dwarfdump 2>/dev/null");
+//#else /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
 		// macOS
-		findTool(&toolpath, "xcrun -f dwarfdump 2>/dev/null")
-	||  findTool(&toolpath, "xcrun -f dwarfdump-classic 2>/dev/null")
-#endif /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
-	) {
+//		findTool(&toolpath, "xcrun -f dwarfdump 2>/dev/null")
+//	||  findTool(&toolpath, "xcrun -f dwarfdump-classic 2>/dev/null")
+//#endif /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
+//	) {
+#if defined(J9ZOS390)
+#pragma convlit(resume)
+#endif
 		stringstream command;
-		command << toolpath << " " << DwarfScanner::getScanFileName() << " 2>&1";
-		printf("DwarfParser running command: %s\n", command.str().c_str());
+		//command << toolpath << " " << DwarfScanner::getScanFileName() << " 2>&1";
+		command << "/jit/team/gauravc/downloads/bin/llvm-dwarfdump" << " " << DwarfScanner::getScanFileName() << " 2>&1";
+		DEBUGPRINTF("DwarfParser running command: %s", command.str().c_str());
 		fp = popen(command.str().c_str(), "r");
-	}
+		DEBUGPRINTF("DwarfParser filepointer: %d", fp);
+//	}
+	DEBUGPRINTF("DwarfParser findTool: %s", toolpath);
 	if (NULL != toolpath) {
 		free(toolpath);
+		DEBUGPRINTF("tool found");
 	}
-
+/*#if defined(J9ZOS390)
+#pragma convlit(resume)
+#endif*/
 	if (NULL == fp) {
 		ret = DW_DLV_ERROR;
 		setError(error, DW_DLE_IOF);
@@ -702,5 +718,6 @@ findTool(char **buffer, const char *command)
 		}
 		pclose(fp);
 	}
+	DEBUGPRINTF("tool found? = %s", found);
 	return found;
 }
