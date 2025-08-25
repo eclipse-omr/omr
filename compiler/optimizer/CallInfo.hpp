@@ -66,6 +66,11 @@ class ResolvedMethodSymbol;
 class SymbolReference;
 class TreeTop;
 } // namespace TR
+
+namespace OMR {
+class RetainedMethodSet;
+}
+
 class TR_CallSite;
 struct TR_VirtualGuardSelection;
 
@@ -240,6 +245,9 @@ struct TR_CallTarget : public TR_Link<TR_CallTarget> {
     TR_PrexArgInfo *_prexArgInfo; // used by computePrexInfo to calculate prex on generatedIL and transform IL
     TR_PrexArgInfo *_ecsPrexArgInfo; // used by ECS and findInlineTargets to assist in choosing correct inline targets
 
+    OMR::RetainedMethodSet *_retainedMethods;
+    bool _needsBond;
+
     /**
      * \brief Constant values that were observed during call target selection
      * within this particular call target, keyed on bytecode index.
@@ -269,10 +277,10 @@ struct TR_CallTarget : public TR_Link<TR_CallTarget> {
         TR::Node *callNode, TR::Method *interfaceMethod, TR_OpaqueClassBlock *receiverClass, int32_t vftSlot,      \
         int32_t cpIndex, TR_ResolvedMethod *initialCalleeMethod, TR::ResolvedMethodSymbol *initialCalleeSymbol,    \
         bool isIndirectCall, bool isInterface, TR_ByteCodeInfo &bcInfo, TR::Compilation *comp, int32_t depth,      \
-        bool allConsts)                                                                                            \
+        bool allConsts, OMR::RetainedMethodSet *retainedMethods, bool wasRefinedFromKnownObject)                   \
         : BASE(callerResolvedMethod, callNodeTreeTop, parent, callNode, interfaceMethod, receiverClass, vftSlot,   \
               cpIndex, initialCalleeMethod, initialCalleeSymbol, isIndirectCall, isInterface, bcInfo, comp, depth, \
-              allConsts)
+              allConsts, retainedMethods, wasRefinedFromKnownObject)
 
 #define TR_CALLSITE_EMPTY_CONSTRUCTOR_BODY {};
 
@@ -306,7 +314,7 @@ public:
         TR::Node *callNode, TR::Method *interfaceMethod, TR_OpaqueClassBlock *receiverClass, int32_t vftSlot,
         int32_t cpIndex, TR_ResolvedMethod *initialCalleeMethod, TR::ResolvedMethodSymbol *initialCalleeSymbol,
         bool isIndirectCall, bool isInterface, TR_ByteCodeInfo &bcInfo, TR::Compilation *comp, int32_t depth,
-        bool allConsts);
+        bool allConsts, OMR::RetainedMethodSet *retainedMethods, bool wasRefinedFromKnownObject);
 
     TR_InlinerFailureReason getCallSiteFailureReason() { return _failureReason; }
 
@@ -402,6 +410,10 @@ public:
 
     // we propagate from calltarget to callee callsite when appropriate in ecs
     TR_PrexArgInfo *_ecsPrexArgInfo; // used by ECS and findInlineTargets to assist in choosing correct inline targets
+
+    TR_ResolvedMethod *_refinedMethod; // if refined based on known object
+    OMR::RetainedMethodSet *_retainedMethods;
+    bool _needsKeepalive;
 
     // new findInlineTargets API
     virtual bool findCallSiteTarget(TR_CallStack *callStack, TR_InlinerBase *inliner);
