@@ -26,6 +26,14 @@
 #include "ddr/scanner/dwarf/DwarfFunctions.hpp"
 #include "ddr/scanner/dwarf/DwarfScanner.hpp"
 
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#include "atoe.h" //if using a2e_string
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+
+#if defined(J9ZOS390)
+#include "spawn.h"
+#endif
+
 /* Statics to create: */
 static bool findTool(char **buffer, const char *command);
 static void deleteDie(Dwarf_Die die);
@@ -122,25 +130,36 @@ dwarf_init(int fd,
 	 */
 	char *toolpath = NULL;
 
-	if (
-#if defined(AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__))
+
+//	if (
+//#if defined(AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__))
 		// AIX with OpenXL
-		findTool(&toolpath, "which llvm-dwarfdump 2>/dev/null")
-#else /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
+#pragma convlit(suspend)
+		bool found = findTool(&toolpath, "which llvm-dwarfdump 2>/dev/null");
+#pragma convlit(resume)
+//#else /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
 		// macOS
-		findTool(&toolpath, "xcrun -f dwarfdump 2>/dev/null")
-	||  findTool(&toolpath, "xcrun -f dwarfdump-classic 2>/dev/null")
-#endif /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
-	) {
+//		findTool(&toolpath, "xcrun -f dwarfdump 2>/dev/null")
+//	||  findTool(&toolpath, "xcrun -f dwarfdump-classic 2>/dev/null")
+//#endif /* defined (AIXPPC) || (defined(J9ZOS390) && defined(__open_xl__)) */
+//	) {
+		DEBUGPRINTF("Found llvm-dwarfdump? %s", found ? "YES" : "NO");
+		DEBUGPRINTF("DwarfParser findTool: %s", toolpath);
 		stringstream command;
-		command << toolpath << " " << DwarfScanner::getScanFileName() << " 2>&1";
-		printf("DwarfParser running command: %s\n", command.str().c_str());
+		//command << toolpath << " " << DwarfScanner::getScanFileName() << " 2>&1";
+		//command << "/jit/team/gauravc/downloads/bin/llvm-dwarfdump" << " " << DwarfScanner::getScanFileName() << " 2>&1";
+		command << "/jit/team/gauravc/downloads/bin/llvm-dwarfdump /jit/team/gauravc/repos/openj9-openjdk-jdk21-zos/build/zos-s390x-server-release/vm/runtime/bcutil/CMakeFiles/j9dyn.dir/BufferManager.cpp.dwo 2>&1";
+		//command << " | iconv -f IBM1047 -t ISO8859-1";
+		DEBUGPRINTF("DwarfParser running command: %s", command.str().c_str());
+#pragma convlit(suspend)
 		fp = popen(command.str().c_str(), "r");
-	}
+#pragma convlit(resume)
+		DEBUGPRINTF("DwarfParser filepointer: %d", fp);
+//	}
 	if (NULL != toolpath) {
 		free(toolpath);
+		DEBUGPRINTF("tool found");
 	}
-
 	if (NULL == fp) {
 		ret = DW_DLV_ERROR;
 		setError(error, DW_DLE_IOF);
@@ -687,10 +706,12 @@ parseAttrType(const char *string, size_t length, Dwarf_Half *type, Dwarf_Half *f
 static bool
 findTool(char **buffer, const char *command)
 {
+#pragma convlit(suspend)
 	bool found = false;
 	FILE *fp = popen(command, "r");
 	if (NULL != fp) {
 		size_t cap = 0;
+		DEBUGPRINTF("findTool::popen succeeded");
 		ssize_t len = getline(buffer, &cap, fp);
 		/* if xcrun fails to find the tool, then returned length would be 0 */
 		if ((len > 0) &&  ('/' == (*buffer)[0])) {
@@ -702,5 +723,6 @@ findTool(char **buffer, const char *command)
 		}
 		pclose(fp);
 	}
+#pragma convlit(resume)
 	return found;
 }

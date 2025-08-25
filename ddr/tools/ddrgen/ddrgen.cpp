@@ -84,7 +84,6 @@ main(int argc, char *argv[])
 	omrthread_attach(NULL);
 
 	OMRPortLibrary portLibrary;
-	printf("ddrgen-main start...\n");
 
 	if (0 != omrport_init_library(&portLibrary, sizeof(portLibrary))) {
 		fprintf(stderr, "failed to initalize port library\n");
@@ -99,6 +98,7 @@ main(int argc, char *argv[])
 		/* translate argv strings to ASCII */
 		for (int i = 0; i < argc; ++i) {
 			argv[i] = e2a_string(argv[i]);
+        //printf("argv[%d]: %s\n", i, argv[i]);
 			if (NULL == argv[i]) {
 				fprintf(stderr, "failed to convert argument #%d from EBCDIC to ASCII\n", i);
 				rc = DDR_RC_ERROR;
@@ -129,6 +129,7 @@ main(int argc, char *argv[])
 	const TypePrinter printer(&portLibrary, TypePrinter::FIELDS | TypePrinter::LITERALS | TypePrinter::MACROS);
 #endif /* DEBUG_PRINT_TYPES */
 printf("about to startScan: \n");
+printf("!options.debugFiles.empty(): %s\n", !options.debugFiles.empty() ? "true" : "false" );
 	if ((DDR_RC_OK == rc) && !options.debugFiles.empty()) {
 		rc = scanner.startScan(&portLibrary, &ir, &options.debugFiles, options.excludesFile);
 
