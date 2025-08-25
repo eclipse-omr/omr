@@ -9235,7 +9235,7 @@
         /* .description =    "vector merge high word", */
         /* .prefix      = */ 0x00000000,
         /* .opcode      = */ 0x1000008C,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P6,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },

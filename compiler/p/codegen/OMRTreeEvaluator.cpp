@@ -1027,7 +1027,38 @@ TR::Register *OMR::Power::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::s2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+    
+    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+    
+    TR::Register *tmpGPR = cg->allocateRegister(TR_GPR);
+    TR::Register *tmpVRF = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    //get first byte element of src
+    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sradi, node, tmpGPR, srcReg, 8);
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, tmpVRF, tmpGPR);
+
+    //get last byte element of src
+    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, tmpGPR, srcReg, 0xFF);
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, tmpGPR);
+
+    //merge dstReg and tmpVRF
+    generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, dstReg, dstReg, tmpVRF, 0);
+
+    //create all 0/1 mask by subtracting from 0:
+    //0-1 = -1 = 0xFF...
+    //0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpVRF, 0);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsubudm, node, dstReg, tmpVRF, dstReg);
+
+    cg->stopUsingRegister(tmpGPR);
+    cg->stopUsingRegister(tmpVRF);
+    cg->decReferenceCount(child);
+    
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
