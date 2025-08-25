@@ -655,8 +655,8 @@ inline ASparseBitVector<Allocator> &ASparseBitVector<Allocator>::operator=(const
     else
         Clear();
     if (vector.fNumberOfSegments) {
+        fBase = (Segment *)Allocator::allocate(vector.fNumberOfSegments * sizeof(Segment));
         fNumberOfSegments = vector.fNumberOfSegments;
-        fBase = (Segment *)Allocator::allocate(fNumberOfSegments * sizeof(Segment));
         SparseBitIndex i;
         for (i = 0; i < fNumberOfSegments; i++)
             fBase[i].copy(vector.fBase[i], *this);
@@ -688,8 +688,8 @@ inline ASparseBitVector<Allocator> &ASparseBitVector<Allocator>::operator=(const
     else
         Clear();
     if (vector.fNumberOfSegments) {
+        fBase = (Segment *)Allocator::allocate(vector.fNumberOfSegments * sizeof(Segment));
         fNumberOfSegments = vector.fNumberOfSegments;
-        fBase = (Segment *)Allocator::allocate(fNumberOfSegments * sizeof(Segment));
         memset(fBase, 0, fNumberOfSegments * sizeof(Segment));
         SparseBitIndex i;
         for (i = 0; i < fNumberOfSegments; i++)
