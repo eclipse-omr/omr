@@ -19,6 +19,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -346,4 +347,78 @@ int32_t TR::CircularLogger::close()
     setLoggerClosed(true);
     setEnabled_DEPRECATED(false);
     return getInnerLogger()->close();
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * MemoryBufferLogger
+ * -----------------------------------------------------------------------------
+ */
+
+TR::MemoryBufferLogger *TR::MemoryBufferLogger::create(char *buf, size_t maxBufLen)
+{
+    return new TR::MemoryBufferLogger(buf, maxBufLen);
+}
+
+TR::MemoryBufferLogger::MemoryBufferLogger(char *buf, size_t maxBufLen)
+    : _buf(buf)
+    , _bufCursor(buf)
+    , _maxBufLen(maxBufLen)
+    , _maxRemainingChars(maxBufLen)
+{}
+
+int32_t TR::MemoryBufferLogger::printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int32_t result = TR::MemoryBufferLogger::vprintf(format, args);
+    va_end(args);
+
+    return result;
+}
+
+int32_t TR::MemoryBufferLogger::prints(const char *string) { return TR::MemoryBufferLogger::printf("%s", string); }
+
+int32_t TR::MemoryBufferLogger::printc(char c) { return TR::MemoryBufferLogger::printf("%c", c); }
+
+int32_t TR::MemoryBufferLogger::println() { return TR::MemoryBufferLogger::printf("\n"); }
+
+int32_t TR::MemoryBufferLogger::vprintf(const char *format, va_list args)
+{
+    int32_t charsWritten = ::vsnprintf(_bufCursor, _maxRemainingChars, format, args);
+
+    if (charsWritten >= 0) {
+        if (charsWritten < _maxRemainingChars) {
+            _bufCursor += charsWritten;
+            _maxRemainingChars -= charsWritten;
+            return charsWritten;
+        } else {
+            // Buffer would overflow, but only max allowable chars were written
+            //
+            _bufCursor += _maxRemainingChars;
+            _maxRemainingChars = 0;
+            return -charsWritten;
+        }
+    } else {
+        // Non-overflow error
+        //
+        return INT_MIN;
+    }
+}
+
+int64_t TR::MemoryBufferLogger::tell() { return static_cast<int64_t>(_bufCursor - _buf); }
+
+void TR::MemoryBufferLogger::rewind()
+{
+    _bufCursor = _buf;
+    _maxRemainingChars = _maxBufLen;
+}
+
+int32_t TR::MemoryBufferLogger::flush() { return 0; }
+
+int32_t TR::MemoryBufferLogger::close()
+{
+    setLoggerClosed(true);
+    setEnabled_DEPRECATED(false);
+    return this->flush();
 }
