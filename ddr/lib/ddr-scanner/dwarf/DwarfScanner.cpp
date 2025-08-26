@@ -499,11 +499,11 @@ DwarfScanner::getName(Dwarf_Die die, string *name, Dwarf_Off *dieOffset)
 				}
 				Dwarf_Die spec = NULL;
 				if (
-#if defined(J9ZOS390)
+#if defined(J9ZOS390) && !defined(__open_xl__)
 					DW_DLV_ERROR == dwarf_offdie(_debug, offset, &spec, &err)
-#else /* defined(J9ZOS390) */
+#else /* defined(J9ZOS390) && !defined(__open_xl__) */
 					DW_DLV_ERROR == dwarf_offdie_b(_debug, offset, 1, &spec, &err)
-#endif /* defined(J9ZOS390) */
+#endif /* defined(J9ZOS390) && !defined(__open_xl__) */
 				) {
 					ERRMSG("Getting die from specification offset: %s\n", dwarf_errmsg(err));
 					rc = DDR_RC_ERROR;
@@ -750,12 +750,12 @@ DwarfScanner::getTypeTag(Dwarf_Die die, Dwarf_Die *typeDie, Dwarf_Half *tag)
 		/* Use the offset to get the Die containing the type tag. */
 		Dwarf_Die newDie = NULL;
 		if (
-#if defined(J9ZOS390)
+#if defined(J9ZOS390) && !defined(__open_xl__)
 			/* z/OS dwarf library doesn't have dwarf_offdie_b, only dwarf_offdie. */
 			DW_DLV_ERROR == dwarf_offdie(_debug, offset, &newDie, &err)
-#else /* defined(J9ZOS390) */
+#else /* defined(J9ZOS390) && !defined(__open_xl__) */
 			DW_DLV_ERROR == dwarf_offdie_b(_debug, offset, 1, &newDie, &err)
-#endif /* defined(J9ZOS390) */
+#endif /* defined(J9ZOS390) && !defined(__open_xl__) */
 		) {
 			ERRMSG("Getting typedie from type offset: %s\n", dwarf_errmsg(err));
 			goto getTypeDone;
@@ -1777,6 +1777,7 @@ DDR_RC
 DwarfScanner::startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir, vector<string> *debugFiles, const char *excludesFilePath)
 {
 	DEBUGPRINTF("Initializing libDwarf:");
+	printf("inside startScan...\n");
 
 	DDR_RC rc = loadExcludesFile(portLibrary, excludesFilePath);
 
@@ -1784,6 +1785,7 @@ DwarfScanner::startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir, vector<strin
 		/* Read list of debug files to scan from the input file. */
 		for (vector<string>::iterator it = debugFiles->begin(); it != debugFiles->end(); ++it) {
 			Symbol_IR newIR(ir);
+			printf("scanFile: %s \n",it->c_str());
 			rc = scanFile(portLibrary, &newIR, it->c_str());
 			if (DDR_RC_OK != rc) {
 				ERRMSG("Failure scanning %s\n", it->c_str());
@@ -1814,6 +1816,7 @@ DwarfScanner::scanFile(OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *f
 		Dwarf_Ptr errarg = NULL;
 		intptr_t native_fd = omrfile_convert_omrfile_fd_to_native_fd(fd);
 		DwarfScanner::scanFileName = filepath;
+		printf("before ddr_dw_init of %s\n", filepath);
 		res = ddr_dw_init((int)native_fd, errhand, errarg, &_debug, &error);
 		if (DW_DLV_OK != res) {
 			ERRMSG("Failed to initialize libDwarf scanning %s: %s\nExiting...\n", filepath, dwarf_errmsg(error));
