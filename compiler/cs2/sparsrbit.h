@@ -360,6 +360,7 @@ private:
     SparseBitIndex fNumberOfSegments;
 
     Segment *FindSegment(SparseBitIndex index) const;
+    bool AddSegmentInner(SparseBitIndex index, SparseBitIndex count, Segment **out);
     Segment *AddSegment(SparseBitIndex index, SparseBitIndex count);
     Segment *AddSegment(SparseBitIndex index, SparseBitIndex count, uint16_t *bits);
     Segment *OrSegment(SparseBitIndex index, SparseBitIndex count, uint16_t *bits);
@@ -598,34 +599,13 @@ inline typename ASparseBitVector<Allocator>::SparseBitRef &ASparseBitVector<Allo
 template<class Allocator>
 inline typename ASparseBitVector<Allocator>::SparseBitRef &ASparseBitVector<Allocator>::SparseBitRef::Set()
 {
-    size_t i = 0, n = fVector.fNumberOfSegments;
-
-    uint16_t highBits = fIndex >> 16;
-    Segment *base;
-    if (n) {
-        base = fVector.fBase;
-        for (i = 0; i < n; i++) {
-            if (base[i].fHighBits >= highBits) {
-                if (base[i].fHighBits == highBits) {
-                    fVector.SetSegment(base[i], fIndex);
-                    return *this;
-                }
-                break;
-            }
-        }
-        base = (Segment *)fVector.reallocate((n + 1) * sizeof(Segment), base, n * sizeof(Segment));
-        memmove(&base[i + 1], &base[i], (n - i) * sizeof(Segment));
+    Segment *segment = NULL;
+    if (fVector.AddSegmentInner(fIndex >> 16, sizeof(size_t) / sizeof(uint16_t), &segment)) {
+        fVector.SetSegment(*segment, fIndex);
     } else {
-        base = (Segment *)fVector.allocate((n + 1) * sizeof(Segment));
+        segment->fNumValues = 1;
+        segment->Indices()[0] = fIndex;
     }
-
-    base[i].allocate(sizeof(size_t) / sizeof(uint16_t), fVector);
-    base[i].fNumValues = 1;
-    base[i].fHighBits = highBits;
-    base[i].Indices()[0] = fIndex;
-
-    fVector.fBase = base;
-    fVector.fNumberOfSegments = static_cast<SparseBitIndex>(n + 1);
 
     return *this;
 }
@@ -1283,21 +1263,22 @@ inline SparseBitIndex ASparseBitVector<Allocator>::ValueAtSegment(
     return 0;
 }
 
+// Return true if an existing segment was found, and false otherwise.
 template<class Allocator>
-inline typename ASparseBitVector<Allocator>::Segment *ASparseBitVector<Allocator>::AddSegment(SparseBitIndex index,
-    SparseBitIndex count)
+inline bool ASparseBitVector<Allocator>::AddSegmentInner(SparseBitIndex highBits, SparseBitIndex count, Segment **out)
 {
     size_t i = 0, n = fNumberOfSegments;
 
     Segment *base;
+    *out = NULL;
 
     if (n) {
         base = fBase;
         for (i = 0; i < n; i++) {
-            if (base[i].fHighBits >= index >> 16) {
-                if (base[i].fHighBits == index >> 16) {
-                    GrowSegment(base[i], count);
-                    return &base[i];
+            if (base[i].fHighBits >= highBits) {
+                if (base[i].fHighBits == highBits) {
+                    *out = &base[i];
+                    return true;
                 }
                 break;
             }
@@ -1309,13 +1290,26 @@ inline typename ASparseBitVector<Allocator>::Segment *ASparseBitVector<Allocator
     }
 
     base[i].allocate(count, *this);
-    base[i].fHighBits = index >> 16;
+    base[i].fHighBits = highBits;
     base[i].fNumValues = 0;
 
     fBase = base;
     fNumberOfSegments = static_cast<SparseBitIndex>(n + 1);
 
-    return &base[i];
+    *out = &base[i];
+    return false;
+}
+
+template<class Allocator>
+inline typename ASparseBitVector<Allocator>::Segment *ASparseBitVector<Allocator>::AddSegment(SparseBitIndex index,
+    SparseBitIndex count)
+{
+    Segment *result = NULL;
+    if (AddSegmentInner(index >> 16, count, &result)) {
+        GrowSegment(*result, count);
+    }
+
+    return result;
 }
 
 template<class Allocator>
