@@ -19,6 +19,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -346,4 +347,78 @@ int32_t OMR::CircularLogger::close()
     setLoggerClosed(true);
     setEnabled_DEPRECATED(false);
     return getInnerLogger()->close();
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * MemoryBufferLogger
+ * -----------------------------------------------------------------------------
+ */
+
+OMR::MemoryBufferLogger *OMR::MemoryBufferLogger::create(char *buf, size_t maxBufLen)
+{
+    return new OMR::MemoryBufferLogger(buf, maxBufLen);
+}
+
+OMR::MemoryBufferLogger::MemoryBufferLogger(char *buf, size_t maxBufLen)
+    : _buf(buf)
+    , _bufCursor(buf)
+    , _maxBufLen(maxBufLen)
+    , _maxRemainingChars(maxBufLen)
+{}
+
+int32_t OMR::MemoryBufferLogger::printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int32_t result = OMR::MemoryBufferLogger::vprintf(format, args);
+    va_end(args);
+
+    return result;
+}
+
+int32_t OMR::MemoryBufferLogger::prints(const char *string) { return OMR::MemoryBufferLogger::printf("%s", string); }
+
+int32_t OMR::MemoryBufferLogger::printc(char c) { return OMR::MemoryBufferLogger::printf("%c", c); }
+
+int32_t OMR::MemoryBufferLogger::println() { return OMR::MemoryBufferLogger::printf("\n"); }
+
+int32_t OMR::MemoryBufferLogger::vprintf(const char *format, va_list args)
+{
+    int32_t charsWritten = ::vsnprintf(_bufCursor, _maxRemainingChars, format, args);
+
+    if (charsWritten >= 0) {
+        if (charsWritten < _maxRemainingChars) {
+            _bufCursor += charsWritten;
+            _maxRemainingChars -= charsWritten;
+            return charsWritten;
+        } else {
+            // Buffer would overflow, but only max allowable chars were written
+            //
+            _bufCursor += _maxRemainingChars;
+            _maxRemainingChars = 0;
+            return -charsWritten;
+        }
+    } else {
+        // Non-overflow error
+        //
+        return INT_MIN;
+    }
+}
+
+int64_t OMR::MemoryBufferLogger::tell() { return static_cast<int64_t>(_bufCursor - _buf); }
+
+void OMR::MemoryBufferLogger::rewind()
+{
+    _bufCursor = _buf;
+    _maxRemainingChars = _maxBufLen;
+}
+
+int32_t OMR::MemoryBufferLogger::flush() { return 0; }
+
+int32_t OMR::MemoryBufferLogger::close()
+{
+    setLoggerClosed(true);
+    setEnabled_DEPRECATED(false);
+    return this->flush();
 }

@@ -432,6 +432,105 @@ private:
     int64_t _rewindThresholdInChars;
 };
 
+/**
+ * A Logger class that performs logging to a memory buffer. The maximum size of the
+ * buffer is fixed on Logger creation. The memory buffer is protected against buffer
+ * overflows.
+ *
+ * All content logged is terminated with a '\0'-termination character.
+ *
+ * The underlying char buffer must be allocated before the Logger is created.
+ */
+class MemoryBufferLogger : public Logger {
+public:
+    /**
+     * @brief The \c MemoryBufferLogger factory function
+     *
+     * @param[in] buf : a non-NULL pointer to an already allocated memory buffer
+     * @param[in] maxBufLen : the maximum capacity of the buffer in chars. Note
+     *     that the size of the buffer must include space for one '\0'-termination
+     *     character.
+     *
+     * @return An allocated \c MemoryBufferLogger object
+     */
+    static MemoryBufferLogger *create(char *buf, size_t maxBufLen);
+
+    /**
+     * @anchor membuf_printf
+     *
+     * @brief
+     *     Send a `\0`-terminated string with format specifiers and arguments
+     *     to the Logger. The format specifier follows C/C++ conventions.
+     *
+     * @details
+     *     If there is insufficient space in the buffer for the string to log
+     *     then it may be partially written until the buffer is exhausted. The
+     *     negative of the number of chars that would have been written had
+     *     there been sufficent space is returned.
+     *
+     * @return
+     *     If non-negative, the number of chars successfully sent to the Logger
+     *
+     *     If negative, there is insufficient space in the memory buffer for the
+     *     string to log. The return value is the negative of the number of chars
+     *     that would have been sent if the logging had been successful.
+     *
+     *     MIN_INT on any other error
+     */
+    virtual int32_t printf(const char *format, ...);
+
+    /**
+     * @brief Send a raw `\0`-terminated string to the Logger.
+     *
+     * @see membuf_printf for details and return value
+     */
+    virtual int32_t prints(const char *string);
+
+    /**
+     * @brief Send a single `char` to the Logger.
+     *
+     * @see membuf_printf for details and return value
+     */
+    virtual int32_t printc(char c);
+
+    /**
+     * @brief
+     *     Send a single newline to the Logger.
+     *     This is equivalent to `printc('\n')`.
+     *
+     * @see membuf_printf for details and return value
+     */
+    virtual int32_t println();
+
+    /**
+     * @brief
+     *     Send a `\0`-terminated string with format specifiers and arguments
+     *     in a `va_list` to the Logger. The format specifier follows C/C++
+     *     conventions.
+     *
+     * @see membuf_printf for details and return value
+     */
+    virtual int32_t vprintf(const char *format, va_list args);
+
+    virtual int64_t tell();
+
+    virtual void rewind();
+
+    virtual int32_t flush();
+
+    virtual int32_t close();
+
+    virtual bool supportsRewinding() { return true; }
+
+private:
+    MemoryBufferLogger(char *buf, size_t maxBufLen);
+
+    char *_buf;
+    char *_bufCursor;
+    size_t _maxBufLen;
+    size_t _maxRemainingChars;
+};
+
 } // namespace OMR
 
 #endif
