@@ -1793,6 +1793,11 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
         case TR::m2v:
             // only P9 has splat byte immediate, otherwise it's too expensive
             return cpu->isAtLeast(OMR_PROCESSOR_PPC_P9);
+        case TR::l2m:
+            if (et == TR::Int16 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8))
+                return true;
+            else
+                return false;
         default:
             return false;
     }
