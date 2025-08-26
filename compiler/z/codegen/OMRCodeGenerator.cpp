@@ -4449,6 +4449,13 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::mAnyTrue:
         case TR::mAllTrue:
             return true;
+        case TR::vcmpeq:
+        case TR::vcmpne:
+        case TR::vcmplt:
+        case TR::vcmple:
+        case TR::vcmpgt:
+        case TR::vcmpge:
+            return true;
         default:
             return false;
     }
