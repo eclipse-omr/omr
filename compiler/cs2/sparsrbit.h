@@ -1791,11 +1791,28 @@ template<class Allocator> inline void ASparseBitVector<Allocator>::RemoveSegment
     Segment s = fBase[i];
 
     if (fNumberOfSegments > 1) {
+        // Don't decrement fNumberOfSegments yet. fBase is expected to point to an allocation sized according to
+        // fNumberOfSegments, so if we were to decrement it now, and if reallocate() were to fail, fBase would become
+        // inconsistent with fNumberOfSegments, which would be a problem at the next reallocate() or deallocate().
+        Segment removedSegment = fBase[i];
         for (size_t j = i; j < (fNumberOfSegments - 1); j++)
             fBase[j] = fBase[j + 1];
 
-        fBase = (Segment *)Allocator::reallocate(sizeof(Segment) * (fNumberOfSegments - 1), fBase,
-            sizeof(Segment) * (fNumberOfSegments));
+        try {
+            fBase = (Segment *)Allocator::reallocate(sizeof(Segment) * (fNumberOfSegments - 1), fBase,
+                sizeof(Segment) * (fNumberOfSegments));
+        } catch (...) {
+            // The last two elements of fBase are bitwise identical, which could lead to corruption because they're
+            // supposed to own separate memory. Most likely the stack will unwind and this sparse bit vector will be
+            // destroyed, which would double-free. Restore fBase to its original contents to avoid problems.
+            for (size_t j = fNumberOfSegments - 1; j > i; j--) {
+                fBase[j] = fBase[j - 1];
+            }
+
+            fBase[i] = removedSegment;
+            throw;
+        }
+
         fNumberOfSegments -= 1;
     } else {
         Allocator::deallocate(fBase, sizeof(Segment));
