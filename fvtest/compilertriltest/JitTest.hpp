@@ -152,6 +152,37 @@ class JitTest : public TestWithPortLib
   };
 
 /**
+ * @brief The JitWithPortTest class is a basic test fixture for OMR compiler test cases.
+ *
+ * The fixture does the following for OMR compiler tests that use it:
+ *
+ * - initialize JIT just before the test starts
+ * - shutdown JIT just after the test finishes executing
+ * - makes port library macros available for use in test cases
+ * - add OMR port library to the test environment
+ *
+ * Example use:
+ *
+ *    class MyTestCase : public TRTest::JitWithPortTest {};
+ */
+class JitWithPortTest : public TestWithPortLib
+   {
+   public:
+
+   JitWithPortTest()
+      {
+      auto initSuccess = initializeJitWithOptionsAndPort((char*)"-Xjit:acceptHugeMethods,enableBasicBlockHoisting,omitFramePointer,useILValidator,paranoidoptcheck", privateOmrPortLibrary);
+      if (!initSuccess)
+         throw std::runtime_error("Failed to initialize jit");
+      }
+
+   ~JitWithPortTest()
+      {
+      shutdownJit();
+      }
+  };
+
+/**
  * @brief A fixture for testing with a customized optimization strategy.
  *
  * The design of this is such that it is expected sublasses will

@@ -27,5 +27,6 @@ class TR_Memory;
 
 extern "C" bool initializeJit();
 extern "C" bool initializeJitWithOptions(char * options);
+extern "C" bool initializeJitWithOptionsAndPort(char *options, void *portLib);
 extern "C" uint32_t compileMethodBuilder(TR::MethodBuilder *m, uint8_t **entry);
 extern "C" void shutdownJit();

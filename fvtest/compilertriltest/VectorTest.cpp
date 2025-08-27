@@ -27,7 +27,11 @@
 #define MAX(x, y) (x > y) ? x : y
 #define ABS(x) (x < 0) ? -x : x
 
+#ifdef TR_TARGET_S390
+class VectorTest : public TRTest::JitWithPortTest {};
+#else
 class VectorTest : public TRTest::JitTest {};
+#endif // TR_TARGET_S390
 
 class ParameterizedBinaryVectorArithmeticTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::ILOpCode, TR::VectorLength>> {};
 
@@ -213,8 +217,6 @@ TEST_P(ParameterizedBinaryVectorArithmeticTest, VLoadStore) {
     TR::DataTypes et = scalarOpcode.getType().getDataType();
 
     SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
 
     TR::ILOpCode vectorOpcode = OMR::ILOpCode::convertScalarToVector(scalarOpcode.getOpCodeValue(), vl);
     ASSERT_NE(TR::BadILOp, vectorOpcode.getOpCodeValue());
@@ -355,8 +357,6 @@ TEST_P(ParameterizedVectorTest, VLoadStore) {
     TR::DataTypes et = std::get<1>(GetParam());
 
     SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
 
     TR::DataType vt = TR::DataType::createVectorType(et, vl);
 
@@ -403,8 +403,6 @@ TEST_P(ParameterizedVectorTest, VSplats) {
     TR::DataTypes et = std::get<1>(GetParam());
 
     SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
 
     TR::DataType vt = TR::DataType::createVectorType(et, vl);
 
@@ -498,14 +496,14 @@ typedef BinaryTestData<int8_t, 64> BinaryByteTest;
 typedef BinaryTestData<int16_t, 32> BinaryShortTest;
 typedef BinaryTestData<int32_t, 16> BinaryIntTest;
 typedef BinaryTestData<int64_t, 8> BinaryLongTest;
-typedef BinaryTestData<float_t, 16> BinaryFloatTest;
-typedef BinaryTestData<double_t, 8> BinaryDoubleTest;
+typedef BinaryTestData<float, 16> BinaryFloatTest;
+typedef BinaryTestData<double, 8> BinaryDoubleTest;
 typedef TernaryTestData<int8_t, 64> TernaryByteTest;
 typedef TernaryTestData<int16_t, 32> TernaryShortTest;
 typedef TernaryTestData<int32_t, 16> TernaryIntTest;
 typedef TernaryTestData<int64_t, 8> TernaryLongTest;
-typedef TernaryTestData<float_t, 16> TernaryFloatTest;
-typedef TernaryTestData<double_t, 8> TernaryDoubleTest;
+typedef TernaryTestData<float, 16> TernaryFloatTest;
+typedef TernaryTestData<double, 8> TernaryDoubleTest;
 
 void dataDrivenTestEvaluator(TR::VectorOperation operation, TR::VectorLength vl, TR::DataType dt, TR::CPU *cpu, void *expected, void *inputA, void* inputB, void* inputC) {
     SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
@@ -530,46 +528,34 @@ class BinaryDataDriven##type##Test : public VectorTest, public ::testing::WithPa
 TEST_P(BinaryDataDriven##type##Test, BinaryVector128##type##Test) {                                                                            \
     testType data = std::get<1>(GetParam());                                                                                                   \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                      \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)"; \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength128, TR::type, &cpu, data.expected, data.inputA, data.inputB, NULL);      \
 }                                                                                                                                              \
 TEST_P(BinaryDataDriven##type##Test, BinaryVector256##type##Test) {                                                                            \
     testType data = std::get<1>(GetParam());                                                                                                   \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                      \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)"; \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength256, TR::type, &cpu, data.expected, data.inputA, data.inputB, NULL);      \
 }                                                                                                                                              \
 TEST_P(BinaryDataDriven##type##Test, BinaryVector512##type##Test) {                                                                            \
     testType data = std::get<1>(GetParam());                                                                                                   \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                      \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)"; \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength512, TR::type, &cpu, data.expected, data.inputA, data.inputB, NULL);      \
 }                                                                                                                                              \
 class BinaryDataDriven128##type##Test : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorOperation, testType>> {}; \
 TEST_P(BinaryDataDriven128##type##Test, BinaryVector128##type##Test) {                                                                         \
     testType data = std::get<1>(GetParam());                                                                                                   \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                      \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)"; \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength128, TR::type, &cpu, data.expected, data.inputA, data.inputB, NULL);      \
 }                                                                                                                                              \
 class BinaryDataDriven256##type##Test : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorOperation, testType>> {}; \
 TEST_P(BinaryDataDriven256##type##Test, BinaryVector256##type##Test) {                                                                         \
     testType data = std::get<1>(GetParam());                                                                                                   \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                      \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)"; \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength256, TR::type, &cpu, data.expected, data.inputA, data.inputB, NULL);      \
 }                                                                                                                                              \
 class BinaryDataDriven512##type##Test : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorOperation, testType>> {}; \
 TEST_P(BinaryDataDriven512##type##Test, BinaryVector512##type##Test) {                                                                         \
     testType data = std::get<1>(GetParam());                                                                                                   \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                      \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)"; \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength512, TR::type, &cpu, data.expected, data.inputA, data.inputB, NULL);      \
 }
 
@@ -579,22 +565,16 @@ class TernaryDataDriven##type##Test : public VectorTest, public ::testing::WithP
 TEST_P(TernaryDataDriven##type##Test, TernaryVector128##type##Test) {                                                                           \
     testType data = std::get<1>(GetParam());                                                                                                    \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                       \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";   \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength128, TR::type, &cpu, data.expected, data.inputA, data.inputB, data.inputC);\
 }                                                                                                                                               \
 TEST_P(TernaryDataDriven##type##Test, TernaryVector256##type##Test) {                                                                           \
     testType data = std::get<1>(GetParam());                                                                                                    \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                       \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";   \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength256, TR::type, &cpu, data.expected, data.inputA, data.inputB, data.inputC);\
 }                                                                                                                                               \
 TEST_P(TernaryDataDriven##type##Test, TernaryVector512##type##Test) {                                                                           \
     testType data = std::get<1>(GetParam());                                                                                                    \
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);                                                                                       \
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";   \
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";  \
     dataDrivenTestEvaluator(std::get<0>(GetParam()), TR::VectorLength512, TR::type, &cpu, data.expected, data.inputA, data.inputB, data.inputC);\
 }
 
@@ -629,12 +609,11 @@ TEST_F(VectorTest, VInt8Not) {
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
-    //TODO: Re-enable this test on S390 after issue #1843 is resolved.
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
     SKIP_ON_RISCV(MissingImplementation);
     SKIP_ON_X86(MissingImplementation);
     SKIP_ON_HAMMER(MissingImplementation);
+    SKIP_ON_S390(MissingImplementation);
+    SKIP_ON_S390X(MissingImplementation);
 
     Tril::DefaultCompiler compiler(trees);
     ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
@@ -668,9 +647,6 @@ TEST_F(VectorTest, VInt8BitSelect) {
     auto trees = parseString(inputTrees);
 
     ASSERT_NOTNULL(trees);
-    //TODO: Re-enable this test on S390 after issue #1843 is resolved.
-    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
-    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
     SKIP_ON_RISCV(MissingImplementation);
 
     Tril::DefaultCompiler compiler(trees);
