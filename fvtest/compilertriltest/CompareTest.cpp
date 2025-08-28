@@ -158,6 +158,8 @@ int32_t iucmple(uint32_t l, uint32_t r) {
 class UInt32Compare : public TRTest::OpCodeTest<int32_t,uint32_t,uint32_t> {};
 
 TEST_P(UInt32Compare, UsingConst) {
+    SKIP_ON_S390(KnownBug) << "This test fails on Z platform (issue #7911)";
+    SKIP_ON_S390X(KnownBug) << "This test fails on Z platform (issue #7911)";
     auto param = TRTest::to_struct(GetParam());
 
     char inputTrees[120] = {0};
@@ -184,6 +186,8 @@ TEST_P(UInt32Compare, UsingConst) {
 }
 
 TEST_P(UInt32Compare, UsingRhsConst) {
+    SKIP_ON_S390(KnownBug) << "This test fails on Z platform (issue #7911)";
+    SKIP_ON_S390X(KnownBug) << "This test fails on Z platform (issue #7911)";
     auto param = TRTest::to_struct(GetParam());
 
     char inputTrees[120] = {0};
