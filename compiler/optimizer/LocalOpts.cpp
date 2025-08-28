@@ -6416,6 +6416,11 @@ bool TR_InvariantArgumentPreexistence::devirtualizeVirtualCall(TR::Node *node, T
         return false;
     }
 
+    // We don't need to consider the possibility of unloading the refined callee
+    // before this compilation's outermost method. This is a call to an instance
+    // method, so if the callee is unloaded, there will be no receiver object
+    // and the call will therefore be unreachable.
+
     if (!performTransformation(comp(),
             "%sspecialize and devirtualize invoke [%p] on currently fixed or final parameter\n", optDetailString(),
             node))
