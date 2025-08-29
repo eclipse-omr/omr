@@ -13915,7 +13915,6 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
         case TR::InstOpCode::VA:
         case TR::InstOpCode::VS:
         case TR::InstOpCode::VML:
-        case TR::InstOpCode::VCEQ:
             mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, 0, mask4);
             break;
@@ -13940,6 +13939,7 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
         // These are VRRb
         case TR::InstOpCode::VCH:
         case TR::InstOpCode::VCHL:
+        case TR::InstOpCode::VCEQ:
             mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRbInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, mask4);
             break;
@@ -15411,7 +15411,7 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::CodeGen
 
         int32_t mask4 = getVectorElementSizeMask(node);
         // vector int types need compare equal part
-        generateVRRcInstruction(cg, TR::InstOpCode::VCEQ, node, equalReg, firstReg, secondReg, 0, 0, mask4);
+        generateVRRbInstruction(cg, TR::InstOpCode::VCEQ, node, equalReg, firstReg, secondReg, 0, mask4);
         generateVRRbInstruction(cg, op, node, targetReg, firstReg, secondReg, 0, mask4);
         generateVRRcInstruction(cg, TR::InstOpCode::VO, node, targetReg, targetReg, equalReg, 0, 0, 0);
 
