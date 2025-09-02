@@ -1037,16 +1037,19 @@ TR::Register *OMR::Power::TreeEvaluator::s2mEvaluator(TR::Node *node, TR::CodeGe
 
     node->setRegister(dstReg);
 
-    // get first byte element of src
+    //rearrange byte elements of src to convert to word-length elements
     generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sradi, node, tmpGPR, srcReg, 8);
-    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, tmpVRF, tmpGPR);
-
-    // get last byte element of src
-    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, tmpGPR, srcReg, 0xFF);
+    generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, tmpGPR, srcReg, 32, 0x000000FF00000000);
+    
+    //move to VRF
     generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, tmpGPR);
 
-    // merge dstReg and tmpVRF
-    generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, dstReg, dstReg, tmpVRF, 0);
+    //unpack word-length elements to doubleword-length elements
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsw, node, dstReg, dstReg);
+
+    //reverse element order if big endian
+    if (!cg->comp()->target().cpu.isLittleEndian())
+        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, dstReg, dstReg, dstReg, 2);
 
     // create all 0/1 mask by subtracting from 0:
     // 0-1 = -1 = 0xFF...
