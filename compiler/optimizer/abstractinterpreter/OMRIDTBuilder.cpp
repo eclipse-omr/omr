@@ -59,7 +59,8 @@ TR::IDT *OMR::IDTBuilder::buildIDT()
         TR_CallSite(rootMethod, NULL, NULL, NULL, NULL, rootMethod->containingClass(), 0, 0, rootMethod, _rootSymbol,
             _rootSymbol->getMethodKind() == TR::MethodSymbol::Kinds::Virtual
                 || _rootSymbol->getMethodKind() == TR::MethodSymbol::Kinds::Interface,
-            _rootSymbol->getMethodKind() == TR::MethodSymbol::Kinds::Interface, bcInfo, comp(), -1, false);
+            _rootSymbol->getMethodKind() == TR::MethodSymbol::Kinds::Interface, bcInfo, comp(), -1, false,
+            comp()->retainedMethods(), false);
 
     TR_CallTarget *rootCallTarget = new (region())
         TR_CallTarget(region(), rootCallSite, _rootSymbol, rootMethod, NULL, rootMethod->containingClass(), NULL);

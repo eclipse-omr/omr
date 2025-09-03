@@ -41,6 +41,7 @@ class PatchNOPedGuardSite;
 class PatchMultipleNOPedGuardSites;
 } // namespace TR
 class TR_PreXRecompile;
+class TR_ClassUnloadRecompile;
 class TR_RedefinedClassPicSite;
 class TR_UnloadedClassPicSite;
 
@@ -258,6 +259,8 @@ public:
     virtual TR::PatchMultipleNOPedGuardSites *asPMNGSite() { return 0; }
 
     virtual TR_PreXRecompile *asPXRecompile() { return 0; }
+
+    virtual TR_ClassUnloadRecompile *asCURecompile() { return 0; }
 
     virtual TR_UnloadedClassPicSite *asUCPSite() { return 0; }
 

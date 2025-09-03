@@ -835,6 +835,7 @@ void TR_Debug::nodePrintAllFlags(TR::Node *node, TR_PrettyPrinterString &output)
 
     FLAG(isInvalid8BitGlobalRegister, "invalid8BitGlobalRegister");
     FLAG(isDirectMemoryUpdate, "directMemoryUpdate");
+    FLAG(isCallThatWasRefinedFromKnownObject, "wasRefinedFromKnownObject");
     FLAG(chkTheVirtualCallNodeForAGuardedInlinedCall, "virtualCallNodeForAGuardedInlinedCall");
     FLAG(chkDontTransformArrayCopyCall, "dontTransformArrayCopyCall");
     FLAG(chkNodeRecognizedArrayCopyCall, "nodeRecognizedArrayCopyCall");
