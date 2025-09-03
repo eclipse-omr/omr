@@ -14765,7 +14765,8 @@ TR::Register *OMR::Z::TreeEvaluator::arraycmpSIMDHelper(TR::Node *node, TR::Code
     }
 
     // VLL uses lastByteIndexReg as the highest 0-based index to load, which is length - 1
-    generateRIInstruction(cg, TR::InstOpCode::getAddHalfWordImmOpCode(), node, lastByteIndexReg, -1);
+    // elementExpr child of the arraycmplen is of long type.
+    generateRIInstruction(cg, TR::InstOpCode::AGHI, node, lastByteIndexReg, -1);
 
     generateS390LabelInstruction(cg, TR::InstOpCode::label, node, loopStart);
     // Vector is filled with data in memory in [addr,addr+min(15,numBytesLeft)]
@@ -14784,7 +14785,7 @@ TR::Register *OMR::Z::TreeEvaluator::arraycmpSIMDHelper(TR::Node *node, TR::Code
         generateS390MemoryReference(secondAddrReg, 16, cg));
 
     // eds : perf : Can use BRXLE with negative increment for this
-    generateRIInstruction(cg, TR::InstOpCode::getAddHalfWordImmOpCode(), node, lastByteIndexReg, -16);
+    generateRIInstruction(cg, TR::InstOpCode::AGHI, node, lastByteIndexReg, -16);
 
     // ed : perf : replace these 2 with BRXLE
     // Branch if the number of bytes left is not negative
@@ -14808,11 +14809,11 @@ TR::Register *OMR::Z::TreeEvaluator::arraycmpSIMDHelper(TR::Node *node, TR::Code
             // (resultReg - 1) - lastByteIndexReg = number of elements compared before the last loop
             // vectorOutputReg contains the 0-based index of the first non-matching element (index is its position in
             // the vector)
-            generateRIInstruction(cg, TR::InstOpCode::getAddHalfWordImmOpCode(), node, resultReg, -1);
-            generateRRInstruction(cg, TR::InstOpCode::getSubstractRegOpCode(), node, resultReg, lastByteIndexReg);
+            generateRIInstruction(cg, TR::InstOpCode::AGHI, node, resultReg, -1);
+            generateRRInstruction(cg, TR::InstOpCode::SGR, node, resultReg, lastByteIndexReg);
             generateVRScInstruction(cg, TR::InstOpCode::VLGV /*B*/, node, lastByteIndexReg, vectorOutputReg,
                 generateS390MemoryReference(7, cg), 0);
-            generateRRInstruction(cg, TR::InstOpCode::getAddRegOpCode(), node, resultReg, lastByteIndexReg);
+            generateRRInstruction(cg, TR::InstOpCode::AGR, node, resultReg, lastByteIndexReg);
         } else {
             if (return102) {
                 // Return the condition code of VFENE
