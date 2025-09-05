@@ -26,6 +26,7 @@
 #include "cs2/allocator.h"
 #include "cs2/bitmanip.h"
 #include "cs2/bitvectr.h"
+#include "infra/Assert.hpp"
 
 #ifdef CS2_ALLOCINFO
 #define allocate(x) allocate(x, __FILE__, __LINE__)
@@ -71,18 +72,9 @@ public:
     ASparseBitVector(const ASparseBitVector &v)
         : Allocator(v)
         , fBase(NULL)
-        , fNumberOfSegments(v.fNumberOfSegments)
+        , fNumberOfSegments(0)
     {
-        size_t n = fNumberOfSegments;
-
-        if (n) {
-            fBase = (Segment *)Allocator::allocate(n * sizeof(Segment));
-            for (size_t i = 0; i < n; i++)
-                fBase[i].copy(v.fBase[i], *this);
-        } else {
-            // sets to equiv zero set as v - either null or empty
-            fBase = v.fBase;
-        }
+        CopyFrom(v);
     }
 
     // Destructor will free bit vector storage
@@ -359,7 +351,10 @@ private:
     Segment *fBase;
     SparseBitIndex fNumberOfSegments;
 
+    template<class A2> ASparseBitVector &CopyFrom(const ASparseBitVector<A2> &vector); // operator=() implementation
+
     Segment *FindSegment(SparseBitIndex index) const;
+    bool AddSegmentInner(SparseBitIndex index, SparseBitIndex count, Segment **out);
     Segment *AddSegment(SparseBitIndex index, SparseBitIndex count);
     Segment *AddSegment(SparseBitIndex index, SparseBitIndex count, uint16_t *bits);
     Segment *OrSegment(SparseBitIndex index, SparseBitIndex count, uint16_t *bits);
@@ -598,34 +593,13 @@ inline typename ASparseBitVector<Allocator>::SparseBitRef &ASparseBitVector<Allo
 template<class Allocator>
 inline typename ASparseBitVector<Allocator>::SparseBitRef &ASparseBitVector<Allocator>::SparseBitRef::Set()
 {
-    size_t i = 0, n = fVector.fNumberOfSegments;
-
-    uint16_t highBits = fIndex >> 16;
-    Segment *base;
-    if (n) {
-        base = fVector.fBase;
-        for (i = 0; i < n; i++) {
-            if (base[i].fHighBits >= highBits) {
-                if (base[i].fHighBits == highBits) {
-                    fVector.SetSegment(base[i], fIndex);
-                    return *this;
-                }
-                break;
-            }
-        }
-        base = (Segment *)fVector.reallocate((n + 1) * sizeof(Segment), base, n * sizeof(Segment));
-        memmove(&base[i + 1], &base[i], (n - i) * sizeof(Segment));
+    Segment *segment = NULL;
+    if (fVector.AddSegmentInner(fIndex >> 16, sizeof(size_t) / sizeof(uint16_t), &segment)) {
+        fVector.SetSegment(*segment, fIndex);
     } else {
-        base = (Segment *)fVector.allocate((n + 1) * sizeof(Segment));
+        segment->fNumValues = 1;
+        segment->Indices()[0] = fIndex;
     }
-
-    base[i].allocate(sizeof(size_t) / sizeof(uint16_t), fVector);
-    base[i].fNumValues = 1;
-    base[i].fHighBits = highBits;
-    base[i].Indices()[0] = fIndex;
-
-    fVector.fBase = base;
-    fVector.fNumberOfSegments = static_cast<SparseBitIndex>(n + 1);
 
     return *this;
 }
@@ -650,17 +624,46 @@ inline typename ASparseBitVector<Allocator>::SparseBitRef &ASparseBitVector<Allo
 template<class Allocator>
 inline ASparseBitVector<Allocator> &ASparseBitVector<Allocator>::operator=(const ASparseBitVector<Allocator> &vector)
 {
-    if (vector.IsNull())
+    return CopyFrom(vector);
+}
+
+template<class Allocator>
+template<class A2>
+inline ASparseBitVector<Allocator> &ASparseBitVector<Allocator>::operator=(const ASparseBitVector<A2> &vector)
+{
+    return CopyFrom(vector);
+}
+
+template<class Allocator>
+template<class A2>
+inline ASparseBitVector<Allocator> &ASparseBitVector<Allocator>::CopyFrom(const ASparseBitVector<A2> &vector)
+{
+    if (vector.IsNull()) {
         ClearToNull();
-    else
+    } else {
         Clear();
-    if (vector.fNumberOfSegments) {
-        fNumberOfSegments = vector.fNumberOfSegments;
-        fBase = (Segment *)Allocator::allocate(fNumberOfSegments * sizeof(Segment));
-        SparseBitIndex i;
-        for (i = 0; i < fNumberOfSegments; i++)
-            fBase[i].copy(vector.fBase[i], *this);
     }
+
+    SparseBitIndex n = vector.fNumberOfSegments;
+    if (n != 0) {
+        Segment *base = (Segment *)Allocator::allocate(n * sizeof(Segment));
+        for (SparseBitIndex i = 0; i < n; i++) {
+            try {
+                base[i].copy(vector.fBase[i], *this);
+            } catch (...) {
+                for (SparseBitIndex j = 0; j < i; j++) {
+                    base[j].deallocate(*this);
+                }
+
+                Allocator::deallocate(base, n * sizeof(Segment));
+                throw;
+            }
+        }
+
+        fBase = base;
+        fNumberOfSegments = n;
+    }
+
     return *this;
 }
 
@@ -677,25 +680,6 @@ template<class Allocator> inline void Swap(ASparseBitVector<Allocator> &vectorA,
     vectorA.fNumberOfSegments = vectorB.fNumberOfSegments;
     vectorB.fBase = base;
     vectorB.fNumberOfSegments = numberOfSegments;
-}
-
-template<class Allocator>
-template<class A2>
-inline ASparseBitVector<Allocator> &ASparseBitVector<Allocator>::operator=(const ASparseBitVector<A2> &vector)
-{
-    if (vector.IsNull())
-        ClearToNull();
-    else
-        Clear();
-    if (vector.fNumberOfSegments) {
-        fNumberOfSegments = vector.fNumberOfSegments;
-        fBase = (Segment *)Allocator::allocate(fNumberOfSegments * sizeof(Segment));
-        memset(fBase, 0, fNumberOfSegments * sizeof(Segment));
-        SparseBitIndex i;
-        for (i = 0; i < fNumberOfSegments; i++)
-            fBase[i].copy(vector.fBase[i], *this);
-    }
-    return *this;
 }
 
 template<class Allocator>
@@ -1283,21 +1267,22 @@ inline SparseBitIndex ASparseBitVector<Allocator>::ValueAtSegment(
     return 0;
 }
 
+// Return true if an existing segment was found, and false otherwise.
 template<class Allocator>
-inline typename ASparseBitVector<Allocator>::Segment *ASparseBitVector<Allocator>::AddSegment(SparseBitIndex index,
-    SparseBitIndex count)
+inline bool ASparseBitVector<Allocator>::AddSegmentInner(SparseBitIndex highBits, SparseBitIndex count, Segment **out)
 {
     size_t i = 0, n = fNumberOfSegments;
 
     Segment *base;
+    *out = NULL;
 
     if (n) {
         base = fBase;
         for (i = 0; i < n; i++) {
-            if (base[i].fHighBits >= index >> 16) {
-                if (base[i].fHighBits == index >> 16) {
-                    GrowSegment(base[i], count);
-                    return &base[i];
+            if (base[i].fHighBits >= highBits) {
+                if (base[i].fHighBits == highBits) {
+                    *out = &base[i];
+                    return true;
                 }
                 break;
             }
@@ -1308,14 +1293,54 @@ inline typename ASparseBitVector<Allocator>::Segment *ASparseBitVector<Allocator
         base = (Segment *)Allocator::allocate((n + 1) * sizeof(Segment));
     }
 
-    base[i].allocate(count, *this);
-    base[i].fHighBits = index >> 16;
+    try {
+        base[i].allocate(count, *this);
+    } catch (...) {
+        if (n == 0) {
+            Allocator::deallocate(base, (n + 1) * sizeof(Segment));
+        } else {
+            // We did reallocate() and memmove(). If reallocate() extended the existing allocation, then fBase points to
+            // the same memory as base, and at the moment fBase[i] and fBase[i + 1] are bitwise identical, which could
+            // lead to corruption because they're supposed to own separate memory. Most likely the stack will unwind and
+            // this sparse bit-vector will be destroyed, which would double-free. Reverse the memmove() to ensure that
+            // fBase has its original contents restored in this case to avoid problems.
+            memmove(&base[i], &base[i + 1], (n - i) * sizeof(Segment));
+
+            // If reallocate() didn't reuse the existing allocation, then fBase is now dangling. We can't just set it to
+            // base because base is an allocation of size (n + 1) * sizeof(Segment), but fBase is expected to have size
+            // n * sizeof(Segment). Reallocate back to the original size. Unfortunately, reallocation might fail too...
+            // Hopefully it should usually (or maybe even always?) succeed because if fBase is dangling, then we've just
+            // freed an allocation of the exact size that we're requesting here.
+            try {
+                fBase = (Segment *)Allocator::reallocate(n * sizeof(Segment), base, (n + 1) * sizeof(Segment));
+            } catch (...) {
+                TR_ASSERT_FATAL(false, "failed to restore original fBase allocation size"); // not much for it...
+            }
+        }
+
+        throw;
+    }
+
+    base[i].fHighBits = highBits;
     base[i].fNumValues = 0;
 
     fBase = base;
     fNumberOfSegments = static_cast<SparseBitIndex>(n + 1);
 
-    return &base[i];
+    *out = &base[i];
+    return false;
+}
+
+template<class Allocator>
+inline typename ASparseBitVector<Allocator>::Segment *ASparseBitVector<Allocator>::AddSegment(SparseBitIndex index,
+    SparseBitIndex count)
+{
+    Segment *result = NULL;
+    if (AddSegmentInner(index >> 16, count, &result)) {
+        GrowSegment(*result, count);
+    }
+
+    return result;
 }
 
 template<class Allocator>
@@ -1769,13 +1794,32 @@ template<class Allocator> inline void ASparseBitVector<Allocator>::RemoveSegment
     Segment s = fBase[i];
 
     if (fNumberOfSegments > 1) {
+        // Don't decrement fNumberOfSegments yet. fBase is expected to point to an allocation sized according to
+        // fNumberOfSegments, so if we were to decrement it now, and if reallocate() were to fail, fBase would become
+        // inconsistent with fNumberOfSegments, which would be a problem at the next reallocate() or deallocate().
+        Segment removedSegment = fBase[i];
         for (size_t j = i; j < (fNumberOfSegments - 1); j++)
             fBase[j] = fBase[j + 1];
 
-        fBase = (Segment *)Allocator::reallocate(sizeof(Segment) * (fNumberOfSegments - 1), fBase,
-            sizeof(Segment) * (fNumberOfSegments));
+        try {
+            fBase = (Segment *)Allocator::reallocate(sizeof(Segment) * (fNumberOfSegments - 1), fBase,
+                sizeof(Segment) * (fNumberOfSegments));
+        } catch (...) {
+            // The last two elements of fBase are bitwise identical, which could lead to corruption because they're
+            // supposed to own separate memory. Most likely the stack will unwind and this sparse bit vector will be
+            // destroyed, which would double-free. Restore fBase to its original contents to avoid problems.
+            for (size_t j = fNumberOfSegments - 1; j > i; j--) {
+                fBase[j] = fBase[j - 1];
+            }
+
+            fBase[i] = removedSegment;
+            throw;
+        }
+
+        removedSegment.deallocate(*this);
         fNumberOfSegments -= 1;
     } else {
+        fBase[0].deallocate(*this);
         Allocator::deallocate(fBase, sizeof(Segment));
         // unallocated, but non-null
         fBase = (Segment *)1;
