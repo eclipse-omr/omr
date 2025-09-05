@@ -1552,11 +1552,11 @@ public:
         _edoRecompSizeThreshold = 0;
         _edoRecompSizeThresholdInStartupMode = 0;
         _catchBlockCounterThreshold = 0;
-        _arraycopyRepMovsByteArrayThreshold = 32;
-        _arraycopyRepMovsCharArrayThreshold = 32;
-        _arraycopyRepMovsIntArrayThreshold = 32;
-        _arraycopyRepMovsLongArrayThreshold = 32;
-        _arraycopyRepMovsReferenceArrayThreshold = 32;
+        _arraycopyRepMovsByteArrayThreshold = 64;
+        _arraycopyRepMovsCharArrayThreshold = 64;
+        _arraycopyRepMovsIntArrayThreshold = 128;
+        _arraycopyRepMovsLongArrayThreshold = 128;
+        _arraycopyRepMovsReferenceArrayThreshold = 128;
         _codeCacheKind = TR::CodeCacheKind::DEFAULT_CC;
 
         memset(_options, 0, sizeof(_options));
