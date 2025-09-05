@@ -535,6 +535,13 @@ public:
      */
     void validateImmediateOffsetAlignment(TR::Node *node, uint32_t alignment, TR::CodeGenerator *cg);
 
+    /**
+     * @brief Simplifies the memory reference so that it has no index register or offset.
+     * @param[in] node: node
+     * @param[in] cg: CodeGenerator
+     */
+    void simplify(TR::Node *node, TR::CodeGenerator *cg);
+
 private:
     /**
      * @brief Moves index register and node to base register and node.
@@ -542,6 +549,14 @@ private:
      * @param[in] cg: CodeGenerator
      */
     void moveIndexToBase(TR::Node *node, TR::CodeGenerator *cg);
+
+    /**
+     * @brief Moves offset to base register and node.
+     * @param[in] node: node
+     * @param[in] cg: CodeGenerator
+     * @param[in] withRegSym : add offset of register mapped symbol if true
+     */
+    void moveOffsetToBase(TR::Node *node, TR::CodeGenerator *cg, bool withRegSym = false);
 
     /**
      * @brief Normalizes the memory reference so that it can be encoded into instruction.

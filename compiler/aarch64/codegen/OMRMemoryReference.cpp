@@ -355,53 +355,64 @@ void OMR::ARM64::MemoryReference::normalize(TR::Node *node, TR::CodeGenerator *c
         return;
     }
 
-    intptr_t displacement = self()->getOffset();
-
-    if (displacement != 0) {
+    if (self()->getOffset() != 0) {
         TR_ASSERT_FATAL(_indexRegister == NULL, "_indexRegister must be NULL if displacement is not zero");
+        if (!constantIsImm9(self()->getOffset()))
+            self()->moveOffsetToBase(node, cg);
+    }
+}
 
-        if (!constantIsImm9(displacement)) {
-            TR::Register *newBase;
+void OMR::ARM64::MemoryReference::moveOffsetToBase(TR::Node *node, TR::CodeGenerator *cg, bool withRegSym)
+{
+    intptr_t displacement = self()->getOffset(withRegSym);
 
-            self()->setOffset(0);
+    TR::Register *newBase;
 
-            if (_baseRegister && self()->isBaseModifiable())
-                newBase = _baseRegister;
-            else {
-                newBase = cg->allocateRegister();
+    self()->setOffset(0);
+    if (withRegSym)
+        self()->setDelayedOffsetDone();
 
-                if (_baseRegister && _baseRegister->containsInternalPointer()) {
-                    newBase->setContainsInternalPointer();
-                    newBase->setPinningArrayPointer(_baseRegister->getPinningArrayPointer());
-                }
-            }
+    if (_baseRegister && self()->isBaseModifiable())
+        newBase = _baseRegister;
+    else {
+        newBase = cg->allocateRegister();
 
-            if (_baseRegister != NULL) {
-                if (constantIsUnsignedImm12(displacement)) {
-                    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, newBase, _baseRegister,
-                        displacement);
-                } else if (node->getOpCode().isLoadConst() && node->getRegister()
-                    && (node->getLongInt() == displacement)) {
-                    generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister,
-                        node->getRegister());
-                } else {
-                    TR::Register *tempReg = cg->allocateRegister();
-                    loadConstant64(cg, node, displacement, tempReg);
-                    generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister, tempReg);
-                    cg->stopUsingRegister(tempReg);
-                }
-            } else {
-                loadConstant64(cg, node, displacement, newBase);
-            }
-
-            if (_baseRegister != newBase) {
-                self()->decNodeReferenceCounts(cg);
-                _baseNode = NULL;
-                self()->setBaseModifiable();
-                _baseRegister = newBase;
-            }
+        if (_baseRegister && _baseRegister->containsInternalPointer()) {
+            newBase->setContainsInternalPointer();
+            newBase->setPinningArrayPointer(_baseRegister->getPinningArrayPointer());
         }
     }
+
+    if (_baseRegister != NULL) {
+        if (constantIsUnsignedImm12(displacement)) {
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, newBase, _baseRegister, displacement);
+        } else if (node->getOpCode().isLoadConst() && node->getRegister() && (node->getLongInt() == displacement)) {
+            generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister, node->getRegister());
+        } else {
+            TR::Register *tempReg = cg->allocateRegister();
+            loadConstant64(cg, node, displacement, tempReg);
+            generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister, tempReg);
+            cg->stopUsingRegister(tempReg);
+        }
+    } else {
+        loadConstant64(cg, node, displacement, newBase);
+    }
+
+    if (_baseRegister != newBase) {
+        self()->decNodeReferenceCounts(cg);
+        _baseNode = NULL;
+        self()->setBaseModifiable();
+        _baseRegister = newBase;
+    }
+}
+
+void OMR::ARM64::MemoryReference::simplify(TR::Node *node, TR::CodeGenerator *cg)
+{
+    if (_indexRegister != NULL)
+        self()->moveIndexToBase(node, cg);
+
+    if (self()->getOffset() != 0)
+        self()->moveOffsetToBase(node, cg, true);
 }
 
 void OMR::ARM64::MemoryReference::addToOffset(TR::Node *node, intptr_t amount, TR::CodeGenerator *cg)
