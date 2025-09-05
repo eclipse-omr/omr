@@ -1014,9 +1014,6 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
 
     // implemented vector opcodes
     switch (opcode.getVectorOperation()) {
-        case TR::mload:
-        case TR::mloadi:
-            return cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1);
         case TR::vcmpgt:
         case TR::vmcmpgt:
         case TR::vcmpge:
@@ -1025,6 +1022,23 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
             // This is only valid for integer types due to nan handling.
             if (et.isFloatingPoint() && !cpu->supportsFeature(OMR_FEATURE_X86_AVX))
                 return false;
+        case TR::vmrol:
+        case TR::vrol:
+            if (et == TR::Int8 || et.isFloatingPoint())
+                return false;
+
+            switch (ot.getVectorLength()) {
+                case TR::VectorLength128:
+                case TR::VectorLength256:
+                    if (et == TR::Int16)
+                        return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F);
+
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX2);
+                case TR::VectorLength512:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F);
+                default:
+                    return false;
+            }
         case TR::vcmpeq:
         case TR::vmcmpeq:
         case TR::vcmpne:
@@ -1125,6 +1139,12 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
                 default:
                     return false;
             }
+        case TR::mload:
+        case TR::mloadi:
+        case TR::mstore:
+        case TR::mstorei:
+            if (!cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1))
+                return false;
         case TR::vload:
         case TR::vloadi:
         case TR::vstore:
