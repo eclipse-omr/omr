@@ -46,7 +46,6 @@ typedef OMR::X86::Machine MachineConnector;
 #include "il/DataTypes.hpp"
 #include "infra/Assert.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "infra/TRlist.hpp"
 class TR_BackingStore;
 class TR_Debug;
@@ -114,22 +113,11 @@ class OMR_EXTENSIBLE Machine : public OMR::Machine {
     // registers on demand, based on their relative position from the top of
     // stack marker.
     //
-    TR_X86FPStackRegister *_fpStack[TR_X86FPStackRegister::NumRegisters];
-
-    TR_X86FPStackRegister *_fpRegisters[TR_X86FPStackRegister::NumRegisters];
-    TR_X86FPStackRegister *_copiedFpRegisters[TR_X86FPStackRegister::NumRegisters];
-    TR::Node *_fpRegisterNodes[TR_X86FPStackRegister::NumRegisters];
-
     TR::Register **_xmmGlobalRegisters;
 
     List<TR::Register> *_spilledRegistersList;
 
     TR::SymbolReference *_dummyLocal[TR::NumAllTypes];
-
-    int32_t _fpStackShape[TR_X86FPStackRegister::NumRegisters];
-    int32_t _fpTopOfStack;
-
-    void initializeFPStackRegisterFile();
 
 protected:
     uint32_t *_globalRegisterNumberToRealRegisterMap;
@@ -210,72 +198,11 @@ public:
 
     TR::MemoryReference *getDummyLocalMR(TR::DataType dt);
 
-    TR::RealRegister *fpMapToStackRelativeRegister(TR::Register *vreg);
-
-    TR::RealRegister *fpMapToStackRelativeRegister(int32_t stackReg)
-    {
-        return _registerFile[stackReg + TR::RealRegister::FirstFPR];
-    }
-
-    int32_t getFPTopOfStack() { return _fpTopOfStack; }
-
-    TR_X86FPStackRegister *getFPTopOfStackPtr()
-    {
-        return (_fpTopOfStack > TR_X86FPStackRegister::fpStackEmpty
-                   && _fpTopOfStack < TR_X86FPStackRegister::fpStackFull)
-            ? _fpStack[_fpTopOfStack]
-            : NULL;
-    }
-
-    TR_X86FPStackRegister *getFPStackLocationPtr(int32_t location)
-    {
-        return (location > TR_X86FPStackRegister::fpStackEmpty && location < TR_X86FPStackRegister::fpStackFull)
-            ? _fpStack[location]
-            : NULL;
-    }
-
     void setFPTopOfStack(TR::Register *vreg);
 
-    bool isFPStackFull() { return (_fpTopOfStack + 1 == TR_X86FPStackRegister::fpStackFull) ? true : false; }
-
-    bool isFPRTopOfStack(TR::Register *virtReg);
-
-    uint8_t fpGetNumberOfLiveFPRs() { return _fpTopOfStack + 1; }
+    uint8_t fpGetNumberOfLiveFPRs() { return 0; }
 
     uint8_t fpGetNumberOfLiveXMMRs() { return 0; }
-
-    TR_X86FPStackRegister *getFPStackRegister(int32_t location) { return _fpRegisters[location]; }
-
-    void setFPStackRegister(int32_t location, TR_X86FPStackRegister *reg) { _fpRegisters[location] = reg; }
-
-    TR_X86FPStackRegister *getCopiedFPStackRegister(int32_t location) { return _copiedFpRegisters[location]; }
-
-    void setCopiedFPStackRegister(int32_t location, TR_X86FPStackRegister *reg) { _copiedFpRegisters[location] = reg; }
-
-    TR::Node *getFPStackRegisterNode(int32_t location) { return _fpRegisterNodes[location]; }
-
-    void setFPStackRegisterNode(int32_t location, TR::Node *node) { _fpRegisterNodes[location] = node; }
-
-    void resetFPStackRegisters();
-
-    int32_t *getFPStackShape() { return _fpStackShape; }
-
-    void fpStackPush(TR::Register *virtReg);
-    void fpStackCoerce(TR::Register *virtReg, int32_t location);
-    TR::Register *fpStackPop();
-
-    TR::Instruction *fpStackFXCH(TR::Instruction *currentInstruction, TR::Register *virtReg, bool generateCode = true);
-
-    TR::Instruction *fpStackFXCH(TR::Instruction *currentInstruction, int32_t stackReg);
-
-    void fpCoerceRegistersToTopOfStack(TR::Instruction *currentInstruction, TR::Register *X, TR::Register *Y,
-        bool strict);
-
-    TR_X86FPStackRegister *findFreeFPRegister();
-    TR::Instruction *freeBestFPRegister(TR::Instruction *);
-    TR::Instruction *reverseFPRSpillState(TR::Instruction *currentInstruction, TR::Register *spilledRegister);
-    TR::Instruction *fpSpillFPR(TR::Instruction *precedingInstruction, TR::Register *vreg);
-    TR::Instruction *fpSpillStack(TR::Instruction *precedingInstruction);
 
     TR::Register *getXMMGlobalRegister(int32_t regNum) { return _xmmGlobalRegisters[regNum]; }
 

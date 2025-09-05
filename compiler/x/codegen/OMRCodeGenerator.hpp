@@ -41,6 +41,7 @@ typedef OMR::X86::CodeGenerator CodeGeneratorConnector;
 
 #include "codegen/Machine.hpp"
 #include "codegen/RealRegister.hpp"
+#include "codegen/RegisterConstants.hpp"
 #include "codegen/Register.hpp"
 #include "codegen/ScratchRegisterManager.hpp"
 #include "compile/Compilation.hpp"
@@ -54,7 +55,6 @@ typedef OMR::X86::CodeGenerator CodeGeneratorConnector;
 #include "infra/TRlist.hpp"
 #include "infra/Assert.hpp"
 #include "codegen/InstOpCode.hpp"
-#include "x/codegen/X86Register.hpp"
 #include "env/CompilerEnv.hpp"
 
 #if defined(LINUX) || defined(OSX)
