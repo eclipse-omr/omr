@@ -1032,7 +1032,52 @@ TR::Register *OMR::Power::TreeEvaluator::s2mEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+
+    TR::Register *tmpGPR = cg->allocateRegister(TR_GPR);
+    TR::Register *tmpVRF = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    //set top half of permute control register
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::li, node, tmpGPR, 7);
+    generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicl, node, tmpGPR, tmpGPR, 32, 0xFFFFFFFFFFFFFFFF);
+    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::ori, node, tmpGPR, tmpGPR, 6);
+
+    //move to VRF
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, tmpGPR);
+
+    //set bottom half of permute control register
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::li, node, tmpGPR, 5);
+    generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicl, node, tmpGPR, tmpGPR, 32, 0xFFFFFFFFFFFFFFFF);
+    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::ori, node, tmpGPR, tmpGPR, 4);
+
+    //move to VRF
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, tmpVRF, tmpGPR);
+
+    //merge
+    generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, tmpVRF, dstReg, tmpVRF, 0);
+
+    //move src to VRF
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, srcReg);
+
+    //permute src contents into appropriate byte elements
+    generateTrg1Src3Instruction(cg, TR::InstOpCode::vperm, node, dstReg, dstReg, dstReg, tmpVRF);
+
+    //create all 0/1 mask by subtracting from 0:
+    //0-1 = -1 = 0xFF...
+    //0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpVRF, 0);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsubuwm, node, dstReg, tmpVRF, dstReg);
+
+    cg->stopUsingRegister(tmpGPR);
+    cg->stopUsingRegister(tmpVRF);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
