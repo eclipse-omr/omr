@@ -1037,7 +1037,39 @@ TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+
+    TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    //merge vectors to place each boolean array element into its corresponding ShortVector element
+    //(i.e.: byte elements alternate between 0's and boolean values from src)
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, 0);
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, srcReg);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vmrghb, node, dstReg, tmpReg, dstReg);
+
+    //due to how the boolean array is loaded from memory and moved into the vector register, the result will be reversed
+    //perform series of vector rotations to flip it to correct order
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, -16);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vrlw, node, dstReg, dstReg, tmpReg);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, tmpReg, tmpReg, tmpReg);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vrld, node, dstReg, dstReg, tmpReg);
+    generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, dstReg, dstReg, dstReg, 2);
+
+    //create all 0/1 mask by subtracting from 0:
+    //0-1 = -1 = 0xFF...
+    //0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, 0);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsubuhm, node, dstReg, tmpReg, dstReg);
+
+    cg->stopUsingRegister(tmpReg);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::v2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
