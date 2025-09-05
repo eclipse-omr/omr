@@ -12304,7 +12304,7 @@ TR::Node *removeArithmeticsUnderIntegralCompare(TR::Node *node, TR::Simplifier *
             // calling constNode->setConstValue()
             // Hence, creating a new node here and copy the old node's internal info.
             TR::Node *newConstNode = TR::Node::create(secondChild, secondChild->getOpCodeValue(), 0);
-            newConstNode->setUnsignedLongInt(newUConst);
+            newConstNode->setConstValue(newUConst);
             node->setAndIncChild(0, opNode->getFirstChild());
             node->setAndIncChild(1, newConstNode);
 
