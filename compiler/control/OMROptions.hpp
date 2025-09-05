@@ -1523,6 +1523,8 @@ public:
         _inlinerCGColdBorderFrequency = 0;
         _inlinerCGVeryColdBorderFrequency = 0;
         _alwaysWorthInliningThreshold = 0;
+        _smallInlinerBorderFrequency = 0;
+        _smallInlinerVeryColdBorderFrequency = 0;
         _initialSCount = 0;
         _enableSCHintFlags = 0;
         _insertGCRTrees = false;
@@ -2068,6 +2070,10 @@ public:
     int32_t getMaxLimitedGRARegs() { return _maxLimitedGRARegs; }
 
     int32_t getNumLimitedGRARegsWithheld();
+
+    int32_t getSmallInlinerBorderFrequency() { return _smallInlinerBorderFrequency; }
+
+    int32_t getSmallInlinerVeryColdBorderFrequency() { return _smallInlinerVeryColdBorderFrequency; }
 
     int32_t getProfilingCompNodecountThreshold() { return _profilingCompNodecountThreshold; }
 
@@ -2776,6 +2782,9 @@ protected:
     int32_t _inlinerCGColdBorderFrequency;
     int32_t _inlinerCGVeryColdBorderFrequency;
     int32_t _alwaysWorthInliningThreshold;
+
+    int32_t _smallInlinerBorderFrequency;
+    int32_t _smallInlinerVeryColdBorderFrequency;
 
     int32_t _initialSCount;
     int32_t _enableSCHintFlags;
