@@ -27,9 +27,9 @@
 #include "ddr/std/unordered_map.hpp"
 #include <map>
 
-#if defined(AIXPPC) || defined(OSX) || (defined(J9ZOS390) && defined(__open_xl__))
+#if defined(AIXPPC) || defined(OSX)
 #include "ddr/scanner/dwarf/DwarfFunctions.hpp"
-#else /* defined(AIXPPC) || defined(OSX) || (defined(J9ZOS390) && defined(__open_xl__)) */
+#else /* defined(AIXPPC) || defined(OSX) */
 
 #if defined(HAVE_LIBDWARF_0_DWARF_H)
 #include <libdwarf-0/dwarf.h>

@@ -44,26 +44,17 @@ if(OMR_OS_WINDOWS)
 			DiaSDK::diasdk
 	)
 elseif(OMR_OS_LINUX OR OMR_OS_ZOS)
-	if(CMAKE_C_COMPILER_IS_OPENXL)
-		target_sources(omr_ddr_scanner
-			PRIVATE
-				dwarf/DwarfFunctions.cpp
-				dwarf/DwarfParser.cpp
-				dwarf/DwarfScanner.cpp
-		)
-	else()
-		find_package(LibDwarf REQUIRED)
+	find_package(LibDwarf REQUIRED)
 
-		target_link_libraries(omr_ddr_scanner
-			PUBLIC
-				LibDwarf::dwarf
-		)
+	target_link_libraries(omr_ddr_scanner
+		PUBLIC
+			LibDwarf::dwarf
+	)
 
-		target_sources(omr_ddr_scanner
-			PRIVATE
-				dwarf/DwarfScanner.cpp
-		)
-	endif()	
+	target_sources(omr_ddr_scanner
+		PRIVATE
+			dwarf/DwarfScanner.cpp
+	)
 elseif(OMR_OS_OSX)
 	target_sources(omr_ddr_scanner
 		PRIVATE
