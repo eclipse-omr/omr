@@ -388,7 +388,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    convert long into 4-element platform specific vector mask */ \
+   /* .description             =    convert long into 8-element platform specific vector mask */ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ m2b, \
@@ -452,7 +452,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    convert 4-element platform specific vector mask into long*/ \
+   /* .description             =    convert 8-element platform specific vector mask into long*/ \
 )
 // vector opcodes
 VECTOR_OPERATION_MACRO(\
