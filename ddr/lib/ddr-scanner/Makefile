@@ -21,6 +21,7 @@
 
 top_srcdir = ../../..
 include $(top_srcdir)/omrmakefiles/configure.mk
+include /jit/team/gaurav/include/
 
 MODULE_NAME := ddr-scanner
 ARTIFACT_TYPE := archive
