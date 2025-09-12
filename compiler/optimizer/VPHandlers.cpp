@@ -4278,6 +4278,11 @@ TR::Node *constrainArraylength(OMR::ValuePropagation *vp, TR::Node *node)
 static TR::MethodSymbol *refineMethodSymbolInCall(OMR::ValuePropagation *vp, TR::Node *node,
     TR::SymbolReference *symRef, TR_ResolvedMethod *resolvedMethod, int32_t offset)
 {
+    // We don't need to consider the possibility of unloading the refined callee
+    // before this compilation's outermost method. This is a call to an instance
+    // method, so if the callee is unloaded, there will be no receiver object
+    // and the call will therefore be unreachable.
+
     TR::SymbolReference *newSymRef = vp->comp()->getSymRefTab()->findOrCreateMethodSymbol(
         symRef->getOwningMethodIndex(), -1, resolvedMethod, TR::MethodSymbol::Virtual);
     newSymRef->copyAliasSets(symRef, vp->comp()->getSymRefTab());
