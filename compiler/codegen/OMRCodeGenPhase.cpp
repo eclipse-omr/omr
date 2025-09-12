@@ -280,7 +280,9 @@ void OMR::CodeGenPhase::performBinaryEncodingPhase(TR::CodeGenerator *cg, TR::Co
     TR::LexicalMemProfiler mp(phase->getName(), comp->phaseMemProfiler());
     LexicalTimer pt(phase->getName(), comp->phaseTimer());
 
+    cg->preBinaryEncodingHook();
     cg->doBinaryEncoding();
+    cg->postBinaryEncodingHook();
 
     // Instructions have been emitted, and now we know what the entry point is, so update the compilation method symbol
     comp->getMethodSymbol()->setMethodAddress(cg->getCodeStart());
