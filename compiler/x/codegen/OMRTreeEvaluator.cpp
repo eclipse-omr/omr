@@ -4464,7 +4464,6 @@ TR::Register *OMR::X86::TreeEvaluator::BBStartEvaluator(TR::Node *node, TR::Code
         TR::Machine *machine = cg->machine();
         machine->clearRegisterAssociations();
         machine->setGPRWeightsFromAssociations();
-        machine->resetFPStackRegisters();
 
         machine->resetXMMGlobalRegisters();
 
