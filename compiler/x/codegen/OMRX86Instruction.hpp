@@ -2303,8 +2303,6 @@ public:
         kTargetOnFPStack = 0x08 // target operand is on the FP stack
     };
 
-    uint32_t assignTargetSourceRegisters();
-
     void applyRegistersToOpCode(uint8_t *opCode, TR::Machine *machine)
     {
         // At least one of source and target will be in ST0.
