@@ -38,7 +38,9 @@ else()
 	# For technical reasons this is hard to autodetect on zos.
 	# Note: the value can still be overridden on the command line.
 	if(OMR_ENV_DATA64)
-		set(LIBDWARF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf64.x" CACHE FILEPATH "")
+		set(LIBDWARF_LIBRARY, "/jit/team/gauravc/include/libdwarf/libelfdwarf64.x" CACHE FILEPATH "")
+		message(STATUS "LIBDWARF_LIBRARY = ${LIBDWARF_LIBRARY}")
+		#set(LIBDWARF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf64.x" CACHE FILEPATH "")
 	else()
 		set(LIBDWARF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf32.x" CACHE FILEPATH "")
 	endif()
@@ -134,7 +136,10 @@ endif()
 
 # Find library.
 
-find_library(LIBDWARF_LIBRARY dwarf)
+find_library(LIBDWARF_LIBRARY
+	NAMES dwarf
+	HINTS /jit/team/gauravc/include/libdwarf
+)
 
 # Handle the arguments.
 
