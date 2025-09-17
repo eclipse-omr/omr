@@ -36,24 +36,26 @@
 #elif defined(HAVE_LIBDWARF_0_DWARF_H) /* defined(HAVE_LIBDWARF_2_DWARF_H) */
 #include <libdwarf-0/dwarf.h>
 #elif defined(HAVE_LIBDWARF_DWARF_H) /* defined(HAVE_LIBDWARF_0_DWARF_H) */
-#include <libdwarf/dwarf.h>
+#include "libdwarf/dwarf.h"
 #elif defined(HAVE_DWARF_H) /* defined(HAVE_LIBDWARF_DWARF_H) */
 #include <dwarf.h>
 #else /* defined(HAVE_DWARF_H) */
-#error "Need libdwarf-2/dwarf.h, libdwarf-0/dwarf.h, libdwarf/dwarf.h or dwarf.h"
-#endif /* defined(HAVE_LIBDWARF_2_DWARF_H) */
+#include "libdwarf/dwarf.h"
+//#error "Need libdwarf-0/dwarf.h, libdwarf/dwarf.h or dwarf.h"
+#endif /* defined(HAVE_LIBDWARF_0_DWARF_H) */
 
 #if defined(HAVE_LIBDWARF_2_LIBDWARF_H)
 #include <libdwarf-2/libdwarf.h>
 #elif defined(HAVE_LIBDWARF_0_LIBDWARF_H) /* defined(HAVE_LIBDWARF_2_LIBDWARF_H) */
 #include <libdwarf-0/libdwarf.h>
 #elif defined(HAVE_LIBDWARF_LIBDWARF_H) /* defined(HAVE_LIBDWARF_0_LIBDWARF_H) */
-#include <libdwarf/libdwarf.h>
+#include "libdwarf/libdwarf.h"
 #elif defined(HAVE_LIBDWARF_H) /* defined(HAVE_LIBDWARF_LIBDWARF_H) */
 #include <libdwarf.h>
 #else /* defined(HAVE_LIBDWARF_H) */
-#error "Need libdwarf-2/libdwarf.h, libdwarf-0/libdwarf.h, libdwarf/libdwarf.h or libdwarf.h"
-#endif /* defined(HAVE_LIBDWARF_2_LIBDWARF_H) */
+#include "libdwarf/libdwarf.h"
+//#error "Need libdwarf-0/libdwarf.h, libdwarf/libdwarf.h or libdwarf.h"
+#endif /* defined(HAVE_LIBDWARF_0_LIBDWARF_H) */
 
 #endif /* defined(AIXPPC) || defined(OSX) */
 

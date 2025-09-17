@@ -274,9 +274,9 @@ if(ZOS)
 
 	if(OBJECT_EXCLUDE_REGEX STREQUAL "^")
 		# Empty exclude regex, just include everything.
-		file(GLOB_RECURSE target_files "${OBJECT_SEARCH_ROOT}/*.dbg")
+		file(GLOB_RECURSE target_files "${OBJECT_SEARCH_ROOT}/*.dwo")
 	else()
-		file(GLOB_RECURSE dbg_files RELATIVE "${OBJECT_SEARCH_ROOT}" "${OBJECT_SEARCH_ROOT}/*.dbg")
+		file(GLOB_RECURSE dbg_files RELATIVE "${OBJECT_SEARCH_ROOT}" "${OBJECT_SEARCH_ROOT}/*.dwo")
 		foreach(item IN LISTS dbg_files)
 			if(NOT "${item}" MATCHES "${OBJECT_EXCLUDE_REGEX}")
 				list(APPEND target_files "${OBJECT_SEARCH_ROOT}/${item}")

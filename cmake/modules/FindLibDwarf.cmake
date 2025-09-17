@@ -38,7 +38,10 @@ else()
 	# For technical reasons this is hard to autodetect on zos.
 	# Note: the value can still be overridden on the command line.
 	if(OMR_ENV_DATA64)
-		set(LIBDWARF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf64.x" CACHE FILEPATH "")
+		set(LIBDWARF_LIBRARY, "/jit/team/gauravc/include/lib/libelfdwarf64.x" CACHE FILEPATH "" FORCE)
+		message(STATUS "LIBDWARF_LIBRARY = ${LIBDWARF_LIBRARY}")
+		set(LIBDWARF_FOUND true)
+		#set(LIBDWARF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf64.x" CACHE FILEPATH "")
 	else()
 		set(LIBDWARF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf32.x" CACHE FILEPATH "")
 	endif()
@@ -154,23 +157,29 @@ endif()
 
 # Find library.
 
-find_library(LIBDWARF_LIBRARY dwarf)
+#find_library(LIBDWARF_LIBRARY 
+#	NAME dwarf
+#	HINTS /jit/team/gauravc/include/
+#)
 
 # Handle the arguments.
 
-include(FindPackageHandleStandardArgs)
+#include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(LibDwarf
-	DEFAULT_MSG
-	LIBDWARF_LIBRARY
-	DWARF_H_FOUND
-	LIBDWARF_H_FOUND
-)
+#message(STATUS "LIBDWARF_LIBRARY UPDATED = ${LIBDWARF_LIBRARY}")
+
+#find_package_handle_standard_args(LibDwarf
+#	DEFAULT_MSG
+#	LIBDWARF_LIBRARY
+#	DWARF_H_FOUND
+#	LIBDWARF_H_FOUND
+#)
 
 if(NOT LIBDWARF_FOUND)
 	set(LIBDWARF_INCLUDE_DIRS NOTFOUND)
 	set(LIBDWARF_LIBRARIES NOTFOUND)
 	set(LIBDWARF_DEFINITIONS NOTFOUND)
+	message("LIBDWARF NOT FOUND check hit")
 	return()
 endif()
 
