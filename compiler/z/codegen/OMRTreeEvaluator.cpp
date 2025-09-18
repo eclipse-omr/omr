@@ -14057,7 +14057,7 @@ TR::Register *OMR::Z::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::Cod
     TR::Register *vecSelectReg = cg->evaluate(vecSelectNode);
     TR::Register *returnVecReg = cg->allocateRegister(TR_VRF);
 
-    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, returnVecReg, firstVecReg, secondVecReg, vecSelectReg, 0,
+    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, returnVecReg, secondVecReg, firstVecReg, vecSelectReg, 0,
         0);
 
     cg->stopUsingRegister(firstVecReg);
