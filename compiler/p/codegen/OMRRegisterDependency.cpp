@@ -944,6 +944,24 @@ void OMR::Power::RegisterDependencyGroup::assignRegisters(TR::Instruction *curre
         }
     }
 
+    // Similar, spilling TR_VRF may need an extra GPR. So allocate them first.
+    if (!haveSpareGPRs) {
+        for (i = 0; i < numberOfRegisters; i++) {
+            TR::RegisterDependency &regDep = _dependencies[i];
+            virtReg = regDep.getRegister();
+            if (virtReg->getKind() != TR_VRF && virtReg->getKind() != TR_VSX_SCALAR
+                && virtReg->getKind() != TR_VSX_VECTOR) {
+                continue;
+            }
+            dependentRegNum = regDep.getRealRegister();
+            dependentRealReg = machine->getRealRegister(dependentRegNum);
+
+            if (!regDep.isNoReg() && !regDep.isSpilledReg() && dependentRealReg->getState() == TR::RealRegister::Free) {
+                assignFreeRegisters(currentInstruction, &regDep, map, cg);
+            }
+        }
+    }
+
     // Assign all virtual regs that depend on a specific real reg that is free
     for (i = 0; i < numberOfRegisters; i++) {
         TR::RegisterDependency &regDep = _dependencies[i];
