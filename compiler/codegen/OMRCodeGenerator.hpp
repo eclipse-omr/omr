@@ -452,6 +452,16 @@ public:
     void doRegisterAssignment(TR_RegisterKinds kindsToAssign);
     void doBinaryEncoding();
 
+    /**
+     * @brief This function is a hook that executes immediately before Binary Encoding.
+     */
+    void preBinaryEncodingHook() {}
+
+    /**
+     * @brief This function is a hook that executes immediately after Binary Encoding.
+     */
+    void postBinaryEncodingHook() {}
+
     bool hasComplexAddressingMode() { return false; }
 
     void removeUnusedLocals();
