@@ -42,6 +42,8 @@ endif()
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES /usr/include)
 list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES /usr/include)
 
+# Include custom libdwarf temp path before system headers
+list(APPEND_CMAKE_INCLUDE_PATH "/jit/team/gauravc/include")
 # Make sure that cmake can find libelf/libdwarf headers.
 list(APPEND CMAKE_INCLUDE_PATH "/usr/lpp/cbclib/include")
 

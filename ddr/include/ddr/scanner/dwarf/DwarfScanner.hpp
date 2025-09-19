@@ -34,7 +34,7 @@
 #if defined(HAVE_LIBDWARF_0_DWARF_H)
 #include <libdwarf-0/dwarf.h>
 #elif defined(HAVE_LIBDWARF_DWARF_H) /* defined(HAVE_LIBDWARF_0_DWARF_H) */
-#include <libdwarf/dwarf.h>
+#include "libdwarf/dwarf.h"
 #elif defined(HAVE_DWARF_H) /* defined(HAVE_LIBDWARF_DWARF_H) */
 #include <dwarf.h>
 #else /* defined(HAVE_DWARF_H) */
@@ -44,7 +44,7 @@
 #if defined(HAVE_LIBDWARF_0_LIBDWARF_H)
 #include <libdwarf-0/libdwarf.h>
 #elif defined(HAVE_LIBDWARF_LIBDWARF_H) /* defined(HAVE_LIBDWARF_0_LIBDWARF_H) */
-#include <libdwarf/libdwarf.h>
+#include "libdwarf/libdwarf.h"
 #elif defined(HAVE_LIBDWARF_H) /* defined(HAVE_LIBDWARF_LIBDWARF_H) */
 #include <libdwarf.h>
 #else /* defined(HAVE_LIBDWARF_H) */
