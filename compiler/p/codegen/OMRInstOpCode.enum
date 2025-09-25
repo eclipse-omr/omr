@@ -804,7 +804,7 @@
 // vupklpx,          // Vector Unpack Low Pixel
 // vupkhsw,          // Vector Unpack High Signed Word
 // vpksdss,          // Vector Pack Signed Dword Signed Saturate
-// vpksdus,          // Vector Pack Signed Dword Unsigned Saturate
+   vpksdus,          // Vector Pack Signed Dword Unsigned Saturate
    vpkuhum,          // vector pack unsigned half word unsigned modulo
    vpkuwum,          // vector pack unsigned word unsigned modulo
 // vpkuwus,          // Vector Pack Unsigned Word Unsigned Saturate
