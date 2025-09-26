@@ -2195,7 +2195,7 @@ uint8_t *TR::S390RSInstruction::generateBinaryEncoding()
     if (op == TR::InstOpCode::CDS || op == TR::InstOpCode::CDSG || op == TR::InstOpCode::MVCLE
         || op == TR::InstOpCode::MVCLU || op == TR::InstOpCode::CLCLE || op == TR::InstOpCode::CLCLU) {
         toRealRegister(getSecondRegister()->getHighOrder())->setRegister2Field((uint32_t *)cursor);
-    } else if (getLastRegister()) {
+    } else if (!opCode.usesRegPairForTarget() && getLastRegister()) {
         toRealRegister(getLastRegister())->setRegister2Field((uint32_t *)cursor);
     }
 
