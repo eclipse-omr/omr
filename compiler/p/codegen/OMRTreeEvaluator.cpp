@@ -1079,7 +1079,46 @@ TR::Register *OMR::Power::TreeEvaluator::m2iEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::m2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *dstReg = cg->allocateRegister(TR_GPR);
+
+    TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    // set all but least significant bit of each halfword element to 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltish, node, tmpReg, 1);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vand, node, tmpReg, srcReg, tmpReg);
+
+    // reverse element order if little endian (P8 or lower only due to availability fo xxbrw instruction)
+    if (cg->comp()->target().cpu.isLittleEndian() && !cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9)) {
+        TR::Register *shiftReg = cg->allocateRegister(TR_VRF);
+
+        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, tmpReg, tmpReg, tmpReg, 2);
+        generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, shiftReg, -16);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vrld, node, tmpReg, tmpReg, shiftReg);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vrld, node, tmpReg, tmpReg, shiftReg);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vrlw, node, tmpReg, tmpReg, shiftReg);
+
+        cg->stopUsingRegister(shiftReg);
+    }
+
+    // pack halfworld-length elements into byte-length elements
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vpkuhum, node, tmpReg, tmpReg, tmpReg);
+
+    // if not done already (i.e.: P9+), reverse byte order if little endian
+    if (cg->comp()->target().cpu.isLittleEndian() && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::xxbrq, node, tmpReg, tmpReg);
+
+    // move to GPR
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, dstReg, tmpReg);
+
+    cg->stopUsingRegister(tmpReg);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::m2vEvaluator(TR::Node *node, TR::CodeGenerator *cg)
