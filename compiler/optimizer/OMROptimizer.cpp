@@ -1009,7 +1009,8 @@ TR_ValueNumberInfo *OMR::Optimizer::createValueNumberInfo(bool requiresGlobals, 
 
 void OMR::Optimizer::optimize()
 {
-    TR::Compilation::CompilationPhaseScope mainCompilationPhaseScope(comp());
+    // Save the compilation phase, so that we can restore it when this function ends.
+    auto savedPhase = comp()->saveCompilationPhase();
 
     if (isIlGenOpt()) {
         const OptimizationStrategy *opt = _strategy;
@@ -1147,6 +1148,8 @@ void OMR::Optimizer::optimize()
 
     comp()->setOptimizer(stackedOptimizer);
     _stackedOptimizer = false;
+
+    comp()->restoreCompilationPhase(savedPhase);
 }
 
 void OMR::Optimizer::dumpPostOptTrees()
@@ -1641,6 +1644,8 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
             return 0;
         }
 
+        comp()->reportOptimizationPhase(optNum);
+
         if (comp()->getOption(TR_TraceOptDetails)) {
             if (comp()->isOutermostMethod())
                 getDebug()->printOptimizationHeader(comp()->signature(), manager->name(), optIndex,
@@ -1947,7 +1952,6 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
             }
         }
 
-        comp()->reportOptimizationPhase(optNum);
         breakForTesting(optNum);
         if (!doThisOptimizationIfEnabled
             || manager->getRequestedBlocks()->find(toBlock(comp()->getFlowGraph()->getStart()))
