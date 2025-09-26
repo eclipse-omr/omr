@@ -2787,10 +2787,7 @@ void TR_HandleInjectedBasicBlock::findAndReplaceReferences(TR::TreeTop *callBBSt
     TR::Block *lastBlock = callBBStart->getNode()->getBlock();
     TR::Block *startBlock = lastBlock->startOfExtendedBlock();
 
-    TR::TreeTop *tt = startBlock->getEntry();
-    for (; tt != lastBlock->getExit(); tt = tt->getNextTreeTop())
-        collectNodesWithMultipleReferences(tt, 0, tt->getNode());
-
+    collectNodesWithMultipleReferences(NULL, startBlock->getEntry(), lastBlock->getExit());
     printNodesWithMultipleReferences();
 
     if (_multiplyReferencedNodes.getFirst()) {
@@ -2804,10 +2801,8 @@ void TR_HandleInjectedBasicBlock::findAndReplaceReferences(TR::TreeTop *callBBSt
         }
     }
     if (replaceBlock2) {
-        TR::TreeTop *tt = replaceBlock2->getEntry(), *locationForTemp = lastBlock->getLastRealTreeTop();
-        for (; tt != replaceBlock2->getExit(); tt = tt->getNextTreeTop())
-            collectNodesWithMultipleReferences(locationForTemp, 0, tt->getNode());
-
+        collectNodesWithMultipleReferences(lastBlock->getLastRealTreeTop(), replaceBlock2->getEntry(),
+            replaceBlock2->getExit());
         if (_multiplyReferencedNodes.getFirst()) {
             createTemps(true);
             TR::NodeChecklist visitedNodes(comp());
@@ -2815,6 +2810,40 @@ void TR_HandleInjectedBasicBlock::findAndReplaceReferences(TR::TreeTop *callBBSt
             if (replaceBlock2)
                 replaceNodesReferencedFromAbove(replaceBlock2, visitedNodes);
         }
+    }
+}
+
+void TR_HandleInjectedBasicBlock::collectNodesWithMultipleReferences(TR::TreeTop *storeInsertionPoint,
+    TR::TreeTop *start, TR::TreeTop *end)
+{
+    TR_ASSERT_FATAL(_multiplyReferencedNodes.getFirst() == NULL, "unexpected live nodes");
+
+    // Ensure there will be no PassThroughs in _multiplyReferencedNodes.
+    // The logic that generates the stores and loads is not prepared to
+    // deal with them. It could be made to do so, but it's simpler and
+    // potentially generates fewer temps to prevent the situation here.
+    //
+    // All PassThrough commoning is eliminated before we start to track
+    // live nodes. Otherwise, for any node that occurs as the child of a
+    // commoned PassThrough, we'd have to introduce occurrences as we go
+    // along, so when the node is first encountered, its refcount would
+    // not accurately reflect the number of additional occurrences that
+    // will be encountered later on.
+    //
+    TR::NodeChecklist visitedForPassThrough(comp());
+    for (TR::TreeTop *tt = start; tt != end; tt = tt->getNextTreeTop()) {
+        uncommonPassThroughNodes(tt->getNode(), visitedForPassThrough);
+    }
+
+    // Now that there are no commoned PassThrough nodes reachable from
+    // [startTT, endTT), we can track live nodes as usual.
+    for (TR::TreeTop *tt = start; tt != end; tt = tt->getNextTreeTop()) {
+        TR::TreeTop *curStoreInsertionPoint = storeInsertionPoint;
+        if (curStoreInsertionPoint == NULL) {
+            curStoreInsertionPoint = tt;
+        }
+
+        collectNodesWithMultipleReferences(curStoreInsertionPoint, NULL, tt->getNode());
     }
 }
 
@@ -2832,31 +2861,40 @@ void TR_HandleInjectedBasicBlock::collectNodesWithMultipleReferences(TR::TreeTop
 
     if (!found) {
         for (int32_t i = 0; i < node->getNumChildren(); ++i) {
-            // Ensure there will be no PassThroughs in _multiplyReferencedNodes.
-            // The logic that generates the stores and loads is not prepared to
-            // deal with them. It could be made to do so, but it's simpler and
-            // potentially generates fewer temps to prevent the situation here.
-            TR::Node *child = node->getChild(i);
-            if (child->getReferenceCount() > 1 && child->getOpCodeValue() == TR::PassThrough) {
-                // Most of the time we could use grandchild directly, but that's
-                // not possible when node is a NULLCHK, and it would be really hard
-                // to exercise the NULLCHK case (with commoning), so just always
-                // create a new PassThrough.
-                TR::Node *grandchild = child->getChild(0);
-                TR::Node *newChild = TR::Node::create(child, TR::PassThrough, 1, grandchild);
-                dumpOptDetails(comp(),
-                    "HIBB: Change n%un [%p] child %d from PassThrough n%un [%p] "
-                    "to fresh uncommoned PassThrough n%un [%p]\n",
-                    node->getGlobalIndex(), node, i, child->getGlobalIndex(), child, newChild->getGlobalIndex(),
-                    newChild);
-
-                node->setAndIncChild(i, newChild);
-                child->recursivelyDecReferenceCount();
-                child = newChild;
-            }
-
-            collectNodesWithMultipleReferences(tt, node, child);
+            collectNodesWithMultipleReferences(tt, node, node->getChild(i));
         }
+    }
+}
+
+void TR_HandleInjectedBasicBlock::uncommonPassThroughNodes(TR::Node *node, TR::NodeChecklist &visited)
+{
+    if (visited.contains(node)) {
+        return;
+    }
+
+    visited.add(node);
+
+    int32_t numChildren = node->getNumChildren();
+    for (int32_t i = 0; i < numChildren; i++) {
+        TR::Node *child = node->getChild(i);
+        if (child->getReferenceCount() > 1 && child->getOpCodeValue() == TR::PassThrough) {
+            // Most of the time we could use grandchild directly, but that's
+            // not possible when node is a NULLCHK, and it would be really hard
+            // to exercise the NULLCHK case (with commoning), so just always
+            // create a new PassThrough.
+            TR::Node *grandchild = child->getChild(0);
+            TR::Node *newChild = TR::Node::create(child, TR::PassThrough, 1, grandchild);
+            dumpOptDetails(comp(),
+                "HIBB: Change n%un [%p] child %d from PassThrough n%un [%p] "
+                "to fresh uncommoned PassThrough n%un [%p]\n",
+                node->getGlobalIndex(), node, i, child->getGlobalIndex(), child, newChild->getGlobalIndex(), newChild);
+
+            node->setAndIncChild(i, newChild);
+            child->recursivelyDecReferenceCount();
+            child = newChild;
+        }
+
+        uncommonPassThroughNodes(child, visited);
     }
 }
 

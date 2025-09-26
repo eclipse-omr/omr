@@ -869,7 +869,9 @@ public:
 
 private:
     void printNodesWithMultipleReferences();
+    void collectNodesWithMultipleReferences(TR::TreeTop *storeInsertionPoint, TR::TreeTop *start, TR::TreeTop *end);
     void collectNodesWithMultipleReferences(TR::TreeTop *, TR::Node *, TR::Node *);
+    void uncommonPassThroughNodes(TR::Node *, TR::NodeChecklist &);
     void replaceNodesReferencedFromAbove(TR::Block *, TR::NodeChecklist &visitedNodes);
     void replaceNodesReferencedFromAbove(TR::TreeTop *, TR::Node *, TR::Node *, uint32_t,
         TR::NodeChecklist &visitedNodes);
