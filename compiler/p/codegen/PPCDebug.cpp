@@ -279,6 +279,10 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::PPCLabelInstruction *instr)
         }
     }
     printInstructionComment(pOutFile, 1, instr);
+
+    if (instr->getDependencyConditions())
+        print(pOutFile, instr->getDependencyConditions());
+
     trfflush(_comp->getOutFile());
 }
 
