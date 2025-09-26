@@ -4974,7 +4974,7 @@ MM_Scavenger::reportGCCycleStart(MM_EnvironmentStandard *env)
 
 	/* Clear STW pause stats for this cycle. */
 	stats->clearPauseStats();
-
+	env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 	MM_CommonGCData commonData;
 
 	Trc_MM_CycleStart(env->getLanguageVMThread(), env->_cycleState->_type, _extensions->getHeap()->getActualFreeMemorySize());
