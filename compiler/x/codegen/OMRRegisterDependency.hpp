@@ -102,9 +102,6 @@ public:
     void assignRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindsToBeAssigned,
         uint32_t numberOfRegisters, TR::CodeGenerator *cg);
 
-    void assignFPRegisters(TR::Instruction *currentInstruction, TR_RegisterKinds kindsToBeAssigned,
-        uint32_t numberOfRegisters, TR::CodeGenerator *cg);
-
     void blockRealDependencyRegisters(uint32_t numberOfRegisters, TR::CodeGenerator *cg);
     void unblockRealDependencyRegisters(uint32_t numberOfRegisters, TR::CodeGenerator *cg);
 };
