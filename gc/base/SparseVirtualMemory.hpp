@@ -63,6 +63,8 @@ private:
 	MM_Heap *_heap; /**< reference to in-heap */
 	MM_SparseAddressOrderedFixedSizeDataPool *_sparseDataPool; /**< Structure that manages data and free region of sparse virtual memory */
 	omrthread_monitor_t _largeObjectVirtualMemoryMutex; /**< Monitor that manages access to sparse virtual memory */
+
+	void **_allocationContextArray;
 protected:
 public:
 /*
@@ -84,6 +86,7 @@ protected:
 		, _heap(in_heap)
 		, _sparseDataPool(NULL)
 		, _largeObjectVirtualMemoryMutex(NULL)
+		, _allocationContextArray(NULL)
 	{
 		_typeId = __FUNCTION__;
 	}
@@ -156,6 +159,39 @@ public:
 	MMINLINE MM_SparseAddressOrderedFixedSizeDataPool *getSparseDataPool()
 	{
 		return _sparseDataPool;
+	}
+
+	MMINLINE uintptr_t getAllocationContextIndexForAddress(const void *address)
+	{
+		const uintptr_t regionSize = _heap->getHeapRegionManager()->getRegionSize();
+		return ((uintptr_t)address - (uintptr_t)getHeapBase()) / regionSize;
+	}
+
+	MMINLINE uintptr_t getAllocationContextCount(uintptr_t size)
+	{
+		const uintptr_t regionSize = _heap->getHeapRegionManager()->getRegionSize();
+		return size / regionSize;
+	}
+
+	MMINLINE void* getAllocationContextForAddress(const void *address, uintptr_t index)
+	{
+		uintptr_t offset = getAllocationContextIndexForAddress(address);
+		return _allocationContextArray[offset + index];
+	}
+
+	MMINLINE void setAllocationContextForAddress(const void *address, void *allocationContext, uintptr_t index)
+	{
+		uintptr_t offset = getAllocationContextIndexForAddress(address);
+		_allocationContextArray[offset + index] = allocationContext;
+	}
+
+	MMINLINE void resetAllocationContextForAddress(const void *address, uintptr_t size)
+	{
+		uintptr_t offset = getAllocationContextIndexForAddress(address);
+		uintptr_t count = getAllocationContextCount(size);
+		for (uintptr_t index = 0; index < count; index++) {
+			_allocationContextArray[offset + index] = 0;
+		}
 	}
 };
 
