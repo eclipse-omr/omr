@@ -1038,10 +1038,17 @@ TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGe
 TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Node *child = node->getFirstChild();
+    
+    // use reverse byte order load on little endian systems to ensure boolean array element order is preserved
+    TR::Register *srcReg;
+    
+    if (cg->comp()->target().cpu.isLittleEndian() && child->getReferenceCount() == 1) {
+        srcReg = cg->allocateRegister();
+        TR::LoadStoreHandler::generateLoadNodeSequence(cg, srcReg, child, TR::InstOpCode::ldbrx, 8, true);
+    } else
+        srcReg = cg->evaluate(child);
 
-    TR::Register *srcReg = cg->evaluate(child);
     TR::Register *dstReg = cg->allocateRegister(TR_VRF);
-
     TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
 
     node->setRegister(dstReg);
@@ -1049,21 +1056,8 @@ TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGe
     // move to VRF
     generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, srcReg);
 
-    // reverse byte order if little endian (P9+ only due to availability of xxbrw instruction)
-    if (cg->comp()->target().cpu.isLittleEndian() && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
-        generateTrg1Src1Instruction(cg, TR::InstOpCode::xxbrd, node, dstReg, dstReg);
-
     // unpack byte-length elements to halfword-length elements
     generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsb, node, dstReg, dstReg);
-
-    // if not done already (i.e.: P8 or lower), reverse element order if little endian
-    if (cg->comp()->target().cpu.isLittleEndian() && !cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9)) {
-        generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, -16);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::vrlw, node, dstReg, dstReg, tmpReg);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, tmpReg, tmpReg, tmpReg);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::vrld, node, dstReg, dstReg, tmpReg);
-        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, dstReg, dstReg, dstReg, 2);
-    }
 
     // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
     // all 0/1 mask by subtracting from 0:
