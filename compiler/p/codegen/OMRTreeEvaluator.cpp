@@ -1038,10 +1038,26 @@ TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGe
 TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Node *child = node->getFirstChild();
+    
+    // In order to preserve the boolean array element order on little endian systems, we need to reverse the 
+    // byte/element order of the given input. Due to factors such as instruction availability, there are 
+    // three cases that each need to be handled differently:
+    // 1.) The child node has refCount == 1
+    // 2.) The child node has refCount > 1 AND the target system is P9 or higher
+    // 3.) The child node has refCount > 1 AND the target system is P8 or lower
 
-    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *srcReg;
+    bool reversed = false;
+
+    // Case (1)
+    if (cg->comp()->target().cpu.isLittleEndian() && child->getReferenceCount() == 1) {
+        srcReg = cg->allocateRegister();
+        TR::LoadStoreHandler::generateLoadNodeSequence(cg, srcReg, child, TR::InstOpCode::ldbrx, 8, true);
+        reversed = true;
+    } else
+        srcReg = cg->evaluate(child);
+
     TR::Register *dstReg = cg->allocateRegister(TR_VRF);
-
     TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
 
     node->setRegister(dstReg);
@@ -1049,15 +1065,15 @@ TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGe
     // move to VRF
     generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, srcReg);
 
-    // reverse byte order if little endian (P9+ only due to availability of xxbrw instruction)
-    if (cg->comp()->target().cpu.isLittleEndian() && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
+    // Case (2)
+    if (!reversed && cg->comp()->target().cpu.isLittleEndian() && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
         generateTrg1Src1Instruction(cg, TR::InstOpCode::xxbrd, node, dstReg, dstReg);
 
     // unpack byte-length elements to halfword-length elements
     generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsb, node, dstReg, dstReg);
 
-    // if not done already (i.e.: P8 or lower), reverse element order if little endian
-    if (cg->comp()->target().cpu.isLittleEndian() && !cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9)) {
+    // Case (3)
+    if (!reversed && cg->comp()->target().cpu.isLittleEndian() && !cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9)) {
         generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, -16);
         generateTrg1Src2Instruction(cg, TR::InstOpCode::vrlw, node, dstReg, dstReg, tmpReg);
         generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, tmpReg, tmpReg, tmpReg);
