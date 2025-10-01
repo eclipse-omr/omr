@@ -186,7 +186,8 @@ public:
 	MMINLINE void setAllocationContextForAddress(const void *address, void *allocationContext, uintptr_t index)
 	{
 		uintptr_t offset = getAllocationContextIndexForAddress(address);
-		Assert_MM_true((offset + index) < _allocationContextArraySize);
+		/* testing B.O.B */
+		Assert_MM_true((offset + index) <= _allocationContextArraySize);
 		_allocationContextArray[offset + index] = allocationContext;
 	}
 
