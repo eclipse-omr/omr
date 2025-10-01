@@ -1583,7 +1583,7 @@ int32_t OMR::Z::Linkage::buildArgs(TR::Node *callNode, TR::RegisterDependencyCon
 
     int8_t gprSize = self()->machine()->getGPRSize();
     TR::Register *tempRegister;
-    int32_t argIndex = 0, i, from, to, step, numChildren;
+    int32_t argIndex = 0, i, from, to, step, lastChildIndex;
     int32_t argSize = 0;
     int32_t stackOffset = 0;
     uint32_t numIntegerArgs = 0;
@@ -1594,7 +1594,7 @@ int32_t OMR::Z::Linkage::buildArgs(TR::Node *callNode, TR::RegisterDependencyCon
     uint32_t firstArgumentChild = callNode->getFirstArgumentIndex();
     TR::DataType resType = callNode->getType();
     TR::DataType resDataType = resType.getDataType();
-
+    bool isJITDispatchJ9Method = callNode->isJitDispatchJ9MethodCall(comp());
     const bool enableVectorLinkage = self()->cg()->getSupportsVectorRegisters();
 
     // Not kill special registers
@@ -1623,21 +1623,24 @@ int32_t OMR::Z::Linkage::buildArgs(TR::Node *callNode, TR::RegisterDependencyCon
         firstArgumentChild++;
     }
 
-    numChildren = callNode->getNumChildren() - 1;
-    if ((callNode->getNumChildren() >= 1) && (callNode->getChild(numChildren)->getOpCodeValue() == TR::GlRegDeps))
-        numChildren--;
+    lastChildIndex = callNode->getNumChildren() - 1;
+    if ((callNode->getNumChildren() >= 1) && (callNode->getChild(lastChildIndex)->getOpCodeValue() == TR::GlRegDeps))
+        lastChildIndex--;
 
     // setup helper routine arguments in reverse order
     bool rightToLeft = self()->isParmsInReverseOrder() &&
         // we want the arguments for induceOSR to be passed from left to right as in any other non-helper call
-        !callNode->getSymbolReference()->isOSRInductionHelper();
+        !callNode->getSymbolReference()->isOSRInductionHelper() &&
+        // <jitDispatchJ9Method> receives args in the same order as the target
+        !isJITDispatchJ9Method;
+
     if (rightToLeft) {
-        from = numChildren;
+        from = lastChildIndex;
         to = firstArgumentChild;
         step = -1;
     } else {
         from = firstArgumentChild;
-        to = numChildren;
+        to = lastChildIndex;
         step = 1;
     }
 

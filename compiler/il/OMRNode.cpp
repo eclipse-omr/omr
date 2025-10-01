@@ -6682,3 +6682,10 @@ TR::Node *OMR::Node::storeToAddressField(TR::Compilation *comp, TR::Node *obj, T
 
     return node;
 }
+
+bool OMR::Node::isJitDispatchJ9MethodCall(TR::Compilation *comp)
+{
+    return self()->getOpCode().isCallDirect()
+        && comp->getSymRefTab()->isNonHelper(self()->getSymbolReference(),
+            TR::SymbolReferenceTable::jitDispatchJ9MethodSymbol);
+}

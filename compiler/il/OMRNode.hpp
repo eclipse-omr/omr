@@ -1211,6 +1211,7 @@ public:
     bool chkTheVirtualCallNodeForAGuardedInlinedCall();
 
     bool isArrayCopyCall();
+    bool isJitDispatchJ9MethodCall(TR::Compilation *comp);
     bool isDontTransformArrayCopyCall();
     void setDontTransformArrayCopyCall();
     bool chkDontTransformArrayCopyCall();
