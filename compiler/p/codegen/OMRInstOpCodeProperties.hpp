@@ -9097,7 +9097,7 @@
         /* .description =    "vector pack unsigned half word unsigned modulo", */
         /* .prefix      = */ 0x00000000,
         /* .opcode      = */ 0x1000000E,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P6,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },
