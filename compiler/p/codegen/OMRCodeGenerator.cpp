@@ -1790,6 +1790,8 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
         case TR::v2m:
         case TR::vblend:
             return true;
+        case TR::m2i:
+            return true;
         case TR::m2v:
             // only P9 has splat byte immediate, otherwise it's too expensive
             return cpu->isAtLeast(OMR_PROCESSOR_PPC_P9);
