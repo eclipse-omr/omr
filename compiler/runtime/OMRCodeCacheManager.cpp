@@ -545,6 +545,7 @@ uint8_t *OMR::CodeCacheManager::allocateCodeMemoryWithRetries(size_t warmCodeSiz
     uint8_t *warmCodeAddress = NULL;
     TR::CodeCache *codeCache;
     TR::CodeCache *originalCodeCache = *codeCache_pp; // diagnostic
+    TR::CodeCacheKind kind = originalCodeCache->_kind;
 
     /* prevent infinite recursion on allocation requests larger than possible code cache size etc */
     if (allocationRetries-- < 0)
@@ -576,7 +577,9 @@ uint8_t *OMR::CodeCacheManager::allocateCodeMemoryWithRetries(size_t warmCodeSiz
             for (codeCache = self()->getFirstCodeCache(); codeCache; codeCache = codeCache->next()) {
                 numCachesVisited++;
                 // Our current cache is reserved, so we cannot find it again
-                if (!codeCache->isReserved()) {
+                if (codeCache->isReserved()) {
+                    numCachesAlreadyReserved++;
+                } else if (codeCache->_kind == kind) {
                     if (codeCache->almostFull() != TR_yes) {
                         // How about the size
                         size_t warmSize = warmCodeSize;
@@ -589,9 +592,6 @@ uint8_t *OMR::CodeCacheManager::allocateCodeMemoryWithRetries(size_t warmCodeSiz
                             break;
                         }
                     }
-                } else // This cache is reserved; would it be OK though?
-                {
-                    numCachesAlreadyReserved++;
                 }
             }
         }
