@@ -4319,7 +4319,7 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 		if (_extensions->processLargeAllocateStats) {
 			processLargeAllocateStatsBeforeGC(env);
 		}
-
+		env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 		reportGCCycleStart(env);
 		_cycleTimes.cycleStart = omrtime_hires_clock();
 		mainSetupForGC(env);
@@ -4992,6 +4992,8 @@ void
 MM_Scavenger::reportGCCycleEnd(MM_EnvironmentStandard *env)
 {
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
+	MM_CollectionStatisticsStandard *stats = (MM_CollectionStatisticsStandard *)env->_cycleState->_collectionStatistics;
+	omrtty_printf("\n-- ScavengerGC --\nGC ID: %d\nSTW Total Pauses: %dμs\nSTW Longest Pause: %dμs\n", env->_cycleState->_currentCycleID, omrtime_hires_delta(0, stats->_pauseTotal, OMRPORT_TIME_DELTA_IN_MICROSECONDS), omrtime_hires_delta(0, stats->_pauseLongest, OMRPORT_TIME_DELTA_IN_MICROSECONDS));
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	MM_CommonGCData commonData;
 
