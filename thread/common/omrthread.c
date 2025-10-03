@@ -4395,9 +4395,7 @@ monitor_exit(omrthread_t self, omrthread_monitor_t monitor)
 #if defined(OMR_THR_SPIN_WAKE_CONTROL)
 		omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED);
  		MONITOR_LOCK(monitor, CALLER_MONITOR_EXIT1);
- 		if (0 == monitor->spinThreads) {
- 			unblock_spinlock_threads(self, monitor);
- 		}
+		unblock_spinlock_threads(self, monitor);
  		MONITOR_UNLOCK(monitor);
 #else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 		if (J9THREAD_MONITOR_SPINLOCK_EXCEEDED == omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED)) {
@@ -4713,9 +4711,7 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 #else /* defined(OMR_THR_MCS_LOCKS) */
 #if defined(OMR_THR_SPIN_WAKE_CONTROL)
 	omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED);
-	if (0 == monitor->spinThreads) {
-		unblock_spinlock_threads(self, monitor);
-	}
+	unblock_spinlock_threads(self, monitor);
 #else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	if (J9THREAD_MONITOR_SPINLOCK_EXCEEDED == omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED)) {
 		unblock_spinlock_threads(self, monitor);
@@ -4987,9 +4983,7 @@ monitor_wait_three_tier(omrthread_t self, omrthread_monitor_t monitor,
 #else /* defined(OMR_THR_MCS_LOCKS) */
 #if defined(OMR_THR_SPIN_WAKE_CONTROL)
 	omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED);
-	if (0 == monitor->spinThreads) {
-		unblock_spinlock_threads(self, monitor);
-	}
+	unblock_spinlock_threads(self, monitor);
 #else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	if (J9THREAD_MONITOR_SPINLOCK_EXCEEDED == omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED)) {
 		unblock_spinlock_threads(self, monitor);
