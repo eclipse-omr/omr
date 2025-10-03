@@ -4392,20 +4392,11 @@ monitor_exit(omrthread_t self, omrthread_monitor_t monitor)
 		}
 		MONITOR_UNLOCK(monitor);
 #else /* defined(OMR_THR_MCS_LOCKS) */
-#if defined(OMR_THR_SPIN_WAKE_CONTROL)
-		omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED);
- 		MONITOR_LOCK(monitor, CALLER_MONITOR_EXIT1);
- 		if (0 == monitor->spinThreads) {
- 			unblock_spinlock_threads(self, monitor);
- 		}
- 		MONITOR_UNLOCK(monitor);
-#else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 		if (J9THREAD_MONITOR_SPINLOCK_EXCEEDED == omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED)) {
 			MONITOR_LOCK(monitor, CALLER_MONITOR_EXIT1);
 			unblock_spinlock_threads(self, monitor);
 			MONITOR_UNLOCK(monitor);
 		}
-#endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 #endif /* defined(OMR_THR_MCS_LOCKS) */
 #else /* defined(OMR_THR_THREE_TIER_LOCKING) */
 		MONITOR_UNLOCK(monitor);
@@ -4711,16 +4702,9 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 		NOTIFY_WRAPPER(nextThread);
 	}
 #else /* defined(OMR_THR_MCS_LOCKS) */
-#if defined(OMR_THR_SPIN_WAKE_CONTROL)
-	omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED);
-	if (0 == monitor->spinThreads) {
-		unblock_spinlock_threads(self, monitor);
-	}
-#else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	if (J9THREAD_MONITOR_SPINLOCK_EXCEEDED == omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED)) {
 		unblock_spinlock_threads(self, monitor);
 	}
-#endif  /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 #endif /* defined(OMR_THR_MCS_LOCKS) */
 	self->lockedmonitorcount--;
 #endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
@@ -4985,16 +4969,9 @@ monitor_wait_three_tier(omrthread_t self, omrthread_monitor_t monitor,
 		NOTIFY_WRAPPER(nextThread);
 	}
 #else /* defined(OMR_THR_MCS_LOCKS) */
-#if defined(OMR_THR_SPIN_WAKE_CONTROL)
-	omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED);
-	if (0 == monitor->spinThreads) {
-		unblock_spinlock_threads(self, monitor);
-	}
-#else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	if (J9THREAD_MONITOR_SPINLOCK_EXCEEDED == omrthread_spinlock_swapState(monitor, J9THREAD_MONITOR_SPINLOCK_UNOWNED)) {
 		unblock_spinlock_threads(self, monitor);
 	}
-#endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 #endif /* defined(OMR_THR_MCS_LOCKS) */
 	self->lockedmonitorcount--;
 
