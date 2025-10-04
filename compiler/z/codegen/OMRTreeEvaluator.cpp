@@ -1237,29 +1237,67 @@ TR::Register *OMR::Z::TreeEvaluator::v2mEvaluator(TR::Node *node, TR::CodeGenera
     return resultRegister;
 }
 
+TR::Register *fromMaskEvaluatorHelper(TR::Node *node, TR::CodeGenerator *cg, uint8_t elementSizeMask)
+{
+    TR::Node *sourceNode = node->getFirstChild();
+    TR_ASSERT_FATAL_WITH_NODE(node, sourceNode->getDataType().getVectorLength() == TR::VectorLength128,
+        "A 128-bit vector was expected as the child node but %s was provided!", sourceNode->getDataType().toString());
+    TR::Register *maskRegister = cg->gprClobberEvaluate(sourceNode);
+
+    // More packing cycles needed for smaller element sizes. No packing for byte element size as any byte in mask
+    //  represent the whole mask.
+    int packingLoops = (elementSizeMask == 0) ? 0 : (4 - elementSizeMask);
+    for (; packingLoops > 0; packingLoops--) {
+        // Keep packing until element size is 1 byte.
+        generateVRRcInstruction(cg, TR::InstOpCode::VPK, node, maskRegister, maskRegister, maskRegister, packingLoops);
+    }
+    // Convert mask elements to boolean elements. If the mask element is zero, the boolean element must be zero,
+    //  if the mask element is all ones, the boolean element must be integer 1. All other values are undefined.
+    generateVRRaInstruction(cg, TR::InstOpCode::VLC, node, maskRegister, maskRegister, 0 /* mask5 */, 0 /* mask4 */,
+        0 /* mask3 */);
+
+    TR::Register *resultRegister = cg->allocateRegister();
+    // Move the result from vector register to GPR.
+    generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, resultRegister, maskRegister,
+        generateS390MemoryReference(0, cg), elementSizeMask);
+
+    cg->decReferenceCount(sourceNode);
+    node->setRegister(resultRegister);
+    return resultRegister;
+}
+
 TR::Register *OMR::Z::TreeEvaluator::m2bEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return fromMaskEvaluatorHelper(node, cg, 0);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::m2sEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return fromMaskEvaluatorHelper(node, cg, 1);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::m2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return fromMaskEvaluatorHelper(node, cg, 2);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::m2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return fromMaskEvaluatorHelper(node, cg, 3);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::m2vEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *sourceNode = node->getFirstChild();
+    TR_ASSERT_FATAL_WITH_NODE(node, sourceNode->getDataType().getVectorLength() == TR::VectorLength128,
+        "A 128-bit vector was expected as m2v child node but %s was provided!", sourceNode->getDataType().toString());
+    TR::Register *sourceReg = cg->evaluate(sourceNode);
+    TR::Register *resultRegister = tryToReuseInputVectorRegs(node, cg);
+    generateVRRaInstruction(cg, TR::InstOpCode::VLC, node, resultRegister, sourceReg, 0 /* mask5 */, 0 /* mask4 */,
+        getVectorElementSizeMask(sourceNode) /* mask3 */);
+    node->setRegister(resultRegister);
+    cg->decReferenceCount(sourceNode);
+    return resultRegister;
 }
 
 // vector evaluators
