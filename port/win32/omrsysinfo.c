@@ -2159,3 +2159,9 @@ alloc_failed:
 	callbackResult = (uintptr_t)(intptr_t)OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
 	goto done;
 }
+
+char *
+omrsysinfo_get_process_name(struct OMRPortLibrary *portLibrary, uintptr_t pid)
+{
+	return NULL;
+}

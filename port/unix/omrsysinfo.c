@@ -102,6 +102,7 @@
 #endif /* defined(AIXPPC) */
 
 #include "omrsysinfo_helpers.h"
+#include "omrformatconsts.h"
 
 /* Start copy from omrfiletext.c */
 /* __STDC_ISO_10646__ indicates that the platform wchar_t encoding is Unicode */
@@ -7893,4 +7894,42 @@ alloc_failed:
 	/* sysinfo_get_processes is not supported on this platform. */
 	return OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED;
 #endif /* defined(AIXPPC) */
+}
+
+char *
+omrsysinfo_get_process_name(struct OMRPortLibrary *portLibrary, uintptr_t pid)
+{
+#if defined(LINUX) && !defined(OMRZTPF)
+	ssize_t rc = 0;
+	char exebuf[32];
+	char linkbuf[PATH_MAX];
+	snprintf(exebuf, sizeof(exebuf), "/proc/%" OMR_PRIuPTR "/exe", pid);
+	rc = readlink(exebuf, linkbuf, sizeof(linkbuf));
+	if ((-1 != rc) && (rc < sizeof(linkbuf))) {
+		char *exename = portLibrary->mem_allocate_memory(portLibrary, rc, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+		if (NULL != exename) {
+			strcpy(exename, linkbuf);
+			return exename;
+		}
+	}
+#elif defined(AIXPPC)
+	int fd = 0;
+	char exebuf[35];
+	char psinfobuf[1024];
+	snprintf(exebuf, sizeof(exebuf), "/proc/%" OMR_PRIuPTR "/psinfo", pid);
+	fd = open(exebuf);
+	if (-1 != fd) {
+		int minsize = (int)&((struct psinfo *)0)->pr_fname + PRFNSZ;
+		ssize_t size = read(fd, psinfobuf, sizeof(psinfobuf));
+		close(fd);
+		if (size >= minsize) {
+			char *name = (char *)&((struct psinfo *)psinfobuf)->pr_fname;
+			int len = strlen(name);
+			char *exename = portLibrary->mem_allocate_memory(portLibrary, len, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+			strcpy(exename, name);
+			return exename;
+		}
+	}
+#endif /* defined(LINUX) && !defined(OMRZTPF) */
+	return NULL;
 }

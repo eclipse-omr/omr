@@ -1136,6 +1136,7 @@ typedef struct J9ProcessorInfos {
 #define OMRPORT_SIG_GPR_ARM_R8   -60
 #define OMRPORT_SIG_GPR_ARM_R9   -61
 #define OMRPORT_SIG_GPR_ARM_R10  -62
+#define OMRPORT_SIG_SENDER_PID   -63
 
 #define OMRPORT_SIG_VALUE_UNDEFINED  1
 #define OMRPORT_SIG_VALUE_STRING  2
@@ -2115,6 +2116,8 @@ typedef struct OMRPortLibrary {
 	intptr_t (*sysinfo_get_CPU_load)(struct OMRPortLibrary *portLibrary, double *load) ;
 	/** see @ref omrsysinfo.c::omrsysinfo_get_processes "omrsysinfo_get_processes" */
 	uintptr_t (*sysinfo_get_processes)(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallback callback, void *userData);
+	/** see @ref omrsysinfo.c::omrsysinfo_get_process_name "omrsysinfo_get_process_name" */
+	char *(*sysinfo_get_process_name)(struct OMRPortLibrary *portLibrary, uintptr_t pid);
 	/** see @ref omrsysinfo.c::omrsysinfo_limit_iterator_init "omrsysinfo_limit_iterator_init"*/
 	int32_t (*sysinfo_limit_iterator_init)(struct OMRPortLibrary *portLibrary, J9SysinfoLimitIteratorState *state) ;
 	/** see @ref omrsysinfo.c::omrsysinfo_limit_iterator_hasNext "omrsysinfo_limit_iterator_hasNext"*/
@@ -3018,6 +3021,7 @@ extern J9_CFUNC int32_t omrport_getVersion(struct OMRPortLibrary *portLibrary);
 #define omrsysinfo_env_iterator_next(param1,param2) privateOmrPortLibrary->sysinfo_env_iterator_next(privateOmrPortLibrary, (param1), (param2))
 #define omrsysinfo_set_number_user_specified_CPUs(param1) privateOmrPortLibrary->sysinfo_set_number_user_specified_CPUs(privateOmrPortLibrary,(param1))
 #define omrsysinfo_get_processes(callback, userData) privateOmrPortLibrary->sysinfo_get_processes(privateOmrPortLibrary, callback, userData)
+#define omrsysinfo_get_process_name(param1) privateOmrPortLibrary->sysinfo_get_process_name(privateOmrPortLibrary, param1)
 #define omrfile_startup() privateOmrPortLibrary->file_startup(privateOmrPortLibrary)
 #define omrfile_shutdown() privateOmrPortLibrary->file_shutdown(privateOmrPortLibrary)
 #define omrfile_write(param1,param2,param3) privateOmrPortLibrary->file_write(privateOmrPortLibrary, (param1), (param2), (param3))
