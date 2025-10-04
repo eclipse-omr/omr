@@ -1037,7 +1037,39 @@ TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+    
+    // use reverse byte order load on little endian systems to ensure boolean array element order is preserved
+    TR::Register *srcReg;
+    
+    if (cg->comp()->target().cpu.isLittleEndian() && child->getReferenceCount() == 1) {
+        srcReg = cg->allocateRegister();
+        TR::LoadStoreHandler::generateLoadNodeSequence(cg, srcReg, child, TR::InstOpCode::ldbrx, 8, true);
+    } else
+        srcReg = cg->evaluate(child);
+
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+    TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    // move to VRF
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, srcReg);
+
+    // unpack byte-length elements to halfword-length elements
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsb, node, dstReg, dstReg);
+
+    // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
+    // all 0/1 mask by subtracting from 0:
+    // 0-1 = -1 = 0xFF...
+    // 0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, 0);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsubuhm, node, dstReg, tmpReg, dstReg);
+
+    cg->stopUsingRegister(tmpReg);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::v2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
