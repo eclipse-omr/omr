@@ -2196,7 +2196,9 @@ uint8_t *TR::S390RSInstruction::generateBinaryEncoding()
         || op == TR::InstOpCode::MVCLU || op == TR::InstOpCode::CLCLE || op == TR::InstOpCode::CLCLU) {
         toRealRegister(getSecondRegister()->getHighOrder())->setRegister2Field((uint32_t *)cursor);
     } else if (getLastRegister()) {
-        toRealRegister(getLastRegister())->setRegister2Field((uint32_t *)cursor);
+        if (op != TR::InstOpCode::SRDA ) {
+            toRealRegister(getLastRegister())->setRegister2Field((uint32_t *)cursor);
+        }
     }
 
     instructionStart = cursor;
