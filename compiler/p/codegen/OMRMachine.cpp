@@ -490,7 +490,7 @@ TR::RealRegister *OMR::Power::Machine::freeBestRegister(TR::Instruction *current
             }
         }
 
-        TR_ASSERT(numCandidates != 0, "All %s registers are blocked\n", virtReg->getRegisterKindName(comp, rk));
+        TR_ASSERT_FATAL(numCandidates != 0, "All %s registers are blocked\n", virtReg->getRegisterKindName(comp, rk));
 
         cursor = currentInstruction;
         while (numCandidates > 1 && cursor != NULL && cursor->getOpCodeValue() != TR::InstOpCode::label

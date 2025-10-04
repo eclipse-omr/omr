@@ -944,6 +944,26 @@ void OMR::Power::RegisterDependencyGroup::assignRegisters(TR::Instruction *curre
         }
     }
 
+    // While aloccating a free vector register it might require a spill
+    // and, therefore, a temporary GPR as an index register (due to the alignment issues)
+    // To avoid all GPRs being blocked, allocate vector registers first
+    if (!haveSpareGPRs) {
+        for (i = 0; i < numberOfRegisters; i++) {
+            TR::RegisterDependency &regDep = _dependencies[i];
+            virtReg = regDep.getRegister();
+            if (virtReg->getKind() != TR_VRF && virtReg->getKind() != TR_VSX_SCALAR
+                && virtReg->getKind() != TR_VSX_VECTOR) {
+                continue;
+            }
+            dependentRegNum = regDep.getRealRegister();
+            dependentRealReg = machine->getRealRegister(dependentRegNum);
+
+            if (!regDep.isNoReg() && !regDep.isSpilledReg() && dependentRealReg->getState() == TR::RealRegister::Free) {
+                assignFreeRegisters(currentInstruction, &regDep, map, cg);
+            }
+        }
+    }
+
     // Assign all virtual regs that depend on a specific real reg that is free
     for (i = 0; i < numberOfRegisters; i++) {
         TR::RegisterDependency &regDep = _dependencies[i];
