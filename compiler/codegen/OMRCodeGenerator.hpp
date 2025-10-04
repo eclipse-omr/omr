@@ -295,16 +295,16 @@ public:
 
     TR_StackMemory trStackMemory();
 
-    TR_Memory *trMemory() { return _trMemory; }
+    OMR_FINAL TR_Memory *trMemory() { return _trMemory; }
 
-    TR_HeapMemory trHeapMemory() { return _trMemory; }
+    OMR_FINAL TR_HeapMemory trHeapMemory() { return _trMemory; }
 
-    TR::Machine *machine() { return _machine; }
+    OMR_FINAL TR::Machine *machine() { return _machine; }
 
-    TR::Compilation *comp() { return _compilation; }
+    OMR_FINAL TR::Compilation *comp() { return _compilation; }
 
-    TR_FrontEnd *fe();
-    TR_Debug *getDebug();
+    OMR_FINAL TR_FrontEnd *fe();
+    OMR_FINAL TR_Debug *getDebug();
 
     void uncommonCallConstNodes();
 

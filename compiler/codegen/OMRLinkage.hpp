@@ -70,37 +70,37 @@ public:
     /**
      * @return Cached CodeGenerator object
      */
-    inline TR::CodeGenerator *cg();
+    OMR_FINAL inline TR::CodeGenerator *cg();
 
     /**
      * @return Machine object from cached CodeGenerator
      */
-    inline TR::Machine *machine();
+    OMR_FINAL inline TR::Machine *machine();
 
     /**
      * @return Compilation object from cached CodeGenerator
      */
-    inline TR::Compilation *comp();
+    OMR_FINAL inline TR::Compilation *comp();
 
     /**
      * @return FrontEnd object from cached CodeGenerator
      */
-    inline TR_FrontEnd *fe();
+    OMR_FINAL inline TR_FrontEnd *fe();
 
     /**
      * @return TR_Memory object from cached CodeGenerator
      */
-    inline TR_Memory *trMemory();
+    OMR_FINAL inline TR_Memory *trMemory();
 
     /**
      * @return TR_HeapMemory object
      */
-    inline TR_HeapMemory trHeapMemory();
+    OMR_FINAL inline TR_HeapMemory trHeapMemory();
 
     /**
      * @return TR_StackMemory object
      */
-    inline TR_StackMemory trStackMemory();
+    OMR_FINAL inline TR_StackMemory trStackMemory();
 
     TR_ALLOC(TR_Memory::Linkage)
 

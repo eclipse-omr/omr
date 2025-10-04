@@ -262,9 +262,9 @@ public:
      * Field functions
      */
 
-    TR::TreeTop *getEntry() { return _pEntry; }
+    OMR_FINAL TR::TreeTop *getEntry() { return _pEntry; }
 
-    TR::TreeTop *setEntry(TR::TreeTop *p)
+    OMR_FINAL TR::TreeTop *setEntry(TR::TreeTop *p)
     {
         if (TR::comp()->getOptimizer() && !TR::comp()->isPeekingMethod()) {
             TR::comp()->getOptimizer()->setCachedExtendedBBInfoValid(false);
@@ -272,9 +272,9 @@ public:
         return (_pEntry = p);
     }
 
-    TR::TreeTop *getExit() { return _pExit; }
+    OMR_FINAL TR::TreeTop *getExit() { return _pExit; }
 
-    TR::TreeTop *setExit(TR::TreeTop *p)
+    OMR_FINAL TR::TreeTop *setExit(TR::TreeTop *p)
     {
         if (TR::comp()->getOptimizer() && !TR::comp()->isPeekingMethod()) {
             TR::comp()->getOptimizer()->setCachedExtendedBBInfoValid(false);
@@ -282,19 +282,19 @@ public:
         return (_pExit = p);
     }
 
-    TR_BitVector *getLiveLocals() { return _liveLocals; }
+    OMR_FINAL TR_BitVector *getLiveLocals() { return _liveLocals; }
 
-    TR_BitVector *setLiveLocals(TR_BitVector *v) { return (_liveLocals = v); }
+    OMR_FINAL TR_BitVector *setLiveLocals(TR_BitVector *v) { return (_liveLocals = v); }
 
-    TR_BlockStructure *getStructureOf() { return _pStructureOf; }
+    OMR_FINAL TR_BlockStructure *getStructureOf() { return _pStructureOf; }
 
-    TR_BlockStructure *setStructureOf(TR_BlockStructure *p) { return (_pStructureOf = p); }
+    OMR_FINAL TR_BlockStructure *setStructureOf(TR_BlockStructure *p) { return (_pStructureOf = p); }
 
     int32_t getNestingDepth();
 
     TR_Array<TR::GlobalRegister> &getGlobalRegisters(TR::Compilation *);
 
-    void clearGlobalRegisters() { _globalRegisters = NULL; }
+    OMR_FINAL void clearGlobalRegisters() { _globalRegisters = NULL; }
 
     struct InstructionBoundaries : TR_Link<InstructionBoundaries> {
         InstructionBoundaries(uint32_t s = UINT_MAX, uint32_t e = UINT_MAX)
@@ -308,19 +308,19 @@ public:
 
     void setInstructionBoundaries(uint32_t startPC, uint32_t endPC);
 
-    InstructionBoundaries &getInstructionBoundaries() { return _instructionBoundaries; }
+    OMR_FINAL InstructionBoundaries &getInstructionBoundaries() { return _instructionBoundaries; }
 
     void addExceptionRangeForSnippet(uint32_t startPC, uint32_t endPC);
 
-    InstructionBoundaries *getFirstSnippetBoundaries() { return _snippetBoundaries.getFirst(); }
+    OMR_FINAL InstructionBoundaries *getFirstSnippetBoundaries() { return _snippetBoundaries.getFirst(); }
 
-    TR::Instruction *getFirstInstruction() { return _firstInstruction; }
+    OMR_FINAL TR::Instruction *getFirstInstruction() { return _firstInstruction; }
 
-    TR::Instruction *setFirstInstruction(TR::Instruction *i) { return (_firstInstruction = i); }
+    OMR_FINAL TR::Instruction *setFirstInstruction(TR::Instruction *i) { return (_firstInstruction = i); }
 
-    TR::Instruction *getLastInstruction() { return _lastInstruction; }
+    OMR_FINAL TR::Instruction *getLastInstruction() { return _lastInstruction; }
 
-    TR::Instruction *setLastInstruction(TR::Instruction *i) { return (_lastInstruction = i); }
+    OMR_FINAL TR::Instruction *setLastInstruction(TR::Instruction *i) { return (_lastInstruction = i); }
 
     class TR_CatchBlockExtension {
     public:

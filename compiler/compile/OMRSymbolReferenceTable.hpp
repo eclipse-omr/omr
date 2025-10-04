@@ -67,15 +67,15 @@ public:
 
     TR_ALLOC(TR_Memory::SymbolReferenceTable)
 
-    TR::Compilation *comp() { return _compilation; }
+    OMR_FINAL TR::Compilation *comp() { return _compilation; }
 
-    TR_FrontEnd *fe() { return _fe; }
+    OMR_FINAL TR_FrontEnd *fe() { return _fe; }
 
-    TR_Memory *trMemory() { return _trMemory; }
+    OMR_FINAL TR_Memory *trMemory() { return _trMemory; }
 
-    TR_StackMemory trStackMemory() { return _trMemory; }
+    OMR_FINAL TR_StackMemory trStackMemory() { return _trMemory; }
 
-    TR_HeapMemory trHeapMemory() { return _trMemory; }
+    OMR_FINAL TR_HeapMemory trHeapMemory() { return _trMemory; }
 
     TR_Array<TR::SymbolReference *> baseArray;
 

@@ -70,12 +70,12 @@ public:
      * @param[in] regNum : register number
      * @return RealRegister for specified register number
      */
-    TR::RealRegister *getRealRegister(TR::RealRegister::RegNum regNum) { return _registerFile[regNum]; }
+    OMR_FINAL TR::RealRegister *getRealRegister(TR::RealRegister::RegNum regNum) { return _registerFile[regNum]; }
 
     /**
      * \return : the cached TR::CodeGenerator object
      */
-    TR::CodeGenerator *cg() { return _cg; }
+    OMR_FINAL TR::CodeGenerator *cg() { return _cg; }
 
     /** \brief
      *     Sets the number of locked registers of a specific register kind for use as a cache lookup.
@@ -138,7 +138,7 @@ public:
     /**
      * \brief Retrieve a pointer to the register file
      */
-    TR::RealRegister **registerFile() { return _registerFile; }
+    OMR_FINAL TR::RealRegister **registerFile() { return _registerFile; }
 
     /**
      * \brief Retrieves the TR::RealRegister object for the given real register
@@ -147,7 +147,7 @@ public:
      *
      * \return : the desired TR::RealRegister object
      */
-    TR::RealRegister *realRegister(TR::RealRegister::RegNum rn) { return _registerFile[rn]; }
+    OMR_FINAL TR::RealRegister *realRegister(TR::RealRegister::RegNum rn) { return _registerFile[rn]; }
 
 private:
     TR::CodeGenerator *_cg;

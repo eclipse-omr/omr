@@ -120,11 +120,23 @@ It simply performs a `static_cast` of the `this` pointer to a pointer to the
 most derived type (which we forward declared) and returns the result. All calls
 to member functions from within an extensible class must be prefixed with
 `self()->`. Using the implicit `this` pointer **must be avoided** as it
-circumvents the down cast
-and can lead to strange and unpredictable behaviour.
+circumvents the downcast and can lead to strange and unpredictable behaviour.
 
-> To enforce this rule, we use a clang-based linter, `OMRChecker`, that uses a
-class annotation to verify that extensible classes are implemented correctly.
+Declarations of member functions in extensible classes can be decorated with
+`OMR_FINAL` to indicate that this implementation will not be overridden by a
+subclass. This is useful for functions such as getters and setters that are
+highly unlikely to be needed to be extended by a consuming project. The real
+benefit of this is to avoid the use of `self()` when invoking these functions
+as there is only one implementation. This improves the esthetics of the code
+and its readability. For example,
+```
+    OMR_FINAL TR::Compilation *comp() { return _comp; }
+```
+On certain build compilers (e.g., Clang), `OMR_FINAL` expands to a compiler
+annotation and is available to tools built on that compiler technology.
+
+The correct use of `self()` with extensible classes is enforced with a
+Clang-based linter (called `OMRChecker`).
 
 ### Naming and Namespaces
 

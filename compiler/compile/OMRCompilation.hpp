@@ -298,25 +298,25 @@ public:
 
     ~Compilation() throw();
 
-    TR::Region &region() { return _heapMemoryRegion; }
+    OMR_FINAL TR::Region &region() { return _heapMemoryRegion; }
 
     TR::IL il;
 
-    TR::IlGenRequest &ilGenRequest() { return _ilGenRequest; }
+    OMR_FINAL TR::IlGenRequest &ilGenRequest() { return _ilGenRequest; }
 
-    TR::CodeGenerator *cg() { return _codeGenerator; }
+    OMR_FINAL TR::CodeGenerator *cg() { return _codeGenerator; }
 
-    TR_FrontEnd *fe() { return _fe; }
+    OMR_FINAL TR_FrontEnd *fe() { return _fe; }
 
-    TR::Options *getOptions() { return _options; }
+    OMR_FINAL TR::Options *getOptions() { return _options; }
 
-    TR_Memory *trMemory() { return _trMemory; }
+    OMR_FINAL TR_Memory *trMemory() { return _trMemory; }
 
-    TR_StackMemory trStackMemory() { return _trMemory; }
+    OMR_FINAL TR_StackMemory trStackMemory() { return _trMemory; }
 
-    TR_HeapMemory trHeapMemory() { return _trMemory; }
+    OMR_FINAL TR_HeapMemory trHeapMemory() { return _trMemory; }
 
-    TR_PersistentMemory *trPersistentMemory() { return _trMemory->trPersistentMemory(); }
+    OMR_FINAL TR_PersistentMemory *trPersistentMemory() { return _trMemory->trPersistentMemory(); }
 
     bool getOption(TR_CompilationOptions o) { return _options->getOption(o); }
 

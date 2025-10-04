@@ -41,24 +41,19 @@
  *
  * or inside a branching expression:
  *
- *     if(OMR_LIKELY(isTrue()))
- *
- * \def OMR_NORETURN   Marks a function as non-returning for the purposes of
- * code generation and optimization.
- *
- * \def OMR_EXTENSIBLE Marks a class as an 'Extensible' class.
- *
- * \def OMR_LIKELY     Marks a branch as being more likely.
- *
- * \def OMR_UNLIKELY   Marks a branch as being less likely.
+ *     if (OMR_LIKELY(isTrue()))
  *
  * \todo Provide OMR_RETURNS_NONNULL annotation
  * \todo Provide OMR_DEPRECATED      annotation
- * \todo Provide OMR_MALLOC          annotation.
+ * \todo Provide OMR_MALLOC          annotation
  *
  */
 
 // OMR_NORETURN
+//
+// Marks a function as non-returning for the purposes of code generation and
+// optimization
+//
 #if defined(_MSC_VER)
 #define OMR_NORETURN _declspec(noreturn)
 #elif defined(__GNUC__)
@@ -71,15 +66,34 @@
 #endif
 
 // OMR_EXTENSIBLE
+//
+// Used on a class definition to indicate that the class is extensible
+//
 #if defined(__clang__) // Only clang is checking this macro for now
 #define OMR_EXTENSIBLE __attribute__((annotate("OMR_Extensible")))
 #else
 #define OMR_EXTENSIBLE
 #endif
 
+// OMR_FINAL
+//
+// Used on a member function declaration in an extensible class to
+// indicate the function will not be overridden in a subclass
+//
+#if defined(__clang__) // Only clang is checking this macro for now
+#define OMR_FINAL __attribute__((annotate("OMR_FINAL")))
+#else
+#define OMR_FINAL
+#endif
+
 // OMR_LIKELY and OMR_UNLIKELY
+//
+// OMR_LIKELY     Marks a branch as being more likely
+// OMR_UNLIKELY   Marks a branch as being less likely
+//
 // TODO: check if the definition of these macros is too broad,
 //       __builtin_expect() may not have any effect on xlC
+//
 #if defined(TR_HOST_X86) && defined(OMR_OS_WINDOWS)
 #define OMR_LIKELY(expr) (expr)
 #define OMR_UNLIKELY(expr) (expr)

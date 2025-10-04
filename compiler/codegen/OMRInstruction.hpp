@@ -227,7 +227,7 @@ public:
      * Cached code generator object.
      * OMRTODO: should be retrievable from TLS.
      */
-    TR::CodeGenerator *cg() { return _cg; }
+    OMR_FINAL TR::CodeGenerator *cg() { return _cg; }
 
     bool needsGCMap() { return (_index & TO_MASK(NeedsGCMapBit)) != 0; }
 
