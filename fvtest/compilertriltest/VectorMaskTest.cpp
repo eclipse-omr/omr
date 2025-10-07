@@ -31,6 +31,8 @@ class ParameterizedMaskTest : public VectorTest, public ::testing::WithParamInte
 
 class ParameterizedUnaryMaskTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, int64_t (*) (bool *arr, int32_t)>> {};
 
+class ParameterizedBinaryMaskTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>> {};
+
 enum MaskConvType {
    maskArrayLoad,
    maskArrayStore,
@@ -173,6 +175,18 @@ int64_t lastTrue(bool *arr, int32_t numLanes) {
    return lastTrue;
 }
 
+uint64_t maskAnd(uint64_t maskA, uint64_t maskB, int32_t numLanes) {
+   return (maskA & maskB) & ((1ULL << numLanes) - 1);
+}
+
+uint64_t maskOr(uint64_t maskA, uint64_t maskB, int32_t numLanes) {
+  return (maskA | maskB) & ((1ULL << numLanes) - 1);
+}
+
+uint64_t maskXor(uint64_t maskA, uint64_t maskB, int32_t numLanes) {
+  return (maskA ^ maskB) & ((1ULL << numLanes) - 1);
+}
+
 void getOpcodeName(TR::ILOpCode opcode, char buf[]) {
    if (opcode.isVectorOpCode() && opcode.isTwoTypeVectorOpCode()) {
       TR::DataType srcType = opcode.getVectorSourceDataType();
@@ -246,6 +260,91 @@ TEST_P(ParameterizedMaskTest, mLoadStore) {
 
    EXPECT_EQ(0, memcmp(input, output, maskSize));
    EXPECT_EQ(0, memcmp(output + maskSize, zero, maxVectorLength - maskSize));
+}
+
+TEST_P(ParameterizedBinaryMaskTest, bitwiseMaskTests) {
+   TR::VectorLength vl = std::get<0>(GetParam());
+   TR::DataTypes et = std::get<1>(GetParam());
+   TR::VectorOperation maskOperation = std::get<2>(GetParam());
+   uint64_t (*refFunc)(uint64_t, uint64_t, int32_t) = std::get<3>(GetParam());
+
+   SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
+   SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
+   SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
+
+   TR::DataType vt = TR::DataType::createVectorType(et, vl);
+   TR::DataType mt = TR::DataType::createMaskType(et, vl);
+   TR::ILOpCode loadOp = getMaskConvOpcode(maskArrayLoad, mt);
+   TR::ILOpCode maskOpcode = TR::ILOpCode::createVectorOpCode(maskOperation, mt);
+   TR::ILOpCode m2LongOpcode = TR::ILOpCode::createVectorOpCode(TR::mToLongBits, mt);
+
+   TR::ILOpCode a2m = getMaskConvOpcode(arrayToMask, mt);
+   TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+   bool platformSupport = isSupported(&cpu, loadOp, maskOpcode, a2m, m2LongOpcode);
+   SKIP_IF(!platformSupport, MissingImplementation) << "Opcode is not supported by the target platform";
+
+   char inputTrees[1024];
+   char bits2m[64];
+   char binaryMaskOp[64];
+
+   char *formatStr = "(method return= NoType args=[Address,Address,Address]"
+                     "  (block                                        "
+                     "     (lstorei offset=0                          "
+                     "        (aload parm=0)                          "
+                     "        (mToLongBits%s  offset=0                "
+                     "           (%s                                  "
+                     "              (%s (%s%s (aload parm=1)))        "
+                     "              (%s (%s%s (aload parm=2))))))     "
+                     "     (return)))                                 ";
+
+   getOpcodeName(a2m, bits2m);
+   getOpcodeName(maskOpcode, binaryMaskOp);
+
+   const char *arraySizeType = vt.getVectorNumLanes() > 8 ? vt.toString() : "";
+   sprintf(inputTrees, formatStr, mt.toString(),
+           binaryMaskOp,
+           bits2m,
+           loadOp.getName(), arraySizeType,
+           bits2m,
+           loadOp.getName(), arraySizeType);
+   auto trees = parseString(inputTrees);
+
+   ASSERT_NOTNULL(trees);
+
+   Tril::DefaultCompiler compiler(trees);
+   ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+
+   auto entry_point = compiler.getEntryPoint<void (*)(void *,void *,void *)>();
+   int32_t numLanes = mt.getVectorNumLanes();
+
+   uint64_t bitMasks[] = {
+       0,
+       1,
+       static_cast<uint64_t>(-1),
+       1ull << (numLanes - 1),
+       1 | (1ull << (numLanes - 1)),
+       0xC, 0x3, 0x7, 0xF,
+       0x9, 0xF, 0xFF, 0xF00F,
+       0xF0, 0x2, 0x4, 0x8,
+       0xF0F0F0F0F0F0F0F0ull
+   };
+
+   int numMasks = sizeof(bitMasks) / sizeof(uint64_t);
+
+   for (int i = 0; i < numMasks; i++) {
+      bool inputMaskA[MAX_NUM_LANES] = {};
+      longBitsToBoolArray(bitMasks[i], inputMaskA);
+
+      for (int j = 0; j < numMasks; j++) {
+         bool inputMaskB[MAX_NUM_LANES] = {};
+         longBitsToBoolArray(bitMasks[j], inputMaskB);
+         uint64_t refResult = refFunc(bitMasks[i], bitMasks[j], numLanes);
+         uint64_t result = 0;
+         entry_point(&result, inputMaskA, inputMaskB);
+
+         EXPECT_EQ(refResult, result) << binaryMaskOp << "test failed with input: 0x" << std::hex << std::setfill('0') << bitMasks[i] << " & 0x" << bitMasks[j] << " " << mt.toString();
+      }
+   }
 }
 
 TEST_P(ParameterizedMaskTest, boolToMaskToBool) {
@@ -550,4 +649,85 @@ INSTANTIATE_TEST_CASE_P(mAllTrue512ParametersTest, ParameterizedUnaryMaskTest, :
    std::make_tuple(TR::VectorLength512, TR::Int64,  TR::mAllTrue, static_cast<int64_t (*)(bool*, int32_t)>(::allTrue)),
    std::make_tuple(TR::VectorLength512, TR::Float,  TR::mAllTrue, static_cast<int64_t (*)(bool*, int32_t)>(::allTrue)),
    std::make_tuple(TR::VectorLength512, TR::Double, TR::mAllTrue, static_cast<int64_t (*)(bool*, int32_t)>(::allTrue))
+)));
+
+INSTANTIATE_TEST_CASE_P(mandTest128ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength128, TR::Int8,   TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength128, TR::Int16,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength128, TR::Int32,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength128, TR::Int64,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength128, TR::Float,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength128, TR::Double, TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd))
+)));
+
+INSTANTIATE_TEST_CASE_P(mandTest256ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength256, TR::Int8,   TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength256, TR::Int16,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength256, TR::Int32,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength256, TR::Int64,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength256, TR::Float,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength256, TR::Double, TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd))
+)));
+
+INSTANTIATE_TEST_CASE_P(mandTest512ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength512, TR::Int8,   TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength512, TR::Int16,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength512, TR::Int32,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength512, TR::Int64,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength512, TR::Float,  TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd)),
+   std::make_tuple(TR::VectorLength512, TR::Double, TR::mand, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskAnd))
+)));
+
+INSTANTIATE_TEST_CASE_P(morTest128ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength128, TR::Int8,   TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength128, TR::Int16,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength128, TR::Int32,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength128, TR::Int64,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength128, TR::Float,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength128, TR::Double, TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr))
+)));
+
+INSTANTIATE_TEST_CASE_P(morTest256ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength256, TR::Int8,   TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength256, TR::Int16,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength256, TR::Int32,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength256, TR::Int64,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength256, TR::Float,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength256, TR::Double, TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr))
+)));
+
+INSTANTIATE_TEST_CASE_P(morTest512ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength512, TR::Int8,   TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength512, TR::Int16,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength512, TR::Int32,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength512, TR::Int64,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength512, TR::Float,  TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr)),
+   std::make_tuple(TR::VectorLength512, TR::Double, TR::mor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskOr))
+)));
+
+INSTANTIATE_TEST_CASE_P(mxorTest128ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength128, TR::Int8,   TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength128, TR::Int16,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength128, TR::Int32,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength128, TR::Int64,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength128, TR::Float,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength128, TR::Double, TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor))
+)));
+
+INSTANTIATE_TEST_CASE_P(mxorTest256ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength256, TR::Int8,   TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength256, TR::Int16,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength256, TR::Int32,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength256, TR::Int64,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength256, TR::Float,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength256, TR::Double, TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor))
+)));
+
+INSTANTIATE_TEST_CASE_P(mxorTest512ParametersTest, ParameterizedBinaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>>(
+   std::make_tuple(TR::VectorLength512, TR::Int8,   TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength512, TR::Int16,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength512, TR::Int32,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength512, TR::Int64,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength512, TR::Float,  TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor)),
+   std::make_tuple(TR::VectorLength512, TR::Double, TR::mxor, static_cast<uint64_t (*)(uint64_t, uint64_t, int32_t)>(::maskXor))
 )));
