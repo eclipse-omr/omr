@@ -4404,6 +4404,7 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vstorei:
         case TR::vneg:
         case TR::vsplats:
+        case TR::msplats:
         case TR::vabs:
             return true;
         case TR::vmul:
