@@ -5708,10 +5708,16 @@ void OMR::Options::setAggressiveThroughput()
 #endif
     self()->setOption(TR_DisablePersistIProfile); // Want to rely on freshly collected IProfiler data
     self()->setOption(TR_UseHigherMethodCounts); // Increase counts to gather more IProfiler data
-    // The following options are candidates for inclusion in this
-    // policy but they need more experimental validation
-    // self()->setOption(TR_ProcessHugeMethods);
-    // TR::Options::setScratchSpaceLimit(2 * DEFAULT_SCRATCH_SPACE_LIMIT_KB * 1024); // Increase scratchSpaceLimit
+
+    // A number of applications that care about aggressive throughput
+    // performance fail compilatons because these compile thresholds are
+    // exceeded. While the defaults are still good for most methods, enabling
+    // these options in an aggressive compilation mode will allow those
+    // methods to succeed more often.
+    //
+    self()->setOption(TR_ProcessHugeMethods);
+    TR::Options::setScratchSpaceLimit(2 * DEFAULT_SCRATCH_SPACE_LIMIT_KB * 1024);
+
     // self()->setMoreAggressiveInlining();
 #ifdef J9_PROJECT_SPECIFIC
     // TR::Options::_bigAppThreshold = 3000;
