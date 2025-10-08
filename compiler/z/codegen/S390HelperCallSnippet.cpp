@@ -54,7 +54,8 @@ uint8_t *TR::S390HelperCallSnippet::emitSnippetBody()
     TR::Node *callNode = getNode();
     TR::SymbolReference *helperSymRef = getHelperSymRef();
     bool jitInduceOSR = helperSymRef->isOSRInductionHelper();
-    if (jitInduceOSR) {
+    bool isJitDispatchJ9Method = callNode->isJitDispatchJ9MethodCall(cg()->comp());
+    if (jitInduceOSR || isJitDispatchJ9Method) {
         // Flush in-register arguments back to the stack for interpreter
         cursor = TR::S390CallSnippet::S390flushArgumentsToStack(cursor, callNode, getSizeOfArguments(), cg());
     }
@@ -107,7 +108,6 @@ uint8_t *TR::S390HelperCallSnippet::emitSnippetBody()
     // If MCC is supported, we will look up the appropriate trampoline, if
     //     necessary.
     intptr_t destAddr = (intptr_t)(helperSymRef->getSymbol()->castToMethodSymbol()->getMethodAddress());
-
 #if defined(TR_TARGET_64BIT)
 #if defined(J9ZOS390)
     if (cg()->comp()->getOption(TR_EnableRMODE64))
