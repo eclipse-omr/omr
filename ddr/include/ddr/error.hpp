@@ -25,6 +25,9 @@
 #include "ddr/config.hpp"
 
 #include <stdio.h>
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#include "atoe.h"
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 
 #define ERRMSG(...) do { \
 	fprintf(stderr, "Error: %s:%d %s - ", __FILE__, __LINE__, __FUNCTION__); \
