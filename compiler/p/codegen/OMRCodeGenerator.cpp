@@ -1794,10 +1794,8 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
             // only P9 has splat byte immediate, otherwise it's too expensive
             return cpu->isAtLeast(OMR_PROCESSOR_PPC_P9);
         case TR::i2m:
-            if (et == TR::Int32 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8))
-                return true;
-            else
-                return false;
+            TR_ASSERT_FATAL(et == TR::Int32, "Unsupported vector type %s for i2m (must be Int32)\n", et.toString());
+            return cpu->isAtLeast(OMR_PROCESSOR_PPC_P8);
         default:
             return false;
     }
