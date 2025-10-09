@@ -2743,21 +2743,6 @@ TR::X86RegMemInstruction *generateRegMemInstruction(TR::Instruction *, TR::InstO
 TR::X86RegRegInstruction *generateRegRegInstruction(TR::Instruction *, TR::InstOpCode::Mnemonic op, TR::Register *reg1,
     TR::Register *reg2, TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
 
-/** \brief
- *   Insert instructions to check DF flag is in the right state (zero) and trap if not
- *
- *  \param cg
- *   The Code Generator
- *
- *  \param cursor
- *   The instruction the generated sequence to be inserted after. If is NULL, the check
- *   will be inserted after the most recently generated instruction
- *
- *  \return
- *   Return the last instruction of the sequence
- */
-TR::Instruction *generateBreakOnDFSet(TR::CodeGenerator *cg, TR::Instruction *cursor = NULL);
-
 TR::Instruction *generateInstruction(TR::InstOpCode::Mnemonic, TR::Node *, TR::RegisterDependencyConditions *cond,
     TR::CodeGenerator *cg, OMR::X86::Encoding encoding = OMR::X86::Default);
 TR::Instruction *generateInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::CodeGenerator *cg,

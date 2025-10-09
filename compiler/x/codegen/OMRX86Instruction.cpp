@@ -3208,30 +3208,6 @@ void TR::AMD64RegImm64SymInstruction::autoSetReloKind()
 // Generate methods
 ////////////////////////////////////////////////////////////////////////////////
 
-TR::Instruction *generateBreakOnDFSet(TR::CodeGenerator *cg, TR::Instruction *cursor)
-{
-    if (!cursor)
-        cursor = cg->getAppendInstruction();
-
-    TR::RealRegister *espReal = cg->machine()->getRealRegister(TR::RealRegister::esp);
-    cursor = generateInstruction(cursor, TR::InstOpCode::PUSHFD, cg);
-    TR::LabelSymbol *begLabel = generateLabelSymbol(cg);
-    TR::LabelSymbol *endLabel = generateLabelSymbol(cg);
-    begLabel->setStartInternalControlFlow();
-    endLabel->setEndInternalControlFlow();
-
-    const int32_t dfMask = 0x400;
-    cursor = generateLabelInstruction(cursor, TR::InstOpCode::label, begLabel, cg);
-    cursor = generateMemImmInstruction(cursor, TR::InstOpCode::TEST2MemImm2, generateX86MemoryReference(espReal, 0, cg),
-        dfMask, cg);
-    cursor = generateLabelInstruction(cursor, TR::InstOpCode::JE1, endLabel, cg);
-    cursor = generateInstruction(cursor, TR::InstOpCode::INT3, cg);
-    cursor = generateLabelInstruction(cursor, TR::InstOpCode::label, endLabel, cg);
-    cursor = generateInstruction(cursor, TR::InstOpCode::POPFD, cg);
-
-    return cursor;
-}
-
 TR::Instruction *generateInstruction(TR::Instruction *prev, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg,
     OMR::X86::Encoding encoding)
 {
