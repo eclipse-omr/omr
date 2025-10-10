@@ -46,10 +46,14 @@ RUN mkdir -p /opt/clang-tools /src \
 RUN cd /tmp \
     && wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
     && tar -xvf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz --no-same-owner \
-    && cp clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04/bin/clang-format /opt/clang-tools/ \
+    && cp clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04/bin/clang-format /opt/clang-tools/clang-format.real \
     && rm -rf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04* \
     && microdnf remove -y wget tar xz \
     && microdnf clean all
+
+# Copy the wrapper script
+COPY clang-format-wrapper.sh /opt/clang-tools/clang-format
+RUN chmod +x /opt/clang-tools/clang-format
 
 # Set up environment
 ENV PATH=/opt/clang-tools:$PATH
