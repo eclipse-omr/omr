@@ -21,11 +21,13 @@
 
 #include "GenericNodeConverter.hpp"
 #include "ilgen.hpp"
+#include "ras/Logger.hpp"
 
 namespace Tril {
 
-TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
-    TR::Node* node = NULL;
+TR::Node *GenericNodeConverter::impl(const ASTNode *tree, IlGenState *state)
+{
+    TR::Node *node = NULL;
 
     auto childCount = tree->getChildCount();
 
@@ -34,16 +36,13 @@ TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
         auto iter = state->findNodeByID(id);
         if (iter != state->nodeMapEnd()) {
             auto n = iter->second;
-            TraceIL("Commoning node n%dn (%p) from ASTNode %p (@id \"%s\")\n",n->getGlobalIndex(), n, tree, id);
+            TraceIL("Commoning node n%dn (%p) from ASTNode %p (@id \"%s\")\n", n->getGlobalIndex(), n, tree, id);
             return n;
-        }
-        else {
-            TraceIL("Failed to find node for commoning (@id \"%s\")\n", id)
-            std::string id_str(id);
+        } else {
+            TraceIL("Failed to find node for commoning (@id \"%s\")\n", id) std::string id_str(id);
             throw GenericNodeGenError("Failed to find node for commoning (@id  \"" + id_str + "\")");
         }
-    }
-    else if (strcmp("@common", tree->getName()) == 0) {
+    } else if (strcmp("@common", tree->getName()) == 0) {
         auto id = tree->getArgByName("id")->getValue()->getString();
         TraceIL("WARNING: Using @common is deprecated. Please use (@id \"%s\") instead.\n", id);
         fprintf(stderr, "WARNING: Using @common is deprecated. Please use (@id \"%s\") instead.", id);
@@ -52,8 +51,7 @@ TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
             auto n = iter->second;
             TraceIL("Commoning node n%dn (%p) from ASTNode %p (@id \"%s\")\n", n->getGlobalIndex(), n, tree, id);
             return n;
-        }
-        else {
+        } else {
             std::string id_str(id);
             TraceIL("Failed to find node for commoning (@id \"%s\")\n", id);
             throw GenericNodeGenError("Failed to find node for commoning (@id  \"" + id_str + "\")");
@@ -73,8 +71,7 @@ TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
             auto v = value->get<int64_t>();
             node->set64bitIntegralValue(v);
             TraceIL("integral value %d\n", v);
-        }
-        else {
+        } else {
             switch (opcode.getType()) {
                 case TR::Float:
                     node->setFloat(value->get<float>());
@@ -87,29 +84,25 @@ TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
             }
             TraceIL("floating point value %f\n", value->getFloatingPoint());
         }
-    }
-    else if (opcode.isLoadDirect()) {
+    } else if (opcode.isLoadDirect()) {
         TraceIL("  is direct load of ", "");
 
         // the name of the first argument tells us what kind of symref we're loading
         if (tree->getArgByName("parm") != NULL) {
             auto arg = tree->getArgByName("parm")->getValue()->get<int32_t>();
             TraceIL("parameter %d\n", arg);
-            auto symref = state->symRefTab()->findOrCreateAutoSymbol(state->methodSymbol(), arg, opcode.getType() );
+            auto symref = state->symRefTab()->findOrCreateAutoSymbol(state->methodSymbol(), arg, opcode.getType());
             node = TR::Node::createLoad(symref);
-        }
-        else if (tree->getArgByName("temp") != NULL) {
+        } else if (tree->getArgByName("temp") != NULL) {
             const auto symName = tree->getArgByName("temp")->getValue()->getString();
             TraceIL("temporary %s\n", symName);
             auto symref = state->findSymRefByName(symName)->second;
             node = TR::Node::createLoad(symref);
-        }
-        else {
+        } else {
             // symref kind not recognized
             throw GenericNodeGenError("Failed to recognized symref kind when opcode isLoadDirect");
         }
-    }
-    else if (opcode.isStoreDirect()) {
+    } else if (opcode.isStoreDirect()) {
         TraceIL("  is direct store of ", "");
 
         // the name of the first argument tells us what kind of symref we're storing to
@@ -120,18 +113,17 @@ TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
             // check if a symref has already been created for the temp
             // and if not, create one
             if (state->findSymRefByName(symName) == state->symRefMapEnd()) {
-                state->setSymRefPair(symName, state->symRefTab()->createTemporary(state->methodSymbol(), opcode.getDataType()));
+                state->setSymRefPair(symName,
+                    state->symRefTab()->createTemporary(state->methodSymbol(), opcode.getDataType()));
             }
 
             auto symref = state->findSymRefByName(symName)->second;
             node = TR::Node::createWithSymRef(opcode.getOpCodeValue(), childCount, symref);
-        }
-        else {
+        } else {
             // symref kind not recognized
             throw GenericNodeGenError("Failed to recognize symref kind when opcode isStoreDirect");
         }
-    }
-    else if (opcode.isLoadIndirect() || opcode.isStoreIndirect()) {
+    } else if (opcode.isLoadIndirect() || opcode.isStoreIndirect()) {
         TraceIL("  is indirect store/load with ");
         // If not specified, offset will default to zero.
         int32_t offset = 0;
@@ -147,37 +139,36 @@ TR::Node* GenericNodeConverter::impl(const ASTNode* tree, IlGenState* state) {
         TR::DataType type;
         TraceIL("\n");
         type = opcode.getType();
-        TR::Symbol* sym = TR::Symbol::createNamedShadow(compilation->trHeapMemory(), type, TR::DataType::getSize(opcode.getType()), (char*)name);
-        TR::SymbolReference* symref = new (compilation->trHeapMemory()) TR::SymbolReference(compilation->getSymRefTab(), sym, compilation->getMethodSymbol()->getResolvedMethodIndex(), -1);
+        TR::Symbol *sym = TR::Symbol::createNamedShadow(compilation->trHeapMemory(), type,
+            TR::DataType::getSize(opcode.getType()), (char *)name);
+        TR::SymbolReference *symref = new (compilation->trHeapMemory()) TR::SymbolReference(compilation->getSymRefTab(),
+            sym, compilation->getMethodSymbol()->getResolvedMethodIndex(), -1);
         symref->setOffset(offset);
         node = TR::Node::createWithSymRef(opcode.getOpCodeValue(), childCount, symref);
-    }
-    else if (opcode.isIf()) {
+    } else if (opcode.isIf()) {
         const auto targetName = tree->getArgByName("target")->getValue()->getString();
         auto targetId = state->findBlockByName(targetName);
         auto targetEntry = state->blocks()[targetId]->getEntry();
         TraceIL("  is if with target block %d (%s, entry = %p", targetId, targetName, targetEntry);
 
         /* If jumps must be created using `TR::Node::createif()`, which expected
-        * two child nodes to be given as argument. However, because children
-        * are only processed at the end, we create a dummy `BadILOp` node and
-        * pass it as both the first and second child. When the children are
-        * eventually created, they will override the dummy.
-        */
+         * two child nodes to be given as argument. However, because children
+         * are only processed at the end, we create a dummy `BadILOp` node and
+         * pass it as both the first and second child. When the children are
+         * eventually created, they will override the dummy.
+         */
         auto c1 = TR::Node::create(TR::BadILOp);
         auto c2 = c1;
         TraceIL("  created temporary %s n%dn (%p)\n", c1->getOpCode().getName(), c1->getGlobalIndex(), c1);
         node = TR::Node::createif(opcode.getOpCodeValue(), c1, c2, targetEntry);
-    }
-    else if (opcode.isBranch()) {
+    } else if (opcode.isBranch()) {
         const auto targetName = tree->getArgByName("target")->getValue()->getString();
         auto targetId = state->findBlockByName(targetName);
         auto targetEntry = state->blocks()[targetId]->getEntry();
         TraceIL("  is branch to target block %d (%s, entry = %p", targetId, targetName, targetEntry);
         node = TR::Node::create(opcode.getOpCodeValue(), childCount);
         node->setBranchDestination(targetEntry);
-    }
-    else {
+    } else {
         TraceIL("  unrecognized opcode; using default creation mechanism\n", "");
         node = TR::Node::create(opcode.getOpCodeValue(), childCount);
     }

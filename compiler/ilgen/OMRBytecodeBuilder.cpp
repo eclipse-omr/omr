@@ -29,14 +29,15 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ras/Logger.hpp"
 
 // should really move into IlInjector.hpp
 #define TraceEnabled (comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...)                         \
-    {                                           \
-        if (TraceEnabled) {                     \
-            traceMsg(comp(), m, ##__VA_ARGS__); \
-        }                                       \
+#define TraceIL(m, ...)                              \
+    {                                                \
+        if (TraceEnabled) {                          \
+            comp()->log()->printf(m, ##__VA_ARGS__); \
+        }                                            \
     }
 
 OMR::BytecodeBuilder::BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, const char *name,

@@ -49,6 +49,7 @@ namespace TR {
 class AutomaticSymbol;
 class Compilation;
 class Instruction;
+class Logger;
 class RealRegister;
 class Register;
 class RegisterPair;
@@ -202,7 +203,7 @@ public:
     virtual void unblock();
 
 #if defined(DEBUG)
-    virtual void print(TR::Compilation *comp, TR::FILE *pOutFile, TR_RegisterSizes size = TR_WordReg);
+    virtual void print(TR::Logger *log, TR::Compilation *comp, TR_RegisterSizes size = TR_WordReg);
 #endif
 
 protected:

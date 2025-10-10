@@ -39,10 +39,7 @@ class Block;
 class BytecodeBuilder;
 class IlGeneratorMethodDetails;
 class IlBuilder;
-} // namespace TR
 class ResolvedMethodSymbol;
-
-namespace TR {
 class SymbolReference;
 class SymbolReferenceTable;
 class VirtualMachineState;
@@ -260,7 +257,6 @@ public:
     TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex = 0, const char *name = NULL);
 
     bool TraceEnabled_log();
-    void TraceIL_log(const char *s, ...);
 
     // create a new local value (temporary variable)
     TR::IlValue *NewValue(TR::IlType *dt);

@@ -59,6 +59,7 @@ class RegisterUsage;
 namespace TR {
 class CodeGenerator;
 class Instruction;
+class Logger;
 class Machine;
 class MemoryReference;
 class Node;
@@ -227,8 +228,8 @@ public:
         TR::list<TR::Register *> *spilledRegisterList = NULL);
 
 #if defined(DEBUG)
-    void printGPRegisterStatus(TR_FrontEnd *, TR::RealRegister **registerFile, TR::FILE *pOutFile);
-    void printFPRegisterStatus(TR_FrontEnd *, TR::FILE *pOutFile);
+    void printGPRegisterStatus(TR::Logger *log, TR_FrontEnd *, TR::RealRegister **registerFile);
+    void printFPRegisterStatus(TR::Logger *log, TR_FrontEnd *);
 #endif
 
 protected:

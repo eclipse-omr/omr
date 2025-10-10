@@ -40,6 +40,7 @@ namespace TR {
 class Block;
 class Compilation;
 class Instruction;
+class Logger;
 class Node;
 class ResolvedMethodSymbol;
 class SymbolReference;
@@ -261,9 +262,10 @@ public:
 
     /**
      * \brief Debug dump of \ref DefiningMap
+     * \param log The \c TR::Logger object to write to
      * \param map The \c DefiningMap to print out
      */
-    void printMap(DefiningMap *map);
+    void printMap(TR::Logger *log, DefiningMap *map);
 
     class TR_ScratchBufferInfo {
     public:

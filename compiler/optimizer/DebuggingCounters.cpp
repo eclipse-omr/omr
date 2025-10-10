@@ -206,7 +206,6 @@ void TR_DebuggingCounters::report()
     }
 
     if (dynamicSum == 0) {
-        // fprintf(output, "\nDEBUGGING COUNTERS REPORT: NO DYNAMIC COUNTS\n\n");
         return;
     }
 
@@ -228,14 +227,12 @@ void TR_DebuggingCounters::report()
                     // counterInfo->compilationCount,
                     (double)((double)(counterInfo->compilationCount * 100) / ((double)compilationSum)),
                     counterInfo->totalCount);
-            //            fprintf(output, "DEBUG: totalCount = %x\n",counterInfo->totalCount);
             else
                 fprintf(output, "Name: [%38s ] dynamic : (%5.2lf ) static : (%5.2lf )\n", counterInfo->counterName,
                     //(uint32_t) counterInfo->totalCount,
                     (double)(((double)(counterInfo->totalCount * 100) / ((double)dynamicSum))),
                     // counterInfo->compilationCount,
                     (double)((double)(counterInfo->compilationCount * 100) / ((double)compilationSum)));
-            //            fprintf(output, "DEBUG: totalCount = %x\n",counterInfo->totalCount);
         }
     }
 

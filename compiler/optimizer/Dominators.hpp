@@ -35,6 +35,7 @@ class TR_FrontEnd;
 
 namespace TR {
 class CFGEdge;
+class Logger;
 class ResolvedMethodSymbol;
 } // namespace TR
 template<class T> class ListElement;
@@ -93,9 +94,9 @@ private:
 
         int32_t getIndex() { return _block ? _block->getNumber() + 1 : -1; }
 #ifdef DEBUG
-        void print(TR_FrontEnd *fe, TR::FILE *pOutFile);
+        void print(TR::Logger *log, TR_FrontEnd *fe);
 #else
-        void print(TR_FrontEnd *fe, TR::FILE *pOutFile) {}
+        void print(TR::Logger *log, TR_FrontEnd *fe) {}
 #endif
     };
 

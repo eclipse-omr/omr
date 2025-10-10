@@ -75,6 +75,7 @@ namespace TR {
 class Block;
 class CFGEdge;
 class CFGNode;
+class Logger;
 class StaticSymbol;
 class Symbol;
 class SymbolReference;
@@ -189,8 +190,8 @@ public:
     struct Relationship : public TR_Link<Relationship> {
         int32_t relative;
         TR::VPConstraint *constraint;
-        void print(OMR::ValuePropagation *vp);
-        void print(OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
+        void print(TR::Logger *log, OMR::ValuePropagation *vp);
+        void print(TR::Logger *log, OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
     };
 
     Relationship *createRelationship(int32_t relative, TR::VPConstraint *constraint);
@@ -209,7 +210,7 @@ public:
     struct StoreRelationship : public TR_Link<StoreRelationship> {
         TR::Symbol *symbol;
         TR_LinkHead<Relationship> relationships;
-        void print(OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
+        void print(TR::Logger *log, OMR::ValuePropagation *vp, int32_t valueNumber, int32_t indent);
     };
 
     StoreRelationship *createStoreRelationship(TR::Symbol *symbol, Relationship *firstRel);
@@ -239,7 +240,7 @@ public:
 
         TR_LinkHead<Relationship> relationships;
         TR_LinkHead<StoreRelationship> storeRelationships;
-        void print(OMR::ValuePropagation *vp, int32_t indent);
+        void print(TR::Logger *log, OMR::ValuePropagation *vp, int32_t indent);
     };
 
     typedef TREE_CLASS<ValueConstraint> ValueConstraints;
@@ -763,11 +764,11 @@ public:
      */
     virtual TR::Node *innerConstrainAcall(TR::Node *node) { return node; }
 
-    void printStructureInfo(TR_Structure *structure, bool starting, bool lastTimeThrough);
-    void printParentStructure(TR_Structure *structure);
-    void printValueConstraints(ValueConstraints &valueConstraints);
-    void printEdgeConstraints(EdgeConstraints *constraints);
-    void printGlobalConstraints();
+    void printStructureInfo(TR::Logger *log, TR_Structure *structure, bool starting, bool lastTimeThrough);
+    void printParentStructure(TR::Logger *log, TR_Structure *structure);
+    void printValueConstraints(TR::Logger *log, ValueConstraints &valueConstraints);
+    void printEdgeConstraints(TR::Logger *log, EdgeConstraints *constraints);
+    void printGlobalConstraints(TR::Logger *log);
 
     // routines for removal of constraints
     // when intersection fails for a vn
