@@ -1218,3 +1218,16 @@ omrsysinfo_get_processes(struct OMRPortLibrary *portLibrary, OMRProcessInfoCallb
 {
 	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 }
+
+/**
+ * Get the name of the specified process.
+ * @param[in] portLibrary The port library.
+ * @param[in] pid The process ID.
+ * @return The process name string (NULL terminated) on success, which must be freed,
+ * NULL on error or if not supported.
+ */
+char *
+omrsysinfo_get_process_name(struct OMRPortLibrary *portLibrary, uintptr_t pid)
+{
+	return NULL;
+}
