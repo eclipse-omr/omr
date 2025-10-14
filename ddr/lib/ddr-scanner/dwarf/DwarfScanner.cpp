@@ -1824,7 +1824,8 @@ DwarfScanner::startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir, vector<strin
 					continue;
 				}
 				ERRMSG("gc-Failure scanning(%zu/%zu): %s\n", currentIndex, totalFiles, it->c_str());
-				break;
+				//break;
+				continue;
 			}
 			ir->mergeIR(&newIR);
 		}
@@ -1854,8 +1855,19 @@ DwarfScanner::scanFile(OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *f
 		//printf("before ddr_dw_init of %s\n", filepath);
 		res = ddr_dw_init((int)native_fd, filepath, errhand, errarg, &_debug, &error);
 		if (DW_DLV_OK != res) {
+			// write path to problems
+			FILE *fid;
+			fid = fopen("/jit/team/gauravc/repos/openj9-openjdk-jdk21-zos/problems.txt", "a");
+			if (fid == NULL) {
+				printf("gc-Failure: Error opening the problems.txt");
+			} else {
+				fprintf(fid, "%s,%d\n", filepath, res);
+			}
+
+			fclose(fid);
 			ERRMSG("Failed to initialize libDwarf scanning %s: %s\nExiting...\n", filepath, dwarf_errmsg(error));
 			if (NULL != error) {
+				printf("gc-Failure: Had to dealloc");
 				dwarf_dealloc(_debug, error, DW_DLA_ERROR);
 			}
 			rc = DDR_RC_ERROR;
