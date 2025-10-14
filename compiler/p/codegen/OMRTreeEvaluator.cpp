@@ -1069,7 +1069,35 @@ TR::Register *OMR::Power::TreeEvaluator::m2bEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::m2sEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *dstReg = cg->allocateRegister(TR_GPR);
+
+    TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    // set all but least significant bit of each doubleword element to 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, -1);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsrw, node, tmpReg, srcReg, tmpReg);
+
+    // reverse element order if little endian
+    if (cg->comp()->target().cpu.isLittleEndian())
+        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, tmpReg, tmpReg, tmpReg, 2);
+
+    // pack doubleword elements into byte-length elements
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vpksdus, node, tmpReg, tmpReg, tmpReg); // doubleword -> word
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vpkuwum, node, tmpReg, tmpReg, tmpReg); // word -> halfword
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vpkuhum, node, tmpReg, tmpReg, tmpReg); // halfword -> byte
+
+    // move to GPR
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrwz, node, dstReg, tmpReg);
+
+    cg->stopUsingRegister(tmpReg);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::m2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)

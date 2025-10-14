@@ -9079,17 +9079,16 @@
     /*                   PPCOpProp_SyncSideEffectFree, */
     /* }, */
 
-    /* { */
-    /* .mnemonic    =    OMR::InstOpCode::vpksdus, */
-    /* .name        =    "vpksdus", */
-    /* .description =    "Vector Pack Signed Dword Unsigned Saturate", */
-    /* .prefix      =    0x00000000, */
-    /* .opcode      =    0x1000054E, */
-    /* .format      =    FORMAT_UNKNOWN, */
-    /* .minimumALS  =    OMR_PROCESSOR_PPC_P8, */
-    /* .properties  =    PPCOpProp_IsVMX | */
-    /*                   PPCOpProp_SyncSideEffectFree, */
-    /* }, */
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::vpksdus,
+        /* .name        = */ "vpksdus",
+        /* .description =    "Vector Pack Signed Dword Unsigned Saturate", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x1000054E,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P8,
+        /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
+    },
 
     {
         /* .mnemonic    = */ OMR::InstOpCode::vpkuhum,
@@ -9097,7 +9096,7 @@
         /* .description =    "vector pack unsigned half word unsigned modulo", */
         /* .prefix      = */ 0x00000000,
         /* .opcode      = */ 0x1000000E,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P6,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },
@@ -9108,7 +9107,7 @@
         /* .description =    "vector pack unsigned word unsigned modulo", */
         /* .prefix      = */ 0x00000000,
         /* .opcode      = */ 0x1000004E,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P6,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },
