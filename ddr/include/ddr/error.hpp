@@ -35,7 +35,7 @@
 	fprintf(stderr, "\n"); \
 } while (0)
 
-#if 1
+#if 0
 /* Enable debug printf output */
 #define DEBUGPRINTF_ON
 #endif
