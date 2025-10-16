@@ -32,6 +32,11 @@
 #include <assert.h>
 #include <stdio.h>
 
+// For a2e_string()
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#include "atoe.h"
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+
 using std::stringstream;
 
 static string
@@ -97,8 +102,11 @@ JavaSupersetGenerator::replaceBaseTypedef(Type *type, string *name)
 		stringstream ss;
 
 		ss << (isSigned ? "I" : "U") << bitWidth;
-
-		name->replace(start, length, ss.str());
+		string newName = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+		//printf("gc-printName(old): %s\n", name->c_str());
+		name->replace(start, length, newName.c_str());
+		//printf("gc-printName: %s\n", name->c_str());
+		//printf("gc-newName: %s\n", newName.c_str());
 	}
 }
 
@@ -259,10 +267,10 @@ JavaSupersetGenerator::getFieldType(Field *field, string *assembledTypeName, str
 	string bitField;
 
 	if ((DDR_RC_OK == rc) && (0 != field->_bitField)) {
-		stringstream ss;
-
-		ss << ":" << field->_bitField;
-		bitField = ss.str();
+		//stringstream ss;
+		//ss << ":" << field->_bitField;
+		//bitField = ss.str();
+		bitField = std::string(":") + e2a_string(std::to_string(field->_bitField).c_str()); 
 	}
 
 	/* Assemble the type name. */
