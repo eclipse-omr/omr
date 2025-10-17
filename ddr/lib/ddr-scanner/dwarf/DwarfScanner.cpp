@@ -41,6 +41,11 @@
 #include <stack>
 #include <utility>
 
+// For a2e_string()
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#include "atoe.h"
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+
 #define DW_LIBDWARF_MAKE_VERSION(major, minor) (((major) * 100) + (minor))
 
 #if defined(DW_LIBDWARF_VERSION_MAJOR) && defined(DW_LIBDWARF_VERSION_MINOR)
@@ -74,7 +79,6 @@ ddr_dw_init(
 	Dwarf_Error  *error)
 {
 	unsigned int groupnumber = DW_GROUPNUMBER_ANY;
-
 	return dwarf_init_b(fd, groupnumber, errhand, errarg, dbg, error);
 }
 
@@ -138,13 +142,22 @@ ddr_dw_finish(
 static int
 ddr_dw_init(
 	int           fd,
+	const char* filepath,
 	Dwarf_Handler errhand,
 	Dwarf_Ptr     errarg,
 	Dwarf_Debug  *dbg,
 	Dwarf_Error  *error)
 {
 	Dwarf_Unsigned access = DW_DLC_READ;
-
+//#pragma convlit(suspend)
+//	char *filename = "/jit/team/gauravc/repos/openj9-openjdk-jdk21-zos/build/zos-s390x-server-release/vm/runtime/bcutil/CMakeFiles/j9dyn.dir/BufferManager.cpp.dwo";
+	// Modifyable filename for API
+	// API requires EBCDIC input to recognize file path.
+	char* filename = a2e_string(strdup(filepath));
+	int rc = dwarf_goff_init_with_GOFF_filename(filename, errhand, errarg, 0, dbg, error);
+	free(filename);
+//#pragma convlit(resume)
+	return rc;
 	return dwarf_init(fd, access, errhand, errarg, dbg, error);
 }
 
@@ -1778,16 +1791,41 @@ DwarfScanner::startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir, vector<strin
 {
 	DEBUGPRINTF("Initializing libDwarf:");
 
+    const char* libpath = getenv("LIBPATH");
+    if (libpath != NULL) {
+        DEBUGPRINTF("LIBPATH: %s\n", libpath);
+    } else {
+        DEBUGPRINTF("LIBPATH is not set.\n");
+    }
 	DDR_RC rc = loadExcludesFile(portLibrary, excludesFilePath);
-
+	size_t totalFiles = debugFiles->size();
+//DEBUGPRINTF("total-DEBUGPRINTu: %u\n", (unsigned int)totalFiles);
+	size_t currentIndex = 1;
 	if (DDR_RC_OK == rc) {
 		/* Read list of debug files to scan from the input file. */
-		for (vector<string>::iterator it = debugFiles->begin(); it != debugFiles->end(); ++it) {
+		for (vector<string>::iterator it = debugFiles->begin(); it != debugFiles->end(); ++it, currentIndex++) {
 			Symbol_IR newIR(ir);
+			printf("Scanning files:\n");
+			printf("gc-scanFile(%u/%u): %s\n", (unsigned int)currentIndex, (unsigned int)totalFiles, it->c_str());
+			//printf("totals: %s\n", totalFiles);
+			//printf("totalzu: %u\n", (unsigned int)totalFiles);
+			//printf("totalld: %ld\n", totalFiles);
+//#pragma convlit(suspend)
+//			printf("scanFile(%zu/%zu): %s\n", currentIndex, totalFiles, it->c_str());
+//#pragma convlit(resume)
+//			DEBUGPRINTF("total-DEBUGPRINTd: %d\n", totalFiles);
+//			DEBUGPRINTF("total-DEBUGPRINTu: %u\n", (unsigned int)totalFiles);
+			//DEBUGPRINTF("total-DEBUGPRINTld: %ld\n", totalFiles);
 			rc = scanFile(portLibrary, &newIR, it->c_str());
 			if (DDR_RC_OK != rc) {
-				ERRMSG("Failure scanning %s\n", it->c_str());
-				break;
+				if (rc == -1) {
+					// empty dwo, continue
+					 printf("gc-scanFile SKIPPING EMPTY: %s\n", it->c_str());
+					continue;
+				}
+				ERRMSG("gc-Failure scanning(%zu/%zu): %s\n", currentIndex, totalFiles, it->c_str());
+				//break;
+				continue;
 			}
 			ir->mergeIR(&newIR);
 		}
@@ -1814,10 +1852,22 @@ DwarfScanner::scanFile(OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *f
 		Dwarf_Ptr errarg = NULL;
 		intptr_t native_fd = omrfile_convert_omrfile_fd_to_native_fd(fd);
 		DwarfScanner::scanFileName = filepath;
-		res = ddr_dw_init((int)native_fd, errhand, errarg, &_debug, &error);
+		//printf("before ddr_dw_init of %s\n", filepath);
+		res = ddr_dw_init((int)native_fd, filepath, errhand, errarg, &_debug, &error);
 		if (DW_DLV_OK != res) {
+			// write path to problems
+			FILE *fid;
+			fid = fopen("/jit/team/gauravc/repos/openj9-openjdk-jdk21-zos/problems.txt", "a");
+			if (fid == NULL) {
+				printf("gc-Failure: Error opening the problems.txt");
+			} else {
+				fprintf(fid, "%s,%d\n", filepath, res);
+			}
+
+			fclose(fid);
 			ERRMSG("Failed to initialize libDwarf scanning %s: %s\nExiting...\n", filepath, dwarf_errmsg(error));
 			if (NULL != error) {
+				printf("gc-Failure: Had to dealloc");
 				dwarf_dealloc(_debug, error, DW_DLA_ERROR);
 			}
 			rc = DDR_RC_ERROR;
