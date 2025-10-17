@@ -41,6 +41,7 @@
 #include "infra/List.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "optimizer/ValuePropagation.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "optimizer/TransformUtil.hpp"
 
@@ -138,9 +139,6 @@ TR::Node *constrainVcall(OMR::ValuePropagation *vp, TR::Node *node)
         if (canBeRemoved
             && performTransformation(vp->comp(), "%s Removing redundant call to jitCheckIfFinalize [%p]\n", OPT_DETAILS,
                 node)) {
-            /// printf("found opportunity in %s to remove call to checkfinalize\n",
-            /// vp->comp()->signature());fflush(stdout); traceMsg(vp->comp(), "found opportunity to remove call %p to
-            /// checkfinalize\n", node);
             TR::TransformUtil::transformCallNodeToPassThrough(vp, node, vp->_curTree, receiver);
             return node;
         }

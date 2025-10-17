@@ -27,6 +27,7 @@
 #include "il/Block.hpp"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "ras/Logger.hpp"
 
 #include <string>
 
@@ -43,9 +44,10 @@ std::map<std::string, TR::ILOpCodes> Tril::OpCodeTable::_opcodeNameMap;
  * However, certain opcodes must be created using a special interface. For this
  * reason, special opcodes are detected using opcode properties.
  */
-TR::Node* Tril::TRLangBuilder::toTRNode(const ASTNode* const tree, IlGenState* state) {
-    TR::Node* node = _converter->convert(tree, state);
-    if (node == NULL) 
+TR::Node *Tril::TRLangBuilder::toTRNode(const ASTNode * const tree, IlGenState *state)
+{
+    TR::Node *node = _converter->convert(tree, state);
+    if (node == NULL)
         return NULL;
     node->setFlags(parseFlags(tree));
 
@@ -60,13 +62,14 @@ TR::Node* Tril::TRLangBuilder::toTRNode(const ASTNode* const tree, IlGenState* s
     }
 
     // create a set child nodes
-    const ASTNode* t = tree->getChildren();
+    const ASTNode *t = tree->getChildren();
     int i = 0;
     while (t) {
         auto child = toTRNode(t, state);
         if (child == NULL)
             return NULL;
-        TraceIL("Setting n%dn (%p) as child %d of n%dn (%p)\n", child->getGlobalIndex(), child, i, node->getGlobalIndex(), node);
+        TraceIL("Setting n%dn (%p) as child %d of n%dn (%p)\n", child->getGlobalIndex(), child, i,
+            node->getGlobalIndex(), node);
         node->setAndIncChild(i, child);
         t = t->next;
         ++i;
@@ -84,36 +87,37 @@ TR::Node* Tril::TRLangBuilder::toTRNode(const ASTNode* const tree, IlGenState* s
  * For the fall-through edge, the assumption is that one is always needed unless
  * a node specifically adds one (e.g. goto, return, etc.).
  */
-bool Tril::TRLangBuilder::cfgFor(const ASTNode* const tree, IlGenState* state) {
-   auto isFallthroughNeeded = true;
+bool Tril::TRLangBuilder::cfgFor(const ASTNode * const tree, IlGenState *state)
+{
+    auto isFallthroughNeeded = true;
 
-   // visit the children first
-   const ASTNode* t = tree->getChildren();
-   while (t) {
-       isFallthroughNeeded = isFallthroughNeeded && cfgFor(t, state);
-       t = t->next;
-   }
+    // visit the children first
+    const ASTNode *t = tree->getChildren();
+    while (t) {
+        isFallthroughNeeded = isFallthroughNeeded && cfgFor(t, state);
+        t = t->next;
+    }
 
-   auto opcode = OpCodeTable(tree->getName());
+    auto opcode = OpCodeTable(tree->getName());
 
-   if (opcode.isReturn()) {
-       cfg()->addEdge(_currentBlock, cfg()->getEnd());
-       isFallthroughNeeded = false;
-       TraceIL("Added CFG edge from block %d to @exit -> %s\n", _currentBlockNumber, tree->getName());
-   }
-   else if (opcode.isBranch()) {
-      const auto targetName = tree->getArgByName("target")->getValue()->getString();
-      auto targetId = state->findBlockByName(targetName);
-      cfg()->addEdge(_currentBlock, _blocks[targetId]);
-      isFallthroughNeeded = isFallthroughNeeded && opcode.isIf();
-      TraceIL("Added CFG edge from block %d to block %d (\"%s\") -> %s\n", _currentBlockNumber, targetId, targetName, tree->getName());
-   }
+    if (opcode.isReturn()) {
+        cfg()->addEdge(_currentBlock, cfg()->getEnd());
+        isFallthroughNeeded = false;
+        TraceIL("Added CFG edge from block %d to @exit -> %s\n", _currentBlockNumber, tree->getName());
+    } else if (opcode.isBranch()) {
+        const auto targetName = tree->getArgByName("target")->getValue()->getString();
+        auto targetId = state->findBlockByName(targetName);
+        cfg()->addEdge(_currentBlock, _blocks[targetId]);
+        isFallthroughNeeded = isFallthroughNeeded && opcode.isIf();
+        TraceIL("Added CFG edge from block %d to block %d (\"%s\") -> %s\n", _currentBlockNumber, targetId, targetName,
+            tree->getName());
+    }
 
-   if (!isFallthroughNeeded) {
-       TraceIL("  (no fall-through needed)\n", "");
-   }
+    if (!isFallthroughNeeded) {
+        TraceIL("  (no fall-through needed)\n", "");
+    }
 
-   return isFallthroughNeeded;
+    return isFallthroughNeeded;
 }
 
 /*
@@ -123,7 +127,8 @@ bool Tril::TRLangBuilder::cfgFor(const ASTNode* const tree, IlGenState* state) {
  * 2. Generate the IL itself (Trees) by walking the AST
  * 3. Generate the CFG by walking the AST
  */
-bool Tril::TRLangBuilder::injectIL() {
+bool Tril::TRLangBuilder::injectIL()
+{
     auto state = new IlGenState();
     state->setType(typeDictionary());
     state->setSymRefTab(_symRefTab);
@@ -134,18 +139,18 @@ bool Tril::TRLangBuilder::injectIL() {
     // the top level nodes of the AST should be all the basic blocks
     createBlocks(countNodes(_trees));
     // evaluate the arguments for each basic block
-    const ASTNode* block = _trees;
+    const ASTNode *block = _trees;
     auto blockIndex = 0;
 
     // assign block names
     while (block) {
-       if (block->getArgByName("name") != NULL) {
-           auto name = block->getArgByName("name")->getValue()->getString();
-           state->setBlockPair(name, blockIndex);
-           TraceIL("Name of block %d set to \"%s\"\n", blockIndex, name);
-       }
-       ++blockIndex;
-       block = block->next;
+        if (block->getArgByName("name") != NULL) {
+            auto name = block->getArgByName("name")->getValue()->getString();
+            state->setBlockPair(name, blockIndex);
+            TraceIL("Name of block %d set to \"%s\"\n", blockIndex, name);
+        }
+        ++blockIndex;
+        block = block->next;
     }
 
     TraceIL("=== %s ===\n", "Generating IL");
@@ -155,23 +160,23 @@ bool Tril::TRLangBuilder::injectIL() {
     // iterate over each treetop in each basic block
     state->setBlocks(_blocks);
     while (block) {
-       const ASTNode* t = block->getChildren();
-       while (t) {
-           TR::Node* node = NULL;
+        const ASTNode *t = block->getChildren();
+        while (t) {
+            TR::Node *node = NULL;
             try {
                 node = toTRNode(t, state);
             } catch (ILGenError &e) {
-                char* e_cstr = new char[e.what().size() + 1];
+                char *e_cstr = new char[e.what().size() + 1];
                 strcpy(e_cstr, e.what().c_str());
                 TraceIL(e_cstr);
                 return false;
             }
-           const auto tt = genTreeTop(node);
-           TraceIL("Created TreeTop %p for node n%dn (%p)\n", tt, node->getGlobalIndex(), node);
-           t = t->next;
-       }
-       generateToBlock(_currentBlockNumber + 1);
-       block = block->next;
+            const auto tt = genTreeTop(node);
+            TraceIL("Created TreeTop %p for node n%dn (%p)\n", tt, node->getGlobalIndex(), node);
+            t = t->next;
+        }
+        generateToBlock(_currentBlockNumber + 1);
+        block = block->next;
     }
 
     TraceIL("=== %s ===\n", "Generating CFG");
@@ -180,43 +185,41 @@ bool Tril::TRLangBuilder::injectIL() {
 
     // iterate over each basic block
     while (block) {
-       auto isFallthroughNeeded = true;
+        auto isFallthroughNeeded = true;
 
-       // create CFG edges from the nodes withing the current basic block
-       const ASTNode* t = block->getChildren();
-       while (t) {
-           isFallthroughNeeded = isFallthroughNeeded && cfgFor(t, state);
-           t = t->next;
-       }
+        // create CFG edges from the nodes withing the current basic block
+        const ASTNode *t = block->getChildren();
+        while (t) {
+            isFallthroughNeeded = isFallthroughNeeded && cfgFor(t, state);
+            t = t->next;
+        }
 
-       // create fall-through edge
-       auto fallthroughArg = block->getArgByName("fallthrough");
-       if (fallthroughArg != NULL) {
-           auto target = std::string(fallthroughArg->getValue()->getString());
-           if (target == "@exit") {
-               cfg()->addEdge(_currentBlock, cfg()->getEnd());
-               TraceIL("Added fallthrough edge from block %d to \"%s\"\n", _currentBlockNumber, target.c_str());
-           }
-           else if (target == "@none") {
-               // do nothing, no fall-throught block specified
-           }
-           else {
-               char* targetName = new char[target.size() + 1];
-               strcpy(targetName, target.c_str());
-               auto destBlock = state->findBlockByName(targetName);
-               cfg()->addEdge(_currentBlock, _blocks[destBlock]);
-               TraceIL("Added fallthrough edge from block %d to block %d \"%s\"\n", _currentBlockNumber, destBlock, target.c_str());
-           }
-       }
-       else if (isFallthroughNeeded) {
-           auto dest = _currentBlockNumber + 1 == numBlocks() ? cfg()->getEnd() : _blocks[_currentBlockNumber + 1];
-           cfg()->addEdge(_currentBlock, dest);
-           TraceIL("Added fallthrough edge from block %d to following block\n", _currentBlockNumber);
-       }
+        // create fall-through edge
+        auto fallthroughArg = block->getArgByName("fallthrough");
+        if (fallthroughArg != NULL) {
+            auto target = std::string(fallthroughArg->getValue()->getString());
+            if (target == "@exit") {
+                cfg()->addEdge(_currentBlock, cfg()->getEnd());
+                TraceIL("Added fallthrough edge from block %d to \"%s\"\n", _currentBlockNumber, target.c_str());
+            } else if (target == "@none") {
+                // do nothing, no fall-throught block specified
+            } else {
+                char *targetName = new char[target.size() + 1];
+                strcpy(targetName, target.c_str());
+                auto destBlock = state->findBlockByName(targetName);
+                cfg()->addEdge(_currentBlock, _blocks[destBlock]);
+                TraceIL("Added fallthrough edge from block %d to block %d \"%s\"\n", _currentBlockNumber, destBlock,
+                    target.c_str());
+            }
+        } else if (isFallthroughNeeded) {
+            auto dest = _currentBlockNumber + 1 == numBlocks() ? cfg()->getEnd() : _blocks[_currentBlockNumber + 1];
+            cfg()->addEdge(_currentBlock, dest);
+            TraceIL("Added fallthrough edge from block %d to following block\n", _currentBlockNumber);
+        }
 
-       generateToBlock(_currentBlockNumber + 1);
-       block = block->next;
+        generateToBlock(_currentBlockNumber + 1);
+        block = block->next;
     }
-    
+
     return true;
 }

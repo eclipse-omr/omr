@@ -44,6 +44,7 @@ class TR_ResolvedMethod;
 namespace TR {
 class IlGeneratorMethodDetails;
 class IlVerifier;
+class Logger;
 } // namespace TR
 
 namespace OMR {
@@ -64,7 +65,7 @@ public:
 
     bool sameAs(TR::IlGeneratorMethodDetails &other) { return false; }
 
-    void print(TR_FrontEnd *fe, TR::FILE *file) {}
+    void print(TR::Logger *log, TR_FrontEnd *fe) {}
 
     inline static TR::IlGeneratorMethodDetails &create(TR::IlGeneratorMethodDetails &target, TR_ResolvedMethod *method);
 

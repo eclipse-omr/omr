@@ -90,6 +90,7 @@ class GCRegisterMap;
 class InstOpCode;
 class Instruction;
 class LabelSymbol;
+class Logger;
 class Machine;
 class MemoryReference;
 class Node;
@@ -451,9 +452,13 @@ public:
 
     TR_Debug(TR::Compilation *c);
 
-    TR::FILE *getFile() { return _file; }
+    TR::FILE *getOutFile() { return _outFile; }
 
-    virtual void setFile(TR::FILE *f) { _file = f; }
+    virtual void setOutFile(TR::FILE *f) { _outFile = f; }
+
+    TR::Logger *getLogger() { return _logger; }
+
+    void setLogger(TR::Logger *log) { _logger = log; }
 
     virtual void resetDebugData();
     virtual void newNode(TR::Node *);
@@ -508,7 +513,7 @@ public:
     // Options processing
     //
     virtual TR::FILE *findLogFile(TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions, TR::OptionSet *optSet,
-        char *logFileName);
+        char *logFileName, TR::Logger *&logger);
     virtual int32_t findLogFile(const char *logFileName, TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions,
         TR::Options **optionsArray, int32_t arraySize);
     virtual void dumpOptionHelp(TR::OptionTable *jitOptions, TR::OptionTable *feOptions, TR::SimpleRegex *nameFilter);
@@ -545,14 +550,14 @@ public:
     virtual void printFilters(TR::CompilationFilters *);
     virtual void printFilters();
     virtual void print(TR_FilterBST *filter);
-    virtual void printHeader();
-    virtual void printMethodHotness();
-    virtual void printInstrDumpHeader(const char *title);
+    virtual void printHeader(TR::Logger *log);
+    virtual void printMethodHotness(TR::Logger *log);
+    virtual void printInstrDumpHeader(TR::Logger *log, const char *title);
 
-    virtual void printByteCodeAnnotations();
-    virtual void printAnnotationInfoEntry(J9AnnotationInfo *, J9AnnotationInfoEntry *, int32_t);
+    virtual void printByteCodeAnnotations(TR::Logger *log);
+    virtual void printAnnotationInfoEntry(TR::Logger *log, J9AnnotationInfo *, J9AnnotationInfoEntry *, int32_t);
 
-    virtual void printOptimizationHeader(const char *, const char *, int32_t, bool mustBeDone);
+    virtual void printOptimizationHeader(TR::Logger *log, const char *, const char *, int32_t, bool mustBeDone);
 
     virtual const char *getName(TR::ILOpCode);
     virtual const char *getName(TR::ILOpCodes);
@@ -594,75 +599,71 @@ public:
 
     virtual void roundAddressEnumerationCounters(uint32_t boundary = 16);
 
-    virtual void print(TR::FILE *, uint8_t *, uint8_t *);
-    virtual void printIRTrees(TR::FILE *, const char *, TR::ResolvedMethodSymbol *);
-    virtual void printBlockOrders(TR::FILE *, const char *, TR::ResolvedMethodSymbol *);
-    virtual void print(TR::FILE *, TR::CFG *);
-    virtual void print(TR::FILE *, TR_Structure *structure, uint32_t indentation);
-    virtual void print(TR::FILE *, TR_RegionAnalysis *structure, uint32_t indentation);
-    virtual int32_t print(TR::FILE *, TR::TreeTop *);
-    virtual int32_t print(TR::FILE *, TR::Node *, uint32_t indentation = 0, bool printSubtree = true);
-    virtual void print(TR::FILE *, TR::SymbolReference *);
+    virtual void print(TR::Logger *log, uint8_t *, uint8_t *);
+    virtual void printIRTrees(TR::Logger *log, const char *, TR::ResolvedMethodSymbol *);
+    virtual void printBlockOrders(TR::Logger *log, const char *, TR::ResolvedMethodSymbol *);
+    virtual void print(TR::Logger *log, TR::CFG *);
+    virtual void print(TR::Logger *log, TR_Structure *structure, uint32_t indentation);
+    virtual void print(TR::Logger *log, TR_RegionAnalysis *structure, uint32_t indentation);
+    virtual int32_t print(TR::Logger *log, TR::TreeTop *);
+    virtual int32_t print(TR::Logger *log, TR::Node *, uint32_t indentation = 0, bool printSubtree = true);
+    virtual void print(TR::Logger *log, TR::SymbolReference *);
     virtual void print(TR::SymbolReference *, TR_PrettyPrinterString &, bool hideHelperMethodInfo = false,
         bool verbose = false);
-    virtual void print(TR::FILE *, TR::LabelSymbol *);
+    virtual void print(TR::Logger *log, TR::LabelSymbol *);
     virtual void print(TR::LabelSymbol *, TR_PrettyPrinterString &);
-    virtual void print(TR::FILE *, TR_BitVector *);
-    virtual void print(TR::FILE *, TR_SingleBitContainer *);
-    virtual void print(TR::FILE *pOutFile, TR::BitVector *bv);
-    virtual void print(TR::FILE *pOutFile, TR::SparseBitVector *sparse);
-    virtual void print(TR::FILE *, TR::SymbolReferenceTable *);
-    virtual void printAliasInfo(TR::FILE *, TR::SymbolReferenceTable *);
-    virtual void printAliasInfo(TR::FILE *, TR::SymbolReference *);
+    virtual void print(TR::Logger *log, TR_BitVector *);
+    virtual void print(TR::Logger *log, TR_SingleBitContainer *);
+    virtual void print(TR::Logger *log, TR::BitVector *bv);
+    virtual void print(TR::Logger *log, TR::SparseBitVector *sparse);
+    virtual void print(TR::Logger *log, TR::SymbolReferenceTable *);
+    virtual void printAliasInfo(TR::Logger *log, TR::SymbolReferenceTable *);
+    virtual void printAliasInfo(TR::Logger *log, TR::SymbolReference *);
 
-    virtual int32_t printWithFixedPrefix(TR::FILE *, TR::Node *, uint32_t indentation, bool printChildren,
+    virtual int32_t printWithFixedPrefix(TR::Logger *log, TR::Node *, uint32_t indentation, bool printChildren,
         bool printRefCounts, const char *prefix);
-    virtual void printVCG(TR::FILE *, TR::CFG *, const char *);
-    virtual void printVCG(TR::FILE *, TR::Node *, uint32_t indentation);
+    virtual void printVCG(TR::Logger *log, TR::CFG *, const char *);
+    virtual void printVCG(TR::Logger *log, TR::Node *, uint32_t indentation);
 
-    virtual void print(J9JITExceptionTable *data, TR_ResolvedMethod *feMethod, bool fourByteOffsets);
+    virtual void print(TR::Logger *log, J9JITExceptionTable *data, TR_ResolvedMethod *feMethod, bool fourByteOffsets);
 
     virtual void clearNodeChecklist();
     virtual void saveNodeChecklist(TR_BitVector &saveArea);
     virtual void restoreNodeChecklist(TR_BitVector &saveArea);
-    virtual int32_t dumpLiveRegisters();
-    virtual int32_t dumpLiveRegisters(TR::FILE *pOutFile, TR_RegisterKinds rk);
-    virtual void dumpLiveRealRegisters(TR::FILE *pOutFile, TR_RegisterKinds rk);
+    virtual void dumpLiveRegisters(TR::Logger *log);
     virtual void setupToDumpTreesAndInstructions(const char *);
+    virtual void setupToDumpTreesAndInstructions(TR::Logger *log, const char *);
     virtual void dumpSingleTreeWithInstrs(TR::TreeTop *, TR::Instruction *, bool, bool, bool, bool);
-    virtual void dumpMethodInstrs(TR::FILE *, const char *, bool, bool header = false);
-    virtual void dumpMixedModeDisassembly();
-    virtual void dumpInstructionComments(TR::FILE *, TR::Instruction *, bool needsStartComment = true);
-    virtual void print(TR::FILE *, TR::Instruction *);
-    virtual void print(TR::FILE *, TR::Instruction *, const char *);
-    virtual void print(TR::FILE *, TR::list<TR::Snippet *> &);
-    virtual void print(TR::FILE *, TR::Snippet *);
+    virtual void dumpSingleTreeWithInstrs(TR::Logger *log, TR::TreeTop *, TR::Instruction *, bool, bool, bool, bool);
+    virtual void dumpMethodInstrs(TR::Logger *log, const char *, bool, bool header = false);
+    virtual void dumpMixedModeDisassembly(TR::Logger *log);
+    virtual void dumpInstructionComments(TR::Logger *log, TR::Instruction *, bool needsStartComment = true);
+    virtual void print(TR::Logger *log, TR::Instruction *);
+    virtual void print(TR::Logger *log, TR::Instruction *, const char *);
+    virtual void print(TR::Logger *log, TR::list<TR::Snippet *> &);
+    virtual void print(TR::Logger *log, TR::Snippet *);
 
-    virtual void print(TR::FILE *, TR::RegisterMappedSymbol *, bool);
-    virtual void print(TR::FILE *, TR::GCStackAtlas *);
-    virtual void print(TR::FILE *, TR_GCStackMap *, TR::GCStackAtlas *atlas = NULL);
+    virtual void print(TR::Logger *log, TR::RegisterMappedSymbol *, bool);
+    virtual void print(TR::Logger *log, TR::GCStackAtlas *);
+    virtual void print(TR::Logger *log, TR_GCStackMap *, TR::GCStackAtlas *atlas = NULL);
 
-    virtual void printRegisterMask(TR::FILE *pOutFile, TR_RegisterMask mask, TR_RegisterKinds rk);
-    virtual void print(TR::FILE *, TR::Register *, TR_RegisterSizes size = TR_WordReg);
-    virtual void printFullRegInfo(TR::FILE *, TR::Register *);
+    virtual void printRegisterMask(TR::Logger *log, TR_RegisterMask mask, TR_RegisterKinds rk);
+    virtual void print(TR::Logger *log, TR::Register *, TR_RegisterSizes size = TR_WordReg);
+    virtual void printFullRegInfo(TR::Logger *log, TR::Register *);
     virtual const char *getRegisterKindName(TR_RegisterKinds);
     virtual const char *toString(TR_RematerializationInfo *);
 
-    virtual void print(TR::FILE *, TR::VPConstraint *);
+    virtual void print(TR::Logger *log, TR::VPConstraint *);
 
 #ifdef J9_PROJECT_SPECIFIC
-    virtual void dump(TR::FILE *, TR_CHTable *);
+    virtual void dump(TR::Logger *log, TR_CHTable *);
 #endif
 
-    virtual void trace(const char *, ...);
-    virtual void vtrace(const char *, va_list args);
     virtual void traceLnFromLogTracer(const char *);
     virtual bool performTransformationImpl(bool, const char *, ...);
 
-    virtual void printInstruction(TR::Instruction *);
-
-    virtual void dumpGlobalRegisterTable();
-    virtual void dumpSimulatedNode(TR::Node *node, char tagChar);
+    virtual void dumpGlobalRegisterTable(TR::Logger *log);
+    virtual void dumpSimulatedNode(TR::Logger *log, TR::Node *node, char tagChar);
 
     virtual uint32_t getLabelNumber() { return _nextLabelNumber; }
 
@@ -674,55 +675,58 @@ public:
 
     virtual TR::Node *verifyFinalNodeReferenceCounts(TR::ResolvedMethodSymbol *s);
 
-    virtual void startTracingRegisterAssignment(
+    virtual void startTracingRegisterAssignment(TR::Logger *log,
         TR_RegisterKinds kindsToAssign = TR_RegisterKinds(TR_GPR_Mask | TR_FPR_Mask));
-    virtual void stopTracingRegisterAssignment();
+    virtual void stopTracingRegisterAssignment(TR::Logger *log);
     virtual void pauseTracingRegisterAssignment();
     virtual void resumeTracingRegisterAssignment();
-    virtual void traceRegisterAssignment(const char *format, va_list args);
-    virtual void traceRegisterAssignment(TR::Instruction *instr, bool insertedByRA = true, bool postRA = false);
-    virtual void traceRegisterAssigned(TR_RegisterAssignmentFlags flags, TR::Register *virtReg, TR::Register *realReg);
-    virtual void traceRegisterFreed(TR::Register *virtReg, TR::Register *realReg);
-    virtual void traceRegisterInterference(TR::Register *virtReg, TR::Register *interferingVirtual, int32_t distance);
-    virtual void traceRegisterWeight(TR::Register *realReg, uint32_t weight);
+    virtual void traceRegisterAssignment(TR::Logger *log, const char *format, va_list args);
+    virtual void traceRegisterAssignment(TR::Logger *log, TR::Instruction *instr, bool insertedByRA = true,
+        bool postRA = false);
+    virtual void traceRegisterAssigned(TR::Logger *log, TR_RegisterAssignmentFlags flags, TR::Register *virtReg,
+        TR::Register *realReg);
+    virtual void traceRegisterFreed(TR::Logger *log, TR::Register *virtReg, TR::Register *realReg);
+    virtual void traceRegisterInterference(TR::Logger *log, TR::Register *virtReg, TR::Register *interferingVirtual,
+        int32_t distance);
+    virtual void traceRegisterWeight(TR::Logger *log, TR::Register *realReg, uint32_t weight);
 
-    virtual void printGPRegisterStatus(TR::FILE *pOutFile, OMR::MachineConnector *machine);
-    virtual void printFPRegisterStatus(TR::FILE *pOutFile, OMR::MachineConnector *machine);
+    virtual void printGPRegisterStatus(TR::Logger *log, OMR::MachineConnector *machine);
+    virtual void printFPRegisterStatus(TR::Logger *log, OMR::MachineConnector *machine);
 
     virtual const char *getPerCodeCacheHelperName(TR_CCPreLoadedCode helper);
 
 #if defined(TR_TARGET_X86)
     virtual const char *getOpCodeName(TR::InstOpCode *);
     virtual const char *getMnemonicName(TR::InstOpCode *);
-    virtual void printReferencedRegisterInfo(TR::FILE *, TR::Instruction *);
-    virtual void dumpInstructionWithVFPState(TR::Instruction *instr, const TR_VFPState *prevState);
+    virtual void printReferencedRegisterInfo(TR::Logger *log, TR::Instruction *);
+    virtual void dumpInstructionWithVFPState(TR::Logger *log, TR::Instruction *instr, const TR_VFPState *prevState);
 
-    void print(TR::FILE *, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
+    void print(TR::Logger *log, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
     const char *getNamex(TR::Snippet *);
-    void printRegMemInstruction(TR::FILE *, const char *, TR::RealRegister *reg, TR::RealRegister *base = 0,
+    void printRegMemInstruction(TR::Logger *log, const char *, TR::RealRegister *reg, TR::RealRegister *base = 0,
         int32_t = 0);
-    void printRegRegInstruction(TR::FILE *, const char *, TR::RealRegister *reg1, TR::RealRegister *reg2 = 0);
-    void printRegImmInstruction(TR::FILE *, const char *, TR::RealRegister *reg, int32_t imm);
-    void printMemRegInstruction(TR::FILE *, const char *, TR::RealRegister *base, int32_t offset,
+    void printRegRegInstruction(TR::Logger *log, const char *, TR::RealRegister *reg1, TR::RealRegister *reg2 = 0);
+    void printRegImmInstruction(TR::Logger *log, const char *, TR::RealRegister *reg, int32_t imm);
+    void printMemRegInstruction(TR::Logger *log, const char *, TR::RealRegister *base, int32_t offset,
         TR::RealRegister * = 0);
-    void printMemImmInstruction(TR::FILE *, const char *, TR::RealRegister *base, int32_t offset, int32_t imm);
+    void printMemImmInstruction(TR::Logger *log, const char *, TR::RealRegister *base, int32_t offset, int32_t imm);
 #endif
 #if defined(TR_TARGET_POWER)
     virtual const char *getOpCodeName(TR::InstOpCode *);
     const char *getName(TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
-    void print(TR::FILE *, TR::PPCHelperCallSnippet *);
+    void print(TR::Logger *log, TR::PPCHelperCallSnippet *);
 #endif
 #if defined(TR_TARGET_ARM)
-    virtual void printARMDelayedOffsetInstructions(TR::FILE *pOutFile, TR::ARMMemInstruction *instr);
-    virtual void printARMHelperBranch(TR::SymbolReference *symRef, uint8_t *cursor, TR::FILE *outFile,
+    virtual void printARMDelayedOffsetInstructions(TR::Logger *log, TR::ARMMemInstruction *instr);
+    virtual void printARMHelperBranch(TR::Logger *log, TR::SymbolReference *symRef, uint8_t *cursor,
         const char *opcodeName = "bl");
     virtual const char *getOpCodeName(TR::InstOpCode *);
     const char *getName(TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
     const char *getName(uint32_t realRegisterIndex, TR_RegisterSizes = (TR_RegisterSizes)-1);
-    void print(TR::FILE *, TR::ARMHelperCallSnippet *);
+    void print(TR::Logger *log, TR::ARMHelperCallSnippet *);
 #endif
 #if defined(TR_TARGET_S390)
-    virtual void printRegisterDependencies(TR::FILE *pOutFile, TR::RegisterDependencyGroup *rgd, int numberOfRegisters);
+    virtual void printRegisterDependencies(TR::Logger *log, TR::RegisterDependencyGroup *rgd, int numberOfRegisters);
     const char *getName(TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
 #endif
 #if defined(TR_TARGET_ARM64)
@@ -749,16 +753,16 @@ public:
     virtual void nodePrintAllFlags(TR::Node *, TR_PrettyPrinterString &);
 
     // used by DebugExt and may be overridden
-    virtual void printDestination(TR::FILE *, TR::TreeTop *);
+    virtual void printDestination(TR::Logger *log, TR::TreeTop *);
     virtual void printDestination(TR::TreeTop *, TR_PrettyPrinterString &);
-    virtual void printNodeInfo(TR::FILE *, TR::Node *);
+    virtual void printNodeInfo(TR::Logger *log, TR::Node *);
     virtual void printNodeInfo(TR::Node *, TR_PrettyPrinterString &output, bool);
-    virtual void print(TR::FILE *, TR::CFGNode *, uint32_t indentation);
-    virtual void printNodesInEdgeListIterator(TR::FILE *, TR::CFGEdgeList &li, bool fromNode);
-    virtual void print(TR::FILE *, TR::Block *block, uint32_t indentation);
-    virtual void print(TR::FILE *, TR_RegionStructure *regionStructure, uint32_t indentation);
-    virtual void printSubGraph(TR::FILE *, TR_RegionStructure *regionStructure, uint32_t indentation);
-    virtual void print(TR::FILE *, TR_InductionVariable *inductionVariable, uint32_t indentation);
+    virtual void print(TR::Logger *log, TR::CFGNode *, uint32_t indentation);
+    virtual void printNodesInEdgeListIterator(TR::Logger *log, TR::CFGEdgeList &li, bool fromNode);
+    virtual void print(TR::Logger *log, TR::Block *block, uint32_t indentation);
+    virtual void print(TR::Logger *log, TR_RegionStructure *regionStructure, uint32_t indentation);
+    virtual void printSubGraph(TR::Logger *log, TR_RegionStructure *regionStructure, uint32_t indentation);
+    virtual void print(TR::Logger *log, TR_InductionVariable *inductionVariable, uint32_t indentation);
 
     virtual void *dxMallocAndRead(uintptr_t size, void *remotePtr, bool dontAddToMap = false) { return remotePtr; }
 
@@ -766,11 +770,11 @@ public:
 
     virtual void dxFree(void *localPtr) { return; }
 
-    void printTopLegend(TR::FILE *);
-    void printBottomLegend(TR::FILE *);
-    void printSymRefTable(TR::FILE *, bool printFullTable = false);
-    void printBasicPreNodeInfoAndIndent(TR::FILE *, TR::Node *, uint32_t indentation);
-    void printBasicPostNodeInfo(TR::FILE *, TR::Node *, uint32_t indentation);
+    void printTopLegend(TR::Logger *log);
+    void printBottomLegend(TR::Logger *log);
+    void printSymRefTable(TR::Logger *log, bool printFullTable = false);
+    void printBasicPreNodeInfoAndIndent(TR::Logger *log, TR::Node *, uint32_t indentation);
+    void printBasicPostNodeInfo(TR::Logger *log, TR::Node *, uint32_t indentation);
 
     bool isAlignStackMaps()
     {
@@ -781,44 +785,45 @@ public:
 #endif
     }
 
-    void printNodeFlags(TR::FILE *, TR::Node *);
+    void printNodeFlags(TR::Logger *log, TR::Node *);
 #ifdef J9_PROJECT_SPECIFIC
-    void printBCDNodeInfo(TR::FILE *pOutFile, TR::Node *node);
+    void printBCDNodeInfo(TR::Logger *log, TR::Node *node);
     void printBCDNodeInfo(TR::Node *node, TR_PrettyPrinterString &output);
 #endif
 
-    int32_t *printStackAtlas(uintptr_t startPC, uint8_t *mapBits, int32_t numberOfSlotsMapped, bool fourByteOffsets,
-        int32_t *sizeOfStackAtlas, int32_t frameSize);
-    uint16_t printStackAtlasDetails(uintptr_t startPC, uint8_t *mapBits, int numberOfSlotsMapped, bool fourByteOffsets,
-        int32_t *sizeOfStackAtlas, int32_t frameSize, int32_t *offsetInfo);
-    uint8_t *printMapInfo(uintptr_t startPC, uint8_t *mapBits, int32_t numberOfSlotsMapped, bool fourByteOffsets,
-        int32_t *sizeOfStackAtlas, TR_ByteCodeInfo *byteCodeInfo, uint16_t indexOfFirstInternalPtr,
-        int32_t offsetInfo[], bool nummaps = false);
-    void printStackMapInfo(uint8_t *&mapBits, int32_t numberOfSlotsMapped, int32_t *sizeOfStackAtlas,
+    int32_t *printStackAtlas(TR::Logger *log, uintptr_t startPC, uint8_t *mapBits, int32_t numberOfSlotsMapped,
+        bool fourByteOffsets, int32_t *sizeOfStackAtlas, int32_t frameSize);
+    uint16_t printStackAtlasDetails(TR::Logger *log, uintptr_t startPC, uint8_t *mapBits, int numberOfSlotsMapped,
+        bool fourByteOffsets, int32_t *sizeOfStackAtlas, int32_t frameSize, int32_t *offsetInfo);
+    uint8_t *printMapInfo(TR::Logger *log, uintptr_t startPC, uint8_t *mapBits, int32_t numberOfSlotsMapped,
+        bool fourByteOffsets, int32_t *sizeOfStackAtlas, TR_ByteCodeInfo *byteCodeInfo,
+        uint16_t indexOfFirstInternalPtr, int32_t offsetInfo[], bool nummaps = false);
+    void printStackMapInfo(TR::Logger *log, uint8_t *&mapBits, int32_t numberOfSlotsMapped, int32_t *sizeOfStackAtlas,
         int32_t *offsetInfo, bool nummaps = false);
-    void printJ9JITExceptionTableDetails(J9JITExceptionTable *data, J9JITExceptionTable *dbgextRemotePtr = NULL);
-    void printSnippetLabel(TR::FILE *, TR::LabelSymbol *label, uint8_t *cursor, const char *comment1,
+    void printJ9JITExceptionTableDetails(TR::Logger *log, J9JITExceptionTable *data,
+        J9JITExceptionTable *dbgextRemotePtr = NULL);
+    void printSnippetLabel(TR::Logger *log, TR::LabelSymbol *label, uint8_t *cursor, const char *comment1,
         const char *comment2 = 0);
-    uint8_t *printPrefix(TR::FILE *, TR::Instruction *, uint8_t *cursor, uint8_t size);
+    uint8_t *printPrefix(TR::Logger *log, TR::Instruction *, uint8_t *cursor, uint8_t size);
 
-    void printLabelInstruction(TR::FILE *, const char *, TR::LabelSymbol *label);
-    int32_t printRestartJump(TR::FILE *, TR::X86RestartSnippet *, uint8_t *);
-    int32_t printRestartJump(TR::FILE *, TR::X86RestartSnippet *, uint8_t *, int32_t, const char *);
+    void printLabelInstruction(TR::Logger *log, const char *, TR::LabelSymbol *label);
+    int32_t printRestartJump(TR::Logger *log, TR::X86RestartSnippet *, uint8_t *);
+    int32_t printRestartJump(TR::Logger *log, TR::X86RestartSnippet *, uint8_t *, int32_t, const char *);
 
-    char *printSymbolName(TR::FILE *, TR::Symbol *, TR::SymbolReference *, TR::MemoryReference *mr = NULL);
+    void printSymbolName(TR::Logger *log, TR::Symbol *, TR::SymbolReference *, TR::MemoryReference *mr = NULL);
     bool isBranchToTrampoline(TR::SymbolReference *, uint8_t *, int32_t &);
 
     virtual void printDebugCounters(TR::DebugCounterGroup *counterGroup, const char *name);
 
     // ------------------------------
 
-    void printFirst(int32_t i);
-    void printCPIndex(int32_t i);
-    void printConstant(int32_t i);
-    void printConstant(double d);
-    void printFirstAndConstant(int32_t i, int32_t j);
+    void printFirst(TR::Logger *log, int32_t i);
+    void printCPIndex(TR::Logger *log, int32_t i);
+    void printConstant(TR::Logger *log, int32_t i);
+    void printConstant(TR::Logger *log, double d);
+    void printFirstAndConstant(TR::Logger *log, int32_t i, int32_t j);
 
-    void printLoadConst(TR::FILE *, TR::Node *);
+    void printLoadConst(TR::Logger *log, TR::Node *);
     void printLoadConst(TR::Node *, TR_PrettyPrinterString &);
 
     TR::CompilationFilters *findOrCreateFilters(TR::CompilationFilters *);
@@ -839,25 +844,25 @@ public:
     const char *getShadowName(TR::SymbolReference *);
     const char *getMetaDataName(TR::SymbolReference *);
 
-    TR::FILE *findLogFile(TR::Options *, TR::OptionSet *, char *);
+    TR::FILE *findLogFile(TR::Options *, TR::OptionSet *, char *, TR::Logger *&logger);
     void findLogFile(const char *logFileName, TR::Options *cmdOptions, TR::Options **optionArray, int32_t arraySize,
         int32_t &index);
 
-    void printPreds(TR::FILE *, TR::CFGNode *);
-    void printBaseInfo(TR::FILE *, TR_Structure *structure, uint32_t indentation);
-    void print(TR::FILE *, TR_BlockStructure *blockStructure, uint32_t indentation);
-    void print(TR::FILE *, TR_StructureSubGraphNode *node, uint32_t indentation);
+    void printPreds(TR::Logger *log, TR::CFGNode *);
+    void printBaseInfo(TR::Logger *log, TR_Structure *structure, uint32_t indentation);
+    void print(TR::Logger *log, TR_BlockStructure *blockStructure, uint32_t indentation);
+    void print(TR::Logger *log, TR_StructureSubGraphNode *node, uint32_t indentation);
 
-    void printBlockInfo(TR::FILE *, TR::Node *node);
+    void printBlockInfo(TR::Logger *log, TR::Node *node);
 
-    void printVCG(TR::FILE *, TR_Structure *structure);
-    void printVCG(TR::FILE *, TR_RegionStructure *regionStructure);
-    void printVCG(TR::FILE *, TR_StructureSubGraphNode *node, bool isEntry);
-    void printVCGEdges(TR::FILE *, TR_StructureSubGraphNode *node);
-    void printVCG(TR::FILE *, TR::Block *block, int32_t vorder = -1, int32_t horder = -1);
+    void printVCG(TR::Logger *log, TR_Structure *structure);
+    void printVCG(TR::Logger *log, TR_RegionStructure *regionStructure);
+    void printVCG(TR::Logger *log, TR_StructureSubGraphNode *node, bool isEntry);
+    void printVCGEdges(TR::Logger *log, TR_StructureSubGraphNode *node);
+    void printVCG(TR::Logger *log, TR::Block *block, int32_t vorder = -1, int32_t horder = -1);
 
-    void printByteCodeStack(int32_t parentStackIndex, uint16_t byteCodeIndex, size_t *indentLen);
-    void print(TR::FILE *, TR::GCRegisterMap *);
+    void printByteCodeStack(TR::Logger *log, int32_t parentStackIndex, uint16_t byteCodeIndex, size_t *indentLen);
+    void print(TR::Logger *log, TR::GCRegisterMap *);
 
     void verifyTreesPass1(TR::Node *node);
     void verifyTreesPass2(TR::Node *node, bool isTreeTop);
@@ -872,443 +877,443 @@ public:
     uint32_t getNumSpacesAfterIndex(uint32_t index, uint32_t maxIndexLength) const;
 
 #if defined(TR_TARGET_X86)
-    void printPrefix(TR::FILE *, TR::Instruction *instr);
-    int32_t printPrefixAndMnemonicWithoutBarrier(TR::FILE *, TR::Instruction *instr, int32_t barrier);
-    void printPrefixAndMemoryBarrier(TR::FILE *, TR::Instruction *instr, int32_t barrier, int32_t barrierOffset);
-    void dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGroup *group, int32_t numConditions,
-        char *prefix, bool omitNullDependencies);
-    void dumpDependencies(TR::FILE *, TR::Instruction *);
-    void printRegisterInfoHeader(TR::FILE *, TR::Instruction *);
-    void printBoundaryAvoidanceInfo(TR::FILE *, TR::X86BoundaryAvoidanceInstruction *);
+    void printPrefix(TR::Logger *log, TR::Instruction *instr);
+    int32_t printPrefixAndMnemonicWithoutBarrier(TR::Logger *log, TR::Instruction *instr, int32_t barrier);
+    void printPrefixAndMemoryBarrier(TR::Logger *log, TR::Instruction *instr, int32_t barrier, int32_t barrierOffset);
+    void dumpDependencyGroup(TR::Logger *log, TR::RegisterDependencyGroup *group, int32_t numConditions, char *prefix,
+        bool omitNullDependencies);
+    void dumpDependencies(TR::Logger *log, TR::Instruction *);
+    void printRegisterInfoHeader(TR::Logger *log, TR::Instruction *);
+    void printBoundaryAvoidanceInfo(TR::Logger *log, TR::X86BoundaryAvoidanceInstruction *);
 
-    void printX86OOLSequences(TR::FILE *pOutFile);
+    void printX86OOLSequences(TR::Logger *log);
 
-    void printx(TR::FILE *, TR::Instruction *);
-    void print(TR::FILE *, TR::X86LabelInstruction *);
-    void print(TR::FILE *, TR::X86PaddingInstruction *);
-    void print(TR::FILE *, TR::X86AlignmentInstruction *);
-    void print(TR::FILE *, TR::X86BoundaryAvoidanceInstruction *);
-    void print(TR::FILE *, TR::X86PatchableCodeAlignmentInstruction *);
-    void print(TR::FILE *, TR::X86FenceInstruction *);
+    void printx(TR::Logger *log, TR::Instruction *);
+    void print(TR::Logger *log, TR::X86LabelInstruction *);
+    void print(TR::Logger *log, TR::X86PaddingInstruction *);
+    void print(TR::Logger *log, TR::X86AlignmentInstruction *);
+    void print(TR::Logger *log, TR::X86BoundaryAvoidanceInstruction *);
+    void print(TR::Logger *log, TR::X86PatchableCodeAlignmentInstruction *);
+    void print(TR::Logger *log, TR::X86FenceInstruction *);
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::X86VirtualGuardNOPInstruction *);
+    void print(TR::Logger *log, TR::X86VirtualGuardNOPInstruction *);
 #endif
-    void print(TR::FILE *, TR::X86ImmInstruction *);
-    void print(TR::FILE *, TR::X86ImmSnippetInstruction *);
-    void print(TR::FILE *, TR::X86ImmSymInstruction *);
-    void print(TR::FILE *, TR::X86RegInstruction *);
-    void print(TR::FILE *, TR::X86RegRegInstruction *);
-    void print(TR::FILE *, TR::X86RegImmInstruction *);
-    void print(TR::FILE *, TR::X86RegRegImmInstruction *);
-    void print(TR::FILE *, TR::X86RegRegRegInstruction *);
-    void print(TR::FILE *, TR::X86RegMaskRegInstruction *);
-    void print(TR::FILE *, TR::X86RegMaskRegRegInstruction *);
-    void print(TR::FILE *, TR::X86RegMaskRegRegImmInstruction *);
-    void print(TR::FILE *, TR::X86MemInstruction *);
-    void print(TR::FILE *, TR::X86MemImmInstruction *);
-    void print(TR::FILE *, TR::X86MemRegInstruction *);
-    void print(TR::FILE *, TR::X86MemMaskRegInstruction *);
-    void print(TR::FILE *, TR::X86MemRegImmInstruction *);
-    void print(TR::FILE *, TR::X86RegMemInstruction *);
-    void print(TR::FILE *, TR::X86RegMaskMemInstruction *);
-    void print(TR::FILE *, TR::X86RegMemImmInstruction *);
-    void print(TR::FILE *, TR::X86RegRegMemInstruction *);
-    void print(TR::FILE *, TR::X86FPRegInstruction *);
-    void print(TR::FILE *, TR::X86FPRegRegInstruction *);
-    void print(TR::FILE *, TR::X86FPMemRegInstruction *);
-    void print(TR::FILE *, TR::X86FPRegMemInstruction *);
-    void print(TR::FILE *, TR::AMD64Imm64Instruction *);
-    void print(TR::FILE *, TR::AMD64Imm64SymInstruction *);
-    void print(TR::FILE *, TR::AMD64RegImm64Instruction *);
-    void print(TR::FILE *, TR::X86VFPSaveInstruction *);
-    void print(TR::FILE *, TR::X86VFPRestoreInstruction *);
-    void print(TR::FILE *, TR::X86VFPDedicateInstruction *);
-    void print(TR::FILE *, TR::X86VFPReleaseInstruction *);
-    void print(TR::FILE *, TR::X86VFPCallCleanupInstruction *);
+    void print(TR::Logger *log, TR::X86ImmInstruction *);
+    void print(TR::Logger *log, TR::X86ImmSnippetInstruction *);
+    void print(TR::Logger *log, TR::X86ImmSymInstruction *);
+    void print(TR::Logger *log, TR::X86RegInstruction *);
+    void print(TR::Logger *log, TR::X86RegRegInstruction *);
+    void print(TR::Logger *log, TR::X86RegImmInstruction *);
+    void print(TR::Logger *log, TR::X86RegRegImmInstruction *);
+    void print(TR::Logger *log, TR::X86RegRegRegInstruction *);
+    void print(TR::Logger *log, TR::X86RegMaskRegInstruction *);
+    void print(TR::Logger *log, TR::X86RegMaskRegRegInstruction *);
+    void print(TR::Logger *log, TR::X86RegMaskRegRegImmInstruction *);
+    void print(TR::Logger *log, TR::X86MemInstruction *);
+    void print(TR::Logger *log, TR::X86MemImmInstruction *);
+    void print(TR::Logger *log, TR::X86MemRegInstruction *);
+    void print(TR::Logger *log, TR::X86MemMaskRegInstruction *);
+    void print(TR::Logger *log, TR::X86MemRegImmInstruction *);
+    void print(TR::Logger *log, TR::X86RegMemInstruction *);
+    void print(TR::Logger *log, TR::X86RegMaskMemInstruction *);
+    void print(TR::Logger *log, TR::X86RegMemImmInstruction *);
+    void print(TR::Logger *log, TR::X86RegRegMemInstruction *);
+    void print(TR::Logger *log, TR::X86FPRegInstruction *);
+    void print(TR::Logger *log, TR::X86FPRegRegInstruction *);
+    void print(TR::Logger *log, TR::X86FPMemRegInstruction *);
+    void print(TR::Logger *log, TR::X86FPRegMemInstruction *);
+    void print(TR::Logger *log, TR::AMD64Imm64Instruction *);
+    void print(TR::Logger *log, TR::AMD64Imm64SymInstruction *);
+    void print(TR::Logger *log, TR::AMD64RegImm64Instruction *);
+    void print(TR::Logger *log, TR::X86VFPSaveInstruction *);
+    void print(TR::Logger *log, TR::X86VFPRestoreInstruction *);
+    void print(TR::Logger *log, TR::X86VFPDedicateInstruction *);
+    void print(TR::Logger *log, TR::X86VFPReleaseInstruction *);
+    void print(TR::Logger *log, TR::X86VFPCallCleanupInstruction *);
 
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86RegRegRegInstruction *);
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86RegInstruction *);
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86RegRegInstruction *);
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86MemInstruction *);
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86MemRegInstruction *);
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86RegMemInstruction *);
-    void printReferencedRegisterInfo(TR::FILE *, TR::X86RegRegMemInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86RegRegRegInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86RegInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86RegRegInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86MemInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86MemRegInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86RegMemInstruction *);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::X86RegRegMemInstruction *);
 
-    void printFullRegisterDependencyInfo(TR::FILE *, TR::RegisterDependencyConditions *conditions);
-    void printDependencyConditions(TR::RegisterDependencyGroup *, uint8_t, char *, TR::FILE *);
+    void printFullRegisterDependencyInfo(TR::Logger *log, TR::RegisterDependencyConditions *conditions);
+    void printDependencyConditions(TR::Logger *log, TR::RegisterDependencyGroup *, uint8_t, char *);
 
-    void print(TR::FILE *, TR::MemoryReference *, TR_RegisterSizes);
-    void printReferencedRegisterInfo(TR::FILE *, TR::MemoryReference *);
+    void print(TR::Logger *log, TR::MemoryReference *, TR_RegisterSizes);
+    void printReferencedRegisterInfo(TR::Logger *log, TR::MemoryReference *);
 
-    int32_t printIntConstant(TR::FILE *pOutFile, int64_t value, int8_t radix, TR_RegisterSizes size = TR_WordReg,
+    int32_t printIntConstant(TR::Logger *log, int64_t value, int8_t radix, TR_RegisterSizes size = TR_WordReg,
         bool padWithZeros = false);
-    int32_t printDecimalConstant(TR::FILE *pOutFile, int64_t value, int8_t width, bool padWithZeros);
-    int32_t printHexConstant(TR::FILE *pOutFile, int64_t value, int8_t width, bool padWithZeros);
-    void printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr);
-    void printFPRegisterComment(TR::FILE *pOutFile, TR::Register *target, TR::Register *source);
-    void printMemoryReferenceComment(TR::FILE *pOutFile, TR::MemoryReference *mr);
+    int32_t printDecimalConstant(TR::Logger *log, int64_t value, int8_t width, bool padWithZeros);
+    int32_t printHexConstant(TR::Logger *log, int64_t value, int8_t width, bool padWithZeros);
+    void printInstructionComment(TR::Logger *log, int32_t tabStops, TR::Instruction *instr);
+    void printFPRegisterComment(TR::Logger *log, TR::Register *target, TR::Register *source);
+    void printMemoryReferenceComment(TR::Logger *log, TR::MemoryReference *mr);
     TR_RegisterSizes getTargetSizeFromInstruction(TR::Instruction *instr);
     TR_RegisterSizes getSourceSizeFromInstruction(TR::Instruction *instr);
     TR_RegisterSizes getImmediateSizeFromInstruction(TR::Instruction *instr);
 
-    void printFullRegInfo(TR::FILE *, TR::RealRegister *);
-    void printX86GCRegisterMap(TR::FILE *, TR::GCRegisterMap *);
+    void printFullRegInfo(TR::Logger *log, TR::RealRegister *);
+    void printX86GCRegisterMap(TR::Logger *log, TR::GCRegisterMap *);
 
     const char *getName(TR::RealRegister *, TR_RegisterSizes = TR_WordReg);
     const char *getName(uint32_t realRegisterIndex, TR_RegisterSizes = (TR_RegisterSizes)-1);
 
-    void printx(TR::FILE *, TR::Snippet *);
+    void printx(TR::Logger *log, TR::Snippet *);
 
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::X86CallSnippet *);
-    void print(TR::FILE *, TR::X86PicDataSnippet *);
-    void print(TR::FILE *, TR::X86CheckFailureSnippet *);
-    void print(TR::FILE *, TR::X86CheckFailureSnippetWithResolve *);
-    void print(TR::FILE *, TR::X86BoundCheckWithSpineCheckSnippet *);
-    void print(TR::FILE *, TR::X86SpineCheckSnippet *);
-    void print(TR::FILE *, TR::X86ForceRecompilationSnippet *);
-    void print(TR::FILE *, TR::X86RecompilationSnippet *);
+    void print(TR::Logger *log, TR::X86CallSnippet *);
+    void print(TR::Logger *log, TR::X86PicDataSnippet *);
+    void print(TR::Logger *log, TR::X86CheckFailureSnippet *);
+    void print(TR::Logger *log, TR::X86CheckFailureSnippetWithResolve *);
+    void print(TR::Logger *log, TR::X86BoundCheckWithSpineCheckSnippet *);
+    void print(TR::Logger *log, TR::X86SpineCheckSnippet *);
+    void print(TR::Logger *log, TR::X86ForceRecompilationSnippet *);
+    void print(TR::Logger *log, TR::X86RecompilationSnippet *);
 #endif
 
-    void print(TR::FILE *, TR::X86DivideCheckSnippet *);
-    void print(TR::FILE *, TR::X86FPConvertToIntSnippet *);
-    void print(TR::FILE *, TR::X86FPConvertToLongSnippet *);
-    void print(TR::FILE *, TR::X86GuardedDevirtualSnippet *);
-    void print(TR::FILE *, TR::X86HelperCallSnippet *);
-    void printBody(TR::FILE *, TR::X86HelperCallSnippet *, uint8_t *bufferPos);
+    void print(TR::Logger *log, TR::X86DivideCheckSnippet *);
+    void print(TR::Logger *log, TR::X86FPConvertToIntSnippet *);
+    void print(TR::Logger *log, TR::X86FPConvertToLongSnippet *);
+    void print(TR::Logger *log, TR::X86GuardedDevirtualSnippet *);
+    void print(TR::Logger *log, TR::X86HelperCallSnippet *);
+    void printBody(TR::Logger *log, TR::X86HelperCallSnippet *, uint8_t *bufferPos);
 
-    void print(TR::FILE *, TR::UnresolvedDataSnippet *);
+    void print(TR::Logger *log, TR::UnresolvedDataSnippet *);
 
 #ifdef TR_TARGET_64BIT
-    uint8_t *printArgumentFlush(TR::FILE *, TR::Node *, bool, uint8_t *);
+    uint8_t *printArgumentFlush(TR::Logger *log, TR::Node *, bool, uint8_t *);
 #endif
 #endif
 #ifdef TR_TARGET_POWER
-    void printPrefix(TR::FILE *, TR::Instruction *);
+    void printPrefix(TR::Logger *log, TR::Instruction *);
 
-    void print(TR::FILE *, TR::PPCAlignmentNopInstruction *);
-    void print(TR::FILE *, TR::PPCDepInstruction *);
-    void print(TR::FILE *, TR::PPCLabelInstruction *);
-    void print(TR::FILE *, TR::PPCDepLabelInstruction *);
-    void print(TR::FILE *, TR::PPCConditionalBranchInstruction *);
-    void print(TR::FILE *, TR::PPCDepConditionalBranchInstruction *);
-    void print(TR::FILE *, TR::PPCAdminInstruction *);
-    void print(TR::FILE *, TR::PPCImmInstruction *);
-    void print(TR::FILE *, TR::PPCSrc1Instruction *);
-    void print(TR::FILE *, TR::PPCDepImmSymInstruction *);
-    void print(TR::FILE *, TR::PPCTrg1Instruction *);
-    void print(TR::FILE *, TR::PPCTrg1Src1Instruction *);
-    void print(TR::FILE *, TR::PPCTrg1ImmInstruction *);
-    void print(TR::FILE *, TR::PPCTrg1Src1ImmInstruction *);
-    void print(TR::FILE *, TR::PPCTrg1Src1Imm2Instruction *);
-    void print(TR::FILE *, TR::PPCSrc2Instruction *);
-    void print(TR::FILE *, TR::PPCSrc3Instruction *);
-    void print(TR::FILE *, TR::PPCTrg1Src2Instruction *);
-    void print(TR::FILE *, TR::PPCTrg1Src2ImmInstruction *);
-    void print(TR::FILE *, TR::PPCTrg1Src3Instruction *);
-    void print(TR::FILE *, TR::PPCMemSrc1Instruction *);
-    void print(TR::FILE *, TR::PPCMemInstruction *);
-    void print(TR::FILE *, TR::PPCTrg1MemInstruction *);
-    void print(TR::FILE *, TR::PPCControlFlowInstruction *);
+    void print(TR::Logger *log, TR::PPCAlignmentNopInstruction *);
+    void print(TR::Logger *log, TR::PPCDepInstruction *);
+    void print(TR::Logger *log, TR::PPCLabelInstruction *);
+    void print(TR::Logger *log, TR::PPCDepLabelInstruction *);
+    void print(TR::Logger *log, TR::PPCConditionalBranchInstruction *);
+    void print(TR::Logger *log, TR::PPCDepConditionalBranchInstruction *);
+    void print(TR::Logger *log, TR::PPCAdminInstruction *);
+    void print(TR::Logger *log, TR::PPCImmInstruction *);
+    void print(TR::Logger *log, TR::PPCSrc1Instruction *);
+    void print(TR::Logger *log, TR::PPCDepImmSymInstruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Instruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Src1Instruction *);
+    void print(TR::Logger *log, TR::PPCTrg1ImmInstruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Src1ImmInstruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Src1Imm2Instruction *);
+    void print(TR::Logger *log, TR::PPCSrc2Instruction *);
+    void print(TR::Logger *log, TR::PPCSrc3Instruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Src2Instruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Src2ImmInstruction *);
+    void print(TR::Logger *log, TR::PPCTrg1Src3Instruction *);
+    void print(TR::Logger *log, TR::PPCMemSrc1Instruction *);
+    void print(TR::Logger *log, TR::PPCMemInstruction *);
+    void print(TR::Logger *log, TR::PPCTrg1MemInstruction *);
+    void print(TR::Logger *log, TR::PPCControlFlowInstruction *);
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::PPCVirtualGuardNOPInstruction *);
+    void print(TR::Logger *log, TR::PPCVirtualGuardNOPInstruction *);
 #endif
 
     TR::Instruction *getOutlinedTargetIfAny(TR::Instruction *instr);
-    void printPPCOOLSequences(TR::FILE *pOutFile);
+    void printPPCOOLSequences(TR::Logger *log);
 
     const char *getPPCRegisterName(uint32_t regNum, bool useVSR = false);
 
-    void print(TR::FILE *, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
-    void print(TR::FILE *, TR::RegisterDependency *);
-    void print(TR::FILE *, TR::RegisterDependencyConditions *);
-    void printPPCGCRegisterMap(TR::FILE *, TR::GCRegisterMap *);
+    void print(TR::Logger *log, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
+    void print(TR::Logger *log, TR::RegisterDependency *);
+    void print(TR::Logger *log, TR::RegisterDependencyConditions *);
+    void printPPCGCRegisterMap(TR::Logger *log, TR::GCRegisterMap *);
 
-    void print(TR::FILE *, TR::MemoryReference *, bool d_form = true);
+    void print(TR::Logger *log, TR::MemoryReference *, bool d_form = true);
 
-    uint8_t *printEmitLoadPPCHelperAddrToCtr(TR::FILE *, uint8_t *, int32_t, TR::RealRegister *);
-    uint8_t *printEmitLoadIndirectPPCHelperAddrToCtr(TR::FILE *, uint8_t *, TR::RealRegister *, TR::RealRegister *,
+    uint8_t *printEmitLoadPPCHelperAddrToCtr(TR::Logger *log, uint8_t *, int32_t, TR::RealRegister *);
+    uint8_t *printEmitLoadIndirectPPCHelperAddrToCtr(TR::Logger *log, uint8_t *, TR::RealRegister *, TR::RealRegister *,
         int32_t);
-    uint8_t *printPPCArgumentsFlush(TR::FILE *, TR::Node *, uint8_t *, int32_t);
-    void printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr);
+    uint8_t *printPPCArgumentsFlush(TR::Logger *log, TR::Node *, uint8_t *, int32_t);
+    void printInstructionComment(TR::Logger *log, int32_t tabStops, TR::Instruction *instr);
 
-    void printp(TR::FILE *, TR::Snippet *);
-    void print(TR::FILE *, TR::PPCMonitorEnterSnippet *);
-    void print(TR::FILE *, TR::PPCMonitorExitSnippet *);
-    void print(TR::FILE *, TR::PPCReadMonitorSnippet *);
-    void print(TR::FILE *, TR::PPCAllocPrefetchSnippet *);
+    void printp(TR::Logger *log, TR::Snippet *);
+    void print(TR::Logger *log, TR::PPCMonitorEnterSnippet *);
+    void print(TR::Logger *log, TR::PPCMonitorExitSnippet *);
+    void print(TR::Logger *log, TR::PPCReadMonitorSnippet *);
+    void print(TR::Logger *log, TR::PPCAllocPrefetchSnippet *);
 
-    void print(TR::FILE *, TR::UnresolvedDataSnippet *);
+    void print(TR::Logger *log, TR::UnresolvedDataSnippet *);
 
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::PPCStackCheckFailureSnippet *);
-    void print(TR::FILE *, TR::PPCInterfaceCastSnippet *);
-    void print(TR::FILE *, TR::PPCUnresolvedCallSnippet *);
-    void print(TR::FILE *, TR::PPCVirtualSnippet *);
-    void print(TR::FILE *, TR::PPCVirtualUnresolvedSnippet *);
-    void print(TR::FILE *, TR::PPCInterfaceCallSnippet *);
-    void print(TR::FILE *, TR::PPCForceRecompilationSnippet *);
-    void print(TR::FILE *, TR::PPCRecompilationSnippet *);
-    void print(TR::FILE *, TR::PPCCallSnippet *);
+    void print(TR::Logger *log, TR::PPCStackCheckFailureSnippet *);
+    void print(TR::Logger *log, TR::PPCInterfaceCastSnippet *);
+    void print(TR::Logger *log, TR::PPCUnresolvedCallSnippet *);
+    void print(TR::Logger *log, TR::PPCVirtualSnippet *);
+    void print(TR::Logger *log, TR::PPCVirtualUnresolvedSnippet *);
+    void print(TR::Logger *log, TR::PPCInterfaceCallSnippet *);
+    void print(TR::Logger *log, TR::PPCForceRecompilationSnippet *);
+    void print(TR::Logger *log, TR::PPCRecompilationSnippet *);
+    void print(TR::Logger *log, TR::PPCCallSnippet *);
 #endif
 
-    void printMemoryReferenceComment(TR::FILE *pOutFile, TR::MemoryReference *mr);
-    void print(TR::FILE *, TR::PPCLockReservationEnterSnippet *);
-    void print(TR::FILE *, TR::PPCLockReservationExitSnippet *);
-    uint8_t *print(TR::FILE *pOutFile, TR::PPCArrayCopyCallSnippet *snippet, uint8_t *cursor);
+    void printMemoryReferenceComment(TR::Logger *log, TR::MemoryReference *mr);
+    void print(TR::Logger *log, TR::PPCLockReservationEnterSnippet *);
+    void print(TR::Logger *log, TR::PPCLockReservationExitSnippet *);
+    uint8_t *print(TR::Logger *log, TR::PPCArrayCopyCallSnippet *snippet, uint8_t *cursor);
 
 #endif
 #ifdef TR_TARGET_ARM
     char *fullOpCodeName(TR::Instruction *instr);
-    void printPrefix(TR::FILE *, TR::Instruction *);
+    void printPrefix(TR::Logger *log, TR::Instruction *);
     void printBinaryPrefix(char *prefixBuffer, TR::Instruction *);
-    void dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGroup *group, int32_t numConditions,
-        char *prefix, bool omitNullDependencies);
-    void dumpDependencies(TR::FILE *, TR::Instruction *);
-    void print(TR::FILE *, TR::ARMLabelInstruction *);
+    void dumpDependencyGroup(TR::Logger *log, TR::RegisterDependencyGroup *group, int32_t numConditions, char *prefix,
+        bool omitNullDependencies);
+    void dumpDependencies(TR::Logger *log, TR::Instruction *);
+    void print(TR::Logger *log, TR::ARMLabelInstruction *);
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::ARMVirtualGuardNOPInstruction *);
+    void print(TR::Logger *log, TR::ARMVirtualGuardNOPInstruction *);
 #endif
-    void print(TR::FILE *, TR::ARMAdminInstruction *);
-    void print(TR::FILE *, TR::ARMImmInstruction *);
-    void print(TR::FILE *, TR::ARMImmSymInstruction *);
-    void print(TR::FILE *, TR::ARMTrg1Src2Instruction *);
-    void print(TR::FILE *, TR::ARMTrg2Src1Instruction *);
-    void print(TR::FILE *, TR::ARMMulInstruction *);
-    void print(TR::FILE *, TR::ARMMemSrc1Instruction *);
-    void print(TR::FILE *, TR::ARMTrg1Instruction *);
-    void print(TR::FILE *, TR::ARMMemInstruction *);
-    void print(TR::FILE *, TR::ARMTrg1MemInstruction *);
-    void print(TR::FILE *, TR::ARMTrg1MemSrc1Instruction *);
-    void print(TR::FILE *, TR::ARMControlFlowInstruction *);
-    void print(TR::FILE *, TR::ARMMultipleMoveInstruction *);
+    void print(TR::Logger *log, TR::ARMAdminInstruction *);
+    void print(TR::Logger *log, TR::ARMImmInstruction *);
+    void print(TR::Logger *log, TR::ARMImmSymInstruction *);
+    void print(TR::Logger *log, TR::ARMTrg1Src2Instruction *);
+    void print(TR::Logger *log, TR::ARMTrg2Src1Instruction *);
+    void print(TR::Logger *log, TR::ARMMulInstruction *);
+    void print(TR::Logger *log, TR::ARMMemSrc1Instruction *);
+    void print(TR::Logger *log, TR::ARMTrg1Instruction *);
+    void print(TR::Logger *log, TR::ARMMemInstruction *);
+    void print(TR::Logger *log, TR::ARMTrg1MemInstruction *);
+    void print(TR::Logger *log, TR::ARMTrg1MemSrc1Instruction *);
+    void print(TR::Logger *log, TR::ARMControlFlowInstruction *);
+    void print(TR::Logger *log, TR::ARMMultipleMoveInstruction *);
 
-    void print(TR::FILE *, TR::MemoryReference *);
+    void print(TR::Logger *log, TR::MemoryReference *);
 
-    void print(TR::FILE *, TR_ARMOperand2 *op, TR_RegisterSizes size = TR_WordReg);
+    void print(TR::Logger *log, TR_ARMOperand2 *op, TR_RegisterSizes size = TR_WordReg);
 
     const char *getNamea(TR::Snippet *);
 
-    void print(TR::FILE *, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
-    void printARMGCRegisterMap(TR::FILE *, TR::GCRegisterMap *);
-    void printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr);
+    void print(TR::Logger *log, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
+    void printARMGCRegisterMap(TR::Logger *log, TR::GCRegisterMap *);
+    void printInstructionComment(TR::Logger *log, int32_t tabStops, TR::Instruction *instr);
 
-    void printa(TR::FILE *, TR::Snippet *);
-    void print(TR::FILE *, TR::ARMCallSnippet *);
-    void print(TR::FILE *, TR::ARMUnresolvedCallSnippet *);
-    void print(TR::FILE *, TR::ARMVirtualSnippet *);
-    void print(TR::FILE *, TR::ARMVirtualUnresolvedSnippet *);
-    void print(TR::FILE *, TR::ARMInterfaceCallSnippet *);
-    void print(TR::FILE *, TR::ARMMonitorEnterSnippet *);
-    void print(TR::FILE *, TR::ARMMonitorExitSnippet *);
-    void print(TR::FILE *, TR::ARMStackCheckFailureSnippet *);
-    void print(TR::FILE *, TR::UnresolvedDataSnippet *);
-    void print(TR::FILE *, TR::ARMRecompilationSnippet *);
+    void printa(TR::Logger *log, TR::Snippet *);
+    void print(TR::Logger *log, TR::ARMCallSnippet *);
+    void print(TR::Logger *log, TR::ARMUnresolvedCallSnippet *);
+    void print(TR::Logger *log, TR::ARMVirtualSnippet *);
+    void print(TR::Logger *log, TR::ARMVirtualUnresolvedSnippet *);
+    void print(TR::Logger *log, TR::ARMInterfaceCallSnippet *);
+    void print(TR::Logger *log, TR::ARMMonitorEnterSnippet *);
+    void print(TR::Logger *log, TR::ARMMonitorExitSnippet *);
+    void print(TR::Logger *log, TR::ARMStackCheckFailureSnippet *);
+    void print(TR::Logger *log, TR::UnresolvedDataSnippet *);
+    void print(TR::Logger *log, TR::ARMRecompilationSnippet *);
 #endif
 #ifdef TR_TARGET_S390
-    void printPrefix(TR::FILE *, TR::Instruction *);
+    void printPrefix(TR::Logger *log, TR::Instruction *);
 
-    void printS390RegisterDependency(TR::FILE *pOutFile, TR::Register *virtReg, int realReg, bool uses, bool defs);
+    void printS390RegisterDependency(TR::Logger *log, TR::Register *virtReg, int realReg, bool uses, bool defs);
 
     TR::Instruction *getOutlinedTargetIfAny(TR::Instruction *instr);
-    void printS390OOLSequences(TR::FILE *pOutFile);
+    void printS390OOLSequences(TR::Logger *log);
 
-    void dumpDependencies(TR::FILE *, TR::Instruction *, bool, bool);
-    void printAssocRegDirective(TR::FILE *pOutFile, TR::Instruction *instr);
-    void printz(TR::FILE *, TR::Instruction *);
-    void printz(TR::FILE *, TR::Instruction *, const char *);
-    void print(TR::FILE *, TR::S390LabelInstruction *);
-    void print(TR::FILE *, TR::S390BranchInstruction *);
-    void print(TR::FILE *, TR::S390BranchOnCountInstruction *);
+    void dumpDependencies(TR::Logger *log, TR::Instruction *, bool, bool);
+    void printAssocRegDirective(TR::Logger *log, TR::Instruction *instr);
+    void printz(TR::Logger *log, TR::Instruction *);
+    void printz(TR::Logger *log, TR::Instruction *, const char *);
+    void print(TR::Logger *log, TR::S390LabelInstruction *);
+    void print(TR::Logger *log, TR::S390BranchInstruction *);
+    void print(TR::Logger *log, TR::S390BranchOnCountInstruction *);
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::S390VirtualGuardNOPInstruction *);
+    void print(TR::Logger *log, TR::S390VirtualGuardNOPInstruction *);
 #endif
-    void print(TR::FILE *, TR::S390BranchOnIndexInstruction *);
-    void print(TR::FILE *, TR::S390ImmInstruction *);
-    void print(TR::FILE *, TR::S390ImmSnippetInstruction *);
-    void print(TR::FILE *, TR::S390ImmSymInstruction *);
-    void print(TR::FILE *, TR::S390Imm2Instruction *);
-    void print(TR::FILE *, TR::S390RegInstruction *);
-    void print(TR::FILE *, TR::S390TranslateInstruction *);
-    void print(TR::FILE *, TR::S390RRInstruction *);
-    void print(TR::FILE *, TR::S390RRFInstruction *);
-    void print(TR::FILE *, TR::S390RRRInstruction *);
-    void print(TR::FILE *, TR::S390RIInstruction *);
-    void print(TR::FILE *, TR::S390RILInstruction *);
-    void print(TR::FILE *, TR::S390RSInstruction *);
-    void print(TR::FILE *, TR::S390RSLInstruction *);
-    void print(TR::FILE *, TR::S390RSLbInstruction *);
-    void print(TR::FILE *, TR::S390MemInstruction *);
-    void print(TR::FILE *, TR::S390SS1Instruction *);
-    void print(TR::FILE *, TR::S390SS2Instruction *);
-    void print(TR::FILE *, TR::S390SMIInstruction *);
-    void print(TR::FILE *, TR::S390MIIInstruction *);
-    void print(TR::FILE *, TR::S390SS4Instruction *);
-    void print(TR::FILE *, TR::S390SSFInstruction *);
-    void print(TR::FILE *, TR::S390SSEInstruction *);
-    void print(TR::FILE *, TR::S390SIInstruction *);
-    void print(TR::FILE *, TR::S390SILInstruction *);
-    void print(TR::FILE *, TR::S390SInstruction *);
-    void print(TR::FILE *, TR::S390RXInstruction *);
-    void print(TR::FILE *, TR::S390RXEInstruction *);
-    void print(TR::FILE *, TR::S390RXFInstruction *);
-    void print(TR::FILE *, TR::S390AnnotationInstruction *);
-    void print(TR::FILE *, TR::S390PseudoInstruction *);
-    void print(TR::FILE *, TR::S390NOPInstruction *);
-    void print(TR::FILE *, TR::S390AlignmentNopInstruction *);
-    void print(TR::FILE *, TR::MemoryReference *, TR::Instruction *);
-    void print(TR::FILE *, TR::S390RRSInstruction *);
-    void print(TR::FILE *, TR::S390RIEInstruction *);
-    void print(TR::FILE *, TR::S390RISInstruction *);
-    void print(TR::FILE *, TR::S390OpCodeOnlyInstruction *);
-    void print(TR::FILE *, TR::S390IInstruction *);
-    void print(TR::FILE *, TR::S390IEInstruction *);
-    void print(TR::FILE *, TR::S390VRIInstruction *);
-    void print(TR::FILE *, TR::S390VRRInstruction *);
-    void print(TR::FILE *, TR::S390VStorageInstruction *);
+    void print(TR::Logger *log, TR::S390BranchOnIndexInstruction *);
+    void print(TR::Logger *log, TR::S390ImmInstruction *);
+    void print(TR::Logger *log, TR::S390ImmSnippetInstruction *);
+    void print(TR::Logger *log, TR::S390ImmSymInstruction *);
+    void print(TR::Logger *log, TR::S390Imm2Instruction *);
+    void print(TR::Logger *log, TR::S390RegInstruction *);
+    void print(TR::Logger *log, TR::S390TranslateInstruction *);
+    void print(TR::Logger *log, TR::S390RRInstruction *);
+    void print(TR::Logger *log, TR::S390RRFInstruction *);
+    void print(TR::Logger *log, TR::S390RRRInstruction *);
+    void print(TR::Logger *log, TR::S390RIInstruction *);
+    void print(TR::Logger *log, TR::S390RILInstruction *);
+    void print(TR::Logger *log, TR::S390RSInstruction *);
+    void print(TR::Logger *log, TR::S390RSLInstruction *);
+    void print(TR::Logger *log, TR::S390RSLbInstruction *);
+    void print(TR::Logger *log, TR::S390MemInstruction *);
+    void print(TR::Logger *log, TR::S390SS1Instruction *);
+    void print(TR::Logger *log, TR::S390SS2Instruction *);
+    void print(TR::Logger *log, TR::S390SMIInstruction *);
+    void print(TR::Logger *log, TR::S390MIIInstruction *);
+    void print(TR::Logger *log, TR::S390SS4Instruction *);
+    void print(TR::Logger *log, TR::S390SSFInstruction *);
+    void print(TR::Logger *log, TR::S390SSEInstruction *);
+    void print(TR::Logger *log, TR::S390SIInstruction *);
+    void print(TR::Logger *log, TR::S390SILInstruction *);
+    void print(TR::Logger *log, TR::S390SInstruction *);
+    void print(TR::Logger *log, TR::S390RXInstruction *);
+    void print(TR::Logger *log, TR::S390RXEInstruction *);
+    void print(TR::Logger *log, TR::S390RXFInstruction *);
+    void print(TR::Logger *log, TR::S390AnnotationInstruction *);
+    void print(TR::Logger *log, TR::S390PseudoInstruction *);
+    void print(TR::Logger *log, TR::S390NOPInstruction *);
+    void print(TR::Logger *log, TR::S390AlignmentNopInstruction *);
+    void print(TR::Logger *log, TR::MemoryReference *, TR::Instruction *);
+    void print(TR::Logger *log, TR::S390RRSInstruction *);
+    void print(TR::Logger *log, TR::S390RIEInstruction *);
+    void print(TR::Logger *log, TR::S390RISInstruction *);
+    void print(TR::Logger *log, TR::S390OpCodeOnlyInstruction *);
+    void print(TR::Logger *log, TR::S390IInstruction *);
+    void print(TR::Logger *log, TR::S390IEInstruction *);
+    void print(TR::Logger *log, TR::S390VRIInstruction *);
+    void print(TR::Logger *log, TR::S390VRRInstruction *);
+    void print(TR::Logger *log, TR::S390VStorageInstruction *);
 
     const char *getS390RegisterName(uint32_t regNum, bool isVRF = false);
-    void print(TR::FILE *, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
-    void printFullRegInfo(TR::FILE *, TR::RealRegister *);
-    void printS390GCRegisterMap(TR::FILE *, TR::GCRegisterMap *);
+    void print(TR::Logger *log, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
+    void printFullRegInfo(TR::Logger *log, TR::RealRegister *);
+    void printS390GCRegisterMap(TR::Logger *log, TR::GCRegisterMap *);
 
-    uint8_t *printS390ArgumentsFlush(TR::FILE *, TR::Node *, uint8_t *, int32_t);
+    uint8_t *printS390ArgumentsFlush(TR::Logger *log, TR::Node *, uint8_t *, int32_t);
 
-    void printz(TR::FILE *, TR::Snippet *);
+    void printz(TR::Logger *log, TR::Snippet *);
 
-    void print(TR::FILE *, TR::S390ConstantDataSnippet *);
+    void print(TR::Logger *log, TR::S390ConstantDataSnippet *);
 
-    void print(TR::FILE *, TR::S390HelperCallSnippet *);
+    void print(TR::Logger *log, TR::S390HelperCallSnippet *);
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::S390ForceRecompilationSnippet *);
-    void print(TR::FILE *, TR::S390ForceRecompilationDataSnippet *);
-    void print(TR::FILE *, TR::S390UnresolvedCallSnippet *);
-    void print(TR::FILE *, TR::S390VirtualSnippet *);
-    void print(TR::FILE *, TR::S390VirtualUnresolvedSnippet *);
-    void print(TR::FILE *, TR::S390InterfaceCallSnippet *);
-    void print(TR::FILE *, TR::J9S390InterfaceCallDataSnippet *);
+    void print(TR::Logger *log, TR::S390ForceRecompilationSnippet *);
+    void print(TR::Logger *log, TR::S390ForceRecompilationDataSnippet *);
+    void print(TR::Logger *log, TR::S390UnresolvedCallSnippet *);
+    void print(TR::Logger *log, TR::S390VirtualSnippet *);
+    void print(TR::Logger *log, TR::S390VirtualUnresolvedSnippet *);
+    void print(TR::Logger *log, TR::S390InterfaceCallSnippet *);
+    void print(TR::Logger *log, TR::J9S390InterfaceCallDataSnippet *);
 #endif
-    void print(TR::FILE *, TR::S390StackCheckFailureSnippet *);
-    void print(TR::FILE *, TR::UnresolvedDataSnippet *);
-    void print(TR::FILE *, TR::S390HeapAllocSnippet *);
-    void print(TR::FILE *, TR::S390JNICallDataSnippet *);
-    void print(TR::FILE *, TR::S390RestoreGPR7Snippet *);
+    void print(TR::Logger *log, TR::S390StackCheckFailureSnippet *);
+    void print(TR::Logger *log, TR::UnresolvedDataSnippet *);
+    void print(TR::Logger *log, TR::S390HeapAllocSnippet *);
+    void print(TR::Logger *log, TR::S390JNICallDataSnippet *);
+    void print(TR::Logger *log, TR::S390RestoreGPR7Snippet *);
 
     // Assembly related snippet display
-    void printGPRegisterStatus(TR::FILE *pOutFile, TR::Machine *machine);
-    void printFPRegisterStatus(TR::FILE *pOutFile, TR::Machine *machine);
+    void printGPRegisterStatus(TR::Logger *log, TR::Machine *machine);
+    void printFPRegisterStatus(TR::Logger *log, TR::Machine *machine);
     uint32_t getBitRegNum(TR::RealRegister *reg);
 
-    void printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr,
+    void printInstructionComment(TR::Logger *log, int32_t tabStops, TR::Instruction *instr,
         bool needsStartComment = false);
-    uint8_t *printLoadVMThreadInstruction(TR::FILE *pOutFile, uint8_t *cursor);
-    uint8_t *printRuntimeInstrumentationOnOffInstruction(TR::FILE *pOutFile, uint8_t *cursor, bool isRION,
+    uint8_t *printLoadVMThreadInstruction(TR::Logger *log, uint8_t *cursor);
+    uint8_t *printRuntimeInstrumentationOnOffInstruction(TR::Logger *log, uint8_t *cursor, bool isRION,
         bool isPrivateLinkage = false);
     const char *updateBranchName(const char *opCodeName, const char *brCondName);
 #endif
 #ifdef TR_TARGET_ARM64
-    void printPrefix(TR::FILE *, TR::Instruction *);
+    void printPrefix(TR::Logger *log, TR::Instruction *);
 
-    void print(TR::FILE *, TR::ARM64ImmInstruction *);
-    void print(TR::FILE *, TR::ARM64RelocatableImmInstruction *);
-    void print(TR::FILE *, TR::ARM64ImmSymInstruction *);
-    void print(TR::FILE *, TR::ARM64LabelInstruction *);
-    void print(TR::FILE *, TR::ARM64ConditionalBranchInstruction *);
-    void print(TR::FILE *, TR::ARM64CompareBranchInstruction *);
-    void print(TR::FILE *, TR::ARM64TestBitBranchInstruction *);
-    void print(TR::FILE *, TR::ARM64RegBranchInstruction *);
-    void print(TR::FILE *, TR::ARM64AdminInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Instruction *);
-    void print(TR::FILE *, TR::ARM64Trg1CondInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1ImmInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1ImmShiftedInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1ImmSymInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src1Instruction *);
-    void print(TR::FILE *, TR::ARM64Trg1ZeroSrc1Instruction *);
-    void print(TR::FILE *, TR::ARM64Trg1ZeroImmInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src1ImmInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src2Instruction *);
-    void print(TR::FILE *, TR::ARM64CondTrg1Src2Instruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src2ImmInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src2ShiftedInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src2ExtendedInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src2IndexedElementInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src2ZeroInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg1Src3Instruction *);
-    void print(TR::FILE *, TR::ARM64Trg1MemInstruction *);
-    void print(TR::FILE *, TR::ARM64Trg2MemInstruction *);
-    void print(TR::FILE *, TR::ARM64MemInstruction *);
-    void print(TR::FILE *, TR::ARM64MemImmInstruction *);
-    void print(TR::FILE *, TR::ARM64MemSrc1Instruction *);
-    void print(TR::FILE *, TR::ARM64MemSrc2Instruction *);
-    void print(TR::FILE *, TR::ARM64Trg1MemSrc1Instruction *);
-    void print(TR::FILE *, TR::ARM64Src1Instruction *);
-    void print(TR::FILE *, TR::ARM64ZeroSrc1ImmInstruction *);
-    void print(TR::FILE *, TR::ARM64Src2Instruction *);
-    void print(TR::FILE *, TR::ARM64ZeroSrc2Instruction *);
-    void print(TR::FILE *, TR::ARM64Src1ImmCondInstruction *);
-    void print(TR::FILE *, TR::ARM64Src2CondInstruction *);
-    void print(TR::FILE *, TR::ARM64SynchronizationInstruction *);
+    void print(TR::Logger *log, TR::ARM64ImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64RelocatableImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64ImmSymInstruction *);
+    void print(TR::Logger *log, TR::ARM64LabelInstruction *);
+    void print(TR::Logger *log, TR::ARM64ConditionalBranchInstruction *);
+    void print(TR::Logger *log, TR::ARM64CompareBranchInstruction *);
+    void print(TR::Logger *log, TR::ARM64TestBitBranchInstruction *);
+    void print(TR::Logger *log, TR::ARM64RegBranchInstruction *);
+    void print(TR::Logger *log, TR::ARM64AdminInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Instruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1CondInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1ImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1ImmShiftedInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1ImmSymInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src1Instruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1ZeroSrc1Instruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1ZeroImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src2Instruction *);
+    void print(TR::Logger *log, TR::ARM64CondTrg1Src2Instruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src2ImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src2ShiftedInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src2ExtendedInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src2IndexedElementInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src2ZeroInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1Src3Instruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1MemInstruction *);
+    void print(TR::Logger *log, TR::ARM64Trg2MemInstruction *);
+    void print(TR::Logger *log, TR::ARM64MemInstruction *);
+    void print(TR::Logger *log, TR::ARM64MemImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64MemSrc1Instruction *);
+    void print(TR::Logger *log, TR::ARM64MemSrc2Instruction *);
+    void print(TR::Logger *log, TR::ARM64Trg1MemSrc1Instruction *);
+    void print(TR::Logger *log, TR::ARM64Src1Instruction *);
+    void print(TR::Logger *log, TR::ARM64ZeroSrc1ImmInstruction *);
+    void print(TR::Logger *log, TR::ARM64Src2Instruction *);
+    void print(TR::Logger *log, TR::ARM64ZeroSrc2Instruction *);
+    void print(TR::Logger *log, TR::ARM64Src1ImmCondInstruction *);
+    void print(TR::Logger *log, TR::ARM64Src2CondInstruction *);
+    void print(TR::Logger *log, TR::ARM64SynchronizationInstruction *);
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::ARM64VirtualGuardNOPInstruction *);
+    void print(TR::Logger *log, TR::ARM64VirtualGuardNOPInstruction *);
 #endif
-    void print(TR::FILE *, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
-    void print(TR::FILE *, TR::RegisterDependency *);
-    void print(TR::FILE *, TR::RegisterDependencyConditions *);
-    void print(TR::FILE *, TR::MemoryReference *);
-    void print(TR::FILE *, TR::UnresolvedDataSnippet *);
+    void print(TR::Logger *log, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
+    void print(TR::Logger *log, TR::RegisterDependency *);
+    void print(TR::Logger *log, TR::RegisterDependencyConditions *);
+    void print(TR::Logger *log, TR::MemoryReference *);
+    void print(TR::Logger *log, TR::UnresolvedDataSnippet *);
 
-    void printARM64OOLSequences(TR::FILE *);
-    void printARM64GCRegisterMap(TR::FILE *, TR::GCRegisterMap *);
-    void printInstructionComment(TR::FILE *, int32_t, TR::Instruction *);
-    void printMemoryReferenceComment(TR::FILE *, TR::MemoryReference *);
-    void printAssocRegDirective(TR::FILE *, TR::Instruction *);
+    void printARM64OOLSequences(TR::Logger *log);
+    void printARM64GCRegisterMap(TR::Logger *log, TR::GCRegisterMap *);
+    void printInstructionComment(TR::Logger *log, int32_t, TR::Instruction *);
+    void printMemoryReferenceComment(TR::Logger *log, TR::MemoryReference *);
+    void printAssocRegDirective(TR::Logger *log, TR::Instruction *);
 
     const char *getARM64RegisterName(uint32_t, bool = true);
 
-    void printa64(TR::FILE *, TR::Snippet *);
+    void printa64(TR::Logger *log, TR::Snippet *);
     const char *getNamea64(TR::Snippet *);
 
 #ifdef J9_PROJECT_SPECIFIC
-    void print(TR::FILE *, TR::ARM64CallSnippet *);
-    void print(TR::FILE *, TR::ARM64UnresolvedCallSnippet *);
-    void print(TR::FILE *, TR::ARM64VirtualUnresolvedSnippet *);
-    void print(TR::FILE *, TR::ARM64InterfaceCallSnippet *);
-    void print(TR::FILE *, TR::ARM64StackCheckFailureSnippet *);
-    void print(TR::FILE *, TR::ARM64ForceRecompilationSnippet *);
-    void print(TR::FILE *, TR::ARM64RecompilationSnippet *);
-    uint8_t *printARM64ArgumentsFlush(TR::FILE *, TR::Node *, uint8_t *, int32_t);
+    void print(TR::Logger *log, TR::ARM64CallSnippet *);
+    void print(TR::Logger *log, TR::ARM64UnresolvedCallSnippet *);
+    void print(TR::Logger *log, TR::ARM64VirtualUnresolvedSnippet *);
+    void print(TR::Logger *log, TR::ARM64InterfaceCallSnippet *);
+    void print(TR::Logger *log, TR::ARM64StackCheckFailureSnippet *);
+    void print(TR::Logger *log, TR::ARM64ForceRecompilationSnippet *);
+    void print(TR::Logger *log, TR::ARM64RecompilationSnippet *);
+    uint8_t *printARM64ArgumentsFlush(TR::Logger *log, TR::Node *, uint8_t *, int32_t);
 #endif
-    void print(TR::FILE *, TR::ARM64HelperCallSnippet *);
+    void print(TR::Logger *log, TR::ARM64HelperCallSnippet *);
 
 #endif
 #ifdef TR_TARGET_RISCV
-    void printPrefix(TR::FILE *, TR::Instruction *);
+    void printPrefix(TR::Logger *log, TR::Instruction *);
 
-    void print(TR::FILE *, TR::LabelInstruction *);
-    void print(TR::FILE *, TR::AdminInstruction *);
-    void print(TR::FILE *, TR::DataInstruction *);
+    void print(TR::Logger *log, TR::LabelInstruction *);
+    void print(TR::Logger *log, TR::AdminInstruction *);
+    void print(TR::Logger *log, TR::DataInstruction *);
 
-    void print(TR::FILE *, TR::RtypeInstruction *);
-    void print(TR::FILE *, TR::ItypeInstruction *);
-    void print(TR::FILE *, TR::StypeInstruction *);
-    void print(TR::FILE *, TR::BtypeInstruction *);
-    void print(TR::FILE *, TR::UtypeInstruction *);
-    void print(TR::FILE *, TR::JtypeInstruction *);
-    void print(TR::FILE *, TR::LoadInstruction *);
-    void print(TR::FILE *, TR::StoreInstruction *);
-    void print(TR::FILE *, TR::RVHelperCallSnippet *);
+    void print(TR::Logger *log, TR::RtypeInstruction *);
+    void print(TR::Logger *log, TR::ItypeInstruction *);
+    void print(TR::Logger *log, TR::StypeInstruction *);
+    void print(TR::Logger *log, TR::BtypeInstruction *);
+    void print(TR::Logger *log, TR::UtypeInstruction *);
+    void print(TR::Logger *log, TR::JtypeInstruction *);
+    void print(TR::Logger *log, TR::LoadInstruction *);
+    void print(TR::Logger *log, TR::StoreInstruction *);
+    void print(TR::Logger *log, TR::RVHelperCallSnippet *);
 
-    void print(TR::FILE *, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
-    void print(TR::FILE *, TR::RegisterDependency *);
-    void print(TR::FILE *, TR::RegisterDependencyConditions *);
-    void print(TR::FILE *, TR::MemoryReference *);
-    void print(TR::FILE *, TR::UnresolvedDataSnippet *);
+    void print(TR::Logger *log, TR::RealRegister *, TR_RegisterSizes size = TR_WordReg);
+    void print(TR::Logger *log, TR::RegisterDependency *);
+    void print(TR::Logger *log, TR::RegisterDependencyConditions *);
+    void print(TR::Logger *log, TR::MemoryReference *);
+    void print(TR::Logger *log, TR::UnresolvedDataSnippet *);
 
-    void printRVOOLSequences(TR::FILE *);
-    void printRVGCRegisterMap(TR::FILE *, TR::GCRegisterMap *);
-    void printInstructionComment(TR::FILE *, int32_t, TR::Instruction *);
-    void printMemoryReferenceComment(TR::FILE *, TR::MemoryReference *);
+    void printRVOOLSequences(TR::Logger *log);
+    void printRVGCRegisterMap(TR::Logger *log, TR::GCRegisterMap *);
+    void printInstructionComment(TR::Logger *log, int32_t, TR::Instruction *);
+    void printMemoryReferenceComment(TR::Logger *log, TR::MemoryReference *);
 
     const char *getRVRegisterName(uint32_t, bool = true);
 #endif
@@ -1316,9 +1321,10 @@ public:
     friend class TR_CFGChecker;
 
 protected:
-    TR::FILE *_file;
+    TR::FILE *_outFile;
     TR::Compilation *_comp;
     TR_FrontEnd *_fe;
+    TR::Logger *_logger;
 
     uint32_t _nextLabelNumber;
     uint32_t _nextRegisterNumber;

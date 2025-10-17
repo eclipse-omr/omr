@@ -43,6 +43,7 @@ class TR_IlGenerator;
 namespace TR {
 class Compilation;
 class IlGeneratorMethodDetails;
+class Logger;
 class ResolvedMethodSymbol;
 class SymbolReferenceTable;
 } // namespace TR
@@ -66,7 +67,7 @@ public:
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
         = 0;
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix) = 0;
+    virtual void print(TR::Logger *log, TR_FrontEnd *fe, const char *suffix) = 0;
 
     TR::IlGeneratorMethodDetails &details() { return _methodDetails; }
 

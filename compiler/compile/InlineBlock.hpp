@@ -59,7 +59,6 @@ public:
     void addExceptionBlock(TR::Block *);
     bool isInList(int32_t);
     bool isInExceptionList(int32_t);
-    void dump(TR::FILE *);
 
     int32_t getNumBlocks() { return _numBlocks; }
 
