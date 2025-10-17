@@ -140,6 +140,20 @@ uint8_t *OMR::CodeCache::getCodeBase() { return _segment->segmentBase(); }
 
 uint8_t *OMR::CodeCache::getCodeTop() { return _segment->segmentTop(); }
 
+const char *OMR::CodeCache::getCodeCacheKindString()
+{
+    switch (_kind) {
+        case TR::CodeCacheKind::DEFAULT_CC:
+            return "DEFAULT_CC";
+        case TR::CodeCacheKind::TRANSIENT_CODE_CC:
+            return "TRANSIENT_CODE_CC";
+        case TR::CodeCacheKind::FILE_BACKED_CC:
+            return "FILE_BACKED_CC";
+        default:
+            return "UNKNOWN";
+    }
+}
+
 void OMR::CodeCache::reserve(int32_t reservingCompThreadID)
 {
     _reserved = true;
@@ -1150,7 +1164,9 @@ void OMR::CodeCache::dumpCodeCache()
 
 void OMR::CodeCache::printOccupancyStats()
 {
-    fprintf(stderr, "Code Cache @%p flags=0x%x almostFull=%d\n", this, _flags, _almostFull);
+    fprintf(stderr, "Code Cache @%p flags=0x%x almostFull=%d codeCacheKind=%s\n", this, _flags, _almostFull,
+        getCodeCacheKindString());
+    fprintf(stderr, "   range: " POINTER_PRINTF_FORMAT "-" POINTER_PRINTF_FORMAT "\n", getCodeBase(), getCodeTop());
     fprintf(stderr, "   cold-warm hole size        = %8" OMR_PRIuSIZE " bytes\n", self()->getFreeContiguousSpace());
     fprintf(stderr, "   warmCodeAlloc=%p coldCodeAlloc=%p\n", (void *)_warmCodeAlloc, (void *)_coldCodeAlloc);
     size_t warmCodeSize = _warmCodeAlloc - _segment->segmentBase();

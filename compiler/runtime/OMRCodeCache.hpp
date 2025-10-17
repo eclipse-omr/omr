@@ -80,6 +80,8 @@ public:
     uint8_t *getCodeBase();
     uint8_t *getCodeTop();
 
+    const char *getCodeCacheKindString();
+
     uint8_t *getHelperBase() { return _helperBase; }
 
     uint8_t *getHelperTop() { return _helperTop; }

@@ -1066,10 +1066,6 @@ void OMR::CodeCacheManager::initializeExecutableELFGenerator(void)
 }
 #endif // HOST_OS==OMR_LINUX
 
-// Should be in correspondance with the enum defined in
-// compiler/control/OptionsUtil.hpp
-const char *CodeCacheKindStrings[] = { "DEFAULT_CC", "TRANSIENT_CODE_CC", "FILE_BACKED_CC" };
-
 TR::CodeCache *OMR::CodeCacheManager::allocateCodeCacheFromNewSegment(size_t segmentSizeInBytes,
     int32_t reservingCompilationTID, TR::CodeCacheKind kind)
 {
@@ -1098,7 +1094,7 @@ TR::CodeCache *OMR::CodeCacheManager::allocateCodeCacheFromNewSegment(size_t seg
                     "CodeCache allocated %p @ " POINTER_PRINTF_FORMAT "-" POINTER_PRINTF_FORMAT
                     " HelperBase:" POINTER_PRINTF_FORMAT " CodeCacheKind=%s",
                     codeCache, codeCache->getCodeBase(), codeCache->getCodeTop(), codeCache->_helperBase,
-                    CodeCacheKindStrings[codeCache->_kind]);
+                    codeCache->getCodeCacheKindString());
             }
 
             return codeCache;
