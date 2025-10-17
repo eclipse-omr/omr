@@ -1032,7 +1032,67 @@ TR::Register *OMR::Power::TreeEvaluator::s2mEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+
+    // In order to preserve the boolean array element order on little endian systems, we need to reverse the
+    // byte/element order of the given input. Due to factors such as instruction availability, there are
+    // three cases that each need to be handled differently:
+    // 1.) The child node has refCount == 1
+    // 2.) The child node has refCount > 1 AND the target system is P9 or higher
+    // 3.) The child node has refCount > 1 AND the target system is P8 or lower
+
+    TR::Register *srcReg;
+    bool reversed = false;
+
+    // Case (1)
+    if (cg->comp()->target().cpu.isLittleEndian() && child->getReferenceCount() == 1 && child->getRegister() == NULL) {
+        srcReg = cg->allocateRegister();
+        TR::LoadStoreHandler::generateLoadNodeSequence(cg, srcReg, child, TR::InstOpCode::lwbrx, 4, true);
+        reversed = true;
+    } else
+        srcReg = cg->evaluate(child);
+
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+    TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    // move to VRF
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, srcReg);
+
+    // Case (2)
+    if (!reversed && cg->comp()->target().cpu.isLittleEndian()
+        && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::xxbrw, node, dstReg, dstReg);
+
+    // unpack byte-length elements to halfword-length elements
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsb, node, dstReg, dstReg);
+
+    // unpack halfword-length elements to word-length elements
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::vupklsh, node, dstReg, dstReg);
+
+    // Case (3)
+    if (!reversed && cg->comp()->target().cpu.isLittleEndian()
+        && !cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9)) {
+        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, dstReg, dstReg, dstReg,
+            2); // switch doubleword elements
+        generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, -16);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, tmpReg, tmpReg, tmpReg);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vrld, node, dstReg, dstReg,
+            tmpReg); // switch word elements within each doubleword element
+    }
+
+    // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
+    // all 0/1 mask by subtracting from 0:
+    // 0-1 = -1 = 0xFF...
+    // 0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpReg, 0);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsubuwm, node, dstReg, tmpReg, dstReg);
+
+    cg->stopUsingRegister(tmpReg);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::l2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
