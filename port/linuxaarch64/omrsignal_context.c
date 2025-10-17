@@ -101,8 +101,19 @@ infoForSignal(struct OMRPortLibrary *portLibrary, struct OMRUnixSignalInfo *info
 		}
 		break;
 
+	case OMRPORT_SIG_SENDER_PID:
+	case 7:
+		if ((NULL != info) && (NULL != info->sigInfo)) {
+			*name = "Sending_Process";
+			*value = &info->sigInfo->si_pid;
+			return (sizeof(info->sigInfo->si_pid) == sizeof(uint32_t))
+				? OMRPORT_SIG_VALUE_32
+				: OMRPORT_SIG_VALUE_64;
+		}
+		break;
+
 	// case OMRPORT_SIG_SIGNAL_ADDRESS:
-	// case 7:
+	// case 8:
 	// 	*name = "fault_address";
 	// 	*value = &((struct sigcontext *)&info->platformSignalInfo.context->uc_mcontext)->fault_address;
 	// 	return OMRPORT_SIG_VALUE_ADDRESS;
