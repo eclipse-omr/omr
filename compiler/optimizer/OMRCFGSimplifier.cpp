@@ -127,7 +127,7 @@ bool OMR::CFGSimplifier::simplify()
 bool OMR::CFGSimplifier::simplifyIfStructure()
 {
     if (trace())
-        traceMsg(comp(), "Attempting if simpliciaton on block_%d\n", _block->getNumber());
+        traceMsg(comp(), "Attempting if simplification on block_%d\n", _block->getNumber());
     // There must be exactly two successors, and they must be real blocks
     //
     if (_next1 == NULL || _next2 == NULL)
@@ -197,8 +197,9 @@ bool OMR::CFGSimplifier::hasExceptionPoint(TR::Block *block, TR::TreeTop *end)
 
 bool OMR::CFGSimplifier::simplifyInstanceOfTestToCheckcast(bool needToDuplicateTree)
 {
-    static char *disableSimplifyInstanceOfTestToCheckcast = feGetEnv("TR_disableSimplifyInstanceOfTestToCheckcast");
-    if (disableSimplifyInstanceOfTestToCheckcast != NULL)
+    static const char *enableSimplifyInstanceOfTestToCheckcast = feGetEnv("TR_enableSimplifyInstanceOfTestToCheckcast");
+
+    if (enableSimplifyInstanceOfTestToCheckcast == NULL)
         return false;
 
     if (comp()->getOSRMode() == TR::involuntaryOSR)
@@ -365,7 +366,7 @@ bool OMR::CFGSimplifier::simplifyInstanceOfTestToCheckcast(bool needToDuplicateT
 //
 //
 //  Simplification:
-//    BNDCHK (i, length)  ----(exp edge) ------
+//    BNDCHK (length, i)  ----(exp edge) ------
 //      |                                      |
 //    return                                   |
 //                                             |
@@ -375,7 +376,7 @@ bool OMR::CFGSimplifier::simplifyInstanceOfTestToCheckcast(bool needToDuplicateT
 // Or,
 //
 //  Simplification:
-//    BNDCHK (i, length)  ----(exp edge) ------
+//    BNDCHK (length, i)  ----(exp edge) ------
 //      |                                      |
 //    goto =================                   |
 //                          |                  |
@@ -389,9 +390,10 @@ bool OMR::CFGSimplifier::simplifyInstanceOfTestToCheckcast(bool needToDuplicateT
 //
 bool OMR::CFGSimplifier::simplifyBoundCheckWithThrowException(bool needToDuplicateTree)
 {
-    static char *disableSimplifyBoundCheckWithThrowException
-        = feGetEnv("TR_disableSimplifyBoundCheckWithThrowException");
-    if (disableSimplifyBoundCheckWithThrowException != NULL)
+    static const char *enableSimplifyBoundCheckWithThrowException
+        = feGetEnv("TR_enableSimplifyBoundCheckWithThrowException");
+
+    if (enableSimplifyBoundCheckWithThrowException == NULL)
         return false;
     if (trace())
         traceMsg(comp(), "Start simplifyBoundCheckWithThrowException\n");
@@ -658,7 +660,7 @@ static bool containsIndirectOperation(TR::Compilation *comp, TR::TreeTop *treeto
 
 bool OMR::CFGSimplifier::simplifyCondStoreSequence(bool needToDuplicateTree)
 {
-    static char *enableSimplifyCondStoreSequence = feGetEnv("TR_enableSimplifyCondStoreSequence");
+    static const char *enableSimplifyCondStoreSequence = feGetEnv("TR_enableSimplifyCondStoreSequence");
     if (enableSimplifyCondStoreSequence == NULL)
         return false;
 
@@ -773,7 +775,7 @@ bool OMR::CFGSimplifier::simplifyCondStoreSequence(bool needToDuplicateTree)
 
 bool OMR::CFGSimplifier::simplifySimpleStore(bool needToDuplicateTree)
 {
-    static char *enableSimplifySimpleStore = feGetEnv("TR_enableSimplifySimpleStore");
+    static const char *enableSimplifySimpleStore = feGetEnv("TR_enableSimplifySimpleStore");
     if (enableSimplifySimpleStore == NULL)
         return false;
 
@@ -799,11 +801,11 @@ bool OMR::CFGSimplifier::simplifySimpleStore(bool needToDuplicateTree)
             triangle2, diamond);
     }
 
-    static char *disableSimplifySimpleStoreTriangle = feGetEnv("TR_disableSimplifySimpleStoreTriangle");
+    static const char *disableSimplifySimpleStoreTriangle = feGetEnv("TR_disableSimplifySimpleStoreTriangle");
     if ((triangle1 || triangle2) && disableSimplifySimpleStoreTriangle != NULL)
         return false;
 
-    static char *disableSimplifySimpleStoreDiamond = feGetEnv("TR_disableSimplifySimpleStoreDiamond");
+    static const char *disableSimplifySimpleStoreDiamond = feGetEnv("TR_disableSimplifySimpleStoreDiamond");
     if ((diamond) && disableSimplifySimpleStoreDiamond != NULL)
         return false;
 
@@ -952,9 +954,9 @@ bool OMR::CFGSimplifier::simplifySimpleStore(bool needToDuplicateTree)
 
 bool OMR::CFGSimplifier::simplifyNullToException(bool needToDuplicateTree)
 {
-    static char *disableSimplifyExplicitNULLTest = feGetEnv("TR_disableSimplifyExplicitNULLTest");
-    static char *disableSimplifyNullToException = feGetEnv("TR_disableSimplifyNullToException");
-    if (disableSimplifyExplicitNULLTest != NULL || disableSimplifyNullToException != NULL)
+    static const char *enableSimplifyExplicitNULLTest = feGetEnv("TR_enableSimplifyExplicitNULLTest");
+    static const char *enableSimplifyNullToException = feGetEnv("TR_enableSimplifyNullToException");
+    if (enableSimplifyExplicitNULLTest == NULL || enableSimplifyNullToException == NULL)
         return false;
 
     if (comp()->getOSRMode() == TR::involuntaryOSR)
@@ -988,7 +990,7 @@ bool OMR::CFGSimplifier::simplifyNullToException(bool needToDuplicateTree)
         return false;
 
     if (!performTransformation(comp(),
-            "%sReplace ifacmpeq/ifacmpne of NULL node n%dn [%p] to a blcok ending in throw with a NULLCHK to a catch "
+            "%sReplace ifacmpeq/ifacmpne of NULL node n%dn [%p] to a block ending in throw with a NULLCHK to a catch "
             "which goes to block_%d\n",
             OPT_DETAILS, compareNode->getGlobalIndex(), compareNode, nullBlock->getNumber()))
         return false;
