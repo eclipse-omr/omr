@@ -1149,16 +1149,6 @@ bool OMR::CFGSimplifier::simplifyBooleanStore(bool needToDuplicateTree)
     if (trace())
         traceMsg(comp(), "   Successor block_%d is single store\n", _next2->getNumber());
 
-    // Store values cannot be internal pointers
-    //
-    int32_t valueIndex = store1->getOpCode().isIndirect() ? 1 : 0;
-    TR::Node *value1 = store1->getChild(valueIndex);
-    TR::Node *value2 = store2->getChild(valueIndex);
-    if (value1->isInternalPointer() || value2->isInternalPointer())
-        return false;
-    if (trace())
-        traceMsg(comp(), "   Store values are not internal pointers\n");
-
     // The stores must be integer stores to the same variable
     //
     if (store1->getOpCodeValue() != store2->getOpCodeValue())
@@ -1169,6 +1159,16 @@ bool OMR::CFGSimplifier::simplifyBooleanStore(bool needToDuplicateTree)
         return false;
     if (trace())
         traceMsg(comp(), "   Store nodes opcode and symref checks out\n");
+
+    // Store values cannot be internal pointers
+    //
+    int32_t valueIndex = store1->getOpCode().isIndirect() ? 1 : 0;
+    TR::Node *value1 = store1->getChild(valueIndex);
+    TR::Node *value2 = store2->getChild(valueIndex);
+    if (value1->isInternalPointer() || value2->isInternalPointer())
+        return false;
+    if (trace())
+        traceMsg(comp(), "   Store values are not internal pointers\n");
 
     // Indirect stores must have the same base
     //
