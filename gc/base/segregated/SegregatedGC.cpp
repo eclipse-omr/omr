@@ -176,8 +176,6 @@ bool
 MM_SegregatedGC::internalGarbageCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *subSpace, MM_AllocateDescription *allocDescription)
 {
 	env->_cycleState->_activeSubSpace->reset();
-	_extensions->globalGCStats.clear();
-	_extensions->globalGCStats.gcCount++;
 
 	/*
 	 * Marking
@@ -258,6 +256,9 @@ MM_SegregatedGC::internalPreCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *
 	env->_cycleState->_gcCode = MM_GCCode(gcCode);
 	env->_cycleState->_type = _cycleType;
 	env->_cycleState->_activeSubSpace = subSpace;
+	_extensions->globalGCStats.clear();
+	_extensions->globalGCStats.gcCount++;
+	env->_cycleState->_currentCycleID = env->getExtensions()->getUniqueGCCycleCount();
 
 	MM_MemoryPoolSegregated *memoryPool = (MM_MemoryPoolSegregated *) env->getDefaultMemorySubSpace()->getMemoryPool();
 
@@ -331,7 +332,6 @@ MM_SegregatedGC::reportGCCycleStart(MM_EnvironmentBase *env)
 
 	/* Clear STW pause stats for this cycle. */
 	stats->clearPauseStats();
-
 	MM_CommonGCData commonData;
 
 	TRIGGER_J9HOOK_MM_OMR_GC_CYCLE_START(

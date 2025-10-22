@@ -1589,6 +1589,8 @@ MM_ConcurrentGC::acquireExclusiveVMAccessAndSignalThreadsToActivateWriteBarrier(
 			_concurrentCycleState._type = _cycleType;
 			env->_cycleState = &_concurrentCycleState;
 			env->_cycleState->_collectionStatistics = &_collectionStatistics;
+			_extensions->globalGCStats.gcCount += 1;
+			env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 			reportGCCycleStart(env);
 			env->_cycleState = previousCycleState;
 
@@ -1963,6 +1965,7 @@ MM_ConcurrentGC::internalPreCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *
 		env->_cycleState->_gcCode = MM_GCCode(gcCode);
 		env->_cycleState->_activeSubSpace = subSpace;
 		env->_cycleState->_collectionStatistics = &_collectionStatistics;
+		env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 
 		/* Report concurrent-end now, concurrent-start was reported but we didn't get
 		 * the opportunity to report concurrent-end (due to GC idle collection or concurrent halted)
@@ -2069,8 +2072,6 @@ MM_ConcurrentGC::internalPreCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *
 bool
 MM_ConcurrentGC::internalGarbageCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *subSpace, MM_AllocateDescription *allocDescription)
 {
-	_extensions->globalGCStats.gcCount += 1;
-
 	mainThreadGarbageCollect(env, static_cast<MM_AllocateDescription*>(allocDescription), _initializeMarkMap, false);
 
 	/* Restore normal allocation rules.

@@ -4319,7 +4319,7 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 		if (_extensions->processLargeAllocateStats) {
 			processLargeAllocateStatsBeforeGC(env);
 		}
-
+		env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 		reportGCCycleStart(env);
 		_cycleTimes.cycleStart = omrtime_hires_clock();
 		mainSetupForGC(env);

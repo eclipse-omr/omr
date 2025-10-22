@@ -1085,6 +1085,8 @@ MM_ParallelGlobalGC::internalPreCollect(MM_EnvironmentBase *env, MM_MemorySubSpa
 	env->_cycleState->_type = _cycleType;
 	env->_cycleState->_activeSubSpace = subSpace;
 	env->_cycleState->_collectionStatistics = &_collectionStatistics;
+	_extensions->globalGCStats.gcCount += 1;
+	env->_cycleState->_currentCycleID = _extensions->getUniqueGCCycleCount();
 
 	/* If we are in an excessiveGC level beyond normal then an aggressive GC is
 	 * conducted to free up as much space as possible
@@ -1270,8 +1272,6 @@ MM_ParallelGlobalGC::setupForGC(MM_EnvironmentBase *env)
 bool
 MM_ParallelGlobalGC::internalGarbageCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *subSpace, MM_AllocateDescription *allocDescription)
 {
-	_extensions->globalGCStats.gcCount += 1;
-
 	/* only try to expand heap instead of garbage collection in -Xgcpolicy:nogc */
 	if (_disableGC) {
 		env->_cycleState->_activeSubSpace->checkResize(env, allocDescription, false);
@@ -1509,7 +1509,7 @@ globalGCHookAFCycleEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventDa
 	OMR_VMThread *omrVMThread = event->currentThread;
 	MM_GCExtensionsBase *extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
 	OMRPORT_ACCESS_FROM_OMRVMTHREAD(omrVMThread);
-	
+
 	if((event->subSpaceType == MEMORY_TYPE_NEW) && ((extensions->heap->getResizeStats()->getGlobalGCCountAtAF()) == (extensions->globalGCStats.gcCount))){
 		return;
 	}
@@ -1656,7 +1656,6 @@ MM_ParallelGlobalGC::reportGCCycleStart(MM_EnvironmentBase *env)
 
 	/* Clear STW pause stats for this cycle. */
 	stats->clearPauseStats();
-
 	MM_CommonGCData commonData;
 
 	TRIGGER_J9HOOK_MM_OMR_GC_CYCLE_START(
