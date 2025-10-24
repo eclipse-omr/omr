@@ -933,7 +933,9 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector bit-wise select operator */ \
+   /* .description             =    vector bit-wise select operator. \
+                                    For each bit that is 1 in the first child (selector) select from the second child, \
+                                    otherwise select from the third child. */ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vblend, \

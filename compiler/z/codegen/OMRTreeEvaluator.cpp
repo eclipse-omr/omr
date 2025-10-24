@@ -14173,25 +14173,24 @@ TR::Register *OMR::Z::TreeEvaluator::vstoreEvaluator(TR::Node *node, TR::CodeGen
 
 TR::Register *OMR::Z::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    TR::Node *firstVecNode = node->getFirstChild();
-    TR::Node *secondVecNode = node->getSecondChild();
-    TR::Node *vecSelectNode = node->getThirdChild();
+    TR::Node *selectorChild = node->getFirstChild();
+    TR::Node *trueChild = node->getSecondChild();
+    TR::Node *falseChild = node->getThirdChild();
 
-    TR::Register *firstVecReg = cg->evaluate(firstVecNode);
-    TR::Register *secondVecReg = cg->evaluate(secondVecNode);
-    TR::Register *vecSelectReg = cg->evaluate(vecSelectNode);
+    TR::Register *falseVecReg = cg->evaluate(falseChild);
+    TR::Register *trueVecReg = cg->evaluate(trueChild);
+    TR::Register *vecSelectReg = cg->evaluate(selectorChild);
     TR::Register *returnVecReg = cg->allocateRegister(TR_VRF);
 
-    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, returnVecReg, firstVecReg, secondVecReg, vecSelectReg, 0,
-        0);
+    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, returnVecReg, trueVecReg, falseVecReg, vecSelectReg, 0, 0);
 
-    cg->stopUsingRegister(firstVecReg);
-    cg->stopUsingRegister(secondVecReg);
+    cg->stopUsingRegister(falseVecReg);
+    cg->stopUsingRegister(trueVecReg);
     cg->stopUsingRegister(vecSelectReg);
 
-    cg->decReferenceCount(firstVecNode);
-    cg->decReferenceCount(secondVecNode);
-    cg->decReferenceCount(vecSelectNode);
+    cg->decReferenceCount(falseChild);
+    cg->decReferenceCount(trueChild);
+    cg->decReferenceCount(selectorChild);
 
     node->setRegister(returnVecReg);
     return returnVecReg;
