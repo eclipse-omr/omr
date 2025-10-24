@@ -270,7 +270,7 @@ void OMR::CodeCacheManager::unreserveCodeCache(TR::CodeCache *codeCache)
 // The ID of the thread that last reserved the cache will remain written after the
 // reservation is over. This will allow us to implement some affinity.
 //
-// If TR_RetryCodeCacheAllocAndIgnoreKind is set, this method will retry the
+// If TR_AlwaysObeyCodeCacheKind is not set, this method will retry the
 // reservation ignoring the kind; however, on the retry it will skip trying to
 // allocate a new code cache. This is because, on the first attempt, if we
 // failed to reserve a new code cache, we would try to allocate a new code
@@ -284,7 +284,7 @@ TR::CodeCache *OMR::CodeCacheManager::reserveCodeCache(bool compilationCodeAlloc
         compThreadID, numReserved, kind, false /* ignoreKindAndSkipAllocate */);
 
     if (!codeCache && !self()->codeCacheFull()
-        && TR::Options::getCmdLineOptions()->getOption(TR_RetryCodeCacheAllocAndIgnoreKind)) {
+        && !TR::Options::getCmdLineOptions()->getOption(TR_AlwaysObeyCodeCacheKind)) {
         codeCache = reserveCodeCacheImpl(compilationCodeAllocationsMustBeContiguous, sizeEstimate, compThreadID,
             numReserved, kind, true /* ignoreKindAndSkipAllocate */);
     }
