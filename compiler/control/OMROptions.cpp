@@ -2382,7 +2382,7 @@ const char *OMR::Options::setRegex(const char *option, void *base, TR::OptionTab
     TR::SimpleRegex *regex = TR::SimpleRegex::create(option);
     *((TR::SimpleRegex **)((char *)base + entry->parm1)) = regex;
     if (!regex)
-        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", option);
+        fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", option);
     return option;
 }
 
@@ -2391,7 +2391,7 @@ const char *OMR::Options::setStaticRegex(const char *option, void *base, TR::Opt
     TR::SimpleRegex *regex = TR::SimpleRegex::create(option);
     *((TR::SimpleRegex **)entry->parm1) = regex;
     if (!regex)
-        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", option);
+        fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", option);
     return option;
 }
 
@@ -3858,11 +3858,7 @@ bool OMR::Options::validateOptionsTables(void *feBase, TR_FrontEnd *fe)
             TR_ASSERT(categories[i], "No category for help text");
         }
         if (_numJitEntries > 0 && stricmp_ignore_locale((opt - 1)->name, opt->name) >= 0) {
-            TR_VerboseLog::CriticalSection vlogLock;
-            TR_VerboseLog::write(TR_Vlog_FAILURE, "JIT option table entries out of order: ");
-            TR_VerboseLog::write((opt - 1)->name);
-            TR_VerboseLog::write(", ");
-            TR_VerboseLog::writeLine(opt->name);
+            fprintf(stderr, "JIT option table entries out of order: %s, %s\n", (opt - 1)->name, opt->name);
             return false;
         }
 #endif
@@ -3880,11 +3876,7 @@ bool OMR::Options::validateOptionsTables(void *feBase, TR_FrontEnd *fe)
             TR_ASSERT(categories[i], "No category for help text");
         }
         if (_numVmEntries > 0 && stricmp_ignore_locale((opt - 1)->name, opt->name) >= 0) {
-            TR_VerboseLog::CriticalSection vlogLock;
-            TR_VerboseLog::writeLine(TR_Vlog_FAILURE, "FE option table entries out of order: ");
-            TR_VerboseLog::write((opt - 1)->name);
-            TR_VerboseLog::write(", ");
-            TR_VerboseLog::write(opt->name);
+            fprinf(stderr, "JIT option table entries out of order: %s, %s\n", (opt - 1)->name, opt->name);
             return false;
         }
 #endif
@@ -3986,7 +3978,7 @@ const char *OMR::Options::processOptionSet(const char *options, TR::OptionSet *o
 
                 methodRegex = TR::SimpleRegex::create(endOpt);
                 if (!methodRegex) {
-                    TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", endOpt);
+                    fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", endOpt);
                     return options;
                 }
 
@@ -3995,7 +3987,7 @@ const char *OMR::Options::processOptionSet(const char *options, TR::OptionSet *o
                 if (*endOpt == '{') {
                     optLevelRegex = TR::SimpleRegex::create(endOpt);
                     if (!optLevelRegex) {
-                        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", endOpt);
+                        fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", endOpt);
                         return options;
                     }
                 } else {
@@ -4114,7 +4106,7 @@ const char *OMR::Options::processOptionSet(const char *options, TR::OptionSet *o
             endOpt = (char *)TR::Options::processOption(options, _jitOptions, jitBase, _numJitEntries, optionSet);
 
             if (!endOpt) {
-                TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Unable to allocate option string");
+                fprintf(stderr, "FAILURE: Unable to allocate option string");
                 return options;
             }
 
@@ -4122,7 +4114,7 @@ const char *OMR::Options::processOptionSet(const char *options, TR::OptionSet *o
                 = TR::Options::processOption(options, TR::Options::_feOptions, _feBase, _numVmEntries, optionSet);
 
             if (!feEndOpt) {
-                TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Unable to allocate option string");
+                fprintf(stderr, "FAILURE: Unable to allocate option string");
                 return options;
             }
 
@@ -4131,7 +4123,7 @@ const char *OMR::Options::processOptionSet(const char *options, TR::OptionSet *o
             // option.
             //
             if (feEndOpt != options && optionSet) {
-                TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Option not allowed in option subset");
+                fprintf(stderr, "FAILURE: Option not allowed in option subset");
                 return options;
             }
 
@@ -4264,7 +4256,7 @@ const char *OMR::Options::processOption(const char *startOption, TR::OptionTable
     //
     if (optionSet) {
         if (opt->msgInfo & NOT_IN_SUBSET) {
-            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Option not allowed in option subset");
+            fprintf(stderr, "FAILURE: Option not allowed in option subset");
             opt->msgInfo = 0;
             return startOption;
         }
@@ -4284,7 +4276,7 @@ const char *OMR::Options::processOption(const char *startOption, TR::OptionTable
     if (negate) {
         processingMethod = TR::Options::negateProcessingMethod(opt->fcn);
         if (!processingMethod) {
-            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "'!' is not supported for this option");
+            fprintf(stderr, "FAILURE: '!' is not supported for this option");
             opt->msgInfo = 0;
             return startOption;
         }
@@ -4331,8 +4323,7 @@ bool OMR::Options::jitPostProcess()
         if (_debug)
             self()->openLogFile();
     } else if (self()->requiresLogFile()) {
-        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE,
-            "Log file option must be specified when a trace options is used: log=<filename>");
+        fprintf(stderr, "FAILURE: Log file option must be specified when a trace options is used: log=<filename>\n");
         return false;
     }
 
@@ -4916,12 +4907,12 @@ const char *OMR::Options::setCounts()
         _initialColdRunBCount = std::min(TR_INITIAL_COLDRUN_BCOUNT, _initialBCount);
 
     if (!_countString) {
-        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Count string could not be allocated");
+        fprintf(stderr, "FAILURE: Count string could not be allocated");
         return dummy_string;
     }
 
     if (_initialCount == -1 || _initialBCount == -1 || _initialMILCount == -1) {
-        TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad string count: '%s'", _countString);
+        fprintf(stderr, "FAILURE: Bad string count: '%s'", _countString);
         return _countString;
     }
 
@@ -5209,7 +5200,7 @@ const char *OMR::Options::setAddressEnumerationBits(const char *option, void *ba
 
         TR::SimpleRegex *regex = _debug ? TR::SimpleRegex::create(option) : 0;
         if (!regex)
-            TR_VerboseLog::writeLine(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", option);
+            fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", option);
         else {
             if (TR::SimpleRegex::matchIgnoringLocale(regex, "block")) {
                 *((int32_t *)((char *)base + entry->parm1)) |= TR_EnumerateBlock;
@@ -5269,9 +5260,9 @@ const char *OMR::Options::setBitsFromStringSet(const char *option, void *base, T
         *((int32_t *)((char *)base + entry->parm1)) = 0x1; // enable basic tracing is any set is provided
 
         TR::SimpleRegex *regex = _debug ? TR::SimpleRegex::create(option) : 0;
-        if (!regex)
-            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", option);
-        else {
+        if (!regex) {
+            fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", option);
+        } else {
             for (i = 0; _optionStringToBitMapping[i].bitValue != 0; i++) {
                 if (TR::SimpleRegex::matchIgnoringLocale(regex, _optionStringToBitMapping[i].bitName)) {
                     *((int32_t *)((char *)base + entry->parm1)) |= _optionStringToBitMapping[i].bitValue;
@@ -5295,7 +5286,7 @@ const char *OMR::Options::clearBitsFromStringSet(const char *option, void *base,
     } else {
         TR::SimpleRegex *regex = TR::SimpleRegex::create(option);
         if (!regex)
-            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", option);
+            fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'", option);
         else {
             for (i = 0; _optionStringToBitMapping[i].bitValue != 0; i++) {
                 if (TR::SimpleRegex::matchIgnoringLocale(regex, _optionStringToBitMapping[i].bitName)) {
@@ -5325,7 +5316,7 @@ const char *OMR::Options::configureOptReporting(const char *option, void *base, 
             options->setOption(TR_CountOptTransformations);
             TR::SimpleRegex *regex = _debug ? TR::SimpleRegex::create(option) : 0;
             if (!regex)
-                TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression --> '%s'", option);
+                fprintf(stderr, "FAILURE: Bad regular expression --> '%s'", option);
             else
                 options->_verboseOptTransformationsRegex = regex;
             break;
