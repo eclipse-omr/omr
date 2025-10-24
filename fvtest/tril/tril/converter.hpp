@@ -26,55 +26,66 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "state.hpp"
 
-#define TraceEnabled    (state->comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(state->comp(), m, ##__VA_ARGS__);}}
+#define TraceEnabled (state->comp()->getOption(TR_TraceILGen))
+#define TraceIL(m, ...)                                     \
+    {                                                       \
+        if (TraceEnabled) {                                 \
+            state->comp()->log()->printf(m, ##__VA_ARGS__); \
+        }                                                   \
+    }
 
 namespace Tril {
 
 class ASTToTRNode {
-    public:
-        /**
-         * @brief Given an AST structure and corresponding IlGenState, returns the basic TR::Node
-         * @param tree the AST structure
-         * @param state the object that encapsulating the IL generator state
-         * @return TR::Node represented by the AST
-         */
-        TR::Node* convert(const ASTNode* tree, IlGenState* state) {
-            auto n = impl(tree, state);
-            if (n == NULL && next != NULL) {
-                return next->convert(tree, state);
-            } else {
-                return n;
-            }
+public:
+    /**
+     * @brief Given an AST structure and corresponding IlGenState, returns the basic TR::Node
+     * @param tree the AST structure
+     * @param state the object that encapsulating the IL generator state
+     * @return TR::Node represented by the AST
+     */
+    TR::Node *convert(const ASTNode *tree, IlGenState *state)
+    {
+        auto n = impl(tree, state);
+        if (n == NULL && next != NULL) {
+            return next->convert(tree, state);
+        } else {
+            return n;
         }
-        /**
-         * @brief Constructs a ASTNode to TRNode
-         * @param n is the next object that gets a chance to convert the AST node if the current on fails
-         */
-        explicit ASTToTRNode(ASTToTRNode* n = NULL) : next(n) {}
+    }
 
-    protected:
-        /**
-         * @brief Generates the TR::Node based on the opcode type of the given AST structure
-         * @param tree the AST structure
-         * @param state the object that encapsulating the IL generator state
-         * @return TR::Node represented by the AST
-         */
-        virtual TR::Node* impl(const ASTNode* tree, IlGenState* state) = 0;
-    
-    private:
-        ASTToTRNode* next;
+    /**
+     * @brief Constructs a ASTNode to TRNode
+     * @param n is the next object that gets a chance to convert the AST node if the current on fails
+     */
+    explicit ASTToTRNode(ASTToTRNode *n = NULL)
+        : next(n)
+    {}
+
+protected:
+    /**
+     * @brief Generates the TR::Node based on the opcode type of the given AST structure
+     * @param tree the AST structure
+     * @param state the object that encapsulating the IL generator state
+     * @return TR::Node represented by the AST
+     */
+    virtual TR::Node *impl(const ASTNode *tree, IlGenState *state) = 0;
+
+private:
+    ASTToTRNode *next;
 };
 
 class ILGenError {
-    private:
-        std::string message;
+private:
+    std::string message;
 
-    public:
-        explicit ILGenError(std::string message) : message(message) {}
+public:
+    explicit ILGenError(std::string message)
+        : message(message)
+    {}
 
-        const std::string &what() { return message; }
+    const std::string &what() { return message; }
 };
 
-}
+} // namespace Tril
 #endif

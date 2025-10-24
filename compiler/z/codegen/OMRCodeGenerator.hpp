@@ -118,6 +118,7 @@ namespace TR {
 class CodeGenerator;
 class Instruction;
 class LabelSymbol;
+class Logger;
 class MemoryReference;
 class Optimizer;
 class RegStarRef;
@@ -552,7 +553,7 @@ public:
 
     bool doRematerialization() { return true; }
 
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(TR::Logger *log);
 
     bool getSupportsBitOpCodes() { return true; }
 

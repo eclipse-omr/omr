@@ -78,4 +78,3 @@ TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt) = TR::IO::
 void (*trfclose)(TR::FILE *fileId) = TR::IO::fclose;
 void (*trfflush)(TR::FILE *fileId) = TR::IO::fflush;
 int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...) = TR::IO::fprintf;
-int32_t (*trprintf)(const char *format, ...) = TR::IO::printf;

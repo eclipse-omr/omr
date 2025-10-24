@@ -74,7 +74,6 @@ extern TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt);
 extern void (*trfclose)(TR::FILE *fileId);
 extern void (*trfflush)(TR::FILE *fileId);
 extern int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...);
-extern int32_t (*trprintf)(const char *format, ...);
 
 namespace OMR {
 

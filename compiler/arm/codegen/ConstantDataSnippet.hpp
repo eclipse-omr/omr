@@ -33,8 +33,9 @@
 #include "infra/List.hpp"
 
 namespace TR {
+class Logger;
 class Node;
-}
+} // namespace TR
 
 namespace TR {
 
@@ -115,7 +116,7 @@ public:
     TR::CodeGenerator *cg() { return _cg; }
 
 #ifdef DEBUG
-    virtual void print(TR::FILE *outFile);
+    virtual void print(TR::Logger *log);
 #endif
 };
 

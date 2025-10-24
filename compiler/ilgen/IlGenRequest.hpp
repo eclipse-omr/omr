@@ -33,6 +33,7 @@ class TR_InlineBlocks;
 namespace TR {
 class Compilation;
 class IlGeneratorMethodDetails;
+class Logger;
 class ResolvedMethodSymbol;
 class SymbolReferenceTable;
 } // namespace TR
@@ -65,7 +66,7 @@ public:
     virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab);
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix);
+    virtual void print(TR::Logger *log, TR_FrontEnd *fe, const char *suffix);
 };
 
 class InliningIlGenRequest : public IlGenRequest {
@@ -83,7 +84,7 @@ public:
     virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab);
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix);
+    virtual void print(TR::Logger *log, TR_FrontEnd *fe, const char *suffix);
 };
 
 class PartialInliningIlGenRequest : public InliningIlGenRequest {
@@ -100,7 +101,7 @@ public:
     virtual TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab);
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix);
+    virtual void print(TR::Logger *log, TR_FrontEnd *fe, const char *suffix);
 };
 
 } // namespace TR

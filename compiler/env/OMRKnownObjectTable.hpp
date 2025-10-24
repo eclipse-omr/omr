@@ -45,6 +45,7 @@ class TR_FrontEnd;
 namespace TR {
 class Compilation;
 class KnownObjectTable;
+class Logger;
 } // namespace TR
 
 namespace OMR {
@@ -83,7 +84,7 @@ public:
     uintptr_t *getPointerLocation(Index index);
     bool isNull(Index index);
 
-    void dumpTo(TR::FILE *file, TR::Compilation *comp);
+    void dumpTo(TR::Logger *log, TR::Compilation *comp);
 
     // Handy wrappers
 

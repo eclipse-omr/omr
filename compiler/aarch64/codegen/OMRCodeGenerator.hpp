@@ -53,6 +53,7 @@ class ARM64LinkageProperties;
 class ARM64ConstantDataSnippet;
 class RegisterDependencyConditions;
 class DebugCounterBase;
+class Logger;
 } // namespace TR
 
 /**
@@ -241,9 +242,9 @@ public:
 
     /**
      * @brief Dumps data snippets
-     * @param[in] outFile : FILE for output
+     * @param[in] log : TR::Logger for output
      */
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(TR::Logger *log);
 
     /**
      * @brief Generates switch-to-interpreter pre-prologue

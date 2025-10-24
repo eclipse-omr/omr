@@ -44,6 +44,7 @@ typedef OMR::Z::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
 namespace TR {
 class Instruction;
 class FunctionCallData;
+class Logger;
 } // namespace TR
 
 namespace OMR { namespace Z {
@@ -56,7 +57,7 @@ public:
 
     virtual int32_t estimateBinaryLength() { return 8; }
 
-    virtual uint8_t *printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data);
+    virtual uint8_t *printEncodedFunctionCall(TR::Logger *log, TR::FunctionCallData &data);
 
     struct ccGlobalFunctionData {
         uintptr_t address;

@@ -29,6 +29,7 @@ compiler_library(ras
 	${CMAKE_CURRENT_LIST_DIR}/ILValidator.cpp
 	${CMAKE_CURRENT_LIST_DIR}/IgnoreLocale.cpp
 	${CMAKE_CURRENT_LIST_DIR}/LimitFile.cpp
+	${CMAKE_CURRENT_LIST_DIR}/Logger.cpp
 	${CMAKE_CURRENT_LIST_DIR}/LogTracer.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OptionsDebug.cpp
 	${CMAKE_CURRENT_LIST_DIR}/Tree.cpp

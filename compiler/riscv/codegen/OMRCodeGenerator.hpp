@@ -49,6 +49,7 @@ class TR_RVOutOfLineCodeSection;
 namespace TR {
 class RVLinkageProperties;
 class ConstantDataSnippet;
+class Logger;
 } // namespace TR
 
 /**
@@ -131,9 +132,9 @@ public:
 #ifdef DEBUG
     /**
      * @brief Dumps data snippets
-     * @param[in] outFile : FILE for output
+     * @param[in] log : TR::Logger for output
      */
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(TR::Logger *log);
 #endif
 
     /**
