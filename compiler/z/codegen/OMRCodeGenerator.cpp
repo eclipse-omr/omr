@@ -4422,6 +4422,9 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vxor:
         case TR::vor:
         case TR::vand:
+        case TR::vmxor:
+        case TR::vmor:
+        case TR::vmand:
         case TR::vnotz:
         case TR::vnolz:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Int64)
@@ -4436,6 +4439,8 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
                 return false;
         case TR::vmax:
         case TR::vmin:
+        case TR::vmmax:
+        case TR::vmmin:
             if ((et == TR::Float || et == TR::Double)
                 && !cpu->supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1))
                 return false;
