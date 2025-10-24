@@ -4014,6 +4014,14 @@ void TR::GlobalValuePropagation::processNaturalLoop(TR_StructureSubGraphNode *no
         printStructureInfo(node->getStructure(), false, lastTimeThrough);
 
     _loopInfo = parentLoopInfo;
+    if (!insideLoop) {
+        // _curDefinedOnAllPaths is meant to tell us whether it's safe to ignore
+        // back-edge constraints when considering a load within a loop. For code
+        // outside of any loop, it's not kept up to date correctly, and if it's
+        // left in place, stale information from loop processing can interfere
+        // with optimization outside.
+        _curDefinedOnAllPaths = NULL;
+    }
 }
 
 void TR::GlobalValuePropagation::processImproperLoop(TR_StructureSubGraphNode *node, bool lastTimeThrough,
