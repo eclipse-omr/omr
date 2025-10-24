@@ -118,7 +118,7 @@ TR_FilterBST *TR_Debug::addFilter(const char *&filterString, int32_t scanningExc
         //
         TR::SimpleRegex *regex = TR::SimpleRegex::create(filterCursor);
         if (!regex) {
-            TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE, "Bad regular expression at --> '%s'", filterCursor);
+            fprintf(stderr, "FAILURE: Bad regular expression at --> '%s'\n", filterCursor);
             return 0;
         }
         nameLength = static_cast<int32_t>(filterCursor - filterString);
