@@ -140,11 +140,27 @@ public:
     virtual int32_t prints(const char *string) = 0;
 
     /**
+     * @brief Send a raw `\0`-terminated string to the Logger.
+     *
+     * @return the exact number of characters written on success, or a negative
+     *     value on any error
+     */
+    virtual int32_t prints_len(const char *string);
+
+    /**
      * @brief Send a single `char` to the Logger.
      *
      * @return a nonnegative number on success, or a negative value on any error
      */
     virtual int32_t printc(char c) = 0;
+
+    /**
+     * @brief Send a single `char` to the Logger.
+     *
+     * @return 1 on success (number of chars written), or a negative value on
+     *     any error
+     */
+    virtual int32_t printc_len(char c);
 
     /**
      * @brief
