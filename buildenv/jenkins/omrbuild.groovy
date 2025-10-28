@@ -111,7 +111,7 @@ SPECS = [
         'buildSystem' : 'cmake',
         'builds' : [
             [
-                'buildDir' : autoconfBuildDir,
+                'buildDir' : cmakeBuildDir,
                 'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
                 'compile' : defaultCompile
             ]
@@ -130,7 +130,7 @@ SPECS = [
         'buildSystem' : 'cmake',
         'builds' : [
             [
-                'buildDir' : autoconfBuildDir,
+                'buildDir' : cmakeBuildDir,
                 'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
                 'compile' : defaultCompile
             ]
