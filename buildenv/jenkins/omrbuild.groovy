@@ -112,7 +112,7 @@ SPECS = [
         'builds' : [
             [
                 'buildDir' : autoconfBuildDir,
-                'configureArgs' : 'SPEC=linux_aarch64',
+                'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
                 'compile' : defaultCompile
             ]
         ],
@@ -131,7 +131,7 @@ SPECS = [
         'builds' : [
             [
                 'buildDir' : autoconfBuildDir,
-                'configureArgs' : 'SPEC=linux_arm',
+                'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
                 'compile' : defaultCompile
             ]
         ],
