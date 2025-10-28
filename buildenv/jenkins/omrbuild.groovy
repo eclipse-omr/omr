@@ -105,8 +105,7 @@ SPECS = [
         'reference' : defaultReference,
         'environment' : [
             'PATH+CCACHE=/usr/lib/ccache/',
-            'PLATFORM=aarch64-linux-gcc',
-            'CHOST=aarch64-linux-gnu'
+            'GTEST_COLOR=0'
         ],
         'ccache' : true,
         'buildSystem' : 'autoconf',
@@ -125,8 +124,7 @@ SPECS = [
         'reference' : defaultReference,
         'environment' : [
             'PATH+CCACHE=/usr/lib/ccache/',
-            'PLATFORM=arm-linux-gcc',
-            'CHOST=arm-linux-gnueabihf'
+            'GTEST_COLOR=0'
         ],
         'ccache' : true,
         'buildSystem' : 'autoconf',
