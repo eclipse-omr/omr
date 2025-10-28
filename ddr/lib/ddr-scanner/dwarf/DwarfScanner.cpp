@@ -925,7 +925,9 @@ DwarfScanner::getOrCreateNewType(Dwarf_Die die, Dwarf_Half tag, Type **newType, 
 	string dieName = "";
 	Dwarf_Off dieOffset = 0;
 	DDR_RC rc = getName(die, &dieName, &dieOffset);
-
+	if (dieName == "CharacterString") {
+		printf("gc-dieName: %s\n", dieName.c_str());
+	}
 	if (DDR_RC_OK == rc) {
 		unordered_map<Dwarf_Off, Type *>::const_iterator it = _typeOffsetMap.find(dieOffset);
 		if (_typeOffsetMap.end() != it) {
@@ -1660,17 +1662,33 @@ DwarfScanner::getSuperUDT(Dwarf_Die die, ClassUDT *udt)
 	DDR_RC rc = DDR_RC_ERROR;
 	Dwarf_Half tag = 0;
 	Dwarf_Die superTypeDie = NULL;
-
-	if (DDR_RC_OK == getTypeTag(die, &superTypeDie, &tag)) {
-		ClassUDT *superUDT = NULL;
-		/* Get the super udt. */
-		if ((DDR_RC_OK == addDieToIR(superTypeDie, tag, NULL, (Type **)&superUDT))
-				&& (NULL != superUDT)) {
-			rc = DDR_RC_OK;
-			udt->_superClass = superUDT;
-		}
+	Dwarf_Die currentDie = die;
+	ClassUDT *superUDT = NULL;
+	do {
+		rc = DDR_RC_ERROR;
 		dwarf_dealloc(_debug, superTypeDie, DW_DLA_DIE);
+		tag = 0;
+		superTypeDie = NULL;
+		superUDT = NULL;
+		string dieName = "";
+		if (currentDie == NULL) {
+			getName(die, &dieName);
+			printf("gc-getSuperUDT::currentDie= %s\n", dieName.c_str());
+		}
+		if (DDR_RC_OK == getTypeTag(currentDie, &superTypeDie, &tag)) {
+			/* Get the super udt. */
+			rc = addDieToIR(superTypeDie, tag, NULL, (Type **)&superUDT);
+			currentDie = superTypeDie;
+		} else {
+			printf("gc-getSuperUDT(FAIL): Cannot getTypeTag\n");
+			return rc;
+		}
+	} while (tag == DW_TAG_typedef);
+
+	if ((DDR_RC_OK == rc) && (NULL != superUDT)) {
+		udt->_superClass = superUDT;
 	}
+	dwarf_dealloc(_debug, superTypeDie, DW_DLA_DIE);
 	return rc;
 }
 
@@ -1806,7 +1824,7 @@ DwarfScanner::startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir, vector<strin
 		for (vector<string>::iterator it = debugFiles->begin(); it != debugFiles->end(); ++it, currentIndex++) {
 			Symbol_IR newIR(ir);
 			printf("Scanning files:\n");
-			printf("gc-scanFile(%u/%u): %s\n", (unsigned int)currentIndex, (unsigned int)totalFiles, it->c_str());
+			//printf("gc-scanFile(%u/%u): %s\n", (unsigned int)currentIndex, (unsigned int)totalFiles, it->c_str());
 			//printf("totals: %s\n", totalFiles);
 			//printf("totalzu: %u\n", (unsigned int)totalFiles);
 			//printf("totalld: %ld\n", totalFiles);
@@ -1818,7 +1836,7 @@ DwarfScanner::startScan(OMRPortLibrary *portLibrary, Symbol_IR *ir, vector<strin
 			//DEBUGPRINTF("total-DEBUGPRINTld: %ld\n", totalFiles);
 			rc = scanFile(portLibrary, &newIR, it->c_str());
 			if (DDR_RC_OK != rc) {
-				if (rc == -1) {
+				if (rc == DDR_RC_ERROR) {
 					// empty dwo, continue
 					 printf("gc-scanFile SKIPPING EMPTY: %s\n", it->c_str());
 					continue;
