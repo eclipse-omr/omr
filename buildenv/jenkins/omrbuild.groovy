@@ -116,7 +116,9 @@ SPECS = [
                 'compile' : defaultCompile
             ]
         ],
-        'test' : false
+        'test' : true,
+        'testArgs' : '',
+        'junitPublish' : true
     ],
     'linux_arm' : [
         'alias': 'arm',
@@ -135,7 +137,9 @@ SPECS = [
                 'compile' : defaultCompile
             ]
         ],
-        'test' : false
+        'test' : true,
+        'testArgs' : '',
+        'junitPublish' : true
     ],
     'linux_ppc-64_le_gcc' : [
         'alias': 'plinux',
