@@ -108,7 +108,7 @@ SPECS = [
             'GTEST_COLOR=0'
         ],
         'ccache' : true,
-        'buildSystem' : 'autoconf',
+        'buildSystem' : 'cmake',
         'builds' : [
             [
                 'buildDir' : autoconfBuildDir,
@@ -127,7 +127,7 @@ SPECS = [
             'GTEST_COLOR=0'
         ],
         'ccache' : true,
-        'buildSystem' : 'autoconf',
+        'buildSystem' : 'cmake',
         'builds' : [
             [
                 'buildDir' : autoconfBuildDir,
