@@ -44,6 +44,11 @@
 #include <sys/types.h>
 #include <vector>
 
+// For e2a_string()
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC)
+#include "atoe.h"
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
+
 using std::string;
 using std::pair;
 using std::make_pair;
@@ -804,11 +809,11 @@ BlobFieldVisitor::visitType(Type *type) const
 	size_t bitWidth = 0;
 
 	if (Type::isStandardType(typeName.c_str(), (size_t)typeName.length(), &isSigned, &bitWidth)) {
-		stringstream newType;
+		//stringstream newType;
 
-		newType << (isSigned ? "I" : "U") << bitWidth;
-
-		*_typePrefix += newType.str();
+		//newType << (isSigned ? "I" : "U") << bitWidth;
+		string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+		*_typePrefix += newType;
 	} else {
 		*_typePrefix += typeName;
 	}
@@ -856,11 +861,11 @@ BlobFieldVisitor::visitTypedef(TypedefUDT *type) const
 			size_t bitWidth = 0;
 
 			if (Type::isStandardType(fullName.c_str(), (size_t)fullName.length(), &isSigned, &bitWidth)) {
-				stringstream newType;
+				//stringstream newType;
 
-				newType << (isSigned ? "I" : "U") << bitWidth;
-
-				*_typePrefix += newType.str();
+				//newType << (isSigned ? "I" : "U") << bitWidth;
+				string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+				*_typePrefix += newType;
 			} else {
 				*_typePrefix += fullName;
 			}
@@ -918,13 +923,14 @@ JavaBlobGenerator::formatFieldType(Field *field, string *fieldType)
 	}
 
 	if ((DDR_RC_OK == rc) && (NULL != type)) {
-		stringstream bits;
-
+		//stringstream bits;
+		string bitField;
 		if (0 != field->_bitField) {
-			bits << ":" << field->_bitField;
+			//bits << ":" << field->_bitField;
+			bitField = std::string(":") + e2a_string(std::to_string(field->_bitField).c_str());
 		}
 
-		*fieldType = typePrefix + typeSuffix + bits.str();
+		*fieldType = typePrefix + typeSuffix + bitField;
 	}
 
 	return rc;
