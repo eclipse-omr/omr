@@ -1016,6 +1016,9 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "M\tdo not activate another compilation thread when high priority request is blocked", RESET_OPTION_BIT(TR_ActivateCompThreadWhenHighPriReqIsBlocked), "F", NOT_IN_SUBSET },
     { "dontAddHWPDataToIProfiler", "O\tDont add HW Data to IProfiler", SET_OPTION_BIT(TR_DontAddHWPDataToIProfiler),
      "F", NOT_IN_SUBSET },
+    { "dontCompile=",
+     "D{regex}\t regex which specifies a subset of methods not to compile. If the option is passed via -Xaot, then"
+        " it is not AOT compiled, but may be jit compiled. The converse is true for -Xjit", TR::Options::setRegex, offsetof(OMR::Options, _dontCompile), 0, "F" },
     { "dontDisclaimMemoryOnSwap",
      "M\tIf memory disclaiming is enabled, prevent disclaiming on swap. Takes precedence over "
         "-Xjit:disclaimMemoryOnSwap", SET_OPTION_BIT(TR_DontDisclaimMemoryOnSwap), "F", NOT_IN_SUBSET },
