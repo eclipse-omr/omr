@@ -615,8 +615,10 @@ typedef struct U_128 {
 
 #if defined(J9ZOS390) && !defined(OMR_EBCDIC)
 #define OMR_ISDIGIT(x) __isdigit_a(x)
+#define OMR_ISSPACE(x) __isspace_a(x)
 #else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 #define OMR_ISDIGIT(x) isdigit(x)
+#define OMR_ISSPACE(x) isspace(x)
 #endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) */
 
 #endif /* OMRCOMP_H */

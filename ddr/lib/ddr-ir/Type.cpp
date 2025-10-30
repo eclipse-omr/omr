@@ -308,20 +308,26 @@ Type::isStandardType(const char *type, size_t typeLen, bool *isSigned, size_t *b
 	 * C allows types and modifiers in any order, so we count the number of
 	 * occurrences of each word to verify the combination is reasonable.
 	 */
+	/*
+	printf("gc-stdtype-type: %s\n", type);
+	printf("gc-stdtype-typeLen: %u\n", (unsigned int)typeLen);
+	printf("gc-stdtype-isSigned: %s\n", *isSigned ? "true" : "false");
+	printf("gc-stdtype-bitWidth: %u\n", (unsigned int)*bitWidth);
+	printf("gc-stdtype-----------\n");
+	*/
 	for (const char * cursor = type; cursor < typeEnd;) {
-		if (isspace(*cursor)) {
+		if (OMR_ISSPACE(*cursor)) {
 			cursor += 1;
 			continue;
 		}
 
 		const char * const word = cursor;
 
-		while ((cursor < typeEnd) && !isspace(*cursor)) {
+		while ((cursor < typeEnd) && !OMR_ISSPACE(*cursor)) {
 			cursor += 1;
 		}
 
 		const size_t wordLen = (size_t)(cursor - word);
-
 		for (const TypeWord *typeWord = typeWords;; ++typeWord) {
 			if (NULL == typeWord->name) {
 				/* unrecognized word */
@@ -365,7 +371,6 @@ Type::isStandardType(const char *type, size_t typeLen, bool *isSigned, size_t *b
 			break;
 		}
 	}
-
 	if (num[TK_signed] + num[TK_unsigned] > 1) {
 		/* at most one of 'signed' or 'unsigned' is allowed */
 		goto fail;
