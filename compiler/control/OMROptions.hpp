@@ -1464,6 +1464,7 @@ public:
         _disabledIdiomPatterns = NULL;
         _suppressEA = NULL;
         _dontFoldStaticFinalFields = NULL;
+        _dontCompile = NULL;
         _gcCardSize = 0;
         _heapBase = 0;
         _heapTop = 0;
@@ -1889,6 +1890,8 @@ public:
     TR::SimpleRegex *getSuppressEARegex() { return _suppressEA; }
 
     TR::SimpleRegex *getDontFoldStaticFinalFields() { return _dontFoldStaticFinalFields; }
+
+    TR::SimpleRegex *getDontCompile() { return _dontCompile; }
 
     char *getInduceOSR() { return _induceOSR; }
 
@@ -2697,6 +2700,7 @@ protected:
     TR::SimpleRegex *_disabledIdiomPatterns;
     TR::SimpleRegex *_suppressEA;
     TR::SimpleRegex *_dontFoldStaticFinalFields;
+    TR::SimpleRegex *_dontCompile;
     uintptr_t _gcCardSize;
     uintptr_t _heapBase;
     uintptr_t _heapTop;
