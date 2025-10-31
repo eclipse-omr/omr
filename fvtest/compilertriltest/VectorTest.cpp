@@ -22,6 +22,7 @@
 #include "JitTest.hpp"
 #include "default_compiler.hpp"
 #include "compilerunittest/CompilerUnitTest.hpp"
+#include "VectorTestUtils.hpp"
 
 #define MAX(x, y) (x > y) ? x : y
 #define ABS(x) (x < 0) ? -x : x
@@ -29,108 +30,6 @@
 class VectorTest : public TRTest::JitTest {};
 
 class ParameterizedBinaryVectorArithmeticTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::ILOpCode, TR::VectorLength>> {};
-
-int vectorSize(TR::VectorLength vl) {
-    switch (vl) {
-        case TR::VectorLength64:
-            return 8;
-        case TR::VectorLength128:
-            return 16;
-        case TR::VectorLength256:
-            return 32;
-        case TR::VectorLength512:
-            return 64;
-        default:
-            TR_ASSERT_FATAL(0, "Illegal vector length");
-            return 0;
-    }
-}
-
-int typeSize(TR::DataTypes dt) {
-    switch (dt) {
-        case TR::Int8:
-            return 1;
-        case TR::Int16:
-            return 2;
-        case TR::Int32:
-            return 4;
-        case TR::Int64:
-            return 8;
-        case TR::Float:
-            return 4;
-        case TR::Double:
-            return 8;
-        default:
-            TR_ASSERT_FATAL(0, "Illegal data type");
-            return 0;
-    }
-}
-
-void compareResults(void *expected, void *actual, TR::DataTypes dt, TR::VectorLength vl, bool isReduction = false) {
-    int elementBytes = typeSize(dt);
-    int lengthBytes = isReduction ? elementBytes : vectorSize(vl);
-
-    for (int i = 0; i < lengthBytes; i += elementBytes) {
-        switch (dt) {
-            case TR::Int8:
-                EXPECT_EQ(*((int8_t *) expected), *((int8_t *) actual));
-                break;
-            case TR::Int16:
-                EXPECT_EQ(*((int16_t *) expected), *((int16_t *) actual));
-                break;
-            case TR::Int32:
-                EXPECT_EQ(*((int32_t *) expected), *((int32_t *) actual));
-                break;
-            case TR::Int64:
-                EXPECT_EQ(*((int64_t *) expected), *((int64_t *) actual));
-                break;
-            case TR::Float:
-                if (std::isnan(*((float *) expected)))
-                    EXPECT_TRUE(std::isnan(*((float *) actual))) << "Expected NaN but got " << *((float *) actual);
-                else
-                    EXPECT_FLOAT_EQ(*((float *) expected), *((float *) actual));
-                break;
-            case TR::Double:
-                if (std::isnan(*((double *) expected)))
-                    EXPECT_TRUE(std::isnan(*((double *) actual))) << "Expected NaN but got " << *((double *) actual);
-                else
-                    EXPECT_DOUBLE_EQ(*((double *) expected), *((double *) actual));
-                break;
-            default:
-                TR_ASSERT_FATAL(0, "Illegal type to compare");
-                break;
-        }
-        expected = static_cast<char *>(expected) + elementBytes;
-        actual = static_cast<char *>(actual) + elementBytes;
-    }
-}
-
-void generateByType(void *output, TR::DataType dt, bool nonZero) {
-    switch (dt) {
-        case TR::Int8:
-            *((int8_t *) output) = -128 + static_cast<int8_t>(rand() % 255);
-            if (nonZero && *((int8_t *) output) == 0) *((int8_t *) output) = 1;
-            break;
-        case TR::Int16:
-            *((int16_t *) output) = -200 + static_cast<int16_t>(rand() % 400);
-            if (nonZero && *((int16_t *) output) == 0) *((int16_t *) output) = 1;
-            break;
-        case TR::Int32:
-            *((int32_t *) output) = -1000 + static_cast<int32_t>(rand() % 2000);
-            if (nonZero && *((int32_t *) output) == 0) *((int32_t *) output) = 1;
-            break;
-        case TR::Int64:
-            *((int64_t *) output) = -1000 + static_cast<int64_t>(rand() % 2000);
-            if (nonZero && *((int64_t *) output) == 0) *((int64_t *) output) = 1;
-            break;
-        case TR::Float:
-            *((float *) output) = static_cast<float>(rand() / 1000.0);
-            break;
-        case TR::Double:
-            *((double *) output) = static_cast<double>(rand() / 1000.0);
-            break;
-    }
-}
 
 void generateIO(TR::ILOpCode scalarOpcode, TR::VectorLength vl, void *output, void *inputA, void *inputB) {
     TR::ILOpCode vectorOpcode = OMR::ILOpCode::convertScalarToVector(scalarOpcode.getOpCodeValue(), vl);
@@ -177,8 +76,8 @@ void generateIO(TR::ILOpCode scalarOpcode, TR::VectorLength vl, void *output, vo
 
     ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
 
-    int numBytes = vectorSize(vl);
-    int elementSize = typeSize(elementType.getDataType());
+    int numBytes = TRTest::vectorSize(vl);
+    int elementSize = TRTest::typeSize(elementType.getDataType());
 
     int numElements = numBytes / elementSize;
 
@@ -189,8 +88,8 @@ void generateIO(TR::ILOpCode scalarOpcode, TR::VectorLength vl, void *output, vo
         void *outOff = output;
 
         for (int i = 0; i < numElements; i++) {
-            generateByType(aOff, elementType, scalarOpcode.isDiv());
-            generateByType(bOff, elementType, scalarOpcode.isDiv());
+            TRTest::generateByType(aOff, elementType, scalarOpcode.isDiv());
+            TRTest::generateByType(bOff, elementType, scalarOpcode.isDiv());
 
             entry_point(outOff, aOff, bOff);
 
@@ -204,7 +103,7 @@ void generateIO(TR::ILOpCode scalarOpcode, TR::VectorLength vl, void *output, vo
         void *outOff = output;
 
         for (int i = 0; i < numElements; i++) {
-            generateByType(aOff, elementType, scalarOpcode.isDiv());
+            TRTest::generateByType(aOff, elementType, scalarOpcode.isDiv());
             entry_point(outOff, aOff);
 
             aOff = static_cast<char *>(aOff) + elementSize;
@@ -223,7 +122,7 @@ void generateAndExecuteVectorTest(TR::ILOpCode vectorOpcode, void *expected, voi
     char type[64];
     char inputTrees[1024];
 
-    std::snprintf(type, sizeof(type), "Vector%i%s", vectorSize(vl) * 8, TR::DataType::getName(elementType));
+    std::snprintf(type, sizeof(type), "Vector%i%s", TRTest::vectorSize(vl) * 8, TR::DataType::getName(elementType));
 
     if (vectorOpcode.expectedChildCount() == 1) {
         std::snprintf(inputTrees, sizeof(inputTrees),
@@ -305,7 +204,7 @@ void generateAndExecuteVectorTest(TR::ILOpCode vectorOpcode, void *expected, voi
         entry_point(result, inputA, inputB, inputC);
     }
 
-    compareResults(expected, result, elementType.getDataType(), vl, vectorOpcode.isVectorReduction());
+    TRTest::compareResults(expected, result, elementType.getDataType(), vl, vectorOpcode.isVectorReduction());
 }
 
 TEST_P(ParameterizedBinaryVectorArithmeticTest, VLoadStore) {
@@ -325,7 +224,7 @@ TEST_P(ParameterizedBinaryVectorArithmeticTest, VLoadStore) {
     TR::ILOpCode storeOp = TR::ILOpCode::createVectorOpCode(TR::vstorei, vt);
 
     char type[64];
-    std::snprintf(type, sizeof(type), "Vector%i%s", vectorSize(vl) * 8, TR::DataType::getName(elementType));
+    std::snprintf(type, sizeof(type), "Vector%i%s", TRTest::vectorSize(vl) * 8, TR::DataType::getName(elementType));
 
     TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
     bool platformSupport = TR::CodeGenerator::getSupportsOpCodeForAutoSIMD(&cpu, loadOp) &&
@@ -545,9 +444,9 @@ TEST_P(ParameterizedVectorTest, VSplats) {
     char expected[maxVectorLength] = {0};
     char input[maxVectorLength] = {0};
 
-    int etSize = typeSize(et);
-    int vlSize = vectorSize(vl);
-    generateByType(input, et, false);
+    int etSize = TRTest::typeSize(et);
+    int vlSize = TRTest::vectorSize(vl);
+    TRTest::generateByType(input, et, false);
 
     for (int i = 0; i < vlSize; i += etSize) {
         memcpy(expected + i, input, etSize);

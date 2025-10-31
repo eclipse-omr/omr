@@ -7536,7 +7536,78 @@ TR::Register *OMR::X86::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::C
 
 TR::Register *OMR::X86::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::DataType et = node->getDataType().getVectorElementType();
+    TR::VectorLength vl = node->getDataType().getVectorLength();
+
+    TR::Node *lhsNode = node->getFirstChild();
+    TR::Node *rhsNode = node->getSecondChild();
+    TR::Node *maskNode = node->getThirdChild();
+
+    TR::Register *lhsReg = cg->evaluate(lhsNode);
+    TR::Register *rhsReg = cg->evaluate(rhsNode);
+    TR::Register *maskReg = cg->evaluate(maskNode);
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+
+    TR::InstOpCode xorOpcode = TR::InstOpCode::PXORRegReg;
+    TR::InstOpCode andOpcode = TR::InstOpCode::PANDRegReg;
+
+    OMR::X86::Encoding xorEncoding = xorOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+    OMR::X86::Encoding andEncoding = andOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+
+    TR_ASSERT_FATAL(xorEncoding != OMR::X86::Bad, "No encoding method for pxor opcode");
+    TR_ASSERT_FATAL(andEncoding != OMR::X86::Bad, "No encoding method for pand opcode");
+
+    if (xorEncoding != Legacy) {
+        generateRegRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, lhsReg, rhsReg, cg, xorEncoding);
+    } else {
+        TR::InstOpCode movOpcode = TR::InstOpCode::MOVDQURegReg;
+        OMR::X86::Encoding movEncoding = movOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+
+        TR_ASSERT_FATAL(movEncoding != OMR::X86::Bad, "No encoding method for movdqu opcode");
+        generateRegRegInstruction(movOpcode.getMnemonic(), node, resultReg, lhsReg, cg, movEncoding);
+        generateRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, rhsReg, cg, xorEncoding);
+    }
+
+    if (maskReg->getKind() == TR_VMR) {
+        TR::InstOpCode m2vOpcode = TR::InstOpCode::bad;
+
+        switch (et) {
+            case TR::Int8:
+                m2vOpcode = TR::InstOpCode::VPMOVM2BRegReg;
+                break;
+            case TR::Int16:
+                m2vOpcode = TR::InstOpCode::VPMOVM2WRegReg;
+                break;
+            case TR::Int32:
+            case TR::Float:
+                m2vOpcode = TR::InstOpCode::VPMOVM2DRegReg;
+                break;
+            case TR::Int64:
+            case TR::Double:
+                m2vOpcode = TR::InstOpCode::VPMOVM2QRegReg;
+                break;
+            default:
+                TR_ASSERT_FATAL(false, "Unexpected lane type");
+        }
+
+        OMR::X86::Encoding m2vEncoding = m2vOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        TR::Register *tmpVectorReg = cg->allocateRegister(TR_VRF);
+
+        generateRegRegInstruction(m2vOpcode.getMnemonic(), node, tmpVectorReg, maskReg, cg, m2vEncoding);
+        generateRegRegInstruction(andOpcode.getMnemonic(), node, resultReg, tmpVectorReg, cg, xorEncoding);
+        cg->stopUsingRegister(tmpVectorReg);
+    } else {
+        generateRegRegInstruction(andOpcode.getMnemonic(), node, resultReg, maskReg, cg, andEncoding);
+    }
+
+    generateRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, lhsReg, cg, xorEncoding);
+
+    node->setRegister(resultReg);
+    cg->decReferenceCount(lhsNode);
+    cg->decReferenceCount(rhsNode);
+    cg->decReferenceCount(maskNode);
+
+    return resultReg;
 }
 
 TR::Register *OMR::X86::TreeEvaluator::vcompressbitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)

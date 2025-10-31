@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "JitTest.hpp"
+#include "VectorTestUtils.hpp"
 #include "default_compiler.hpp"
 #include "compilerunittest/CompilerUnitTest.hpp"
 
@@ -32,6 +33,8 @@ class ParameterizedMaskTest : public VectorTest, public ::testing::WithParamInte
 class ParameterizedUnaryMaskTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, int64_t (*) (bool *arr, int32_t)>> {};
 
 class ParameterizedBinaryMaskTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, uint64_t (*) (uint64_t, uint64_t, int32_t)>> {};
+
+class ParameterizedVBlendTest : public VectorTest, public ::testing::WithParamInterface<std::tuple<TR::VectorLength, TR::DataTypes>> {};
 
 enum MaskConvType {
    maskArrayLoad,
@@ -515,6 +518,114 @@ TEST_P(ParameterizedUnaryMaskTest, unaryTest) {
       EXPECT_EQ(refResult, result) << unaryMaskOp << " test failed with Input Mask: 0x" << std::hex << std::setw(8) << std::setfill('0') << bitMasks[i];
    }
 }
+
+TEST_P(ParameterizedVBlendTest, vblend) {
+   TR::VectorLength vl = std::get<0>(GetParam());
+   TR::DataTypes et = std::get<1>(GetParam());
+
+   SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
+   SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
+   SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
+
+   TR::DataType vt = TR::DataType::createVectorType(et, vl);
+   TR::DataType mt = TR::DataType::createMaskType(et, vl);
+   TR::ILOpCode loadOp = getMaskConvOpcode(maskArrayLoad, mt);
+   TR::ILOpCode blend = TR::ILOpCode::createVectorOpCode(TR::vblend, mt);
+
+   TR::ILOpCode a2m = getMaskConvOpcode(arrayToMask, mt);
+   TR::CPU cpu = TR::CPU::detect(privateOmrPortLibrary);
+   bool platformSupport = isSupported(&cpu, loadOp, a2m, blend);
+   SKIP_IF(!platformSupport, MissingImplementation) << "Opcode is not supported by the target platform";
+
+   char inputTrees[1024];
+   char bits2m[64];
+
+   char *formatStr = "(method return= NoType args=[Address,Address,Address,Address]"
+                     "  (block                                        "
+                     "     (vstorei%s offset=0                        "
+                     "        (aload parm=0)                          "
+                     "        (vblend%s                               "
+                     "              (vloadi%s (aload parm=1))         "
+                     "              (vloadi%s (aload parm=2))         "
+                     "              (%s (%s%s (aload parm=3)))))      "
+                     "     (return)))                                 ";
+
+   getOpcodeName(a2m, bits2m);
+
+   const char *arraySizeType = vt.getVectorNumLanes() > 8 ? vt.toString() : "";
+   sprintf(inputTrees, formatStr,
+           vt.toString(), vt.toString(), vt.toString(), vt.toString(),
+           bits2m,
+           loadOp.getName(), arraySizeType);
+
+   auto trees = parseString(inputTrees);
+   ASSERT_NOTNULL(trees);
+
+   Tril::DefaultCompiler compiler(trees);
+   ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+
+   auto entry_point = compiler.getEntryPoint<void (*)(void *,void *,void *,void *)>();
+   int32_t numLanes = mt.getVectorNumLanes();
+   uint32_t elementSizeBytes = TR::DataType::getSize(et);
+
+   bool inputMask[MAX_NUM_LANES] = {};
+   uint8_t inputA[MAX_NUM_LANES];
+   uint8_t inputB[MAX_NUM_LANES];
+   uint8_t expected[MAX_NUM_LANES];
+
+   void *aOff = inputA;
+   void *bOff = inputB;
+   void *expectedOff = expected;
+
+   for (int i = 0; i < numLanes; i++) {
+      TRTest::generateByType(aOff, et, false);
+      TRTest::generateByType(bOff, et, false);
+      inputMask[i] = (rand() < RAND_MAX / 2) ? true : false;
+
+      // If the lane is set, then the expected result is the second input
+      if (inputMask[i]) {
+         memcpy(expectedOff, bOff, elementSizeBytes);
+      } else {
+         memcpy(expectedOff, aOff, elementSizeBytes);
+      }
+
+      aOff = static_cast<char *>(aOff) + elementSizeBytes;
+      bOff = static_cast<char *>(bOff) + elementSizeBytes;
+      expectedOff = static_cast<char *>(expectedOff) + elementSizeBytes;
+   }
+
+   uint8_t result[MAX_NUM_LANES] = {}; // allocate proper array
+   entry_point(result, inputA, inputB, inputMask); // pass array
+
+   TRTest::compareResults(expected, result, et, vl);
+}
+
+INSTANTIATE_TEST_CASE_P(vblend128Test, ParameterizedVBlendTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes>>(
+   std::make_tuple(TR::VectorLength128, TR::Int8),
+   std::make_tuple(TR::VectorLength128, TR::Int16),
+   std::make_tuple(TR::VectorLength128, TR::Int32),
+   std::make_tuple(TR::VectorLength128, TR::Int64),
+   std::make_tuple(TR::VectorLength128, TR::Float),
+   std::make_tuple(TR::VectorLength128, TR::Double)
+)));
+
+INSTANTIATE_TEST_CASE_P(vblend256Test, ParameterizedVBlendTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes>>(
+   std::make_tuple(TR::VectorLength256, TR::Int8),
+   std::make_tuple(TR::VectorLength256, TR::Int16),
+   std::make_tuple(TR::VectorLength256, TR::Int32),
+   std::make_tuple(TR::VectorLength256, TR::Int64),
+   std::make_tuple(TR::VectorLength256, TR::Float),
+   std::make_tuple(TR::VectorLength256, TR::Double)
+)));
+
+INSTANTIATE_TEST_CASE_P(vblend512Test, ParameterizedVBlendTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes>>(
+   std::make_tuple(TR::VectorLength512, TR::Int8),
+   std::make_tuple(TR::VectorLength512, TR::Int16),
+   std::make_tuple(TR::VectorLength512, TR::Int32),
+   std::make_tuple(TR::VectorLength512, TR::Int64),
+   std::make_tuple(TR::VectorLength512, TR::Float),
+   std::make_tuple(TR::VectorLength512, TR::Double)
+)));
 
 INSTANTIATE_TEST_CASE_P(mTrueCount128ParametersTest, ParameterizedUnaryMaskTest, ::testing::ValuesIn(*TRTest::MakeVector<std::tuple<TR::VectorLength, TR::DataTypes, TR::VectorOperation, int64_t (*) (bool *arr, int32_t)>>(
    std::make_tuple(TR::VectorLength128, TR::Int8,   TR::mTrueCount, static_cast<int64_t (*)(bool*, int32_t)>(::trueCount)),
