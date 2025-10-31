@@ -782,15 +782,15 @@ TEST_F(VectorTest, VInt8BitSelect) {
     // This test currently assumes 128bit SIMD
 
     int8_t output[] =  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    int8_t inputA[] =  {8, -3, 62, 56, -108, -13, 114, -100, 69, -80, 6, 104, 67, 78, 12, -72};
-    int8_t inputB[] =  {55, 107, -12, 39, 77, 103, -3, 15, -17, -16, -62, -41, 71, 77, 111, -119};
-    int8_t inputC[] =  {-121, 28, -85, 63, 59, 19, 21, 95, -14, -21, 8, -41, 8, 103, -100, -16};
+    int8_t falseInput[] =  {8, -3, 62, 56, -108, -13, 114, -100, 69, -80, 6, 104, 67, 78, 12, -72};
+    int8_t trueInput[] =  {55, 107, -12, 39, 77, 103, -3, 15, -17, -16, -62, -41, 71, 77, 111, -119};
+    int8_t maskInput[] =  {-121, 28, -85, 63, 59, 19, 21, 95, -14, -21, 8, -41, 8, 103, -100, -16};
 
-    entry_point(output,inputA,inputB,inputC);
+    entry_point(output,maskInput,trueInput,falseInput);
 
     // The expected result is a^((a^b)&c), which extracts bits from b if the corresponding bit of c is 1.
     for (int i = 0; i < (sizeof(output) / sizeof(*output)); i++) {
-        EXPECT_EQ(inputA[i] ^ ((inputA[i] ^ inputB[i]) & inputC[i]), output[i]);
+        EXPECT_EQ(falseInput[i] ^ ((falseInput[i] ^ trueInput[i]) & maskInput[i]), output[i]);
     }
 }
 

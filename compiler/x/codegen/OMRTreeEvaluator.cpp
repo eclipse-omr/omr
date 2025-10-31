@@ -7490,13 +7490,13 @@ TR::Register *OMR::X86::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::C
     TR::DataType et = node->getDataType().getVectorElementType();
     TR::VectorLength vl = node->getDataType().getVectorLength();
 
-    TR::Node *firstChild = node->getFirstChild();
-    TR::Node *secondChild = node->getSecondChild();
-    TR::Node *thirdChild = node->getThirdChild();
+    TR::Node *maskChild = node->getFirstChild();
+    TR::Node *trueChild = node->getSecondChild();
+    TR::Node *falseChild = node->getThirdChild();
 
-    TR::Register *firstReg = cg->evaluate(firstChild);
-    TR::Register *secondReg = cg->evaluate(secondChild);
-    TR::Register *thirdReg = cg->evaluate(thirdChild);
+    TR::Register *falseReg = cg->evaluate(falseChild);
+    TR::Register *trueReg = cg->evaluate(trueChild);
+    TR::Register *maskReg = cg->evaluate(maskChild);
     TR::Register *resultReg = cg->allocateRegister(TR_VRF);
 
     TR_ASSERT_FATAL(et.isIntegral(), "vbitselect is for integer operations");
@@ -7510,26 +7510,26 @@ TR::Register *OMR::X86::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::C
     TR_ASSERT_FATAL(xorEncoding != OMR::X86::Bad, "No encoding method for pxor opcode");
     TR_ASSERT_FATAL(andEncoding != OMR::X86::Bad, "No encoding method for pand opcode");
 
-    // inputA[i] ^ ((inputA[i] ^ inputB[i]) & inputC[i])
+    // falseInput[i] ^ ((falseInput[i] ^ trueInput[i]) & maskInput[i])
 
     if (xorEncoding != Legacy) {
-        generateRegRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, firstReg, secondReg, cg, xorEncoding);
+        generateRegRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, falseReg, trueReg, cg, xorEncoding);
     } else {
         TR::InstOpCode movOpcode = TR::InstOpCode::MOVDQURegReg;
         OMR::X86::Encoding movEncoding = xorOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
 
         TR_ASSERT_FATAL(movEncoding != OMR::X86::Bad, "No encoding method for movdqu opcode");
-        generateRegRegInstruction(movOpcode.getMnemonic(), node, resultReg, firstReg, cg, movEncoding);
-        generateRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, secondReg, cg, xorEncoding);
+        generateRegRegInstruction(movOpcode.getMnemonic(), node, resultReg, falseReg, cg, movEncoding);
+        generateRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, trueReg, cg, xorEncoding);
     }
 
-    generateRegRegInstruction(andOpcode.getMnemonic(), node, resultReg, thirdReg, cg, xorEncoding);
-    generateRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, firstReg, cg, xorEncoding);
+    generateRegRegInstruction(andOpcode.getMnemonic(), node, resultReg, maskReg, cg, xorEncoding);
+    generateRegRegInstruction(xorOpcode.getMnemonic(), node, resultReg, falseReg, cg, xorEncoding);
 
     node->setRegister(resultReg);
-    cg->decReferenceCount(firstChild);
-    cg->decReferenceCount(secondChild);
-    cg->decReferenceCount(thirdChild);
+    cg->decReferenceCount(falseChild);
+    cg->decReferenceCount(trueChild);
+    cg->decReferenceCount(maskChild);
 
     return resultReg;
 }

@@ -2798,12 +2798,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::vcalliEvaluator(TR::Node *node, TR::Cod
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
-TR::Register *OMR::ARM64::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
-    return OMR::ARM64::TreeEvaluator::vbitselectEvaluator(node, cg);
-}
-
-TR::Register *OMR::ARM64::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+static TR::Register *vbitselectHelper(TR::Node *node, TR::CodeGenerator *cg, bool isSelectOpcode)
 {
     TR_ASSERT_FATAL_WITH_NODE(node, node->getFirstChild()->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getFirstChild()->getDataType().toString());
@@ -2824,33 +2819,43 @@ TR::Register *OMR::ARM64::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR:
             return NULL;
     }
 
-    TR::Node *firstChild = node->getFirstChild();
-    TR::Node *secondChild = node->getSecondChild();
-    TR::Node *thirdChild = node->getThirdChild();
+    TR::Node *falseChild = isSelectOpcode ? node->getThirdChild() : node->getFirstChild();
+    TR::Node *trueChild = node->getSecondChild();
+    TR::Node *maskChild = isSelectOpcode ? node->getFirstChild() : node->getThirdChild();
 
-    TR::Register *firstReg = cg->evaluate(firstChild);
-    TR::Register *secondReg = cg->evaluate(secondChild);
-    TR::Register *thirdReg = cg->evaluate(thirdChild);
+    TR::Register *falseReg = cg->evaluate(falseChild);
+    TR::Register *trueReg = cg->evaluate(trueChild);
+    TR::Register *maskReg = cg->evaluate(maskChild);
     TR::Register *targetReg;
 
-    if (cg->canClobberNodesRegister(thirdChild)) {
-        targetReg = thirdReg;
+    if (cg->canClobberNodesRegister(maskChild)) {
+        targetReg = maskReg;
     } else {
         targetReg = cg->allocateRegister(TR_VRF);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::vorr16b, node, targetReg, thirdReg, thirdReg);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vorr16b, node, targetReg, maskReg, maskReg);
     }
 
     /*
-     * vbitselect extracts bits from the first operand if the corresponding bit of the third operand is 0,
-     * otherwise from the second operand.
+     * vbitselect helper extracts bits from the "false" operand if the corresponding bit of the "mask" operand is 0,
+     * otherwise from the "true" operand.
      */
-    generateTrg1Src2Instruction(cg, TR::InstOpCode::vbsl16b, node, targetReg, secondReg, firstReg);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vbsl16b, node, targetReg, trueReg, falseReg);
     node->setRegister(targetReg);
-    cg->decReferenceCount(firstChild);
-    cg->decReferenceCount(secondChild);
-    cg->decReferenceCount(thirdChild);
+    cg->decReferenceCount(falseChild);
+    cg->decReferenceCount(trueChild);
+    cg->decReferenceCount(maskChild);
 
     return targetReg;
+}
+
+TR::Register *OMR::ARM64::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return vbitselectHelper(node, cg, false /* isSelectOpcode */);
+}
+
+TR::Register *OMR::ARM64::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return vbitselectHelper(node, cg, true /* isSelectOpcode */);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::vcastEvaluator(TR::Node *node, TR::CodeGenerator *cg)

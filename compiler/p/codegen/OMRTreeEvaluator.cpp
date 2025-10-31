@@ -1542,7 +1542,7 @@ TR::Register *OMR::Power::TreeEvaluator::vcalliEvaluator(TR::Node *node, TR::Cod
 
 TR::Register *OMR::Power::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::inlineVectorBitSelectOp(node, cg, TR::InstOpCode::xxsel);
+    return TR::TreeEvaluator::inlineVectorBitSelectOp(node, cg, TR::InstOpCode::xxsel, true /* isSelectOpcode */);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -3279,35 +3279,35 @@ TR::Register *OMR::Power::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR
 }
 
 TR::Register *OMR::Power::TreeEvaluator::inlineVectorBitSelectOp(TR::Node *node, TR::CodeGenerator *cg,
-    TR::InstOpCode::Mnemonic op)
+    TR::InstOpCode::Mnemonic op, bool isSelectOpcode)
 {
-    TR::Node *firstChild = node->getFirstChild();
-    TR::Node *secondChild = node->getSecondChild();
-    TR::Node *thirdChild = node->getThirdChild();
+    TR::Node *falseChild = isSelectOpcode ? node->getThirdChild() : node->getFirstChild();
+    TR::Node *trueChild = node->getSecondChild();
+    TR::Node *maskChild = isSelectOpcode ? node->getFirstChild() : node->getThirdChild();
 
-    TR::Register *thirdReg = cg->evaluate(thirdChild);
-    TR::Register *firstReg = cg->evaluate(firstChild);
-    TR::Register *secondReg = cg->evaluate(secondChild);
+    TR::Register *maskReg = cg->evaluate(maskChild);
+    TR::Register *falseReg = cg->evaluate(falseChild);
+    TR::Register *trueReg = cg->evaluate(trueChild);
 
     TR::Register *resReg;
 
     if (op != TR::InstOpCode::xvmaddadp && op != TR::InstOpCode::xvmsubadp && op != TR::InstOpCode::xvnmsubadp) {
-        resReg = firstReg->getKind() == TR_VRF ? cg->allocateRegister(TR_VRF) : cg->allocateRegister(TR_VSX_VECTOR);
-        generateTrg1Src3Instruction(cg, op, node, resReg, firstReg, secondReg, thirdReg);
+        resReg = falseReg->getKind() == TR_VRF ? cg->allocateRegister(TR_VRF) : cg->allocateRegister(TR_VSX_VECTOR);
+        generateTrg1Src3Instruction(cg, op, node, resReg, falseReg, trueReg, maskReg);
     } else {
-        if (cg->canClobberNodesRegister(thirdChild)) {
-            resReg = thirdReg;
+        if (cg->canClobberNodesRegister(maskChild)) {
+            resReg = maskReg;
         } else {
-            resReg = firstReg->getKind() == TR_VRF ? cg->allocateRegister(TR_VRF) : cg->allocateRegister(TR_VSX_VECTOR);
-            generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlor, node, resReg, thirdReg, thirdReg);
+            resReg = falseReg->getKind() == TR_VRF ? cg->allocateRegister(TR_VRF) : cg->allocateRegister(TR_VSX_VECTOR);
+            generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlor, node, resReg, maskReg, maskReg);
         }
-        generateTrg1Src2Instruction(cg, op, node, resReg, firstReg, secondReg);
+        generateTrg1Src2Instruction(cg, op, node, resReg, falseReg, trueReg);
     }
 
     node->setRegister(resReg);
-    cg->decReferenceCount(firstChild);
-    cg->decReferenceCount(secondChild);
-    cg->decReferenceCount(thirdChild);
+    cg->decReferenceCount(falseChild);
+    cg->decReferenceCount(trueChild);
+    cg->decReferenceCount(maskChild);
     return resReg;
 }
 

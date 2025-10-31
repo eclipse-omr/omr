@@ -757,7 +757,8 @@ public:
     static TR::Register *BBEndEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *inlineVectorUnaryOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op);
     static TR::Register *inlineVectorBinaryOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op);
-    static TR::Register *inlineVectorBitSelectOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op);
+    static TR::Register *inlineVectorBitSelectOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+        bool isSelectOpcode = false);
     static TR::Register *PrefetchEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *i2aEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *iu2aEvaluator(TR::Node *node, TR::CodeGenerator *cg);
