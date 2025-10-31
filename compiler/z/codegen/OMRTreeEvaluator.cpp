@@ -1494,6 +1494,51 @@ TR::Register *OMR::Z::TreeEvaluator::vmorUncheckedEvaluator(TR::Node *node, TR::
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+static TR::Register *reductionOperationHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    bool instructionNeedsElementSizeMask)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Register *sourceReg = cg->gprClobberEvaluate(firstChild);
+    TR::DataType type = firstChild->getDataType().getVectorElementType();
+    uint8_t elementSizeMask = 0;
+    switch (type) {
+        case TR::Int8:
+            elementSizeMask = 0;
+            break;
+        case TR::Int16:
+            elementSizeMask = 1;
+            break;
+        case TR::Int32:
+            elementSizeMask = 2;
+            break;
+        case TR::Int64:
+            elementSizeMask = 3;
+            break;
+        default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "Encountered unsupported data type: %s", type.toString());
+    }
+
+    TR::Register *scratchReg = cg->allocateRegister(TR_VRF);
+    for (int i = 0; i < 4 - elementSizeMask; i++) {
+        // In each iteration, the vector is split in half: the first half stays in
+        // sourceReg, and the second half moves to the scratch register. The operation
+        // is then performed. This process repeats until all vector elements are combined.
+        generateVRIcInstruction(cg, TR::InstOpCode::VREP, node, scratchReg, sourceReg, 1, 3 - i);
+
+        generateVRRcInstruction(cg, op, node, sourceReg, sourceReg, scratchReg, 0, 0,
+            instructionNeedsElementSizeMask ? elementSizeMask : 0);
+    }
+    TR::Register *resultReg = cg->allocateRegister();
+    // The final result is stored in element 0 of the source register.
+    generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, resultReg, sourceReg, generateS390MemoryReference(0, cg),
+        elementSizeMask);
+
+    cg->decReferenceCount(firstChild);
+    cg->stopUsingRegister(scratchReg);
+    node->setRegister(resultReg);
+    return resultReg;
+}
+
 TR::Register *OMR::Z::TreeEvaluator::vmreductionAddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
@@ -15566,7 +15611,7 @@ TR::Register *OMR::Z::TreeEvaluator::vreductionAddEvaluator(TR::Node *node, TR::
 
 TR::Register *OMR::Z::TreeEvaluator::vreductionAndEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return reductionOperationHelper(node, cg, TR::InstOpCode::VN, false /* instructionNeedsElementSizeMask */);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vreductionFirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -15591,7 +15636,7 @@ TR::Register *OMR::Z::TreeEvaluator::vreductionMulEvaluator(TR::Node *node, TR::
 
 TR::Register *OMR::Z::TreeEvaluator::vreductionOrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return reductionOperationHelper(node, cg, TR::InstOpCode::VO, false /* instructionNeedsElementSizeMask */);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vreductionOrUncheckedEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -15601,7 +15646,7 @@ TR::Register *OMR::Z::TreeEvaluator::vreductionOrUncheckedEvaluator(TR::Node *no
 
 TR::Register *OMR::Z::TreeEvaluator::vreductionXorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return reductionOperationHelper(node, cg, TR::InstOpCode::VX, false /* instructionNeedsElementSizeMask */);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vreturnEvaluator(TR::Node *node, TR::CodeGenerator *cg)
