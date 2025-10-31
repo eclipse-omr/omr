@@ -15559,9 +15559,86 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::CodeGen
     }
 }
 
-TR::Register *OMR::Z::TreeEvaluator::vreductionAddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+TR::Register *vIntReductionAddHelper(TR::Node *node, TR::CodeGenerator *cg, TR::Register *sourceReg, TR::DataType type)
+{
+    bool needPreReduction = false;
+    uint8_t elementSizeMask = 0;
+    switch (type) {
+        case TR::Int8:
+            needPreReduction = true;
+            break;
+        case TR::Int16:
+            needPreReduction = true;
+            elementSizeMask = 1;
+            break;
+        case TR::Int32:
+            elementSizeMask = 2;
+            break;
+        case TR::Int64:
+            elementSizeMask = 3;
+            break;
+        default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "Encountered unsupported data type: %s", type.toString());
+    }
+
+    TR::Register *scratchReg = cg->allocateRegister(TR_VRF);
+    // Zeroing the scratch register.
+    generateVRIaInstruction(cg, TR::InstOpCode::VGBM, node, scratchReg, 0, 0);
+    if (needPreReduction) {
+        // We can not sum all lanes in one operation when the lane size is byte or halfword.
+        // Calculating the sum of byte or halfword into an intermediate word so we can add all word in the next step.
+        TR::Register *tmpSourceReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
+        generateVRRcInstruction(cg, TR::InstOpCode::VSUM, node, tmpSourceReg, sourceReg, scratchReg, 0, 0,
+            elementSizeMask);
+        sourceReg = tmpSourceReg;
+    }
+
+    // Reduce word or doubleword size to one element.
+    generateVRRcInstruction(cg, TR::InstOpCode::VSUMQ, node, scratchReg, sourceReg, scratchReg, 0, 0,
+        needPreReduction ? 2 : elementSizeMask);
+
+    // Copy the portion of the reduction result corresponding to the element size into the result GPR.
+    // If the result size exceeds the element size, the excess bits will silently wrap around due to overflow.
+    TR::Register *resultReg = cg->allocateRegister();
+    generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, resultReg, scratchReg,
+        generateS390MemoryReference((16 >> elementSizeMask) - 1, cg), elementSizeMask);
+
+    if (needPreReduction)
+        cg->stopUsingRegister(sourceReg);
+    cg->stopUsingRegister(scratchReg);
+
+    return resultReg;
+}
+
+TR::Register *vFloatReductionAddHelper(TR::Node *node, TR::CodeGenerator *cg, TR::Register *source, TR::DataType type)
 {
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+}
+
+TR::Register *OMR::Z::TreeEvaluator::vreductionAddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *firstChild = node->getFirstChild();
+
+    TR_ASSERT_FATAL_WITH_NODE(node, firstChild->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", firstChild->getDataType().toString());
+
+    TR::Register *sourceReg = cg->evaluate(firstChild);
+
+    TR::DataType type = firstChild->getDataType().getVectorElementType();
+
+    TR::Register *resultReg = NULL;
+
+    if (type.isIntegral()) {
+        resultReg = vIntReductionAddHelper(node, cg, sourceReg, type);
+    } else if (type.isFloat()) {
+        resultReg = vFloatReductionAddHelper(node, cg, sourceReg, type);
+    } else {
+        TR_ASSERT_FATAL_WITH_NODE(node, false, "Encountered unsupported data type: %s", type.toString());
+    }
+
+    cg->decReferenceCount(firstChild);
+    node->setRegister(resultReg);
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vreductionAndEvaluator(TR::Node *node, TR::CodeGenerator *cg)
