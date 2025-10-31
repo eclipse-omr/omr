@@ -67,6 +67,7 @@
 #include "optimizer/ValueNumberInfo.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define DEFAULT_TREETOP_INDENT 2
 #define DEFAULT_INDENT_INCREMENT 2
@@ -75,53 +76,41 @@
 
 extern int32_t addressWidth;
 
-void TR_Debug::printTopLegend(TR::FILE *pOutFile)
+void TR_Debug::printTopLegend(OMR::Logger *log)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile,
-        "\n------------------------------------------------------------------------------------------------------------"
-        "------------------------------------------------------------\n");
-    trfflush(pOutFile);
+    log->prints("\n----------------------------------------------------------------------------------------------------"
+                "--------------------------------------------------------------------\n");
+    log->flush();
 }
 
-void TR_Debug::printBottomLegend(TR::FILE *pOutFile)
+void TR_Debug::printBottomLegend(OMR::Logger *log)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile,
-        "\n"
-        "index:       node global index\n");
+    log->prints("\n"
+                "index:       node global index\n");
     char const *lineOrStatement = "line-number";
     char const *bciOrLoc = "bci";
     char const *bciOrLocVerbose = "bytecode-index";
 
-    trfprintf(pOutFile, "%s=[x,y,z]: byte-code-info [callee-index, %s, %s]\n", bciOrLoc, bciOrLocVerbose,
-        lineOrStatement);
+    log->printf("%s=[x,y,z]: byte-code-info [callee-index, %s, %s]\n", bciOrLoc, bciOrLocVerbose, lineOrStatement);
 
-    trfprintf(pOutFile,
-        "rc:          reference count\n"
-        "vc:          visit count\n"
-        "vn:          value number\n"
-        "li:          local index\n"
-        "udi:         use/def index\n"
-        "nc:          number of children\n"
-        "addr:        address size in bytes\n"
-        "flg:         node flags\n");
-    trfflush(pOutFile);
+    log->prints("rc:          reference count\n"
+                "vc:          visit count\n"
+                "vn:          value number\n"
+                "li:          local index\n"
+                "udi:         use/def index\n"
+                "nc:          number of children\n"
+                "addr:        address size in bytes\n"
+                "flg:         node flags\n");
+
+    log->flush();
 }
 
 // Prints the symbol reference table showing only symbols that were added during the last optimization and also sets
 // TR::Compilationl::_prevSymRefTabSize to the current size of symbol reference table as it is the end of this
 // optimization.
 //
-void TR_Debug::printSymRefTable(TR::FILE *pOutFile, bool printFullTable)
+void TR_Debug::printSymRefTable(OMR::Logger *log, bool printFullTable)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR_PrettyPrinterString output(this);
     TR::SymbolReferenceTable *symRefTab = _comp->getSymRefTab();
     TR::SymbolReference *symRefIterator;
@@ -135,29 +124,28 @@ void TR_Debug::printSymRefTable(TR::FILE *pOutFile, bool printFullTable)
                                                               // since last optimization was performed
     {
         if (printFullTable)
-            trfprintf(pOutFile, "\nSymbol References:\n------------------\n");
+            log->prints("\nSymbol References:\n------------------\n");
         else
-            trfprintf(pOutFile, "\nSymbol References (incremental):\n--------------------------------\n");
+            log->prints("\nSymbol References (incremental):\n--------------------------------\n");
+
         for (int i = _comp->getPrevSymRefTabSize(); i < currSymRefTabSize; i++) {
             if ((symRefIterator = symRefTab->getSymRef(i))) {
                 output.reset();
                 print(symRefIterator, output, false /*hideHelperMethodInfo*/, true /*verbose*/);
-                trfprintf(pOutFile, "%s\n", output.getStr());
+                log->printf("%s\n", output.getStr());
             }
-        } // end for
-        trfflush(pOutFile);
-    } // end if
+        }
+        log->flush();
+    }
 
     _comp->setPrevSymRefTabSize(_comp->getSymRefTab()->baseArray.size());
 }
 
-void TR_Debug::printOptimizationHeader(const char *funcName, const char *optName, int32_t optIndex, bool mustBeDone)
+void TR_Debug::printOptimizationHeader(OMR::Logger *log, const char *funcName, const char *optName, int32_t optIndex,
+    bool mustBeDone)
 {
-    if (_file == NULL)
-        return;
-
-    trfprintf(_file, "<optimization id=%d name=%s method=%s>\n", optIndex, optName ? optName : "???", funcName);
-    trfprintf(_file, "Performing %d: %s%s\n", optIndex, optName ? optName : "???", mustBeDone ? " mustBeDone" : "");
+    log->printf("<optimization id=%d name=%s method=%s>\n", optIndex, optName ? optName : "???", funcName);
+    log->printf("Performing %d: %s%s\n", optIndex, optName ? optName : "???", mustBeDone ? " mustBeDone" : "");
 }
 
 static bool valueIsProbablyHex(TR::Node *node)
@@ -181,11 +169,11 @@ static bool valueIsProbablyHex(TR::Node *node)
     return false;
 }
 
-void TR_Debug::printLoadConst(TR::FILE *pOutFile, TR::Node *node)
+void TR_Debug::printLoadConst(OMR::Logger *log, TR::Node *node)
 {
     TR_PrettyPrinterString output(this);
     printLoadConst(node, output);
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
     _comp->incrNodeOpCodeLength(output.getLength());
 }
 
@@ -253,11 +241,8 @@ void TR_Debug::printLoadConst(TR::Node *node, TR_PrettyPrinterString &output)
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::CFG *cfg)
+void TR_Debug::print(OMR::Logger *log, TR::CFG *cfg)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t numNodes = 0;
     int32_t index;
     TR::CFGNode *node;
@@ -289,83 +274,78 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::CFG *cfg)
         array[nodeNum >= 0 ? nodeNum : --index] = node;
     }
 
-    trfprintf(pOutFile, "\n<cfg>\n");
+    log->prints("\n<cfg>\n");
 
     for (index = 0; index < numNodes; index++)
         if (array[index] != NULL)
-            print(pOutFile, array[index], 6);
+            print(log, array[index], 6);
 
     if (cfg->getStructure()) {
-        trfprintf(pOutFile, "<structure>\n");
-        print(pOutFile, cfg->getStructure(), 6);
-        trfprintf(pOutFile, "</structure>");
+        log->prints("<structure>\n");
+        print(log, cfg->getStructure(), 6);
+        log->prints("</structure>");
     }
-    trfprintf(pOutFile, "\n</cfg>\n");
+
+    log->prints("\n</cfg>\n");
 }
 
-void TR_Debug::print(TR::FILE *outFile, TR_RegionAnalysis *regionAnalysis, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR_RegionAnalysis *regionAnalysis, uint32_t indentation)
 {
-    if (outFile == NULL)
-        return;
-
     for (int32_t index = 0; index < regionAnalysis->_totalNumberOfNodes; index++) {
         TR_RegionAnalysis::StructInfo &node = regionAnalysis->getInfo(index);
         if (node._structure == NULL)
             continue;
 
-        printBaseInfo(outFile, node._structure, indentation);
+        printBaseInfo(log, node._structure, indentation);
 
         // Dump successors
-        trfprintf(outFile, "%*sout       = [", indentation + 11, " ");
+        log->printf("%*sout       = [", indentation + 11, " ");
         int num = 0;
         TR_RegionAnalysis::StructureBitVector::Cursor cursor(node._succ);
         for (cursor.SetToFirstOne(); cursor.Valid(); cursor.SetToNextOne()) {
             TR_RegionAnalysis::StructInfo &succ = regionAnalysis->getInfo(cursor);
 
-            trfprintf(outFile, "%d ", succ.getNumber());
+            log->printf("%d ", succ.getNumber());
 
             if (num > 20) {
-                trfprintf(outFile, "\n");
+                log->println();
                 num = 0;
             }
             num++;
         }
-        trfprintf(outFile, "]\n");
+        log->prints("]\n");
 
         // Dump exception successors
-        trfprintf(outFile, "%*sexceptions= [", indentation + 11, " ");
+        log->printf("%*sexceptions= [", indentation + 11, " ");
         num = 0;
         TR_RegionAnalysis::StructureBitVector::Cursor eCursor(node._exceptionSucc);
         for (eCursor.SetToFirstOne(); eCursor.Valid(); eCursor.SetToNextOne()) {
             TR_RegionAnalysis::StructInfo &succ = regionAnalysis->getInfo(eCursor);
-            trfprintf(outFile, "%d ", succ.getNumber());
+            log->printf("%d ", succ.getNumber());
 
             if (num > 20) {
-                trfprintf(outFile, "\n");
+                log->println();
                 num = 0;
             }
             num++;
         }
-        trfprintf(outFile, "]\n");
+        log->prints("]\n");
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_Structure *structure, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR_Structure *structure, uint32_t indentation)
 {
     if (structure->asBlock())
-        print(pOutFile, structure->asBlock(), indentation);
+        print(log, structure->asBlock(), indentation);
     else
-        print(pOutFile, structure->asRegion(), indentation);
+        print(log, structure->asRegion(), indentation);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_RegionStructure *regionStructure, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR_RegionStructure *regionStructure, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR_RegionStructure *versionedLoop = NULL;
     if (debug("fullStructure"))
-        printBaseInfo(pOutFile, regionStructure, indentation);
+        printBaseInfo(log, regionStructure, indentation);
     else {
         // Do indentation and dump the address of this block
 
@@ -378,8 +358,6 @@ void TR_Debug::print(TR::FILE *pOutFile, TR_RegionStructure *regionStructure, ui
                 TR::Block *entryBlock = regionStructure->getEntryBlock();
                 if (entryBlock->isCold())
                     type = "Natural loop is the slow version of the fast versioned Natural loop ";
-                // else if (entryBlock->isRare())
-                //   type = "Natural loop is the slow version of the fast specialized Natural loop ";
                 else
                     type = "Natural loop is the fast version of the slow Natural loop ";
             } else
@@ -388,61 +366,59 @@ void TR_Debug::print(TR::FILE *pOutFile, TR_RegionStructure *regionStructure, ui
             type = "Acyclic region";
 
         if (versionedLoop)
-            trfprintf(pOutFile, "%*s%d [%s] %s %d\n", indentation, " ", regionStructure->getNumber(),
-                getName(regionStructure), type, versionedLoop->getNumber());
+            log->printf("%*s%d [%s] %s %d\n", indentation, " ", regionStructure->getNumber(), getName(regionStructure),
+                type, versionedLoop->getNumber());
         else
-            trfprintf(pOutFile, "%*s%d [%s] %s\n", indentation, " ", regionStructure->getNumber(),
-                getName(regionStructure), type);
+            log->printf("%*s%d [%s] %s\n", indentation, " ", regionStructure->getNumber(), getName(regionStructure),
+                type);
     }
 
     // Dump induction variables
     //
     for (TR_InductionVariable *v = regionStructure->getFirstInductionVariable(); v; v = v->getNext()) {
-        print(pOutFile, v, indentation + 3);
+        print(log, v, indentation + 3);
     }
 
     // Dump members
-    printSubGraph(pOutFile, regionStructure, indentation + 3);
+    printSubGraph(log, regionStructure, indentation + 3);
 }
 
-void TR_Debug::printPreds(TR::FILE *pOutFile, TR::CFGNode *node)
+void TR_Debug::printPreds(OMR::Logger *log, TR::CFGNode *node)
 {
-    trfprintf(pOutFile, "in={");
+    log->prints("in={");
     int num = 0;
     for (auto edge = node->getPredecessors().begin(); edge != node->getPredecessors().end(); ++edge) {
-        trfprintf(pOutFile, "%d ", (*edge)->getFrom()->getNumber());
+        log->printf("%d ", (*edge)->getFrom()->getNumber());
 
         if (num > 20) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
     }
+
     num = 0;
-    trfprintf(pOutFile, "} exc-in={");
+    log->prints("} exc-in={");
     for (auto edge = node->getExceptionPredecessors().begin(); edge != node->getExceptionPredecessors().end(); ++edge) {
-        trfprintf(pOutFile, "%d ", (*edge)->getFrom()->getNumber());
+        log->printf("%d ", (*edge)->getFrom()->getNumber());
 
         if (num > 20) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
     }
-    trfprintf(pOutFile, "}");
+    log->printc('}');
 }
 
-void TR_Debug::printSubGraph(TR::FILE *pOutFile, TR_RegionStructure *regionStructure, uint32_t indentation)
+void TR_Debug::printSubGraph(OMR::Logger *log, TR_RegionStructure *regionStructure, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
     int offset = 3;
     int num = 0;
 
     TR_StructureSubGraphNode *node, *next;
 
-    trfprintf(pOutFile, "%*sSubgraph: (* = exit edge)\n", indentation, " ");
+    log->printf("%*sSubgraph: (* = exit edge)\n", indentation, " ");
 
     TR_RegionStructure::Cursor si(*regionStructure);
     for (node = si.getCurrent(); node != NULL; node = si.getNext()) {
@@ -450,66 +426,66 @@ void TR_Debug::printSubGraph(TR::FILE *pOutFile, TR_RegionStructure *regionStruc
         if (node->getNumber() != node->getStructure()->getNumber()) {
             // This is an error situation, but print it to aid in debugging
             //
-            trfprintf(pOutFile, "%*s%d(%d) -->", indentation + offset * 2, " ", node->getNumber(),
+            log->printf("%*s%d(%d) -->", indentation + offset * 2, " ", node->getNumber(),
                 node->getStructure()->getNumber());
         } else {
-            trfprintf(pOutFile, "%*s(%s:%s)%d -->", indentation + offset * 2, " ", getName(node),
-                getName(node->getStructure()), node->getNumber());
+            log->printf("%*s(%s:%s)%d -->", indentation + offset * 2, " ", getName(node), getName(node->getStructure()),
+                node->getNumber());
         }
 
         num = 0;
         for (auto edge = node->getSuccessors().begin(); edge != node->getSuccessors().end(); ++edge) {
             next = toStructureSubGraphNode((*edge)->getTo());
-            trfprintf(pOutFile, " %d(%s)", next->getNumber(), getName(next));
+            log->printf(" %d(%s)", next->getNumber(), getName(next));
             if (regionStructure->isExitEdge(*edge))
-                trfprintf(pOutFile, "*");
+                log->printc('*');
 
             if (num > 10) {
-                trfprintf(pOutFile, "\n");
+                log->println();
                 num = 0;
             }
             num++;
         }
-        trfprintf(pOutFile, "\n");
+        log->println();
 
         // Dump exception successors
         if (!node->getExceptionSuccessors().empty()) {
-            trfprintf(pOutFile, "%*s(%s:%s)%d >>>", indentation + offset * 2, " ", getName(node),
-                getName(node->getStructure()), node->getNumber());
+            log->printf("%*s(%s:%s)%d >>>", indentation + offset * 2, " ", getName(node), getName(node->getStructure()),
+                node->getNumber());
             num = 0;
             for (auto edge = node->getExceptionSuccessors().begin(); edge != node->getExceptionSuccessors().end();
                  ++edge) {
                 next = toStructureSubGraphNode((*edge)->getTo());
-                trfprintf(pOutFile, " %d(%s)", next->getNumber(), getName(next));
+                log->printf(" %d(%s)", next->getNumber(), getName(next));
                 if (regionStructure->isExitEdge(*edge))
-                    trfprintf(pOutFile, "*");
+                    log->printc('*');
 
                 if (num > 10) {
-                    trfprintf(pOutFile, "\n");
+                    log->println();
                     num = 0;
                 }
                 num++;
             }
-            trfprintf(pOutFile, "\n");
+            log->println();
         }
         if (node->getStructure()->getParent() != regionStructure)
-            trfprintf(pOutFile, "******* Structure %d does not refer back to its parent structure\n",
+            log->printf("******* Structure %d does not refer back to its parent structure\n",
                 node->getStructure()->getNumber());
     }
 
     ListElement<TR::CFGEdge> *firstExitEdge = regionStructure->getExitEdges().getListHead();
 
     if (firstExitEdge)
-        trfprintf(pOutFile, "%*s%s", indentation + offset, " ", "Exit edges:\n");
+        log->printf("%*s%s", indentation + offset, " ", "Exit edges:\n");
 
     num = 0;
     ListElement<TR::CFGEdge> *exitEdge;
     for (exitEdge = firstExitEdge; exitEdge != NULL; exitEdge = exitEdge->getNextElement()) {
-        trfprintf(pOutFile, "%*s(%s)%d -->%d\n", indentation + offset * 2, " ", getName(exitEdge->getData()->getFrom()),
+        log->printf("%*s(%s)%d -->%d\n", indentation + offset * 2, " ", getName(exitEdge->getData()->getFrom()),
             exitEdge->getData()->getFrom()->getNumber(), exitEdge->getData()->getTo()->getNumber());
 
         if (num > 10) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
@@ -517,181 +493,166 @@ void TR_Debug::printSubGraph(TR::FILE *pOutFile, TR_RegionStructure *regionStruc
 
     static char *verbose = ::feGetEnv("TR_VerboseStructures");
     if (verbose) {
-        trfprintf(pOutFile, "%*sPred list:\n", indentation, " ");
+        log->printf("%*sPred list:\n", indentation, " ");
         si.reset();
         for (node = si.getCurrent(); node != NULL; node = si.getNext()) {
-            trfprintf(pOutFile, "%*s%d:", indentation + offset * 2, " ", node->getNumber());
-            printPreds(pOutFile, node);
-            trfprintf(pOutFile, "\n");
+            log->printf("%*s%d:", indentation + offset * 2, " ", node->getNumber());
+            printPreds(log, node);
+            log->println();
         }
         for (exitEdge = firstExitEdge; exitEdge != NULL; exitEdge = exitEdge->getNextElement()) {
-            trfprintf(pOutFile, "%*s*%d:", indentation + offset * 2, " ", exitEdge->getData()->getTo()->getNumber());
-            printPreds(pOutFile, exitEdge->getData()->getTo());
-            trfprintf(pOutFile, "\n");
+            log->printf("%*s*%d:", indentation + offset * 2, " ", exitEdge->getData()->getTo()->getNumber());
+            printPreds(log, exitEdge->getData()->getTo());
+            log->println();
         }
     }
 
     si.reset();
     for (node = si.getCurrent(); node != NULL; node = si.getNext()) {
-        print(pOutFile, node->getStructure(), indentation);
+        print(log, node->getStructure(), indentation);
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_InductionVariable *inductionVariable, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR_InductionVariable *inductionVariable, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
     int offset = 3;
 
-    trfprintf(pOutFile, "%*sInduction variable [%s]\n", indentation, " ", getName(inductionVariable->getLocal()));
-    trfprintf(pOutFile, "%*sEntry value: ", indentation + offset, " ");
-    print(pOutFile, inductionVariable->getEntry());
-    trfprintf(pOutFile, "\n%*sExit value:  ", indentation + offset, " ");
-    print(pOutFile, inductionVariable->getExit());
-    trfprintf(pOutFile, "\n%*sIncrement:   ", indentation + offset, " ");
-    print(pOutFile, inductionVariable->getIncr());
-    trfprintf(pOutFile, "\n");
+    log->printf("%*sInduction variable [%s]\n", indentation, " ", getName(inductionVariable->getLocal()));
+    log->printf("%*sEntry value: ", indentation + offset, " ");
+    print(log, inductionVariable->getEntry());
+    log->printf("\n%*sExit value:  ", indentation + offset, " ");
+    print(log, inductionVariable->getExit());
+    log->printf("\n%*sIncrement:   ", indentation + offset, " ");
+    print(log, inductionVariable->getIncr());
+    log->println();
 }
 
 static const char *structNames[] = { "Blank", "Block", "Region" };
 
-void TR_Debug::printBaseInfo(TR::FILE *pOutFile, TR_Structure *structure, uint32_t indentation)
+void TR_Debug::printBaseInfo(OMR::Logger *log, TR_Structure *structure, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
     // Do indentation and dump the address of this block
-    trfprintf(pOutFile, "%*s%d [%s] %s", indentation, " ", structure->getNumber(), getName(structure),
+    log->printf("%*s%d [%s] %s", indentation, " ", structure->getNumber(), getName(structure),
         structNames[structure->getKind()]);
 
-    trfprintf(pOutFile, "\n");
+    log->println();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_BlockStructure *blockStructure, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR_BlockStructure *blockStructure, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printBaseInfo(pOutFile, blockStructure, indentation);
+    printBaseInfo(log, blockStructure, indentation);
     if (blockStructure->getBlock()->getStructureOf() != blockStructure)
-        trfprintf(pOutFile, "******* Block %d does not refer back to block structure\n",
+        log->printf("******* Block %d does not refer back to block structure\n",
             blockStructure->getBlock()->getNumber());
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::CFGNode *cfgNode, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR::CFGNode *cfgNode, uint32_t indentation)
 {
     if (cfgNode->asBlock())
-        print(pOutFile, toBlock(cfgNode), indentation);
+        print(log, toBlock(cfgNode), indentation);
     else
-        print(pOutFile, toStructureSubGraphNode(cfgNode), indentation);
+        print(log, toStructureSubGraphNode(cfgNode), indentation);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_StructureSubGraphNode *node, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR_StructureSubGraphNode *node, uint32_t indentation)
 {
-    print(pOutFile, node->getStructure(), indentation);
+    print(log, node->getStructure(), indentation);
 }
 
-void TR_Debug::printNodesInEdgeListIterator(TR::FILE *pOutFile, TR::CFGEdgeList &li, bool fromNode)
+void TR_Debug::printNodesInEdgeListIterator(OMR::Logger *log, TR::CFGEdgeList &li, bool fromNode)
 {
     TR::Block *b;
     int num = 0;
     for (auto edge = li.begin(); edge != li.end(); ++edge) {
         b = fromNode ? toBlock((*edge)->getFrom()) : toBlock((*edge)->getTo());
         if ((*edge)->getFrequency() >= 0)
-            trfprintf(pOutFile, "%d(%d) ", b->getNumber(), (*edge)->getFrequency());
+            log->printf("%d(%d) ", b->getNumber(), (*edge)->getFrequency());
         else
-            trfprintf(pOutFile, "%d ", b->getNumber());
+            log->printf("%d ", b->getNumber());
 
         if (num > 20) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::Block *block, uint32_t indentation)
+void TR_Debug::print(OMR::Logger *log, TR::Block *block, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
     // Do indentation and dump the address of this block
-    trfprintf(pOutFile, "%*s", indentation, " ");
+    log->printf("%*s", indentation, " ");
     if (block->getNumber() >= 0)
-        trfprintf(pOutFile, "%4d ", block->getNumber());
-    trfprintf(pOutFile, "[%s] ", getName(block));
+        log->printf("%4d ", block->getNumber());
+    log->printf("[%s] ", getName(block));
 
     // If there are no nodes associated with this block, it must be the entry or
     // exit node.
     if (!block->getEntry()) {
         TR_ASSERT(!block->getExit(), "both entry and exit must be specified for TR_Block");
         if (block->getPredecessors().empty())
-            trfprintf(pOutFile, "entry\n");
+            log->prints("entry\n");
         else
-            trfprintf(pOutFile, "exit\n");
+            log->prints("exit\n");
     } else {
         // Dump information about regular block
-        trfprintf(pOutFile, "BBStart at %s", getName(block->getEntry()->getNode()));
+        log->printf("BBStart at %s", getName(block->getEntry()->getNode()));
         if (block->getFrequency() >= 0)
-            trfprintf(pOutFile, ", frequency = %d", block->getFrequency());
+            log->printf(", frequency = %d", block->getFrequency());
 
         static const bool enableTracePartialInlining = feGetEnv("TR_EnableTracePartialInlining") != NULL;
         if (enableTracePartialInlining) {
-            trfprintf(pOutFile, ", partialFlags = ");
+            log->prints(", partialFlags = ");
             if (block->isUnsanitizeable())
-                trfprintf(pOutFile, "U, ");
+                log->prints("U, ");
             if (block->containsCall())
-                trfprintf(pOutFile, "C, ");
+                log->prints("C, ");
             if (block->isRestartBlock())
-                trfprintf(pOutFile, "R, ");
+                log->prints("R, ");
             if (block->isPartialInlineBlock())
-                trfprintf(pOutFile, "P, ");
+                log->prints("P, ");
         }
 
-        trfprintf(pOutFile, "\n");
+        log->println();
     }
 
     bool fromNode;
 
     // Dump predecessors
-    trfprintf(pOutFile, "%*sin        = [", indentation + 11, " ");
-    printNodesInEdgeListIterator(pOutFile, block->getPredecessors(), fromNode = true);
-    trfprintf(pOutFile, "]\n");
+    log->printf("%*sin        = [", indentation + 11, " ");
+    printNodesInEdgeListIterator(log, block->getPredecessors(), fromNode = true);
+    log->prints("]\n");
 
     // Dump successors
-    trfprintf(pOutFile, "%*sout       = [", indentation + 11, " ");
-    printNodesInEdgeListIterator(pOutFile, block->getSuccessors(), fromNode = false);
-    trfprintf(pOutFile, "]\n");
+    log->printf("%*sout       = [", indentation + 11, " ");
+    printNodesInEdgeListIterator(log, block->getSuccessors(), fromNode = false);
+    log->prints("]\n");
 
     // Dump exception predecessors
-    trfprintf(pOutFile, "%*sexception in  = [", indentation + 11, " ");
-    printNodesInEdgeListIterator(pOutFile, block->getExceptionPredecessors(), fromNode = true);
-    trfprintf(pOutFile, "]\n");
+    log->printf("%*sexception in  = [", indentation + 11, " ");
+    printNodesInEdgeListIterator(log, block->getExceptionPredecessors(), fromNode = true);
+    log->prints("]\n");
 
     // Dump exception successors
-    trfprintf(pOutFile, "%*sexception out = [", indentation + 11, " ");
-    printNodesInEdgeListIterator(pOutFile, block->getExceptionSuccessors(), fromNode = false);
-    trfprintf(pOutFile, "]\n");
+    log->printf("%*sexception out = [", indentation + 11, " ");
+    printNodesInEdgeListIterator(log, block->getExceptionSuccessors(), fromNode = false);
+    log->prints("]\n");
 }
 
-static void printInlinePath(TR::FILE *pOutFile, TR_InlinedCallSite *site, TR_Debug *debug)
+static void printInlinePath(OMR::Logger *log, TR_InlinedCallSite *site, TR_Debug *debug)
 {
     int32_t callerIndex = site->_byteCodeInfo.getCallerIndex();
     if (callerIndex == -1) {
-        trfprintf(pOutFile, "%02d", site->_byteCodeInfo.getByteCodeIndex());
+        log->printf("%02d", site->_byteCodeInfo.getByteCodeIndex());
     } else {
         TR::Compilation *comp = debug->comp();
-        printInlinePath(pOutFile, &comp->getInlinedCallSite(callerIndex), debug);
-        trfprintf(pOutFile, ".%02d", site->_byteCodeInfo.getByteCodeIndex());
+        printInlinePath(log, &comp->getInlinedCallSite(callerIndex), debug);
+        log->printf(".%02d", site->_byteCodeInfo.getByteCodeIndex());
     }
 }
 
-void TR_Debug::printIRTrees(TR::FILE *pOutFile, const char *title, TR::ResolvedMethodSymbol *methodSymbol)
+void TR_Debug::printIRTrees(OMR::Logger *log, const char *title, TR::ResolvedMethodSymbol *methodSymbol)
 {
-    if (pOutFile == NULL)
-        return;
-
     if (!methodSymbol)
         methodSymbol = _comp->getMethodSymbol();
 
@@ -699,24 +660,23 @@ void TR_Debug::printIRTrees(TR::FILE *pOutFile, const char *title, TR::ResolvedM
 
     const char *sig = signature(methodSymbol);
 
-    trfprintf(pOutFile,
-        "<trees\n"
-        "\ttitle=\"%s\"\n"
-        "\tmethod=\"%s\"\n"
-        "\thotness=\"%s\">\n",
+    log->printf("<trees\n"
+                "\ttitle=\"%s\"\n"
+                "\tmethod=\"%s\"\n"
+                "\thotness=\"%s\">\n",
         title, sig, hotnessString);
 
     // we dump the name again?
-    trfprintf(pOutFile, "\n%s: for %s\n", title, sig);
+    log->printf("\n%s: for %s\n", title, sig);
 
     if (_comp->getMethodSymbol() == methodSymbol && _comp->getNumInlinedCallSites() > 0) {
-        trfprintf(pOutFile, "\nCall Stack Info\n", title, sig);
-        trfprintf(pOutFile, "CalleeIndex CallerIndex ByteCodeIndex CalleeMethod\n", title, sig);
+        log->prints("\nCall Stack Info\n");
+        log->prints("CalleeIndex CallerIndex ByteCodeIndex CalleeMethod\n");
 
         for (auto i = 0U; i < _comp->getNumInlinedCallSites(); ++i) {
             TR_InlinedCallSite &ics = _comp->getInlinedCallSite(i);
             TR_ResolvedMethod *meth = _comp->getInlinedResolvedMethod(i);
-            trfprintf(pOutFile, "    %4d       %4d       %5d       ", i, ics._byteCodeInfo.getCallerIndex(),
+            log->printf("    %4d       %4d       %5d       ", i, ics._byteCodeInfo.getCallerIndex(),
                 ics._byteCodeInfo.getByteCodeIndex());
 
             TR::KnownObjectTable *knot = _comp->getKnownObjectTable();
@@ -724,14 +684,14 @@ void TR_Debug::printIRTrees(TR::FILE *pOutFile, const char *title, TR::ResolvedM
             if (knot && meth && meth->convertToMethod()->isArchetypeSpecimen() && meth->getMethodHandleLocation())
                 targetMethodHandleIndex = knot->getExistingIndexAt(meth->getMethodHandleLocation());
             if (targetMethodHandleIndex != TR::KnownObjectTable::UNKNOWN)
-                trfprintf(pOutFile, "obj%d.", targetMethodHandleIndex);
+                log->printf("obj%d.", targetMethodHandleIndex);
 
-            trfprintf(pOutFile, "%s\n", fe()->sampleSignature(ics._methodInfo, 0, 0, _comp->trMemory()));
+            log->printf("%s\n", fe()->sampleSignature(ics._methodInfo, 0, 0, _comp->trMemory()));
 
             if (debug("printInlinePath")) {
-                trfprintf(pOutFile, "     = ");
-                printInlinePath(pOutFile, &ics, this);
-                trfprintf(pOutFile, "\n");
+                log->prints("     = ");
+                printInlinePath(log, &ics, this);
+                log->println();
             }
         }
     }
@@ -739,15 +699,15 @@ void TR_Debug::printIRTrees(TR::FILE *pOutFile, const char *title, TR::ResolvedM
     _nodeChecklist.empty();
     int32_t nodeCount = 0;
 
-    printTopLegend(pOutFile);
+    printTopLegend(log);
 
     TR::TreeTop *tt = methodSymbol->getFirstTreeTop();
     for (; tt; tt = tt->getNextTreeTop()) {
-        nodeCount += print(pOutFile, tt);
+        nodeCount += print(log, tt);
         TR::Node *ttNode = tt->getNode();
         if (_comp->getOption(TR_TraceLiveness) && methodSymbol->getAutoSymRefs()
             && ttNode->getOpCodeValue() == TR::BBStart && ttNode->getBlock()->getLiveLocals()) {
-            trfprintf(pOutFile, "%*s// Live locals:", addressWidth + 48, "");
+            log->printf("%*s// Live locals:", addressWidth + 48, "");
             TR_BitVector *liveLocals = ttNode->getBlock()->getLiveLocals();
             // ouch, this loop is painstaking
             for (int32_t i = _comp->getSymRefTab()->getIndexOfFirstSymRef(); i < _comp->getSymRefTab()->getNumSymRefs();
@@ -755,46 +715,44 @@ void TR_Debug::printIRTrees(TR::FILE *pOutFile, const char *title, TR::ResolvedM
                 TR::SymbolReference *symRef = _comp->getSymRefTab()->getSymRef(i);
                 if (symRef && symRef->getSymbol()->isAutoOrParm()
                     && liveLocals->isSet(symRef->getSymbol()->castToRegisterMappedSymbol()->getLiveLocalIndex()))
-                    trfprintf(pOutFile, " #%d", symRef->getReferenceNumber());
+                    log->printf(" #%d", symRef->getReferenceNumber());
             }
-            trfprintf(pOutFile, "\n");
+            log->println();
         }
     }
 
-    printBottomLegend(pOutFile);
-    printSymRefTable(pOutFile);
+    printBottomLegend(log);
+    printSymRefTable(log);
 
-    trfprintf(pOutFile, "\nNumber of nodes = %d, symRefCount = %d\n", nodeCount,
-        _comp->getSymRefTab()->getNumSymRefs());
+    log->printf("\nNumber of nodes = %d, symRefCount = %d\n", nodeCount, _comp->getSymRefTab()->getNumSymRefs());
 
-    // trfprintf(pOutFile, "]]>\n");
-    trfprintf(pOutFile, "</trees>\n");
-    trfflush(pOutFile);
+    log->prints("</trees>\n");
+    log->flush();
 }
 
-void TR_Debug::printBlockOrders(TR::FILE *pOutFile, const char *title, TR::ResolvedMethodSymbol *methodSymbol)
+void TR_Debug::printBlockOrders(OMR::Logger *log, const char *title, TR::ResolvedMethodSymbol *methodSymbol)
 {
     TR::TreeTop *tt = methodSymbol->getFirstTreeTop();
 
-    trfprintf(pOutFile, "%s block ordering:\n", title);
+    log->printf("%s block ordering:\n", title);
     unsigned numberOfColdBlocks = 0;
     while (tt != NULL) {
         TR::Node *node = tt->getNode();
         if (node && node->getOpCodeValue() == TR::BBStart) {
             TR::Block *block = node->getBlock();
-            trfprintf(pOutFile, "block_%-4d\t[ " POINTER_PRINTF_FORMAT "]\tfrequency %4d", block->getNumber(), block,
+            log->printf("block_%-4d\t[ " POINTER_PRINTF_FORMAT "]\tfrequency %4d", block->getNumber(), block,
                 block->getFrequency());
             if (block->isSuperCold()) {
                 numberOfColdBlocks++;
-                trfprintf(pOutFile, "\t(super cold)\n");
+                log->prints("\t(super cold)\n");
             } else if (block->isCold())
-                trfprintf(pOutFile, "\t(cold)\n");
+                log->prints("\t(cold)\n");
             else
-                trfprintf(pOutFile, "\n");
+                log->println();
 
             TR::CFGEdgeList &successors = block->getSuccessors();
             for (auto succEdge = successors.begin(); succEdge != successors.end(); ++succEdge)
-                trfprintf(pOutFile, "\t -> block_%-4d\tfrequency %4d\n", (*succEdge)->getTo()->getNumber(),
+                log->printf("\t -> block_%-4d\tfrequency %4d\n", (*succEdge)->getTo()->getNumber(),
                     (*succEdge)->getFrequency());
         }
         tt = tt->getNextTreeTop();
@@ -819,8 +777,12 @@ char *TR_Debug::formattedString(char *buf, uint32_t bufLen, const char *format, 
     // vsnprintf returns -1 on zos when buffer is too small
     char s[VSNPRINTF_BUFFER_SIZE];
     int resultLen = vsnprintf(s, VSNPRINTF_BUFFER_SIZE, format, args_copy);
-    if (resultLen < 0 && _file != NULL)
-        trfprintf(_file, "Failed to get length of string with format %s\n", format);
+    if (resultLen < 0) {
+        OMR::Logger *log = _comp->log();
+        static char *disableReportFormattedStringError = feGetEnv("TR_DisableReportFormattedStringError");
+        if (!disableReportFormattedStringError && log->isEnabled_DEPRECATED())
+            log->printf("Failed to get length of string with format %s\n", format);
+    }
 #else
     int resultLen = vsnprintf(NULL, 0, format, args_copy);
 #endif
@@ -831,7 +793,9 @@ char *TR_Debug::formattedString(char *buf, uint32_t bufLen, const char *format, 
         bufLen = resultLen + 1;
         buf = (char *)comp()->trMemory()->allocateMemory(bufLen, allocationKind);
     }
+
     vsnprintf(buf, bufLen, format, args);
+
     return buf;
 }
 
@@ -860,73 +824,71 @@ void TR_PrettyPrinterString::appends(char const *str)
     }
 }
 
-int32_t TR_Debug::print(TR::FILE *pOutFile, TR::TreeTop *tt)
+int32_t TR_Debug::print(OMR::Logger *log, TR::TreeTop *tt)
 {
-    return print(pOutFile, tt->getNode(), DEFAULT_TREETOP_INDENT, true);
+    return print(log, tt->getNode(), DEFAULT_TREETOP_INDENT, true);
 }
 
 // Dump this node and its children with a standard prefix.
 // Return the number of nodes encountered.
-int32_t TR_Debug::print(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation, bool printChildren)
+int32_t TR_Debug::print(OMR::Logger *log, TR::Node *node, uint32_t indentation, bool printChildren)
 {
-    if (pOutFile == NULL)
-        return 0;
     TR_ASSERT(node != NULL, "node is NULL\n");
 
     // If this node has already been printed, just print a reference to it.
     //
     if (_nodeChecklist.isSet(node->getGlobalIndex())) {
-        printBasicPreNodeInfoAndIndent(pOutFile, node, indentation);
-        trfprintf(pOutFile, "==>%s", getName(node->getOpCode()));
+        printBasicPreNodeInfoAndIndent(log, node, indentation);
+        log->printf("==>%s", getName(node->getOpCode()));
         if (node->getOpCode().isLoadConst())
-            printLoadConst(pOutFile, node);
+            printLoadConst(log, node);
 #ifdef J9_PROJECT_SPECIFIC
-        printBCDNodeInfo(pOutFile, node);
+        printBCDNodeInfo(log, node);
 #endif
-        trfprintf(pOutFile, "\n");
-        trfflush(pOutFile);
+        log->println();
+        log->flush();
         _comp->setNodeOpCodeLength(0); // probably redundant - just to be safe
         return 0;
     }
 
     _nodeChecklist.set(node->getGlobalIndex());
-    printBasicPreNodeInfoAndIndent(pOutFile, node, indentation);
+    printBasicPreNodeInfoAndIndent(log, node, indentation);
 
     int32_t nodeCount = 1; // Count this node
     int32_t i;
 
-    printNodeInfo(pOutFile, node);
+    printNodeInfo(log, node);
     if (!debug("disableDumpNodeFlags"))
-        printNodeFlags(pOutFile, node);
-    printBasicPostNodeInfo(pOutFile, node, indentation);
+        printNodeFlags(log, node);
+    printBasicPostNodeInfo(log, node, indentation);
 
-    trfprintf(pOutFile, "\n");
+    log->println();
 
     TR_PrettyPrinterString output(this);
 
     if (printChildren) {
         indentation += DEFAULT_INDENT_INCREMENT;
         if (node->getOpCode().isSwitch()) {
-            nodeCount += print(pOutFile, node->getFirstChild(), indentation, true);
+            nodeCount += print(log, node->getFirstChild(), indentation, true);
 
-            printBasicPreNodeInfoAndIndent(pOutFile, node->getSecondChild(), indentation);
+            printBasicPreNodeInfoAndIndent(log, node->getSecondChild(), indentation);
             nodeCount++;
 
             output.appends("default ");
             _comp->incrNodeOpCodeLength(output.getLength());
-            trfprintf(pOutFile, "%s", output.getStr());
+            log->prints(output.getStr());
             output.reset();
 
-            printDestination(pOutFile, node->getSecondChild()->getBranchDestination());
-            printBasicPostNodeInfo(pOutFile, node->getSecondChild(), indentation);
-            trfprintf(pOutFile, "\n");
+            printDestination(log, node->getSecondChild()->getBranchDestination());
+            printBasicPostNodeInfo(log, node->getSecondChild(), indentation);
+            log->println();
             TR::Node *oldParent = getCurrentParent();
             int32_t oldChildIndex = getCurrentChildIndex();
             if (node->getSecondChild()->getNumChildren() == 1) // a GlRegDep
             {
                 setCurrentParentAndChildIndex(node->getSecondChild(), 1);
-                nodeCount += print(pOutFile, node->getSecondChild()->getFirstChild(),
-                    indentation + DEFAULT_INDENT_INCREMENT, true);
+                nodeCount += print(log, node->getSecondChild()->getFirstChild(), indentation + DEFAULT_INDENT_INCREMENT,
+                    true);
             }
             setCurrentParentAndChildIndex(oldParent, oldChildIndex);
 
@@ -938,7 +900,7 @@ int32_t TR_Debug::print(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation
                 TR::Node *oldParent = getCurrentParent();
                 int32_t oldChildIndex = getCurrentChildIndex();
                 for (i = 2; i < upperBound; i++) {
-                    printBasicPreNodeInfoAndIndent(pOutFile, node->getChild(i), indentation);
+                    printBasicPreNodeInfoAndIndent(log, node->getChild(i), indentation);
                     nodeCount++;
 
                     char const *fmtStr;
@@ -950,17 +912,17 @@ int32_t TR_Debug::print(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation
                     output.appendf(fmtStr, node->getChild(i)->getCaseConstant());
 
                     _comp->incrNodeOpCodeLength(output.getLength());
-                    trfprintf(pOutFile, "%s", output.getStr());
+                    log->prints(output.getStr());
                     output.reset();
 
-                    printDestination(pOutFile, node->getChild(i)->getBranchDestination());
+                    printDestination(log, node->getChild(i)->getBranchDestination());
 
-                    printBasicPostNodeInfo(pOutFile, node->getChild(i), indentation);
-                    trfprintf(pOutFile, "\n");
+                    printBasicPostNodeInfo(log, node->getChild(i), indentation);
+                    log->println();
                     if (node->getChild(i)->getNumChildren() == 1) // a GlRegDep
                     {
                         setCurrentParentAndChildIndex(node->getChild(i), i);
-                        nodeCount += print(pOutFile, node->getChild(i)->getFirstChild(),
+                        nodeCount += print(log, node->getChild(i)->getFirstChild(),
                             indentation + DEFAULT_INDENT_INCREMENT, true);
                     }
                 }
@@ -969,20 +931,20 @@ int32_t TR_Debug::print(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation
                 TR::Node *oldParent = getCurrentParent();
                 int32_t oldChildIndex = getCurrentChildIndex();
                 for (i = 2; i < upperBound; i++) {
-                    printBasicPreNodeInfoAndIndent(pOutFile, node->getChild(i), indentation);
+                    printBasicPreNodeInfoAndIndent(log, node->getChild(i), indentation);
                     nodeCount++;
                     output.appendf("%d", i - 2);
                     _comp->incrNodeOpCodeLength(output.getLength());
-                    trfprintf(pOutFile, "%s", output.getStr());
+                    log->prints(output.getStr());
                     output.reset();
 
-                    printDestination(pOutFile, node->getChild(i)->getBranchDestination());
-                    printBasicPostNodeInfo(pOutFile, node->getChild(i), indentation);
-                    trfprintf(pOutFile, "\n");
+                    printDestination(log, node->getChild(i)->getBranchDestination());
+                    printBasicPostNodeInfo(log, node->getChild(i), indentation);
+                    log->println();
                     if (node->getChild(i)->getNumChildren() == 1) // a GlRegDep
                     {
                         setCurrentParentAndChildIndex(node->getChild(i), i);
-                        nodeCount += print(pOutFile, node->getChild(i)->getFirstChild(),
+                        nodeCount += print(log, node->getChild(i)->getFirstChild(),
                             indentation + DEFAULT_INDENT_INCREMENT, true);
                     }
                 }
@@ -990,7 +952,7 @@ int32_t TR_Debug::print(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation
                 // Check for branch table address
                 if (upperBound < node->getNumChildren()
                     && node->getChild(upperBound)->getOpCodeValue() != TR::GlRegDeps) {
-                    nodeCount += print(pOutFile, node->getChild(upperBound), indentation, true);
+                    nodeCount += print(log, node->getChild(upperBound), indentation, true);
                 }
             }
         } else {
@@ -998,13 +960,13 @@ int32_t TR_Debug::print(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation
             int32_t oldChildIndex = getCurrentChildIndex();
             for (i = 0; i < node->getNumChildren(); i++) {
                 setCurrentParentAndChildIndex(node, i);
-                nodeCount += print(pOutFile, node->getChild(i), indentation, true);
+                nodeCount += print(log, node->getChild(i), indentation, true);
             }
             setCurrentParentAndChildIndex(oldParent, oldChildIndex);
         }
     }
 
-    trfflush(pOutFile);
+    log->flush();
     return nodeCount;
 }
 
@@ -1058,15 +1020,12 @@ uint32_t TR_Debug::getNumSpacesAfterIndex(uint32_t index, uint32_t maxIndexLengt
 // Dump this node and its children with a fixed prefix.
 // Return the number of nodes encountered.
 //
-int32_t TR_Debug::printWithFixedPrefix(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation, bool printChildren,
+int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_t indentation, bool printChildren,
     bool printRefCounts, const char *prefix)
 {
     uint32_t numSpaces, globalIndex;
 
     TR_PrettyPrinterString output(this);
-
-    if (pOutFile == NULL)
-        return 0;
 
     _comp->setNodeOpCodeLength(0);
 
@@ -1079,78 +1038,76 @@ int32_t TR_Debug::printWithFixedPrefix(TR::FILE *pOutFile, TR::Node *node, uint3
     //
     if (_nodeChecklist.isSet(node->getGlobalIndex())) {
         if (printRefCounts) {
-            trfprintf(pOutFile, "%s%s%dn%*s  (%3d) %*s==>%s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
+            log->printf("%s%s%dn%*s  (%3d) %*s==>%s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
                 node->getReferenceCount(), indentation, " ", getName(node->getOpCode()));
         } else {
-            trfprintf(pOutFile, "%s%s%dn%*s  %*s==>%s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
-                indentation, " ", getName(node->getOpCode()));
+            log->printf("%s%s%dn%*s  %*s==>%s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation, " ",
+                getName(node->getOpCode()));
         }
 
         if (node->getOpCode().isLoadConst())
-            printLoadConst(pOutFile, node);
+            printLoadConst(log, node);
 #ifdef J9_PROJECT_SPECIFIC
-        printBCDNodeInfo(pOutFile, node);
+        printBCDNodeInfo(log, node);
 #endif
 
         if (_comp->cg()->getAppendInstruction() != NULL && node->getDataType() != TR::NoType
             && node->getRegister() != NULL) {
             output.appendf(" (in %s)", getName(node->getRegister()));
             _comp->incrNodeOpCodeLength(output.getLength());
-            trfprintf(pOutFile, "%s", output.getStr());
+            log->prints(output.getStr());
             output.reset();
         }
         if (!debug("disableDumpNodeFlags"))
-            printNodeFlags(pOutFile, node);
+            printNodeFlags(log, node);
 
-        trfflush(pOutFile);
+        log->flush();
         return 0;
     }
 
     _nodeChecklist.set(node->getGlobalIndex());
 
     if (printRefCounts)
-        trfprintf(pOutFile, "%s%s%dn%*s  (%3d) %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
+        log->printf("%s%s%dn%*s  (%3d) %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
             node->getReferenceCount(), indentation, " ");
     else
-        trfprintf(pOutFile, "%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation, " ");
+        log->printf("%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation, " ");
 
     int32_t nodeCount = 1; // Count this node
     int32_t i;
 
-    printNodeInfo(pOutFile, node);
+    printNodeInfo(log, node);
     if (_comp->cg()->getAppendInstruction() != NULL && node->getDataType() != TR::NoType
         && node->getRegister() != NULL) {
         output.appendf(" (in %s)", getName(node->getRegister()));
         _comp->incrNodeOpCodeLength(output.getLength());
-        trfprintf(pOutFile, "%s", output.getStr());
+        log->prints(output.getStr());
         output.reset();
     }
     if (!debug("disableDumpNodeFlags"))
-        printNodeFlags(pOutFile, node);
-    printBasicPostNodeInfo(pOutFile, node, indentation);
+        printNodeFlags(log, node);
+    printBasicPostNodeInfo(log, node, indentation);
 
     if (printChildren) {
         indentation += DEFAULT_INDENT_INCREMENT;
         if (node->getOpCode().isSwitch()) {
-            trfprintf(pOutFile, "\n");
-            nodeCount
-                += printWithFixedPrefix(pOutFile, node->getFirstChild(), indentation, true, printRefCounts, prefix);
+            log->println();
+            nodeCount += printWithFixedPrefix(log, node->getFirstChild(), indentation, true, printRefCounts, prefix);
 
             globalIndex = node->getSecondChild()->getGlobalIndex();
             numSpaces = getNumSpacesAfterIndex(globalIndex, MAX_GLOBAL_INDEX_LENGTH);
 
-            trfprintf(pOutFile, "\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation,
-                " ");
+            log->printf("\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation, " ");
             nodeCount++;
             output.appends("default ");
             _comp->incrNodeOpCodeLength(output.getLength());
-            trfprintf(pOutFile, "%s", output.getStr());
+            log->prints(output.getStr());
             output.reset();
 
-            printDestination(pOutFile, node->getSecondChild()->getBranchDestination());
-            printBasicPostNodeInfo(pOutFile, node->getSecondChild(), indentation);
+            printDestination(log, node->getSecondChild()->getBranchDestination());
+            printBasicPostNodeInfo(log, node->getSecondChild(), indentation);
             if (node->getSecondChild()->getNumChildren() == 1) // a GlRegDep
-                nodeCount += printWithFixedPrefix(pOutFile, node->getSecondChild()->getFirstChild(),
+                nodeCount += printWithFixedPrefix(log, node->getSecondChild()->getFirstChild(),
                     indentation + DEFAULT_INDENT_INCREMENT, true, printRefCounts, prefix);
 
             uint16_t upperBound = node->getCaseIndexUpperBound();
@@ -1160,8 +1117,8 @@ int32_t TR_Debug::printWithFixedPrefix(TR::FILE *pOutFile, TR::Node *node, uint3
                     globalIndex = node->getChild(i)->getGlobalIndex();
                     numSpaces = getNumSpacesAfterIndex(globalIndex, MAX_GLOBAL_INDEX_LENGTH);
 
-                    trfprintf(pOutFile, "\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
-                        indentation, " ");
+                    log->printf("\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation,
+                        " ");
                     nodeCount++;
 
                     char const *fmtStr;
@@ -1173,15 +1130,15 @@ int32_t TR_Debug::printWithFixedPrefix(TR::FILE *pOutFile, TR::Node *node, uint3
                     }
                     output.appendf(fmtStr, node->getChild(i)->getCaseConstant());
                     _comp->incrNodeOpCodeLength(output.getLength());
-                    trfprintf(pOutFile, "%s", output.getStr());
+                    log->prints(output.getStr());
                     output.reset();
 
-                    printDestination(pOutFile, node->getChild(i)->getBranchDestination());
+                    printDestination(log, node->getChild(i)->getBranchDestination());
 
-                    printBasicPostNodeInfo(pOutFile, node->getChild(i), indentation);
+                    printBasicPostNodeInfo(log, node->getChild(i), indentation);
 
                     if (node->getChild(i)->getNumChildren() == 1) // a GlRegDep
-                        nodeCount += printWithFixedPrefix(pOutFile, node->getChild(i)->getFirstChild(),
+                        nodeCount += printWithFixedPrefix(log, node->getChild(i)->getFirstChild(),
                             indentation + DEFAULT_INDENT_INCREMENT, true, printRefCounts, prefix);
                 }
             } else {
@@ -1189,23 +1146,23 @@ int32_t TR_Debug::printWithFixedPrefix(TR::FILE *pOutFile, TR::Node *node, uint3
                     globalIndex = node->getChild(i)->getGlobalIndex();
                     numSpaces = getNumSpacesAfterIndex(globalIndex, MAX_GLOBAL_INDEX_LENGTH);
 
-                    trfprintf(pOutFile, "\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "",
-                        indentation, " ");
+                    log->printf("\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation,
+                        " ");
                     nodeCount++;
                     output.appendf("%d", i - 2);
                     _comp->incrNodeOpCodeLength(output.getLength());
-                    trfprintf(pOutFile, "%s", output.getStr());
+                    log->prints(output.getStr());
                     output.reset();
 
-                    printDestination(pOutFile, node->getChild(i)->getBranchDestination());
+                    printDestination(log, node->getChild(i)->getBranchDestination());
                     if (node->getChild(i)->getNumChildren() == 1) // a GlRegDep
-                        nodeCount += printWithFixedPrefix(pOutFile, node->getChild(i)->getFirstChild(),
+                        nodeCount += printWithFixedPrefix(log, node->getChild(i)->getFirstChild(),
                             indentation + DEFAULT_INDENT_INCREMENT, true, printRefCounts, prefix);
                 }
                 // Check for branch table address
                 if (upperBound < node->getNumChildren()
                     && node->getChild(upperBound)->getOpCodeValue() != TR::GlRegDeps) {
-                    nodeCount += printWithFixedPrefix(pOutFile, node->getChild(upperBound), indentation, true,
+                    nodeCount += printWithFixedPrefix(log, node->getChild(upperBound), indentation, true,
                         printRefCounts, prefix);
                 }
             }
@@ -1214,25 +1171,23 @@ int32_t TR_Debug::printWithFixedPrefix(TR::FILE *pOutFile, TR::Node *node, uint3
             int32_t oldChildIndex = getCurrentChildIndex();
             setCurrentParent(node);
             for (i = 0; i < node->getNumChildren(); i++) {
-                trfprintf(pOutFile, "\n");
+                log->println();
                 setCurrentChildIndex(i);
-                nodeCount
-                    += printWithFixedPrefix(pOutFile, node->getChild(i), indentation, true, printRefCounts, prefix);
+                nodeCount += printWithFixedPrefix(log, node->getChild(i), indentation, true, printRefCounts, prefix);
             }
             setCurrentParentAndChildIndex(oldParent, oldChildIndex);
         }
     }
-    trfflush(pOutFile);
+
+    log->flush();
     return nodeCount;
 }
 
-void TR_Debug::printDestination(TR::FILE *pOutFile, TR::TreeTop *treeTop)
+void TR_Debug::printDestination(OMR::Logger *log, TR::TreeTop *treeTop)
 {
-    if (pOutFile == NULL)
-        return;
     TR_PrettyPrinterString output(this);
     printDestination(treeTop, output);
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
     _comp->incrNodeOpCodeLength(output.getLength());
 }
 
@@ -1249,33 +1204,28 @@ void TR_Debug::printDestination(TR::TreeTop *treeTop, TR_PrettyPrinterString &ou
     output.appendf(" BBStart at n%dn", node->getGlobalIndex());
 }
 
-void TR_Debug::printBasicPreNodeInfoAndIndent(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation)
+void TR_Debug::printBasicPreNodeInfoAndIndent(OMR::Logger *log, TR::Node *node, uint32_t indentation)
 {
     uint32_t numSpaces;
-
-    if (pOutFile == NULL)
-        return;
 
     if (node->getOpCodeValue() == TR::BBStart && !node->getBlock()->isExtensionOfPreviousBlock()
         && node->getBlock()
                ->getPrevBlock()) // a block that is not an extension of previous block and is not the first block
     {
-        trfprintf(pOutFile, "\n");
+        log->println();
     }
 
     char const * const globalIndexPrefix = "n";
 
     numSpaces = getNumSpacesAfterIndex(node->getGlobalIndex(), MAX_GLOBAL_INDEX_LENGTH);
-    trfprintf(pOutFile, "%s%dn%*s %*s", globalIndexPrefix, node->getGlobalIndex(), numSpaces, "", indentation, " ");
+    log->printf("%s%dn%*s %*s", globalIndexPrefix, node->getGlobalIndex(), numSpaces, "", indentation, " ");
 
     _comp->setNodeOpCodeLength(0);
 }
 
-void TR_Debug::printBasicPostNodeInfo(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation)
+void TR_Debug::printBasicPostNodeInfo(OMR::Logger *log, TR::Node *node, uint32_t indentation)
 {
     TR_PrettyPrinterString output(this);
-    if (pOutFile == NULL)
-        return;
 
     output.appends("  ");
     if ((_comp->getNodeOpCodeLength() + indentation) < DEFAULT_NODE_LENGTH + DEFAULT_INDENT_INCREMENT)
@@ -1318,18 +1268,16 @@ void TR_Debug::printBasicPostNodeInfo(TR::FILE *pOutFile, TR::Node *node, uint32
     if (node->getFlags().getValue())
         output.appendf(" flg=0x%x", node->getFlags().getValue());
 
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
 
     _comp->setNodeOpCodeLength(0); // redundant - just to be safe
 }
 
-void TR_Debug::printNodeInfo(TR::FILE *pOutFile, TR::Node *node)
+void TR_Debug::printNodeInfo(OMR::Logger *log, TR::Node *node)
 {
-    if (pOutFile == NULL)
-        return;
     TR_PrettyPrinterString output(this);
     printNodeInfo(node, output, false);
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
     _comp->incrNodeOpCodeLength(output.getLength());
 }
 
@@ -1396,7 +1344,6 @@ void TR_Debug::printNodeInfo(TR::Node *node, TR_PrettyPrinterString &output, boo
     } else if (node->getOpCodeValue() == TR::BBStart) {
         TR::Block *block = node->getBlock();
         if (block->getNumber() >= 0) {
-            // trfprintf(pOutFile, " <block_%d>",block->getNumber());
             output.appendf(" <block_%d>", block->getNumber());
         }
 
@@ -1547,11 +1494,9 @@ void TR_Debug::printNodeInfo(TR::Node *node, TR_PrettyPrinterString &output, boo
 
 // Dump the node flags for this node
 // All flag printers should be called from here
-void TR_Debug::printNodeFlags(TR::FILE *pOutFile, TR::Node *node)
+void TR_Debug::printNodeFlags(OMR::Logger *log, TR::Node *node)
 {
     TR_PrettyPrinterString output(this);
-    if (pOutFile == NULL)
-        return;
 
     if (node->getFlags().getValue()) {
         output.appends(" (");
@@ -1559,17 +1504,17 @@ void TR_Debug::printNodeFlags(TR::FILE *pOutFile, TR::Node *node)
         output.appends(")");
     }
 
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
 
     _comp->incrNodeOpCodeLength(output.getLength());
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-void TR_Debug::printBCDNodeInfo(TR::FILE *pOutFile, TR::Node *node)
+void TR_Debug::printBCDNodeInfo(OMR::Logger *log, TR::Node *node)
 {
     TR_PrettyPrinterString output(this);
     printBCDNodeInfo(node, output);
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
     _comp->incrNodeOpCodeLength(output.getLength());
 }
 
@@ -1638,53 +1583,48 @@ void TR_Debug::printBCDNodeInfo(TR::Node *node, TR_PrettyPrinterString &output)
 
 // Prints out a specification of the control flow graph in VCG format.
 //
-void TR_Debug::printVCG(TR::FILE *pOutFile, TR::CFG *cfg, const char *sig)
+void TR_Debug::printVCG(OMR::Logger *log, TR::CFG *cfg, const char *sig)
 {
-    if (pOutFile == NULL)
-        return;
-
     _nodeChecklist.empty();
     _structureChecklist.empty();
     if (debug("nestedVCG")) {
-        trfprintf(pOutFile, "graph: {\n");
-        trfprintf(pOutFile, "title: \"Nested Flow Graph\"\n");
-        trfprintf(pOutFile, "splines: yes\n");
-        trfprintf(pOutFile, "portsharing: no\n");
-        trfprintf(pOutFile, "manhatten_edges: no\n");
-        trfprintf(pOutFile, "layoutalgorithm: dfs\n");
-        trfprintf(pOutFile, "finetuning: no\n");
-        trfprintf(pOutFile, "xspace: 60\n");
-        trfprintf(pOutFile, "yspace: 50\n\n");
-        trfprintf(pOutFile, "node.borderwidth: 2\n");
-        trfprintf(pOutFile, "node.color: white\n");
-        trfprintf(pOutFile, "node.textcolor: black\n");
-        trfprintf(pOutFile, "edge.color: black\n");
-        trfprintf(pOutFile,
-            "node: {title: \"Top1\" label: \"%s\" vertical_order: 0 horizontal_order: 0 textcolor: blue borderwidth: "
-            "1}\n",
+        log->prints("graph: {\n");
+        log->prints("title: \"Nested Flow Graph\"\n");
+        log->prints("splines: yes\n");
+        log->prints("portsharing: no\n");
+        log->prints("manhatten_edges: no\n");
+        log->prints("layoutalgorithm: dfs\n");
+        log->prints("finetuning: no\n");
+        log->prints("xspace: 60\n");
+        log->prints("yspace: 50\n\n");
+        log->prints("node.borderwidth: 2\n");
+        log->prints("node.color: white\n");
+        log->prints("node.textcolor: black\n");
+        log->prints("edge.color: black\n");
+        log->printf("node: {title: \"Top1\" label: \"%s\" vertical_order: 0 horizontal_order: 0 textcolor: blue "
+                    "borderwidth: 1}\n",
             sig);
 
         if (cfg->getStructure())
-            printVCG(pOutFile, cfg->getStructure());
+            printVCG(log, cfg->getStructure());
 
-        trfprintf(pOutFile, "\n}\n");
+        log->prints("\n}\n");
     } else if (debug("bseqVCG")) {
-        trfprintf(pOutFile, "graph: {\n");
-        trfprintf(pOutFile, "title: \"Nested Flow Graph\"\n");
-        trfprintf(pOutFile, "splines: yes\n");
-        trfprintf(pOutFile, "portsharing: yes\n");
-        trfprintf(pOutFile, "manhatten_edges: no\n");
-        trfprintf(pOutFile, "layoutalgorithm: dfs\n");
-        trfprintf(pOutFile, "finetuning: no\n");
-        trfprintf(pOutFile, "xspace: 60\n");
-        trfprintf(pOutFile, "yspace: 50\n\n");
-        trfprintf(pOutFile, "node.borderwidth: 2\n");
-        trfprintf(pOutFile, "node.color: white\n");
-        trfprintf(pOutFile, "node.textcolor: black\n");
-        trfprintf(pOutFile, "edge.color: black\n");
-        trfprintf(pOutFile,
-            "node: {title: \"Top1\" label: \"%s\" vertical_order: 0 horizontal_order: 0 textcolor: blue borderwidth: "
-            "1}\n",
+        log->prints("graph: {\n");
+        log->prints("title: \"Nested Flow Graph\"\n");
+        log->prints("splines: yes\n");
+        log->prints("portsharing: yes\n");
+        log->prints("manhatten_edges: no\n");
+        log->prints("layoutalgorithm: dfs\n");
+        log->prints("finetuning: no\n");
+        log->prints("xspace: 60\n");
+        log->prints("yspace: 50\n\n");
+        log->prints("node.borderwidth: 2\n");
+        log->prints("node.color: white\n");
+        log->prints("node.textcolor: black\n");
+        log->prints("edge.color: black\n");
+        log->printf("node: {title: \"Top1\" label: \"%s\" vertical_order: 0 horizontal_order: 0 textcolor: blue "
+                    "borderwidth: 1}\n",
             sig);
 
         int32_t order;
@@ -1692,94 +1632,93 @@ void TR_Debug::printVCG(TR::FILE *pOutFile, TR::CFG *cfg, const char *sig)
         for (order = 1, treeTop = _comp->getStartTree(); treeTop; treeTop = exitTree->getNextTreeTop(), ++order) {
             TR::Block *block = treeTop->getNode()->getBlock();
             exitTree = block->getExit();
-            printVCG(pOutFile, block, order, 1);
+            printVCG(log, block, order, 1);
         }
-        printVCG(pOutFile, toBlock(cfg->getStart()), 0, 1);
-        printVCG(pOutFile, toBlock(cfg->getEnd()), order, 1);
+        printVCG(log, toBlock(cfg->getStart()), 0, 1);
+        printVCG(log, toBlock(cfg->getEnd()), order, 1);
 
-        trfprintf(pOutFile, "\n}\n");
+        log->prints("\n}\n");
     } else {
-        trfprintf(pOutFile, "graph: {\n");
-        trfprintf(pOutFile, "title: \"Linear Flow Graph\"\n");
-        trfprintf(pOutFile, "splines: no\n");
-        trfprintf(pOutFile, "portsharing: no\n");
-        trfprintf(pOutFile, "manhatten_edges: no\n");
-        trfprintf(pOutFile, "layoutalgorithm: dfs\n");
-        trfprintf(pOutFile, "finetuning: no\n");
-        trfprintf(pOutFile, "xspace: 60\n");
-        trfprintf(pOutFile, "yspace: 50\n\n");
-        trfprintf(pOutFile, "node.borderwidth: 2\n");
-        trfprintf(pOutFile, "node.color: white\n");
-        trfprintf(pOutFile, "node.textcolor: black\n");
-        trfprintf(pOutFile, "edge.color: black\n");
-        trfprintf(pOutFile, "node: {title: \"Top1\" label: \"%s\" vertical_order: 0 textcolor: blue borderwidth: 1}\n",
-            sig);
+        log->prints("graph: {\n");
+        log->prints("title: \"Linear Flow Graph\"\n");
+        log->prints("splines: no\n");
+        log->prints("portsharing: no\n");
+        log->prints("manhatten_edges: no\n");
+        log->prints("layoutalgorithm: dfs\n");
+        log->prints("finetuning: no\n");
+        log->prints("xspace: 60\n");
+        log->prints("yspace: 50\n\n");
+        log->prints("node.borderwidth: 2\n");
+        log->prints("node.color: white\n");
+        log->prints("node.textcolor: black\n");
+        log->prints("edge.color: black\n");
+        log->printf("node: {title: \"Top1\" label: \"%s\" vertical_order: 0 textcolor: blue borderwidth: 1}\n", sig);
 
         TR::CFGNode *node;
         for (node = cfg->getFirstNode(); node; node = node->getNext())
-            printVCG(pOutFile, toBlock(node));
+            printVCG(log, toBlock(node));
 
-        trfprintf(pOutFile, "\n}\n");
+        log->prints("\n}\n");
     }
 }
 
-void TR_Debug::printVCG(TR::FILE *pOutFile, TR_Structure *structure)
+void TR_Debug::printVCG(OMR::Logger *log, TR_Structure *structure)
 {
     if (structure->asRegion())
-        printVCG(pOutFile, structure->asRegion());
+        printVCG(log, structure->asRegion());
 }
 
-void TR_Debug::printVCG(TR::FILE *pOutFile, TR_RegionStructure *regionStructure)
+void TR_Debug::printVCG(OMR::Logger *log, TR_RegionStructure *regionStructure)
 {
-    trfprintf(pOutFile, "graph: {\n");
-    trfprintf(pOutFile, "title: \"%s\"\n", getName(regionStructure));
+    log->prints("graph: {\n");
+    log->printf("title: \"%s\"\n", getName(regionStructure));
 
-    printVCG(pOutFile, regionStructure->getEntry(), true);
+    printVCG(log, regionStructure->getEntry(), true);
     TR_RegionStructure::Cursor it(*regionStructure);
     TR_StructureSubGraphNode *node;
     for (node = it.getFirst(); node != NULL; node = it.getNext()) {
-        printVCG(pOutFile, node, false);
+        printVCG(log, node, false);
     }
     it.reset();
     for (node = it.getFirst(); node != NULL; node = it.getNext()) {
-        printVCGEdges(pOutFile, node);
+        printVCGEdges(log, node);
     }
 
-    trfprintf(pOutFile, "}\n");
+    log->prints("}\n");
 }
 
-void TR_Debug::printVCG(TR::FILE *pOutFile, TR_StructureSubGraphNode *node, bool isEntry)
+void TR_Debug::printVCG(OMR::Logger *log, TR_StructureSubGraphNode *node, bool isEntry)
 {
     if (_structureChecklist.isSet(node->getNumber()))
         return;
     _structureChecklist.set(node->getNumber());
 
-    trfprintf(pOutFile, "node: {title: \"%s\" ", getName(node));
-    trfprintf(pOutFile, "label: \"%d\" ", node->getNumber());
+    log->printf("node: {title: \"%s\" ", getName(node));
+    log->printf("label: \"%d\" ", node->getNumber());
     if (isEntry)
-        trfprintf(pOutFile, "vertical_order: 1 ");
+        log->prints("vertical_order: 1 ");
     if (node->getStructure() == NULL) // exit destination
-        trfprintf(pOutFile, "color: red}\n");
+        log->prints("color: red}\n");
     else {
         if (node->getStructure()->asRegion())
-            trfprintf(pOutFile, "color: lightcyan ");
-        trfprintf(pOutFile, "}\n");
-        printVCG(pOutFile, node->getStructure());
+            log->prints("color: lightcyan ");
+        log->prints("}\n");
+        printVCG(log, node->getStructure());
     }
 }
 
-void TR_Debug::printVCGEdges(TR::FILE *pOutFile, TR_StructureSubGraphNode *node)
+void TR_Debug::printVCGEdges(OMR::Logger *log, TR_StructureSubGraphNode *node)
 {
     for (auto edge = node->getSuccessors().begin(); edge != node->getSuccessors().end(); ++edge) {
         TR_StructureSubGraphNode *to = toStructureSubGraphNode((*edge)->getTo());
-        printVCG(pOutFile, to, false); // print it out if it is an exit destination
-        trfprintf(pOutFile, "edge: { sourcename: \"%s\" targetname: \"%s\" }\n", getName(node), getName(to));
+        printVCG(log, to, false); // print it out if it is an exit destination
+        log->printf("edge: { sourcename: \"%s\" targetname: \"%s\" }\n", getName(node), getName(to));
     }
 
     for (auto edge = node->getExceptionSuccessors().begin(); edge != node->getExceptionSuccessors().end(); ++edge) {
         TR_StructureSubGraphNode *to = toStructureSubGraphNode((*edge)->getTo());
-        printVCG(pOutFile, to, false); // print it out if it is an exit destination
-        trfprintf(pOutFile, "edge: { sourcename: \"%s\" targetname: \"%s\" color: pink}\n", getName(node), getName(to));
+        printVCG(log, to, false); // print it out if it is an exit destination
+        log->printf("edge: { sourcename: \"%s\" targetname: \"%s\" color: pink}\n", getName(node), getName(to));
     }
 }
 
@@ -1789,37 +1728,34 @@ static const char *blockColours[numHotnessLevels]
 static const char *edgeColours[numHotnessLevels]
     = { "black", "blue", "lightblue", "lightyellow", "gold", "red", "black" };
 
-void TR_Debug::printVCG(TR::FILE *pOutFile, TR::Block *block, int32_t vorder, int32_t horder)
+void TR_Debug::printVCG(OMR::Logger *log, TR::Block *block, int32_t vorder, int32_t horder)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR::CFG *cfg = _comp->getFlowGraph();
 
-    trfprintf(pOutFile, "node: {title: \"%d\" ", block->getNumber());
+    log->printf("node: {title: \"%d\" ", block->getNumber());
     if (!block->getEntry()) {
         TR_ASSERT(!block->getExit(), "both entry and exit must be specified for TR_Block");
         if (block->getPredecessors().empty())
-            trfprintf(pOutFile, "vertical_order: 0 label: \"Entry\" shape: ellipse color: lightgreen ");
+            log->prints("vertical_order: 0 label: \"Entry\" shape: ellipse color: lightgreen ");
         else
-            trfprintf(pOutFile, "label: \"Exit\" shape: ellipse color: lightyellow ");
+            log->prints("label: \"Exit\" shape: ellipse color: lightyellow ");
     } else {
-        trfprintf(pOutFile, "label: \"%d", block->getNumber());
-        trfprintf(pOutFile, "\" ");
+        log->printf("label: \"%d", block->getNumber());
+        log->prints("\" ");
 
-        trfprintf(pOutFile, "color: %s ", blockColours[unknownHotness]);
+        log->printf("color: %s ", blockColours[unknownHotness]);
         if (vorder != -1)
-            trfprintf(pOutFile, "vertical_order: %d ", vorder);
+            log->printf("vertical_order: %d ", vorder);
         if (horder != -1)
-            trfprintf(pOutFile, "horizontal_order: %d ", horder);
+            log->printf("horizontal_order: %d ", horder);
     }
-    trfprintf(pOutFile, "}\n");
+    log->prints("}\n");
 
     TR::Block *b;
     for (auto edge = block->getSuccessors().begin(); edge != block->getSuccessors().end(); ++edge) {
         b = toBlock((*edge)->getTo());
         if (b->getNumber() >= 0) {
-            trfprintf(pOutFile, "edge: { sourcename: \"%d\" targetname: \"%d\" color: %s}\n", block->getNumber(),
+            log->printf("edge: { sourcename: \"%d\" targetname: \"%d\" color: %s}\n", block->getNumber(),
                 b->getNumber(), edgeColours[unknownHotness]);
         }
     }
@@ -1827,7 +1763,7 @@ void TR_Debug::printVCG(TR::FILE *pOutFile, TR::Block *block, int32_t vorder, in
     for (auto edge = block->getExceptionSuccessors().begin(); edge != block->getExceptionSuccessors().end(); ++edge) {
         b = toBlock((*edge)->getTo());
         if (b->getNumber() >= 0) {
-            trfprintf(pOutFile,
+            log->printf(
                 "edge: { sourcename: \"%d\" targetname: \"%d\" linestyle: dotted label: \"exception\" color: %s }\n",
                 block->getNumber(), b->getNumber(), edgeColours[unknownHotness]);
         }
@@ -1836,78 +1772,75 @@ void TR_Debug::printVCG(TR::FILE *pOutFile, TR::Block *block, int32_t vorder, in
 
 // Output a representation of this node in the VCG output
 //
-void TR_Debug::printVCG(TR::FILE *pOutFile, TR::Node *node, uint32_t indentation)
+void TR_Debug::printVCG(OMR::Logger *log, TR::Node *node, uint32_t indentation)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t i;
 
     if (_nodeChecklist.isSet(node->getGlobalIndex())) {
-        trfprintf(pOutFile, "%*s==>%s at %s\\n", 12 + indentation, " ", getName(node->getOpCode()), getName(node));
+        log->printf("%*s==>%s at %s\\n", 12 + indentation, " ", getName(node->getOpCode()), getName(node));
         return;
     }
 
     _nodeChecklist.set(node->getGlobalIndex());
-    trfprintf(pOutFile, "%s  ", getName(node));
-    trfprintf(pOutFile, "%*s", indentation, " ");
-    printNodeInfo(pOutFile, node);
-    trfprintf(pOutFile, "\\n");
+    log->printf("%s  ", getName(node));
+    log->printf("%*s", indentation, " ");
+    printNodeInfo(log, node);
+    log->prints("\\n");
 
     indentation += 5;
 
     if (node->getOpCode().isSwitch()) {
-        trfprintf(pOutFile, "%*s ***can't print switches yet***\\n", indentation + 10, " ");
+        log->printf("%*s ***can't print switches yet***\\n", indentation + 10, " ");
     } else {
         for (i = 0; i < node->getNumChildren(); i++)
-            printVCG(pOutFile, node->getChild(i), indentation);
+            printVCG(log, node->getChild(i), indentation);
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::VPConstraint *info)
+void TR_Debug::print(OMR::Logger *log, TR::VPConstraint *info)
 {
-    if (pOutFile == NULL)
-        return;
-
     if (!info) {
-        trfprintf(pOutFile, "none");
+        log->prints("none");
         return;
     }
 
     if (info->asIntConst()) {
-        trfprintf(pOutFile, "%dI", info->getLowInt());
+        log->printf("%dI", info->getLowInt());
         return;
     }
+
     if (info->asIntRange()) {
         if (info->getLowInt() == TR::getMinSigned<TR::Int32>())
-            trfprintf(pOutFile, "(TR::getMinSigned<TR::Int32>() ");
+            log->prints("(TR::getMinSigned<TR::Int32>() ");
         else
-            trfprintf(pOutFile, "(%d ", info->getLowInt());
+            log->printf("(%d ", info->getLowInt());
         if (info->getHighInt() == TR::getMaxSigned<TR::Int32>())
-            trfprintf(pOutFile, "to TR::getMaxSigned<TR::Int32>())");
+            log->prints("to TR::getMaxSigned<TR::Int32>())");
         else
-            trfprintf(pOutFile, "to %d)", info->getHighInt());
-        trfprintf(pOutFile, "I");
+            log->printf("to %d)", info->getHighInt());
+        log->printc('I');
         return;
     }
+
     if (info->asLongConst()) {
-        trfprintf(pOutFile, INT64_PRINTF_FORMAT "L", info->getLowLong());
+        log->printf(INT64_PRINTF_FORMAT "L", info->getLowLong());
         return;
     }
 
     if (info->asLongRange()) {
         if (info->getLowLong() == TR::getMinSigned<TR::Int64>())
-            trfprintf(pOutFile, "(TR::getMinSigned<TR::Int64>() ");
+            log->prints("(TR::getMinSigned<TR::Int64>() ");
         else
-            trfprintf(pOutFile, "(" INT64_PRINTF_FORMAT " ", info->getLowLong());
+            log->printf("(" INT64_PRINTF_FORMAT " ", info->getLowLong());
         if (info->getHighLong() == TR::getMaxSigned<TR::Int64>())
-            trfprintf(pOutFile, "to TR::getMaxSigned<TR::Int64>())");
+            log->printf("to TR::getMaxSigned<TR::Int64>())");
         else
-            trfprintf(pOutFile, "to " INT64_PRINTF_FORMAT ")", info->getHighLong());
-        trfprintf(pOutFile, "L");
+            log->printf("to " INT64_PRINTF_FORMAT ")", info->getHighLong());
+        log->printc('L');
         return;
     }
-    trfprintf(pOutFile, "unprintable constraint");
+
+    log->prints("unprintable constraint");
 }
 
 const char *TR_Debug::getName(TR::DataType type) { return TR::DataType::getName(type); }
@@ -1947,8 +1880,9 @@ void TR_Debug::verifyGlobalIndices(TR::Node *node, TR::Node **nodesByGlobalIndex
 void TR_Debug::verifyTrees(TR::ResolvedMethodSymbol *methodSymbol)
 {
 #ifndef ASSUMES
-    if (getFile() == NULL)
+    if (!_comp->getOption(TR_TraceTreeVerification)) {
         return;
+    }
 #endif
 
     // Pre-allocate the bitvector to the correct size.
@@ -2020,11 +1954,10 @@ void TR_Debug::verifyTreesPass1(TR::Node *node)
                 if (childType != expectedType && childType != TR::NoType
                     && !((node->getOpCodeValue() == TR::imul || node->getOpCodeValue() == TR::ishl)
                         && child->getOpCodeValue() == TR::loadaddr)) {
-                    if (getFile() != NULL) {
-                        trfprintf(getFile(),
-                            "TREE VERIFICATION ERROR -- node [%s] has wrong type for child [%s] (%s), expected %s\n",
-                            getName(node), getName(child), getName(childType), getName(expectedType));
-                    }
+                    logprintf(_comp->getOption(TR_TraceTreeVerification), getLogger(),
+                        "TREE VERIFICATION ERROR -- node [%s] has wrong type for child [%s] (%s), expected %s\n",
+                        getName(node), getName(child), getName(childType), getName(expectedType));
+
                     TR_ASSERT(debug("fixTrees"), "Tree verification error");
                 }
             }
@@ -2034,6 +1967,9 @@ void TR_Debug::verifyTreesPass1(TR::Node *node)
 
 void TR_Debug::verifyTreesPass2(TR::Node *node, bool isTreeTop)
 {
+    OMR::Logger *log = getLogger();
+    bool trace = _comp->getOption(TR_TraceTreeVerification);
+
     // Verify the reference count. Pass 1 should have set the localIndex to the
     // reference count.
     //
@@ -2045,9 +1981,9 @@ void TR_Debug::verifyTreesPass2(TR::Node *node, bool isTreeTop)
 
         if (isTreeTop) {
             if (node->getReferenceCount() != 0) {
-                if (getFile() != NULL)
-                    trfprintf(getFile(), "TREE VERIFICATION ERROR -- treetop node [%s] with ref count %d\n",
-                        getName(node), node->getReferenceCount());
+                logprintf(trace, log, "TREE VERIFICATION ERROR -- treetop node [%s] with ref count %d\n", getName(node),
+                    node->getReferenceCount());
+
                 TR_ASSERT(debug("fixTrees"), "Tree verification error");
                 node->setReferenceCount(0);
             }
@@ -2055,20 +1991,22 @@ void TR_Debug::verifyTreesPass2(TR::Node *node, bool isTreeTop)
 
         if (node->getReferenceCount() > 1
             && (node->getOpCodeValue() == TR::call || node->getOpCodeValue() == TR::calli)) {
-            if (getFile() != NULL)
-                trfprintf(getFile(), "TREE VERIFICATION ERROR -- void call node [%s] with ref count %d\n",
-                    getName(node), node->getReferenceCount());
+            logprintf(trace, log, "TREE VERIFICATION ERROR -- void call node [%s] with ref count %d\n", getName(node),
+                node->getReferenceCount());
+
             TR_ASSERT(debug("fixTrees"), "Tree verification error");
         }
 
         if (node->getReferenceCount() != node->getLocalIndex()) {
-            if (getFile() != NULL)
-                trfprintf(getFile(), "TREE VERIFICATION ERROR -- node [%s] ref count is %d and should be %d\n",
-                    getName(node), node->getReferenceCount(), node->getLocalIndex());
+            logprintf(trace, log, "TREE VERIFICATION ERROR -- node [%s] ref count is %d and should be %d\n",
+                getName(node), node->getReferenceCount(), node->getLocalIndex());
+
             TR_ASSERT(debug("fixTrees"), "Tree verification error");
+
             // if there is logging, don't fix the ref count!
-            if (getFile() == NULL)
+            if (!trace) {
                 node->setReferenceCount(node->getLocalIndex());
+            }
         }
     }
 }
@@ -2084,8 +2022,9 @@ TR::Node *TR_Debug::verifyFinalNodeReferenceCounts(TR::ResolvedMethodSymbol *met
             firstBadNode = badNode;
     }
 
-    if (getFile() != NULL)
-        trfflush(getFile());
+    if (_comp->getOption(TR_TraceNodeRefCountVerification)) {
+        getLogger()->flush();
+    }
 
     if (debug("enforceFinalNodeReferenceCounts")) {
         TR_ASSERT(!firstBadNode, "Node [%s] final ref count is %d and should be zero\n", getName(firstBadNode),
@@ -2105,9 +2044,10 @@ TR::Node *TR_Debug::verifyFinalNodeReferenceCounts(TR::Node *node)
         //
         if (node->getReferenceCount() != 0) {
             badNode = node;
-            if (getFile() != NULL)
-                trfprintf(getFile(), "WARNING -- node [%s] has final ref count %d and should be zero\n",
-                    getName(badNode), badNode->getReferenceCount());
+
+            logprintf(_comp->getOption(TR_TraceNodeRefCountVerification), getLogger(),
+                "WARNING -- node [%s] has final ref count %d and should be zero\n", getName(badNode),
+                badNode->getReferenceCount());
         }
 
         // Recursively check its children
@@ -2127,8 +2067,9 @@ TR::Node *TR_Debug::verifyFinalNodeReferenceCounts(TR::Node *node)
 void TR_Debug::verifyBlocks(TR::ResolvedMethodSymbol *methodSymbol)
 {
 #ifndef ASSUMES
-    if (getFile() == NULL)
+    if (!_comp->getOption(TR_TraceBlockVerification)) {
         return;
+    }
 #endif
 
     TR::TreeTop *tt, *exitTreeTop;
@@ -2182,7 +2123,6 @@ void TR_Debug::verifyBlocksPass2(TR::Node *node)
 {
     // Pass through and make sure that the localIndex == 0 for each child
     //
-
     if (!_nodeChecklist.isSet(node->getGlobalIndex())) {
         _nodeChecklist.set(node->getGlobalIndex());
         for (int32_t i = node->getNumChildren() - 1; i >= 0; --i)
@@ -2193,8 +2133,9 @@ void TR_Debug::verifyBlocksPass2(TR::Node *node)
             sprintf(buffer,
                 "BLOCK VERIFICATION ERROR -- node [%s] accessed outside of its (extended) basic block: %d time(s)\n",
                 getName(node), node->getLocalIndex());
-            if (getFile() != NULL)
-                trfprintf(getFile(), buffer);
+
+            logprints(_comp->getOption(TR_TraceBlockVerification), getLogger(), buffer);
+
             TR_ASSERT(debug("fixTrees"), buffer);
         }
     }

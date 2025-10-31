@@ -37,6 +37,7 @@
 #include "infra/Annotations.hpp"
 #include "infra/ILWalk.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "stdarg.h"
 
 void OMR_NORETURN TR::trap()
@@ -196,10 +197,10 @@ void NodeAssertionContext::printContext() const
     fprintf(stderr, "\nNode context:\n\n");
 
     if (printFullContext) {
-        debug->printIRTrees(TR::IO::Stderr, "Assertion Context", comp->getMethodSymbol());
-        debug->print(TR::IO::Stderr, comp->getMethodSymbol()->getFlowGraph());
+        debug->printIRTrees(OMR::CStdIOStreamLogger::Stderr, "Assertion Context", comp->getMethodSymbol());
+        debug->print(OMR::CStdIOStreamLogger::Stderr, comp->getMethodSymbol()->getFlowGraph());
         if (comp->getKnownObjectTable())
-            comp->getKnownObjectTable()->dumpTo(TR::IO::Stderr, comp);
+            comp->getKnownObjectTable()->dumpTo(OMR::CStdIOStreamLogger::Stderr, comp);
     } else {
         fprintf(stderr, "...\n");
 
@@ -213,7 +214,7 @@ void NodeAssertionContext::printContext() const
             if (containsNode(it.currentNode(), _node, checkedNodeChecklist)) {
                 foundNode = true;
                 debug->restoreNodeChecklist(commonedNodeChecklist);
-                debug->print(TR::IO::Stderr, it.currentTree());
+                debug->print(OMR::CStdIOStreamLogger::Stderr, it.currentTree());
                 break;
             } else {
                 markInChecklist(it.currentNode(), commonedNodeChecklist);
@@ -243,7 +244,7 @@ void InstructionAssertionContext::printContext() const
 
     if (printFullContext) {
         fprintf(stderr, "\n");
-        debug->dumpMethodInstrs(TR::IO::Stderr, "Assertion Context", false, false);
+        debug->dumpMethodInstrs(OMR::CStdIOStreamLogger::Stderr, "Assertion Context", false, false);
     } else {
         TR::Instruction *cursor = _instruction;
         for (int i = 0; i < (numInstructionsInContext - 1) / 2 && cursor->getPrev(); i++)
@@ -253,7 +254,7 @@ void InstructionAssertionContext::printContext() const
             fprintf(stderr, "\n...");
 
         for (int i = 0; i < numInstructionsInContext && cursor; i++) {
-            debug->print(TR::IO::Stderr, cursor);
+            debug->print(OMR::CStdIOStreamLogger::Stderr, cursor);
             cursor = cursor->getNext();
         }
 

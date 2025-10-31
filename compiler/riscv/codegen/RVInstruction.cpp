@@ -51,6 +51,7 @@
 #include "infra/Assert.hpp" // for TR_ASSERT
 #include "codegen/RVOutOfLineCodeSection.hpp"
 #include "codegen/GenerateInstructions.hpp"
+#include "ras/Logger.hpp"
 
 // TR::RtypeInstruction:: member functions
 
@@ -378,8 +379,8 @@ void TR::BtypeInstruction::expandIntoFarBranch()
 {
     TR_ASSERT_FATAL(getLabelSymbol(), "Attempt to expand conditional branch %p without a label", self());
 
-    if (comp()->getOption(TR_TraceCG))
-        traceMsg(comp(), "Expanding conditional branch instruction %p into a far branch\n", self());
+    logprintf(comp()->getOption(TR_TraceCG), comp()->log(),
+        "Expanding conditional branch instruction %p into a far branch\n", self());
 
     TR::RealRegister *zero = cg()->machine()->getRealRegister(TR::RealRegister::zero);
 
@@ -576,17 +577,8 @@ uint8_t *TR::VGNOPInstruction::generateBinaryEncoding()
         _site->setDestination(cursor);
         cg()->addRelocation(
             new (cg()->trHeapMemory()) TR::LabelAbsoluteRelocation((uint8_t *)(&_site->getDestination()), label));
-
-#ifdef DEBUG
-        if (debug("traceVGNOP"))
-            printf("####> virtual location = %p, label (relocation) = %p\n", cursor, label);
-#endif
     } else {
         _site->setDestination(label->getCodeLocation());
-#ifdef DEBUG
-        if (debug("traceVGNOP"))
-            printf("####> virtual location = %p, label location = %p\n", cursor, label->getCodeLocation());
-#endif
     }
 
     setBinaryEncoding(cursor);

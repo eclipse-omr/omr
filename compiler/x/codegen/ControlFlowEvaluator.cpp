@@ -69,6 +69,7 @@
 #include "infra/Bit.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "x/codegen/BinaryCommutativeAnalyser.hpp"
 #include "x/codegen/CompareAnalyser.hpp"
@@ -536,7 +537,9 @@ void OMR::X86::TreeEvaluator::setupProfiledGuardRelocation(TR::X86RegImmInstruct
         cmpInstruction->setReloKind(reloKind);
         cmpInstruction->setNode(node->getSecondChild());
     }
-    traceMsg(comp, "setupProfiledGuardRelocation: site %p type %d node %p\n", site, site->getType(), node);
+
+    logprintf(comp->getOption(TR_TraceCG), comp->log(), "setupProfiledGuardRelocation: site %p type %d node %p\n", site,
+        site->getType(), node);
 #endif
 }
 
@@ -1137,6 +1140,7 @@ TR::Register *OMR::X86::TreeEvaluator::returnEvaluator(TR::Node *node, TR::CodeG
 // also handles lselect, aselect
 TR::Register *OMR::X86::TreeEvaluator::iselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
+    TR::Compilation *comp = cg->comp();
     TR::Node *condition = node->getChild(0);
     TR::Node *trueVal = node->getChild(1);
     TR::Node *falseVal = node->getChild(2);
@@ -1151,15 +1155,15 @@ TR::Register *OMR::X86::TreeEvaluator::iselectEvaluator(TR::Node *node, TR::Code
     TR_ASSERT_FATAL_WITH_NODE(node, !trueReg->containsInternalPointer() && !falseReg->containsInternalPointer(),
         "Select nodes cannot have children that are internal pointers");
     if (falseReg->containsCollectedReference()) {
-        if (cg->comp()->getOption(TR_TraceCG))
-            traceMsg(cg->comp(), "Setting containsCollectedReference on result of select node in register %s\n",
-                cg->getDebug()->getName(trueReg));
+        logprintf(comp->getOption(TR_TraceCG), comp->log(),
+            "Setting containsCollectedReference on result of select node in register %s\n",
+            cg->getDebug()->getName(trueReg));
         trueReg->setContainsCollectedReference();
     }
 
     // don't need to test if we're already using a compare eq or compare ne
     auto conditionOp = condition->getOpCode();
-    bool longCompareOn32bit = (cg->comp()->target().is32Bit() && conditionOp.isBooleanCompare()
+    bool longCompareOn32bit = (comp->target().is32Bit() && conditionOp.isBooleanCompare()
         && condition->getFirstChild()->getOpCode().isLong());
     // if ((conditionOp == TR::icmpeq) || (conditionOp == TR::icmpne) || (conditionOp == TR::lcmpeq) || (conditionOp ==
     // TR::lcmpne))
@@ -1230,7 +1234,8 @@ TR::Register *OMR::X86::TreeEvaluator::integerIfCmpeqEvaluator(TR::Node *node, T
             cg->decReferenceCount(firstChild);
             cg->decReferenceCount(secondChild);
 
-            traceMsg(cg->comp(), "inserting long lookaside versioning overflow check @ node %p\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+                "inserting long lookaside versioning overflow check @ node %p\n", node);
 
             return NULL;
         }
@@ -1296,7 +1301,8 @@ TR::Register *OMR::X86::TreeEvaluator::integerIfCmpneEvaluator(TR::Node *node, T
                 cg->decReferenceCount(firstChild);
                 cg->decReferenceCount(secondChild);
 
-                traceMsg(comp, "inserting long lookaside versioning overflow check @ node %p\n", node);
+                logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                    "inserting long lookaside versioning overflow check @ node %p\n", node);
 
                 return NULL;
             }

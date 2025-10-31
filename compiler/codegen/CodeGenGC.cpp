@@ -49,6 +49,7 @@
 #include "infra/InterferenceGraph.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O CODE GENERATION: "
 
@@ -156,6 +157,8 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
     // Build a stack map with enough bits for parms, locals, and collectable temps
     //
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
     TR::GCStackAtlas *atlas = self()->getStackAtlas();
     uint32_t numberOfSlots = atlas->getNumberOfSlotsMapped();
 
@@ -191,11 +194,11 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
     if (liveLocals || liveMonitors) {
         ListIterator<TR::AutomaticSymbol> automaticIterator(&methodSymbol->getAutomaticList());
 
-        if (debug("traceLiveMonitors")) {
+        if (trace) {
             if (liveMonitors)
-                traceMsg(comp, "building monitor map for instr %p node %p\n", instr, instr->getNode());
+                log->printf("building monitor map for instr %p node %p\n", instr, instr->getNode());
             else
-                traceMsg(comp, "no monitor map for instr %p node %p\n", instr, instr->getNode());
+                log->printf("no monitor map for instr %p node %p\n", instr, instr->getNode());
         }
 
         for (TR::AutomaticSymbol *localCursor = automaticIterator.getFirst(); localCursor;
@@ -217,9 +220,8 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
                     map->setBit(mapIndex); // make sure the slot is marked as live
 
                 if (liveMonitors && liveMonitors->get(localCursor->getLiveLocalIndex())) {
-                    if (debug("traceLiveMonitors"))
-                        traceMsg(comp, "setting map bit for local %p (%d) mapIndex %d\n", localCursor,
-                            localCursor->getLiveLocalIndex(), mapIndex);
+                    logprintf(trace, log, "setting map bit for local %p (%d) mapIndex %d\n", localCursor,
+                        localCursor->getLiveLocalIndex(), mapIndex);
                     map->setLiveMonitorBit(mapIndex);
                     map->setBit(mapIndex); // make sure the slot is marked as live
                 }
@@ -251,11 +253,10 @@ TR_GCStackMap *OMR::CodeGenerator::buildGCMapForInstruction(TR::Instruction *ins
             if ((self()->comp()->target().cpu.isPower() || self()->comp()->target().cpu.isZ()
                     || self()->comp()->target().cpu.isARM64())
                 && (*location)->getMaxSpillDepth() == 0 && comp->cg()->isOutOfLineHotPath()) {
-                if (self()->getDebug())
-                    traceMsg(comp,
-                        "\nSkipping GC map [%p] index %d (%s) for instruction [%p] in OOL hot path because it has "
-                        "already been reverse spilled.\n",
-                        map, s->getGCMapIndex(), self()->getDebug()->getName((*location)->getSymbolReference()), instr);
+                logprintf(trace, log,
+                    "\nSkipping GC map [%p] index %d (%s) for instruction [%p] in OOL hot path because it has already "
+                    "been reverse spilled.\n",
+                    map, s->getGCMapIndex(), self()->getDebug()->getName((*location)->getSymbolReference()), instr);
                 continue;
             }
 

@@ -43,6 +43,7 @@
 #include "optimizer/Structure.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 class TR_OpaqueClassBlock;
 
@@ -75,8 +76,8 @@ TR_GlobalAnticipatability::TR_GlobalAnticipatability(TR::Compilation *comp, TR::
     , _localTransparency(_localAnalysisInfo, trace)
     , _localAnticipatability(_localAnalysisInfo, &_localTransparency, trace)
 {
-    if (trace)
-        traceMsg(comp, "Starting GlobalAnticipatability\n");
+    OMR::Logger *log = comp->log();
+    logprints(trace, log, "Starting GlobalAnticipatability\n");
 
     _supportedNodesAsArray = _localAnalysisInfo._supportedNodesAsArray;
 
@@ -94,12 +95,12 @@ TR_GlobalAnticipatability::TR_GlobalAnticipatability(TR::Compilation *comp, TR::
         if (trace) {
             int32_t i;
             for (i = 0; i < _numberOfNodes; i++) {
-                traceMsg(comp, "Block number : %d has solution : ", i);
-                _blockAnalysisInfo[i]->print(comp);
-                traceMsg(comp, "\n");
+                log->printf("Block number : %d has solution : ", i);
+                _blockAnalysisInfo[i]->print(log, comp);
+                log->println();
             }
 
-            traceMsg(comp, "Ending GlobalAnticipatability\n");
+            log->prints("Ending GlobalAnticipatability\n");
         }
 
     } // scope of the stack memory region
@@ -151,6 +152,8 @@ static bool isFieldAccess(TR::Node *nextNode)
 static bool nodeCanSurvive(TR::Node *nextNode, TR::Node *lastNodeFirstChild, TR::Node *lastNodeSecondChild,
     TR::Compilation *comp, bool trace)
 {
+    OMR::Logger *log = comp->log();
+
     if (isFieldAccess(nextNode)) {
         intptr_t similarOffset = -1;
         bool seenSimilarAccess = false;
@@ -171,8 +174,7 @@ static bool nodeCanSurvive(TR::Node *nextNode, TR::Node *lastNodeFirstChild, TR:
             }
         }
 
-        if (trace)
-            traceMsg(comp, "seen similar access %d\n", seenSimilarAccess);
+        logprintf(trace, log, "seen similar access %d\n", seenSimilarAccess);
 
         if (seenSimilarAccess) {
             if (similarOffset >= nextNode->getSymbolReference()->getOffset())
@@ -198,8 +200,7 @@ static bool nodeCanSurvive(TR::Node *nextNode, TR::Node *lastNodeFirstChild, TR:
                     = comp->fe()->getClassFromSignature(otherSig, otherLen, otherSymRef->getOwningMethod(comp));
             }
 
-            if (trace)
-                traceMsg(comp, "cl %p other cl %p\n", cl, otherClassObject);
+            logprintf(trace, log, "cl %p other cl %p\n", cl, otherClassObject);
 
             if (cl && otherClassObject && (comp->fe()->isInstanceOf(cl, otherClassObject, true) == TR_yes))
                 return true;
@@ -248,12 +249,6 @@ bool isRareEdge(TR::Compilation *comp, TR::CFGEdge *edge)
 {
     return false; // has to be performance tested with Java
     /*
-
-    #if 0
-       traceMsg (comp, "Edge from %d to %d has freq %d\n", toBlock(edge->getFrom())->getNumber(),
-                                                         toBlock(edge->getTo())->getNumber(),
-                                                         edge->getFrequency());
-    #endif
        return (edge->getFrequency() == 1);*/
 }
 
@@ -277,6 +272,7 @@ void TR_GlobalAnticipatability::killBasedOnSuccTransparency(TR::Block *block)
 //
 void TR_GlobalAnticipatability::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStructure)
 {
+    OMR::Logger *log = comp()->log();
     TR::Block *block = blockStructure->getBlock();
     TR::TreeTop *currentTree = block->getExit();
     TR::TreeTop *entryTree = block->getEntry();
@@ -369,18 +365,12 @@ void TR_GlobalAnticipatability::analyzeTreeTopsInBlockStructure(TR_BlockStructur
                     //*_scratch2 &= *(_localAnticipatability.getAnalysisInfo(next->getNumber()));
                     _scratch3->empty();
 
-                    if (trace()) {
-                        // traceMsg(comp(), "_scratch2 : ");
-                        //_scratch2->print(comp());
-                        // traceMsg(comp(), "\n");
-                    }
                     if ((lastNodeFirstChild || lastNodeSecondChild) && !_scratch2->isEmpty()) {
                         ContainerType::Cursor bvi(*_scratch2);
                         for (bvi.SetToFirstOne(); bvi.Valid(); bvi.SetToNextOne()) {
                             int32_t nextExpression = bvi;
                             TR::Node *nextNode = _supportedNodesAsArray[nextExpression];
-                            if (trace())
-                                traceMsg(comp(), "next expression %d\n", nextExpression);
+                            logprintf(trace(), log, "next expression %d\n", nextExpression);
                             if (nodeCanSurvive(nextNode, lastNodeFirstChild, lastNodeSecondChild, comp(), trace())) {
                                 _scratch3->set(nextExpression);
                             }
@@ -436,10 +426,11 @@ void TR_GlobalAnticipatability::analyzeTreeTopsInBlockStructure(TR_BlockStructur
     }
 
     if (trace()) {
-        traceMsg(comp(), "\nLocal Anticipatability of Block : %d\n", blockStructure->getBlock()->getNumber());
-        _localAnticipatability.getDownwardExposedAnalysisInfo(blockStructure->getBlock()->getNumber())->print(comp());
+        log->printf("\nLocal Anticipatability of Block : %d\n", blockStructure->getBlock()->getNumber());
+        _localAnticipatability.getDownwardExposedAnalysisInfo(blockStructure->getBlock()->getNumber())
+            ->print(log, comp());
 
-        traceMsg(comp(), "\nIn Set of Block : %d\n", blockStructure->getNumber());
-        _regularInfo->print(comp());
+        log->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
+        _regularInfo->print(log, comp());
     }
 }

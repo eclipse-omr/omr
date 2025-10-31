@@ -44,6 +44,7 @@
 #include "il/SymbolReference.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
 
@@ -57,15 +58,15 @@ uint8_t *TR::PPCHelperCallSnippet::emitSnippetBody()
     return genHelperCall(buffer);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::PPCHelperCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::PPCHelperCallSnippet *snippet)
 {
     uint8_t *cursor = snippet->getSnippetLabel()->getCodeLocation();
     TR::LabelSymbol *restartLabel = snippet->getRestartLabel();
 
     if (snippet->getKind() == TR::Snippet::IsArrayCopyCall) {
-        cursor = print(pOutFile, (TR::PPCArrayCopyCallSnippet *)snippet, cursor);
+        cursor = print(log, (TR::PPCArrayCopyCallSnippet *)snippet, cursor);
     } else {
-        printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "Helper Call Snippet");
+        printSnippetLabel(log, snippet->getSnippetLabel(), cursor, "Helper Call Snippet");
     }
 
     const char *info = "";
@@ -73,18 +74,18 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::PPCHelperCallSnippet *snippet)
     if (isBranchToTrampoline(snippet->getDestination(), cursor, distance))
         info = " Through trampoline";
 
-    printPrefix(pOutFile, NULL, cursor, 4);
+    printPrefix(log, NULL, cursor, 4);
     distance = *((int32_t *)cursor) & 0x03fffffc;
     distance = (distance << 6) >> 6; // sign extend
-    trfprintf(pOutFile, "%s \t" POINTER_PRINTF_FORMAT "\t\t; %s %s", restartLabel ? "bl" : "b",
-        (intptr_t)cursor + distance, getName(snippet->getDestination()), info);
+    log->printf("%s \t" POINTER_PRINTF_FORMAT "\t\t; %s %s", restartLabel ? "bl" : "b", (intptr_t)cursor + distance,
+        getName(snippet->getDestination()), info);
 
     if (restartLabel) {
         cursor += 4;
-        printPrefix(pOutFile, NULL, cursor, 4);
+        printPrefix(log, NULL, cursor, 4);
         distance = *((int32_t *)cursor) & 0x03fffffc;
         distance = (distance << 6) >> 6; // sign extend
-        trfprintf(pOutFile, "b \t" POINTER_PRINTF_FORMAT "\t\t; Restart", (intptr_t)cursor + distance);
+        log->printf("b \t" POINTER_PRINTF_FORMAT "\t\t; Restart", (intptr_t)cursor + distance);
     }
 }
 
@@ -151,14 +152,14 @@ uint8_t *TR::PPCArrayCopyCallSnippet::emitSnippetBody()
     return TR::PPCHelperCallSnippet::genHelperCall(buffer);
 }
 
-uint8_t *TR_Debug::print(TR::FILE *pOutFile, TR::PPCArrayCopyCallSnippet *snippet, uint8_t *cursor)
+uint8_t *TR_Debug::print(OMR::Logger *log, TR::PPCArrayCopyCallSnippet *snippet, uint8_t *cursor)
 {
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), cursor, "ArrayCopy Helper Call Snippet");
+    printSnippetLabel(log, snippet->getSnippetLabel(), cursor, "ArrayCopy Helper Call Snippet");
 
     TR::RealRegister *lengthReg = _cg->machine()->getRealRegister(snippet->getLengthRegNum());
 
-    printPrefix(pOutFile, NULL, cursor, 4);
-    trfprintf(pOutFile, "li \t%s, %d", getName(lengthReg), *((int32_t *)cursor) & 0x0000ffff);
+    printPrefix(log, NULL, cursor, 4);
+    log->printf("li \t%s, %d", getName(lengthReg), *((int32_t *)cursor) & 0x0000ffff);
     cursor += 4;
 
     return cursor;

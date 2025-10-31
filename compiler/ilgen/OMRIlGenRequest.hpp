@@ -49,6 +49,8 @@ class SymbolReferenceTable;
 
 namespace OMR {
 
+class Logger;
+
 /**
  * IlGenRequestBase defines the IlGenRequest API that common code can count on, although it's more documentation
  *   then enforcement.  A front end will typically extend this class (perhaps even with a hierarchy of classes)
@@ -66,7 +68,7 @@ public:
         TR::Compilation *comp, TR::SymbolReferenceTable *symRefTab)
         = 0;
 
-    virtual void print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix) = 0;
+    virtual void print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix) = 0;
 
     TR::IlGeneratorMethodDetails &details() { return _methodDetails; }
 

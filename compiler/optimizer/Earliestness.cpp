@@ -31,6 +31,7 @@
 #include "optimizer/Structure.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Optimizer;
@@ -58,25 +59,24 @@ TR_Earliestness::TR_Earliestness(TR::Compilation *comp, TR::Optimizer *optimizer
     bool trace)
     : TR_UnionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
 {
+    OMR::Logger *log = comp->log();
     _globalAnticipatability = new (comp->allocator()) TR_GlobalAnticipatability(comp, optimizer, rootStructure, trace);
 
-    if (trace)
-        traceMsg(comp, "Starting Earliestness\n");
+    logprints(trace, log, "Starting Earliestness\n");
 
     _supportedNodesAsArray = _globalAnticipatability->_supportedNodesAsArray;
 
     _temp = NULL;
     performAnalysis(rootStructure, false);
-    if (trace)
-        traceMsg(comp, "Earl # bits %d, %d\n", _numberOfBits, _globalAnticipatability->_numberOfBits);
+    logprintf(trace, log, "Earl # bits %d, %d\n", _numberOfBits, _globalAnticipatability->_numberOfBits);
     if (trace) {
         int32_t i;
         for (i = 0; i < _numberOfNodes; i++) {
-            traceMsg(comp, "Block number : %d has solution : ", i);
-            _inSetInfo[i]->print(comp);
-            traceMsg(comp, "\n");
+            log->printf("Block number : %d has solution : ", i);
+            _inSetInfo[i]->print(log, comp);
+            log->println();
         }
-        traceMsg(comp, "\nEnding Earliestness\n");
+        log->prints("\nEnding Earliestness\n");
     }
 
     // Null out info not used by callers
@@ -122,13 +122,6 @@ void TR_Earliestness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockSt
 
     *(_blockAnalysisInfo[blockStructure->getNumber()]) |= *_temp;
     copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
-
-    if (trace()) {
-        /////traceMsg(comp(), "\nIn Set of Block : %d\n", blockStructure->getNumber());
-        /////_inSetInfo[blockStructure->getNumber()]->print(comp()->getOutFile());
-        /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(comp()->getOutFile());
-    }
 
     TR::Block *block = blockStructure->getBlock();
     TR::TreeTop *currentTree = block->getEntry();

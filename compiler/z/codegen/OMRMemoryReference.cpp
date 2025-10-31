@@ -80,6 +80,7 @@
 #include "infra/Flags.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "z/codegen/EndianConversion.hpp"
 #include "z/codegen/S390Evaluator.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
@@ -113,22 +114,23 @@ void OMR::Z::MemoryReference::setupCausesImplicitNullPointerException(TR::CodeGe
 void OMR::Z::MemoryReference::addToTemporaryNegativeOffset(TR::Node *node, int32_t offset, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = cg->traceBCDCodeGen();
+
     if (offset < 0) {
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp,
-                "\taddToTemporaryNegativeOffset : %s (%p) new offset %d, existing mr offset %d (existing mr "
-                "hasTempNegOffset = %s)\n",
-                node ? node->getOpCode().getName() : "NULL", node, offset, self()->getOffset(),
-                self()->hasTemporaryNegativeOffset() ? "yes" : "no");
+        logprintf(trace, log,
+            "\taddToTemporaryNegativeOffset : %s (%p) new offset %d, existing mr offset %d (existing mr "
+            "hasTempNegOffset = %s)\n",
+            node ? node->getOpCode().getName() : "NULL", node, offset, self()->getOffset(),
+            self()->hasTemporaryNegativeOffset() ? "yes" : "no");
         if (self()->getOffset() < 0
             && !self()->hasTemporaryNegativeOffset()) // if there is a 'real' negative offset then deal with this first
                                                       // before adding in the temporary negative offset
         {
-            if (cg->traceBCDCodeGen())
-                traceMsg(comp,
-                    "\t\texisting mr->offset %d < 0 so call enforceSSFormatLimits to clear this up before setting "
-                    "HasTemporaryNegativeOffset\n",
-                    self()->getOffset());
+            logprintf(trace, log,
+                "\t\texisting mr->offset %d < 0 so call enforceSSFormatLimits to clear this up before setting "
+                "HasTemporaryNegativeOffset\n",
+                self()->getOffset());
             self()->enforceSSFormatLimits(node, cg,
                 NULL); // call SSFormatLimits to also take this chance to fold in an index register if needed
         }
@@ -160,6 +162,8 @@ void OMR::Z::MemoryReference::setupCheckForLongDispFlag(TR::CodeGenerator *cg)
 bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *cg, TR::Node *addressChild)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = cg->traceBCDCodeGen();
 
     // Force folding if it will make a standard memory reference: X(B) or X(I,B)
 
@@ -169,31 +173,27 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
         // aiadd (reg)
         //    node/tree
         //    iconst
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp, " inside setForceFoldingIfAdvantageous, addressChild %s (%p) has register %s\n",
-                addressChild->getOpCode().getName(), addressChild,
-                cg->getDebug()->getName(addressChild->getRegister()));
-        }
+        logprintf(trace, log, " inside setForceFoldingIfAdvantageous, addressChild %s (%p) has register %s\n",
+            addressChild->getOpCode().getName(), addressChild, cg->getDebug()->getName(addressChild->getRegister()));
+
         return false;
     }
 
     if (!addressChild->getOpCode().isAdd()) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) is not an add type - most likely cannot "
-                "fold\n",
-                addressChild->getOpCode().getName(), addressChild);
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) is not an add type - most likely cannot "
+            "fold\n",
+            addressChild->getOpCode().getName(), addressChild);
+
         return false;
     }
 
     if (!addressChild->getSecondChild()->getOpCode().isLoadConst()) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) second child is not a load const - cannot "
-                "fold\n",
-                addressChild->getOpCode().getName(), addressChild);
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) second child is not a load const - cannot "
+            "fold\n",
+            addressChild->getOpCode().getName(), addressChild);
+
         return false;
     }
 
@@ -203,24 +203,21 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
         // aiadd
         //    node/tree
         //    iconst (reg)
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) const child %s (%p) has register %s, "
-                "cannot fold.\n",
-                addressChild->getOpCode().getName(), addressChild,
-                addressChild->getSecondChild()->getOpCode().getName(), addressChild->getSecondChild(),
-                cg->getDebug()->getName(addressChild->getSecondChild()->getRegister()));
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) const child %s (%p) has register %s, cannot "
+            "fold.\n",
+            addressChild->getOpCode().getName(), addressChild, addressChild->getSecondChild()->getOpCode().getName(),
+            addressChild->getSecondChild(), cg->getDebug()->getName(addressChild->getSecondChild()->getRegister()));
+
         return false;
     }
 
     if (addressChild->getReferenceCount() != 1) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) has ref count %d, cannot fold, need value "
-                "in register.\n",
-                addressChild->getOpCode().getName(), addressChild, addressChild->getReferenceCount());
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) has ref count %d, cannot fold, need value in "
+            "register.\n",
+            addressChild->getOpCode().getName(), addressChild, addressChild->getReferenceCount());
+
         return false;
     }
 
@@ -253,12 +250,11 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
     }
 
     if (haveToEvalConvIntoRegister) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) first child has conv. with ref count > 1 "
-                "and no register, must evaluate - setForceFolding()\n",
-                addressChild->getOpCode().getName(), addressChild);
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) first child has conv. with ref count > 1 and "
+            "no register, must evaluate - setForceFolding()\n",
+            addressChild->getOpCode().getName(), addressChild);
+
         cg->evaluate(addressChild->getFirstChild());
         self()->setForceFolding();
         return true;
@@ -268,12 +264,11 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
     // only allow folding if conversions are deemed 'unneeded' by LoadExtension step
 
     if (!allConvNodesAreUnneeded) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) first child has conv. which are needed, "
-                "folding after evaluation.\n",
-                addressChild->getOpCode().getName(), addressChild);
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) first child has conv. which are needed, "
+            "folding after evaluation.\n",
+            addressChild->getOpCode().getName(), addressChild);
+
         cg->evaluate(addressChild->getFirstChild());
         self()->setForceFolding();
         return true;
@@ -305,11 +300,11 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
         //       conv
         //          loadaddr / aload / aRegLoad (reg)
         //    iconst
-        if (cg->traceBCDCodeGen()) {
+        if (trace) {
             TR::Node *dispNode
                 = eventualNonConversion->getRegister() ? eventualNonConversion : foundConvNodeWithRegister;
 
-            traceMsg(comp, "\t\taddressChild %s (%p) node %s (%p) is evaluatedReg+const (%s + %lld) so %s=true\n",
+            log->printf("\t\taddressChild %s (%p) node %s (%p) is evaluatedReg+const (%s + %lld) so %s=true\n",
                 addressChild->getOpCode().getName(), addressChild, dispNode->getOpCode().getName(), dispNode,
                 cg->getDebug()->getName(dispNode->getRegister()),
                 addressChild->getSecondChild()->get64bitIntegralValue(), "setForceFirstTimeFolding");
@@ -323,13 +318,12 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
             || eventualNonConversion->getRegister() || eventualNonConversion->getOpCode().isLoadReg());
 
     if (!eventualNonConversionIsSuitableForFolding) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, addressChild %s (%p) eventual non conversion %s (%p) is not "
-                "suitable for folding.\n",
-                addressChild->getOpCode().getName(), addressChild, eventualNonConversion->getOpCode().getName(),
-                eventualNonConversion);
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, addressChild %s (%p) eventual non conversion %s (%p) is not "
+            "suitable for folding.\n",
+            addressChild->getOpCode().getName(), addressChild, eventualNonConversion->getOpCode().getName(),
+            eventualNonConversion);
+
         // TODO: first time folding here? still desirable axadd form
         return false;
     }
@@ -346,12 +340,11 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
         //       conv
         //          loadaddr/aload/aRegLoad
         //    iconst
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, eventualNonConversion %s (%p) has no register and refCount==1 "
-                "and is a aload+const so setForceFolding=true\n",
-                eventualNonConversion->getOpCode().getName(), eventualNonConversion);
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, eventualNonConversion %s (%p) has no register and refCount==1 and "
+            "is a aload+const so setForceFolding=true\n",
+            eventualNonConversion->getOpCode().getName(), eventualNonConversion);
+
         self()->setForceFolding();
         return true;
     } else // if (eventualNonConversion->getReferenceCount() == 1)
@@ -368,13 +361,12 @@ bool OMR::Z::MemoryReference::setForceFoldingIfAdvantageous(TR::CodeGenerator *c
         //       aloadi
         //          x
         //    iconst
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp,
-                " inside setForceFoldingIfAdvantageous, eventualNonConversion %s (%p) has no register and refCount==1 "
-                "and is an aloadi+const so eval(%s - %p) and setForceFolding=true\n",
-                eventualNonConversion->getOpCode().getName(), eventualNonConversion,
-                eventualNonConversion->getFirstChild()->getOpCode().getName(), eventualNonConversion->getFirstChild());
-        }
+        logprintf(trace, log,
+            " inside setForceFoldingIfAdvantageous, eventualNonConversion %s (%p) has no register and refCount==1 and "
+            "is an aloadi+const so eval(%s - %p) and setForceFolding=true\n",
+            eventualNonConversion->getOpCode().getName(), eventualNonConversion,
+            eventualNonConversion->getFirstChild()->getOpCode().getName(), eventualNonConversion->getFirstChild());
+
         self()->setForceFolding();
         cg->evaluate(addressChild->getFirstChild());
         return true;
@@ -404,6 +396,8 @@ void recursivelyDecrementIncrementedNodesIfUnderRegister(TR::CodeGenerator *cg, 
 
     bool foundCurNode = false;
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = cg->traceBCDCodeGen();
 
     // search for the current node in the list, and remove + decrement if found
     ListIterator<TR::Node> listIt(&_incNodesList);
@@ -413,10 +407,9 @@ void recursivelyDecrementIncrementedNodesIfUnderRegister(TR::CodeGenerator *cg, 
             foundCurNode = true;
 
             if (startRemoving) {
-                if (cg->traceBCDCodeGen()) {
-                    traceMsg(comp, "\t decReferenceCount on incremented node %p (%d) (%d->%d)\n", cur,
-                        cur->getGlobalIndex(), cur->getReferenceCount(), cur->getReferenceCount() - 1);
-                }
+                logprintf(trace, log, "\t decReferenceCount on incremented node %p (%d) (%d->%d)\n", cur,
+                    cur->getGlobalIndex(), cur->getReferenceCount(), cur->getReferenceCount() - 1);
+
                 cg->decReferenceCount(cur);
             }
             break;
@@ -438,10 +431,9 @@ void recursivelyDecrementIncrementedNodesIfUnderRegister(TR::CodeGenerator *cg, 
     // Do not remove the current node if it has a register, so perform check afterwards.
 
     if (cur->getRegister() != NULL) {
-        if (cg->traceBCDCodeGen()) {
-            traceMsg(comp, "\t %s [%p] (%d) has a register, so start removing under it\n", cur->getOpCode().getName(),
-                cur, cur->getGlobalIndex());
-        }
+        logprintf(trace, log, "\t %s [%p] (%d) has a register, so start removing under it\n",
+            cur->getOpCode().getName(), cur, cur->getGlobalIndex());
+
         startRemoving = true;
     }
 
@@ -1127,18 +1119,18 @@ void ArtificiallyInflateReferenceCountWhenNecessary(TR::MemoryReference *mr, con
     TR_Array<TR::Node *> &nodeArray, TR::CodeGenerator *cg, List<TR::Node> *incrementedNodesList)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     for (uint32_t i = 0; i < nodeArray.size(); i++) {
         // Stop registers escaping a partial evaluation with ref count 1.
         if ((nodeArray[i]->getReferenceCount() == 1) && (nodeArray[i]->getRegister() != NULL)) {
-            if (comp->getOption(TR_TraceCG)) {
-                traceMsg(comp,
-                    " ArtificiallyInflateReferenceCountWhenNecessary: bug potential with node %p (reg %p %s%s): ref "
-                    "count after %s is 1.\n",
-                    nodeArray[i], nodeArray[i]->getRegister(),
-                    nodeArray[i]->getRegister() ? (nodeArray[i]->getRegister()->isPlaceholderReg() ? "D_" : "") : "?",
-                    comp->getDebug()->getName(nodeArray[i]->getRegister()), functionString);
-            }
+            logprintf(trace, log,
+                " ArtificiallyInflateReferenceCountWhenNecessary: bug potential with node %p (reg %p %s%s): ref count "
+                "after %s is 1.\n",
+                nodeArray[i], nodeArray[i]->getRegister(),
+                nodeArray[i]->getRegister() ? (nodeArray[i]->getRegister()->isPlaceholderReg() ? "D_" : "") : "?",
+                comp->getDebug()->getName(nodeArray[i]->getRegister()), functionString);
 
             if (incrementedNodesList) {
                 // This node's reference count went from N -> 1 during "evaluation" in one of the populate* functions.
@@ -1167,15 +1159,13 @@ void ArtificiallyInflateReferenceCountWhenNecessary(TR::MemoryReference *mr, con
                 if (listNode == nodeArray[i]) {
                     // Skip processing the current node because the reference count was already artificially inflated
                     // somewhere else.
-                    if (comp->getOption(TR_TraceCG)) {
-                        traceMsg(comp,
-                            " ArtificiallyInflateReferenceCountWhenNecessary: skip inflating node %p (reg %p %s%s) "
-                            "because it exists in incrementedNodesList.\n",
-                            nodeArray[i], nodeArray[i]->getRegister(),
-                            nodeArray[i]->getRegister() ? (nodeArray[i]->getRegister()->isPlaceholderReg() ? "D_" : "")
-                                                        : "?",
-                            comp->getDebug()->getName(nodeArray[i]->getRegister()), functionString);
-                    }
+                    logprintf(trace, log,
+                        " ArtificiallyInflateReferenceCountWhenNecessary: skip inflating node %p (reg %p %s%s) because "
+                        "it exists in incrementedNodesList.\n",
+                        nodeArray[i], nodeArray[i]->getRegister(),
+                        nodeArray[i]->getRegister() ? (nodeArray[i]->getRegister()->isPlaceholderReg() ? "D_" : "")
+                                                    : "?",
+                        comp->getDebug()->getName(nodeArray[i]->getRegister()), functionString);
 
                     continue;
                 }
@@ -1189,9 +1179,7 @@ void ArtificiallyInflateReferenceCountWhenNecessary(TR::MemoryReference *mr, con
                 // Reference count is now 2.
                 cg->incRefCountForOpaquePseudoRegister(nodeArray[i]);
             } else {
-                if (comp->getOption(TR_TraceCG)) {
-                    comp->getDebug()->trace(" could not add node %p to cg stack\n", nodeArray[i]);
-                }
+                logprintf(trace, log, " could not add node %p to cg stack\n", nodeArray[i]);
             }
         }
     }
@@ -1563,9 +1551,9 @@ bool OMR::Z::MemoryReference::tryBaseIndexDispl(TR::CodeGenerator *cg, TR::Node 
 
     TR_Array<TR::Node *> nodesBefore(cg->trMemory(), 8, true, stackAlloc);
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
 
-    if (debug)
-        traceMsg(comp, "&&& TBID load=%llx addr1=%llx addr2=%llx\n", loadStore, topAdd, addressChild);
+    logprintf(debug, log, "&&& TBID load=%llx addr1=%llx addr2=%llx\n", loadStore, topAdd, addressChild);
 
     noteAllNodesWithRefCountNotOne(nodesBefore, topAdd, comp);
 
@@ -1605,10 +1593,10 @@ bool OMR::Z::MemoryReference::tryBaseIndexDispl(TR::CodeGenerator *cg, TR::Node 
 
     if (debug) {
         if (base)
-            traceMsg(comp, "&&& TBID base %llx count %d\n", base, base->getReferenceCount());
+            log->printf("&&& TBID base %llx count %d\n", base, base->getReferenceCount());
         if (index)
-            traceMsg(comp, "&&& TBID index %llx count %d\n", index, index->getReferenceCount());
-        traceMsg(comp, "&&& TBID offset %lld\n", offset);
+            log->printf("&&& TBID index %llx count %d\n", index, index->getReferenceCount());
+        log->printf("&&& TBID offset %lld\n", offset);
     }
 
     if (!cg->isDispInRange(offset))
@@ -1625,16 +1613,15 @@ bool OMR::Z::MemoryReference::tryBaseIndexDispl(TR::CodeGenerator *cg, TR::Node 
         ireg = cg->evaluate(index);
 
     if (topAdd->getReferenceCount() == 1) {
-        if (debug)
-            traceMsg(comp, "&&& TBID recursive decrement\n");
+        logprints(debug, log, "&&& TBID recursive decrement\n");
         cg->recursivelyDecReferenceCount(topAdd);
     } else
         cg->decReferenceCount(topAdd);
 
     if (debug) {
         if (sub)
-            traceMsg(comp, "&&& TBID sub rc %d\n", sub->getReferenceCount());
-        traceMsg(comp, "&&& TBID index rc %d\n", index->getReferenceCount());
+            log->printf("&&& TBID sub rc %d\n", sub->getReferenceCount());
+        log->printf("&&& TBID index rc %d\n", index->getReferenceCount());
     }
 
     self()->setBaseRegister(breg, cg);
@@ -1922,12 +1909,11 @@ bool OMR::Z::MemoryReference::alignmentBumpMayRequire4KFixup(TR::Node *node, TR:
             = self()->getFixedSizeForAlignment() - 1; // alignment is getFixedSizeForAlignment() - (length or
                                                       // leftMostByte) and each of these must be at least 1
         if (_offset + maxAlignmentBump >= MAXDISP) {
-            if (cg->traceBCDCodeGen())
-                traceMsg(cg->comp(),
-                    "\tz^z : node %s (%p) : _offset %d + maxAlignmentBump %d >= MAXDISP %d : (%d >= %d) -- force 4K "
-                    "fixup\n",
-                    node ? node->getOpCode().getName() : "NULL", node, _offset, maxAlignmentBump, MAXDISP,
-                    _offset + maxAlignmentBump, MAXDISP);
+            logprintf(cg->traceBCDCodeGen(), cg->comp()->log(),
+                "\tz^z : node %s (%p) : _offset %d + maxAlignmentBump %d >= MAXDISP %d : (%d >= %d) -- force 4K "
+                "fixup\n",
+                node ? node->getOpCode().getName() : "NULL", node, _offset, maxAlignmentBump, MAXDISP,
+                _offset + maxAlignmentBump, MAXDISP);
             return true;
         }
     }
@@ -2531,52 +2517,48 @@ int32_t OMR::Z::MemoryReference::calcDisplacement(uint8_t *cursor, TR::Instructi
     TR::Symbol *symbol = self()->getSymbolReference()->getSymbol();
     int32_t disp = _offset;
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = cg->traceBCDCodeGen();
 
     if (self()->rightAlignMemRef()) {
         TR_ASSERT(!self()->leftAlignMemRef(),
             "A memory reference should not be marked as both right and left aligned\n");
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp,
-                "instr %p : right aligning memRef with symRef #%d (%s, isTemp %s) _offset %d, totalSize %d : bump = ",
-                instr, self()->getSymbolReference()->getReferenceNumber(),
-                cg->getDebug()->getName(self()->getSymbolReference()->getSymbol()),
-                self()->getSymbolReference()->isTempVariableSizeSymRef() ? "yes" : "no", _offset,
-                self()->getTotalSizeForAlignment());
+        logprintf(trace, log,
+            "instr %p : right aligning memRef with symRef #%d (%s, isTemp %s) _offset %d, totalSize %d : bump = ",
+            instr, self()->getSymbolReference()->getReferenceNumber(),
+            cg->getDebug()->getName(self()->getSymbolReference()->getSymbol()),
+            self()->getSymbolReference()->isTempVariableSizeSymRef() ? "yes" : "no", _offset,
+            self()->getTotalSizeForAlignment());
         int32_t oldDisp = disp;
         disp += self()->getRightAlignmentBump(instr, cg);
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp, "%d (disp = %d)\n", disp - oldDisp, disp);
+        logprintf(trace, log, "%d (disp = %d)\n", disp - oldDisp, disp);
     }
 
     if (self()->leftAlignMemRef()) {
         TR_ASSERT(!self()->rightAlignMemRef(),
             "A memory reference should not be marked as both left and right aligned\n");
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp,
-                "instr %p : left aligning memRef with symRef #%d (%s, isTemp %s), _offset %d : bump = totalSize - "
-                "leftMostByte = %d - %d = ",
-                instr, self()->getSymbolReference()->getReferenceNumber(),
-                cg->getDebug()->getName(self()->getSymbolReference()->getSymbol()),
-                self()->getSymbolReference()->isTempVariableSizeSymRef() ? "yes" : "no", _offset,
-                self()->getTotalSizeForAlignment(), self()->getLeftMostByte());
+        logprintf(trace, log,
+            "instr %p : left aligning memRef with symRef #%d (%s, isTemp %s), _offset %d : bump = totalSize - "
+            "leftMostByte = %d - %d = ",
+            instr, self()->getSymbolReference()->getReferenceNumber(),
+            cg->getDebug()->getName(self()->getSymbolReference()->getSymbol()),
+            self()->getSymbolReference()->isTempVariableSizeSymRef() ? "yes" : "no", _offset,
+            self()->getTotalSizeForAlignment(), self()->getLeftMostByte());
         int32_t oldDisp = disp;
         disp += self()->getLeftAlignmentBump(instr, cg);
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp, "%d (disp = %d)\n", disp - oldDisp, disp);
+        logprintf(trace, log, "%d (disp = %d)\n", disp - oldDisp, disp);
     }
 
     if (self()->getSymbolReference()->isTempVariableSizeSymRef()) {
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp,
-                "instr %p : bumping tempVariableSizeSymRef memRef with symRef #%d (%s), _offset %d : bump = symSize - "
-                "totalSize = %d - %d = ",
-                instr, self()->getSymbolReference()->getReferenceNumber(),
-                cg->getDebug()->getName(self()->getSymbolReference()->getSymbol()), _offset,
-                self()->getSymbolReference()->getSymbol()->getSize(), self()->getTotalSizeForAlignment());
+        logprintf(trace, log,
+            "instr %p : bumping tempVariableSizeSymRef memRef with symRef #%d (%s), _offset %d : bump = symSize - "
+            "totalSize = %d - %d = ",
+            instr, self()->getSymbolReference()->getReferenceNumber(),
+            cg->getDebug()->getName(self()->getSymbolReference()->getSymbol()), _offset,
+            self()->getSymbolReference()->getSymbol()->getSize(), self()->getTotalSizeForAlignment());
         int32_t oldDisp = disp;
         disp += self()->getSizeIncreaseBump(instr, cg);
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp, "%d (disp = %d)\n", disp - oldDisp, disp);
+        logprintf(trace, log, "%d (disp = %d)\n", disp - oldDisp, disp);
     }
 
     if (snippet != NULL) {
@@ -2770,14 +2752,12 @@ int32_t OMR::Z::MemoryReference::generateBinaryEncoding(uint8_t *cursor, TR::Cod
                     "OMR::Z::MemoryReference::generateBinaryEncoding -- This memoryReference must not spill");
                 if (!is2ndSSMemRef) {
                     scratchReg = instr->assignBestSpillRegister();
-                    // traceMsg(comp, "Using first spillReg %p \n", instr);
                 } else {
                     scratchReg = instr->assignBestSpillRegister2();
                     if (cg->comp()->target().is64Bit())
                         offsetToLongDispSlot += 8;
                     else
                         offsetToLongDispSlot += 4;
-                    // traceMsg(comp, "Using another spillReg, increment spill slot %p \n", instr);
                 }
                 spillNeeded = true;
             }
@@ -2889,9 +2869,8 @@ int32_t OMR::Z::MemoryReference::generateBinaryEncoding(uint8_t *cursor, TR::Cod
             TR::DebugCounter::incStaticDebugCounter(comp,
                 TR::DebugCounter::debugCounterName(comp, "z/memref/huge-displacement-upgrade/(%s)", comp->signature()));
 
-            if (comp->getOption(TR_TraceCG))
-                traceMsg(comp, "[%p] Long Disp Inst using %s as scratch reg\n", instr,
-                    cg->getDebug()->getName(scratchReg));
+            logprintf(comp->getOption(TR_TraceCG), comp->log(), "[%p] Long Disp Inst using %s as scratch reg\n", instr,
+                cg->getDebug()->getName(scratchReg));
         }
     }
 
@@ -3023,12 +3002,11 @@ bool OMR::Z::MemoryReference::doEvaluate(TR::Node *subTree, TR::CodeGenerator *c
     TR::Compilation *comp = cg->comp();
 
     if (self()->forceFirstTimeFolding()) {
-        if (cg->traceBCDCodeGen())
-            traceMsg(comp,
-                "\tforceFirstTimeFolding=true for subTree %s (%p) refCount %d, reg %s (reset firstTimeFlag for next "
-                "doEvaluate)\n",
-                subTree->getOpCode().getName(), subTree, subTree->getReferenceCount(),
-                subTree->getRegister() ? cg->getDebug()->getName(subTree->getRegister()) : "NULL");
+        logprintf(cg->traceBCDCodeGen(), comp->log(),
+            "\tforceFirstTimeFolding=true for subTree %s (%p) refCount %d, reg %s (reset firstTimeFlag for next "
+            "doEvaluate)\n",
+            subTree->getOpCode().getName(), subTree, subTree->getReferenceCount(),
+            subTree->getRegister() ? cg->getDebug()->getName(subTree->getRegister()) : "NULL");
         self()->resetForceFirstTimeFolding();
         self()->setForceEvaluation();
         return false;

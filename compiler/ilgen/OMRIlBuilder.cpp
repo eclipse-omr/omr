@@ -48,15 +48,16 @@
 #include "ilgen/BytecodeBuilder.hpp"
 #include "infra/Cfg.hpp"
 #include "infra/List.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O ILBLD: "
 
 #define TraceEnabled (comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...)                         \
-    {                                           \
-        if (TraceEnabled) {                     \
-            traceMsg(comp(), m, ##__VA_ARGS__); \
-        }                                       \
+#define TraceIL(m, ...)                              \
+    {                                                \
+        if (TraceEnabled) {                          \
+            comp()->log()->printf(m, ##__VA_ARGS__); \
+        }                                            \
     }
 
 // IlBuilder is a class designed to help build Testarossa IL quickly without
@@ -112,14 +113,6 @@ bool OMR::IlBuilder::TraceEnabled_log()
     return traceEnabled;
 }
 
-void OMR::IlBuilder::TraceIL_log(const char *s, ...)
-{
-    va_list argp;
-    va_start(argp, s);
-    traceMsgVarArgs(_comp, s, argp);
-    va_end(argp);
-}
-
 void OMR::IlBuilder::initSequence()
 {
     _sequence = new (_comp->trMemory()->trHeapMemory()) List<SequenceEntry>(_comp->trMemory());
@@ -141,10 +134,10 @@ bool OMR::IlBuilder::injectIL()
 
     rc = connectTrees();
     if (TraceEnabled)
-        comp()->dumpMethodTrees("after connectTrees");
+        comp()->dumpMethodTrees(comp()->log(), "after connectTrees");
     cfg()->removeUnreachableBlocks();
     if (TraceEnabled)
-        comp()->dumpMethodTrees("after removing unreachable blocks");
+        comp()->dumpMethodTrees(comp()->log(), "after removing unreachable blocks");
     return rc;
 }
 
@@ -192,10 +185,10 @@ void OMR::IlBuilder::printBlock(TR::Block *block)
     TraceIL("[ %p ] Block %p\n", this, block);
     TR::TreeTop *tt = block->getEntry();
     while (tt != block->getExit()) {
-        comp()->getDebug()->print(comp()->getOutFile(), tt);
+        comp()->getDebug()->print(comp()->log(), tt);
         tt = tt->getNextTreeTop();
     }
-    comp()->getDebug()->print(comp()->getOutFile(), tt);
+    comp()->getDebug()->print(comp()->log(), tt);
 }
 
 TR::IlBuilder *OMR::IlBuilder::setBCIndex(int32_t bcIndex)

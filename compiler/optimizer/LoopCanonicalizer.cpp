@@ -63,6 +63,7 @@
 #include "optimizer/UseDefInfo.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class RegisterMappedSymbol;
@@ -134,6 +135,8 @@ int32_t TR_LoopCanonicalizer::perform()
     _requiresAdditionalCheckForIncrement = false;
     _doingVersioning = false;
 
+    OMR::Logger *log = comp()->log();
+
     {
         TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
@@ -145,9 +148,9 @@ int32_t TR_LoopCanonicalizer::perform()
         _rootStructure = _cfg->getStructure();
 
         if (trace()) {
-            traceMsg(comp(), "Starting LoopCanonicalizer\n");
-            traceMsg(comp(), "\nCFG before loop canonicalization:\n");
-            getDebug()->print(comp()->getOutFile(), _cfg);
+            log->prints("Starting LoopCanonicalizer\n");
+            log->prints("\nCFG before loop canonicalization:\n");
+            getDebug()->print(log, _cfg);
         }
 
         // printTrees();
@@ -170,8 +173,7 @@ int32_t TR_LoopCanonicalizer::perform()
             return false;
         }
 
-        if (trace())
-            traceMsg(comp(), "Number of WhileLoops = %d\n", whileLoops.getSize());
+        logprintf(trace(), log, "Number of WhileLoops = %d\n", whileLoops.getSize());
 
         // _startOfHeader originally points to the last tree in the method;
         // this variable is used as a placeholder to keep track of where
@@ -201,11 +203,8 @@ int32_t TR_LoopCanonicalizer::perform()
             canonicalizeNaturalLoop(naturalLoop);
         }
 
-        /// comp()->dumpMethodTrees("Trees now\n");
+        logprintf(trace(), log, "Number of cleansed blocks : %d\n", _blocksToBeCleansed.getSize());
 
-        if (trace())
-            traceMsg(comp(), "Number of cleansed blocks : %d\n", _blocksToBeCleansed.getSize());
-        //
         // Move the trees around in this method so that the blocks that are currently
         // violating the CFG constraints (only 1 branch in a block) are cleansed
         //
@@ -226,8 +225,7 @@ int32_t TR_LoopCanonicalizer::perform()
             makeInvariantBlockFallThroughIfPossible(nextInvariantBlock);
         }
 
-        if (trace())
-            traceMsg(comp(), "Number of DoWhileLoops = %d\n", doWhileLoops.getSize());
+        logprintf(trace(), log, "Number of DoWhileLoops = %d\n", doWhileLoops.getSize());
 
         ListIterator<TR_Structure> doWhileLoopsIt(&doWhileLoops);
         TR_Structure *nextDoWhileLoop;
@@ -274,18 +272,15 @@ int32_t TR_LoopCanonicalizer::perform()
         requestOpt(OMR::loopVersionerGroup);
 
         if (trace()) {
-            traceMsg(comp(), "\nCFG after loop canonicalization:\n");
-            getDebug()->print(comp()->getOutFile(), _cfg);
-            traceMsg(comp(), "Ending LoopCanonicalizer\n");
+            log->prints("\nCFG after loop canonicalization:\n");
+            getDebug()->print(log, _cfg);
+            log->prints("Ending LoopCanonicalizer\n");
         }
 
     } // scope of the stack memory region
 
-    // if (trace())
-    {
-        if (trace())
-            comp()->dumpMethodTrees("Trees after canonicalization\n");
-    }
+    if (trace())
+        comp()->dumpMethodTrees(log, "Trees after canonicalization\n");
 
     return 1; // actual cost
 }
@@ -295,8 +290,8 @@ void TR_LoopTransformer::detectWhileLoopsInSubnodesInOrder(ListAppender<TR_Struc
     List<TR_Structure> &doWhileLoops, TR_Structure *root, TR_StructureSubGraphNode *rootNode,
     TR_RegionStructure *region, vcount_t visitCount, TR_BitVector *pendingList, bool innerFirst)
 {
-    if (trace())
-        traceMsg(comp(), "Begin looking for canonicalizable loops in node %p numbered %d\n", root, root->getNumber());
+    logprintf(trace(), comp()->log(), "Begin looking for canonicalizable loops in node %p numbered %d\n", root,
+        root->getNumber());
 
     bool alreadyVisitedNode = false;
     // if (rootNode->getVisitCount() == visitCount)
@@ -389,9 +384,8 @@ void TR_LoopTransformer::detectWhileLoopsInSubnodesInOrder(ListAppender<TR_Struc
             continue;
         }
 
-        if (trace())
-            traceMsg(comp(), "Begin looking for canonicalizable loops in node %p numbered %d\n", root,
-                root->getNumber());
+        logprintf(trace(), comp()->log(), "Begin looking for canonicalizable loops in node %p numbered %d\n", root,
+            root->getNumber());
 
         if (!_nodesInCycle->get(rootNode->getNumber())) {
             _nodesInCycle->set(rootNode->getNumber());
@@ -639,10 +633,6 @@ void TR_LoopTransformer::detectWhileLoops(ListAppender<TR_Structure> &whileLoops
 
                             if (!doNotConsiderAsWhile)
                                 isWhileLoop = true;
-                            else {
-                                // printf("Found a fake while loop in %s\n", comp()->signature());
-                                // fflush(stdout);
-                            }
                         }
                     }
                 }
@@ -729,15 +719,13 @@ void TR_LoopTransformer::detectWhileLoops(ListAppender<TR_Structure> &whileLoops
     // transformed.
     //
     if (isDoWhileLoop) {
-        if (trace())
-            traceMsg(comp(), "Adding structure %d(%p) as a doWhile loop\n", region->getNumber(), region);
+        logprintf(trace(), comp()->log(), "Adding structure %d(%p) as a doWhile loop\n", region->getNumber(), region);
         if (innerFirst)
             doWhileLoopsInnerFirst.add(region);
         else
             doWhileLoops.add(region);
     } else {
-        if (trace())
-            traceMsg(comp(), "Adding structure %d(%p) as a While loop\n", region->getNumber(), region);
+        logprintf(trace(), comp()->log(), "Adding structure %d(%p) as a While loop\n", region->getNumber(), region);
 
         if (innerFirst)
             whileLoopsInnerFirst.add(region);
@@ -809,13 +797,15 @@ bool TR_LoopTransformer::findMatchingIVInRegion(TR::TreeTop *loopTestTree, TR_Re
  */
 void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop)
 {
+    OMR::Logger *log = comp()->log();
+
     rewritePostToPreIncrementTestInRegion(whileLoop);
 
     if (!performTransformation(comp(), "%sCanonicalizing natural loop %d\n", OPT_DETAILS, whileLoop->getNumber()))
         return;
 
     if (trace())
-        comp()->dumpMethodTrees("Trees at this stage");
+        comp()->dumpMethodTrees(log, "Trees at this stage");
 
     TR_StructureSubGraphNode *entryGraphNode = whileLoop->getEntry();
     TR_ASSERT(entryGraphNode->getStructure()->asBlock(), "Loop canonicalizer, header is not a block");
@@ -963,7 +953,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
             removedEdges.add(*edge);
             TR::CFGEdge *newEdge = TR::CFGEdge::createEdge(pred, clonedHeader, trMemory());
             _cfg->addEdge(newEdge);
-            // traceMsg(comp(), "newEdge %p freq %d\n", newEdge, newEdge->getFrequency());
 
             if (pred != _cfg->getStart()) {
                 TR::TreeTop *lastNonFenceTree = pred->getLastRealTreeTop();
@@ -1043,7 +1032,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
             TR::TreeTop *predNext = predExit->getNextTreeTop();
             predExit->join(entryTree);
             exitTree->join(predNext);
-            // printf("Changing layout in %s\n", comp()->signature());
         } else {
             _startOfHeader->join(entryTree);
             exitTree->join(nextTreeAfterHeader);
@@ -1072,9 +1060,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
             TR::Node *duplicateChildNode
                 = duplicateExact(currentTree->getNode()->getChild(childNum), &seenNodes, &duplicateNodes);
             newCurrentNode->setChild(childNum, duplicateChildNode);
-
-            /////if (trace())
-            /////   traceMsg(comp(), "Cloned a treetop \n");
         }
 
         TR::TreeTop *newCurrentTree = TR::TreeTop::create(comp(), newCurrentNode, NULL, NULL);
@@ -1083,8 +1068,6 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
 
         currentTree = currentTree->getNextTreeTop();
         newPrevTree = newCurrentTree;
-        /////if (trace())
-        /////   newCurrentTree->print(comp()->getOutFile());
     }
 
     // If the duplicate header falls through to the loop body
@@ -1230,24 +1213,21 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
     if (newLoopHeaderFrequency > 10000)
         newLoopHeaderFrequency = 10000;
 
-    if (trace()) {
-        traceMsg(comp(), "Setting frequency of peeled iteration block_%d to %d, s1 block_%d to %d, s2 block_%d to %d\n",
-            loopHeader->getNumber(), newLoopHeaderFrequency, splitter1->getNumber(), exitBlockFrequency,
-            splitter2->getNumber(), sumPredFreq);
-    }
+    logprintf(trace(), log,
+        "Setting frequency of peeled iteration block_%d to %d, s1 block_%d to %d, s2 block_%d to %d\n",
+        loopHeader->getNumber(), newLoopHeaderFrequency, splitter1->getNumber(), exitBlockFrequency,
+        splitter2->getNumber(), sumPredFreq);
 
     loopHeader->setFrequency(newLoopHeaderFrequency);
     splitter2->setFrequency(sumPredFreq);
     if (loopBody->isCold()) {
-        if (trace())
-            traceMsg(comp(), "Setting s2 block_%d cold because loop body is cold\n", splitter2->getNumber());
+        logprintf(trace(), log, "Setting s2 block_%d cold because loop body is cold\n", splitter2->getNumber());
         splitter2->setIsCold(true);
     }
 
     splitter1->setFrequency(exitBlockFrequency);
     if (joinBlock->isCold()) {
-        if (trace())
-            traceMsg(comp(), "Setting s1 block_%d cold because join block is cold\n", splitter1->getNumber());
+        logprintf(trace(), log, "Setting s1 block_%d cold because join block is cold\n", splitter1->getNumber());
         splitter2->setIsCold(true);
     }
 
@@ -1298,11 +1278,11 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
     // Dump block info now that the block numbers have been assigned
     //
     if (trace()) {
-        traceMsg(comp(), "Cloning header block : %d(%p) as block_%d(%p) for canonicalization\n",
-            loopHeader->getNumber(), loopHeader, clonedHeader->getNumber(), clonedHeader);
-        traceMsg(comp(), "Creating splitter blocks %d and %d\n", splitter1->getNumber(), splitter2->getNumber());
+        log->printf("Cloning header block : %d(%p) as block_%d(%p) for canonicalization\n", loopHeader->getNumber(),
+            loopHeader, clonedHeader->getNumber(), clonedHeader);
+        log->printf("Creating splitter blocks %d and %d\n", splitter1->getNumber(), splitter2->getNumber());
         if (reversedBranch)
-            traceMsg(comp(), "Creating extra goto block_%d\n", extraGoto->getNumber());
+            log->printf("Creating extra goto block_%d\n", extraGoto->getNumber());
     }
 
     // Now start adjusting the structure properly; since we are changing structure
@@ -1348,8 +1328,7 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
             entryBlock->getStructureOf()->setIsEntryOfShortRunningLoop();
         } else
             bodyNode->getStructure()->asBlock()->setIsEntryOfShortRunningLoop();
-        if (trace())
-            traceMsg(comp(), "Marked block %p\n", bodyNode->getNumber());
+        logprintf(trace(), log, "Marked block %p\n", bodyNode->getNumber());
     }
 
     clonedHdrBlockStructure->setWasHeaderOfCanonicalizedLoop(true);
@@ -1436,10 +1415,10 @@ void TR_LoopCanonicalizer::canonicalizeNaturalLoop(TR_RegionStructure *whileLoop
     properRegion->addExitEdge(node, joinNumber);
 
     if (trace()) {
-        traceMsg(comp(), "Structure after canonicalizing natural loop %d:\n", properRegion->getNumber());
-        getDebug()->print(comp()->getOutFile(), _rootStructure, 6);
-        getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph());
-        comp()->dumpMethodTrees("Trees at this stage");
+        log->printf("Structure after canonicalizing natural loop %d:\n", properRegion->getNumber());
+        getDebug()->print(log, _rootStructure, 6);
+        getDebug()->print(log, comp()->getFlowGraph());
+        comp()->dumpMethodTrees(log, "Trees at this stage");
     }
 }
 
@@ -1540,7 +1519,6 @@ void TR_LoopCanonicalizer::canonicalizeDoWhileLoop(TR_RegionStructure *doWhileLo
     bool isEntry = false;
     if (parentStructure->getEntry() == doWhileNode) {
         isEntry = true;
-        // printf("Found a do-while that is also parent's entry in method %s\n", comp()->signature());
     }
 
     TR_ScratchList<TR::Block> blocksInDoWhileLoop(trMemory());
@@ -1720,10 +1698,10 @@ void TR_LoopCanonicalizer::canonicalizeDoWhileLoop(TR_RegionStructure *doWhileLo
     }
 
     if (trace()) {
-        traceMsg(comp(), "Structure after canonicalizing do while loop %p: number: %d\n", doWhileLoop,
+        comp()->log()->printf("Structure after canonicalizing do while loop %p: number: %d\n", doWhileLoop,
             doWhileLoop->getNumber());
         if (comp()->getFlowGraph()->getStructure())
-            getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph()->getStructure(), 6);
+            getDebug()->print(comp()->log(), comp()->getFlowGraph()->getStructure(), 6);
     }
 
     return;
@@ -1832,8 +1810,6 @@ void TR_LoopCanonicalizer::eliminateRedundantInductionVariablesFromLoop(TR_Regio
     TR_PrimaryInductionVariable *primaryInductionVariable = naturalLoop->getPrimaryInductionVariable();
     ListIterator<TR_BasicInductionVariable> bivIterator(&naturalLoop->getBasicInductionVariables());
     if (primaryInductionVariable && bivIterator.getFirst()) {
-        // printf("Found primary induction variable in loop %d in method %s\n", naturalLoop->getNumber(),
-        // comp()->signature()); fflush(stdout);
         dumpOptDetails(comp(), "Found primary induction variable in loop %d in method %s\n", naturalLoop->getNumber(),
             comp()->signature());
 
@@ -1913,10 +1889,9 @@ void TR_LoopCanonicalizer::eliminateRedundantInductionVariablesFromLoop(TR_Regio
                     //   _derivedInductionIncrementBlock = entryBlock;
                     //     }
                     if (!disableIVEPostDominatorsCheck) {
-                        if (trace())
-                            traceMsg(comp(),
-                                "Checking post dominator relationship between primary and derived induction variable "
-                                "increments");
+                        logprints(trace(), comp()->log(),
+                            "Checking post dominator relationship between primary and derived induction variable "
+                            "increments");
 
                         bool existsAtLeastOnePostDom = false;
                         ListIterator<TR::Block> primaryIndVarIncrIt(&primaryInductionVarIncrementBlocks);
@@ -2349,27 +2324,28 @@ bool TR_LoopCanonicalizer::checkComplexInductionVariableUse(TR_Structure *struct
 
 bool TR_LoopCanonicalizer::checkComplexInductionVariableUseNode(TR::Node *node, bool addrExpression)
 {
+    OMR::Logger *log = comp()->log();
     TR::ILOpCode &opCode = node->getOpCode();
 
-    traceMsg(comp(), "NG: Walking node 0x%p\n", node);
+    logprintf(trace(), log, "NG: Walking node 0x%p\n", node);
     if (opCode.isStoreIndirect()) {
         addrExpression = true;
     } else if (addrExpression) {
         if (node->getOpCodeValue() == TR::imul) {
-            traceMsg(comp(), "Found imul node 0x%p used in address expression.\n", node);
+            logprintf(trace(), log, "Found imul node 0x%p used in address expression.\n", node);
             if (node->getFirstChild()->getOpCode().hasSymbolReference()
                 && node->getFirstChild()->getSymbolReference() == _symRefBeingReplaced) {
-                traceMsg(comp(),
+                logprintf(trace(), log,
                     "\tAvoiding induction variable replacement because of address mode complexity. Sym Ref. = %p\n",
                     _symRefBeingReplaced);
                 return false;
             }
         } else if (node->getOpCodeValue() == TR::lmul) {
-            traceMsg(comp(), "Found lmul node 0x%p used in address expression.\n", node);
+            logprintf(trace(), log, "Found lmul node 0x%p used in address expression.\n", node);
             if (node->getFirstChild()->getOpCodeValue() == TR::i2l
                 && node->getFirstChild()->getFirstChild()->getOpCode().hasSymbolReference()
                 && node->getFirstChild()->getFirstChild()->getSymbolReference() == _symRefBeingReplaced) {
-                traceMsg(comp(),
+                logprintf(trace(), log,
                     "\tAvoiding induction variable replacement because of address mode complexity. Sym Ref. = %p\n",
                     _symRefBeingReplaced);
                 return false;
@@ -2674,6 +2650,7 @@ static bool isLoadVarDirectOf(TR::Node * const node, int32_t symrefNum)
 // Per-block implementation of rewritePostToPreIncrementTestInRegion (above).
 void TR_LoopCanonicalizer::rewritePostToPreIncrementTestInBlock(TR::Block * const block)
 {
+    OMR::Logger *log = comp()->log();
     TR::TreeTop * const testTree = block->getLastRealTreeTop();
     TR::Node * const test = testTree->getNode();
     if (!test->getOpCode().isIf())
@@ -2742,12 +2719,10 @@ void TR_LoopCanonicalizer::rewritePostToPreIncrementTestInBlock(TR::Block * cons
     // Transformation is possible if left has the same value as updateBase. Of
     // course they can only have different values if they are different nodes.
     if (left != updateBase) {
-        if (trace()) {
-            traceMsg(comp(),
-                "Post- to pre-increment transformation looking for store of #%d "
-                "between n%un and n%un.\n\tEvaluation order:",
-                symrefNum, left->getGlobalIndex(), updateBase->getGlobalIndex());
-        }
+        logprintf(trace(), log,
+            "Post- to pre-increment transformation looking for store of #%d "
+            "between n%un and n%un.\n\tEvaluation order:",
+            symrefNum, left->getGlobalIndex(), updateBase->getGlobalIndex());
 
         // They have the same value iff symref is not stored between them. This
         // determination relies on the fact that (left != updateBase), since
@@ -2764,8 +2739,7 @@ void TR_LoopCanonicalizer::rewritePostToPreIncrementTestInBlock(TR::Block * cons
 
             TR::Node * const eval = it.currentNode();
             if (eval == left || eval == updateBase) {
-                if (trace())
-                    traceMsg(comp(), " n%un", eval->getGlobalIndex());
+                logprintf(trace(), log, " n%un", eval->getGlobalIndex());
 
                 if (between)
                     break; // Same value - go on to transform.
@@ -2776,16 +2750,14 @@ void TR_LoopCanonicalizer::rewritePostToPreIncrementTestInBlock(TR::Block * cons
             if (between && eval->getOpCode().isStoreDirect()
                 && eval->getSymbolReference()->getReferenceNumber() == symrefNum) {
                 // Can't transform
-                if (trace()) {
-                    traceMsg(comp(), " n%un\n\tBailing due to store between loads\n", eval->getGlobalIndex());
-                }
+                logprintf(trace(), log, " n%un\n\tBailing due to store between loads\n", eval->getGlobalIndex());
+
                 return;
             }
         }
     }
 
-    if (trace())
-        traceMsg(comp(), "\n");
+    logprintln(trace(), log);
 
     // adjustedIfOp will be the same as ifOp, with inverted isCompareTrueIfEqual.
     // This works because ifOp is an inequality.
@@ -2897,17 +2869,19 @@ void TR_LoopTransformer::adjustTreesInBlock(TR::Block *block)
 
 void TR_LoopTransformer::printTrees()
 {
+    if (!trace()) {
+        return;
+    }
+
     comp()->incVisitCount();
     TR::TreeTop *currentTree = comp()->getStartTree();
 
     while (!(currentTree == NULL)) {
-        if (trace())
-            getDebug()->print(comp()->getOutFile(), currentTree);
-
+        getDebug()->print(comp()->log(), currentTree);
         currentTree = currentTree->getNextTreeTop();
     }
-    if (trace())
-        getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph());
+
+    getDebug()->print(comp()->log(), comp()->getFlowGraph());
 }
 
 /**
@@ -3062,9 +3036,8 @@ bool TR_LoopTransformer::makeInvariantBlockFallThroughIfPossible(TR::Block *bloc
                     // to the end of the method if reqd and eliminate the goto.
                     //
                     if ((exitTreeTop->getNextTreeTop() != targetTree) && allPredsBranchExplicitly) {
-                        if (trace())
-                            traceMsg(comp(), "Moving invariant block_%d to fall through into loop %d\n",
-                                block->getNumber(), targetTree->getNode()->getBlock()->getNumber());
+                        logprintf(trace(), comp()->log(), "Moving invariant block_%d to fall through into loop %d\n",
+                            block->getNumber(), targetTree->getNode()->getBlock()->getNumber());
                         TR::TreeTop *nextTreeAfterBlock = exitTreeTop->getNextTreeTop();
                         TR::TreeTop *prevTreeBeforeBlock = treeTop->getPrevTreeTop();
                         prevTreeBeforeBlock->join(nextTreeAfterBlock);
@@ -3131,9 +3104,8 @@ bool TR_LoopTransformer::isStoreInRequiredForm(int32_t symRefNum, TR_Structure *
         } else
             return false;
 
-        if (trace()) {
-            traceMsg(comp(), "Found loop induction variable #%d incremented indirectly by %lld\n", symRefNum, low);
-        }
+        logprintf(trace(), comp()->log(), "Found loop induction variable #%d incremented indirectly by %lld\n",
+            symRefNum, low);
     } else {
         TR::Node *secondChild = _constNode;
         if (secondChild->getOpCode().isLoadVarDirect()) {
@@ -3213,7 +3185,6 @@ int32_t TR_LoopTransformer::checkLoopForPredictability(TR_Structure *loopStructu
 
 void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateInfo_tables &uinfo)
 {
-    // traceMsg(comp(), "TR_LoopTransformer::updateInfo node=%p\n", node);
     if (node->getVisitCount() == visitCount)
         return;
 
@@ -3225,21 +3196,11 @@ void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateI
         _allSymRefs[refNo] = true;
     }
 
-    //   traceMsg(comp(), "bf _allKilledSymRefs = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_allKilledSymRefs);
-    //   traceMsg(comp(), "\n");
     TR::BitVector mayKillAliases(comp()->allocator());
     node->mayKill().getAliases(mayKillAliases);
     if (refNo != 0)
         mayKillAliases[refNo] = false;
-    //   traceMsg(comp(), "mayKillAliases(w/o self) = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &mayKillAliases);
-    //   traceMsg(comp(), "\n");
     _allKilledSymRefs.Or(mayKillAliases);
-
-    //   traceMsg(comp(), "af _allKilledSymRefs = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_allKilledSymRefs);
-    //   traceMsg(comp(), "\n");
 
     TR::BitVector defAliases(comp()->allocator());
 
@@ -3251,15 +3212,6 @@ void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateI
     // update writes
     *_neverWritten -= defAliases;
 
-    //   traceMsg(comp(), "defAliases = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &defAliases);
-    //   traceMsg(comp(), "\n");
-    //   traceMsg(comp(), "bf _writtenExactlyOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
-    //   traceMsg(comp(), "\n");
-    //   traceMsg(comp(), "bf uinfo.currentlyWrittenOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &(uinfo.currentlyWrittenOnce));
-    //   traceMsg(comp(), "\n");
     // For most store operations
     if (refNo && node->getOpCode().isLikeDef() && defAliases.PopulationCount() > 1) {
         // FIXME: there seems to be an assumption that for every symbol
@@ -3288,13 +3240,6 @@ void TR_LoopTransformer::updateInfo(TR::Node *node, vcount_t visitCount, updateI
         _readExactlyOnce -= defAliases;
         _writtenExactlyOnce -= defAliases;
     }
-
-    //   traceMsg(comp(), "af _writtenExactlyOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
-    //   traceMsg(comp(), "\n");
-    //   traceMsg(comp(), "af uinfo.currentlyWrittenOnce = ");
-    //   comp()->getDebug()->print(comp()->getOutFile(), &(uinfo.currentlyWrittenOnce));
-    //   traceMsg(comp(), "\n");
 
     // update reads
     TR::BitVector useAliases(comp()->allocator());
@@ -3368,7 +3313,6 @@ void TR_LoopTransformer::collectSymbolsWrittenAndReadExactlyOnce(TR_Structure *s
         TR::TreeTop *currentTree = block->getEntry();
 
         while (currentTree != exitTree) {
-            // traceMsg(comp(), "Looking at node %p in block_%d\n", currentTree->getNode(), block->getNumber());
             TR::Node *currentNode = currentTree->getNode();
             _currTree = currentTree;
             _numberOfTreesInLoop++;
@@ -3750,11 +3694,9 @@ int32_t TR_RedundantInductionVarElimination::perform()
         return false;
     }
 
-    if (trace())
-        traceMsg(comp(), "Number of WhileLoops = %d\n", whileLoops.getSize());
+    logprintf(trace(), comp()->log(), "Number of WhileLoops = %d\n", whileLoops.getSize());
 
-    if (trace())
-        traceMsg(comp(), "Number of DoWhileLoops = %d\n", doWhileLoops.getSize());
+    logprintf(trace(), comp()->log(), "Number of DoWhileLoops = %d\n", doWhileLoops.getSize());
 
     ListIterator<TR_Structure> whileLoopsIt(&whileLoops);
     TR_Structure *nextWhileLoop;
@@ -3851,6 +3793,7 @@ int32_t TR_LoopInverter::perform()
 int32_t TR_LoopInverter::detectCanonicalizedPredictableLoops(TR_Structure *loopStructure, TR_BitVector **optSetInfo,
     int32_t bitVectorSize)
 {
+    OMR::Logger *log = comp()->log();
     TR_RegionStructure *regionStructure = loopStructure->asRegion();
 
     if (regionStructure) {
@@ -3904,8 +3847,7 @@ int32_t TR_LoopInverter::detectCanonicalizedPredictableLoops(TR_Structure *loopS
     int32_t symRefCount = comp()->getSymRefCount();
     initializeSymbolsWrittenAndReadExactlyOnce(symRefCount, notGrowable);
 
-    if (trace())
-        traceMsg(comp(), "\nChecking loop %d for predictability\n", loopStructure->getNumber());
+    logprintf(trace(), log, "\nChecking loop %d for predictability\n", loopStructure->getNumber());
 
     _isAddition = false;
     TR::SymbolReferenceTable *symRefTab = comp()->getSymRefTab();
@@ -3916,10 +3858,10 @@ int32_t TR_LoopInverter::detectCanonicalizedPredictableLoops(TR_Structure *loopS
         return 0;
 
     if (trace()) {
-        traceMsg(comp(), "\nDetected a predictable loop %d\n", loopStructure->getNumber());
-        traceMsg(comp(), "Possible new induction variable candidates :\n");
-        comp()->getDebug()->print(comp()->getOutFile(), &_writtenExactlyOnce);
-        traceMsg(comp(), "\n");
+        log->printf("\nDetected a predictable loop %d\n", loopStructure->getNumber());
+        log->prints("Possible new induction variable candidates :\n");
+        comp()->getDebug()->print(log, &_writtenExactlyOnce);
+        log->println();
     }
 
     TR::SparseBitVector::Cursor cursor(_writtenExactlyOnce);
@@ -3996,8 +3938,7 @@ int32_t TR_LoopInverter::detectCanonicalizedPredictableLoops(TR_Structure *loopS
             }
         }
 
-        if (trace())
-            traceMsg(comp(), "Loop %d is %s invertable\n", loopStructure->getNumber(), isInvertible ? "" : "not");
+        logprintf(trace(), log, "Loop %d is %s invertable\n", loopStructure->getNumber(), isInvertible ? "" : "not");
 
         if (isInvertible
             && performTransformation(comp(), "%sInverting loop %d\n", OPT_DETAILS, loopStructure->getNumber())) {

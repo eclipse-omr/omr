@@ -57,6 +57,7 @@
 #include "optimizer/UseDefInfo.hpp"
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O COPY PROPAGATION: "
 
@@ -109,14 +110,14 @@ bool foundInterferenceBetweenCurrentNodeAndPropagation(TR::Compilation *comp, bo
     }
 
     if (trace) {
-        comp->getDebug()->trace(
-            "foundInterferenceBetweenCurrentNodeAndPropagation: currentNode %p storeNode %p checkNodes [", currentNode,
-            storeNode);
+        OMR::Logger *log = comp->log();
+        log->printf("foundInterferenceBetweenCurrentNodeAndPropagation: currentNode %p storeNode %p checkNodes [",
+            currentNode, storeNode);
         for (auto checkNodesCursor = checkNodes.begin(); checkNodesCursor != checkNodes.end(); ++checkNodesCursor) {
-            comp->getDebug()->trace("%p ", (*checkNodesCursor));
+            log->printf("%p ", (*checkNodesCursor));
         }
 
-        comp->getDebug()->trace("] = %s\n", result ? "interference" : "ok");
+        log->printf("] = %s\n", result ? "interference" : "ok");
     }
 
     comp->setVisitCount(save_vc);
@@ -223,12 +224,10 @@ private:
 
             TR_ASSERT(parentNode != 0, "parentNode == 0!");
 
-            if (trace()) {
-                comp()->getDebug()->trace("%s   Propagating new RHS " POINTER_PRINTF_FORMAT
-                                          " in place of old instance location " POINTER_PRINTF_FORMAT
-                                          " child index %d\n",
-                    OPT_DETAILS, sourceTree, parentNode, childIndex);
-            }
+            logprintf(trace(), comp()->log(),
+                "%s   Propagating new RHS " POINTER_PRINTF_FORMAT
+                " in place of old instance location " POINTER_PRINTF_FORMAT " child index %d\n",
+                OPT_DETAILS, sourceTree, parentNode, childIndex);
 
             TR::Node *commonedNode = parentNode->getChild(static_cast<int32_t>(childIndex));
             parentNode->setAndIncChild(static_cast<int32_t>(childIndex), sourceTree);
@@ -271,9 +270,8 @@ private:
                         oldSize == newSymSize) // 16 == 16
                     {
                         if (trace() || comp()->cg()->traceBCDCodeGen()) {
-                            traceMsg(comp(),
-                                "reduce newPrecision %d->%d for odd to even truncation (origNode %s (%p) prec=%d, node "
-                                "%s (%p) prec=%d\n",
+                            comp()->log()->printf("reduce newPrecision %d->%d for odd to even truncation (origNode %s "
+                                                  "(%p) prec=%d, node %s (%p) prec=%d\n",
                                 newPrecision, oldPrecision, newNode->getOpCode().getName(), newNode,
                                 newNode->getDecimalPrecision(), oldNode->getOpCode().getName(), oldNode, oldPrecision);
                         }
@@ -385,11 +383,9 @@ private:
 
                 if (oldNode->getReferenceCount() == 0) {
                     // Replaced all occurrences later in the block, bail out.
-                    if (trace()) {
-                        comp()->getDebug()->trace("%s   Propagating new RHS " POINTER_PRINTF_FORMAT
-                                                  " stops because oldNode ref count = 0\n",
-                            OPT_DETAILS, newNode);
-                    }
+                    logprintf(trace(), comp()->log(),
+                        "%s   Propagating new RHS " POINTER_PRINTF_FORMAT " stops because oldNode ref count = 0\n",
+                        OPT_DETAILS, newNode);
 
                     break;
                 }
@@ -417,15 +413,15 @@ private:
 
 int32_t TR_CopyPropagation::perform()
 {
-    if (trace())
-        traceMsg(comp(), "Starting CopyPropagation\n");
+    OMR::Logger *log = comp()->log();
+
+    logprints(trace(), log, "Starting CopyPropagation\n");
 
     TR_UseDefInfo *useDefInfo = optimizer()->getUseDefInfo();
     _canMaintainUseDefs = true;
     if (useDefInfo == NULL) {
         {
-            if (trace())
-                traceMsg(comp(), "Can't do CopyPropagation, no use/def information\n");
+            logprints(trace(), log, "Can't do CopyPropagation, no use/def information\n");
             return 0;
         }
     }
@@ -536,8 +532,7 @@ int32_t TR_CopyPropagation::perform()
                             auto equivalentDefLookup = equivalentDefs.find(j);
                             if ((!thisSymRefIsPreferred
                                     && (prevSymRefIsPreferred || (equivalentDefLookup != equivalentDefs.end())))) {
-                                if (trace())
-                                    traceMsg(comp(), "000setting i %d to j %d\n", i, j);
+                                logprintf(trace(), log, "000setting i %d to j %d\n", i, j);
                                 if (equivalentDefLookup == equivalentDefs.end()) {
                                     if (i != j)
                                         equivalentDefs[i] = j;
@@ -547,8 +542,7 @@ int32_t TR_CopyPropagation::perform()
                                     equivalentDefs[i] = equivalentDefLookup->second;
                                 }
                             } else if (equivalentDefs.find(j) == equivalentDefs.end()) {
-                                if (trace())
-                                    traceMsg(comp(), "111setting j %d to i %d\n", j, i);
+                                logprintf(trace(), log, "111setting j %d to i %d\n", j, i);
                                 if (i != j)
                                     equivalentDefs[j] = i;
                             }
@@ -562,8 +556,7 @@ int32_t TR_CopyPropagation::perform()
                         auto equivalentDefLookup = equivalentDefs.find(j);
                         if ((!thisSymRefIsPreferred
                                 && (prevSymRefIsPreferred || (equivalentDefLookup != equivalentDefs.end())))) {
-                            if (trace())
-                                traceMsg(comp(), "000setting i %d to j %d\n", i, j);
+                            logprintf(trace(), log, "000setting i %d to j %d\n", i, j);
 
                             if (equivalentDefLookup == equivalentDefs.end()) {
                                 if (i != j)
@@ -574,8 +567,7 @@ int32_t TR_CopyPropagation::perform()
                                 equivalentDefs[i] = equivalentDefLookup->second;
                             }
                         } else if (equivalentDefs.find(j) == equivalentDefs.end()) {
-                            if (trace())
-                                traceMsg(comp(), "111setting j %d to i %d\n", j, i);
+                            logprintf(trace(), log, "111setting j %d to i %d\n", j, i);
                             if (i != j)
                                 equivalentDefs[j] = i;
                         }
@@ -694,19 +686,13 @@ int32_t TR_CopyPropagation::perform()
                     donePropagation = true;
 
                     if (trace()) {
-                        traceMsg(comp(), "   Use #%d[%p] :\n", useNode->getUseDefIndex(), useNode);
-                        traceMsg(comp(), "      Does NOT get Defined by #%d[%p] from now\n", defNode->getUseDefIndex(),
+                        log->printf("   Use #%d[%p] :\n", useNode->getUseDefIndex(), useNode);
+                        log->printf("      Does NOT get Defined by #%d[%p] from now\n", defNode->getUseDefIndex(),
                             defNode);
-                    }
-
-                    if (trace()) {
-                        traceMsg(comp(), "   Use #%d[%p] is defined by:\n", useNode->getUseDefIndex(), useNode);
-                        traceMsg(comp(), "      Added New Def #%d[%p]\n", defIndex,
+                        log->printf("   Use #%d[%p] is defined by:\n", useNode->getUseDefIndex(), useNode);
+                        log->printf("      Added New Def #%d[%p]\n\n", defIndex,
                             useDefInfo->getNode(equivalentDefs[defIndex]));
                     }
-
-                    if (trace())
-                        traceMsg(comp(), "\n");
                 }
             }
         }
@@ -898,8 +884,7 @@ int32_t TR_CopyPropagation::perform()
                         }
                     }
 
-                    if (trace())
-                        traceMsg(comp(), "\n");
+                    logprintln(trace(), log);
                 }
             }
         }
@@ -953,9 +938,7 @@ int32_t TR_CopyPropagation::perform()
 
     } // scope of the stack memory region
 
-    if (trace()) {
-        traceMsg(comp(), "\nEnding CopyPropagation\n");
-    }
+    logprints(trace(), log, "\nEnding CopyPropagation\n");
 
     if (donePropagation) {
         optimizer()->setAliasSetsAreValid(false);
@@ -1013,7 +996,7 @@ void TR_CopyPropagation::rematerializeIndirectLoadsFromAutos()
     }
 
     if (trace())
-        comp()->dumpMethodTrees("Trees after rematerialization of indirect loads from autos");
+        comp()->dumpMethodTrees(comp()->log(), "Trees after rematerialization of indirect loads from autos");
 }
 
 void TR_CopyPropagation::commonIndirectLoadsFromAutos()
@@ -1048,7 +1031,7 @@ void TR_CopyPropagation::commonIndirectLoadsFromAutos()
     }
 
     if (trace())
-        comp()->dumpMethodTrees("Trees after commoning of indirect loads from autos");
+        comp()->dumpMethodTrees(comp()->log(), "Trees after commoning of indirect loads from autos");
 }
 
 static void preserveKnownObjectInfo(TR::Compilation *comp, TR::Node *node, TR::SymbolReference *oldSymRef,
@@ -1081,13 +1064,15 @@ TR::treetop
 void TR_CopyPropagation::replaceCopySymbolReferenceByOriginalIn(TR::SymbolReference *copySymbolReference,
     TR::Node *origNode, TR::Node *node, TR::Node *defNode, TR::Node *baseAddrNode, bool baseAddrAvail)
 {
+    OMR::Logger *log = comp()->log();
+    bool traceAll = trace() || comp()->cg()->traceBCDCodeGen();
     vcount_t curVisit = comp()->getVisitCount();
 
 #ifdef J9_PROJECT_SPECIFIC
     if (_useTree && !node->getOpCode().isLoadConst() && cg()->IsInMemoryType(node->getType())) {
         if (cg()->traceBCDCodeGen() && _useTree->getNode()->chkOpsIsInMemoryCopyProp()
             && !_useTree->getNode()->isInMemoryCopyProp())
-            traceMsg(comp(), "\tset IsInMemoryCopyProp on %s (%p), useNode %s (%p)\n",
+            log->printf("\tset IsInMemoryCopyProp on %s (%p), useNode %s (%p)\n",
                 _useTree->getNode()->getOpCode().getName(), _useTree->getNode(), node->getOpCode().getName(), node);
         _useTree->getNode()->setIsInMemoryCopyProp(true);
     }
@@ -1139,20 +1124,18 @@ void TR_CopyPropagation::replaceCopySymbolReferenceByOriginalIn(TR::SymbolRefere
                 }
 #ifdef J9_PROJECT_SPECIFIC
                 else if (node->getType().isBCD()) {
-                    if (trace() || comp()->cg()->traceBCDCodeGen())
-                        traceMsg(comp(),
-                            "node %s (%p) #%d->#%d, origNode %s (%p) #%d, defNode %s (%p) #%d,copySymRef #%d\n",
-                            node->getOpCode().getName(), node, symRef->getReferenceNumber(),
-                            origNode->getOpCode().hasSymbolReference()
-                                ? origNode->getSymbolReference()->getReferenceNumber()
-                                : -1,
-                            origNode->getOpCode().getName(), origNode,
-                            origNode->getOpCode().hasSymbolReference()
-                                ? origNode->getSymbolReference()->getReferenceNumber()
-                                : -1,
-                            defNode->getOpCode().getName(), defNode,
-                            defNode->getSymbolReference()->getReferenceNumber(),
-                            copySymbolReference->getReferenceNumber());
+                    logprintf(traceAll, log,
+                        "node %s (%p) #%d->#%d, origNode %s (%p) #%d, defNode %s (%p) #%d,copySymRef #%d\n",
+                        node->getOpCode().getName(), node, symRef->getReferenceNumber(),
+                        origNode->getOpCode().hasSymbolReference()
+                            ? origNode->getSymbolReference()->getReferenceNumber()
+                            : -1,
+                        origNode->getOpCode().getName(), origNode,
+                        origNode->getOpCode().hasSymbolReference()
+                            ? origNode->getSymbolReference()->getReferenceNumber()
+                            : -1,
+                        defNode->getOpCode().getName(), defNode, defNode->getSymbolReference()->getReferenceNumber(),
+                        copySymbolReference->getReferenceNumber());
 
                     // BCD tracing might be misleading after this
                     if (!origNode->getOpCode().isStore())
@@ -1189,13 +1172,11 @@ void TR_CopyPropagation::replaceCopySymbolReferenceByOriginalIn(TR::SymbolRefere
                                 nodeSize == origNode->getSize() && // 16 == 16
                                 nodeSize == origSymSize) // 16 == 16
                             {
-                                if (trace() || comp()->cg()->traceBCDCodeGen())
-                                    traceMsg(comp(),
-                                        "reduce newPrecision %d->%d for odd to even truncation (origNode %s (%p) "
-                                        "prec=%d, node %s (%p) prec=%d\n",
-                                        newPrecision, nodePrecision, origNode->getOpCode().getName(), origNode,
-                                        origNode->getDecimalPrecision(), node->getOpCode().getName(), node,
-                                        nodePrecision);
+                                logprintf(traceAll, log,
+                                    "reduce newPrecision %d->%d for odd to even truncation (origNode %s (%p) prec=%d, "
+                                    "node %s (%p) prec=%d\n",
+                                    newPrecision, nodePrecision, origNode->getOpCode().getName(), origNode,
+                                    origNode->getDecimalPrecision(), node->getOpCode().getName(), node, nodePrecision);
                                 newPrecision = nodePrecision; // 31->30 -- no correction needed for same byte odd to
                                                               // even truncation if the origNode was only storing out
                                                               // the even $ of digits
@@ -1212,10 +1193,9 @@ void TR_CopyPropagation::replaceCopySymbolReferenceByOriginalIn(TR::SymbolRefere
                     bool needsClean = defNode && defNode->mustClean();
                     bool needsPrecisionCorrection = currentPrecision != newPrecision;
 
-                    if (trace() || comp()->cg()->traceBCDCodeGen())
-                        traceMsg(comp(), "needsClean = %s, needsPrecisionCorrection = %s (cur %d, new %d)\n",
-                            needsClean ? "yes" : "no", needsPrecisionCorrection ? "yes" : "no", currentPrecision,
-                            newPrecision);
+                    logprintf(traceAll, log, "needsClean = %s, needsPrecisionCorrection = %s (cur %d, new %d)\n",
+                        needsClean ? "yes" : "no", needsPrecisionCorrection ? "yes" : "no", currentPrecision,
+                        newPrecision);
 
                     // pdstore symA-- defNode
                     //    pdload symB -- origNode
@@ -1609,10 +1589,8 @@ TR::Node *TR_CopyPropagation::areAllDefsInCorrectForm(TR::Node *useNode, const T
 
             if (foundInterferenceBetweenCurrentNodeAndPropagation(comp(), trace(), currentNode, lastDefNode, checkNodes,
                     refsToCheckIfKilled)) {
-                if (trace()) {
-                    comp()->getDebug()->trace("%s   Cannot propagate RHS of i = i + 1 (node %p)\n", OPT_DETAILS,
-                        lastDefNode);
-                }
+                logprintf(trace(), comp()->log(), "%s   Cannot propagate RHS of i = i + 1 (node %p)\n", OPT_DETAILS,
+                    lastDefNode);
 
                 return NULL;
             }
@@ -2203,10 +2181,8 @@ TR::Node *TR_CopyPropagation::isCheapRematerializationCandidate(TR::Node *defNod
     // TODO: a trdbg option to propagate all expressions anyway?
 
     if (!cheapExpression) {
-        if (trace()) {
-            comp()->getDebug()->trace("%s   skipping attempt at propagating %p because it is not cheap\n", OPT_DETAILS,
-                node);
-        }
+        logprintf(trace(), comp()->log(), "%s   skipping attempt at propagating %p because it is not cheap\n",
+            OPT_DETAILS, node);
 
         return NULL;
     }

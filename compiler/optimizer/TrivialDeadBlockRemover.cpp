@@ -34,15 +34,17 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/OMRSimplifierHelpers.hpp"
 #include "optimizer/TransformUtil.hpp"
+#include "ras/Logger.hpp"
 
 TR_YesNoMaybe TR_TrivialDeadBlockRemover::evaluateTakeBranch(TR::Node *ifNode)
 {
+    OMR::Logger *log = comp()->log();
+
     if (ifNode->getFirstChild() == ifNode->getSecondChild() && !ifNode->getFirstChild()->getOpCode().isFloatingPoint()
         && (TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue())
             || TR::ILOpCode::isNotEqualCmp(ifNode->getOpCodeValue()))) {
-        if (trace())
-            traceMsg(comp(), "An equality comparison %p folded to %d\n", ifNode,
-                TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue()));
+        logprintf(trace(), log, "An equality comparison %p folded to %d\n", ifNode,
+            TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue()));
 
         return TR::ILOpCode::isEqualCmp(ifNode->getOpCodeValue()) ? TR_yes : TR_no;
     }
@@ -79,11 +81,8 @@ TR_YesNoMaybe TR_TrivialDeadBlockRemover::evaluateTakeBranch(TR::Node *ifNode)
     int col = ifOp.isCompareTrueIfLess() * 1 + ifOp.isCompareTrueIfGreater() * 2 + ifOp.isCompareTrueIfEqual() * 4;
     int row = less ? 0 : greater ? 1 : 2;
 
-    if (trace())
-        traceMsg(comp(),
-            "ifNode %p folded using a decision table,"
-            "row %d col %d value %s\n",
-            ifNode, row, col, comp()->getDebug()->getName(decisionTable[row][col]));
+    logprintf(trace(), log, "ifNode %p folded using a decision table, row %d col %d value %s\n", ifNode, row, col,
+        comp()->getDebug()->getName(decisionTable[row][col]));
 
     return decisionTable[row][col];
 }
@@ -139,7 +138,6 @@ int32_t TR_TrivialDeadBlockRemover::perform()
     }
 
     if (blocksWereRemoved) {
-        // printf("@@@trivial dead block elimination performed in %s\n", comp()->signature()); fflush(stdout);
         optimizer()->setUseDefInfo(NULL);
         optimizer()->setValueNumberInfo(NULL);
     }

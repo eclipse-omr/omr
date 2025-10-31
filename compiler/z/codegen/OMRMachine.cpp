@@ -70,6 +70,7 @@
 #include "infra/Stack.hpp"
 #include "codegen/SystemLinkage.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "z/codegen/S390GenerateInstructions.hpp"
 #include "z/codegen/S390Instruction.hpp"
 
@@ -1611,7 +1612,7 @@ void OMR::Z::Machine::freeBestRegisterPair(TR::RealRegister **firstReg, TR::Real
     // Assert if no register pair was found
     if (bestCandidateHigh == NULL && bestCandidateLow == NULL) {
         if (self()->cg()->getDebug() != NULL) {
-            self()->cg()->getDebug()->printGPRegisterStatus(comp->getOutFile(), machine);
+            self()->cg()->getDebug()->printGPRegisterStatus(comp->log(), machine);
         }
 
         TR_ASSERT_FATAL(0, "Ran out of register pairs to use as a pair on instruction [%p]", currInst);
@@ -2249,7 +2250,7 @@ TR::RealRegister *OMR::Z::Machine::freeBestRegister(TR::Instruction *currentInst
     if (numCandidates == 0) {
         if (!allowNullReturn) {
             if (self()->cg()->getDebug() != NULL) {
-                self()->cg()->getDebug()->printGPRegisterStatus(comp->getOutFile(), machine);
+                self()->cg()->getDebug()->printGPRegisterStatus(comp->log(), machine);
             }
 
             TR_ASSERT_FATAL(false, "Ran out of register candidates to free on instruction [%p]", currentInstruction);
@@ -2976,9 +2977,12 @@ TR::Instruction *OMR::Z::Machine::coerceRegisterAssignment(TR::Instruction *curr
         targetRegister->setState(TR::RealRegister::Assigned);
         targetRegister->setAssignedRegister(virtualRegister);
     } else {
-        traceMsg(comp, "    WARNING: Assigning a Locked register %s to %s\n",
-            getRegisterName(targetRegister, self()->cg()), getRegisterName(virtualRegister, self()->cg()));
-        traceMsg(comp, "             This assignment is equivalent to using a hard coded real register.\n");
+        if (comp->getOption(TR_TraceCG)) {
+            OMR::Logger *log = comp->log();
+            log->printf("    WARNING: Assigning a Locked register %s to %s\n",
+                getRegisterName(targetRegister, self()->cg()), getRegisterName(virtualRegister, self()->cg()));
+            log->prints("             This assignment is equivalent to using a hard coded real register.\n");
+        }
 
         // the virtual register haven't be assigned to any real register yet
         if (currentAssignedRegister == NULL) {

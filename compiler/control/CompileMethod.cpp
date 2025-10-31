@@ -55,6 +55,7 @@
 #include "infra/Assert.hpp"
 #include "infra/String.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "env/SystemSegmentProvider.hpp"
 #include "env/DebugSegmentProvider.hpp"
 #include "omrformatconsts.h"
@@ -225,7 +226,11 @@ void registerTrampoline(uint8_t *start, uint32_t size, const char *name)
 static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp, const char *reason)
 {
     if (comp) {
-        traceMsg(comp, "\n=== EXCEPTION THROWN (%s) ===\n", reason);
+        OMR::Logger *log = comp->log();
+
+        static char *disableExceptionLogging = feGetEnv("TR_DisableJITExceptionLogging");
+        if (!disableExceptionLogging && log && log->isEnabled_DEPRECATED())
+            log->printf("\n=== EXCEPTION THROWN (%s) ===\n", reason);
 
         if (debug("traceCompilationException")) {
             diagnostic("JIT: terminated compile of %s: %s\n", comp->signature(),
@@ -239,8 +244,8 @@ static void printCompFailureInfo(TR::JitConfig *jitConfig, TR::Compilation *comp
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPFAIL, "%s failed compilation", comp->signature());
         }
 
-        if (comp->getOutFile() != NULL && comp->getOption(TR_TraceAll))
-            traceMsg(comp, "<result success=\"false\">exception thrown by the compiler</result>\n");
+        if (!disableExceptionLogging && log && log->isEnabled_DEPRECATED())
+            log->prints("<result success=\"false\">exception thrown by the compiler</result>\n");
     }
 }
 
@@ -310,7 +315,6 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
         &compiler);
 
     try {
-        // fprintf(stderr,"loading JIT debug\n");
         if (TR::Options::requiresDebugObject() || options.getLogFileName() || options.enableDebugCounters()) {
             compiler.setDebug(createDebugObject(&compiler));
         }
@@ -322,9 +326,12 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
             TR_VerboseLog::writeLineLocked(TR_Vlog_COMPSTART, "compiling %s", signature);
         }
 
-        if (compiler.getOutFile() != NULL && compiler.getOption(TR_TraceAll)) {
+        OMR::Logger *log = compiler.log();
+        bool trace = compiler.getOption(TR_TraceAll);
+
+        if (trace) {
             const char *signature = compilee.signature(&trMemory);
-            traceMsg((&compiler), "<compile hotness=\"%s\" method=\"%s\">\n",
+            log->printf("<compile hotness=\"%s\" method=\"%s\">\n",
                 compiler.getHotnessName(compiler.getMethodHotness()), signature);
         }
 
@@ -377,9 +384,8 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
                 }
             }
 
-            if (compiler.getOutFile() != NULL && compiler.getOption(TR_TraceAll))
-                traceMsg((&compiler), "<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n", startPC,
-                    translationTime / 1000, translationTime % 1000);
+            logprintf(trace, log, "<result success=\"true\" startPC=\"%#p\" time=\"%lld.%lldms\"/>\n", startPC,
+                translationTime / 1000, translationTime % 1000);
         } else /* of rc == COMPILATION_SUCCEEDED */
         {
             TR_ASSERT(false, "compiler error code %d returned\n", rc);

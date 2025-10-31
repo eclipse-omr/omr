@@ -24,6 +24,7 @@
 #include "compile/Compilation.hpp"
 #include "compile/ResolvedMethod.hpp"
 #include "infra/Assert.hpp"
+#include "ras/Logger.hpp"
 
 OMR::RetainedMethodSet::KeepalivesAndBonds::KeepalivesAndBonds(TR::Region &heapRegion)
     : _keepaliveMethods(heapRegion)
@@ -74,11 +75,10 @@ OMR::RetainedMethodSet::KeepalivesAndBonds *OMR::RetainedMethodSet::createKeepal
 
 void OMR::RetainedMethodSet::traceCommitment(const char *kind, void *key)
 {
-    if (_comp->getOption(TR_TraceRetainedMethods)) {
-        traceMsg(_comp, "RetainedMethodSet %p: %s %p %.*s.%.*s%.*s (key %p)\n", this, kind,
-            _method->getNonPersistentIdentifier(), _method->classNameLength(), _method->classNameChars(),
-            _method->nameLength(), _method->nameChars(), _method->signatureLength(), _method->signatureChars(), key);
-    }
+    logprintf(_comp->getOption(TR_TraceRetainedMethods), _comp->log(),
+        "RetainedMethodSet %p: %s %p %.*s.%.*s%.*s (key %p)\n", this, kind, _method->getNonPersistentIdentifier(),
+        _method->classNameLength(), _method->classNameChars(), _method->nameLength(), _method->nameChars(),
+        _method->signatureLength(), _method->signatureChars(), key);
 }
 
 OMR::RetainedMethodSet *OMR::RetainedMethodSet::createChild(TR_ResolvedMethod *method)

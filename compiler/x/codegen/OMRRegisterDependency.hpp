@@ -64,6 +64,10 @@ typedef OMR::X86::RegisterDependencyGroup RegisterDependencyGroupConnector;
 #include "env/TRMemory.hpp"
 #include "infra/Assert.hpp"
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Instruction;
 class Node;
@@ -255,9 +259,7 @@ public:
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
     uint32_t numReferencedGPRegisters(TR::CodeGenerator *);
     uint32_t numReferencedFPRegisters(TR::CodeGenerator *);
-    void printFullRegisterDependencyInfo(FILE *pOutFile);
-    void printDependencyConditions(TR::RegisterDependencyGroup *conditions, uint32_t numConditions, char *prefix,
-        FILE *pOutFile);
+    void printFullRegisterDependencyInfo(OMR::Logger *log);
 #endif /* defined(DEBUG) || defined(PROD_WITH_ASSUMES) */
 };
 }} // namespace OMR::X86

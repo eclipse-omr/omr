@@ -48,6 +48,7 @@
 #include "infra/Arith.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/ValuePropagation.hpp"
+#include "ras/Logger.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
 #include "env/J9ConstProvenanceGraph.hpp"
@@ -2443,12 +2444,13 @@ TR::VPConstraint *TR::VPEqual::merge1(TR::VPConstraint *other, OMR::ValuePropaga
 
 TR::VPConstraint *TR::VPConstraint::intersect(TR::VPConstraint *other, OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     // If this is the same constraint, just return it
     //
     if (!other) {
-        if (vp->trace())
-            traceMsg(vp->comp(),
-                "setIntersectionFailed to true because NULL constraint found this = 0x%p, other = 0x%p\n", this, other);
+        logprintf(vp->trace(), log,
+            "setIntersectionFailed to true because NULL constraint found this = 0x%p, other = 0x%p\n", this, other);
         vp->setIntersectionFailed(true);
         return NULL;
     }
@@ -2465,12 +2467,13 @@ TR::VPConstraint *TR::VPConstraint::intersect(TR::VPConstraint *other, OMR::Valu
         result = intersect1(other, vp);
 
     if (vp->trace() && !result) {
-        traceMsg(vp->comp(), "\nCannot intersect constraints:\n   ");
-        print(vp->comp(), vp->comp()->getOutFile());
-        traceMsg(vp->comp(), "\n   ");
-        other->print(vp->comp(), vp->comp()->getOutFile());
-        traceMsg(vp->comp(), "\n");
-        traceMsg(vp->comp(), "priority: %d; other->priority: %d\n", priority(), other->priority());
+        TR::Compilation *comp = vp->comp();
+        log->prints("\nCannot intersect constraints:\n   ");
+        print(log, comp);
+        log->prints("\n   ");
+        other->print(log, comp);
+        log->println();
+        log->printf("priority: %d; other->priority: %d\n", priority(), other->priority());
     }
 
     return result;
@@ -2678,6 +2681,8 @@ TR::VPConstraint *TR::VPClassType::typeIntersectLocation(TR::VPObjectLocation *l
 void TR::VPClass::typeIntersect(TR::VPClassPresence *&presence, TR::VPClassType *&type, TR::VPConstraint *other,
     OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     if (type && TR::VPConstraint::isSpecialClass((uintptr_t)type->getClass()))
         type = NULL;
 
@@ -2728,9 +2733,9 @@ void TR::VPClass::typeIntersect(TR::VPClassPresence *&presence, TR::VPClassType 
                         TR::VPResolvedClass *rc = otherType->asResolvedClass();
                         if (rc->getClass() == vp->fe()->getClassClassPointer(rc->getClass())) {
                             if (vp->trace()) {
-                                traceMsg(vp->comp(), "   1Intersecting type is a class object\n");
-                                otherType->print(vp->comp(), vp->comp()->getOutFile());
-                                traceMsg(vp->comp(), "\n");
+                                log->prints("   1Intersecting type is a class object\n");
+                                otherType->print(log, vp->comp());
+                                log->println();
                             }
 
                             // this means otherType could be a java/lang/Class
@@ -2749,9 +2754,9 @@ void TR::VPClass::typeIntersect(TR::VPClassPresence *&presence, TR::VPClassType 
                             TR::VPResolvedClass *rc = type->asResolvedClass();
                             if (rc && rc->getClass() == vp->fe()->getClassClassPointer(rc->getClass())) {
                                 if (vp->trace()) {
-                                    traceMsg(vp->comp(), "   Current type is a class object\n");
-                                    this->print(vp->comp(), vp->comp()->getOutFile());
-                                    traceMsg(vp->comp(), "\n");
+                                    log->prints("   Current type is a class object\n");
+                                    this->print(log, vp->comp());
+                                    log->println();
                                 }
                                 // resulting type is this type
                                 //////type = _type;
@@ -2766,9 +2771,9 @@ void TR::VPClass::typeIntersect(TR::VPClassPresence *&presence, TR::VPClassType 
                     TR::VPResolvedClass *rc = type->asResolvedClass();
                     if (rc && rc->getClass() == vp->fe()->getClassClassPointer(rc->getClass())) {
                         if (vp->trace()) {
-                            traceMsg(vp->comp(), "   2Intersecting type is a class object\n");
-                            this->print(vp->comp(), vp->comp()->getOutFile());
-                            traceMsg(vp->comp(), "\n");
+                            log->prints("   2Intersecting type is a class object\n");
+                            this->print(log, vp->comp());
+                            log->println();
                         }
                         // resulting type is this type
                         ///////type = _type;
@@ -2808,9 +2813,9 @@ void TR::VPClass::typeIntersect(TR::VPClassPresence *&presence, TR::VPClassType 
                     TR::VPResolvedClass *rc = otherType->asResolvedClass();
                     if (rc->getClass() == vp->fe()->getClassClassPointer(rc->getClass())) {
                         if (vp->trace()) {
-                            traceMsg(vp->comp(), "   Intersecting type is a class object\n");
-                            otherType->print(vp->comp(), vp->comp()->getOutFile());
-                            traceMsg(vp->comp(), "\n");
+                            log->prints("   Intersecting type is a class object\n");
+                            otherType->print(log, vp->comp());
+                            log->println();
                         }
                         // resulting type is the otherType
                         //
@@ -2994,9 +2999,9 @@ TR::VPConstraint *TR::VPClass::intersect1(TR::VPConstraint *other, OMR::ValuePro
                   {
                   if (vp->trace())
                      {
-                     traceMsg(vp->comp(), "   Intersecting type is a class object\n");
-                     otherType->print(vp->comp(), vp->comp()->getOutFile());
-                     traceMsg(vp->comp(), "\n");
+                     vp->comp()->log()->prints("   Intersecting type is a class object\n");
+                     otherType->print(vp->comp()->log(), vp->comp()());
+                     vp->comp()->log()->println();
                      }
                   return other;
                   }
@@ -4896,11 +4901,13 @@ TR::VPConstraint *TR::VPRelation::propagateAbsoluteConstraint(TR::VPConstraint *
 TR::VPConstraint *TR::VPLessThanOrEqual::propagateAbsoluteConstraint(TR::VPConstraint *constraint, int32_t relative,
     OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     // x <= y + I and x == (M to N)    ==> y == ((M-I) to TR::getMaxSigned<TR::Int32>())
     //
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V <= value %d %+d and V is ", relative, increment());
-        constraint->print(vp->comp(), vp->comp()->getOutFile());
+        log->printf("      Propagating V <= value %d %+d and V is ", relative, increment());
+        constraint->print(log, vp->comp());
     }
 
     if (constraint->asLongConstraint()) {
@@ -4927,10 +4934,10 @@ TR::VPConstraint *TR::VPLessThanOrEqual::propagateAbsoluteConstraint(TR::VPConst
     }
     if (vp->trace()) {
         if (constraint) {
-            traceMsg(vp->comp(), " ... value %d is ", relative);
-            constraint->print(vp->comp(), vp->comp()->getOutFile());
+            log->printf(" ... value %d is ", relative);
+            constraint->print(log, vp->comp());
         }
-        traceMsg(vp->comp(), "\n");
+        log->println();
     }
 
     return constraint;
@@ -4939,11 +4946,13 @@ TR::VPConstraint *TR::VPLessThanOrEqual::propagateAbsoluteConstraint(TR::VPConst
 TR::VPConstraint *TR::VPGreaterThanOrEqual::propagateAbsoluteConstraint(TR::VPConstraint *constraint, int32_t relative,
     OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     // x >= y + I and x == (M to N)    ==> y == (TR::getMinSigned<TR::Int32>() to (M-I))
     //
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V >= value %d %+d and V is ", relative, increment());
-        constraint->print(vp->comp(), vp->comp()->getOutFile());
+        log->printf("      Propagating V >= value %d %+d and V is ", relative, increment());
+        constraint->print(log, vp->comp());
     }
 
     if (constraint->asLongConstraint()) {
@@ -4970,10 +4979,10 @@ TR::VPConstraint *TR::VPGreaterThanOrEqual::propagateAbsoluteConstraint(TR::VPCo
     }
     if (vp->trace()) {
         if (constraint) {
-            traceMsg(vp->comp(), " ... value %d is ", relative);
-            constraint->print(vp->comp(), vp->comp()->getOutFile());
+            log->printf(" ... value %d is ", relative);
+            constraint->print(log, vp->comp());
         }
-        traceMsg(vp->comp(), "\n");
+        log->println();
     }
 
     return constraint;
@@ -4982,11 +4991,13 @@ TR::VPConstraint *TR::VPGreaterThanOrEqual::propagateAbsoluteConstraint(TR::VPCo
 TR::VPConstraint *TR::VPEqual::propagateAbsoluteConstraint(TR::VPConstraint *constraint, int32_t relative,
     OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     // x == y + I and x == (M to N)    ==> y == ((M-I) to N-I))
     //
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V == value %d %+d and V is ", relative, increment());
-        constraint->print(vp->comp(), vp->comp()->getOutFile());
+        log->printf("      Propagating V == value %d %+d and V is ", relative, increment());
+        constraint->print(log, vp->comp());
     }
 
     if (increment() != 0) {
@@ -5001,10 +5012,10 @@ TR::VPConstraint *TR::VPEqual::propagateAbsoluteConstraint(TR::VPConstraint *con
     }
     if (vp->trace()) {
         if (constraint) {
-            traceMsg(vp->comp(), " ... value %d is ", relative);
-            constraint->print(vp->comp(), vp->comp()->getOutFile());
+            log->printf(" ... value %d is ", relative);
+            constraint->print(log, vp->comp());
         }
-        traceMsg(vp->comp(), "\n");
+        log->println();
     }
 
     return constraint;
@@ -5013,11 +5024,13 @@ TR::VPConstraint *TR::VPEqual::propagateAbsoluteConstraint(TR::VPConstraint *con
 TR::VPConstraint *TR::VPNotEqual::propagateAbsoluteConstraint(TR::VPConstraint *constraint, int32_t relative,
     OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     // x != y + I and x == N           ==> y != (N-I)
     //
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V != value %d %+d and V is ", relative, increment());
-        constraint->print(vp->comp(), vp->comp()->getOutFile());
+        log->printf("      Propagating V != value %d %+d and V is ", relative, increment());
+        constraint->print(log, vp->comp());
     }
 
     TR::VPConstraint *newConstraint = NULL;
@@ -5076,10 +5089,10 @@ TR::VPConstraint *TR::VPNotEqual::propagateAbsoluteConstraint(TR::VPConstraint *
 
     if (vp->trace()) {
         if (newConstraint) {
-            traceMsg(vp->comp(), " ... value %d is ", relative);
-            newConstraint->print(vp->comp(), vp->comp()->getOutFile());
+            log->printf(" ... value %d is ", relative);
+            newConstraint->print(log, vp->comp());
         }
-        traceMsg(vp->comp(), "\n");
+        log->println();
     }
 
     return newConstraint;
@@ -5118,9 +5131,10 @@ TR::VPConstraint *TR::VPLessThanOrEqual::propagateRelativeConstraint(TR::VPRelat
     }
 
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V <= value %d %+d and V >= value %d %+d", relative, increment(),
-            otherRelative, other->increment());
-        traceMsg(vp->comp(), " ... value %d >= value %d %+d\n", relative, otherRelative, newIncr);
+        OMR::Logger *log = vp->comp()->log();
+        log->printf("      Propagating V <= value %d %+d and V >= value %d %+d", relative, increment(), otherRelative,
+            other->increment());
+        log->printf(" ... value %d >= value %d %+d\n", relative, otherRelative, newIncr);
     }
     return constraint;
 }
@@ -5158,9 +5172,10 @@ TR::VPConstraint *TR::VPGreaterThanOrEqual::propagateRelativeConstraint(TR::VPRe
     }
 
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V >= value %d %+d and V <= value %d %+d", relative, increment(),
-            otherRelative, other->increment());
-        traceMsg(vp->comp(), " ... value %d <= value %d %+d\n", relative, otherRelative, newIncr);
+        OMR::Logger *log = vp->comp()->log();
+        log->printf("      Propagating V >= value %d %+d and V <= value %d %+d", relative, increment(), otherRelative,
+            other->increment());
+        log->printf(" ... value %d <= value %d %+d\n", relative, otherRelative, newIncr);
     }
     return constraint;
 }
@@ -5168,6 +5183,8 @@ TR::VPConstraint *TR::VPGreaterThanOrEqual::propagateRelativeConstraint(TR::VPRe
 TR::VPConstraint *TR::VPEqual::propagateRelativeConstraint(TR::VPRelation *other, int32_t relative,
     int32_t otherRelative, OMR::ValuePropagation *vp)
 {
+    OMR::Logger *log = vp->comp()->log();
+
     // x == y + M and x <= z + N    ==> y <= z + (N-M)
     // x == y + M and x >= z + N    ==> y >= z + (N-M)
     // x == y + M and x != z + N    ==> y != z + (N-M)
@@ -5199,9 +5216,9 @@ TR::VPConstraint *TR::VPEqual::propagateRelativeConstraint(TR::VPRelation *other
         }
 
         if (vp->trace()) {
-            traceMsg(vp->comp(), "      Propagating V == value %d %+d and V <= value %d %+d", relative, increment(),
+            log->printf("      Propagating V == value %d %+d and V <= value %d %+d", relative, increment(),
                 otherRelative, other->increment());
-            traceMsg(vp->comp(), " ... value %d <= value %d %+d\n", relative, otherRelative, newIncr);
+            log->printf(" ... value %d <= value %d %+d\n", relative, otherRelative, newIncr);
         }
     } else if (other->asGreaterThanOrEqual()) {
         constraint = TR::VPGreaterThanOrEqual::create(vp, newIncr);
@@ -5211,24 +5228,24 @@ TR::VPConstraint *TR::VPEqual::propagateRelativeConstraint(TR::VPRelation *other
         }
 
         if (vp->trace()) {
-            traceMsg(vp->comp(), "      Propagating V == value %d %+d and V >= value %d %+d", relative, increment(),
+            log->printf("      Propagating V == value %d %+d and V >= value %d %+d", relative, increment(),
                 otherRelative, other->increment());
-            traceMsg(vp->comp(), " ... value %d >= value %d %+d\n", relative, otherRelative, newIncr);
+            log->printf(" ... value %d >= value %d %+d\n", relative, otherRelative, newIncr);
         }
     } else if (other->asNotEqual()) {
         constraint = TR::VPNotEqual::create(vp, newIncr);
         if (vp->trace()) {
-            traceMsg(vp->comp(), "      Propagating V == value %d %+d and V != value %d %+d", relative, increment(),
+            log->printf("      Propagating V == value %d %+d and V != value %d %+d", relative, increment(),
                 otherRelative, other->increment());
-            traceMsg(vp->comp(), " ... value %d != value %d %+d\n", relative, otherRelative, newIncr);
+            log->printf(" ... value %d != value %d %+d\n", relative, otherRelative, newIncr);
         }
     } else {
         TR_ASSERT(other->asEqual(), "assertion failure");
         constraint = TR::VPEqual::create(vp, newIncr);
         if (vp->trace()) {
-            traceMsg(vp->comp(), "      Propagating V == value %d %+d and V == value %d %+d", relative, increment(),
+            log->printf("      Propagating V == value %d %+d and V == value %d %+d", relative, increment(),
                 otherRelative, other->increment());
-            traceMsg(vp->comp(), " ... value %d == value %d %+d\n", relative, otherRelative, newIncr);
+            log->printf(" ... value %d == value %d %+d\n", relative, otherRelative, newIncr);
         }
     }
     return constraint;
@@ -5259,9 +5276,9 @@ TR::VPConstraint *TR::VPNotEqual::propagateRelativeConstraint(TR::VPRelation *ot
     }
     constraint = TR::VPNotEqual::create(vp, newIncr);
     if (vp->trace()) {
-        traceMsg(vp->comp(), "      Propagating V != value %d %+d and V == value %d %+d", relative, increment(),
+        vp->comp()->log()->printf("      Propagating V != value %d %+d and V == value %d %+d", relative, increment(),
             otherRelative, other->increment());
-        traceMsg(vp->comp(), " ... value %d != value %d %+d\n", relative, otherRelative, newIncr);
+        vp->comp()->log()->printf(" ... value %d != value %d %+d\n", relative, otherRelative, newIncr);
     }
     return constraint;
 }
@@ -5272,164 +5289,139 @@ TR::VPConstraint *TR::VPNotEqual::propagateRelativeConstraint(TR::VPRelation *ot
 //
 // ***************************************************************************
 
-void TR::VPConstraint::print(OMR::ValuePropagation *vp) { print(vp->comp(), vp->comp()->getOutFile()); }
+void TR::VPConstraint::print(OMR::ValuePropagation *vp) { print(vp->comp()->log(), vp->comp()); }
 
-void TR::VPConstraint::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPConstraint::print(OMR::Logger *log, TR::Compilation *comp) { log->prints("unknown absolute constraint"); }
+
+void TR::VPConstraint::print(OMR::Logger *log, TR::Compilation *comp, int32_t relative)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "unknown absolute constraint");
+    log->printf("unknown constraint relative to value number %d", relative);
 }
 
-void TR::VPConstraint::print(TR::Compilation *comp, TR::FILE *outFile, int32_t relative)
+void TR::VPShortConst::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "unknown constraint relative to value number %d", relative);
-}
-
-void TR::VPShortConst::print(TR::Compilation *comp, TR::FILE *outFile)
-{
-    if (outFile == NULL)
-        return;
     if (isUnsigned())
-        trfprintf(outFile, "%u US ", getLow());
+        log->printf("%u US ", getLow());
     else
-        trfprintf(outFile, "%d S ", getLow());
+        log->printf("%d S ", getLow());
 }
 
-void TR::VPShortRange::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPShortRange::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-
     if (isUnsigned()) {
         if ((uint16_t)getLow() == TR::getMinUnsigned<TR::Int16>())
-            trfprintf(outFile, "(TR::getMinUnsigned<TR::Int16>() ");
+            log->prints("(TR::getMinUnsigned<TR::Int16>() ");
         else
-            trfprintf(outFile, "(%u ", getLow());
+            log->printf("(%u ", getLow());
 
         if ((uint16_t)getHigh() == TR::getMaxUnsigned<TR::Int16>())
-            trfprintf(outFile, "to TR::getMaxUnsigned<TR::Int16>())US");
+            log->prints("to TR::getMaxUnsigned<TR::Int16>())US");
         else
-            trfprintf(outFile, "to %u)US", getHigh());
+            log->printf("to %u)US", getHigh());
     } else {
         if (getLow() == TR::getMinSigned<TR::Int16>())
-            trfprintf(outFile, "(TR::getMinSigned<TR::Int16>() ");
+            log->prints("(TR::getMinSigned<TR::Int16>() ");
         else
-            trfprintf(outFile, "(%d ", getLow());
+            log->printf("(%d ", getLow());
         if (getHigh() == TR::getMaxSigned<TR::Int16>())
-            trfprintf(outFile, "to TR::getMaxSigned<TR::Int16>())S");
+            log->prints("to TR::getMaxSigned<TR::Int16>())S");
         else
-            trfprintf(outFile, "to %d)S", getHigh());
+            log->printf("to %d)S", getHigh());
     }
 }
 
-void TR::VPIntConst::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPIntConst::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     if (isUnsigned())
-        trfprintf(outFile, "%u UI ", getLow());
+        log->printf("%u UI ", getLow());
     else
-        trfprintf(outFile, "%d I ", getLow());
+        log->printf("%d I ", getLow());
 }
 
-void TR::VPIntRange::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPIntRange::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     if (isUnsigned()) {
         if ((uint32_t)getLow() == TR::getMinUnsigned<TR::Int32>())
-            trfprintf(outFile, "(TR::getMinUnsigned<TR::Int32>() ");
+            log->prints("(TR::getMinUnsigned<TR::Int32>() ");
         else
-            trfprintf(outFile, "(%u ", getLow());
+            log->printf("(%u ", getLow());
         if ((uint32_t)getHigh() == TR::getMaxUnsigned<TR::Int32>())
-            trfprintf(outFile, "to TR::getMaxUnsigned<TR::Int32>())UI");
+            log->prints("to TR::getMaxUnsigned<TR::Int32>())UI");
         else
-            trfprintf(outFile, "to %u)UI", getHigh());
+            log->printf("to %u)UI", getHigh());
     } else {
         if (getLow() == TR::getMinSigned<TR::Int32>())
-            trfprintf(outFile, "(TR::getMinSigned<TR::Int32>() ");
+            log->prints("(TR::getMinSigned<TR::Int32>() ");
         else
-            trfprintf(outFile, "(%d ", getLow());
+            log->printf("(%d ", getLow());
         if (getHigh() == TR::getMaxSigned<TR::Int32>())
-            trfprintf(outFile, "to TR::getMaxSigned<TR::Int32>())I");
+            log->prints("to TR::getMaxSigned<TR::Int32>())I");
         else
-            trfprintf(outFile, "to %d)I", getHigh());
+            log->printf("to %d)I", getHigh());
     }
 }
 
-void TR::VPLongConst::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPLongConst::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     if (isUnsigned())
-        trfprintf(outFile, UINT64_PRINTF_FORMAT " UL ", getUnsignedLong());
+        log->printf(UINT64_PRINTF_FORMAT " UL ", getUnsignedLong());
     else
-        trfprintf(outFile, INT64_PRINTF_FORMAT " L ", getLong());
+        log->printf(INT64_PRINTF_FORMAT " L ", getLong());
 }
 
-void TR::VPLongRange::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPLongRange::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     if (isUnsigned()) {
         if (getLow() == 0ULL)
-            trfprintf(outFile, "(MIN_ULONG ");
+            log->prints("(MIN_ULONG ");
         else
-            trfprintf(outFile, "(" UINT64_PRINTF_FORMAT " ", (uint64_t)getLow());
+            log->printf("(" UINT64_PRINTF_FORMAT " ", (uint64_t)getLow());
         if (getHigh() == (uint64_t)(-1))
-            trfprintf(outFile, "to MAX_ULONG)UL");
+            log->prints("to MAX_ULONG)UL");
         else
-            trfprintf(outFile, "to " UINT64_PRINTF_FORMAT ")UL", (uint64_t)getHigh());
+            log->printf("to " UINT64_PRINTF_FORMAT ")UL", (uint64_t)getHigh());
     } else {
         if (getLow() == TR::getMinSigned<TR::Int64>())
-            trfprintf(outFile, "(TR::getMinSigned<TR::Int64>() ");
+            log->prints("(TR::getMinSigned<TR::Int64>() ");
         else
-            trfprintf(outFile, "(" INT64_PRINTF_FORMAT " ", getLow());
+            log->printf("(" INT64_PRINTF_FORMAT " ", getLow());
         if (getHigh() == TR::getMaxSigned<TR::Int64>())
-            trfprintf(outFile, "to TR::getMaxSigned<TR::Int64>())L");
+            log->prints("to TR::getMaxSigned<TR::Int64>())L");
         else
-            trfprintf(outFile, "to " INT64_PRINTF_FORMAT ")L", getHigh());
+            log->printf("to " INT64_PRINTF_FORMAT ")L", getHigh());
     }
 }
 
-void TR::VPClass::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPClass::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     if (_type)
-        _type->print(comp, outFile);
+        _type->print(log, comp);
     if (_typeHintClass) {
         TR_OpaqueClassBlock *typeHintClassFromVPClassType = _type ? _type->getTypeHintClass() : NULL;
         if (_typeHintClass != typeHintClassFromVPClassType) {
-            trfprintf(outFile, " (+hint 0x%p", _typeHintClass);
+            log->printf(" (+hint 0x%p", _typeHintClass);
             if (!isSpecialClass((uintptr_t)_typeHintClass)) {
                 int32_t len;
                 const char *sig
                     = TR::Compiler->cls.classSignature_DEPRECATED(comp, _typeHintClass, len, comp->trMemory());
-                trfprintf(outFile, " %.*s)", len, sig);
+                log->printf(" %.*s)", len, sig);
             } else {
-                trfprintf(outFile, " <bottom>)");
+                log->prints(" <bottom>)");
             }
         }
     }
     if (getKnownObject() && !isNonNullObject())
-        trfprintf(outFile, " (maybe NULL)");
+        log->prints(" (maybe NULL)");
     if (_presence)
-        _presence->print(comp, outFile);
+        _presence->print(log, comp);
     if (_arrayInfo)
-        _arrayInfo->print(comp, outFile);
+        _arrayInfo->print(log, comp);
     if (_location)
-        _location->print(comp, outFile);
+        _location->print(log, comp);
 }
 
-void TR::VPResolvedClass::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPResolvedClass::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-
     int32_t len = _len;
     const char *sig = _sig;
     if (isSpecialClass((uintptr_t)_class)) {
@@ -5437,34 +5429,29 @@ void TR::VPResolvedClass::print(TR::Compilation *comp, TR::FILE *outFile)
         len = static_cast<int32_t>(strlen(sig));
     }
 
-    trfprintf(outFile, "class 0x%p %.*s", _class, len, sig);
+    log->printf("class 0x%p %.*s", _class, len, sig);
     if (_typeHintClass) {
-        trfprintf(outFile, " (hint 0x%p", _typeHintClass);
+        log->printf(" (hint 0x%p", _typeHintClass);
         if (!isSpecialClass((uintptr_t)_typeHintClass)) {
             sig = TR::Compiler->cls.classSignature_DEPRECATED(comp, _typeHintClass, len, comp->trMemory());
-            trfprintf(outFile, " %.*s)", len, sig);
+            log->printf(" %.*s)", len, sig);
         } else {
-            trfprintf(outFile, " <bottom>)");
+            log->prints(" <bottom>)");
         }
     }
 }
 
-void TR::VPFixedClass::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPFixedClass::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "fixed ");
-    TR::VPResolvedClass::print(comp, outFile);
+    log->prints("fixed ");
+    TR::VPResolvedClass::print(log, comp);
 }
 
 static uint16_t format[] = { 'C', 'S', ':', '"', '%', '.', '*', 's', '"', 0 };
 
-void TR::VPConstString::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPConstString::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-
-    trfprintf(outFile, "constant string: \"");
+    log->prints("constant string: \"");
 #ifdef J9_PROJECT_SPECIFIC
     {
         TR::VMAccessCriticalSection vpConstStringPrintCriticalSection(comp,
@@ -5474,195 +5461,146 @@ void TR::VPConstString::print(TR::Compilation *comp, TR::FILE *outFile)
             uintptr_t string = comp->fej9()->getStaticReferenceFieldAtAddress(stringStaticAddr);
             int32_t len = comp->fej9()->getStringLength(string);
             for (int32_t i = 0; i < len; ++i)
-                trfprintf(outFile, "%c", TR::Compiler->cls.getStringCharacter(comp, string, i));
-            trfprintf(outFile, "\" ");
+                log->printf("%c", TR::Compiler->cls.getStringCharacter(comp, string, i));
+            log->prints("\" ");
         } else
-            trfprintf(outFile, " <could not print as no fe access> \" ");
+            log->prints(" <could not print as no fe access> \" ");
     }
 #endif
 }
 
-void TR::VPKnownObject::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPKnownObject::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-
-    trfprintf(outFile, "known object obj%d ", _index);
-    TR::VPFixedClass::print(comp, outFile);
+    log->printf("known object obj%d ", _index);
+    TR::VPFixedClass::print(log, comp);
 }
 
-void TR::VPUnresolvedClass::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPUnresolvedClass::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     int32_t methodLen = _method->nameLength();
     char *methodName = _method->nameChars();
-    trfprintf(outFile, "unresolved class %.*s in method %.*s", _len, _sig, methodLen, methodName);
+    log->printf("unresolved class %.*s in method %.*s", _len, _sig, methodLen, methodName);
 }
 
-void TR::VPNullObject::print(TR::Compilation *comp, TR::FILE *outFile)
-{
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, " (NULL)");
-}
+void TR::VPNullObject::print(OMR::Logger *log, TR::Compilation *comp) { log->prints(" (NULL)"); }
 
-void TR::VPNonNullObject::print(TR::Compilation *comp, TR::FILE *outFile)
-{
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, " (non-NULL)");
-}
+void TR::VPNonNullObject::print(OMR::Logger *log, TR::Compilation *comp) { log->prints(" (non-NULL)"); }
 
-void TR::VPPreexistentObject::print(TR::Compilation *comp, TR::FILE *outFile)
-{
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, " (pre-existent)");
-}
+void TR::VPPreexistentObject::print(OMR::Logger *log, TR::Compilation *comp) { log->prints(" (pre-existent)"); }
 
-void TR::VPArrayInfo::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPArrayInfo::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     if (_lowBound > 0 || _highBound < TR::getMaxSigned<TR::Int32>())
-        trfprintf(outFile, " (min bound %d, max bound %d)", _lowBound, _highBound);
+        log->printf(" (min bound %d, max bound %d)", _lowBound, _highBound);
     if (_elementSize > 0)
-        trfprintf(outFile, " (array element size %d)", _elementSize);
+        log->printf(" (array element size %d)", _elementSize);
 }
 
-void TR::VPObjectLocation::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPObjectLocation::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
     const int nkinds = 4;
     static VPObjectLocationKind kinds[nkinds] = { HeapObject, StackObject, JavaLangClassObject, J9ClassObject };
     static const char * const names[nkinds] = { "HeapObject", "StackObject", "JavaLangClassObject", "J9ClassObject" };
-    trfprintf(outFile, " {");
+    log->prints(" {");
     bool first = true;
     for (int i = 0; i < nkinds; i++) {
         if ((_kind & kinds[i]) != 0) {
-            trfprintf(outFile, "%s%s", first ? "" : ",", names[i]);
+            log->printf("%s%s", first ? "" : ",", names[i]);
             first = false;
         }
     }
-    trfprintf(outFile, "}");
+    log->printc('}');
 }
 
-void TR::VPMergedConstraints::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPMergedConstraints::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "{");
+    log->printc('{');
     ListElement<TR::VPConstraint> *p;
     for (p = _constraints.getListHead(); p; p = p->getNextElement()) {
-        p->getData()->print(comp, outFile);
+        p->getData()->print(log, comp);
         if (p->getNextElement())
-            trfprintf(outFile, ", ");
+            log->prints(", ");
     }
-    trfprintf(outFile, "}");
+    log->printc('}');
 }
 
-void TR::VPUnreachablePath::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPUnreachablePath::print(OMR::Logger *log, TR::Compilation *comp) { log->prints("*** Unreachable Path ***"); }
+
+void TR::VPSync::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "*** Unreachable Path ***");
+    log->printf("sync has %s been emitted", (syncEmitted() == TR_yes) ? "" : "not");
 }
 
-void TR::VPSync::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPLessThanOrEqual::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "sync has %s been emitted", (syncEmitted() == TR_yes) ? "" : "not");
-}
-
-void TR::VPLessThanOrEqual::print(TR::Compilation *comp, TR::FILE *outFile)
-{
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "less than or equal to another value number");
+    log->prints("less than or equal to another value number");
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPLessThanOrEqual::print(TR::Compilation *comp, TR::FILE *outFile, int32_t relative)
+void TR::VPLessThanOrEqual::print(OMR::Logger *log, TR::Compilation *comp, int32_t relative)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "less than or equal to value number %d", relative);
+    log->printf("less than or equal to value number %d", relative);
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPGreaterThanOrEqual::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPGreaterThanOrEqual::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "greater than or equal to another value number");
+    log->prints("greater than or equal to another value number");
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPGreaterThanOrEqual::print(TR::Compilation *comp, TR::FILE *outFile, int32_t relative)
+void TR::VPGreaterThanOrEqual::print(OMR::Logger *log, TR::Compilation *comp, int32_t relative)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "greater than or equal to value number %d", relative);
+    log->printf("greater than or equal to value number %d", relative);
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPEqual::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPEqual::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "equal to another value number");
+    log->prints("equal to another value number");
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPEqual::print(TR::Compilation *comp, TR::FILE *outFile, int32_t relative)
+void TR::VPEqual::print(OMR::Logger *log, TR::Compilation *comp, int32_t relative)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "equal to value number %d", relative);
+    log->printf("equal to value number %d", relative);
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPNotEqual::print(TR::Compilation *comp, TR::FILE *outFile)
+void TR::VPNotEqual::print(OMR::Logger *log, TR::Compilation *comp)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "not equal to another value number");
+    log->prints("not equal to another value number");
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
-void TR::VPNotEqual::print(TR::Compilation *comp, TR::FILE *outFile, int32_t relative)
+void TR::VPNotEqual::print(OMR::Logger *log, TR::Compilation *comp, int32_t relative)
 {
-    if (outFile == NULL)
-        return;
-    trfprintf(outFile, "not equal to value number %d", relative);
+    log->printf("not equal to value number %d", relative);
     if (increment() > 0)
-        trfprintf(outFile, " + %d", increment());
+        log->printf(" + %d", increment());
     else if (increment() < 0)
-        trfprintf(outFile, " - %d", -increment());
+        log->printf(" - %d", -increment());
 }
 
 // ***************************************************************************
@@ -5732,20 +5670,22 @@ TR::VPConstraint::Tracer::Tracer(OMR::ValuePropagation *vpArg, TR::VPConstraint 
     , _other(other)
     , _name(name)
 {
+    OMR::Logger *log = comp()->log();
+
     if (comp()->getOption(TR_TraceVPConstraints)) {
-        traceMsg(comp(), "{{{ %s.%s\n", _self->name(), _name);
-        traceMsg(comp(), "  self: ");
+        log->printf("{{{ %s.%s\n", _self->name(), _name);
+        log->prints("  self: ");
         _self->print(vp());
-        traceMsg(comp(), "\n  other: ");
+        log->prints("\n  other: ");
         _other->print(vp());
-        traceMsg(comp(), "\n");
+        log->println();
     }
 }
 
 TR::VPConstraint::Tracer::~Tracer()
 {
     if (comp()->getOption(TR_TraceVPConstraints)) {
-        traceMsg(comp(), "%s.%s }}}\n", _self->name(), _name);
+        comp()->log()->printf("%s.%s }}}\n", _self->name(), _name);
     }
 }
 

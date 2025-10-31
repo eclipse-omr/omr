@@ -26,6 +26,7 @@
 #include "infra/BitVector.hpp"
 #include "env/VerboseLog.hpp"
 #include "infra/String.hpp"
+#include "ras/Logger.hpp"
 
 TR::InliningProposal::InliningProposal(TR::Region &region, TR::IDT *idt)
     : _region(region)
@@ -53,6 +54,7 @@ TR::InliningProposal::InliningProposal(const InliningProposal &proposal, TR::Reg
 
 void TR::InliningProposal::print(TR::Compilation *comp)
 {
+    OMR::Logger *log = comp->log();
     bool traceBIProposal = comp->getOption(TR_TraceBIProposal);
     bool verboseInlining = comp->getOptions()->getVerboseOption(TR_VerboseInlining);
 
@@ -62,8 +64,7 @@ void TR::InliningProposal::print(TR::Compilation *comp)
     TR_VerboseLog::CriticalSection vlogLock(verboseInlining);
 
     if (!_nodes) {
-        if (traceBIProposal)
-            traceMsg(comp, "Inlining Proposal is NULL\n");
+        logprints(traceBIProposal, log, "Inlining Proposal is NULL\n");
         if (verboseInlining)
             TR_VerboseLog::writeLine(TR_Vlog_BI, "%s", "Inlining Proposal is NULL");
         return;
@@ -77,8 +78,7 @@ void TR::InliningProposal::print(TR::Compilation *comp)
     line.appendf("#Proposal: %d methods inlined into %s, cost: %d", numMethodsToInline,
         _idt->getRoot()->getName(comp->trMemory()), getCost());
 
-    if (traceBIProposal)
-        traceMsg(comp, "%s\n", line.text());
+    logprintf(traceBIProposal, log, "%s\n", line.text());
     if (verboseInlining)
         TR_VerboseLog::writeLine(TR_Vlog_BI, "%s", line.text());
 
@@ -100,8 +100,7 @@ void TR::InliningProposal::print(TR::Compilation *comp)
                 currentNode->getByteCodeSize(), currentNode->getName(comp->trMemory()), currentNode->getBenefit(),
                 currentNode->getCost(), currentNode->getBudget());
 
-            if (traceBIProposal)
-                traceMsg(comp, "%s\n", line.text());
+            logprintf(traceBIProposal, log, "%s\n", line.text());
             if (verboseInlining)
                 TR_VerboseLog::writeLine(TR_Vlog_BI, "%s", line.text());
         }
@@ -112,8 +111,7 @@ void TR::InliningProposal::print(TR::Compilation *comp)
         for (uint32_t i = 0; i < numChildren; i++)
             idtNodeQueue.push_back(currentNode->getChild(i));
     }
-    if (traceBIProposal)
-        traceMsg(comp, "\n");
+    logprintln(traceBIProposal, log);
 }
 
 void TR::InliningProposal::addNode(TR::IDTNode *node)

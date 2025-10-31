@@ -85,6 +85,7 @@
 #include "p/codegen/PPCHelperCallSnippet.hpp"
 #include "p/codegen/PPCOpsDefines.hpp"
 #include "p/codegen/PPCTableOfConstants.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 TR::Register *OMR::Power::TreeEvaluator::BadILOpEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -6855,7 +6856,8 @@ TR::Register *OMR::Power::TreeEvaluator::PrefetchEvaluator(TR::Node *node, TR::C
     }
 #endif
     else {
-        traceMsg(comp, "Prefetching for type %d not implemented/supported on PPC.\n", type);
+        logprintf(comp->getOption(TR_TraceCG), comp->log(),
+            "Prefetching for type %d not implemented/supported on PPC.\n", type);
         cg->recursivelyDecReferenceCount(firstChild);
         cg->recursivelyDecReferenceCount(secondChild);
         return NULL;

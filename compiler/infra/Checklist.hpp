@@ -30,6 +30,10 @@
 
 class TR_BitVector;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 
 class Block;
@@ -58,7 +62,7 @@ public:
 
     void clear() { _v->empty(); }
 
-    void print() const { _v->print(_comp); }
+    void print(OMR::Logger *log) const { _v->print(log, _comp); }
 };
 
 class NodeChecklist : public Checklist {

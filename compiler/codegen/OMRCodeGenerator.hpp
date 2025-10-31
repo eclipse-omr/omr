@@ -99,8 +99,9 @@ class GCStackAtlas;
 }
 
 namespace OMR {
+class Logger;
 class RegisterUsage;
-}
+} // namespace OMR
 
 namespace TR {
 class AheadOfTimeCompile;
@@ -1305,11 +1306,7 @@ public:
     // X86 only
     uint32_t estimateBinaryLength(TR::MemoryReference *) { return 0; }
 
-#ifdef DEBUG
-    static void shutdown(TR_FrontEnd *fe, TR::FILE *logFile);
-#endif
-
-    void dumpDataSnippets(TR::FILE *outFile) {}
+    void dumpDataSnippets(OMR::Logger *log) {}
 
     // --------------------------------------------------------------------------
     // Register assignment tracing

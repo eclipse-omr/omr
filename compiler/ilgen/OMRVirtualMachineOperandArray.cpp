@@ -29,13 +29,14 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineState.hpp"
+#include "ras/Logger.hpp"
 
 #define TraceEnabled (TR::comp()->getOption(TR_TraceILGen))
-#define TraceIL(m, ...)                             \
-    {                                               \
-        if (TraceEnabled) {                         \
-            traceMsg(TR::comp(), m, ##__VA_ARGS__); \
-        }                                           \
+#define TraceIL(m, ...)                                  \
+    {                                                    \
+        if (TraceEnabled) {                              \
+            TR::comp()->log()->printf(m, ##__VA_ARGS__); \
+        }                                                \
     }
 
 OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::MethodBuilder *mb, int32_t numOfElements,

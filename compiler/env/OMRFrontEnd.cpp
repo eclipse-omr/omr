@@ -33,6 +33,7 @@
 #include "env/VerboseLog.hpp"
 #include "env/jittypes.h"
 #include "infra/Assert.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
 #if defined(OMR_OS_WINDOWS)
@@ -247,10 +248,10 @@ void __cxa_pure_virtual() { __pure_virtual(); }
 }
 #endif
 
-void TR_Debug::print(J9JITExceptionTable *, TR_ResolvedMethod *, bool) {}
+void TR_Debug::print(OMR::Logger *log, J9JITExceptionTable *, TR_ResolvedMethod *, bool) {}
 
-void TR_Debug::printAnnotationInfoEntry(J9AnnotationInfo *, J9AnnotationInfoEntry *, int32_t) {}
+void TR_Debug::printAnnotationInfoEntry(OMR::Logger *log, J9AnnotationInfo *, J9AnnotationInfoEntry *, int32_t) {}
 
-void TR_Debug::printByteCodeAnnotations() {}
+void TR_Debug::printByteCodeAnnotations(OMR::Logger *log) {}
 
-void TR_Debug::printByteCodeStack(int32_t, uint16_t, size_t *) {}
+void TR_Debug::printByteCodeStack(OMR::Logger *log, int32_t, uint16_t, size_t *) {}

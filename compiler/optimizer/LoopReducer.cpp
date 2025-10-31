@@ -61,6 +61,7 @@
 #include "optimizer/TranslateTable.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O LOOP TRANSFORMATION: "
 
@@ -4044,6 +4045,8 @@ TR_LoopReducer::TR_LoopReducer(TR::OptimizationManager *manager)
 
 int32_t TR_LoopReducer::perform()
 {
+    OMR::Logger *log = comp()->log();
+
     // enable only if the new loop reduction framework is
     // disabled
     //
@@ -4067,9 +4070,9 @@ int32_t TR_LoopReducer::perform()
 
     _cfg = comp()->getFlowGraph();
     if (trace()) {
-        traceMsg(comp(), "Starting LoopReducer\n");
-        traceMsg(comp(), "\nCFG before loop reduction:\n");
-        getDebug()->print(comp()->getOutFile(), _cfg);
+        log->prints("Starting LoopReducer\n");
+        log->prints("\nCFG before loop reduction:\n");
+        getDebug()->print(log, _cfg);
     }
 
     // From this point on, stack memory allocations will die when the function returns
@@ -4112,9 +4115,9 @@ int32_t TR_LoopReducer::perform()
     optimizer()->setValueNumberInfo(NULL);
 
     if (trace()) {
-        traceMsg(comp(), "\nCFG after loop reduction:\n");
-        getDebug()->print(comp()->getOutFile(), _cfg);
-        traceMsg(comp(), "Ending LoopReducer\n");
+        log->prints("\nCFG after loop reduction:\n");
+        getDebug()->print(log, _cfg);
+        log->prints("Ending LoopReducer\n");
     }
 
     return 1; // actual cost

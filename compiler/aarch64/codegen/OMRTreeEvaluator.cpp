@@ -41,6 +41,7 @@
 #include "il/Node_inlines.hpp"
 #include "il/ParameterSymbol.hpp"
 #include "il/StaticSymbol.hpp"
+#include "ras/Logger.hpp"
 
 TR::Register *OMR::ARM64::TreeEvaluator::BadILOpEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
@@ -1718,9 +1719,7 @@ TR::Register *toMaskConversionHelper(TR::Node *node, bool omitNot, TR::CodeGener
     if ((op == TR::s2m) || (op == TR::v2m)) {
         if (omitNot) {
             TR::Compilation *comp = cg->comp();
-            if (comp->getOption(TR_TraceCG)) {
-                traceMsg(comp, "omitting vnot instruction at node %p\n", node);
-            }
+            logprintf(comp->getOption(TR_TraceCG), comp->log(), "omitting vnot instruction at node %p\n", node);
         } else {
             generateTrg1Src1Instruction(cg, TR::InstOpCode::vnot16b, node, maskReg, maskReg);
         }
@@ -2176,9 +2175,7 @@ static TR::Register *vcmpHelper(TR::Node *node, VectorCompareOps compareOp, bool
     } else {
         if (notAfterCompare) {
             TR::Compilation *comp = cg->comp();
-            if (comp->getOption(TR_TraceCG)) {
-                traceMsg(comp, "omitting vnot instruction at node %p\n", node);
-            }
+            logprintf(comp->getOption(TR_TraceCG), comp->log(), "omitting vnot instruction at node %p\n", node);
         }
     }
     if (flipCompareResult != NULL) {

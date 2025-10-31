@@ -38,6 +38,7 @@
 #include "il/SymbolReference.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
 #include "z/codegen/CallSnippet.hpp"
@@ -161,33 +162,29 @@ uint32_t TR::S390HelperCallSnippet::getLength(int32_t)
     return length;
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::S390HelperCallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::S390HelperCallSnippet *snippet)
 {
-    if (pOutFile == NULL) {
-        return;
-    }
-
     TR::SymbolReference *helperSymRef = snippet->getHelperSymRef();
 
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, "Helper Call Snippet", getName(helperSymRef));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, "Helper Call Snippet", getName(helperSymRef));
 
-    bufferPos = printLoadVMThreadInstruction(pOutFile, bufferPos);
+    bufferPos = printLoadVMThreadInstruction(log, bufferPos);
 
-    bufferPos = printRuntimeInstrumentationOnOffInstruction(pOutFile, bufferPos, false); // RIOFF
+    bufferPos = printRuntimeInstrumentationOnOffInstruction(log, bufferPos, false); // RIOFF
 
     if (snippet->alwaysExcept()) {
-        printPrefix(pOutFile, NULL, bufferPos, 6);
-        trfprintf(pOutFile, "BRASL \tGPR14, <%p>\t# Branch to Helper Method %s", snippet->getSnippetDestAddr(),
+        printPrefix(log, NULL, bufferPos, 6);
+        log->printf("BRASL \tGPR14, <%p>\t# Branch to Helper Method %s", snippet->getSnippetDestAddr(),
             snippet->usedTrampoline() ? "- Trampoline Used." : "");
         bufferPos += 6;
     } else {
-        printPrefix(pOutFile, NULL, bufferPos, 6);
-        trfprintf(pOutFile, "LARL \tGPR14, <%p>\t# Return Addr of Main Line.",
+        printPrefix(log, NULL, bufferPos, 6);
+        log->printf("LARL \tGPR14, <%p>\t# Return Addr of Main Line.",
             (intptr_t)snippet->getReStartLabel()->getCodeLocation());
         bufferPos += 6;
-        printPrefix(pOutFile, NULL, bufferPos, 6);
-        trfprintf(pOutFile, "BRCL \t<%p>\t# Branch to Helper Method %s", snippet->getSnippetDestAddr(),
+        printPrefix(log, NULL, bufferPos, 6);
+        log->printf("BRCL \t<%p>\t# Branch to Helper Method %s", snippet->getSnippetDestAddr(),
             snippet->usedTrampoline() ? "- Trampoline Used." : "");
         bufferPos += 6;
     }

@@ -36,6 +36,7 @@
 #include "il/Node_inlines.hpp"
 #include "il/TreeTop.hpp"
 #include "il/TreeTop_inlines.hpp"
+#include "ras/Logger.hpp"
 
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
 // Helpers
@@ -137,7 +138,8 @@ static TR::Register *singlePrecisionEvaluator(TR::Node *node, TR::InstOpCode::Mn
     // Test with no RA, put values back in general registers, conforming to ABI
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             trgReg = floatTrgReg;
         } else {
             trgReg = moveFromFloatRegister(node, floatTrgReg, cg);
@@ -178,7 +180,8 @@ static TR::Register *doublePrecisionEvaluator(TR::Node *node, TR::InstOpCode::Mn
     // Test with no RA, put values back in general registers, conforming to ABI
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             trgReg = doubleTrgReg;
         } else {
             trgReg = moveFromDoubleRegister(node, doubleTrgReg, cg);
@@ -253,7 +256,8 @@ static TR::Register *callLong2DoubleHelper(TR::Node *node, TR::CodeGenerator *cg
     if (noFPRA) {
 #if defined(__ARM_PCS_VFP)
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             doubleTrgReg = trgReg;
         } else {
             doubleTrgReg = moveFromDoubleRegister(node, trgReg, cg);
@@ -330,7 +334,8 @@ static TR::Register *callLong2FloatHelper(TR::Node *node, TR::CodeGenerator *cg)
     if (noFPRA) {
 #if defined(__ARM_PCS_VFP)
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             floatTrgReg = trgReg;
         } else {
             floatTrgReg = moveFromFloatRegister(node, trgReg, cg);
@@ -606,7 +611,8 @@ static TR::Register *callDoubleRemainderHelper(TR::Node *node, TR::CodeGenerator
     if (noFPRA) {
 #if defined(__ARM_PCS_VFP)
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             doubleTrgReg = trgReg;
         } else {
             doubleTrgReg = moveFromDoubleRegister(node, trgReg, cg);
@@ -696,7 +702,8 @@ static TR::Register *callFloatRemainderHelper(TR::Node *node, TR::CodeGenerator 
     if (noFPRA) {
 #if defined(__ARM_PCS_VFP)
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             floatTrgReg = trgReg;
         } else {
             floatTrgReg = moveFromFloatRegister(node, trgReg, cg);
@@ -723,8 +730,10 @@ TR::Register *OMR::ARM::TreeEvaluator::ibits2fEvaluator(TR::Node *node, TR::Code
     if (child->getRegister() == NULL && child->getReferenceCount() == 1 && child->getOpCode().isLoadVar()) {
         TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(child, 4, cg);
         if (noFPRA) {
-            if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node))
-                traceMsg(cg->comp(), "Result of node %p can stay in FP reg (not exec.).\n", node);
+            if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
+                logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+                    "Result of node %p can stay in FP reg (not exec.).\n", node);
+            }
 
             target = cg->allocateRegister();
             generateTrg1MemInstruction(cg, TR::InstOpCode::ldr, node, target, tempMR);
@@ -898,11 +907,13 @@ TR::Register *OMR::ARM::TreeEvaluator::fconstEvaluator(TR::Node *node, TR::CodeG
     float value = node->getFloat();
     uint32_t i32 = *(int32_t *)(&value);
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
     TR::RealRegister *machineIPReg = cg->machine()->getRealRegister(TR::RealRegister::gr15);
     TR::RegisterDependencyConditions *deps
         = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(2, 2, cg->trMemory());
 
-    traceMsg(comp, "In fconstEvaluator %x\n", i32);
+    logprintf(trace, log, "In fconstEvaluator %x\n", i32);
     TR::addDependency(deps, tempReg, TR::RealRegister::NoReg, TR_GPR, cg);
     if (!noFPRA) {
         TR::addDependency(deps, floatTrgReg, TR::RealRegister::NoReg, TR_FPR, cg);
@@ -921,7 +932,7 @@ TR::Register *OMR::ARM::TreeEvaluator::fconstEvaluator(TR::Node *node, TR::CodeG
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(trace, log, "Result of node %p can stay in FP reg.\n", node);
             trgReg = floatTrgReg;
         } else {
             trgReg = moveFromFloatRegister(node, floatTrgReg, cg);
@@ -953,11 +964,13 @@ TR::Register *OMR::ARM::TreeEvaluator::dconstEvaluator(TR::Node *node, TR::CodeG
     double value = node->getDouble();
     uint64_t i64 = (*(int64_t *)&value);
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
     TR::RealRegister *machineIPReg = cg->machine()->getRealRegister(TR::RealRegister::gr15);
     TR::RegisterDependencyConditions *deps
         = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(2, 2, cg->trMemory());
 
-    traceMsg(comp, "In dconstEvaluator %x\n", i64);
+    logprintf(trace, log, "In dconstEvaluator %x\n", i64);
     TR::addDependency(deps, tempReg, TR::RealRegister::NoReg, TR_GPR, cg);
     if (!noFPRA) {
         TR::addDependency(deps, doubleTrgReg, TR::RealRegister::NoReg, TR_FPR, cg);
@@ -982,7 +995,7 @@ TR::Register *OMR::ARM::TreeEvaluator::dconstEvaluator(TR::Node *node, TR::CodeG
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(comp, "Result of node %p can stay in FP reg.\n", node);
+            logprintf(trace, log, "Result of node %p can stay in FP reg.\n", node);
             trgReg = doubleTrgReg;
         } else {
             trgReg = moveFromDoubleRegister(node, doubleTrgReg, cg);
@@ -1023,7 +1036,8 @@ TR::Register *OMR::ARM::TreeEvaluator::floadEvaluator(TR::Node *node, TR::CodeGe
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg in fload.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+                "Result of node %p can stay in FP reg in fload.\n", node);
             // This seem to break things.. trgReg = floatTrgReg;
 #ifdef STAYINFP
             trgReg = floatTrgReg;
@@ -1084,7 +1098,8 @@ TR::Register *OMR::ARM::TreeEvaluator::dloadEvaluator(TR::Node *node, TR::CodeGe
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg in dload.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+                "Result of node %p can stay in FP reg in dload.\n", node);
             trgReg = doubleTrgReg;
         } else {
             trgReg = moveFromDoubleRegister(node, doubleTrgReg, cg);
@@ -1645,7 +1660,8 @@ TR::Register *OMR::ARM::TreeEvaluator::i2fEvaluator(TR::Node *node, TR::CodeGene
 
         if (noFPRA) {
             if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-                traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+                logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
+                    "Result of node %p can stay in FP reg.\n", node);
                 trgReg = floatTrgReg;
             } else {
                 trgReg = moveFromFloatRegister(node, floatTrgReg, cg);
@@ -1699,7 +1715,8 @@ TR::Register *OMR::ARM::TreeEvaluator::i2dEvaluator(TR::Node *node, TR::CodeGene
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             trgReg = doubleTrgReg;
         } else {
             trgReg = moveFromDoubleRegister(node, doubleTrgReg, cg);
@@ -1762,7 +1779,8 @@ TR::Register *OMR::ARM::TreeEvaluator::f2dEvaluator(TR::Node *node, TR::CodeGene
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             trgReg = doubleTrgReg;
         } else {
             trgReg = moveFromDoubleRegister(node, doubleTrgReg, cg);
@@ -1913,7 +1931,8 @@ TR::Register *OMR::ARM::TreeEvaluator::d2fEvaluator(TR::Node *node, TR::CodeGene
 
     if (noFPRA) {
         if (resultCanStayInFloatRegister(cg->getCurrentEvaluationTreeTop()->getNode(), node)) {
-            traceMsg(cg->comp(), "Result of node %p can stay in FP reg.\n", node);
+            logprintf(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(), "Result of node %p can stay in FP reg.\n",
+                node);
             trgReg = floatTrgReg;
         } else {
             trgReg = moveFromFloatRegister(node, floatTrgReg, cg);

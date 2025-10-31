@@ -69,6 +69,7 @@
 #include "infra/CfgEdge.hpp"
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 #include "x/codegen/HelperCallSnippet.hpp"
 #include "x/codegen/OutlinedInstructions.hpp"
@@ -171,6 +172,9 @@ TR::Instruction *OMR::X86::TreeEvaluator::insertLoadConstant(TR::Node *node, TR:
     TR_RematerializableTypes type, TR::CodeGenerator *cg, TR::Instruction *currentInstruction)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
     static const TR::InstOpCode::Mnemonic ops[TR_NumRematerializableTypes + 1][3] =
         //    load 0      load -1     load c
         {
@@ -271,7 +275,7 @@ TR::Instruction *OMR::X86::TreeEvaluator::insertLoadConstant(TR::Node *node, TR:
                                                          ->classOfMethod(),
                     comp->getCurrentMethod())
                 || cg->profiledPointersRequireRelocation())) {
-            traceMsg(comp, "Adding instr %p to MethodPICSites for node %p\n", movInstruction, node);
+            logprintf(trace, log, "Adding instr %p to MethodPICSites for node %p\n", movInstruction, node);
             comp->getStaticMethodPICSites()->push_front(movInstruction);
         }
 
@@ -333,7 +337,7 @@ TR::Instruction *OMR::X86::TreeEvaluator::insertLoadConstant(TR::Node *node, TR:
                                                              ->classOfMethod(),
                         comp->getCurrentMethod())
                     || cg->profiledPointersRequireRelocation())) {
-                traceMsg(comp, "Adding instr %p to MethodPICSites for node %p\n", movInstruction, node);
+                logprintf(trace, log, "Adding instr %p to MethodPICSites for node %p\n", movInstruction, node);
                 comp->getStaticMethodPICSites()->push_front(movInstruction);
             }
 
@@ -450,8 +454,8 @@ void OMR::X86::TreeEvaluator::padUnresolvedDataReferences(TR::Node *node, TR::Sy
 
     if (padBytes > 0) {
         TR::Instruction *pi = generatePaddingInstruction(padBytes, node, cg);
-        if (comp->getOption(TR_TraceCG))
-            traceMsg(comp, "adding %d pad bytes following unresolved data instruction %p\n", padBytes, pi->getPrev());
+        logprintf(comp->getOption(TR_TraceCG), comp->log(),
+            "adding %d pad bytes following unresolved data instruction %p\n", padBytes, pi->getPrev());
     }
 }
 
@@ -1696,11 +1700,11 @@ void OMR::X86::TreeEvaluator::arrayCopy64BitPrimitiveInlineSmallSizeWithoutREPMO
     TR::Register *tmpXmmYmmReg1, TR::Register *tmpXmmYmmReg2, TR::CodeGenerator *cg, int32_t repMovsThresholdBytes,
     TR::LabelSymbol *repMovsLabel, TR::LabelSymbol *mainEndLabel)
 {
-    if (cg->comp()->getOption(TR_TraceCG)) {
-        traceMsg(cg->comp(), "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__,
-            node->getGlobalIndex(), cg->comp()->getDebug()->getName(srcReg), cg->comp()->getDebug()->getName(dstReg),
-            cg->comp()->getDebug()->getName(sizeReg), repMovsThresholdBytes);
-    }
+    TR::Compilation *comp = cg->comp();
+    logprintf(comp->getOption(TR_TraceCG), comp->log(),
+        "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__, node->getGlobalIndex(),
+        comp->getDebug()->getName(srcReg), comp->getDebug()->getName(dstReg), comp->getDebug()->getName(sizeReg),
+        repMovsThresholdBytes);
 
     TR_ASSERT_FATAL((repMovsThresholdBytes == 32) || (repMovsThresholdBytes == 64) || (repMovsThresholdBytes == 128),
         "%s: repMovsThresholdBytes %d is not supported\n", __FUNCTION__, repMovsThresholdBytes);
@@ -1804,11 +1808,11 @@ void OMR::X86::TreeEvaluator::arrayCopy32BitPrimitiveInlineSmallSizeWithoutREPMO
     TR::Register *tmpXmmYmmReg1, TR::Register *tmpXmmYmmReg2, TR::CodeGenerator *cg, int32_t repMovsThresholdBytes,
     TR::LabelSymbol *repMovsLabel, TR::LabelSymbol *mainEndLabel)
 {
-    if (cg->comp()->getOption(TR_TraceCG)) {
-        traceMsg(cg->comp(), "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__,
-            node->getGlobalIndex(), cg->comp()->getDebug()->getName(srcReg), cg->comp()->getDebug()->getName(dstReg),
-            cg->comp()->getDebug()->getName(sizeReg), repMovsThresholdBytes);
-    }
+    TR::Compilation *comp = cg->comp();
+    logprintf(comp->getOption(TR_TraceCG), comp->log(),
+        "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__, node->getGlobalIndex(),
+        comp->getDebug()->getName(srcReg), comp->getDebug()->getName(dstReg), comp->getDebug()->getName(sizeReg),
+        repMovsThresholdBytes);
 
     TR_ASSERT_FATAL((repMovsThresholdBytes == 32) || (repMovsThresholdBytes == 64) || (repMovsThresholdBytes == 128),
         "%s: repMovsThresholdBytes %d is not supported\n", __FUNCTION__, repMovsThresholdBytes);
@@ -2006,11 +2010,11 @@ static void arrayCopy16BitPrimitiveInlineSmallSizeWithoutREPMOVSImplRoot16(TR::N
     TR::Register *tmpXmmYmmReg1, TR::Register *tmpXmmYmmReg2, TR::CodeGenerator *cg, int32_t repMovsThresholdBytes,
     TR::LabelSymbol *repMovsLabel, TR::LabelSymbol *mainEndLabel)
 {
-    if (cg->comp()->getOption(TR_TraceCG)) {
-        traceMsg(cg->comp(), "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__,
-            node->getGlobalIndex(), cg->comp()->getDebug()->getName(srcReg), cg->comp()->getDebug()->getName(dstReg),
-            cg->comp()->getDebug()->getName(sizeReg), repMovsThresholdBytes);
-    }
+    TR::Compilation *comp = cg->comp();
+    logprintf(comp->getOption(TR_TraceCG), comp->log(),
+        "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__, node->getGlobalIndex(),
+        comp->getDebug()->getName(srcReg), comp->getDebug()->getName(dstReg), comp->getDebug()->getName(sizeReg),
+        repMovsThresholdBytes);
 
     TR_ASSERT_FATAL((repMovsThresholdBytes == 32) || (repMovsThresholdBytes == 64),
         "%s: repMovsThresholdBytes %d is not supported\n", __FUNCTION__, repMovsThresholdBytes);
@@ -2139,11 +2143,11 @@ static void arrayCopy8BitPrimitiveInlineSmallSizeWithoutREPMOVSImplRoot8(TR::Nod
     TR::Register *tmpXmmYmmReg1, TR::Register *tmpXmmYmmReg2, TR::CodeGenerator *cg, int32_t repMovsThresholdBytes,
     TR::LabelSymbol *repMovsLabel, TR::LabelSymbol *mainEndLabel)
 {
-    if (cg->comp()->getOption(TR_TraceCG)) {
-        traceMsg(cg->comp(), "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__,
-            node->getGlobalIndex(), cg->comp()->getDebug()->getName(srcReg), cg->comp()->getDebug()->getName(dstReg),
-            cg->comp()->getDebug()->getName(sizeReg), repMovsThresholdBytes);
-    }
+    TR::Compilation *comp = cg->comp();
+    logprintf(comp->getOption(TR_TraceCG), comp->log(),
+        "%s: node n%dn srcReg %s dstReg %s sizeReg %s repMovsThresholdBytes %d\n", __FUNCTION__, node->getGlobalIndex(),
+        comp->getDebug()->getName(srcReg), comp->getDebug()->getName(dstReg), comp->getDebug()->getName(sizeReg),
+        repMovsThresholdBytes);
 
     TR_ASSERT_FATAL((repMovsThresholdBytes == 32) || (repMovsThresholdBytes == 64),
         "%s: repMovsThresholdBytes %d is not supported\n", __FUNCTION__, repMovsThresholdBytes);
@@ -2368,13 +2372,13 @@ static void generateRepMovsInstructionBasedOnElementSize(uint8_t elementSize, bo
     TR::Register *dstReg, TR::Register *srcReg, TR::Register *sizeReg, TR::RegisterDependencyConditions *dependencies,
     TR::LabelSymbol *mainEndLabel, TR::CodeGenerator *cg)
 {
+    TR::Compilation *comp = cg->comp();
     TR::InstOpCode::Mnemonic repmovs = selectRepMovsInstruction(elementSize, basedOnCPU, cg);
 
-    if (cg->comp()->getOption(TR_TraceCG)) {
-        traceMsg(cg->comp(), "%s: node n%dn elementSize %u basedOnCPU %d repmovs %d processor %d %s\n", __FUNCTION__,
-            node->getGlobalIndex(), elementSize, basedOnCPU, repmovs,
-            cg->comp()->target().cpu.getProcessorDescription().processor, cg->comp()->target().cpu.getProcessorName());
-    }
+    logprintf(comp->getOption(TR_TraceCG), comp->log(),
+        "%s: node n%dn elementSize %u basedOnCPU %d repmovs %d processor %d %s\n", __FUNCTION__, node->getGlobalIndex(),
+        elementSize, basedOnCPU, repmovs, comp->target().cpu.getProcessorDescription().processor,
+        comp->target().cpu.getProcessorName());
 
     switch (elementSize) {
         case 8: {
@@ -2555,7 +2559,9 @@ static void arrayCopyPrimitiveInlineSmallSizeWithoutREPMOVS(TR::Node *node, TR::
 static bool enablePrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS(uint8_t elementSize, TR::CodeGenerator *cg,
     int32_t &threshold)
 {
-    if (!cg->comp()->target().cpu.supportsAVX() || !cg->comp()->target().is64Bit())
+    TR::Compilation *comp = cg->comp();
+
+    if (!comp->target().cpu.supportsAVX() || !comp->target().is64Bit())
         return false;
 
     static bool disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS
@@ -2574,9 +2580,9 @@ static bool enablePrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS(uint8_t elemen
     switch (elementSize) {
         case 8: {
             disableEnhancement = disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS
-                || cg->comp()->getOption(TR_Disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
+                || comp->getOption(TR_Disable64BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
 
-            int32_t newThreshold = cg->comp()->getOptions()->getArraycopyRepMovsLongArrayThreshold();
+            int32_t newThreshold = comp->getOptions()->getArraycopyRepMovsLongArrayThreshold();
             if ((threshold < newThreshold) && ((newThreshold == 64) || (newThreshold == 128))) {
                 // If the CPU doesn't support AVX512, reduce the threshold to 64 bytes
                 threshold = ((newThreshold == 128) && cg->getMaxPreferredVectorLength() != TR::VectorLength512)
@@ -2586,9 +2592,9 @@ static bool enablePrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS(uint8_t elemen
         } break;
         case 4: {
             disableEnhancement = disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS
-                || cg->comp()->getOption(TR_Disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
+                || comp->getOption(TR_Disable32BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
 
-            int32_t newThreshold = cg->comp()->getOptions()->getArraycopyRepMovsIntArrayThreshold();
+            int32_t newThreshold = comp->getOptions()->getArraycopyRepMovsIntArrayThreshold();
             if ((threshold < newThreshold) && ((newThreshold == 64) || (newThreshold == 128))) {
                 // If the CPU doesn't support AVX512, reduce the threshold to 64 bytes
                 threshold = ((newThreshold == 128) && cg->getMaxPreferredVectorLength() != TR::VectorLength512)
@@ -2598,9 +2604,9 @@ static bool enablePrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS(uint8_t elemen
         } break;
         case 2: {
             disableEnhancement = disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS
-                || cg->comp()->getOption(TR_Disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
+                || comp->getOption(TR_Disable16BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
 
-            int32_t newThreshold = cg->comp()->getOptions()->getArraycopyRepMovsCharArrayThreshold();
+            int32_t newThreshold = comp->getOptions()->getArraycopyRepMovsCharArrayThreshold();
 
             // Char array enhancement supports only 32 or 64 bytes
             threshold = (newThreshold == 64) ? 64 : threshold;
@@ -2608,9 +2614,9 @@ static bool enablePrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS(uint8_t elemen
         default: // 1 byte
         {
             disableEnhancement = disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS
-                || cg->comp()->getOption(TR_Disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
+                || comp->getOption(TR_Disable8BitPrimitiveArrayCopyInlineSmallSizeWithoutREPMOVS);
 
-            int32_t newThreshold = cg->comp()->getOptions()->getArraycopyRepMovsByteArrayThreshold();
+            int32_t newThreshold = comp->getOptions()->getArraycopyRepMovsByteArrayThreshold();
 
             // Byte array enhancement supports only 32 or 64 bytes
             threshold = (newThreshold == 64) ? 64 : threshold;
@@ -2800,11 +2806,11 @@ static void generateArrayElementLoad(TR::Node *node, TR::Register *valueReg, uin
 static void arrayCopyPrimitiveInlineSmallSizeConstantCopySize(TR::Node *node, TR::Register *dstReg,
     TR::Register *srcReg, TR::Register *sizeReg, uint32_t copySize, TR::CodeGenerator *cg)
 {
-    if (cg->comp()->getOption(TR_TraceCG)) {
-        traceMsg(cg->comp(), "%s: node n%dn srcReg %s dstReg %s sizeReg %s copySize %d\n", __FUNCTION__,
-            node->getGlobalIndex(), cg->comp()->getDebug()->getName(srcReg), cg->comp()->getDebug()->getName(dstReg),
-            cg->comp()->getDebug()->getName(sizeReg), copySize);
-    }
+    TR::Compilation *comp = cg->comp();
+
+    logprintf(comp->getOption(TR_TraceCG), comp->log(), "%s: node n%dn srcReg %s dstReg %s sizeReg %s copySize %d\n",
+        __FUNCTION__, node->getGlobalIndex(), comp->getDebug()->getName(srcReg), comp->getDebug()->getName(dstReg),
+        comp->getDebug()->getName(sizeReg), copySize);
 
     if (copySize == 0)
         return;

@@ -24,10 +24,13 @@
 #include "codegen/CodeGenerator.hpp"
 #include "codegen/InstructionDelegate.hpp"
 #include "codegen/RegisterDependency.hpp"
+#include "ras/Logger.hpp"
 
 void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_RegisterKinds kindToBeAssigned)
 {
     TR::Compilation *comp = cg()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceRA);
 
     bool isLabel = getOpCodeValue() == TR::InstOpCode::label;
     bool isBranch = (getOpCodeValue() == TR::InstOpCode::b) || (getKind() == IsConditionalBranch)
@@ -37,8 +40,7 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
     // this is the return label from OOL
     if (isLabel && getLabelSymbol()->isEndOfColdInstructionStream()) {
         TR::Machine *machine = cg()->machine();
-        if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "\nOOL: taking register state snap shot\n");
+        logprints(trace, log, "\nOOL: taking register state snap shot\n");
         cg()->setIsOutOfLineHotPath(true);
         machine->takeRegisterStateSnapShot();
     }
@@ -66,14 +68,13 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
             TR_ASSERT(cg()->getAppendInstruction() == this, "OOL section must have only one branch to the merge point");
             // Start RA for OOL cold path, restore register state from snap shot
             TR::Machine *machine = cg()->machine();
-            if (comp->getOption(TR_TraceRA))
-                traceMsg(comp, "\nOOL: Restoring Register state from snap shot\n");
+            logprints(trace, log, "\nOOL: Restoring Register state from snap shot\n");
             cg()->setIsOutOfLineHotPath(false);
             machine->restoreRegisterStateFromSnapShot();
         }
         // Reusing the OOL Section merge label for other branches might be unsafe.
-        else if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "\nOOL: Reusing the OOL Section merge label for other branches might be unsafe.\n");
+        else
+            logprints(trace, log, "\nOOL: Reusing the OOL Section merge label for other branches might be unsafe.\n");
     }
 }
 

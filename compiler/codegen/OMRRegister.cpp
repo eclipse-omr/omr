@@ -30,6 +30,7 @@
 #include "codegen/RealRegister.hpp"
 #include "compile/Compilation.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 OMR::Register::Register(uint32_t f)
     : _flags(f)
@@ -164,9 +165,9 @@ void OMR::Register::setContainsInternalPointer()
 }
 
 #if defined(DEBUG)
-void OMR::Register::print(TR::Compilation *comp, TR::FILE *pOutFile, TR_RegisterSizes size)
+void OMR::Register::print(OMR::Logger *log, TR::Compilation *comp, TR_RegisterSizes size)
 {
-    comp->getDebug()->print(pOutFile, self(), size);
+    comp->getDebug()->print(log, self(), size);
 }
 #endif
 

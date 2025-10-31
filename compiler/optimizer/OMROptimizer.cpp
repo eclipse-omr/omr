@@ -112,6 +112,7 @@
 #include "optimizer/RecognizedCallTransformer.hpp"
 #include "optimizer/SwitchAnalyzer.hpp"
 #include "env/RegionProfiler.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class AutomaticSymbol;
@@ -677,7 +678,7 @@ TR::Optimizer *OMR::Optimizer::createOptimizer(TR::Compilation *comp, TR::Resolv
 
     if (comp->getOptions()->getCustomStrategy()) {
         if (comp->getOption(TR_TraceOptDetails))
-            traceMsg(comp, "Using custom optimization strategy\n");
+            comp->log()->prints("Using custom optimization strategy\n");
 
         // Reformat custom strategy as array of Optimization rather than array of int32_t
         //
@@ -1010,6 +1011,7 @@ TR_ValueNumberInfo *OMR::Optimizer::createValueNumberInfo(bool requiresGlobals, 
 void OMR::Optimizer::optimize()
 {
     TR::Compilation::CompilationPhaseScope mainCompilationPhaseScope(comp());
+    OMR::Logger *log = comp()->log();
 
     if (isIlGenOpt()) {
         const OptimizationStrategy *opt = _strategy;
@@ -1022,7 +1024,7 @@ void OMR::Optimizer::optimize()
 
         if (comp()->getOption(TR_TraceTrees)
             && (comp()->isOutermostMethod() || comp()->trace(inlining) || comp()->getOption(TR_DebugInliner)))
-            comp()->dumpMethodTrees("Pre IlGenOpt Trees", getMethodSymbol());
+            comp()->dumpMethodTrees(log, "Pre IlGenOpt Trees", getMethodSymbol());
     }
 
     LexicalTimer t("optimize", comp()->signature(), comp()->phaseTimer());
@@ -1042,10 +1044,9 @@ void OMR::Optimizer::optimize()
         if (comp()->isOutermostMethod()) {
             const char *hotnessString = comp()->getHotnessName(comp()->getMethodHotness());
             TR_ASSERT(hotnessString, "expected to have a hotness string");
-            traceMsg(comp(),
-                "<optimize\n"
-                "\tmethod=\"%s\"\n"
-                "\thotness=\"%s\">\n",
+            log->printf("<optimize\n"
+                        "\tmethod=\"%s\"\n"
+                        "\thotness=\"%s\">\n",
                 comp()->signature(), hotnessString);
         }
     }
@@ -1054,7 +1055,7 @@ void OMR::Optimizer::optimize()
         if (comp()->isOutermostMethod()) {
             const char *hotnessString = comp()->getHotnessName(comp()->getMethodHotness());
             TR_ASSERT(hotnessString, "expected to have a hotness string");
-            traceMsg(comp(), "<strategy hotness=\"%s\">\n", hotnessString);
+            log->printf("<strategy hotness=\"%s\">\n", hotnessString);
         }
     }
 
@@ -1100,7 +1101,7 @@ void OMR::Optimizer::optimize()
     TR_SingleTimer myTimer;
     TR_FrontEnd *fe = comp()->fe();
     bool doTiming = comp()->getOption(TR_Timing);
-    if (doTiming && comp()->getOutFile() != NULL) {
+    if (doTiming && log->isEnabled_DEPRECATED()) {
         myTimer.initialize("all optimizations", trMemory());
     }
 
@@ -1137,12 +1138,12 @@ void OMR::Optimizer::optimize()
 
     if (comp()->getOption(TR_TraceOpts)) {
         if (comp()->isOutermostMethod())
-            traceMsg(comp(), "</strategy>\n");
+            log->prints("</strategy>\n");
     }
 
     if (comp()->getOption(TR_TraceOptDetails)) {
         if (comp()->isOutermostMethod())
-            traceMsg(comp(), "</optimize>\n");
+            log->prints("</optimize>\n");
     }
 
     comp()->setOptimizer(stackedOptimizer);
@@ -1157,53 +1158,7 @@ void OMR::Optimizer::dumpPostOptTrees()
 
     TR::Method *method = comp()->getMethodSymbol()->getMethod();
     if ((debug("dumpPostLocalOptTrees") || comp()->getOption(TR_TraceTrees)))
-        comp()->dumpMethodTrees("Post Optimization Trees");
-}
-
-void dumpName(TR::Optimizer *op, TR_FrontEnd *fe, TR::Compilation *comp, OMR::Optimizations optNum)
-{
-    static int level = 1;
-    TR::OptimizationManager *manager = op->getOptimization(optNum);
-
-    if (level > 6)
-        return;
-
-    if (optNum > endGroup && optNum < OMR::numGroups) {
-        trfprintf(comp->getOutFile(), "%*s<%s>\n", level * 6, " ", manager->name());
-
-        level++;
-
-        const OptimizationStrategy *subGroup = ((TR::OptimizationManager *)manager)->groupOfOpts();
-
-        while (subGroup->_num != endOpts && subGroup->_num != endGroup) {
-            dumpName(op, fe, comp, subGroup->_num);
-            subGroup++;
-        }
-
-        level--;
-
-        trfprintf(comp->getOutFile(), "%*s</%s>", level * 6, " ", manager->name());
-    } else if (optNum > endOpts && optNum < OMR::numOpts)
-        trfprintf(comp->getOutFile(), "%*s%s", level * 6, " ", manager->name());
-    else
-        trfprintf(comp->getOutFile(), "%*s<%d>", level * 6, " ", optNum);
-
-    trfprintf(comp->getOutFile(), "\n");
-}
-
-void OMR::Optimizer::dumpStrategy(const OptimizationStrategy *opt)
-{
-    TR_FrontEnd *fe = comp()->fe();
-
-    trfprintf(comp()->getOutFile(), "endOpts:%d OMR::numOpts:%d endGroup:%d numGroups:%d\n", endOpts, OMR::numOpts,
-        endGroup, OMR::numGroups);
-
-    while (opt->_num != endOpts) {
-        dumpName(self(), fe, comp(), opt->_num);
-        opt++;
-    }
-
-    trfprintf(comp()->getOutFile(), "\n");
+        comp()->dumpMethodTrees(comp()->log(), "Post Optimization Trees");
 }
 
 static bool hasMoreThanOneBlock(TR::Compilation *comp)
@@ -1230,6 +1185,7 @@ static void breakForTesting(int index)
 int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimization, int32_t firstOptIndex,
     int32_t lastOptIndex, int32_t doTiming)
 {
+    OMR::Logger *log = comp()->log();
     OMR::Optimizations optNum = optimization->_num;
     TR::OptimizationManager *manager = getOptimization(optNum);
     TR_ASSERT(manager != NULL, "Optimization manager should have been initialized for %s.",
@@ -1537,7 +1493,7 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
     if (optNum > OMR::numOpts && doThisOptimization) {
         if (comp()->getOption(TR_TraceOptDetails) || comp()->getOption(TR_TraceOpts)) {
             if (comp()->isOutermostMethod())
-                traceMsg(comp(), "%*s<optgroup name=%s>\n", optDepth * 3, " ", manager->name());
+                log->printf("%*s<optgroup name=%s>\n", optDepth * 3, " ", manager->name());
         }
 
         optDepth++;
@@ -1591,7 +1547,7 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
 
         if (comp()->getOption(TR_TraceOptDetails) || comp()->getOption(TR_TraceOpts)) {
             if (comp()->isOutermostMethod())
-                traceMsg(comp(), "%*s</optgroup>\n", optDepth * 3, " ");
+                log->printf("%*s</optgroup>\n", optDepth * 3, " ");
         }
 
         return actualCost;
@@ -1644,13 +1600,13 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
 
         if (comp()->getOption(TR_TraceOptDetails)) {
             if (comp()->isOutermostMethod())
-                getDebug()->printOptimizationHeader(comp()->signature(), manager->name(), optIndex,
+                getDebug()->printOptimizationHeader(log, comp()->signature(), manager->name(), optIndex,
                     optimization->_options == MustBeDone);
         }
 
         if (comp()->getOption(TR_TraceOpts)) {
             if (comp()->isOutermostMethod())
-                traceMsg(comp(), "%*s%s\n", optDepth * 3, " ", manager->name());
+                log->printf("%*s%s\n", optDepth * 3, " ", manager->name());
         }
 
         if (!_aliasSetsAreValid && !manager->getDoesNotRequireAliasSets()) {
@@ -1880,8 +1836,6 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
             comp()->generateAccurateNodeCount();
         }
 
-        // dumpOptDetails(comp(), "\n");
-
 #ifdef OPT_TIMING
         if (*(statOptTiming[optNum].getName()) == 0) // has no name yet
             statOptTiming[optNum].setName(manager->name());
@@ -2044,21 +1998,20 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
 
 #ifdef DEBUG
         if (manager->getDumpStructure() && debug("dumpStructure")) {
-            traceMsg(comp(), "\nStructures:\n");
-            getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph()->getStructure(), 6);
+            log->prints("\nStructures:\n");
+            getDebug()->print(log, comp()->getFlowGraph()->getStructure(), 6);
         }
-
 #endif
 
         if (methodTreeDumpPermitted && comp()->isOutermostMethod()) {
             if (manager->getDoesNotRequireTreeDumps()) {
                 dumpOptDetails(comp(), "Trivial opt -- omitting listings\n");
-            } else if (needTreeDump || (finalOptMsgIndex != origOptMsgIndex))
-                comp()->dumpMethodTrees("Trees after ", manager->name(), getMethodSymbol());
+            } else if ((needTreeDump || (finalOptMsgIndex != origOptMsgIndex)) && log->isEnabled_DEPRECATED())
+                comp()->dumpMethodTrees(log, "Trees after ", manager->name(), getMethodSymbol());
             else if (finalOptMsgIndex == origOptMsgIndex) {
                 dumpOptDetails(comp(), "No transformations done by this pass -- omitting listings\n");
-                if (needStructureDump && comp()->getDebug() && comp()->getFlowGraph()->getStructure()) {
-                    comp()->getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph()->getStructure(), 6);
+                if (needStructureDump && log->isEnabled_DEPRECATED() && comp()->getFlowGraph()->getStructure()) {
+                    comp()->getDebug()->print(log, comp()->getFlowGraph()->getStructure(), 6);
                 }
             }
         }
@@ -2074,7 +2027,8 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
         if (enableCountTemps) {
             int32_t tempCount = 0;
 
-            traceMsg(comp(), "Temps seen (if any): ");
+            if (comp()->getOption(TR_TraceOptDetails))
+                log->prints("Temps seen (if any): ");
 
             for (TR::TreeTop *tt = getMethodSymbol()->getFirstTreeTop(); tt; tt = tt->getNextTreeTop()) {
                 TR::Node *ttNode = tt->getNode();
@@ -2088,17 +2042,19 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
 
                     if ((symRef->getSymbol()->getKind() == TR::Symbol::IsAutomatic) && symRef->isTemporary(comp())) {
                         ++tempCount;
-                        traceMsg(comp(), "%s ", comp()->getDebug()->getName(ttNode->getSymbolReference()));
+                        if (comp()->getOption(TR_TraceOptDetails))
+                            log->printf("%s ", comp()->getDebug()->getName(ttNode->getSymbolReference()));
                     }
                 }
             }
 
-            traceMsg(comp(), "\nNumber of temps seen = %d\n", tempCount);
+            if (comp()->getOption(TR_TraceOptDetails))
+                log->printf("\nNumber of temps seen = %d\n", tempCount);
         }
 
         if (comp()->getOption(TR_TraceOptDetails)) {
             if (comp()->isOutermostMethod())
-                traceMsg(comp(), "</optimization>\n\n");
+                log->prints("</optimization>\n\n");
         }
     }
 
@@ -2134,8 +2090,8 @@ int32_t OMR::Optimizer::doStructuralAnalysis()
         comp()->getFlowGraph()->setStructure(rootStructure);
 
         if (debug("dumpStructure")) {
-            traceMsg(comp(), "\nStructures:\n");
-            getDebug()->print(comp()->getOutFile(), rootStructure, 6);
+            comp()->log()->prints("\nStructures:\n");
+            getDebug()->print(comp()->log(), rootStructure, 6);
         }
     }
 
@@ -2375,14 +2331,13 @@ bool OMR::Optimizer::areNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Co
                     && !node1->isSignStateEquivalent(node2)) {
                     if (allowBCDSignPromotion && node1->isSignStateAnImprovementOver(node2)) {
                         if (_comp->cg()->traceBCDCodeGen())
-                            traceMsg(_comp,
-                                "y^y : found sign state mismatch node1 %s (%p), node2 %s (%p) but node1 improves sign "
-                                "state over node2\n",
+                            _comp->log()->printf("y^y : found sign state mismatch node1 %s (%p), node2 %s (%p) but "
+                                                 "node1 improves sign state over node2\n",
                                 node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
                         return true;
                     } else {
                         if (_comp->cg()->traceBCDCodeGen())
-                            traceMsg(_comp, "x^x : found sign state mismatch node1 %s (%p), node2 %s (%p)\n",
+                            _comp->log()->printf("x^x : found sign state mismatch node1 %s (%p), node2 %s (%p)\n",
                                 node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
                         return false;
                     }
@@ -2592,8 +2547,11 @@ const OptimizationStrategy *OMR::Optimizer::optimizationStrategy(TR::Compilation
 {
     // Mock strategies are used for testing, and override
     // the compilation strategy.
-    if (NULL != OMR::Optimizer::_mockStrategy) {
-        traceMsg(c, "Using mock optimization strategy %p\n", OMR::Optimizer::_mockStrategy);
+    if (OMR::Optimizer::_mockStrategy != NULL) {
+        OMR::Logger *log = c->log();
+        if (log->isEnabled_DEPRECATED())
+            log->printf("Using mock optimization strategy %p\n", OMR::Optimizer::_mockStrategy);
+
         return OMR::Optimizer::_mockStrategy;
     }
 

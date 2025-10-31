@@ -33,6 +33,7 @@
 #include "infra/Cfg.hpp"
 #include "infra/List.hpp"
 #include "infra/CfgEdge.hpp"
+#include "ras/Logger.hpp"
 
 TR_ReachabilityAnalysis::TR_ReachabilityAnalysis(TR::Compilation *comp)
     : _comp(comp)
@@ -40,6 +41,7 @@ TR_ReachabilityAnalysis::TR_ReachabilityAnalysis(TR::Compilation *comp)
 
 void TR_ReachabilityAnalysis::perform(TR_BitVector *result)
 {
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     int32_t numBlockIndexes = cfg->getNextNodeNumber();
     int32_t numBlocks = cfg->getNumberOfNodes();
@@ -52,41 +54,40 @@ void TR_ReachabilityAnalysis::perform(TR_BitVector *result)
 
     bool trace = comp()->getOption(TR_TraceReachability);
 
-    if (trace)
-        traceMsg(comp(), "BEGIN REACHABILITY: %d blocks\n", numBlocks);
+    logprintf(trace, log, "BEGIN REACHABILITY: %d blocks\n", numBlocks);
 
     for (TR::Block *block = comp()->getStartBlock(); block; block = block->getNextBlock()) {
         blocknum_t blockNum = block->getNumber();
-        if (trace)
-            traceMsg(comp(), "Visit block_%d\n", blockNum);
+        logprintf(trace, log, "Visit block_%d\n", blockNum);
         if (depthMap[blockNum] == 0)
             traverse(blockNum, 0, stack, depthMap, result);
         else
-            traceMsg(comp(), "  depth is already %d; skip\n", depthMap[blockNum]);
+            logprintf(trace, log, "  depth is already %d; skip\n", depthMap[blockNum]);
     }
 
-    if (comp()->getOption(TR_TraceReachability)) {
-        traceMsg(comp(), "END REACHABILITY.  Result:\n");
-        result->print(comp(), comp()->getOutFile());
-        traceMsg(comp(), "\n");
+    if (trace) {
+        log->prints("END REACHABILITY.  Result:\n");
+        result->print(log, comp());
+        log->println();
     }
 }
 
 void TR_ReachabilityAnalysis::propagateOneInput(blocknum_t inputBlockNum, blocknum_t blockNum, int32_t depth,
     blocknum_t *stack, blocknum_t *depthMap, TR_BitVector *result)
 {
+    OMR::Logger *log = comp()->log();
+    bool trace = comp()->getOption(TR_TraceReachability);
+
     if (inputBlockNum == blockNum)
         return;
     if (depthMap[inputBlockNum] == 0)
         traverse(inputBlockNum, depth, stack, depthMap, result);
     depthMap[blockNum] = std::min(depthMap[blockNum], depthMap[inputBlockNum]);
     if (result->isSet(inputBlockNum)) {
-        if (comp()->getOption(TR_TraceReachability))
-            traceMsg(comp(), "    Propagate block_%d to block_%d\n", blockNum, inputBlockNum);
+        logprintf(trace, log, "    Propagate block_%d to block_%d\n", blockNum, inputBlockNum);
         result->set(blockNum);
     } else {
-        if (comp()->getOption(TR_TraceReachability))
-            traceMsg(comp(), "    No change to block_%d from block_%d\n", blockNum, inputBlockNum);
+        logprintf(trace, log, "    No change to block_%d from block_%d\n", blockNum, inputBlockNum);
     }
 }
 
@@ -96,6 +97,7 @@ void TR_ReachabilityAnalysis::traverse(blocknum_t blockNum, int32_t depth, block
     //
     // This is DeRemer and Penello's "digraph" algorithm
     //
+    OMR::Logger *log = comp()->log();
     bool trace = comp()->getOption(TR_TraceReachability);
 
     // Initialize state for this block
@@ -103,8 +105,7 @@ void TR_ReachabilityAnalysis::traverse(blocknum_t blockNum, int32_t depth, block
     stack[depth++] = blockNum;
     depthMap[blockNum] = depth;
     bool value = isOrigin(getBlock(blockNum));
-    if (trace)
-        traceMsg(comp(), "  traverse %sblock_%d depth %d\n", value ? "origin " : "", blockNum, depth);
+    logprintf(trace, log, "  traverse %sblock_%d depth %d\n", value ? "origin " : "", blockNum, depth);
     result->setTo(blockNum, value);
 
     // Recursively propagate from inputs
@@ -120,8 +121,7 @@ void TR_ReachabilityAnalysis::traverse(blocknum_t blockNum, int32_t depth, block
             if (top == blockNum) {
                 break;
             } else {
-                if (trace)
-                    traceMsg(comp(), "    Loop: propagate block_%d to block_%d\n", blockNum, top);
+                logprintf(trace, log, "    Loop: propagate block_%d to block_%d\n", blockNum, top);
                 result->setTo(top, result->isSet(blockNum));
             }
         }

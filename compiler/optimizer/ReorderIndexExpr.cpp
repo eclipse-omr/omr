@@ -39,6 +39,7 @@
 #include "optimizer/Optimizer.hpp"
 #include "optimizer/Structure.hpp"
 #include "optimizer/InductionVariable.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O ARRAY INDEX EXPRESSION MANIPULATION: "
 
@@ -74,11 +75,6 @@ int32_t TR_IndexExprManipulator::perform()
     if (doit != NULL)
         return 0;
 
-    if (false)
-        printf("called for %s\n", comp()->signature());
-    // TR::TreeTop *treeTop;
-    // TR::Block   *block;
-
     _visitCount = comp()->incVisitCount();
 
     rewriteIndexExpression(comp()->getFlowGraph()->getStructure());
@@ -98,6 +94,7 @@ int32_t TR_IndexExprManipulator::perform()
  */
 void TR_IndexExprManipulator::rewriteIndexExpression(TR_Structure *loopStructure)
 {
+    OMR::Logger *log = comp()->log();
     TR_RegionStructure *regionStructure = loopStructure->asRegion();
     if (regionStructure) {
         TR_StructureSubGraphNode *graphNode;
@@ -112,8 +109,7 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_Structure *loopStructure
     TR_ScratchList<TR::Block> blocksInRegion(trMemory());
     regionStructure->getBlocks(&blocksInRegion);
 
-    if (_debug)
-        traceMsg(comp(), "XX looking at region %d\n", regionStructure->getNumber());
+    logprintf(_debug, log, "XX looking at region %d\n", regionStructure->getNumber());
     ListIterator<TR::Block> blocksIt(&blocksInRegion);
     TR::Block *nextBlock;
     TR::TreeTop /**first,*/ *last, *curTree;
@@ -126,8 +122,7 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_Structure *loopStructure
 
     _visitCount = comp()->incOrResetVisitCount();
 
-    if (_debug)
-        traceMsg(comp(), "Loop: %d primeIV:%p\n", regionStructure->getNumber(), primeIV);
+    logprintf(_debug, log, "Loop: %d primeIV:%p\n", regionStructure->getNumber(), primeIV);
     for (nextBlock = blocksIt.getCurrent(); nextBlock; nextBlock = blocksIt.getNext()) {
         curTree = nextBlock->getFirstRealTreeTop();
         last = nextBlock->getLastRealTreeTop();
@@ -150,6 +145,8 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_PrimaryInductionVariable
     if (node->getVisitCount() == _visitCount)
         return;
 
+    OMR::Logger *log = comp()->log();
+
     node->setVisitCount(_visitCount);
 
     parentIsAiadd = parentIsAiadd || node->getOpCode().isArrayRef();
@@ -158,13 +155,11 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_PrimaryInductionVariable
         TR::Node *childNode = node->getChild(i);
         rewriteIndexExpression(primeIV, node, childNode, parentIsAiadd);
 
-        if (_debug)
-            traceMsg(comp(), "traced %p %s\n", childNode, parentIsAiadd ? "(arrayRef)" : "");
+        logprintf(_debug, log, "traced %p %s\n", childNode, parentIsAiadd ? "(arrayRef)" : "");
         if (parentIsAiadd) {
             if (childNode->getOpCode().hasSymbolReference()
                 && childNode->getSymbol() == primeIV->getSymRef()->getSymbol()) {
-                if (_debug)
-                    traceMsg(comp(), "Found reference [%p] to primeiv %p\n", childNode, childNode->getSymbol());
+                logprintf(_debug, log, "Found reference [%p] to primeiv %p\n", childNode, childNode->getSymbol());
                 if (childNode->cannotOverflow() && // no wrapping of index can happen, hence safe to move around
                     parentNode->getReferenceCount() < 2 && // safe to swap nodes
                     node->getReferenceCount() < 2 && node->getOpCodeValue() == parentNode->getOpCodeValue()
@@ -180,9 +175,6 @@ void TR_IndexExprManipulator::rewriteIndexExpression(TR_PrimaryInductionVariable
                     if (performTransformation(comp(),
                             "%sSwapping nodes [%p] and [%p] to create larger loop invariant sub-expression\n",
                             OPT_DETAILS, childNode, parentNode->getChild(swapChildIdx))) {
-                        if (false)
-                            printf("%sSwapping nodes [%p] and [%p] to create larger loop invariant sub-expression\n",
-                                OPT_DETAILS, childNode, parentNode->getChild(swapChildIdx));
                         node->setChild(i, parentNode->getChild(swapChildIdx));
                         parentNode->setChild(swapChildIdx, childNode);
                         _somethingChanged = true;
