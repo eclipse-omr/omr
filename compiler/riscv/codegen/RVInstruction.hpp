@@ -847,6 +847,7 @@ public:
         : UtypeInstruction(op, n, 0, treg, cg)
         , _symbolReference(nullptr)
         , _symbol(label)
+        , _snippet(nullptr)
     {}
 
     JtypeInstruction(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::LabelSymbol *label,
@@ -855,6 +856,7 @@ public:
         : UtypeInstruction(op, n, 0, treg, cond, cg)
         , _symbolReference(nullptr)
         , _symbol(label)
+        , _snippet(nullptr)
     {}
 
     JtypeInstruction(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::LabelSymbol *label,
@@ -871,6 +873,7 @@ public:
         : UtypeInstruction(op, n, 0, treg, precedingInstruction, cg)
         , _symbolReference(nullptr)
         , _symbol(label)
+        , _snippet(nullptr)
     {}
 
     JtypeInstruction(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::LabelSymbol *label,
@@ -879,6 +882,7 @@ public:
         : UtypeInstruction(op, n, 0, treg, cond, precedingInstruction, cg)
         , _symbolReference(nullptr)
         , _symbol(label)
+        , _snippet(nullptr)
     {}
 
     JtypeInstruction(TR::InstOpCode::Mnemonic op, TR::Node *n, TR::Register *treg, TR::LabelSymbol *label,
