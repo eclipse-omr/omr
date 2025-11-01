@@ -469,6 +469,54 @@ TR::Register *OMR::ARM64::TreeEvaluator::l2iEvaluator(TR::Node *node, TR::CodeGe
     return trgReg;
 }
 
+// handles b2i and s2i
+static TR::Register *x2iHelper(TR::Node *node, TR::CodeGenerator *cg, bool isB2i)
+{
+    TR::Register *srcReg;
+    TR::Register *trgReg;
+    TR::Node *child = node->getFirstChild();
+
+    TR::ILOpCodes childOp1 = isB2i ? TR::i2b : TR::i2s;
+    TR::ILOpCodes childOp2 = isB2i ? TR::bload : TR::sload;
+    TR::ILOpCodes childOp3 = isB2i ? TR::bloadi : TR::sloadi;
+    int32_t sbfmBit = isB2i ? 7 : 15;
+
+    if (child->getOpCodeValue() == childOp1 && child->getRegister() == NULL && child->getReferenceCount() == 1) {
+        // Skip evaluating i2b/i2s
+        TR::Node *intChild = child->getFirstChild();
+        srcReg = cg->evaluate(intChild);
+        trgReg = (intChild->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
+        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, srcReg, sbfmBit);
+        node->setRegister(trgReg);
+        cg->decReferenceCount(intChild);
+        cg->decReferenceCount(child);
+    } else {
+        srcReg = cg->evaluate(child);
+        trgReg = (child->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
+        if (child->getOpCodeValue() == childOp2 || child->getOpCodeValue() == childOp3) {
+            // No sign extension needed.
+            if (trgReg != srcReg) {
+                generateMovInstruction(cg, node, trgReg, srcReg);
+            }
+        } else {
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, srcReg, sbfmBit);
+        }
+        node->setRegister(trgReg);
+        cg->decReferenceCount(child);
+    }
+    return trgReg;
+}
+
+TR::Register *OMR::ARM64::TreeEvaluator::b2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return x2iHelper(node, cg, true);
+}
+
+TR::Register *OMR::ARM64::TreeEvaluator::s2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return x2iHelper(node, cg, false);
+}
+
 static TR::Register *extendToIntOrLongHelper(TR::Node *node, TR::InstOpCode::Mnemonic op, uint32_t imms,
     TR::CodeGenerator *cg)
 {
@@ -481,42 +529,6 @@ static TR::Register *extendToIntOrLongHelper(TR::Node *node, TR::InstOpCode::Mne
     TR_ASSERT(imms < 32, "Extension size too big");
     generateTrg1Src1ImmInstruction(cg, op, node, trgReg, srcReg, imms);
 
-    node->setRegister(trgReg);
-    cg->decReferenceCount(child);
-    return trgReg;
-}
-
-TR::Register *OMR::ARM64::TreeEvaluator::b2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
-    TR::Node *child = node->getFirstChild();
-    TR::Register *srcReg = cg->evaluate(child);
-    TR::Register *trgReg = (child->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
-    if (child->getOpCodeValue() == TR::bload || child->getOpCodeValue() == TR::bloadi) {
-        // No sign extension needed.
-        if (trgReg != srcReg) {
-            generateMovInstruction(cg, node, trgReg, srcReg);
-        }
-    } else {
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, srcReg, 7);
-    }
-    node->setRegister(trgReg);
-    cg->decReferenceCount(child);
-    return trgReg;
-}
-
-TR::Register *OMR::ARM64::TreeEvaluator::s2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
-    TR::Node *child = node->getFirstChild();
-    TR::Register *srcReg = cg->evaluate(child);
-    TR::Register *trgReg = (child->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
-    if (child->getOpCodeValue() == TR::sload || child->getOpCodeValue() == TR::sloadi) {
-        // No sign extension needed.
-        if (trgReg != srcReg) {
-            generateMovInstruction(cg, node, trgReg, srcReg);
-        }
-    } else {
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, srcReg, 15);
-    }
     node->setRegister(trgReg);
     cg->decReferenceCount(child);
     return trgReg;
