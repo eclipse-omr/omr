@@ -1385,6 +1385,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
     { "forceAOT", "M\tForce compilations to be done in AOT mode", SET_OPTION_BIT(TR_ForceAOT), "P", NOT_IN_SUBSET },
     { "forceBCDInit", "O\tForce Binary Coded Decimal (BCD) loads to be initialized by forcing the field to a temporary",
      SET_OPTION_BIT(TR_ForceBCDInit), "F" },
+    { "forceCStdIOForLoggers", "M\tforce the use of C Stdio for JIT Loggers", SET_OPTION_BIT(TR_ForceCStdIOForLoggers),
+     "F" },
     { "forceFieldWatch", "M\tForce JIT to pretend that field watch is activated", SET_OPTION_BIT(TR_EnableFieldWatch),
      "P", NOT_IN_SUBSET },
     { "forceFullSpeedDebug", "M\tForce JIT to pretend that debug mode is activated", SET_OPTION_BIT(TR_FullSpeedDebug),
@@ -1396,6 +1398,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
     { "forceNonSMP", "D\tforce UniP code generation.", SET_OPTION_BIT(TR_ForceNonSMP), "F" },
     { "forceReadOnlyCode", "M\tForce generation of read-only code (no self-modifying code)\t",
      SET_OPTION_BIT(TR_ForceGenerateReadOnlyCode), "F", NOT_IN_SUBSET },
+    { "forceTRIOForLoggers", "M\tforce the use of TR IO for JIT Loggers", SET_OPTION_BIT(TR_ForceTRIOForLoggers), "F" },
     { "forceUsePreexistence", "D\tPretend methods are using pre-existence. RAS feature.",
      SET_OPTION_BIT(TR_ForceUsePreexistence), "F" },
     { "forceVSSStackCompaction", "O\tAlways compact VariableSizeSymbols on the stack",
@@ -4653,7 +4656,15 @@ void getTRPID(char *buf, size_t size);
 
 OMR::Logger *OMR::Options::createLoggerForLogFile(TR::FILE *file)
 {
-    OMR::Logger *logger = OMR::CStdIOStreamLogger::create((::FILE *)file);
+    OMR::Logger *logger = NULL;
+
+    if (self()->getOption(TR_ForceTRIOForLoggers)) {
+        logger = OMR::TRIOStreamLogger::create(file);
+    } else {
+        // An OMR::CStdIOStreamLogger is the default logger
+        //
+        logger = OMR::CStdIOStreamLogger::create((::FILE *)file);
+    }
 
     if (_traceFileLengthInMiB > 0) {
         // Wrap the logger in a CircularLogger if requested
