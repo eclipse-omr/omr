@@ -198,7 +198,7 @@ SPECS = [
         'builds' : [
             [
                 'buildDir' : cmakeBuildDir,
-                'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
+                'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake -DCMAKE_C_COMPILER="ccache;cc" -DCMAKE_CXX_COMPILER="ccache;c++" -DCMAKE_ASM_COMPILER="ccache;cc"',
                 'compile' : defaultCompile
             ]
         ],
