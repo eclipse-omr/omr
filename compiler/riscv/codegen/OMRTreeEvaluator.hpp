@@ -27,13 +27,13 @@
 #ifndef OMR_TREE_EVALUATOR_CONNECTOR
 #define OMR_TREE_EVALUATOR_CONNECTOR
 
-namespace OMR {
-namespace RV {
+namespace OMR { namespace RV {
 class TreeEvaluator;
-}
+}} // namespace OMR::RV
 
+namespace OMR {
 typedef OMR::RV::TreeEvaluator TreeEvaluatorConnector;
-} // namespace OMR
+}
 #else
 #error OMR::RV::TreeEvaluator expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -65,7 +65,7 @@ TR::Register *genericReturnEvaluator(TR::Node *node, TR::RealRegister::RegNum rn
  * @param[in] memSize : data size on memory
  * @param[in] cg : CodeGenerator
  */
-TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t memSize, TR::CodeGenerator *cg);
+TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg);
 
 /**
  * @brief Helper function for xstoreEvaluators
@@ -74,7 +74,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
  * @param[in] memSize : data size on memory
  * @param[in] cg : CodeGenerator
  */
-TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t memSize, TR::CodeGenerator *cg);
+TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg);
 
 namespace OMR { namespace RV {
 

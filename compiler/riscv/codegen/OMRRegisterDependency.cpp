@@ -225,7 +225,7 @@ void OMR::RV::RegisterDependencyGroup::assignRegisters(TR::Instruction *currentI
                 TR::Node *currentNode = currentInstruction->getNode();
                 TR::RealRegister *assignedReg = toRealRegister(virtReg->getAssignedRegister());
                 TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(currentNode,
-                    (TR::SymbolReference *)virtReg->getBackingStorage()->getSymbolReference(), sizeof(uintptr_t), cg);
+                    (TR::SymbolReference *)virtReg->getBackingStorage()->getSymbolReference(), cg);
                 TR_RegisterKinds rk = virtReg->getKind();
                 TR::InstOpCode::Mnemonic opCode;
                 switch (rk) {
