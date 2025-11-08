@@ -2426,7 +2426,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, T
         tempReg = cg->allocateRegister();
     }
     node->setRegister(tempReg);
-    TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, cg);
+    TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
     generateLOAD(op, node, tempReg, tempMR, cg);
 
     /*
@@ -2468,7 +2468,7 @@ TR::Register *OMR::RV::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGen
 
     node->setRegister(tempReg);
 
-    TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, cg);
+    TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
     generateLOAD(TR::InstOpCode::_ld, node, tempReg, tempMR, cg);
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -2523,7 +2523,7 @@ TR::Register *OMR::RV::TreeEvaluator::awrtbarEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
 {
-    TR::MemoryReference *tempMR = new (cg->trHeapMemory()) TR::MemoryReference(node, cg);
+    TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
     TR::Node *valueChild;
 
     if (node->getOpCode().isIndirect()) {
@@ -2728,9 +2728,9 @@ TR::Register *OMR::RV::TreeEvaluator::aRegLoadEvaluator(TR::Node *node, TR::Code
             if (node->getRegLoadStoreSymbolReference()->getSymbol()->isInternalPointer()) {
                 globalReg->setContainsInternalPointer();
                 globalReg->setPinningArrayPointer(node->getRegLoadStoreSymbolReference()
-                        ->getSymbol()
-                        ->castToInternalPointerAutoSymbol()
-                        ->getPinningArrayPointer());
+                                                      ->getSymbol()
+                                                      ->castToInternalPointerAutoSymbol()
+                                                      ->getPinningArrayPointer());
             }
         } else {
             globalReg = cg->allocateCollectedReferenceRegister();
