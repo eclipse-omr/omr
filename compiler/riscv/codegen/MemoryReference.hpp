@@ -45,7 +45,7 @@ class Register;
 namespace TR {
 
 class OMR_EXTENSIBLE MemoryReference : public OMR::MemoryReferenceConnector {
-public:
+private:
     /**
      * @brief Constructor
      * @param[in] cg : CodeGenerator object
