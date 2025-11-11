@@ -42,25 +42,14 @@ endif()
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES /usr/include)
 list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES /usr/include)
 
-# Include custom libdwarf temp path before system headers
-#list(PREPEND CMAKE_INCLUDE_PATH "/jit/team/gauravc/include")
 # Make sure that cmake can find libelf/libdwarf headers.
 list(APPEND CMAKE_INCLUDE_PATH "/usr/lpp/cbclib/include")
-# Add both paths in correct order
-#list(APPEND CMAKE_INCLUDE_PATH
-#  "/jit/team/gauravc/include"
-#  "/usr/lpp/cbclib/include"
-#)
 
 # Create helper targets for specifying ascii/ebcdic options
 add_library(omr_ascii INTERFACE)
 target_compile_definitions(omr_ascii INTERFACE -DIBM_ATOE)
 if(CMAKE_C_COMPILER_IS_OPENXL)
 	target_compile_options(omr_ascii INTERFACE -fexec-charset=ISO8859-1 -isystem ${CMAKE_CURRENT_LIST_DIR}/../../../../util/a2e/headers)
-	target_include_directories(omr_ascii
-		INTERFACE
-		"/jit/team/gauravc/include"
-	)
 else()
 	target_compile_options(omr_ascii INTERFACE "-Wc,convlit(ISO8859-1),nose,se(${CMAKE_CURRENT_LIST_DIR}/../../../../util/a2e/headers)")
 endif()

@@ -36,7 +36,6 @@ else()
 	# Note: the value can still be overridden on the command line.
 	if(OMR_ENV_DATA64)
 		set(LIBELF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf64.x" CACHE FILEPATH "")
-		message(STATUS "LIBELF_LIBRARY = ${LIBELF_LIBRARY}")
 	else()
 		set(LIBELF_LIBRARY "/usr/lpp/cbclib/lib/libelfdwarf32.x" CACHE FILEPATH "")
 	endif()
@@ -45,9 +44,6 @@ endif()
 # First we try getting the info we need from pkg-config
 find_package(PkgConfig QUIET)
 pkg_check_modules(PC_LIBELF QUIET libelf)
-
-message(STATUS "PC_LIBELF_INCLUDEDIR= ${PC_LIBELF_INCLUDEDIR}")
-message(STATUS "PC_LIBELF_INCLUDE_DIRS= ${PC_LIBELF_INCLUDE_DIRS}")
 
 find_path(ELF_H_INCLUDE_DIR NAMES elf.h
 	HINTS
@@ -66,10 +62,6 @@ find_library(LIBELF_LIBRARY NAMES elf
 	${PC_LIBELF_LIBRARY_DIRS}
 	${PC_LIBELF_LIBDIR}
 )
-
-message(STATUS "ELF_H_INCLUDE_DIR = ${ELF_H_INCLUDE_DIR}")
-message(STATUS "LIBELF_H_INCLUDE_DIR = ${LIBELF_H_INCLUDE_DIR}")
-message(STATUS "LIBELF_LIBRARY = ${LIBELF_LIBRARY}")
 
 include(FindPackageHandleStandardArgs)
 

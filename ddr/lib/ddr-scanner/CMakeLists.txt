@@ -48,7 +48,7 @@ elseif(OMR_OS_LINUX OR OMR_OS_ZOS)
 
 	target_link_libraries(omr_ddr_scanner
 		PUBLIC
-			"/jit/team/gauravc/include/lib/libelfdwarf64.x"
+			LibDwarf::dwarf
 	)
 
 	target_sources(omr_ddr_scanner

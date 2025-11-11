@@ -246,8 +246,6 @@ set(OMR_SEPARATE_DEBUG_INFO OFF CACHE BOOL "Maintain debug info in a separate fi
 set(OMR_FLATTEN_DEBUG_INFO OFF CACHE BOOL "Enable generation of flattened debug info on osx")
 if(OMR_OS_OSX)
 	set(default_debug_ext ".dSYM")
-elseif(OMR_OS_ZOS AND (OMR_TOOLCONFIG STREQUAL "openxl"))
-	set(default_debug_ext ".dwo")
 else()
 	set(default_debug_ext ".debuginfo")
 endif()
