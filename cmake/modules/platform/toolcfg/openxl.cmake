@@ -80,10 +80,10 @@ if(OMR_OS_ZOS)
 		-Wuninitialized
 		-mnocsect
 	)
-
-	# Configure the platform-dependent library for multithreading.
-	set(OMR_PLATFORM_THREAD_LIBRARY "")
 endif()
+
+# Configure the platform-dependent library for multithreading.
+set(OMR_PLATFORM_THREAD_LIBRARY "")
 
 set(SPP_CMD ${CMAKE_C_COMPILER})
 set(SPP_FLAGS -E -P)
