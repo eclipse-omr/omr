@@ -28,13 +28,13 @@
 #ifndef OMR_MEMREF_CONNECTOR
 #define OMR_MEMREF_CONNECTOR
 
-namespace OMR {
-namespace RV {
+namespace OMR { namespace RV {
 class MemoryReference;
-}
+}} // namespace OMR::RV
 
+namespace OMR {
 typedef OMR::RV::MemoryReference MemoryReferenceConnector;
-} // namespace OMR
+}
 #else
 #error OMR::RV::MemoryReference expected to be a primary connector, but a OMR connector is already defined
 #endif
@@ -50,10 +50,19 @@ typedef OMR::RV::MemoryReference MemoryReferenceConnector;
 
 namespace TR {
 class CodeGenerator;
+}
+
+namespace TR {
 class Instruction;
+}
+
+namespace TR {
 class Node;
+}
+
+namespace TR {
 class UnresolvedDataSnippet;
-} // namespace TR
+}
 
 namespace OMR { namespace RV {
 
@@ -100,20 +109,18 @@ public:
 
     /**
      * @brief Constructor
-     * @param[in] node : load or store node
-     * @param[in] len : length
+     * @param[in] rootLoadOrStore : load or store node
      * @param[in] cg : CodeGenerator object
      */
-    MemoryReference(TR::Node *node, uint32_t len, TR::CodeGenerator *cg);
+    MemoryReference(TR::Node *rootLoadOrStore, TR::CodeGenerator *cg);
 
     /**
      * @brief Constructor
      * @param[in] node : node
      * @param[in] symRef : symbol reference
-     * @param[in] len : length
      * @param[in] cg : CodeGenerator object
      */
-    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg);
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, TR::CodeGenerator *cg);
 
     /**
      * @brief Gets base register
