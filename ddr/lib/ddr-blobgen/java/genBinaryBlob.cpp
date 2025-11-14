@@ -44,6 +44,11 @@
 #include <sys/types.h>
 #include <vector>
 
+/* For e2a_string() */
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+#include "atoe.h"
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
+
 using std::string;
 using std::pair;
 using std::make_pair;
@@ -804,11 +809,16 @@ BlobFieldVisitor::visitType(Type *type) const
 	size_t bitWidth = 0;
 
 	if (Type::isStandardType(typeName.c_str(), (size_t)typeName.length(), &isSigned, &bitWidth)) {
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+		string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+		*_typePrefix += newType;
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 		stringstream newType;
 
 		newType << (isSigned ? "I" : "U") << bitWidth;
 
 		*_typePrefix += newType.str();
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 	} else {
 		*_typePrefix += typeName;
 	}
@@ -856,11 +866,16 @@ BlobFieldVisitor::visitTypedef(TypedefUDT *type) const
 			size_t bitWidth = 0;
 
 			if (Type::isStandardType(fullName.c_str(), (size_t)fullName.length(), &isSigned, &bitWidth)) {
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+				string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+				*_typePrefix += newType;
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 				stringstream newType;
 
 				newType << (isSigned ? "I" : "U") << bitWidth;
 
 				*_typePrefix += newType.str();
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 			} else {
 				*_typePrefix += fullName;
 			}
@@ -918,13 +933,21 @@ JavaBlobGenerator::formatFieldType(Field *field, string *fieldType)
 	}
 
 	if ((DDR_RC_OK == rc) && (NULL != type)) {
+		string bitField;
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+		if (0 != field->_bitField) {
+			bitField = std::string(":") + e2a_string(std::to_string(field->_bitField).c_str());
+		}
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 		stringstream bits;
 
 		if (0 != field->_bitField) {
 			bits << ":" << field->_bitField;
 		}
+		bitField = bits.str();
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 
-		*fieldType = typePrefix + typeSuffix + bits.str();
+		*fieldType = typePrefix + typeSuffix + bitField;
 	}
 
 	return rc;

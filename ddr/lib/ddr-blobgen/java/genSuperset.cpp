@@ -32,6 +32,11 @@
 #include <assert.h>
 #include <stdio.h>
 
+/* For e2a_string() */
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+#include "atoe.h"
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
+
 using std::stringstream;
 
 static string
@@ -94,11 +99,16 @@ JavaSupersetGenerator::replaceBaseTypedef(Type *type, string *name)
 	 * types such as "U_32" are replaced with "U32".
 	 */
 	if (Type::isStandardType(name->c_str() + start, (size_t)length, &isSigned, &bitWidth)) {
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+		string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+		name->replace(start, length, newType);
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 		stringstream ss;
 
 		ss << (isSigned ? "I" : "U") << bitWidth;
 
 		name->replace(start, length, ss.str());
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 	}
 }
 
@@ -259,10 +269,14 @@ JavaSupersetGenerator::getFieldType(Field *field, string *assembledTypeName, str
 	string bitField;
 
 	if ((DDR_RC_OK == rc) && (0 != field->_bitField)) {
+#if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
+		bitField = std::string(":") + e2a_string(std::to_string(field->_bitField).c_str());
+#else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 		stringstream ss;
 
 		ss << ":" << field->_bitField;
 		bitField = ss.str();
+#endif /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 	}
 
 	/* Assemble the type name. */
