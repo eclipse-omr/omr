@@ -466,7 +466,7 @@ public:
     virtual void resetDebugData();
     virtual void newNode(TR::Node *);
     virtual void newLabelSymbol(TR::LabelSymbol *);
-    virtual void newRegister(TR::Register *);
+    virtual void newRegister(TR::Register *, const char *name = NULL);
     virtual void newVariableSizeSymbol(TR::AutomaticSymbol *sym);
     virtual void newInstruction(TR::Instruction *);
     virtual void addInstructionComment(TR::Instruction *, char *, ...);
