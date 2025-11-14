@@ -309,14 +309,14 @@ Type::isStandardType(const char *type, size_t typeLen, bool *isSigned, size_t *b
 	 * occurrences of each word to verify the combination is reasonable.
 	 */
 	for (const char * cursor = type; cursor < typeEnd;) {
-		if (isspace(*cursor)) {
+		if (OMR_ISSPACE(*cursor)) {
 			cursor += 1;
 			continue;
 		}
 
 		const char * const word = cursor;
 
-		while ((cursor < typeEnd) && !isspace(*cursor)) {
+		while ((cursor < typeEnd) && !OMR_ISSPACE(*cursor)) {
 			cursor += 1;
 		}
 

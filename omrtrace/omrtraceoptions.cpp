@@ -152,7 +152,7 @@ parseBufferSize(const char *const str, const int argSize, BOOLEAN atRuntime)
 	const char *p = str;
 
 	while (*p) {
-		if (isdigit(*p)) {
+		if (OMR_ISDIGIT(*p)) {
 			if (-1 == firstDigit) {
 				firstDigit = p - str;
 			}
