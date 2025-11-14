@@ -2478,7 +2478,7 @@ TR::Register *OMR::Z::CodeGenerator::gprClobberEvaluate(TR::Node *node, bool for
             }
 
             return targetRegister;
-        } else if (node->getOpCode().isVectorResult()) {
+        } else if (node->getOpCode().isVectorOrMaskResult()) {
             TR::Register *targetRegister = self()->allocateClobberableRegister(srcRegister);
             generateVRRaInstruction(self(), TR::InstOpCode::VLR, node, targetRegister, srcRegister);
             return targetRegister;

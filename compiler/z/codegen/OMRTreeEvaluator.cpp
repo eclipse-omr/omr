@@ -13943,7 +13943,7 @@ TR::Register *OMR::Z::TreeEvaluator::tryToReuseInputVectorRegs(TR::Node *node, T
 
     for (int32_t i = 0; i < numChildren; i++) {
         TR::Node *child = node->getChild(i);
-        if (child->getOpCode().isVectorResult() && child->getReferenceCount() <= 1) {
+        if (child->getOpCode().isVectorOrMaskResult() && child->getReferenceCount() <= 1) {
             returnReg = cg->gprClobberEvaluate(child);
             break;
         }

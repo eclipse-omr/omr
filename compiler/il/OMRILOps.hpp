@@ -431,6 +431,11 @@ public:
 
     bool isMaskResult() const { return typeProperties().testAny(ILTypeProp::MaskResult); }
 
+    bool isVectorOrMaskResult() const
+    {
+        return typeProperties().testAny(ILTypeProp::VectorResult | ILTypeProp::MaskResult);
+    }
+
     bool isVectorElementResult() const { return typeProperties().testAny(ILTypeProp::VectorElementResult); }
 
     bool isIntegerOrAddress() const { return typeProperties().testAny(ILTypeProp::Integer | ILTypeProp::Address); }
