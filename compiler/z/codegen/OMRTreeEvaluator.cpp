@@ -14023,6 +14023,13 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
 
+    // Before z14, vector instructions for floating point operations supported only long format (double) values.
+    // Starting with z14, short format (float) values are also supported.
+    TR_ASSERT_FATAL_WITH_NODE(node,
+        (node->getDataType().getVectorElementType() != TR::Float)
+            || cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1),
+        "Unsupported float vector operation: short format floats require z14 or newer.");
+
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
 
@@ -14031,7 +14038,7 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
     TR::Register *sourceReg2 = cg->evaluate(secondChild);
 
     // !!! Masks change per instruction. *Ref to zPoP for masks* !!!
-    uint8_t mask4 = 0;
+    uint8_t mask4 = getVectorElementSizeMask(node);
 
     switch (op) {
         // These don't use mask
@@ -14044,7 +14051,6 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
         case TR::InstOpCode::VA:
         case TR::InstOpCode::VS:
         case TR::InstOpCode::VML:
-            mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, 0, mask4);
             break;
         /*
@@ -14056,20 +14062,17 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
         case TR::InstOpCode::VFS:
         case TR::InstOpCode::VFM:
         case TR::InstOpCode::VFD:
-            mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, 0, mask4);
             break;
         case TR::InstOpCode::VFCE:
         case TR::InstOpCode::VFCH:
         case TR::InstOpCode::VFCHE:
-            mask4 = 3;
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, 0, mask4);
             break;
         // These are VRRb
         case TR::InstOpCode::VCH:
         case TR::InstOpCode::VCHL:
         case TR::InstOpCode::VCEQ:
-            mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRbInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, mask4);
             break;
         case TR::InstOpCode::VFMAX:
@@ -14077,12 +14080,10 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
             TR_ASSERT_FATAL_WITH_NODE(node,
                 cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1),
                 "VFMAX/VFMIN is only supported on z14 onwards.");
-            mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 1, 0, mask4);
             break;
         case TR::InstOpCode::VMX:
         case TR::InstOpCode::VMN:
-            mask4 = getVectorElementSizeMask(node);
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, mask4);
             break;
         default:
@@ -15448,6 +15449,7 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpeqEvaluator(TR::Node *node, TR::CodeGen
         case TR::Int32:
         case TR::Int64:
             return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VCEQ);
+        case TR::Float:
         case TR::Double:
             return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VFCE);
         default:
@@ -15469,6 +15471,7 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpneEvaluator(TR::Node *node, TR::CodeGen
         case TR::Int64:
             targetReg = TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VCEQ);
             break;
+        case TR::Float:
         case TR::Double:
             targetReg = TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VFCE);
             break;
@@ -15503,6 +15506,7 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpgtEvaluator(TR::Node *node, TR::CodeGen
         case TR::Int32:
         case TR::Int64:
             return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, op);
+        case TR::Float:
         case TR::Double:
             return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VFCH);
         default:
@@ -15524,7 +15528,8 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::CodeGen
 
     TR::InstOpCode::Mnemonic op = node->getOpCode().isUnsignedCompare() ? TR::InstOpCode::VCHL : TR::InstOpCode::VCH;
 
-    if (node->getFirstChild()->getDataType().getVectorElementType() == TR::Double)
+    TR::DataType dt = node->getFirstChild()->getDataType().getVectorElementType();
+    if (dt == TR::Double || dt == TR::Float)
         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VFCHE);
     else {
         TR::Node *firstChild = node->getFirstChild();
