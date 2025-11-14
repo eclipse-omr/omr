@@ -269,14 +269,20 @@ foreach(subset IN LISTS DDR_SUBSETS)
 endforeach()
 
 if(ZOS)
-	# On z/OS, we have to glob for the individual .dbg files.
+	# On z/OS, we have to glob for the individual .dbg/.dwo files.
 	set(target_files)
+
+	if("@OMR_TOOLCONFIG@" STREQUAL "openxl")
+		set(debug_file_ext ".dwo")
+	else()
+		set(debug_file_ext ".dbg")
+	endif()
 
 	if(OBJECT_EXCLUDE_REGEX STREQUAL "^")
 		# Empty exclude regex, just include everything.
-		file(GLOB_RECURSE target_files "${OBJECT_SEARCH_ROOT}/*.dbg")
+		file(GLOB_RECURSE target_files "${OBJECT_SEARCH_ROOT}/*${debug_file_ext}")
 	else()
-		file(GLOB_RECURSE dbg_files RELATIVE "${OBJECT_SEARCH_ROOT}" "${OBJECT_SEARCH_ROOT}/*.dbg")
+		file(GLOB_RECURSE dbg_files RELATIVE "${OBJECT_SEARCH_ROOT}" "${OBJECT_SEARCH_ROOT}/*{debug_file_ext}")
 		foreach(item IN LISTS dbg_files)
 			if(NOT "${item}" MATCHES "${OBJECT_EXCLUDE_REGEX}")
 				list(APPEND target_files "${OBJECT_SEARCH_ROOT}/${item}")
