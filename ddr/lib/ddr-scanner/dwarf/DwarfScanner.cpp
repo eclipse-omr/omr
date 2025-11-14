@@ -1647,17 +1647,26 @@ DwarfScanner::getSuperUDT(Dwarf_Die die, ClassUDT *udt)
 	DDR_RC rc = DDR_RC_ERROR;
 	Dwarf_Half tag = 0;
 	Dwarf_Die superTypeDie = NULL;
-
-	if (DDR_RC_OK == getTypeTag(die, &superTypeDie, &tag)) {
-		ClassUDT *superUDT = NULL;
-		/* Get the super udt. */
-		if ((DDR_RC_OK == addDieToIR(superTypeDie, tag, NULL, (Type **)&superUDT))
-				&& (NULL != superUDT)) {
-			rc = DDR_RC_OK;
-			udt->_superClass = superUDT;
+	Dwarf_Die currentDie = die;
+	ClassUDT *superUDT = NULL;
+	bool iterating = false;
+	do {
+		tag = 0;
+		if (DDR_RC_OK == getTypeTag(currentDie, &superTypeDie, &tag)) {
+			/* Get the super udt. */
+			rc = addDieToIR(superTypeDie, tag, NULL, (Type **)&superUDT);
+			currentDie = superTypeDie;
+			iterating = true;
+		} else if (not iterating) {
+			/* No super type found. */
+			return rc;
 		}
-		dwarf_dealloc(_debug, superTypeDie, DW_DLA_DIE);
+	} while (tag == DW_TAG_typedef);
+
+	if((DDR_RC_OK == rc) && (NULL != superUDT)) {
+		udt->_superClass = superUDT;
 	}
+	dwarf_dealloc(_debug, superTypeDie, DW_DLA_DIE);
 	return rc;
 }
 
