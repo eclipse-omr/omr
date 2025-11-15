@@ -31,6 +31,7 @@
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
 #include "optimizer/Structure.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Optimizer;
@@ -61,10 +62,11 @@ void TR_Delayedness::analyzeNode(TR::Node *, vcount_t, TR_BlockStructure *, Cont
 TR_Delayedness::TR_Delayedness(TR::Compilation *comp, TR::Optimizer *optimizer, TR_Structure *rootStructure, bool trace)
     : TR_IntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, trace)
 {
+    OMR::Logger *log = comp->log();
+
     _earliestness = new (comp->allocator()) TR_Earliestness(comp, optimizer, rootStructure, trace);
 
-    if (trace)
-        traceMsg(comp, "Starting Delayedness\n");
+    logprints(trace, log, "Starting Delayedness\n");
 
     _supportedNodesAsArray = _earliestness->_supportedNodesAsArray;
     _temp = NULL;
@@ -74,12 +76,12 @@ TR_Delayedness::TR_Delayedness(TR::Compilation *comp, TR::Optimizer *optimizer, 
     if (trace) {
         int32_t i;
         for (i = 0; i < _numberOfNodes; i++) {
-            traceMsg(comp, "Block number : %d has solution : ", i);
-            _inSetInfo[i]->print(comp);
-            traceMsg(comp, "\n");
+            log->printf("Block number : %d has solution : ", i);
+            _inSetInfo[i]->print(log, comp);
+            log->println();
         }
 
-        traceMsg(comp, "\nEnding Delayedness\n");
+        log->prints("\nEnding Delayedness\n");
     }
 
     // Null out info that will not be used by callers
@@ -107,13 +109,6 @@ bool TR_Delayedness::postInitializationProcessing()
 //
 void TR_Delayedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStructure)
 {
-    if (trace()) {
-        /////traceMsg(comp(), "\ncurrentInSetInfo when entering Block : %d\n", blockStructure->getNumber());
-        /////_currentInSetInfo->print(_compilation);
-        /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getOutFile());
-    }
-
     // Block info is local to this analysis, so allocate from there
     if (_temp == NULL)
         allocateBlockInfoContainer(&_temp);
@@ -129,13 +124,6 @@ void TR_Delayedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockStr
         blockStructure->getBlock()->getNumber()));
     *(_blockAnalysisInfo[blockStructure->getNumber()]) &= *_temp;
     copyFromInto(_blockAnalysisInfo[blockStructure->getNumber()], _regularInfo);
-
-    if (trace()) {
-        /////traceMsg(comp(), "\nIn Set of Block : %d\n", blockStructure->getNumber());
-        /////_inSetInfo[blockStructure->getNumber()]->print(_compilation->getOutFile());
-        /////traceMsg(comp(), "\nOut Set of Block : %d\n", blockStructure->getNumber());
-        /////_blockAnalysisInfo[blockStructure->getNumber()]->print(_compilation->getOutFile());
-    }
 
     TR::Block *block = blockStructure->getBlock();
     TR::TreeTop *currentTree = block->getEntry();

@@ -54,7 +54,6 @@ void TR_LogTracer::alwaysTraceM(const char *fmt, ...)
 
     va_end(args);
 
-    // traceMsg(comp(), "%s\n",str);
     comp()->getDebug()->traceLnFromLogTracer(str);
 
     return;

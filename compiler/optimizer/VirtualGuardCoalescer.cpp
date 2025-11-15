@@ -51,6 +51,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/ValueNumberInfo.hpp"
 #include "optimizer/LocalOpts.hpp"
+#include "ras/Logger.hpp"
 #ifdef J9_PROJECT_SPECIFIC
 #include "runtime/J9Profiler.hpp"
 #include "runtime/J9ValueProfiler.hpp"
@@ -100,7 +101,7 @@ int32_t TR_VirtualGuardTailSplitter::perform()
     splitLinear(toBlock(_cfg->getStart()), toBlock(_cfg->getEnd()));
 
     if (trace()) {
-        comp()->dumpMethodTrees("Trees after splitLinear");
+        comp()->dumpMethodTrees(comp()->log(), "Trees after splitLinear");
     }
 
     return 0;
@@ -108,6 +109,7 @@ int32_t TR_VirtualGuardTailSplitter::perform()
 
 void TR_VirtualGuardTailSplitter::initializeDataStructures()
 {
+    OMR::Logger *log = comp()->log();
     vcount_t visitCount = comp()->incVisitCount();
 
     List<VGInfo> allGuards(trMemory());
@@ -177,8 +179,7 @@ void TR_VirtualGuardTailSplitter::initializeDataStructures()
         }
     }
 
-    if (trace())
-        traceMsg(comp(), "Disjoint set forest:\n");
+    logprints(trace(), log, "Disjoint set forest:\n");
 
     // Put the information into the virtual guard table
     //
@@ -188,8 +189,7 @@ void TR_VirtualGuardTailSplitter::initializeDataStructures()
     uint32_t i = 0;
     for (VGInfo *info = it.getFirst(); info; info = it.getNext()) {
         putGuard(i++, info);
-        if (trace())
-            traceMsg(comp(), "%d -> %d\n", info->getNumber(), info->getParent()->getNumber());
+        logprintf(trace(), log, "%d -> %d\n", info->getNumber(), info->getParent()->getNumber());
     }
 }
 
@@ -393,9 +393,10 @@ void TR_VirtualGuardTailSplitter::transformLinear(TR::Block *first, TR::Block *l
         }
 
         if (trace()) {
-            traceMsg(comp(), "$$$ Processing guards: first %d, last %d\n", firstInfo->getNumber(), last->getNumber());
-            traceMsg(comp(), "=> Call node %d, next node %d\n", call->getNumber(), next->getNumber());
-            traceMsg(comp(), "=> clone block is %d\n\n", clone->getNumber());
+            OMR::Logger *log = comp()->log();
+            log->printf("$$$ Processing guards: first %d, last %d\n", firstInfo->getNumber(), last->getNumber());
+            log->printf("=> Call node %d, next node %d\n", call->getNumber(), next->getNumber());
+            log->printf("=> clone block is %d\n\n", clone->getNumber());
         }
 
         _splitDone = true;
@@ -710,13 +711,14 @@ void TR_VirtualGuardTailSplitter::remergeGuard(TR_BlockCloner &cloner, VGInfo *i
    char fileName[20];
    sprintf(fileName, "split%d.vcg", block->getNumber());
    FILE *file = fopen(fileName, "w");
-   comp->getDebug()->printVCG(file, _cfg, fileName);
+   OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(file);
+   comp->getDebug()->printVCG(vcgLog, _cfg, fileName);
+   vcgLog->close();
    fclose(file);
 #endif
 
-    if (trace())
-        traceMsg(comp(), "Split Guard Block %d->(%d,%d), %d->(%d,%d)\n", block->getNumber(), blockA->getNumber(),
-            blockB->getNumber(), cloneG->getNumber(), cloneA->getNumber(), cloneB->getNumber());
+    logprintf(trace(), comp()->log(), "Split Guard Block %d->(%d,%d), %d->(%d,%d)\n", block->getNumber(),
+        blockA->getNumber(), blockB->getNumber(), cloneG->getNumber(), cloneA->getNumber(), cloneB->getNumber());
 }
 
 TR::Node *TR_VirtualGuardTailSplitter::getFirstCallNode(TR::Block *block)
@@ -753,7 +755,7 @@ int32_t TR_InnerPreexistence::perform()
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     if (trace())
-        comp()->dumpMethodTrees("Trees before InnerPreexistence");
+        comp()->dumpMethodTrees(comp()->log(), "Trees before InnerPreexistence");
 
     int32_t candidates = initialize();
 
@@ -882,23 +884,24 @@ void TR_InnerPreexistence::transform()
         GuardInfo *parent = info->getParent();
 
         if (trace()) {
+            OMR::Logger *log = comp()->log();
             TR_BitVectorIterator bvi;
 
-            traceMsg(comp(), "Site %d (block_%d, parent-block_%d): thisVN: %d, argsVNs: {", i,
-                info->getBlock()->getNumber(), parent ? parent->getBlock()->getNumber() : -1, info->getThisVN());
+            log->printf("Site %d (block_%d, parent-block_%d): thisVN: %d, argsVNs: {", i, info->getBlock()->getNumber(),
+                parent ? parent->getBlock()->getNumber() : -1, info->getThisVN());
             bvi.setBitVector(*(info->getArgVNs()));
             while (bvi.hasMoreElements()) {
                 uint32_t c = bvi.getNextElement();
-                traceMsg(comp(), "%d ", c);
+                log->printf("%d ", c);
             }
-            traceMsg(comp(), "}\n\tReachable Subtree: {");
+            log->prints("}\n\tReachable Subtree: {");
 
             bvi.setBitVector(*(info->getVisibleGuards()));
             while (bvi.hasMoreElements()) {
                 uint32_t c = bvi.getNextElement();
-                traceMsg(comp(), "%d ", c);
+                log->printf("%d ", c);
             }
-            traceMsg(comp(), "}\n");
+            log->prints("}\n");
         }
     }
 

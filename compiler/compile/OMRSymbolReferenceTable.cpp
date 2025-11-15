@@ -76,6 +76,7 @@
 #include "infra/CfgEdge.hpp"
 #include "infra/CfgNode.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -460,13 +461,14 @@ TR::SymbolReference *OMR::SymbolReferenceTable::createRefinedArrayShadowSymbolRe
             break;
     }
     if (trace) {
-        traceMsg(comp(), "Created new array shadow %d\nRefinedAddress shadows:", index);
-        aliasBuilder.refinedAddressArrayShadows().print(comp());
-        traceMsg(comp(), "\nRefined Int Array shadows:");
-        aliasBuilder.refinedIntArrayShadows().print(comp());
-        traceMsg(comp(), "\nRefined non int shadows:");
-        aliasBuilder.refinedNonIntPrimitiveArrayShadows().print(comp());
-        traceMsg(comp(), "\n");
+        OMR::Logger *log = comp()->log();
+        log->printf("Created new array shadow %d\nRefinedAddress shadows:", index);
+        aliasBuilder.refinedAddressArrayShadows().print(log, comp());
+        log->prints("\nRefined Int Array shadows:");
+        aliasBuilder.refinedIntArrayShadows().print(log, comp());
+        log->prints("\nRefined non int shadows:");
+        aliasBuilder.refinedNonIntPrimitiveArrayShadows().print(log, comp());
+        log->println();
     }
 
     rememberOriginalUnimprovedSymRef(newRef, original);
@@ -833,6 +835,9 @@ TR::SymbolReference *OMR::SymbolReferenceTable::methodSymRefFromName(TR::Resolve
     const char *className, const char *methodName, const char *methodSignature, TR::MethodSymbol::Kinds kind,
     int32_t cpIndex)
 {
+    OMR::Logger *log = comp()->log();
+    bool trace = comp()->getOption(TR_TraceMethodIndex);
+
     // Check _methodsBySignature to see if we've already created a symref for this one
     //
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
@@ -847,17 +852,15 @@ TR::SymbolReference *OMR::SymbolReferenceTable::methodSymRefFromName(TR::Resolve
     OwningMethodAndString key(owningMethodSymbol->getResolvedMethodIndex(), fullSignature);
     if (_methodsBySignature.Locate(key, hashIndex) && !ignoreMBSCache) {
         TR::SymbolReference *result = _methodsBySignature[hashIndex];
-        if (comp()->getOption(TR_TraceMethodIndex))
-            traceMsg(comp(), "-- MBS cache hit (1): M%p\n",
-                result->getSymbol()->getResolvedMethodSymbol()->getResolvedMethod());
+        logprintf(trace, log, "-- MBS cache hit (1): M%p\n",
+            result->getSymbol()->getResolvedMethodSymbol()->getResolvedMethod());
         return result;
     } else {
         // fullSignature will be kept as a key by _methodsBySignature, so it needs heapAlloc
         //
         key = OwningMethodAndString(owningMethodSymbol->getResolvedMethodIndex(), self()->strdup(fullSignature));
-        if (comp()->getOption(TR_TraceMethodIndex))
-            traceMsg(comp(), "-- MBS cache miss (1) owning method #%d, signature %s\n",
-                owningMethodSymbol->getResolvedMethodIndex().value(), fullSignature);
+        logprintf(trace, log, "-- MBS cache miss (1) owning method #%d, signature %s\n",
+            owningMethodSymbol->getResolvedMethodIndex().value(), fullSignature);
     }
 
     //

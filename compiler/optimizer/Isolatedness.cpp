@@ -30,6 +30,7 @@
 #include "optimizer/Structure.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Node;
@@ -60,13 +61,7 @@ TR_Isolatedness::TR_Isolatedness(TR::Compilation *comp, TR::Optimizer *optimizer
     //_temp = NULL;
 
     /*
-    if (trace())
-       traceMsg("Starting Isolatedness\n");
-
     performAnalysis(rootStructure, false);
-
-    if (trace())
-       traceMsg("\nEnding Isolatedness\n");
     */
 }
 
@@ -167,8 +162,8 @@ void TR_Isolatedness::analyzeTreeTopsInBlockStructure(TR_BlockStructure *blockSt
 
       if (trace())
          {
-         /////traceMsg("\nIn Set of Block : %d\n", blockStructure->getNumber());
-         /////_regularInfo->print(comp()->getOutFile());
+         /////comp()->log()->printf("\nIn Set of Block : %d\n", blockStructure->getNumber());
+         /////_regularInfo->print(comp()->log());
          }
       }
    }

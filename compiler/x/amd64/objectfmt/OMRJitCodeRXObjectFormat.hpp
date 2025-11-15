@@ -41,6 +41,10 @@ typedef OMR::X86::AMD64::JitCodeRXObjectFormat JitCodeRXObjectFormatConnector;
 
 #include "compiler/x/objectfmt/OMRJitCodeRXObjectFormat.hpp"
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Instruction;
 class FunctionCallData;
@@ -59,7 +63,7 @@ public:
         return 6; // CALL [RIP+disp32]
     }
 
-    virtual void printEncodedFunctionCall(TR::FILE *pOutFile, TR::FunctionCallData &data, uint8_t *bufferPos);
+    virtual void printEncodedFunctionCall(OMR::Logger *log, TR::FunctionCallData &data, uint8_t *bufferPos);
 
     /**
      * @struct ccFunctionData

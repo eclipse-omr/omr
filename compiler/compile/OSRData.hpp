@@ -36,6 +36,10 @@ class TR_BitVector;
 class TR_OSRMethodData;
 class TR_OSRSlotSharingInfo;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Block;
 class Compilation;
@@ -261,9 +265,10 @@ public:
 
     /**
      * \brief Debug dump of \ref DefiningMap
+     * \param log The \c OMR::Logger object to write to
      * \param map The \c DefiningMap to print out
      */
-    void printMap(DefiningMap *map);
+    void printMap(OMR::Logger *log, DefiningMap *map);
 
     class TR_ScratchBufferInfo {
     public:

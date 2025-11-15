@@ -49,6 +49,8 @@ class KnownObjectTable;
 
 namespace OMR {
 
+class Logger;
+
 /**
  * Table of known objects.
  *
@@ -83,7 +85,7 @@ public:
     uintptr_t *getPointerLocation(Index index);
     bool isNull(Index index);
 
-    void dumpTo(TR::FILE *file, TR::Compilation *comp);
+    void dumpTo(OMR::Logger *log, TR::Compilation *comp);
 
     // Handy wrappers
 

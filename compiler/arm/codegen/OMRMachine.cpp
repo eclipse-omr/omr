@@ -29,6 +29,7 @@
 #include "env/CompilerEnv.hpp"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "ras/Logger.hpp"
 
 static void registerExchange(TR::Instruction *precedingI, TR_RegisterKinds rk, TR::RealRegister *tReg,
     TR::RealRegister *sReg, TR::RealRegister *mReg, TR::CodeGenerator *cg);
@@ -825,6 +826,9 @@ void OMR::ARM::Machine::takeRegisterStateSnapShot()
 {
     int32_t i;
     TR::Compilation *comp = self()->cg()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceRA);
+
     for (i = TR::RealRegister::FirstGPR; i < TR::RealRegister::gr12;
          i++) // Skipping the special/reserved register.  Add FPR later
     {
@@ -832,9 +836,8 @@ void OMR::ARM::Machine::takeRegisterStateSnapShot()
         _registerStatesSnapShot[i] = _registerFile[i]->getState();
         _assignedRegisterSnapShot[i] = _registerFile[i]->getAssignedRegister();
         _registerFlagsSnapShot[i] = _registerFile[i]->getFlags();
-        if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
-                _assignedRegisterSnapShot[i], _registerFlagsSnapShot[i]);
+        logprintf(trace, log, "OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
+            _assignedRegisterSnapShot[i], _registerFlagsSnapShot[i]);
     }
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
     // snapshot is used only for OOL. For now, single precision registers are used only for DirectToJNI.
@@ -844,9 +847,8 @@ void OMR::ARM::Machine::takeRegisterStateSnapShot()
         _registerStatesSnapShot[i] = _registerFile[i]->getState();
         _assignedRegisterSnapShot[i] = _registerFile[i]->getAssignedRegister();
         _registerFlagsSnapShot[i] = _registerFile[i]->getFlags();
-        if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
-                _assignedRegisterSnapShot[i], _registerFlagsSnapShot[i]);
+        logprintf(trace, log, "OOL: Taking snap shot %d, %x, %x, %x\n", i, _registerStatesSnapShot[i],
+            _assignedRegisterSnapShot[i], _registerFlagsSnapShot[i]);
     }
 #endif
 }
@@ -855,6 +857,9 @@ void OMR::ARM::Machine::restoreRegisterStateFromSnapShot()
 {
     int32_t i;
     TR::Compilation *comp = self()->cg()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceRA);
+
     for (i = TR::RealRegister::FirstGPR; i < TR::RealRegister::gr12; i++) // Skipping SpilledReg
     {
         _registerFile[i]->setFlags(_registerFlagsSnapShot[i]);
@@ -872,9 +877,8 @@ void OMR::ARM::Machine::restoreRegisterStateFromSnapShot()
         if (_registerFile[i]->getState() == TR::RealRegister::Assigned) {
             _registerFile[i]->getAssignedRegister()->setAssignedRegister(_registerFile[i]);
         }
-        if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
-                _registerFile[i]->getAssignedRegister(), _registerFile[i]->getFlags());
+        logprintf(trace, log, "OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
+            _registerFile[i]->getAssignedRegister(), _registerFile[i]->getFlags());
     }
 #if (defined(__VFP_FP__) && !defined(__SOFTFP__))
     // snapshot is used only for OOL. For now, single precision registers are used only for DirectToJNI.
@@ -893,9 +897,8 @@ void OMR::ARM::Machine::restoreRegisterStateFromSnapShot()
         if (_registerFile[i]->getState() == TR::RealRegister::Assigned) {
             _registerFile[i]->getAssignedRegister()->setAssignedRegister(_registerFile[i]);
         }
-        if (comp->getOption(TR_TraceRA))
-            traceMsg(comp, "OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
-                _registerFile[i]->getAssignedRegister(), _registerFile[i]->getFlags());
+        logprintf(trace, log, "OOL: Restoring snap shot %d, %x, %x, %x\n", i, _registerFile[i]->getState(),
+            _registerFile[i]->getAssignedRegister(), _registerFile[i]->getFlags());
     }
 #endif
 }

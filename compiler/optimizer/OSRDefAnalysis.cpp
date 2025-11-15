@@ -60,6 +60,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/UseDefInfo.hpp"
 #include "runtime/Runtime.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O OSR LIVE RANGE ANALYSIS: "
 
@@ -97,10 +98,11 @@ bool TR_OSRDefInfo::performAnalysis(AuxiliaryData &aux)
 
 void TR_OSRDefInfo::performFurtherAnalysis(AuxiliaryData &aux)
 {
+    OMR::Logger *log = comp()->log();
     if (!infoIsValid()) {
         // TR_ASSERT(0, "osr def analysis failed. need to undo whatever we did for OSR and disable OSR but we don't.
         // Implementation is not completed.\n");
-        traceMsg(comp(), "compilation failed for %s because osr def analysis failed\n",
+        logprintf(trace(), log, "compilation failed for %s because osr def analysis failed\n",
             optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
         comp()->failCompilation<TR::ILGenFailure>("compilation failed because osr def analysis failed");
     }
@@ -160,7 +162,7 @@ void TR_OSRDefInfo::performFurtherAnalysis(AuxiliaryData &aux)
                         symRefOrder, static_cast<int32_t>(defSymRef->getSymbol()->getSize()), takesTwoSlots);
                     if (trace()) {
                         TR_ByteCodeInfo &bcInfo = point->getByteCodeInfo();
-                        traceMsg(comp(),
+                        log->printf(
                             "added (callerIndex=%d, bcIndex=%d)->(slot=%d, ref#=%d) at OSR point %d side %d def %d\n",
                             bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex(), slot, symRefNum, i, j, jj);
                     }
@@ -312,6 +314,8 @@ void TR_OSRDefInfo::processReachingDefinition(void *vblockInfo, AuxiliaryData &a
 // Build OSR def information from the bit vector information from reaching defs
 void TR_OSRDefInfo::buildOSRDefs(void *vblockInfo, AuxiliaryData &aux)
 {
+    OMR::Logger *log = comp()->log();
+
     /*
        for (treeTop = comp()->getStartTree(); treeTop != NULL; treeTop = treeTop->getNextTreeTop())
           {
@@ -323,17 +327,16 @@ void TR_OSRDefInfo::buildOSRDefs(void *vblockInfo, AuxiliaryData &aux)
              TR_ReachingDefinitions::ContainerType* analysisInfo =
        reachingDefinitions._blockAnalysisInfo[block->getNumber()]; if (trace())
                 {
-                traceMsg(comp(), "analysisInfo at node %p \n", node);
-                analysisInfo->print(comp());
-                traceMsg(comp(), "\n");
+                comp()->log()->printf("analysisInfo at node %p \n", node);
+                analysisInfo->print(comp()->log(), comp());
+                comp()->log()->println();
                 }
              continue;
              }
 
           }
     */
-    if (trace())
-        traceMsg(comp(), "Just before buildOSRDefs\n");
+    logprints(trace(), log, "Just before buildOSRDefs\n");
 
     // Allocate the array of bit vectors that will represent live definitions at OSR points
     //
@@ -404,9 +407,7 @@ void TR_OSRDefInfo::buildOSRDefs(void *vblockInfo, AuxiliaryData &aux)
     }
 
     // Print some debugging information
-    if (trace()) {
-        traceMsg(comp(), "\nOSR def info:\n");
-    }
+    logprints(trace(), log, "\nOSR def info:\n");
 
     for (int i = 0; i < numOSRPoints; ++i) {
         TR_BitVector *info = aux._defsForOSR[i];
@@ -420,14 +421,14 @@ void TR_OSRDefInfo::buildOSRDefs(void *vblockInfo, AuxiliaryData &aux)
         TR_ASSERT(!info->isEmpty(), "OSR def info at index %d is empty", i);
         if (trace()) {
             if (info->isEmpty()) {
-                traceMsg(comp(), "OSR def info at index %d is empty\n", i);
+                log->printf("OSR def info at index %d is empty\n", i);
                 continue;
             }
             TR_ByteCodeInfo &bcinfo = _methodSymbol->getOSRPoints()[i]->getByteCodeInfo();
-            traceMsg(comp(), "OSR defs at index %d bcIndex %d callerIndex %d\n", i, bcinfo.getByteCodeIndex(),
+            log->printf("OSR defs at index %d bcIndex %d callerIndex %d\n", i, bcinfo.getByteCodeIndex(),
                 bcinfo.getCallerIndex());
-            info->print(comp());
-            traceMsg(comp(), "\n");
+            info->print(log, comp());
+            log->println();
         }
     }
 }
@@ -439,6 +440,8 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
     if (node->getVisitCount() == visitCount)
         return;
     node->setVisitCount(visitCount);
+
+    OMR::Logger *log = comp()->log();
     TR_ReachingDefinitions::ContainerType *analysisInfo = (TR_ReachingDefinitions::ContainerType *)vanalysisInfo;
 
     // Look in the children first.
@@ -457,9 +460,9 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
         if (!defsForSymbol->isEmpty() && isExpandedDefIndex(expandedNodeIndex) && !sym->isRegularShadow()
             && !sym->isMethod()) {
             if (trace()) {
-                traceMsg(comp(), "defs for symbol %d with symref index %d\n", symIndex, symRef->getReferenceNumber());
-                defsForSymbol->print(comp());
-                traceMsg(comp(), "\n");
+                log->printf("defs for symbol %d with symref index %d\n", symIndex, symRef->getReferenceNumber());
+                defsForSymbol->print(log, comp());
+                log->println();
             }
             *analysisInfo -= *defsForSymbol;
             analysisInfo->set(expandedNodeIndex);
@@ -468,9 +471,9 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
 
     if (parent == NULL) {
         if (trace()) {
-            traceMsg(comp(), "analysisInfo at node %p \n", node);
-            analysisInfo->print(comp());
-            traceMsg(comp(), "\n");
+            log->printf("analysisInfo at node %p \n", node);
+            analysisInfo->print(log, comp());
+            log->println();
         }
 
         if (osrPoint != NULL) {
@@ -478,9 +481,9 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
             aux._defsForOSR[osrIndex] = new (aux._region) TR_BitVector(aux._region);
             *aux._defsForOSR[osrIndex] |= *analysisInfo;
             if (trace()) {
-                traceMsg(comp(), "_defsForOSR[%d] at node %p \n", osrIndex, node);
-                aux._defsForOSR[osrIndex]->print(comp());
-                traceMsg(comp(), "\n");
+                log->printf("_defsForOSR[%d] at node %p \n", osrIndex, node);
+                aux._defsForOSR[osrIndex]->print(log, comp());
+                log->println();
             }
         }
         if (osrPoint2 != NULL) {
@@ -488,9 +491,9 @@ void TR_OSRDefInfo::buildOSRDefs(TR::Node *node, void *vanalysisInfo, TR_OSRPoin
             aux._defsForOSR[osrIndex] = new (aux._region) TR_BitVector(aux._region);
             *aux._defsForOSR[osrIndex] |= *analysisInfo;
             if (trace()) {
-                traceMsg(comp(), "_defsForOSR[%d] after node %p \n", osrIndex, node);
-                aux._defsForOSR[osrIndex]->print(comp());
-                traceMsg(comp(), "\n");
+                log->printf("_defsForOSR[%d] after node %p \n", osrIndex, node);
+                aux._defsForOSR[osrIndex]->print(log, comp());
+                log->println();
             }
         }
     }
@@ -503,45 +506,43 @@ TR_OSRDefAnalysis::TR_OSRDefAnalysis(TR::OptimizationManager *manager)
 
 int32_t TR_OSRDefAnalysis::perform()
 {
+    OMR::Logger *log = comp()->log();
     if (comp()->getOption(TR_EnableOSR)) {
         if (comp()->getOption(TR_DisableOSRSharedSlots)) {
-            if (trace())
-                traceMsg(comp(), "OSR is enabled but OSR def analysis is not.\n");
+            logprints(trace(), log, "OSR is enabled but OSR def analysis is not.\n");
             return 0;
         }
 
         if (!comp()->canAffordOSRControlFlow()) {
-            if (trace())
-                traceMsg(comp(), "OSR is enabled but no longer in use for this compilation.\n");
+            logprints(trace(), log, "OSR is enabled but no longer in use for this compilation.\n");
             return 0;
         }
     } else {
-        if (trace())
-            traceMsg(comp(), "Options is not enabled -- returning from OSR reaching definitions analysis.\n");
+        logprints(trace(), log, "Options is not enabled -- returning from OSR reaching definitions analysis.\n");
         return 0;
     }
 
     // Determine if the analysis is necessary
     if (!requiresAnalysis()) {
         if (trace()) {
-            traceMsg(comp(), "%s OSR reaching definitions analysis is not required because there is no sharing\n",
+            log->printf("%s OSR reaching definitions analysis is not required because there is no sharing\n",
                 optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-            traceMsg(comp(), "Returning...\n");
+            log->prints("Returning...\n");
         }
 
         return 0;
     } else if (!comp()->supportsInduceOSR()) {
         if (comp()->getOption(TR_TraceOSR)) {
-            traceMsg(comp(), "%s OSR reaching definitions analysis is not required because OSR is not supported\n",
+            log->printf("%s OSR reaching definitions analysis is not required because OSR is not supported\n",
                 optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-            traceMsg(comp(), "Returning...\n");
+            log->prints("Returning...\n");
         }
         return 0;
     } else if (comp()->isPeekingMethod()) {
         if (trace()) {
-            traceMsg(comp(), "%s OSR reaching definition analysis is not required because we are peeking\n",
+            log->printf("%s OSR reaching definition analysis is not required because we are peeking\n",
                 optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-            traceMsg(comp(), "Returning...\n");
+            log->prints("Returning...\n");
         }
         return 0;
     } else {
@@ -549,27 +550,24 @@ int32_t TR_OSRDefAnalysis::perform()
             comp()->getCurrentInlinedSiteIndex(), comp()->getMethodSymbol());
         if (osrMethodData->hasSlotSharingOrDeadSlotsInfo()) {
             if (trace()) {
-                traceMsg(comp(),
-                    "%s OSR reaching definition analysis is not required as it has already been calculated\n",
+                log->printf("%s OSR reaching definition analysis is not required as it has already been calculated\n",
                     optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-                traceMsg(comp(), "Returning...\n");
+                log->prints("Returning...\n");
             }
             return 0;
         }
     }
 
-    if (trace()) {
-        traceMsg(comp(), "%s OSR reaching definition analysis is required\n",
-            optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-    }
+    logprintf(trace(), log, "%s OSR reaching definition analysis is required\n",
+        optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
 
     TR_Structure *rootStructure = TR_RegionAnalysis::getRegions(comp(), optimizer()->getMethodSymbol());
     optimizer()->getMethodSymbol()->getFlowGraph()->setStructure(rootStructure);
     TR_ASSERT(rootStructure, "Structure is NULL");
 
     if (trace()) {
-        traceMsg(comp(), "Starting OSR reaching definitions analysis\n");
-        comp()->dumpMethodTrees("Before OSR reaching definitions analysis", optimizer()->getMethodSymbol());
+        log->prints("Starting OSR reaching definitions analysis\n");
+        comp()->dumpMethodTrees(log, "Before OSR reaching definitions analysis", optimizer()->getMethodSymbol());
     }
 
     {
@@ -610,7 +608,7 @@ TR::TreeTop* findOSRHelperCall(TR::Compilation* comp, TR::Block * osrCodeBlock)
       if (n->getOpCodeValue() == TR::treetop)
          n = n->getFirstChild();
       if (comp->getOption(TR_TraceOSR))
-         traceMsg(comp, "checking node %p in OSR code block\n", n);
+         comp->log()->printf("checking node %p in OSR code block\n", n);
       if (n->getOpCodeValue() == TR::call && n->getSymbolReference() == osrHelper)
          {
          //OSR Helper call found
@@ -639,30 +637,28 @@ TR_OSRLiveRangeAnalysis::TR_OSRLiveRangeAnalysis(TR::OptimizationManager *manage
 
 bool TR_OSRLiveRangeAnalysis::shouldPerformAnalysis()
 {
+    OMR::Logger *log = comp()->log();
+    bool traceOSR = comp()->getOption(TR_TraceOSR);
+
     if (!comp()->getOption(TR_EnableOSR)) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(), "Should not perform OSRLiveRangeAnalysis -- OSR Option not enabled\n");
+        logprints(traceOSR, log, "Should not perform OSRLiveRangeAnalysis -- OSR Option not enabled\n");
         return false;
     } else if (comp()->isPeekingMethod()) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(), "Should not perform OSRLiveRangeAnalysis -- Not required because we are peeking\n");
+        logprints(traceOSR, log, "Should not perform OSRLiveRangeAnalysis -- Not required because we are peeking\n");
         return false;
     } else if (!comp()->supportsInduceOSR()) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(),
-                "Should not perform OSRLiveRangeAnlysis -- OSR is not supported under the current configuration\n");
+        logprints(traceOSR, log,
+            "Should not perform OSRLiveRangeAnlysis -- OSR is not supported under the current configuration\n");
         return false;
     } else if (comp()->getOSRMode() == TR::involuntaryOSR) {
         static const char *disableOSRPointDeadslotsBookKeeping = feGetEnv("TR_DisableOSRPointDeadslotsBookKeeping");
         if (comp()->getOption(TR_MimicInterpreterFrameShape)) {
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "No need to perform OSRLiveRangeAnlysis under mimic interpreter frame shape\n");
+            logprints(traceOSR, log, "No need to perform OSRLiveRangeAnlysis under mimic interpreter frame shape\n");
             return false;
         } else if (disableOSRPointDeadslotsBookKeeping) // save some compile time
         {
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(),
-                    "Dead slots bookkeeping is disabled and therefore OSRLiveRangeAnlysis is not needed\n");
+            logprints(traceOSR, log,
+                "Dead slots bookkeeping is disabled and therefore OSRLiveRangeAnlysis is not needed\n");
             return false;
         }
     }
@@ -670,8 +666,7 @@ bool TR_OSRLiveRangeAnalysis::shouldPerformAnalysis()
     // Skip optimization if there are no OSR points
     TR::ResolvedMethodSymbol *methodSymbol = optimizer()->getMethodSymbol();
     if (methodSymbol->getNumOSRPoints() == 0) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(), "No OSR points, skip liveness\n");
+        logprints(traceOSR, log, "No OSR points, skip liveness\n");
         return false;
     }
 
@@ -684,8 +679,9 @@ int32_t TR_OSRLiveRangeAnalysis::perform()
     if (!shouldPerformAnalysis())
         return 0;
 
-    if (comp()->getOption(TR_TraceOSR))
-        traceMsg(comp(), "OSR reaching live range analysis can be done\n");
+    OMR::Logger *log = comp()->log();
+
+    logprints(comp()->getOption(TR_TraceOSR), log, "OSR reaching live range analysis can be done\n");
 
     // Initalize BitVectors that exist only for this optimization
     _pendingPushSymRefs = new (trStackMemory()) TR_BitVector(0, trMemory(), stackAlloc);
@@ -749,11 +745,10 @@ int32_t TR_OSRLiveRangeAnalysis::perform()
     if (comp()->getOption(TR_DisableOSRLiveRangeAnalysis)) {
         if (comp()->getOption(TR_TraceOSR)) {
             if (!_sharedSymRefs->isEmpty())
-                traceMsg(comp(),
-                    "OSRLiveRangeAnalysis is disabled but it is required for correctness. OSR transitions may not "
-                    "work.\n");
+                log->prints("OSRLiveRangeAnalysis is disabled but it is required for correctness. OSR transitions may "
+                            "not work.\n");
             else
-                traceMsg(comp(), "OSRLiveRangeAnalysis is disabled.\n");
+                log->prints("OSRLiveRangeAnalysis is disabled.\n");
         }
         return 0;
     }
@@ -778,12 +773,13 @@ int32_t TR_OSRLiveRangeAnalysis::perform()
 int32_t TR_OSRLiveRangeAnalysis::partialAnalysis()
 {
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
+    OMR::Logger *log = comp()->log();
+    bool traceOSR = comp()->getOption(TR_TraceOSR);
 
     TR_ASSERT(comp()->pendingPushLivenessDuringIlgen(),
         "Partial analysis is only possible if liveness has been solved in Ilgen");
 
-    if (comp()->getOption(TR_TraceOSR))
-        traceMsg(comp(), "Starting partial OSRLiveRangeAnalysis\n");
+    logprints(traceOSR, log, "Starting partial OSRLiveRangeAnalysis\n");
 
     TR_OSRMethodData *osrMethodData = comp()->getOSRCompilationData()->findOSRMethodData(
         comp()->getCurrentInlinedSiteIndex(), comp()->getMethodSymbol());
@@ -797,23 +793,24 @@ int32_t TR_OSRLiveRangeAnalysis::partialAnalysis()
         TR_ByteCodeInfo &bci = node->getByteCodeInfo();
 
         if (isPotentialOSRPoint && comp()->isOSRTransitionTarget(TR::postExecutionOSR)) {
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "Analysing post OSR point for n%dn at %d:%d offset by %d\n", node->getGlobalIndex(),
-                    bci.getCallerIndex(), bci.getByteCodeIndex(), comp()->getOSRInductionOffset(node));
+            logprintf(traceOSR, log, "Analysing post OSR point for n%dn at %d:%d offset by %d\n",
+                node->getGlobalIndex(), bci.getCallerIndex(), bci.getByteCodeIndex(),
+                comp()->getOSRInductionOffset(node));
 
             TR_ByteCodeInfo bcInfo = bci;
             bcInfo.setByteCodeIndex(bcInfo.getByteCodeIndex() + comp()->getOSRInductionOffset(node));
             TR_OSRPoint *offsetOSRPoint = comp()->getMethodSymbol()->findOSRPoint(bcInfo);
-            TR_ASSERT(offsetOSRPoint != NULL, "Cannot find a post OSR point for node %p", node);
+
+            logprintf(traceOSR, log, "Cannot find a post OSR point for node %p", node);
 
             TR_BitVector *ppInfo = osrMethodData->getPendingPushLivenessInfo(bcInfo.getByteCodeIndex());
-            if (comp()->getOption(TR_TraceOSR)) {
-                traceMsg(comp(), "Existing liveness information:\n");
+            if (traceOSR) {
+                log->prints("Existing liveness information:\n");
                 if (ppInfo)
-                    ppInfo->print(comp());
+                    ppInfo->print(log, comp());
                 else
-                    traceMsg(comp(), "NULL");
-                traceMsg(comp(), "\n");
+                    log->prints("NULL");
+                log->println();
             }
 
             pendingPushLiveRangeInfo(node, ppInfo, _pendingPushSymRefs, offsetOSRPoint, osrMethodData);
@@ -822,21 +819,20 @@ int32_t TR_OSRLiveRangeAnalysis::partialAnalysis()
 
         if (isPotentialOSRPoint
             && (comp()->isOSRTransitionTarget(TR::preExecutionOSR) || comp()->requiresAnalysisOSRPoint(node))) {
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "Analysing pre OSR point for n%dn at %d:%d\n", node->getGlobalIndex(),
-                    bci.getCallerIndex(), bci.getByteCodeIndex());
+            logprintf(traceOSR, log, "Analysing pre OSR point for n%dn at %d:%d\n", node->getGlobalIndex(),
+                bci.getCallerIndex(), bci.getByteCodeIndex());
 
             TR_OSRPoint *osrPoint = comp()->getMethodSymbol()->findOSRPoint(bci);
             TR_ASSERT(osrPoint != NULL, "Cannot find a pre OSR point for node %p", node);
 
             TR_BitVector *ppInfo = osrMethodData->getPendingPushLivenessInfo(bci.getByteCodeIndex());
-            if (comp()->getOption(TR_TraceOSR)) {
-                traceMsg(comp(), "Existing liveness information:\n");
+            if (traceOSR) {
+                log->prints("Existing liveness information:\n");
                 if (ppInfo)
-                    ppInfo->print(comp());
+                    ppInfo->print(log, comp());
                 else
-                    traceMsg(comp(), "NULL");
-                traceMsg(comp(), "\n");
+                    log->prints("NULL");
+                log->println();
             }
 
             pendingPushLiveRangeInfo(node, ppInfo, _pendingPushSymRefs, osrPoint, osrMethodData);
@@ -848,8 +844,7 @@ int32_t TR_OSRLiveRangeAnalysis::partialAnalysis()
 
     // Certain modes require the method entry to be an OSR point
     if (comp()->isOutermostMethod() && comp()->getHCRMode() == TR::osr) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(), "Analysing OSR point at method entry\n");
+        logprints(traceOSR, log, "Analysing OSR point at method entry\n");
 
         TR_ByteCodeInfo bci;
         bci.setCallerIndex(-1);
@@ -886,13 +881,13 @@ void TR_OSRLiveRangeAnalysis::pendingPushLiveRangeInfo(TR::Node *node, TR_BitVec
     }
 
     if (comp()->getOption(TR_TraceOSR)) {
-        traceMsg(comp(), "Live PP variables at OSR point %p of %p bytecode offset %d\n", node, osrMethodData,
-            byteCodeIndex);
+        OMR::Logger *log = comp()->log();
+        log->printf("Live PP variables at OSR point %p of %p bytecode offset %d\n", node, osrMethodData, byteCodeIndex);
         if (!liveSymRefs)
-            traceMsg(comp(), " NULL");
+            log->prints(" NULL");
         else
-            liveSymRefs->print(comp());
-        traceMsg(comp(), "\n");
+            liveSymRefs->print(log, comp());
+        log->println();
     }
 }
 
@@ -902,13 +897,15 @@ void TR_OSRLiveRangeAnalysis::pendingPushLiveRangeInfo(TR::Node *node, TR_BitVec
 void TR_OSRLiveRangeAnalysis::pendingPushSlotSharingInfo(TR::Node *node, TR_BitVector *liveSymRefs,
     TR_BitVector *slotSharingSymRefs, TR_OSRPoint *osrPoint)
 {
+    OMR::Logger *log = comp()->log();
+    bool trace = comp()->getOption(TR_TraceOSR);
+
     if (liveSymRefs && !liveSymRefs->isEmpty()) {
         TR::SymbolReferenceTable *symRefTab = comp()->getSymRefTab();
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
 
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(), "Shared PP slots at OSR point [%p] at %d:%d\n", node, bcInfo.getCallerIndex(),
-                bcInfo.getByteCodeIndex());
+        logprintf(trace, log, "Shared PP slots at OSR point [%p] at %d:%d\n", node, bcInfo.getCallerIndex(),
+            bcInfo.getByteCodeIndex());
 
         _workBitVector->empty();
         *_workBitVector |= *liveSymRefs;
@@ -937,8 +934,7 @@ void TR_OSRLiveRangeAnalysis::pendingPushSlotSharingInfo(TR::Node *node, TR_BitV
             TR_ASSERT(symRefOrder < list->getSize(), "symref #%d not found in list of shared slots\n",
                 symRef->getReferenceNumber());
 
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "  Slot:%d SymRef:%d TwoSlots:%d\n", slot, symRefNum, takesTwoSlots);
+            logprintf(trace, log, "  Slot:%d SymRef:%d TwoSlots:%d\n", slot, symRefNum, takesTwoSlots);
 
             comp()->getOSRCompilationData()->addSlotSharingInfo(osrPoint->getByteCodeInfo(), slot, symRefNum,
                 symRefOrder, static_cast<int32_t>(symRef->getSymbol()->getSize()), takesTwoSlots);
@@ -954,10 +950,10 @@ void TR_OSRLiveRangeAnalysis::pendingPushSlotSharingInfo(TR::Node *node, TR_BitV
 void TR_OSRLiveRangeAnalysis::buildDeadPendingPushSlotsInfo(TR::Node *node, TR_BitVector *livePendingPushSymRefs,
     TR_OSRPoint *osrPoint)
 {
+    OMR::Logger *log = comp()->log();
     TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
-    if (trace())
-        traceMsg(comp(), "buildDeadPendingPushSlotsInfo: OSR point [%p] at %d:%d\n", node, bcInfo.getCallerIndex(),
-            bcInfo.getByteCodeIndex());
+    logprintf(trace(), log, "buildDeadPendingPushSlotsInfo: OSR point [%p] at %d:%d\n", node, bcInfo.getCallerIndex(),
+        bcInfo.getByteCodeIndex());
 
     TR_Array<List<TR::SymbolReference> > *pendingPushSymRefs = comp()->getMethodSymbol()->getPendingPushSymRefs();
     uint32_t numOfPPSSlots = 0;
@@ -979,9 +975,8 @@ void TR_OSRLiveRangeAnalysis::buildDeadPendingPushSlotsInfo(TR::Node *node, TR_B
             bool takesTwoSlots = dt == TR::Int64 || dt == TR::Double;
 
             List<TR::SymbolReference> *list = NULL;
-            if (trace())
-                traceMsg(comp(), "pending push slot %d is live with symref %d takesTwoSlots %d\n", slot, symRefNum,
-                    takesTwoSlots);
+            logprintf(trace(), log, "pending push slot %d is live with symref %d takesTwoSlots %d\n", slot, symRefNum,
+                takesTwoSlots);
 
             deadPPSSlots->reset(-slot - 1);
             if (takesTwoSlots)
@@ -991,18 +986,17 @@ void TR_OSRLiveRangeAnalysis::buildDeadPendingPushSlotsInfo(TR::Node *node, TR_B
 
     if (deadPPSSlots && trace()) {
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
-        traceMsg(comp(), "deadppslots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
-        deadPPSSlots->print(comp());
-        traceMsg(comp(), "\n");
+        log->printf("deadppslots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
+        deadPPSSlots->print(log, comp());
+        log->println();
     }
 
     if (deadPPSSlots && !deadPPSSlots->isEmpty()) {
         TR_BitVectorIterator bvi(*deadPPSSlots);
         while (bvi.hasMoreElements()) {
             int32_t slot = -bvi.getNextElement() - 1;
-            if (trace())
-                traceMsg(comp(), "ppslot %d is dead at %d:%d\n", slot, bcInfo.getCallerIndex(),
-                    bcInfo.getByteCodeIndex());
+            logprintf(trace(), log, "ppslot %d is dead at %d:%d\n", slot, bcInfo.getCallerIndex(),
+                bcInfo.getByteCodeIndex());
             // symRefNum = -1 and symRefOrder = -1 indicate those slots should be zeroed in prepareForOSR
             comp()->getOSRCompilationData()->addSlotSharingInfo(osrPoint->getByteCodeInfo(), slot, -1 /* symRefNum */,
                 -1 /* symRefOrder */, static_cast<int32_t>(TR::Compiler->om.sizeofReferenceAddress()) /*symSize*/,
@@ -1020,19 +1014,20 @@ void TR_OSRLiveRangeAnalysis::intersectWithExistingDeadSlots(TR_OSRPoint *osrPoi
     TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
     if (!_visitedBCI->isSet(bcInfo.getByteCodeIndex()))
         return;
+    OMR::Logger *log = comp()->log();
     TR_OSRSlotSharingInfo *slotsInfo = comp()->getOSRCompilationData()->getSlotsInfo(bcInfo);
 
     TR_BitVector existingDeadPPSSlots(comp()->trMemory()->currentStackRegion());
     existingDeadPPSSlots.empty();
     TR_BitVector existingDeadAutoSlots(comp()->trMemory()->currentStackRegion());
     existingDeadAutoSlots.empty();
-    if (deadPPSSlots) {
-        traceMsg(comp(), "deadPPSSlots:");
-        deadPPSSlots->print(comp());
+    if (deadPPSSlots && trace()) {
+        log->prints("deadPPSSlots:");
+        deadPPSSlots->print(log, comp());
     }
-    if (deadAutoSlots) {
-        traceMsg(comp(), "deadAutoSlots:");
-        deadAutoSlots->print(comp());
+    if (deadAutoSlots && trace()) {
+        log->prints("deadAutoSlots:");
+        deadAutoSlots->print(log, comp());
     }
 
     if (slotsInfo) // remove every dead slot that's not in the current dead symbols bit vector from slotInfos
@@ -1077,10 +1072,10 @@ void TR_OSRLiveRangeAnalysis::intersectWithExistingDeadSlots(TR_OSRPoint *osrPoi
 void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *liveVars, TR_OSRPoint *osrPoint,
     int32_t *liveLocalIndexToSymRefNumberMap, bool containsPendingPushes)
 {
+    OMR::Logger *log = comp()->log();
     TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
-    if (trace())
-        traceMsg(comp(), "buildOSRSlotSharingInfoForDeadSlots: OSR point [%p] at %d:%d\n", node,
-            bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
+    logprintf(trace(), log, "buildOSRSlotSharingInfoForDeadSlots: OSR point [%p] at %d:%d\n", node,
+        bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
 
     TR_Array<List<TR::SymbolReference> > *pendingPushSymRefs = NULL;
     uint32_t numOfPPSSlots = 0;
@@ -1122,8 +1117,8 @@ void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *l
             bool takesTwoSlots = dt == TR::Int64 || dt == TR::Double;
 
             List<TR::SymbolReference> *list = NULL;
-            if (trace())
-                traceMsg(comp(), "slot %d is live with symref %d takesTwoSlots %d\n", slot, symRefNum, takesTwoSlots);
+            logprintf(trace(), log, "slot %d is live with symref %d takesTwoSlots %d\n", slot, symRefNum,
+                takesTwoSlots);
 
             if (slot < 0) {
                 deadPPSSlots->reset(-slot - 1);
@@ -1141,9 +1136,9 @@ void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *l
 
     if (deadPPSSlots && trace()) {
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
-        traceMsg(comp(), "deadppslots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
-        deadPPSSlots->print(comp());
-        traceMsg(comp(), "\n");
+        log->printf("deadppslots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
+        deadPPSSlots->print(log, comp());
+        log->println();
     }
 
     if (deadPPSSlots && !deadPPSSlots->isEmpty()) {
@@ -1151,9 +1146,8 @@ void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *l
         while (bvi.hasMoreElements()) {
             TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
             int32_t slot = -bvi.getNextElement() - 1;
-            if (trace())
-                traceMsg(comp(), "ppslot %d is dead at %d:%d\n", slot, bcInfo.getCallerIndex(),
-                    bcInfo.getByteCodeIndex());
+            logprintf(trace(), log, "ppslot %d is dead at %d:%d\n", slot, bcInfo.getCallerIndex(),
+                bcInfo.getByteCodeIndex());
             // symRefNum = -1 and symRefOrder = -1 indicate those slots should be zeroed in prepareForOSR
             comp()->getOSRCompilationData()->addSlotSharingInfo(osrPoint->getByteCodeInfo(), slot, -1 /* symRefNum */,
                 -1 /* symRefOrder */, static_cast<int32_t>(TR::Compiler->om.sizeofReferenceAddress()) /*symSize*/,
@@ -1163,9 +1157,9 @@ void TR_OSRLiveRangeAnalysis::buildDeadSlotsInfo(TR::Node *node, TR_BitVector *l
 
     if (deadAutoSlots && trace()) {
         TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
-        traceMsg(comp(), "deadAutoSlots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
-        deadAutoSlots->print(comp());
-        traceMsg(comp(), "\n");
+        log->printf("deadAutoSlots at node %p %d:%d\n", node, bcInfo.getCallerIndex(), bcInfo.getByteCodeIndex());
+        deadAutoSlots->print(log, comp());
+        log->println();
     }
 
     if (deadAutoSlots && !deadAutoSlots->isEmpty()) {
@@ -1188,9 +1182,12 @@ int32_t TR_OSRLiveRangeAnalysis::fullAnalysis(bool includeParms, bool containsPe
     optimizer()->getMethodSymbol()->getFlowGraph()->setStructure(rootStructure);
     TR_ASSERT(rootStructure, "Structure is NULL");
 
-    if (comp()->getOption(TR_TraceOSR)) {
-        traceMsg(comp(), "Starting full OSRLiveRangeAnalysis\n");
-        comp()->dumpMethodTrees("Before full OSRLiveRangeAnalysis", optimizer()->getMethodSymbol());
+    OMR::Logger *log = comp()->log();
+    bool traceOSR = comp()->getOption(TR_TraceOSR);
+
+    if (traceOSR) {
+        log->prints("Starting full OSRLiveRangeAnalysis\n");
+        comp()->dumpMethodTrees(log, "Before full OSRLiveRangeAnalysis", optimizer()->getMethodSymbol());
     }
 
     {
@@ -1323,15 +1320,14 @@ int32_t TR_OSRLiveRangeAnalysis::fullAnalysis(bool includeParms, bool containsPe
                         ++edge;
                     }
                     if (edge == block->getExceptionSuccessors().end()) {
-                        if (comp()->getOption(TR_TraceOSR))
-                            traceMsg(comp(), "skipping block_%d without OSR points", block->getNumber());
+                        logprintf(traceOSR, log, "skipping block_%d without OSR points", block->getNumber());
                         break;
                     }
 
-                    if (comp()->getOption(TR_TraceOSR)) {
-                        traceMsg(comp(), "BB_End for block_%d: live vars = ", block->getNumber());
-                        _liveVars->print(comp());
-                        traceMsg(comp(), "\n");
+                    if (traceOSR) {
+                        log->printf("BB_End for block_%d: live vars = ", block->getNumber());
+                        _liveVars->print(log, comp());
+                        log->println();
                     }
                 }
 
@@ -1442,22 +1438,23 @@ int32_t TR_OSRLiveRangeAnalysis::fullAnalysis(bool includeParms, bool containsPe
 //
 TR::TreeTop *TR_OSRLiveRangeAnalysis::collectPendingPush(TR_ByteCodeInfo bci, TR::TreeTop *tt, TR_BitVector *liveVars)
 {
+    OMR::Logger *log = comp()->log();
+    bool traceOSR = comp()->getOption(TR_TraceOSR);
+
     while (comp()->getMethodSymbol()->isOSRRelatedNode(tt->getNode(), bci)) {
         TR::Node *node = tt->getNode();
         if (node->getOpCode().isStoreDirect()) {
             TR::AutomaticSymbol *local = node->getSymbolReference()->getSymbol()->getAutoSymbol();
             int32_t localIndex = local->getLiveLocalIndex();
             _liveVars->set(localIndex);
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "+++ local index %d OSR PENDING PUSH STORE LIVE\n", localIndex);
+            logprintf(traceOSR, log, "+++ local index %d OSR PENDING PUSH STORE LIVE\n", localIndex);
         } else if (node->getOpCodeValue() == TR::treetop && node->getFirstChild()->getOpCode().isLoad()
             && node->getFirstChild()->getOpCode().hasSymbolReference()) {
             if (node->getFirstChild()->getReferenceCount() == 1) {
                 TR::AutomaticSymbol *local = node->getFirstChild()->getSymbolReference()->getSymbol()->getAutoSymbol();
                 int32_t localIndex = local->getLiveLocalIndex();
                 _liveVars->set(localIndex);
-                if (comp()->getOption(TR_TraceOSR))
-                    traceMsg(comp(), "+++ local index %d OSR PENDING PUSH LOAD LIVE\n", localIndex);
+                logprintf(traceOSR, log, "+++ local index %d OSR PENDING PUSH LOAD LIVE\n", localIndex);
                 TR::TransformUtil::removeTree(comp(), tt);
             }
         } else {
@@ -1473,6 +1470,8 @@ TR::TreeTop *TR_OSRLiveRangeAnalysis::collectPendingPush(TR_ByteCodeInfo bci, TR
 void TR_OSRLiveRangeAnalysis::maintainLiveness(TR::Node *node, TR::Node *parent, int32_t childNum, vcount_t visitCount,
     TR_Liveness *liveLocals, TR_BitVector *liveVars, TR::Block *block)
 {
+    OMR::Logger *log = comp()->log();
+
     // First time this node has been encountered.
     //
     if (node->getVisitCount() != visitCount) {
@@ -1480,9 +1479,8 @@ void TR_OSRLiveRangeAnalysis::maintainLiveness(TR::Node *node, TR::Node *parent,
         node->setLocalIndex(node->getReferenceCount());
     }
 
-    if (comp()->getOption(TR_TraceOSR)) {
-        traceMsg(comp(), "---> visiting node %p\n", node);
-    }
+    bool traceOSR = comp()->getOption(TR_TraceOSR);
+    logprintf(traceOSR, log, "---> visiting node %p\n", node);
 
     if (node->getOpCode().isStoreDirect()) {
         TR::RegisterMappedSymbol *local = node->getSymbolReference()->getSymbol()->getAutoSymbol();
@@ -1497,9 +1495,7 @@ void TR_OSRLiveRangeAnalysis::maintainLiveness(TR::Node *node, TR::Node *parent,
             //
             if (local->getLocalIndex() == 0) {
                 liveVars->reset(localIndex);
-                if (comp()->getOption(TR_TraceOSR)) {
-                    traceMsg(comp(), "--- local index %d KILLED\n", localIndex);
-                }
+                logprintf(traceOSR, log, "--- local index %d KILLED\n", localIndex);
             }
         }
     } else if (node->getOpCode().isLoadVarDirect() || node->getOpCodeValue() == TR::loadaddr) {
@@ -1527,9 +1523,7 @@ void TR_OSRLiveRangeAnalysis::maintainLiveness(TR::Node *node, TR::Node *parent,
                 //
                 liveVars->set(localIndex);
 
-                if (comp()->getOption(TR_TraceOSR)) {
-                    traceMsg(comp(), "+++ local index %d LIVE\n", localIndex);
-                }
+                logprintf(traceOSR, log, "+++ local index %d LIVE\n", localIndex);
             }
 
             local->setLocalIndex(local->getLocalIndex() - 1);
@@ -1565,14 +1559,14 @@ void TR_OSRLiveRangeAnalysis::maintainLiveness(TR::Node *node, TR::Node *parent,
 void TR_OSRLiveRangeAnalysis::buildOSRSlotSharingInfo(TR::Node *node, TR_BitVector *liveVars, TR_OSRPoint *osrPoint,
     int32_t *liveLocalIndexToSymRefNumberMap, TR_BitVector *sharedSymRefs)
 {
+    OMR::Logger *log = comp()->log();
     TR_ByteCodeInfo &bcInfo = osrPoint->getByteCodeInfo();
 
     if (!liveVars->isEmpty()) {
         TR::SymbolReferenceTable *symRefTab = comp()->getSymRefTab();
 
-        if (trace())
-            traceMsg(comp(), "Shared slots at OSR point [%p] at %d:%d\n", node, bcInfo.getCallerIndex(),
-                bcInfo.getByteCodeIndex());
+        logprintf(trace(), log, "Shared slots at OSR point [%p] at %d:%d\n", node, bcInfo.getCallerIndex(),
+            bcInfo.getByteCodeIndex());
 
         TR_BitVectorIterator bvi(*liveVars);
         while (bvi.hasMoreElements()) {
@@ -1601,8 +1595,7 @@ void TR_OSRLiveRangeAnalysis::buildOSRSlotSharingInfo(TR::Node *node, TR_BitVect
             TR_ASSERT(symRefOrder < list->getSize(), "symref #%d not found in list of shared slots\n",
                 symRef->getReferenceNumber());
 
-            if (trace())
-                traceMsg(comp(), "  Slot:%d SymRef:%d TwoSlots:%d\n", slot, symRefNum, takesTwoSlots);
+            logprintf(trace(), log, "  Slot:%d SymRef:%d TwoSlots:%d\n", slot, symRefNum, takesTwoSlots);
 
             comp()->getOSRCompilationData()->addSlotSharingInfo(osrPoint->getByteCodeInfo(), slot, symRefNum,
                 symRefOrder, static_cast<int32_t>(symRef->getSymbol()->getSize()), takesTwoSlots);
@@ -1661,13 +1654,14 @@ void TR_OSRLiveRangeAnalysis::buildOSRLiveRangeInfo(TR::Node *node, TR_BitVector
     osrMethodData->setNumSymRefs(numBits);
 
     if (comp()->getOption(TR_TraceOSR)) {
-        traceMsg(comp(), "Dead variables at OSR point %p of %p bytecode offset %d\n", node, osrMethodData,
+        OMR::Logger *log = comp()->log();
+        log->printf("Dead variables at OSR point %p of %p bytecode offset %d\n", node, osrMethodData,
             osrPoint->getByteCodeInfo().getByteCodeIndex());
         if (deadSymRefs)
-            deadSymRefs->print(comp());
+            deadSymRefs->print(log, comp());
         else
-            traceMsg(comp(), " NULL");
-        traceMsg(comp(), "\n");
+            log->prints(" NULL");
+        log->println();
     }
 }
 
@@ -1696,11 +1690,12 @@ bool TR_OSRExceptionEdgeRemoval::addDeadStores(TR::Block *osrBlock, TR_BitVector
         dead |= *_seenDeadStores;
 
     if (comp()->getOption(TR_TraceOSR)) {
-        traceMsg(comp(), "Identified dead stores for block_%d:\n", osrBlock->getNumber());
-        _seenDeadStores->print(comp());
-        traceMsg(comp(), "\nRemaining dead stores:\n");
-        dead.print(comp());
-        traceMsg(comp(), "\n");
+        OMR::Logger *log = comp()->log();
+        log->printf("Identified dead stores for block_%d:\n", osrBlock->getNumber());
+        _seenDeadStores->print(log, comp());
+        log->prints("\nRemaining dead stores:\n");
+        dead.print(log, comp());
+        log->println();
     }
 
     return !_seenDeadStores->isEmpty();
@@ -1720,9 +1715,8 @@ void TR_OSRExceptionEdgeRemoval::removeDeadStores(TR::Block *osrBlock, TR_BitVec
         TR::Node *node = tt->getNode();
         if (node->getOpCode().isStoreDirect() && node->getSymbol()->isAutoOrParm() && node->storedValueIsIrrelevant()
             && dead.get(node->getSymbolReference()->getReferenceNumber())) {
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "Removing dead store n%dn of symref #%d\n", node->getGlobalIndex(),
-                    node->getSymbolReference()->getReferenceNumber());
+            logprintf(comp()->getOption(TR_TraceOSR), comp()->log(), "Removing dead store n%dn of symref #%d\n",
+                node->getGlobalIndex(), node->getSymbolReference()->getReferenceNumber());
             TR::TransformUtil::removeTree(comp(), tt);
         }
     }
@@ -1730,47 +1724,44 @@ void TR_OSRExceptionEdgeRemoval::removeDeadStores(TR::Block *osrBlock, TR_BitVec
 
 int32_t TR_OSRExceptionEdgeRemoval::perform()
 {
+    OMR::Logger *log = comp()->log();
+    bool traceOSR = comp()->getOption(TR_TraceOSR);
+
     if (comp()->getOption(TR_EnableOSR)) {
         // if (comp()->getOption(TR_DisableOSRExceptionEdgeRemoval)) // add to Options later
         if (false) {
-            if (comp()->getOption(TR_TraceOSR))
-                traceMsg(comp(), "OSR is enabled but OSR exception edge removal is not.\n");
+            logprints(traceOSR, log, "OSR is enabled but OSR exception edge removal is not.\n");
             return 0;
         }
     } else {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(), "OSR Option not enabled -- returning from OSR exception edge removal analysis.\n");
+        logprints(traceOSR, log, "OSR Option not enabled -- returning from OSR exception edge removal analysis.\n");
         return 0;
     }
 
     if (comp()->getOSRMode() == TR::involuntaryOSR) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(),
-                "Involuntary OSR enabled -- returning from OSR exception edge removal analysis since we implement "
-                "involuntary OSR with exception edges.\n");
+        logprints(traceOSR, log,
+            "Involuntary OSR enabled -- returning from OSR exception edge removal analysis since we implement "
+            "involuntary OSR with exception edges.\n");
         return 0;
     }
 
     if (comp()->osrInfrastructureRemoved()) {
-        if (comp()->getOption(TR_TraceOSR))
-            traceMsg(comp(),
-                "OSR infrastructure removed -- returning from OSR exception edge removal analysis since we have "
-                "already removed OSR infrastructure.\n");
+        logprints(traceOSR, log,
+            "OSR infrastructure removed -- returning from OSR exception edge removal analysis since we have already "
+            "removed OSR infrastructure.\n");
         return 0;
     }
 
     if (comp()->isPeekingMethod()) {
-        if (comp()->getOption(TR_TraceOSR)) {
-            traceMsg(comp(), "%s OSR exception edge removal is not required because we are peeking\n",
+        if (traceOSR) {
+            log->printf("%s OSR exception edge removal is not required because we are peeking\n",
                 optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-            traceMsg(comp(), "Returning...\n");
+            log->prints("Returning...\n");
         }
         return 0;
     } else {
-        if (comp()->getOption(TR_TraceOSR)) {
-            traceMsg(comp(), "%s OSR exception edge analysis can be done\n",
-                optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
-        }
+        logprintf(traceOSR, log, "%s OSR exception edge analysis can be done\n",
+            optimizer()->getMethodSymbol()->signature(comp()->trMemory()));
     }
 
     TR::CFG *cfg = comp()->getFlowGraph();

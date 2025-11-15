@@ -48,6 +48,10 @@ typedef OMR::ARM64::CodeGenerator CodeGeneratorConnector;
 
 class TR_ARM64OutOfLineCodeSection;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class ARM64LinkageProperties;
 class ARM64ConstantDataSnippet;
@@ -241,9 +245,9 @@ public:
 
     /**
      * @brief Dumps data snippets
-     * @param[in] outFile : FILE for output
+     * @param[in] log : OMR::Logger for output
      */
-    void dumpDataSnippets(TR::FILE *outFile);
+    void dumpDataSnippets(OMR::Logger *log);
 
     /**
      * @brief Generates switch-to-interpreter pre-prologue

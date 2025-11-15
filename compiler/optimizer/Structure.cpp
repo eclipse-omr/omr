@@ -50,6 +50,7 @@
 #include "optimizer/DataFlowAnalysis.hpp"
 #include "optimizer/LocalAnalysis.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #define OPT_DETAILS "O^O STRUCTURE: "
 
@@ -406,8 +407,10 @@ void TR_RegionStructure::ExitExtraction::extractUnconditionalExits(const TR::lis
     if (_workStack.size() == 0)
         return;
 
+    OMR::Logger *log = _comp->log();
+
     if (_trace)
-        _comp->dumpMethodTrees("Trees before unconditional exit extraction");
+        _comp->dumpMethodTrees(log, "Trees before unconditional exit extraction");
 
     // moveNodeIntoParent replaces the entire region with the unconditional exit node
     // if the node is the entry of the region. It expects the region has only one sub
@@ -421,24 +424,23 @@ void TR_RegionStructure::ExitExtraction::extractUnconditionalExits(const TR::lis
         _cfg->removeUnreachableBlocks();
 
         if (_trace)
-            _comp->dumpMethodTrees("Trees after removing unreachable blocks");
+            _comp->dumpMethodTrees(log, "Trees after removing unreachable blocks");
     }
 
     while (_workStack.size() > 0) {
         if (_trace) {
-            traceMsg(_comp, "work stack:");
+            log->prints("work stack:");
             for (auto s = _workStack.begin(); s != _workStack.end(); ++s)
-                traceMsg(_comp, " %d:%p", (*s)->getNumber(), *s);
+                log->printf(" %d:%p", (*s)->getNumber(), *s);
 
-            traceMsg(_comp, "\n");
+            log->println();
         }
 
         TR_Structure * const s = _workStack.back();
         _workStack.pop_back();
         _queued.erase(s);
 
-        if (_trace)
-            traceMsg(_comp, "attempting to extract %d:%p\n", s->getNumber(), s);
+        logprintf(_trace, log, "attempting to extract %d:%p\n", s->getNumber(), s);
 
         extractStructure(s);
 
@@ -449,8 +451,8 @@ void TR_RegionStructure::ExitExtraction::extractUnconditionalExits(const TR::lis
 
 void TR_RegionStructure::ExitExtraction::enqueue(TR_Structure * const s)
 {
-    if (_trace)
-        traceMsg(_comp, "enqueueing %d:%p\n", s->getNumber(), s);
+    OMR::Logger *log = _comp->log();
+    logprintf(_trace, log, "enqueueing %d:%p\n", s->getNumber(), s);
 
     if (_queued.find(s) == _queued.end()) {
         _workStack.push_back(s);
@@ -460,16 +462,15 @@ void TR_RegionStructure::ExitExtraction::enqueue(TR_Structure * const s)
 
 void TR_RegionStructure::ExitExtraction::collectWork(const TR::list<TR::Block *, TR::Region &> &blocks)
 {
+    OMR::Logger *log = _comp->log();
     StructureSet relevant(std::less<TR_Structure *>(), _memRegion);
 
     for (auto b = blocks.begin(); b != blocks.end(); ++b) {
         TR_Structure *s = (*b)->getStructureOf();
         while (s != NULL && relevant.find(s) == relevant.end()) {
             TR_Structure * const parent = s->getParent();
-            if (_trace) {
-                traceMsg(_comp, "found relevant structure %d:%p, parent %d:%p\n", s->getNumber(), s,
-                    parent == NULL ? -1 : parent->getNumber(), parent);
-            }
+            logprintf(_trace, log, "found relevant structure %d:%p, parent %d:%p\n", s->getNumber(), s,
+                parent == NULL ? -1 : parent->getNumber(), parent);
 
             relevant.insert(s);
             s = parent;
@@ -504,6 +505,7 @@ void TR_RegionStructure::ExitExtraction::collectWorkFromRegion(TR_RegionStructur
 
 void TR_RegionStructure::ExitExtraction::extractStructure(TR_Structure * const initialStructure)
 {
+    OMR::Logger *log = _comp->log();
     TR_RegionStructure *region = initialStructure->getParent();
     if (region == NULL)
         return; // ignore initialStructure because it has been detached
@@ -561,8 +563,7 @@ void TR_RegionStructure::ExitExtraction::extractStructure(TR_Structure * const i
 
         if (_comp->getOption(TR_ExtractExitsByInvalidatingStructure)) {
             // There is a node that would be extracted; just kill structure instead
-            if (_trace)
-                traceMsg(_comp, "invalidating structure instead of fixing it\n");
+            logprints(_trace, log, "invalidating structure instead of fixing it\n");
 
             // FIXME this should call invalidateStructure(), but doing so does not
             // clear out blocks' getStructureOf(), and not everything that looks
@@ -576,10 +577,10 @@ void TR_RegionStructure::ExitExtraction::extractStructure(TR_Structure * const i
         moveNodeIntoParent(node, region, parent);
         removeContentsFromRegion(initialStructure, region);
 
-        if (_trace && _comp->getOutFile() != NULL) {
-            traceMsg(_comp, "Structure after moving node into parent:\n<structure>\n");
-            _comp->getDebug()->print(_comp->getOutFile(), _cfg->getStructure(), 0);
-            traceMsg(_comp, "</structure>\n");
+        if (_trace) {
+            log->prints("Structure after moving node into parent:\n<structure>\n");
+            _comp->getDebug()->print(log, _cfg->getStructure(), 0);
+            log->prints("</structure>\n");
         }
 
 #ifdef DEBUG
@@ -625,7 +626,7 @@ TR_BitVector &TR_RegionStructure::ExitExtraction::regionContents(TR_RegionStruct
     }
 
     if (_trace) {
-        traceMsg(_comp, "contents of region %d:%p:", region->getNumber(), region);
+        _comp->log()->printf("contents of region %d:%p:", region->getNumber(), region);
         traceBitVector(contents);
     }
 
@@ -653,24 +654,26 @@ void TR_RegionStructure::ExitExtraction::removeContentsFromRegion(TR_Structure *
     }
 
     if (_trace) {
-        traceMsg(_comp, "adjusted contents of region %d:%p:", region->getNumber(), region);
-
+        _comp->log()->printf("adjusted contents of region %d:%p:", region->getNumber(), region);
         traceBitVector(blocks);
     }
 }
 
 void TR_RegionStructure::ExitExtraction::traceBitVector(TR_BitVector &bv)
 {
+    OMR::Logger *log = _comp->log();
     TR_BitVectorIterator bvi(bv);
     while (bvi.hasMoreElements())
-        traceMsg(_comp, " %d", bvi.getNextElement());
+        log->printf(" %d", bvi.getNextElement());
 
-    traceMsg(_comp, "\n");
+    log->println();
 }
 
 void TR_RegionStructure::ExitExtraction::moveNodeIntoParent(TR_StructureSubGraphNode * const node,
     TR_RegionStructure * const region, TR_RegionStructure * const parent)
 {
+    OMR::Logger *log = _comp->log();
+
     if (node == region->getEntry()) {
         // Replace this entire region in the parent, since entry can't be removed
         TR_ASSERT_FATAL(region->numSubNodes() == 1,
@@ -705,17 +708,14 @@ void TR_RegionStructure::ExitExtraction::moveNodeIntoParent(TR_StructureSubGraph
     // Remove all incoming edges
     for (auto e = _allPreds.begin(); e != _allPreds.end(); ++e) {
         region->removeEdgeWithoutCleanup(*e, false);
-        if (_trace) {
-            traceMsg(_comp, "removed edge (%d->%d):%p from region %d:%p\n", (*e)->getFrom()->getNumber(),
-                (*e)->getTo()->getNumber(), *e, region->getNumber(), region);
-        }
+        logprintf(_trace, log, "removed edge (%d->%d):%p from region %d:%p\n", (*e)->getFrom()->getNumber(),
+            (*e)->getTo()->getNumber(), *e, region->getNumber(), region);
     }
 
     // Move node into parent
     region->removeSubNodeWithoutCleanup(node);
     parent->addSubNode(node);
-    if (_trace)
-        traceMsg(_comp, "moved node into parent\n");
+    logprints(_trace, log, "moved node into parent\n");
 
     // For each edge that was incoming, region has an exit edge
     const bool nodeIsHandler = node->getStructure()->getEntryBlock()->isCatchBlock();
@@ -723,10 +723,8 @@ void TR_RegionStructure::ExitExtraction::moveNodeIntoParent(TR_StructureSubGraph
     for (auto e = _allPreds.begin(); e != _allPreds.end(); ++e) {
         auto * const src = toStructureSubGraphNode((*e)->getFrom());
         region->addExitEdge(src, node->getNumber(), nodeIsHandler);
-        if (_trace) {
-            traceMsg(_comp, "added exit edge (%d->%d) to region %d:%p\n", src->getNumber(), node->getNumber(),
-                region->getNumber(), region);
-        }
+        logprintf(_trace, log, "added exit edge (%d->%d) to region %d:%p\n", src->getNumber(), node->getNumber(),
+            region->getNumber(), region);
     }
 
     // Parent needs an edge from region to node
@@ -736,10 +734,8 @@ void TR_RegionStructure::ExitExtraction::moveNodeIntoParent(TR_StructureSubGraph
     else
         TR::CFGEdge::createEdge(regionNode, node, _structureMemoryRegion);
 
-    if (_trace) {
-        traceMsg(_comp, "added %sedge (%d->%d) to region %d:%p\n", nodeIsHandler ? "exception " : "",
-            regionNode->getNumber(), node->getNumber(), parent->getNumber(), parent);
-    }
+    logprintf(_trace, log, "added %sedge (%d->%d) to region %d:%p\n", nodeIsHandler ? "exception " : "",
+        regionNode->getNumber(), node->getNumber(), parent->getNumber(), parent);
 
     // Replace all outgoing (exit) edges with edges originating in parent
     for (auto e = _succs.begin(); e != _succs.end(); ++e)
@@ -752,10 +748,7 @@ void TR_RegionStructure::ExitExtraction::moveNodeIntoParent(TR_StructureSubGraph
 
     // Cleanup may have eliminated the current region.
     if (region->getParent() == NULL) {
-        if (_trace) {
-            traceMsg(_comp, "region %d:%p was eliminated by cleanupAfterNodeRemoval\n", region->getNumber(), region);
-        }
-
+        logprintf(_trace, log, "region %d:%p was eliminated by cleanupAfterNodeRemoval\n", region->getNumber(), region);
         return;
     }
 
@@ -786,14 +779,14 @@ void TR_RegionStructure::ExitExtraction::moveOutgoingEdgeToParent(TR_RegionStruc
     TR_ASSERT_FATAL(toStructureSubGraphNode(edge->getFrom()) == node,
         "moveOutgoingEdgeToParent: expected edge %p to originate from node %p\n", edge, node);
 
+    OMR::Logger *log = _comp->log();
+
     auto * const exitTgt = toStructureSubGraphNode(edge->getTo());
     const int32_t tgtNum = exitTgt->getNumber();
 
     region->removeEdgeWithoutCleanup(edge, /* isExitEdge = */ true);
-    if (_trace) {
-        traceMsg(_comp, "removed exit edge (%d->%d):%p from region %d:%p\n", edge->getFrom()->getNumber(),
-            edge->getTo()->getNumber(), edge, region->getNumber(), region);
-    }
+    logprintf(_trace, log, "removed exit edge (%d->%d):%p from region %d:%p\n", edge->getFrom()->getNumber(),
+        edge->getTo()->getNumber(), edge, region->getNumber(), region);
 
     // Determine whether region still exits to tgtNum
     bool regionStillHasThisExit = false;
@@ -831,32 +824,26 @@ void TR_RegionStructure::ExitExtraction::moveOutgoingEdgeToParent(TR_RegionStruc
         // forth toward the root. However, in that case parent will definitely
         // have an exit edge from node to tgtNum, to be created below.
         parent->removeEdgeWithoutCleanup(staleEdge, parent->isExitEdge(staleEdge));
-        if (_trace) {
-            traceMsg(_comp,
-                "original region %d:%p no longer exits to %d - "
-                "removed corresponding exit from parent\n",
-                region->getNumber(), region, tgtNum);
-        }
+        logprintf(_trace, log,
+            "original region %d:%p no longer exits to %d - "
+            "removed corresponding exit from parent\n",
+            region->getNumber(), region, tgtNum);
     }
 
     auto * const redirect = parent->findSubNodeInRegion(tgtNum);
     if (redirect == NULL) {
         // This is also an exit from parent.
         parent->addExitEdge(node, tgtNum, isExceptionEdge);
-        if (_trace) {
-            traceMsg(_comp, "successor %d does not exist in parent - created new exit %sedge\n", tgtNum,
-                isExceptionEdge ? "exception " : "");
-        }
+        logprintf(_trace, log, "successor %d does not exist in parent - created new exit %sedge\n", tgtNum,
+            isExceptionEdge ? "exception " : "");
     } else {
         if (isExceptionEdge)
             TR::CFGEdge::createExceptionEdge(node, redirect, _structureMemoryRegion);
         else
             TR::CFGEdge::createEdge(node, redirect, _structureMemoryRegion);
 
-        if (_trace) {
-            traceMsg(_comp, "parent region contains %d - created internal %sedge\n", tgtNum,
-                isExceptionEdge ? "exception " : "");
-        }
+        logprintf(_trace, log, "parent region contains %d - created internal %sedge\n", tgtNum,
+            isExceptionEdge ? "exception " : "");
     }
 }
 
@@ -1843,7 +1830,7 @@ void TR_RegionStructure::collapseIntoParent()
 {
     if (debug("traceCollapseRegion")) {
         diagnostic("==> Structure before collapsing %d into parent %d\n", getNumber(), getParent()->getNumber());
-        comp()->getDebug()->print(comp()->getOutFile(), getParent(), 6);
+        comp()->getDebug()->print(comp()->log(), getParent(), 6);
     }
 
     TR_StructureSubGraphNode *node;
@@ -2479,7 +2466,7 @@ void TR_Structure::mergeBlocks(TR::Block *merged, TR::Block *mergedInto)
 
     TR_ASSERT(s->getNumber() == merged->getNumber(), "Structure: bad structure when merging blocks");
     if (debug("dumpStructure"))
-        comp()->getDebug()->print(comp()->getOutFile(), comp()->getFlowGraph()->getStructure(), 6);
+        comp()->getDebug()->print(comp()->log(), comp()->getFlowGraph()->getStructure(), 6);
 }
 
 void TR_Structure::mergeInto(TR::Block *merged, TR::Block *mergedInto)

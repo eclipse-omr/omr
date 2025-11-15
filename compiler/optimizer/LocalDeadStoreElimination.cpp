@@ -50,6 +50,7 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/Optimizer.hpp"
+#include "ras/Logger.hpp"
 
 TR::Optimization *TR::LocalDeadStoreElimination::create(TR::OptimizationManager *manager)
 {
@@ -72,8 +73,9 @@ bool TR::LocalDeadStoreElimination::isFirstReferenceToNode(TR::Node *parent, int
 
 int32_t TR::LocalDeadStoreElimination::perform()
 {
-    if (trace())
-        traceMsg(comp(), "Starting LocalDeadStoreElimination\n");
+    OMR::Logger *log = comp()->log();
+
+    logprints(trace(), log, "Starting LocalDeadStoreElimination\n");
 
     TR::TreeTop *tt, *exitTreeTop;
     for (tt = comp()->getStartTree(); tt; tt = exitTreeTop->getNextTreeTop()) {
@@ -86,8 +88,7 @@ int32_t TR::LocalDeadStoreElimination::perform()
     if (_treesChanged)
         requestDeadTreesCleanup();
 
-    if (trace())
-        traceMsg(comp(), "\nEnding LocalDeadStoreElimination\n");
+    logprints(trace(), log, "\nEnding LocalDeadStoreElimination\n");
 
     return 1;
 }
@@ -205,8 +206,7 @@ void TR::LocalDeadStoreElimination::transformBlock(TR::TreeTop *entryTree, TR::T
             == MAX_VCOUNT - 2) // Inc visit count will assert at MAX_VCOUNT - 1, so this gives us
                                // the one extra incVisitCount that might occur if we remove a store tree.
         {
-            if (trace())
-                traceMsg(comp(), "Bailing out of local deadstore to avoid visit count overflow\n");
+            logprints(trace(), comp()->log(), "Bailing out of local deadstore to avoid visit count overflow\n");
             break;
         }
 
@@ -635,8 +635,7 @@ bool TR::LocalDeadStoreElimination::seenIdenticalStore(TR::Node *node)
         // in this case, the store is not dead and cannot be removed
         //
         if (storeNode == node) {
-            if (trace())
-                traceMsg(comp(), "seenIdentical nodes %p and %p\n", node, storeNode);
+            logprintf(trace(), comp()->log(), "seenIdentical nodes %p and %p\n", node, storeNode);
             return false;
         }
         if (areLhsOfStoresSyntacticallyEquivalent(storeNode, node))
@@ -932,6 +931,7 @@ void TR::LocalDeadStoreElimination::findLocallyAllocatedObjectUses(LDSBitVector 
 bool TR::LocalDeadStoreElimination::examineNewUsesForKill(TR::Node *node, TR::Node *storeNode,
     List<TR::Node> *currentNews, List<TR::Node> *removedNews, TR::Node *parent, int32_t childNum, vcount_t visitCount)
 {
+    OMR::Logger *log = comp()->log();
     TR::Node *newNode = NULL;
     TR::Node *origNode = node;
     if (node->getOpCode().isArrayRef())
@@ -946,13 +946,11 @@ bool TR::LocalDeadStoreElimination::examineNewUsesForKill(TR::Node *node, TR::No
     if (currentNews->find(newNode)
         && ((((parent->getOpCode().isIndirect() || parent->getOpCode().isArrayLength()))
             || parent->getOpCode().isCall()))) {
-        if (trace())
-            traceMsg(comp(), "going to remove new %p at node %p\n", newNode, node);
+        logprintf(trace(), log, "going to remove new %p at node %p\n", newNode, node);
         if ((childNum == 0) && (storeNode == parent))
             return true;
         else {
-            if (trace())
-                traceMsg(comp(), "removing new %p at node %p\n", newNode, node);
+            logprintf(trace(), log, "removing new %p at node %p\n", newNode, node);
             currentNews->remove(newNode);
             if (!removedNews->find(newNode))
                 removedNews->add(newNode);

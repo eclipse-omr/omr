@@ -37,6 +37,7 @@
 #include "infra/Assert.hpp"
 #include "infra/Flags.hpp"
 #include "infra/Link.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 void TR::Relocation::apply(TR::CodeGenerator *cg) { TR_ASSERT(0, "Should never get here"); }
@@ -224,9 +225,10 @@ void TR::ExternalRelocation::trace(TR::Compilation *comp)
     uintptr_t programOffset = updateLocation - codeStart;
 
     if (data) {
-        traceMsg(comp, "%-35s %-32s %5d      %04x       %04x %8p\n", getName(this->getTargetKind()), data->file,
+        OMR::Logger *log = comp->log();
+        log->printf("%-35s %-32s %5d      %04x       %04x %8p\n", getName(this->getTargetKind()), data->file,
             data->line, methodOffset, programOffset, data->node);
-        traceMsg(comp, "TargetAddress1:" POINTER_PRINTF_FORMAT ",  TargetAddress2:" POINTER_PRINTF_FORMAT "\n",
+        log->printf("TargetAddress1:" POINTER_PRINTF_FORMAT ",  TargetAddress2:" POINTER_PRINTF_FORMAT "\n",
             this->getTargetAddress(), this->getTargetAddress2());
     }
 }

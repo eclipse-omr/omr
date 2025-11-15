@@ -33,6 +33,7 @@
 #include "codegen/TreeEvaluator.hpp"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "ras/Logger.hpp"
 
 OMR::RV::CodeGenerator::CodeGenerator(TR::Compilation *comp)
     : OMR::CodeGenerator(comp)
@@ -248,15 +249,12 @@ int32_t OMR::RV::CodeGenerator::setEstimatedLocationsForDataSnippetLabels(int32_
 }
 
 #ifdef DEBUG
-void OMR::RV::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
+void OMR::RV::CodeGenerator::dumpDataSnippets(OMR::Logger *log)
 {
-    if (outFile == NULL)
-        return;
-
     TR_UNIMPLEMENTED();
     /*
      * Commented out until TR::ConstantDataSnippet is implemented
-    _constantData->print(outFile);
+    _constantData->print(log);
      */
 }
 #endif
@@ -271,24 +269,26 @@ TR::Instruction *OMR::RV::CodeGenerator::generateSwitchToInterpreterPrePrologue(
 // different from evaluate in that it returns a clobberable register
 TR::Register *OMR::RV::CodeGenerator::gprClobberEvaluate(TR::Node *node)
 {
+    TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
     if (node->getReferenceCount() > 1) {
         TR::Register *sourceReg = self()->evaluate(node);
         TR::Register *targetReg = self()->allocateRegister();
         generateITYPE(TR::InstOpCode::_addi, node, targetReg, sourceReg, 0, self());
 
         if (sourceReg->containsCollectedReference()) {
-            if (self()->comp()->getOption(TR_TraceCG))
-                traceMsg(self()->comp(), "Setting containsCollectedReference on register %s\n",
-                    self()->getDebug()->getName(targetReg));
+            logprintf(trace, log, "Setting containsCollectedReference on register %s\n",
+                self()->getDebug()->getName(targetReg));
             targetReg->setContainsCollectedReference();
         }
         if (sourceReg->containsInternalPointer()) {
             TR::AutomaticSymbol *pinningArrayPointer = sourceReg->getPinningArrayPointer();
-            if (self()->comp()->getOption(TR_TraceCG))
-                traceMsg(self()->comp(),
-                    "Setting containsInternalPointer on register %s and setting pinningArrayPointer "
-                    "to " POINTER_PRINTF_FORMAT "\n",
-                    self()->getDebug()->getName(targetReg), pinningArrayPointer);
+            logprintf(trace, log,
+                "Setting containsInternalPointer on register %s and setting pinningArrayPointer "
+                "to " POINTER_PRINTF_FORMAT "\n",
+                self()->getDebug()->getName(targetReg), pinningArrayPointer);
             targetReg->setContainsInternalPointer();
             targetReg->setPinningArrayPointer(pinningArrayPointer);
         }

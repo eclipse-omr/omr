@@ -25,9 +25,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Compilation;
-}
+} // namespace TR
 
 class TR_CallStackIterator {
 public:
@@ -80,7 +84,7 @@ public:
     virtual void printStackBacktrace(TR::Compilation *comp);
 
 private:
-    void printSymbol(int32_t frame, char *sig, TR::Compilation *comp);
+    void printSymbol(int32_t frame, char *sig, OMR::Logger *log);
     friend class TR_CallStackIterator;
 };
 

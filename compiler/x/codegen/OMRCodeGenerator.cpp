@@ -91,6 +91,7 @@
 #include "optimizer/RegisterCandidate.hpp"
 #include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/CodeCache.hpp"
 #include "runtime/CodeCacheManager.hpp"
 #include "x/codegen/DataSnippet.hpp"
@@ -585,14 +586,13 @@ TR::Linkage *OMR::X86::CodeGenerator::createLinkage(TR_LinkageConventions lc)
         case TR_Helper:
             // Intentional fall through
         case TR_System:
-            if (self()->comp()->target().isLinux() || self()->comp()->target().isOSX()
-                || self()->comp()->target().isBSD()) {
+            if (comp->target().isLinux() || comp->target().isOSX() || comp->target().isBSD()) {
 #if defined(TR_TARGET_64BIT)
                 linkage = new (self()->trHeapMemory()) TR::AMD64ABILinkage(self());
 #else
                 linkage = new (self()->trHeapMemory()) TR::IA32SystemLinkage(self());
 #endif
-            } else if (self()->comp()->target().isWindows()) {
+            } else if (comp->target().isWindows()) {
 #if defined(TR_TARGET_64BIT)
                 linkage = new (self()->trHeapMemory()) TR::AMD64Win64FastCallLinkage(self());
 #else
@@ -1436,6 +1436,7 @@ TR::Instruction *OMR::X86::CodeGenerator::findBetterSpillPlacement(TR::Register 
 void OMR::X86::CodeGenerator::performNonLinearRegisterAssignmentAtBranch(TR::X86LabelInstruction *branchInstruction,
     TR_RegisterKinds kindsToBeAssigned)
 {
+    TR::Compilation *comp = self()->comp();
     TR::Machine *xm = self()->machine();
     TR_RegisterAssignerState *branchRAState = new (self()->trHeapMemory()) TR_RegisterAssignerState(xm);
 
@@ -1473,8 +1474,8 @@ void OMR::X86::CodeGenerator::performNonLinearRegisterAssignmentAtBranch(TR::X86
         TR::Instruction *ins = generateLabelInstruction(oi->getFirstInstruction(), TR::InstOpCode::label,
             generateLabelSymbol(self()), deps, self());
 
-        if (self()->comp()->getOption(TR_TraceNonLinearRegisterAssigner)) {
-            traceMsg(self()->comp(), "creating TR::InstOpCode::label instruction %p for dependencies\n", ins);
+        if (comp->getOption(TR_TraceNonLinearRegisterAssigner)) {
+            comp->log()->printf("creating TR::InstOpCode::label instruction %p for dependencies\n", ins);
         }
     }
 
@@ -1599,9 +1600,10 @@ void OMR::X86::CodeGenerator::processClobberingInstructions(TR::ClobberingInstru
 
 TR::Instruction *OMR::X86::CodeGenerator::generateInterpreterEntryInstruction(TR::Instruction *procEntryInstruction)
 {
+    TR::Compilation *comp = self()->comp();
     TR::Instruction *interpreterEntryInstruction;
-    if (self()->comp()->target().is64Bit()) {
-        if (self()->comp()->getMethodSymbol()->getLinkageConvention() != TR_System)
+    if (comp->target().is64Bit()) {
+        if (comp->getMethodSymbol()->getLinkageConvention() != TR_System)
             interpreterEntryInstruction
                 = self()->getLinkage()->copyStackParametersToLinkageRegisters(procEntryInstruction);
         else
@@ -1609,8 +1611,8 @@ TR::Instruction *OMR::X86::CodeGenerator::generateInterpreterEntryInstruction(TR
 
         // Patching can occur at the jit entry point, so insert padding if necessary.
         //
-        if (self()->comp()->target().isSMP()) {
-            TR::Recompilation *recompilation = self()->comp()->getRecompilationInfo();
+        if (comp->target().isSMP()) {
+            TR::Recompilation *recompilation = comp->getRecompilationInfo();
             const TR_AtomicRegion *atomicRegions;
 #ifdef J9_PROJECT_SPECIFIC
             if (recompilation && !recompilation->useSampling()) {
@@ -1653,8 +1655,8 @@ void OMR::X86::CodeGenerator::doBackwardsRegisterAssignment(TR_RegisterKinds kin
 
 #ifdef DEBUG
     TR::Instruction *origNextInstruction;
-    bool dumpPreGP = (debug("dumpGPRA") || debug("dumpGPRA0")) && comp->getOutFile() != NULL;
-    bool dumpPostGP = (debug("dumpGPRA") || debug("dumpGPRA1")) && comp->getOutFile() != NULL;
+    bool dumpPreGP = (debug("dumpGPRA") || debug("dumpGPRA0"));
+    bool dumpPostGP = (debug("dumpGPRA") || debug("dumpGPRA1"));
 #endif
 
     if (self()->getUseNonLinearRegisterAssigner()) {
@@ -1665,7 +1667,7 @@ void OMR::X86::CodeGenerator::doBackwardsRegisterAssignment(TR_RegisterKinds kin
     }
 
     if (self()->getDebug())
-        self()->getDebug()->startTracingRegisterAssignment(kindsToAssign);
+        self()->getDebug()->startTracingRegisterAssignment(comp->log(), kindsToAssign);
 
     while (instructionCursor && instructionCursor != appendInstruction) {
         TR::Instruction *inst = instructionCursor;
@@ -1715,20 +1717,22 @@ void OMR::X86::CodeGenerator::doBackwardsRegisterAssignment(TR_RegisterKinds kin
     }
 
     if (self()->getDebug())
-        self()->getDebug()->stopTracingRegisterAssignment();
+        self()->getDebug()->stopTracingRegisterAssignment(comp->log());
 }
 
 void OMR::X86::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssign)
 {
+    TR::Compilation *comp = self()->comp();
+
 #if defined(DEBUG)
     TR::Instruction *origPrevInstruction;
-    bool dumpPreFP = (debug("dumpFPRA") || debug("dumpFPRA0")) && self()->comp()->getOutFile() != NULL;
-    bool dumpPostFP = (debug("dumpFPRA") || debug("dumpFPRA1")) && self()->comp()->getOutFile() != NULL;
-    bool dumpPreGP = (debug("dumpGPRA") || debug("dumpGPRA0")) && self()->comp()->getOutFile() != NULL;
-    bool dumpPostGP = (debug("dumpGPRA") || debug("dumpGPRA1")) && self()->comp()->getOutFile() != NULL;
+    bool dumpPreFP = (debug("dumpFPRA") || debug("dumpFPRA0"));
+    bool dumpPostFP = (debug("dumpFPRA") || debug("dumpFPRA1"));
+    bool dumpPreGP = (debug("dumpGPRA") || debug("dumpGPRA0"));
+    bool dumpPostGP = (debug("dumpGPRA") || debug("dumpGPRA1"));
 #endif
 
-    LexicalTimer pt1("total register assignment", self()->comp()->phaseTimer());
+    LexicalTimer pt1("total register assignment", comp->phaseTimer());
 
     // Use new float/double slots for XMMR spills, to avoid
     // interfering with existing FPR spills.
@@ -1740,7 +1744,7 @@ void OMR::X86::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssig
         diagnostic("\n\nGP Register Assignment (backward pass):\n");
 #endif
 
-    LexicalTimer pt2("GP register assignment", self()->comp()->phaseTimer());
+    LexicalTimer pt2("GP register assignment", comp->phaseTimer());
     // Assign GPRs and XMMRs in a backward pass
     //
     kindsToAssign = TR_RegisterKinds(kindsToAssign & (TR_GPR_Mask | TR_VMR_Mask | TR_FPR_Mask | TR_VRF_Mask));
@@ -1829,11 +1833,9 @@ void OMR::X86::CodeGenerator::addItemsToRSSReport(uint8_t *coldCode)
             TR_ASSERT_FATAL(overEstimate >= 0, "Estimated cold code length should not be less than actual\n");
 
             if (blocksInsideColdCodeSize != actualColdLength) {
-                if (comp->getOption(TR_TraceCG)) {
-                    traceMsg(comp,
-                        "RSS: blocksInsideColdCodeSize=%zu actualColdLength=%zu coldCode=%p coldCodeEnd=%p\n",
-                        blocksInsideColdCodeSize, actualColdLength, coldCode, coldCode + actualColdLength);
-                }
+                logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                    "RSS: blocksInsideColdCodeSize=%zu actualColdLength=%zu coldCode=%p coldCodeEnd=%p\n",
+                    blocksInsideColdCodeSize, actualColdLength, coldCode, coldCode + actualColdLength);
             }
 
             OMR::RSSItem *rssItem;
@@ -1854,7 +1856,11 @@ void OMR::X86::CodeGenerator::addItemsToRSSReport(uint8_t *coldCode)
 
 void OMR::X86::CodeGenerator::doBinaryEncoding()
 {
-    LexicalTimer pt1("code generation", self()->comp()->phaseTimer());
+    TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
+    LexicalTimer pt1("code generation", comp->phaseTimer());
 
     // Generate fixup code for the interpreter entry point right before TR::InstOpCode::proc
     //
@@ -1874,9 +1880,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     // Pass 1: Binary length estimation and prologue creation
     //
 
-    if (self()->comp()->getOption(TR_TraceCG)) {
-        traceMsg(self()->comp(), "<proepilogue>\n");
-    }
+    logprints(trace, log, "<proepilogue>\n");
 
     TR::Instruction *estimateCursor = self()->getFirstInstruction();
     int32_t estimate = 0;
@@ -1890,7 +1894,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     }
 
     /* Set offset for jitted method entry alignment */
-    if (self()->comp()->getRecompilationInfo()) {
+    if (comp->getRecompilationInfo()) {
         TR_ASSERT(estimate >= 3, "Estimate should not be less than 3");
         self()->setPreJitMethodEntrySize(estimate - 3);
     } else
@@ -1902,7 +1906,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
 
     // The recompilation prologue
     //
-    TR::Recompilation *recompilation = self()->comp()->getRecompilationInfo();
+    TR::Recompilation *recompilation = comp->getRecompilationInfo();
     if (recompilation)
         prologueCursor = recompilation->generatePrologue(prologueCursor);
 
@@ -1923,10 +1927,9 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
         estimate += (self()->getJitMethodEntryAlignmentBoundary() - 1);
     }
 
-    if (self()->comp()->getOption(TR_TraceCG))
-        traceMsg(self()->comp(),
-            "\n<instructions\n"
-            "\ttitle=\"VFP Substitution\">");
+    logprints(trace, log,
+        "\n<instructions\n"
+        "\ttitle=\"VFP Substitution\">");
 
     // Estimate instruction length of prologue and remainder of method,
     // determine adjustments if using esp-relative addressing, and generate
@@ -1934,7 +1937,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     //
     bool skipOneReturn = false;
     int32_t estimatedPrologueStartOffset = estimate;
-    bool snippetsAfterWarm = self()->comp()->getOption(TR_MoveSnippetsToWarmCode);
+    bool snippetsAfterWarm = comp->getOption(TR_MoveSnippetsToWarmCode);
 
     while (estimateCursor) {
         // Update the info bits on the register mask.
@@ -2004,8 +2007,8 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
         TR_VFPState prevState = _vfpState;
         estimateCursor->adjustVFPState(&_vfpState, self());
 
-        if (self()->comp()->getOption(TR_TraceCG))
-            self()->getDebug()->dumpInstructionWithVFPState(estimateCursor, &prevState);
+        if (comp->getOption(TR_TraceCG))
+            self()->getDebug()->dumpInstructionWithVFPState(comp->log(), estimateCursor, &prevState);
 
         // If this is the last warm instruction, remember the estimated size up to
         // this point and add a buffer to the estimated size so that branches
@@ -2029,8 +2032,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
         estimateCursor = estimateCursor->getNext();
     }
 
-    if (self()->comp()->getOption(TR_TraceCG))
-        traceMsg(self()->comp(), "\n</instructions>\n");
+    logprints(trace, log, "\n</instructions>\n");
 
     if (!snippetsAfterWarm || !warmEstimate)
         estimate = self()->setEstimatedLocationsForSnippetLabels(estimate);
@@ -2055,25 +2057,21 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
         self()->setEstimatedColdLength(0);
     }
 
-    if (self()->comp()->getOption(TR_TraceCG)) {
-        traceMsg(self()->comp(), "</proepilogue>\n");
-    }
+    logprints(trace, log, "</proepilogue>\n");
 
     /////////////////////////////////////////////////////////////////
     //
     // Pass 2: Binary encoding
     //
 
-    if (self()->comp()->getOption(TR_TraceCG)) {
-        traceMsg(self()->comp(), "<encode>\n");
-    }
+    logprints(trace, log, "<encode>\n");
 
     uint8_t *coldCode = NULL;
     uint8_t *temp
         = self()->allocateCodeMemory(self()->getEstimatedWarmLength(), self()->getEstimatedColdLength(), &coldCode);
     TR_ASSERT(temp, "Failed to allocate primary code area.");
 
-    if (self()->comp()->target().is64Bit() && self()->hasCodeCacheSwitched() && self()->getPicSlotCount() != 0) {
+    if (comp->target().is64Bit() && self()->hasCodeCacheSwitched() && self()->getPicSlotCount() != 0) {
         int32_t numTrampolinesToReserve = self()->getPicSlotCount() - self()->getNumReservedIPICTrampolines();
         TR_ASSERT(numTrampolinesToReserve >= 0,
             "Discrepancy with number of IPIC trampolines to reserve getPicSlotCount()=%d "
@@ -2099,7 +2097,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     //
     self()->setPrePrologueSize(self()->getBinaryBufferLength());
 
-    self()->comp()->getSymRefTab()->findOrCreateStartPCSymbolRef()->getSymbol()->getStaticSymbol()->setStaticAddress(
+    comp->getSymRefTab()->findOrCreateStartPCSymbolRef()->getSymbol()->getStaticSymbol()->setStaticAddress(
         self()->getBinaryBufferCursor());
 
     // Generate binary for the rest of the instructions
@@ -2115,7 +2113,7 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
             self()->getDebug() ? self()->getDebug()->getOpCodeName(&cursorInstruction->getOpCode()) : "(unknown)",
             cursorInstruction->getEstimatedBinaryLength(), self()->getBinaryBufferCursor() - instructionStart);
 
-        if (self()->comp()->target().is64Bit() && (cursorInstruction->getOpCodeValue() == TR::InstOpCode::proc)) {
+        if (comp->target().is64Bit() && (cursorInstruction->getOpCodeValue() == TR::InstOpCode::proc)) {
             // A hack to set the linkage info word
             //
             TR_ASSERT(_returnTypeInfoInstruction->getOpCodeValue() == TR::InstOpCode::DDImm4, "assertion failure");
@@ -2133,10 +2131,8 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
             self()->setColdCodeStart(coldCode);
             self()->setBinaryBufferCursor(coldCode);
 
-            if (self()->comp()->getOption(TR_TraceCG)) {
-                traceMsg(self()->comp(), "%s warmCodeEnd = %p, lastWarmInstruction = %p coldCodeStart = %p\n",
-                    SPLIT_WARM_COLD_STRING, self()->getWarmCodeEnd(), cursorInstruction, coldCode);
-            }
+            logprintf(trace, log, "%s warmCodeEnd = %p, lastWarmInstruction = %p coldCodeStart = %p\n",
+                SPLIT_WARM_COLD_STRING, self()->getWarmCodeEnd(), cursorInstruction, coldCode);
 
             accumulatedErrorBeforeSnippets = getAccumulatedInstructionLengthError();
 
@@ -2172,18 +2168,16 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
     // Place an assumption that gcrPatchPointSymbol reference has been updated
     // with the address of the byte to be patched. Otherwise, fail this compilation
     // and retry without GCR.
-    if (self()->comp()->getOption(TR_EnableGCRPatching) && self()->comp()->getRecompilationInfo()
-        && self()->comp()->getRecompilationInfo()->getJittedBodyInfo()->getUsesGCR()) {
-        void *addrToPatch = self()
-                                ->comp()
-                                ->getSymRefTab()
+    if (comp->getOption(TR_EnableGCRPatching) && comp->getRecompilationInfo()
+        && comp->getRecompilationInfo()->getJittedBodyInfo()->getUsesGCR()) {
+        void *addrToPatch = comp->getSymRefTab()
                                 ->findOrCreateGCRPatchPointSymbolRef()
                                 ->getSymbol()
                                 ->getStaticSymbol()
                                 ->getStaticAddress();
         if (!addrToPatch) {
             TR_ASSERT(false, "Must have updated gcrPatchPointSymbol with the correct address by now\n");
-            self()->comp()->failCompilation<TR::GCRPatchFailure>(
+            comp->failCompilation<TR::GCRPatchFailure>(
                 "Must have updated gcrPatchPointSymbol with the correct address by now");
         }
     }
@@ -2191,11 +2185,9 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
 
     self()->getLinkage()->performPostBinaryEncoding();
 
-    if (self()->comp()->getOption(TR_TraceCG)) {
-        traceMsg(self()->comp(), "</encode>\n");
-    }
+    logprints(trace, log, "</encode>\n");
 
-    if (self()->comp()->getOption(TR_SplitWarmAndColdBlocks)) {
+    if (comp->getOption(TR_SplitWarmAndColdBlocks)) {
         if (snippetsAfterWarm) // snippets will follow the warm code
             setAccumulatedInstructionLengthError(accumulatedErrorBeforeSnippets);
     }
@@ -2204,6 +2196,9 @@ void OMR::X86::CodeGenerator::doBinaryEncoding()
 // different from evaluate in that it returns a clobberable register
 TR::Register *OMR::X86::CodeGenerator::gprClobberEvaluate(TR::Node *node, TR::InstOpCode::Mnemonic movRegRegOpCode)
 {
+    TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
     TR::Register *sourceRegister = self()->evaluate(node);
 
     bool canClobber = true;
@@ -2212,8 +2207,8 @@ TR::Register *OMR::X86::CodeGenerator::gprClobberEvaluate(TR::Node *node, TR::In
     else if (sourceRegister->needsLazyClobbering())
         canClobber = self()->canClobberNodesRegister(node);
 
-    if (self()->comp()->getOption(TR_TraceCG) && sourceRegister->needsLazyClobbering())
-        traceMsg(self()->comp(), "LAZY CLOBBERING: node %s register %s refcount=%d canClobber=%s\n",
+    if (sourceRegister->needsLazyClobbering())
+        logprintf(trace, log, "LAZY CLOBBERING: node %s register %s refcount=%d canClobber=%s\n",
             self()->getDebug()->getName(node), self()->getDebug()->getName(sourceRegister), node->getReferenceCount(),
             canClobber ? "true" : "false");
 
@@ -2222,10 +2217,9 @@ TR::Register *OMR::X86::CodeGenerator::gprClobberEvaluate(TR::Node *node, TR::In
     } else {
         if (node->getOpCode().isLoadConst()) {
             if (debug("traceClobberedConstantRegisters") && node->getRegister()) {
-                trfprintf(self()->comp()->getOutFile(),
-                    "CLOBBERING CONSTANT in %s on " POINTER_PRINTF_FORMAT " in %s\n",
-                    self()->getDebug()->getName(node->getRegister()), node, self()->comp()->signature());
-                trfflush(self()->comp()->getOutFile());
+                log->printf("CLOBBERING CONSTANT in %s on " POINTER_PRINTF_FORMAT " in %s\n",
+                    self()->getDebug()->getName(node->getRegister()), node, comp->signature());
+                log->flush();
             }
         }
 
@@ -2233,18 +2227,16 @@ TR::Register *OMR::X86::CodeGenerator::gprClobberEvaluate(TR::Node *node, TR::In
         generateRegRegInstruction(movRegRegOpCode, node, targetRegister, sourceRegister, self());
 
         if (sourceRegister->containsCollectedReference()) {
-            if (self()->comp()->getOption(TR_TraceCG))
-                traceMsg(self()->comp(), "Setting containsCollectedReference on register %s\n",
-                    self()->getDebug()->getName(targetRegister));
+            logprintf(trace, log, "Setting containsCollectedReference on register %s\n",
+                self()->getDebug()->getName(targetRegister));
             targetRegister->setContainsCollectedReference();
         }
         if (sourceRegister->containsInternalPointer()) {
             TR::AutomaticSymbol *pinningArrayPointer = sourceRegister->getPinningArrayPointer();
-            if (self()->comp()->getOption(TR_TraceCG))
-                traceMsg(self()->comp(),
-                    "Setting containsInternalPointer on register %s and setting pinningArrayPointer "
-                    "to " POINTER_PRINTF_FORMAT "\n",
-                    self()->getDebug()->getName(targetRegister), pinningArrayPointer);
+            logprintf(trace, log,
+                "Setting containsInternalPointer on register %s and setting pinningArrayPointer "
+                "to " POINTER_PRINTF_FORMAT "\n",
+                self()->getDebug()->getName(targetRegister), pinningArrayPointer);
             targetRegister->setContainsInternalPointer();
             targetRegister->setPinningArrayPointer(pinningArrayPointer);
         }
@@ -2606,6 +2598,8 @@ inline intptr_t integerConstNodeValue(TR::Node *node, TR::CodeGenerator *cg)
 bool OMR::X86::CodeGenerator::nodeIsFoldableMemOperand(TR::Node *node, TR::Node *parent,
     TR_RegisterPressureState *state)
 {
+    OMR::Logger *log = self()->comp()->log();
+    bool trace = self()->traceSimulateTreeEvaluation();
     TR_SimulatedNodeState &nodeState = self()->simulatedNodeState(node, state);
     bool result = (node->getOpCode().isLoadVar() || node->getOpCode().isArrayLength())
         && !self()->isCandidateLoad(node, state) && !nodeState.hasRegister();
@@ -2617,8 +2611,8 @@ bool OMR::X86::CodeGenerator::nodeIsFoldableMemOperand(TR::Node *node, TR::Node 
         // only other reference is under a preceeding NULLCHK
         //
         if (parent->getOpCode().isBndCheck() && node->getOpCode().isArrayLength() && node->getFutureUseCount() == 2) {
-            if (self()->traceSimulateTreeEvaluation() && result)
-                traceMsg(self()->comp(), " bndchk/arraylength");
+            if (result)
+                logprints(trace, log, " bndchk/arraylength");
             TR::TreeTop *prevTT = state->_currentTreeTop->getPrevTreeTop();
             if (prevTT) {
                 TR::Node *nullchk = prevTT->getNode();
@@ -2628,9 +2622,10 @@ bool OMR::X86::CodeGenerator::nodeIsFoldableMemOperand(TR::Node *node, TR::Node 
         }
     }
 
-    if (self()->traceSimulateTreeEvaluation() && result)
-        traceMsg(self()->comp(), " %s foldable into %s", self()->getDebug()->getName(node),
+    if (result)
+        logprintf(trace, log, "%s foldable into %s", self()->getDebug()->getName(node),
             self()->getDebug()->getName(parent));
+
     return result;
 }
 
@@ -2662,7 +2657,10 @@ uint8_t OMR::X86::CodeGenerator::nodeResultGPRCount(TR::Node *node, TR_RegisterP
 void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_RegisterPressureState *state,
     TR_RegisterPressureSummary *summary)
 {
-    TR_ASSERT(!self()->comp()->getOption(TR_DisableRegisterPressureSimulation), "assertion failure");
+    TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = self()->traceSimulateTreeEvaluation();
+    TR_ASSERT(!comp->getOption(TR_DisableRegisterPressureSimulation), "assertion failure");
 
     // Memory operand opportunities
     //
@@ -2683,7 +2681,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
         bool clobbersNothing = node->getOpCode().isBooleanCompare() || node->getOpCode().isBndCheck();
         bool tryFoldingLeft = node->getOpCode().isCommutative() || clobbersNothing;
 
-        if (self()->comp()->target().is32Bit()) {
+        if (comp->target().is32Bit()) {
             while (lookForMemrefInChild(left))
                 left = left->getFirstChild();
             while (lookForMemrefInChild(right))
@@ -2723,8 +2721,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
 
         // Go live
         self()->simulateNodeGoingLive(node, state);
-        if (self()->traceSimulateTreeEvaluation())
-            traceMsg(self()->comp(), " memop");
+        logprints(trace, log, " memop");
     } else {
         // Just call inherited logic
         //
@@ -2741,13 +2738,12 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
         TR::Node *secondChild = node->getSecondChild();
 
         bool usesMul = true;
-        if (secondChild->getOpCode().isLoadConst() && (self()->comp()->target().is64Bit() || !nodeType.isInt64())
+        if (secondChild->getOpCode().isLoadConst() && (comp->target().is64Bit() || !nodeType.isInt64())
             && populationCount(integerConstNodeValue(secondChild, self())) <= 2) {
             // Will probably use shifts/adds/etc instead of multiply
             //
             usesMul = false;
-            if (self()->traceSimulateTreeEvaluation())
-                traceMsg(self()->comp(), " nomul");
+            logprints(trace, log, " nomul");
         }
 
         if (usesMul) {
@@ -2760,8 +2756,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
                 candidateDiesHere = true;
 
             if (candidateDiesHere) {
-                if (self()->traceSimulateTreeEvaluation())
-                    traceMsg(self()->comp(), " dieshere");
+                logprints(trace, log, " dieshere");
             } else {
                 summary->spill(TR_eaxSpill, self());
             }
@@ -2769,8 +2764,7 @@ void OMR::X86::CodeGenerator::simulateNodeEvaluation(TR::Node *node, TR_Register
             // Account for the extra result register that mul/div instructions use
             //
             summary->accumulate(state, self(), 1);
-            if (self()->traceSimulateTreeEvaluation())
-                traceMsg(self()->comp(), " mul:g=%d", summary->_gprPressure);
+            logprintf(trace, log, " mul:g=%d", summary->_gprPressure);
         }
     } else if ((opCode.isLeftShift() || opCode.isRightShift()) && !node->getSecondChild()->getOpCode().isLoadConst()
         && !self()->isCandidateLoad(node->getSecondChild(), candidate)) {
@@ -2842,6 +2836,7 @@ static const uint8_t *paddingTableEncoding(TR_X86PaddingTable *paddingTable, uin
 uint8_t *OMR::X86::CodeGenerator::generatePadding(uint8_t *cursor, intptr_t length, TR::Instruction *neighborhood,
     TR_PaddingProperties properties, bool recursive)
 {
+    TR::Compilation *comp = self()->comp();
     const uint8_t *desiredReturnValue = cursor + length;
     const uint8_t sibMask = 0xb8; // 10111000, where 2^n is set if the NOP with size n uses a SIB byte
     if (length <= _paddingTable->_biggestEncoding) {
@@ -2901,7 +2896,7 @@ uint8_t *OMR::X86::CodeGenerator::generatePadding(uint8_t *cursor, intptr_t leng
         }
     }
     // Begin -- Static debug counters to track nop generation
-    if (!recursive && self()->comp()->getOptions()->enableDebugCounters()) {
+    if (!recursive && comp->getOptions()->enableDebugCounters()) {
         if (neighborhood) {
             int32_t blockFrequency = -1; // used as a proxy for dynamic frequency
             for (TR::Instruction *finst = neighborhood; finst; finst = finst->getPrev()) {
@@ -2916,7 +2911,7 @@ uint8_t *OMR::X86::CodeGenerator::generatePadding(uint8_t *cursor, intptr_t leng
                 && (guardNode->isTheVirtualGuardForAGuardedInlinedCall() || guardNode->isHCRGuard()
                     || guardNode->isProfiledGuard() || guardNode->isMethodEnterExitGuard())) {
                 const char *guardKind;
-                TR_VirtualGuard *vg = self()->comp()->findVirtualGuardInfo(neighborhood->getNode());
+                TR_VirtualGuard *vg = comp->findVirtualGuardInfo(neighborhood->getNode());
                 switch (vg->getKind()) {
                     case TR_NoGuard:
                         guardKind = "NoGuard";
@@ -2964,12 +2959,12 @@ uint8_t *OMR::X86::CodeGenerator::generatePadding(uint8_t *cursor, intptr_t leng
                         guardKind = "Unknown";
                         break;
                 }
-                TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "nopCount/%d/%s/%s", blockFrequency,
+                TR::DebugCounter::incStaticDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "nopCount/%d/%s/%s", blockFrequency,
                         neighborhood->description(), guardKind));
                 if (length > 0) {
-                    TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                        TR::DebugCounter::debugCounterName(self()->comp(), "nopInst/%d/%s/%s", blockFrequency,
+                    TR::DebugCounter::incStaticDebugCounter(comp,
+                        TR::DebugCounter::debugCounterName(comp, "nopInst/%d/%s/%s", blockFrequency,
                             neighborhood->description(), guardKind));
 
                     for (TR::Instruction *ninst = neighborhood->getNext(); ninst; ninst = ninst->getNext()) {
@@ -2977,48 +2972,48 @@ uint8_t *OMR::X86::CodeGenerator::generatePadding(uint8_t *cursor, intptr_t leng
                             if (guardNode->isHCRGuard() && ninst->getNode() && ninst->getNode()->isHCRGuard()
                                 && guardNode->getBranchDestination() == ninst->getNode()->getBranchDestination())
                                 continue;
-                            TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                                TR::DebugCounter::debugCounterName(self()->comp(), "vgnopNoPatchReason/%d/vgnop",
+                            TR::DebugCounter::incStaticDebugCounter(comp,
+                                TR::DebugCounter::debugCounterName(comp, "vgnopNoPatchReason/%d/vgnop",
                                     blockFrequency));
                             break;
                         }
-                        if (self()->comp()->isPICSite(ninst)) {
-                            TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                                TR::DebugCounter::debugCounterName(self()->comp(), "vgnopNoPatchReason/%d/staticPIC",
+                        if (comp->isPICSite(ninst)) {
+                            TR::DebugCounter::incStaticDebugCounter(comp,
+                                TR::DebugCounter::debugCounterName(comp, "vgnopNoPatchReason/%d/staticPIC",
                                     blockFrequency));
                             break;
                         }
                         if (ninst->isPatchBarrier(self())) {
                             if (ninst->getOpCodeValue() != TR::InstOpCode::label)
-                                TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                                    TR::DebugCounter::debugCounterName(self()->comp(),
-                                        "vgnopNoPatchReason/%d/patchBarrier", blockFrequency));
+                                TR::DebugCounter::incStaticDebugCounter(comp,
+                                    TR::DebugCounter::debugCounterName(comp, "vgnopNoPatchReason/%d/patchBarrier",
+                                        blockFrequency));
                             else
-                                TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                                    TR::DebugCounter::debugCounterName(self()->comp(),
-                                        "vgnopNoPatchReason/%d/controlFlowMerge", blockFrequency));
+                                TR::DebugCounter::incStaticDebugCounter(comp,
+                                    TR::DebugCounter::debugCounterName(comp, "vgnopNoPatchReason/%d/controlFlowMerge",
+                                        blockFrequency));
                             break;
                         }
                         if (ninst->getEstimatedBinaryLength() > 0) {
-                            TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                                TR::DebugCounter::debugCounterName(self()->comp(), "vgnopNoPatchReason/%d/%s_%s",
-                                    blockFrequency, (guardNode->isHCRGuard() ? "hcr" : "nohcr"), ninst->description()));
+                            TR::DebugCounter::incStaticDebugCounter(comp,
+                                TR::DebugCounter::debugCounterName(comp, "vgnopNoPatchReason/%d/%s_%s", blockFrequency,
+                                    (guardNode->isHCRGuard() ? "hcr" : "nohcr"), ninst->description()));
                         }
                     }
                 }
             } else {
-                TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                    TR::DebugCounter::debugCounterName(self()->comp(), "nopCount/%d/%s", blockFrequency,
+                TR::DebugCounter::incStaticDebugCounter(comp,
+                    TR::DebugCounter::debugCounterName(comp, "nopCount/%d/%s", blockFrequency,
                         neighborhood->description()));
                 if (length > 0)
-                    TR::DebugCounter::incStaticDebugCounter(self()->comp(),
-                        TR::DebugCounter::debugCounterName(self()->comp(), "nopInst/%d/%s", blockFrequency,
+                    TR::DebugCounter::incStaticDebugCounter(comp,
+                        TR::DebugCounter::debugCounterName(comp, "nopInst/%d/%s", blockFrequency,
                             neighborhood->description()));
             }
         } else {
-            TR::DebugCounter::incStaticDebugCounter(self()->comp(), "nopCount/-1/unknown");
+            TR::DebugCounter::incStaticDebugCounter(comp, "nopCount/-1/unknown");
             if (length > 0)
-                TR::DebugCounter::incStaticDebugCounter(self()->comp(), "nopInst/-1/unknown");
+                TR::DebugCounter::incStaticDebugCounter(comp, "nopInst/-1/unknown");
         }
     }
     // End -- Static debug counters to track nop generation
@@ -3108,13 +3103,10 @@ void OMR::X86::CodeGenerator::removeUnavailableRegisters(TR::RegisterCandidate *
     }
 }
 
-void OMR::X86::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
+void OMR::X86::CodeGenerator::dumpDataSnippets(OMR::Logger *log)
 {
-    if (outFile == NULL)
-        return;
-
     for (auto iterator = _dataSnippetList.begin(); iterator != _dataSnippetList.end(); ++iterator) {
-        (*iterator)->print(outFile, self()->getDebug());
+        (*iterator)->print(log, self()->getDebug());
     }
 }
 
@@ -3122,18 +3114,15 @@ void OMR::X86::CodeGenerator::dumpDataSnippets(TR::FILE *outFile)
 // Dump the instruction before FP register assignment to
 // reveal the virtual registers prior to stack register assignment.
 //
-void OMR::X86::CodeGenerator::dumpPreFPRegisterAssignment(TR::Instruction *instructionCursor)
+void OMR::X86::CodeGenerator::dumpPreFPRegisterAssignment(OMR::Logger *log, TR::Instruction *instructionCursor)
 {
-    if (self()->comp()->getOutFile() == NULL)
-        return;
-
     if (instructionCursor->totalReferencedFPRegisters(self()) > 0) {
-        trfprintf(self()->comp()->getOutFile(), "\n<< Pre-FPR assignment for instruction: %p", instructionCursor);
-        self()->getDebug()->print(self()->comp()->getOutFile(), instructionCursor);
-        self()->getDebug()->printReferencedRegisterInfo(self()->comp()->getOutFile(), instructionCursor);
+        log->printf("\n<< Pre-FPR assignment for instruction: %p", instructionCursor);
+        self()->getDebug()->print(log, instructionCursor);
+        self()->getDebug()->printReferencedRegisterInfo(log, instructionCursor);
 
         if (debug("dumpFPRegStatus")) {
-            self()->machine()->printFPRegisterStatus(self()->fe(), self()->comp()->getOutFile());
+            self()->machine()->printFPRegisterStatus(log, self()->fe());
         }
     }
 }
@@ -3141,15 +3130,12 @@ void OMR::X86::CodeGenerator::dumpPreFPRegisterAssignment(TR::Instruction *instr
 // Dump the current instruction with the FP registers assigned and any new
 // instructions that may have been added before it (such as FXCH).
 //
-void OMR::X86::CodeGenerator::dumpPostFPRegisterAssignment(TR::Instruction *instructionCursor,
+void OMR::X86::CodeGenerator::dumpPostFPRegisterAssignment(OMR::Logger *log, TR::Instruction *instructionCursor,
     TR::Instruction *origPrevInstruction)
 {
-    if (self()->comp()->getOutFile() == NULL)
-        return;
-
     if (instructionCursor->totalReferencedFPRegisters(self()) > 0) {
         TR::Instruction *prevInstruction = instructionCursor->getPrev();
-        trfprintf(self()->comp()->getOutFile(), "\n>> Post-FPR assignment for instruction: %p", instructionCursor);
+        log->printf("\n>> Post-FPR assignment for instruction: %p", instructionCursor);
 
         if (prevInstruction == origPrevInstruction)
             prevInstruction = NULL;
@@ -3161,32 +3147,28 @@ void OMR::X86::CodeGenerator::dumpPostFPRegisterAssignment(TR::Instruction *inst
         }
 
         while (prevInstruction && (prevInstruction != instructionCursor)) {
-            self()->getDebug()->print(self()->comp()->getOutFile(), prevInstruction);
+            self()->getDebug()->print(log, prevInstruction);
             prevInstruction = prevInstruction->getNext();
         }
 
-        self()->getDebug()->print(self()->comp()->getOutFile(), instructionCursor);
-        self()->getDebug()->printReferencedRegisterInfo(self()->comp()->getOutFile(), instructionCursor);
+        self()->getDebug()->print(log, instructionCursor);
+        self()->getDebug()->printReferencedRegisterInfo(log, instructionCursor);
 
         if (debug("dumpFPRegStatus")) {
-            self()->machine()->printFPRegisterStatus(self()->fe(), self()->comp()->getOutFile());
+            self()->machine()->printFPRegisterStatus(log, self()->fe());
         }
     }
 }
 
-void OMR::X86::CodeGenerator::dumpPreGPRegisterAssignment(TR::Instruction *instructionCursor)
+void OMR::X86::CodeGenerator::dumpPreGPRegisterAssignment(OMR::Logger *log, TR::Instruction *instructionCursor)
 {
-    if (self()->comp()->getOutFile() == NULL)
-        return;
-
     if (instructionCursor->totalReferencedGPRegisters(self()) > 0) {
-        trfprintf(self()->comp()->getOutFile(), "\n<< Pre-GPR assignment for instruction: %p", instructionCursor);
-        self()->getDebug()->print(self()->comp()->getOutFile(), instructionCursor);
-        self()->getDebug()->printReferencedRegisterInfo(self()->comp()->getOutFile(), instructionCursor);
+        log->printf("\n<< Pre-GPR assignment for instruction: %p", instructionCursor);
+        self()->getDebug()->print(log, instructionCursor);
+        self()->getDebug()->printReferencedRegisterInfo(log, instructionCursor);
 
         if (debug("dumpGPRegStatus")) {
-            self()->machine()->printGPRegisterStatus(self()->fe(), self()->machine()->registerFile(),
-                self()->comp()->getOutFile());
+            self()->machine()->printGPRegisterStatus(log, self()->fe(), self()->machine()->registerFile());
         }
     }
 }
@@ -3194,27 +3176,23 @@ void OMR::X86::CodeGenerator::dumpPreGPRegisterAssignment(TR::Instruction *instr
 // Dump the current instruction with the GP registers assigned and any new
 // instructions that may have been added after it.
 //
-void OMR::X86::CodeGenerator::dumpPostGPRegisterAssignment(TR::Instruction *instructionCursor,
+void OMR::X86::CodeGenerator::dumpPostGPRegisterAssignment(OMR::Logger *log, TR::Instruction *instructionCursor,
     TR::Instruction *origNextInstruction)
 {
-    if (self()->comp()->getOutFile() == NULL)
-        return;
-
     if (instructionCursor->totalReferencedGPRegisters(self()) > 0) {
-        trfprintf(self()->comp()->getOutFile(), "\n>> Post-GPR assignment for instruction: %p", instructionCursor);
+        log->printf("\n>> Post-GPR assignment for instruction: %p", instructionCursor);
 
         TR::Instruction *nextInstruction = instructionCursor;
 
         while (nextInstruction && (nextInstruction != origNextInstruction)) {
-            self()->getDebug()->print(self()->comp()->getOutFile(), nextInstruction);
+            self()->getDebug()->print(log, nextInstruction);
             nextInstruction = nextInstruction->getNext();
         }
 
-        self()->getDebug()->printReferencedRegisterInfo(self()->comp()->getOutFile(), instructionCursor);
+        self()->getDebug()->printReferencedRegisterInfo(log, instructionCursor);
 
         if (debug("dumpGPRegStatus")) {
-            self()->machine()->printGPRegisterStatus(self()->fe(), self()->machine()->registerFile(),
-                self()->comp()->getOutFile());
+            self()->machine()->printGPRegisterStatus(log, self()->fe(), self()->machine()->registerFile());
         }
     }
 }
@@ -3292,8 +3270,9 @@ void OMR::X86::CodeGenerator::moveOutOfLineInstructionsToWarmCode()
     if (!self()->getLastWarmInstruction())
         return;
 
-    if (self()->comp()->getOption(TR_TraceCG))
-        traceMsg(self()->comp(), "Moving OutOfLine instructions to after %p\n", self()->getLastWarmInstruction());
+    TR::Compilation *comp = self()->comp();
+    logprintf(comp->getOption(TR_TraceCG), comp->log(), "Moving OutOfLine instructions to after %p\n",
+        self()->getLastWarmInstruction());
 
     auto oiIterator = self()->getOutlinedInstructionsList().begin();
 

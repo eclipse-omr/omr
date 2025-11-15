@@ -32,9 +32,13 @@
 class TR_BitVector;
 class TR_BitVectorCursor;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class Compilation;
-}
+} // namespace TR
 
 #if defined(BITVECTOR_64BIT)
 typedef uint64_t chunk_t;
@@ -210,7 +214,7 @@ public:
 
     int32_t numNonZeroChunks() { return _value ? 1 : 0; }
 
-    void print(TR::Compilation *comp, TR::FILE *file = NULL);
+    void print(OMR::Logger *log, TR::Compilation *comp);
 
 private:
     bool _value;
@@ -870,7 +874,7 @@ public:
 
     // Print the bit vector to the log file
     //
-    void print(TR::Compilation *comp, TR::FILE *file = NULL);
+    void print(OMR::Logger *log, TR::Compilation *comp);
 
     // Find the number of used chunks
     //

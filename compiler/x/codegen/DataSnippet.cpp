@@ -31,6 +31,7 @@
 #include "env/jittypes.h"
 #include "il/LabelSymbol.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "codegen/Relocation.hpp"
 
 namespace TR {
@@ -95,37 +96,30 @@ uint8_t *TR::X86DataSnippet::emitSnippetBody()
     return cursor;
 }
 
-void TR::X86DataSnippet::printValue(TR::FILE *pOutFile, TR_Debug *debug)
+void TR::X86DataSnippet::printValue(OMR::Logger *log, TR_Debug *debug)
 {
-    if (pOutFile == NULL)
-        return;
-
     switch (getDataSize()) {
         case 2:
-            trfprintf(pOutFile, "0x%04x | %d", 0xffff & (int32_t)getData<int16_t>(), (int32_t)getData<int16_t>());
+            log->printf("0x%04x | %d", 0xffff & (int32_t)getData<int16_t>(), (int32_t)getData<int16_t>());
             break;
         case 4:
-            trfprintf(pOutFile, "0x%08x | %d | float %g", getData<int32_t>(), getData<int32_t>(), getData<float>());
+            log->printf("0x%08x | %d | float %g", getData<int32_t>(), getData<int32_t>(), getData<float>());
             break;
         case 8:
-            trfprintf(pOutFile, "0x%016llx | %lld | double %g", getData<int64_t>(), getData<int64_t>(),
-                getData<double>());
+            log->printf("0x%016llx | %lld | double %g", getData<int64_t>(), getData<int64_t>(), getData<double>());
             break;
         default:
-            trfprintf(pOutFile, "VECTOR VALUE");
+            log->prints("VECTOR VALUE");
             break;
     }
 }
 
-void TR::X86DataSnippet::print(TR::FILE *pOutFile, TR_Debug *debug)
+void TR::X86DataSnippet::print(OMR::Logger *log, TR_Debug *debug)
 {
-    if (pOutFile == NULL)
-        return;
-
     uint8_t *bufferPos = getSnippetLabel()->getCodeLocation();
 
-    debug->printSnippetLabel(pOutFile, getSnippetLabel(), bufferPos, debug->getName(this));
-    debug->printPrefix(pOutFile, NULL, bufferPos, static_cast<uint8_t>(getDataSize()));
+    debug->printSnippetLabel(log, getSnippetLabel(), bufferPos, debug->getName(this));
+    debug->printPrefix(log, NULL, bufferPos, static_cast<uint8_t>(getDataSize()));
 
     const char *toString;
     switch (getDataSize()) {
@@ -142,12 +136,12 @@ void TR::X86DataSnippet::print(TR::FILE *pOutFile, TR_Debug *debug)
             toString = dbString();
             break;
     }
-    trfprintf(pOutFile, "%s \t%s", toString, hexPrefixString());
+    log->printf("%s \t%s", toString, hexPrefixString());
 
     for (int32_t i = static_cast<int32_t>(getDataSize()) - 1; i >= 0; i--) {
-        trfprintf(pOutFile, "%02x", bufferPos[i]);
+        log->printf("%02x", bufferPos[i]);
     }
 
-    trfprintf(pOutFile, "%s\t%s ", hexSuffixString(), commentString());
-    printValue(pOutFile, debug);
+    log->printf("%s\t%s ", hexSuffixString(), commentString());
+    printValue(log, debug);
 }

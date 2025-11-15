@@ -44,6 +44,10 @@ class SymbolReference;
 class TreeTop;
 } // namespace TR
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 
 class SwitchAnalyzer : public TR::Optimization {
@@ -90,7 +94,7 @@ public:
         {}
 
         bool operator>(SwitchInfo &other);
-        void print(TR_FrontEnd *, TR::FILE *pOutFile, int32_t indent);
+        void print(OMR::Logger *log, TR_FrontEnd *, int32_t indent);
 
         NodeKind _kind;
         float _freq;
@@ -105,7 +109,7 @@ public:
         };
     };
 
-    void print(TR_FrontEnd *, TR::FILE *pOutFile);
+    void print(OMR::Logger *log, TR_FrontEnd *);
     void chainInsert(TR_LinkHead<SwitchInfo> *chain, SwitchInfo *info);
     void denseInsert(SwitchInfo *dense, SwitchInfo *info);
     void denseMerge(SwitchInfo *to, SwitchInfo *from);
@@ -137,7 +141,7 @@ public:
 
     bool keepAsUnique(SwitchInfo *info, int32_t itemNumber);
 
-    void printInfo(TR_FrontEnd *, TR::FILE *pOutFile, TR_LinkHead<SwitchInfo> *head);
+    void printInfo(OMR::Logger *log, TR_FrontEnd *, TR_LinkHead<SwitchInfo> *head);
 
 private:
     void fixUpUnsigned(TR_LinkHead<SwitchInfo> *chain);

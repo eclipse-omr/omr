@@ -39,6 +39,7 @@
 #include "optimizer/Optimizations.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/Optimizer.hpp"
+#include "ras/Logger.hpp"
 
 TR_CatchBlockRemover::TR_CatchBlockRemover(TR::OptimizationManager *manager)
     : TR::Optimization(manager)
@@ -46,15 +47,14 @@ TR_CatchBlockRemover::TR_CatchBlockRemover(TR::OptimizationManager *manager)
 
 int32_t TR_CatchBlockRemover::perform()
 {
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     if (cfg == NULL) {
-        if (trace())
-            traceMsg(comp(), "Can't do Catch Block Removal, no CFG\n");
+        logprints(trace(), log, "Can't do Catch Block Removal, no CFG\n");
         return 0;
     }
 
-    if (trace())
-        traceMsg(comp(), "Starting Catch Block Removal\n");
+    logprints(trace(), log, "Starting Catch Block Removal\n");
 
     bool thereMayBeRemovableCatchBlocks = false;
 
@@ -149,8 +149,7 @@ int32_t TR_CatchBlockRemover::perform()
 
     } // scope of the stack memory region
 
-    if (trace())
-        traceMsg(comp(), "\nEnding Catch Block Removal\n");
+    logprints(trace(), log, "\nEnding Catch Block Removal\n");
 
     return 1; // actual cost
 }

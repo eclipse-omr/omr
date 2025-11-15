@@ -26,6 +26,7 @@
 #include "ilgen/IlGen.hpp"
 #include "ilgen/IlGeneratorMethodDetails.hpp"
 #include "env/IO.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Compilation;
@@ -41,11 +42,11 @@ TR_IlGenerator *CompileIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *me
     return details().getIlGenerator(methodSymbol, fe, comp, symRefTab, false, NULL);
 }
 
-void CompileIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
+void CompileIlGenRequest::print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix)
 {
-    trfprintf(file, "{");
-    details().print(fe, file);
-    trfprintf(file, "}%s", suffix);
+    log->printc('{');
+    details().print(log, fe);
+    log->printf("}%s", suffix);
 }
 
 TR_IlGenerator *InliningIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
@@ -56,11 +57,11 @@ TR_IlGenerator *InliningIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *m
     return ilgen;
 }
 
-void InliningIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
+void InliningIlGenRequest::print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix)
 {
-    trfprintf(file, "{Inlining ");
-    details().print(fe, file);
-    trfprintf(file, "}%s", suffix);
+    log->prints("{Inlining ");
+    details().print(log, fe);
+    log->printf("}%s", suffix);
 }
 
 TR_IlGenerator *PartialInliningIlGenRequest::getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe,
@@ -71,11 +72,11 @@ TR_IlGenerator *PartialInliningIlGenRequest::getIlGenerator(TR::ResolvedMethodSy
     return ilgen;
 }
 
-void PartialInliningIlGenRequest::print(TR_FrontEnd *fe, TR::FILE *file, const char *suffix)
+void PartialInliningIlGenRequest::print(OMR::Logger *log, TR_FrontEnd *fe, const char *suffix)
 {
-    trfprintf(file, "{Partial inlining ");
-    details().print(fe, file);
-    trfprintf(file, "}%s", suffix);
+    log->prints("{Partial inlining ");
+    details().print(log, fe);
+    log->printf("}%s", suffix);
 }
 
 } // namespace TR

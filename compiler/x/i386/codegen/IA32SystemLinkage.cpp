@@ -43,6 +43,7 @@
 #include "il/Symbol.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "codegen/X86Instruction.hpp"
 #include "codegen/InstOpCode.hpp"
 
@@ -203,8 +204,7 @@ int32_t TR::IA32SystemLinkage::layoutParm(TR::Node *parmNode, int32_t &dataCurso
 {
     layoutResult.abstract |= TR::parmLayoutResult::ON_STACK;
     int32_t align = layoutTypeOnStack(parmNode->getDataType(), dataCursor, layoutResult);
-    if (comp()->getOption(TR_TraceCG))
-        traceMsg(comp(), "layout param node %p on stack\n", parmNode);
+    logprintf(comp()->getOption(TR_TraceCG), comp()->log(), "layout param node %p on stack\n", parmNode);
     return align;
 }
 
@@ -213,8 +213,7 @@ int32_t TR::IA32SystemLinkage::layoutParm(TR::ParameterSymbol *parmSymbol, int32
 {
     layoutResult.abstract |= TR::parmLayoutResult::ON_STACK;
     int32_t align = layoutTypeOnStack(parmSymbol->getDataType(), dataCursor, layoutResult);
-    if (comp()->getOption(TR_TraceCG))
-        traceMsg(comp(), "layout param symbol %p on stack\n", parmSymbol);
+    logprintf(comp()->getOption(TR_TraceCG), comp()->log(), "layout param symbol %p on stack\n", parmSymbol);
     return align;
 }
 
@@ -231,9 +230,8 @@ void TR::IA32SystemLinkage::setUpStackSizeForCallNode(TR::Node *node)
 
     if (sizeOfOutGoingArgs > cg()->getLargestOutgoingArgSize()) {
         cg()->setLargestOutgoingArgSize(sizeOfOutGoingArgs);
-        if (comp()->getOption(TR_TraceCG))
-            traceMsg(comp(), "setUpStackSizeForCallNode setLargestOutgoingArgSize %d(for call node %p)\n",
-                sizeOfOutGoingArgs, node);
+        logprintf(comp()->getOption(TR_TraceCG), comp()->log(),
+            "setUpStackSizeForCallNode setLargestOutgoingArgSize %d(for call node %p)\n", sizeOfOutGoingArgs, node);
     }
 }
 

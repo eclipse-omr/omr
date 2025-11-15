@@ -69,7 +69,8 @@ class SimpleRegex;
 
 namespace OMR {
 class Compilation;
-}
+class Logger;
+} // namespace OMR
 
 namespace TR {
 class Options;
@@ -467,8 +468,8 @@ enum TR_CompilationOptions {
     // Available                                             = 0x80000000 + 11,
 
     // Option word 12
-    // Available                                             = 0x00000020 + 12,
-    // Available                                             = 0x00000040 + 12,
+    TR_ForceCStdIOForLoggers                                 = 0x00000020 + 12,
+    TR_ForceTRIOForLoggers                                   = 0x00000040 + 12,
     TR_DisablePartialInlining                                = 0x00000080 + 12,
     TR_AssumeStartupPhaseUntilToldNotTo                      = 0x00000100 + 12,
     // Available                                             = 0x00000200 + 12,
@@ -510,10 +511,10 @@ enum TR_CompilationOptions {
     // Available                                             = 0x00010000 + 13,
     // Available                                             = 0x00020000 + 13,
     TR_EnableMonitorCacheLookup                              = 0x00040000 + 13,
-    // Available                                             = 0x00080000 + 13,
-    // Available                                             = 0x00100000 + 13,
-    // Available                                             = 0x00200000 + 13,
-    // Available                                             = 0x00400000 + 13,
+    TR_TraceTreeVerification                                 = 0x00080000 + 13,
+    TR_TraceNodeRefCountVerification                         = 0x00100000 + 13,
+    TR_TraceCFGVerification                                  = 0x00200000 + 13,
+    TR_TraceBlockVerification                                = 0x00400000 + 13,
     // Available                                             = 0x00800000 + 13,
     TR_PaintAllocatedFrameSlotsDead                          = 0x01000000 + 13, // x86 Only
     TR_PaintAllocatedFrameSlotsFauxObject                    = 0x02000000 + 13, // x86 Only
@@ -948,7 +949,7 @@ enum TR_CompilationOptions {
     TR_InlineVeryLargeCompiledMethods                        = 0x00000040 + 29,
     // Available                                             = 0x00000080 + 29,
     TR_UseOldHCRGuardAOTRelocations                          = 0x00000100 + 29,
-    // Available                                             = 0x00000200 + 29,
+    TR_TraceBlockIteration                                   = 0x00000200 + 29,
     TR_DisableSupportForCpuSpentInCompilation                = 0x00000400 + 29,
     TR_DisableSwitchAwayFromProfilingForHotAndVeryhot        = 0x00000800 + 29,
     TR_UseLowerCountsForNonSCCMethodsDuringStartup           = 0x00001000 + 29,
@@ -1402,173 +1403,7 @@ public:
 
     void setCodeCacheKind(TR::CodeCacheKind kind) { _codeCacheKind = kind; }
 
-    void init()
-    {
-        _optionSets = NULL;
-        _postRestoreOptionSets = NULL;
-        _startOptions = NULL;
-        _envOptions = NULL;
-        _logFileName = NULL;
-        _suffixLogsFormat = NULL;
-        _logFile = NULL;
-        _optFileName = NULL;
-        _customStrategy = NULL;
-        _customStrategySize = 0;
-        _optLevel = 0;
-        _initialOptLevel = 0;
-        _countString = NULL;
-        _initialCount = 0;
-        _initialBCount = 0;
-        _initialMILCount = 0;
-        _initialColdRunCount = 0;
-        _initialColdRunBCount = 0;
-        _maxSpreadCountLoopless = 0;
-        _maxSpreadCountLoopy = 0;
-        _GCRCount = 0;
-        _GCRDecCount = 0;
-        _GCRResetCount = 0;
-        _firstOptIndex = 0;
-        _lastOptIndex = 0;
-        _lastOptSubIndex = 0;
-        _lastSearchCount = 0;
-        _lastIpaOptTransformationIndex = 0;
-        _firstOptTransformationIndex = 0;
-        _lastOptTransformationIndex = 0;
-        _largeNumberOfLoops = 0;
-        _stackPCDumpNumberOfBuffers = 0;
-        _stackPCDumpNumberOfFrames = 0;
-        _tracingOptimization = false;
-        _delayCompileWithCPUBurn = 0;
-        _disabledOptTransformations = NULL;
-        _disabledInlineSites = NULL;
-        _disabledOpts = NULL;
-        _optsToTrace = NULL;
-        _optsToDumpTrees = NULL;
-        _dontInline = NULL;
-        _onlyInline = NULL;
-        _tryToInline = NULL;
-        _slipTrap = NULL;
-        _lockReserveClass = NULL;
-        _breakOnOpts = NULL;
-        _breakOnCreate = NULL;
-        _debugOnCreate = NULL;
-        _breakOnThrow = NULL;
-        _breakOnPrint = NULL;
-        _enabledStaticCounterNames = NULL;
-        _enabledDynamicCounterNames = NULL;
-        _counterHistogramNames = NULL;
-        _verboseOptTransformationsRegex = NULL;
-        _packedTest = NULL;
-        _memUsage = NULL;
-        _classesWithFolableFinalFields = NULL;
-        _disabledIdiomPatterns = NULL;
-        _suppressEA = NULL;
-        _dontFoldStaticFinalFields = NULL;
-        _dontCompile = NULL;
-        _gcCardSize = 0;
-        _heapBase = 0;
-        _heapTop = 0;
-        _heapAddressToCardAddressShift = 0;
-        _heapBaseForBarrierRange0 = 0;
-        _heapSizeForBarrierRange0 = 0;
-        _activeCardTableBase = 0;
-        _isVariableHeapBaseForBarrierRange0 = false;
-        _isVariableHeapSizeForBarrierRange0 = false;
-        _isVariableActiveCardTableBase = false;
-        _osVersionString = NULL;
-        _allowRecompilation = false;
-        _anOptionSetContainsACountValue = false;
-        _anOptionSetContainsADltOptLevel = false;
-        _numInterfaceCallCacheSlots = 0;
-        _numInterfaceCallStaticSlots = 0;
-        _storeSinkingLastOpt = 0;
-        _test390StackBuffer = 0;
-        _test390LitPoolBuffer = 0;
-        _addressToEnumerate = 0;
-        _debugEnableFlags = 0;
-        _optLevelDowngraded = false;
-        _compileExcludedmethods = false;
-        _maxUnloadedAddressRanges = 0;
-        _maxStaticPICSlots = 0;
-        _hotMaxStaticPICSlots = 0;
-        _newAotrtDebugLevel = 0;
-        _disableDLTBytecodeIndex = -1;
-        _enableDLTBytecodeIndex = -1;
-        _dltOptLevel = -1;
-        _profilingCount = 0;
-        _profilingFrequency = 0;
-        _counterBucketGranularity = 0;
-        _minCounterFidelity = 0;
-        _debugCounterWarmupSeconds = 0;
-        _insertDebuggingCounters = 0;
-        _inlineCntrCalleeTooBigBucketSize = 0;
-        _inlineCntrColdAndNotTinyBucketSize = 0;
-        _inlineCntrWarmCalleeTooBigBucketSize = 0;
-        _inlineCntrRanOutOfBudgetBucketSize = 0;
-        _inlineCntrCalleeTooDeepBucketSize = 0;
-        _inlineCntrWarmCallerHasTooManyNodesBucketSize = 0;
-        _inlineCntrWarmCalleeHasTooManyNodesBucketSize = 0;
-        _inlineCntrDepthExceededBucketSize = 0;
-        _inlineCntrAllBucketSize = 0;
-        _maxInlinedCalls = 0;
-        _dumbInlinerBytecodeSizeMaxCutoff = 0;
-        _dumbInlinerBytecodeSizeMinCutoff = 0;
-        _dumbInlinerBytecodeSizeCutoff = 0;
-        _dumbInlinerBytecodeSizeDivisor = 0;
-        _trivialInlinerMaxSize = 0;
-        _inlinerArgumentHeuristicFractionUpToWarm = 0;
-        _inlinerArgumentHeuristicFractionBeyondWarm = 0;
-        _inlinerVeryColdBorderFrequencyAtCold = 0;
-        _inlinerBorderFrequency = 0;
-        _inlinerColdBorderFrequency = 0;
-        _inlinerVeryColdBorderFrequency = 0;
-        _inlinerCGBorderFrequency = 0;
-        _inlinerCGColdBorderFrequency = 0;
-        _inlinerCGVeryColdBorderFrequency = 0;
-        _alwaysWorthInliningThreshold = 0;
-        _serverInlinerBorderFrequency = 0;
-        _serverInlinerVeryColdBorderFrequency = 0;
-        _initialSCount = 0;
-        _enableSCHintFlags = 0;
-        _insertGCRTrees = false;
-        _maxLimitedGRACandidates = 0;
-        _maxLimitedGRARegs = 0;
-        _enableGPU = 0;
-        _isAOTCompile = false;
-        _jProfilingMethodRecompThreshold = 0;
-        _jProfilingLoopRecompThreshold = 0;
-        _blockShufflingSequence = NULL;
-        _randomSeed = 0;
-        _logListForOtherCompThreads = NULL;
-        _induceOSR = NULL;
-        _bigCalleeThreshold = 0;
-        _bigCalleeThresholdForColdCallsAtWarm = 0;
-        _bigCalleeFreqCutoffAtWarm = 0;
-        _bigCalleeHotOptThreshold = 0;
-        _bigCalleeThresholdForColdCallsAtHot = 0;
-        _bigCalleeFreqCutoffAtHot = 0;
-        _bigCalleeScorchingOptThreshold = 0;
-        _inlinerVeryLargeCompiledMethodThreshold = 0;
-        _inlinerVeryLargeCompiledMethodFaninThreshold = 0;
-        _largeCompiledMethodExemptionFreqCutoff = 0;
-        _maxSzForVPInliningWarm = 0;
-        _loopyAsyncCheckInsertionMaxEntryFreq = 0;
-        _objectFileName = 0;
-        _edoRecompSizeThreshold = 0;
-        _edoRecompSizeThresholdInStartupMode = 0;
-        _catchBlockCounterThreshold = 0;
-        _arraycopyRepMovsByteArrayThreshold = 64;
-        _arraycopyRepMovsCharArrayThreshold = 64;
-        _arraycopyRepMovsIntArrayThreshold = 128;
-        _arraycopyRepMovsLongArrayThreshold = 128;
-        _arraycopyRepMovsReferenceArrayThreshold = 128;
-        _codeCacheKind = TR::CodeCacheKind::DEFAULT_CC;
-        _transientClassRegex = NULL;
-
-        memset(_options, 0, sizeof(_options));
-        memset(_disabledOptimizations, false, sizeof(_disabledOptimizations));
-        memset(_traceOptimizations, false, sizeof(_traceOptimizations));
-    }
+    void init();
 
     Options() { OMR::Options::init(); }
 
@@ -1621,11 +1456,36 @@ public:
 
     static bool useCompressedPointers();
 
+    /**
+     * @brief
+     *    Returns the default OMR::Logger object.  If this function is not overridden
+     *    by a consuming project, the default logger is a OMR::NullLogger.
+     */
+    static OMR::Logger *getDefaultLogger();
+
     TR::FILE *getLogFile() { return _logFile; }
 
     void setLogFile(TR::FILE *f) { _logFile = f; }
 
+    OMR::Logger *getLogger() { return _logger; }
+
+    void setLogger(OMR::Logger *log) { _logger = log; }
+
     char *getLogFileName() { return _logFileName; }
+
+    /**
+     * @brief Creates a \c OMR::Logger object for this compilation that wraps
+     *    around the log file.  The default logger is a \c OMR::CStdIOStreamLogger.
+     *
+     * @details
+     *    This function may be specialized by downstream projects to provide their
+     *    own choice of \c OMR::Logger.
+     *
+     * @param[in] file : A \c TR::FILE handle to the log file
+     *
+     * @return : a \c OMR::Logger object
+     */
+    OMR::Logger *createLoggerForLogFile(TR::FILE *file);
 
     char *getBlockShufflingSequence() { return _blockShufflingSequence; }
 
@@ -2180,7 +2040,7 @@ public:
 
     static int32_t _trampolineSpacePercentage;
 
-    static int32_t _traceFileLength;
+    static int32_t _traceFileLengthInMiB;
 
     static size_t _scratchSpaceLimit;
     static size_t _scratchSpaceLowerBound;
@@ -2411,8 +2271,8 @@ private:
     static void closeLogsForOtherCompilationThreads(TR_FrontEnd *fe);
 
 protected:
-    void openLogFile(int32_t idSuffix = -1);
-    static void closeLogFile(TR_FrontEnd *fe, TR::FILE *file);
+    void openLogFileCreateLogger(int32_t idSuffix = -1);
+    static void closeLogFile(TR_FrontEnd *fe, TR::FILE *file, OMR::Logger *log);
 
 private:
     // Standard option processing methods
@@ -2639,6 +2499,7 @@ protected:
     char *_logFileName;
     char *_suffixLogsFormat;
     TR::FILE *_logFile;
+    OMR::Logger *_logger;
 
     char *_optFileName;
     int32_t *_customStrategy; // Actually array of TR_OptimizerImpl::Optimizations numbers read from optFileName
@@ -2861,16 +2722,15 @@ class TR_MCTLogs {
 public:
     TR_ALLOC(TR_Memory::Options)
 
-    TR_MCTLogs(int32_t compThreadID, TR::Options *options)
-        : _next(NULL)
-        , _compThreadID(compThreadID)
-        , _options(options)
-        , _logFile(NULL)
-    {}
+    TR_MCTLogs(int32_t compThreadID, TR::Options *options);
 
     TR::FILE *getLogFile() const { return _logFile; }
 
     void setLogFile(TR::FILE *f) { _logFile = f; }
+
+    OMR::Logger *getLogger() const { return _logger; }
+
+    void setLogger(OMR::Logger *log) { _logger = log; }
 
     TR_MCTLogs *next() const { return _next; }
 
@@ -2883,6 +2743,7 @@ public:
 private:
     TR_MCTLogs *_next; ///< logs are linked
     TR::FILE *_logFile; ///< file descriptor for this log; comp thread will create these
+    OMR::Logger *_logger; ///< Logger object for this log
     TR::Options *_options; ///< pointer back to the TR::Options obj that contains this list
     int32_t _compThreadID; ///< the ID of the compilation thread that can use this log
 

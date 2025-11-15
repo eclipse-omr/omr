@@ -53,6 +53,7 @@
 #include "p/codegen/PPCInstruction.hpp"
 #include "p/codegen/PPCOpsDefines.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class SymbolReference;
@@ -770,8 +771,8 @@ void OMR::Power::RegisterDependencyGroup::assignRegisters(TR::Instruction *curre
                 // this happens when the register was first spilled in main line path then was reverse spilled
                 // and assigned to a real register in OOL path. We protected the backing store when doing
                 // the reverse spill so we could re-spill to the same slot now
-                if (comp->getOption(TR_TraceCG))
-                    traceMsg(comp, "\nOOL: Found register spilled in main line and re-assigned inside OOL");
+                logprints(comp->getOption(TR_TraceCG), comp->log(),
+                    "\nOOL: Found register spilled in main line and re-assigned inside OOL");
                 TR::Node *currentNode = currentInstruction->getNode();
                 TR::RealRegister *assignedReg = toRealRegister(virtReg->getAssignedRegister());
                 TR::MemoryReference *tempMR = TR::MemoryReference::createWithSymRef(cg, currentNode,

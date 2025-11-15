@@ -48,6 +48,7 @@
 #include "il/TreeTop_inlines.hpp"
 #include "infra/Annotations.hpp"
 #include "infra/Bit.hpp"
+#include "ras/Logger.hpp"
 
 TR::Register *OMR::ARM::TreeEvaluator::BadILOpEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
@@ -2497,13 +2498,14 @@ TR::Instruction *armLoadConstant(TR::Node *node, int32_t value, TR::Register *tr
     TR::Compilation *comp = cg->comp();
 
     if (comp->getOption(TR_TraceCG)) {
-        traceMsg(comp, "In armLoadConstant with\n");
-        traceMsg(comp, "\tvalue = %d\n", value);
-        traceMsg(comp, "\tnotBits = %d\n", notBits);
-        traceMsg(comp, "\tbitTrailing = %d\n", bitTrailing);
-        traceMsg(comp, "\tnotTrailing = %d\n", notTrailing);
-        traceMsg(comp, "\tbase = %d\n", base);
-        traceMsg(comp, "\tnotBase = %d\n", notBase);
+        OMR::Logger *log = comp->log();
+        log->prints("In armLoadConstant with\n");
+        log->printf("\tvalue = %d\n", value);
+        log->printf("\tnotBits = %d\n", notBits);
+        log->printf("\tbitTrailing = %d\n", bitTrailing);
+        log->printf("\tnotTrailing = %d\n", notTrailing);
+        log->printf("\tbase = %d\n", base);
+        log->printf("\tnotBase = %d\n", notBase);
     }
 
     TR::Instruction *insertingInstructions = cursor;
@@ -3332,7 +3334,6 @@ TR::Register *OMR::ARM::TreeEvaluator::arraycopyEvaluator(TR::Node *node, TR::Co
     TR::Register *srcObjReg = NULL, *dstObjReg = NULL, *srcAddrReg, *dstAddrReg, *lengthReg;
     bool stopUsingCopyReg1, stopUsingCopyReg2, stopUsingCopyReg3, stopUsingCopyReg4, stopUsingCopyReg5 = false;
     TR::SymbolReference *arrayCopyHelper;
-    FILE *outFile;
 
     bool isSimpleCopy = (node->getNumChildren() == 3);
 

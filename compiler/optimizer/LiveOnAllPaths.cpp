@@ -30,6 +30,7 @@
 #include "infra/Assert.hpp"
 #include "infra/BitVector.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 class TR_BlockStructure;
 class TR_Structure;
@@ -52,8 +53,9 @@ TR_LiveOnAllPaths::TR_LiveOnAllPaths(TR::Compilation *comp, TR::Optimizer *optim
     TR_LiveVariableInformation *liveVariableInfo, bool splitLongs, bool includeParms)
     : TR_BackwardIntersectionBitVectorAnalysis(comp, comp->getFlowGraph(), optimizer, comp->getOption(TR_TraceLiveness))
 {
-    if (trace())
-        traceMsg(comp, "Starting LiveOnAllPaths analysis\n");
+    OMR::Logger *log = comp->log();
+
+    logprints(trace(), log, "Starting LiveOnAllPaths analysis\n");
 
     int32_t i;
 
@@ -83,11 +85,11 @@ TR_LiveOnAllPaths::TR_LiveOnAllPaths(TR::Compilation *comp, TR::Optimizer *optim
         if (trace()) {
             for (i = 1; i < _numberOfNodes; ++i) {
                 if (_blockAnalysisInfo[i]) {
-                    traceMsg(comp, "\nLiveOnAllPaths variables for block_%d: ", i);
-                    _blockAnalysisInfo[i]->print(comp);
+                    log->printf("\nLiveOnAllPaths variables for block_%d: ", i);
+                    _blockAnalysisInfo[i]->print(log, comp);
                 }
             }
-            traceMsg(comp, "\nEnding LiveOnAllPaths analysis\n");
+            log->prints("\nEnding LiveOnAllPaths analysis\n");
         }
     } // scope of the stack memory region
 }
@@ -95,24 +97,25 @@ TR_LiveOnAllPaths::TR_LiveOnAllPaths(TR::Compilation *comp, TR::Optimizer *optim
 bool TR_LiveOnAllPaths::postInitializationProcessing()
 {
     if (trace()) {
+        OMR::Logger *log = comp()->log();
         int32_t i;
         for (i = 1; i < _numberOfNodes; ++i) {
-            traceMsg(comp(), "\nGen and kill sets for block_%d: ", i);
+            log->printf("\nGen and kill sets for block_%d: ", i);
             if (_regularGenSetInfo[i]) {
-                traceMsg(comp(), " gen set ");
-                _regularGenSetInfo[i]->print(comp());
+                log->prints(" gen set ");
+                _regularGenSetInfo[i]->print(log, comp());
             }
             if (_regularKillSetInfo[i]) {
-                traceMsg(comp(), " kill set ");
-                _regularKillSetInfo[i]->print(comp());
+                log->prints(" kill set ");
+                _regularKillSetInfo[i]->print(log, comp());
             }
             if (_exceptionGenSetInfo[i]) {
-                traceMsg(comp(), " exception gen set ");
-                _exceptionGenSetInfo[i]->print(comp());
+                log->prints(" exception gen set ");
+                _exceptionGenSetInfo[i]->print(log, comp());
             }
             if (_exceptionKillSetInfo[i]) {
-                traceMsg(comp(), " exception kill set ");
-                _exceptionKillSetInfo[i]->print(comp());
+                log->prints(" exception kill set ");
+                _exceptionKillSetInfo[i]->print(log, comp());
             }
         }
     }

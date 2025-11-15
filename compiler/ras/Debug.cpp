@@ -93,6 +93,7 @@
 #include "optimizer/Structure.hpp"
 #include "ras/CallStackIterator.hpp"
 #include "ras/DebugCounter.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -208,7 +209,8 @@ TR_Debug::TR_Debug(TR::Compilation *c)
     if (c) {
         _cg = c->cg();
         _fe = c->fe();
-        _file = c->getOutFile();
+        _outFile = c->getOutFile();
+        _logger = c->log();
         resetDebugData();
 
         _nodeChecklist.init(0, c->trMemory(), heapAlloc, growable);
@@ -348,7 +350,9 @@ void TR_Debug::addInstructionComment(TR::Instruction *instr, char *comment, ...)
 {
     TR_ASSERT(_comp, "Required compilation object is NULL.\n");
 
-    if (comment == NULL || _comp->getOutFile() == NULL)
+    static char *disableInstructionComments = feGetEnv("TR_DisableInstructionComments");
+
+    if (disableInstructionComments || comment == NULL || !_comp->log()->isEnabled_DEPRECATED())
         return;
 
     CS2::HashIndex hashIndex;
@@ -364,6 +368,7 @@ void TR_Debug::addInstructionComment(TR::Instruction *instr, char *comment, ...)
 
 bool TR_Debug::performTransformationImpl(bool canOmitTransformation, const char *format, ...)
 {
+    OMR::Logger *log = _comp->log();
     int32_t optIndex = _comp->getOptIndex();
     int32_t firstOptIndex = _comp->getOptions()->getFirstOptIndex();
     int32_t lastOptIndex = _comp->getOptions()->getLastOptIndex();
@@ -381,10 +386,13 @@ bool TR_Debug::performTransformationImpl(bool canOmitTransformation, const char 
     bool alreadyFormatted = false;
     char messageBuffer[300];
 
+    static char *disablePerformTransformationLogging = feGetEnv("TR_DisablePerformTransformationLogging");
+
     // We try to avoid doing the work of formatting the string if we don't need to.
     //
     if ((_comp->getOption(TR_CountOptTransformations) && _comp->getOptions()->getVerboseOptTransformationsRegex())
-        || (_file != NULL && canOmitTransformation && _comp->getOptions()->getDisabledOptTransformations())) {
+        || (!disablePerformTransformationLogging && log->isEnabled_DEPRECATED() && canOmitTransformation
+            && _comp->getOptions()->getDisabledOptTransformations())) {
         va_list args;
         va_start(args, format);
         string = formattedString(messageBuffer, sizeof(messageBuffer), format, args);
@@ -423,18 +431,18 @@ bool TR_Debug::performTransformationImpl(bool canOmitTransformation, const char 
             comp()->recordPerformedOptTransformation();
     }
 
-    // No need to do the printing logic below if there's no log file
+    // No need to do the printing logic below if logging is disabled
     //
-    if (_file == NULL)
+    if (disablePerformTransformationLogging || !log->isEnabled_DEPRECATED())
         return true;
 
     if (canOmitTransformation) {
         if (_registerAssignmentTraceFlags & TRACERA_IN_PROGRESS)
-            trfprintf(_file, "\n"); // traceRA convention is a newline at the start rather than the end
+            log->println(); // traceRA convention is a newline at the start rather than the end
 
-        trfprintf(_file, "[%6d] ", curTransformationIndex);
+        log->printf("[%6d] ", curTransformationIndex);
         if (optIndex == lastOptIndex) {
-            trfprintf(_file, "%3d.%-4d ", optIndex, _comp->getOptSubIndex());
+            log->printf("%3d.%-4d ", optIndex, _comp->getOptSubIndex());
         }
 
         if ((format[0] == '%' && format[1] == 's') || (format[0] == 'O' && format[1] == '^' && format[2] == 'O')) {
@@ -442,91 +450,49 @@ bool TR_Debug::performTransformationImpl(bool canOmitTransformation, const char 
         } else {
             // prefix the string with O^O so that tooling can easily count transformations
             // this should already be in most transformations but it could get accidentally dropped
-            trfprintf(_file, "O^O (Unknown Transformation):");
+            log->prints("O^O (Unknown Transformation):");
         }
     } else if (_registerAssignmentTraceFlags & TRACERA_IN_PROGRESS)
-        trfprintf(_file, "\n         ");
+        log->prints("\n         ");
     else
-        trfprintf(_file, "         ");
+        log->prints("         ");
 
     va_list args;
     va_start(args, format);
-
-    TR::IO::vfprintf(_file, format, args);
+    log->vprintf(format, args);
     va_end(args);
-    trfflush(_file);
+
+    log->flush();
 
     roundAddressEnumerationCounters();
 
     return true;
 }
 
-void TR_Debug::trace(const char *format, ...)
-{
-    if (_file != NULL) {
-        va_list args;
-        va_start(args, format);
-        vtrace(format, args);
-        va_end(args);
-    }
-}
-
-void TR_Debug::vtrace(const char *format, va_list args)
-{
-    if (_file != NULL) {
-        if ((0 != TR::Options::_traceFileLength)
-            && (static_cast<int64_t>(TR::IO::ftell(_file))
-                > (static_cast<int64_t>(TR::Options::_traceFileLength) << 20))) {
-            TR::IO::fseek(_file, 0, SEEK_SET); // rewind the trace file
-            TR::IO::fprintf(_file, "Rewind trace file ...\n\n\n");
-        }
-        TR::IO::vfprintf(_file, format, args);
-        trfflush(_file);
-    }
-}
-
 void TR_Debug::traceLnFromLogTracer(const char *preFormatted)
 {
-    if (_file != NULL) {
-        trfprintf(_file, preFormatted);
-        trfprintf(_file, "\n");
-        trfflush(_file);
+    OMR::Logger *log = getLogger();
+    if (log->isEnabled_DEPRECATED()) {
+        log->prints(preFormatted);
+        log->println();
+        log->flush();
     }
 }
 
-void TR_Debug::printInstruction(TR::Instruction *instr)
+void TR_Debug::printHeader(OMR::Logger *log) { log->printf("\n=======>%s\n", signature(_comp->getMethodSymbol())); }
+
+void TR_Debug::printMethodHotness(OMR::Logger *log)
 {
-    if (_file != NULL) {
-        print(_file, instr);
-        trfflush(_file);
+    log->printf("\nThis method is %s", _comp->getHotnessName(_comp->getMethodHotness()));
+    if (_comp->getRecompilationInfo() && _comp->getRecompilationInfo()->isProfilingCompilation()) {
+        log->prints(" and will be profiled\n");
+    } else {
+        log->println();
     }
 }
 
-void TR_Debug::printHeader()
+void TR_Debug::printInstrDumpHeader(OMR::Logger *log, const char *title)
 {
-    if (_file == NULL)
-        return;
-
-    trfprintf(_file, "\n=======>%s\n", signature(_comp->getMethodSymbol()));
-}
-
-void TR_Debug::printMethodHotness()
-{
-    if (_file == NULL)
-        return;
-
-    trfprintf(_file, "\nThis method is %s", _comp->getHotnessName(_comp->getMethodHotness()));
-    if (_comp->getRecompilationInfo() && _comp->getRecompilationInfo()->isProfilingCompilation())
-        trfprintf(_file, " and will be profiled");
-
-    trfprintf(_file, "\n");
-}
-
-void TR_Debug::printInstrDumpHeader(const char *title)
-{
-    if (_file == NULL)
-        return;
-
     int addressFieldWidth = TR::Compiler->debug.hexAddressFieldWidthInChars();
     int codeByteColumnWidth = TR::Compiler->debug.codeByteColumnWidth();
     int prefixWidth = addressFieldWidth * 2 + codeByteColumnWidth
@@ -535,32 +501,29 @@ void TR_Debug::printInstrDumpHeader(const char *title)
 
     if (strcmp(title, "Post Instruction Selection Instructions") == 0
         || strcmp(title, "Post Register Assignment Instructions") == 0) {
-        trfprintf(_file, "\n%*s+--------------------------------------- instruction address", addressFieldWidth - 2,
-            " ");
-        trfprintf(_file, "\n%*s|       +------------------------------------------ %s", addressFieldWidth - 2, " ",
+        log->printf("\n%*s+--------------------------------------- instruction address", addressFieldWidth - 2, " ");
+        log->printf("\n%*s|       +------------------------------------------ %s", addressFieldWidth - 2, " ",
             lineNumber);
-        trfprintf(_file, "\n%*s|       |       +----------------------------------------- instruction",
+        log->printf("\n%*s|       |       +----------------------------------------- instruction",
             addressFieldWidth - 2, " ");
-        trfprintf(_file, "\n%*s|       |       |", addressFieldWidth - 2, " ");
-        trfprintf(_file, "\n%*sV       V       V", addressFieldWidth - 2, " ");
+        log->printf("\n%*s|       |       |", addressFieldWidth - 2, " ");
+        log->printf("\n%*sV       V       V", addressFieldWidth - 2, " ");
     } else {
-        trfprintf(_file, "\n%*s+--------------------------------------- instruction address", addressFieldWidth - 1,
-            " ");
-        trfprintf(_file,
-            "\n%*s|        +----------------------------------------- instruction offset from start of method",
+        log->printf("\n%*s+--------------------------------------- instruction address", addressFieldWidth - 1, " ");
+        log->printf("\n%*s|        +----------------------------------------- instruction offset from start of method",
             addressFieldWidth - 1, " ");
-        trfprintf(_file,
+        log->printf(
             "\n%*s|        | %*s+------------------------------------------ corresponding TR::Instruction instance",
             addressFieldWidth - 1, " ", addressFieldWidth, " ");
-        trfprintf(_file, "\n%*s|        | %*s|  +-------------------------------------------------- code bytes",
+        log->printf("\n%*s|        | %*s|  +-------------------------------------------------- code bytes",
             addressFieldWidth - 1, " ", addressFieldWidth, " ");
-        trfprintf(_file, "\n%*s|        | %*s|  |%*s+-------------------------------------- %sopcode and operands",
+        log->printf("\n%*s|        | %*s|  |%*s+-------------------------------------- %sopcode and operands",
             addressFieldWidth - 1, " ", addressFieldWidth, " ", codeByteColumnWidth - 2, " ", lineNumber);
-        trfprintf(_file, "\n%*s|        | %*s|  |%*s|\t\t\t\t+----------- additional information",
-            addressFieldWidth - 1, " ", addressFieldWidth, " ", codeByteColumnWidth - 2, " ");
-        trfprintf(_file, "\n%*s|        | %*s|  |%*s|\t\t\t\t|", addressFieldWidth - 1, " ", addressFieldWidth, " ",
+        log->printf("\n%*s|        | %*s|  |%*s|\t\t\t\t+----------- additional information", addressFieldWidth - 1,
+            " ", addressFieldWidth, " ", codeByteColumnWidth - 2, " ");
+        log->printf("\n%*s|        | %*s|  |%*s|\t\t\t\t|", addressFieldWidth - 1, " ", addressFieldWidth, " ",
             codeByteColumnWidth - 2, " ");
-        trfprintf(_file, "\n%*sV        V %*sV  V%*sV\t\t\t\tV", addressFieldWidth - 1, " ", addressFieldWidth, " ",
+        log->printf("\n%*sV        V %*sV  V%*sV\t\t\t\tV", addressFieldWidth - 1, " ", addressFieldWidth, " ",
             codeByteColumnWidth - 2, " ");
     }
 }
@@ -580,7 +543,7 @@ void TR_Debug::printInstrDumpHeader(const char *title)
 //
 // Returns the address of the last printed code byte.
 //
-uint8_t *TR_Debug::printPrefix(TR::FILE *pOutFile, TR::Instruction *instr, uint8_t *cursor, uint8_t size)
+uint8_t *TR_Debug::printPrefix(OMR::Logger *log, TR::Instruction *instr, uint8_t *cursor, uint8_t size)
 {
     if (cursor != NULL) {
         uint32_t offset = static_cast<uint32_t>(cursor - _comp->cg()->getCodeStart());
@@ -620,30 +583,28 @@ uint8_t *TR_Debug::printPrefix(TR::FILE *pOutFile, TR::Instruction *instr, uint8
             p1[leftOver] = '\0';
         }
 
-        trfprintf(pOutFile, "\n%s", prefix);
+        log->printf("\n%s", prefix);
     } else if (_registerAssignmentTraceFlags & TRACERA_IN_PROGRESS) {
         const char *spaces = "                                        ";
         int16_t padding = 30 - _registerAssignmentTraceCursor;
 
         if (padding < 0)
-            trfprintf(_file, "\n%.*s", 30, spaces);
+            log->printf("\n%.*s", 30, spaces);
         else if (padding > 0)
-            trfprintf(_file, "%.*s", padding, spaces);
+            log->printf("%.*s", padding, spaces);
 
         _registerAssignmentTraceCursor = 30;
 
-        if (_registerAssignmentTraceFlags & TRACERA_INSTRUCTION_INSERTED)
-            trfprintf(pOutFile, " <%s>\t", getName(instr));
-        else
-            trfprintf(pOutFile, " [%s]\t", getName(instr));
+        const char *formatStr = (_registerAssignmentTraceFlags & TRACERA_INSTRUCTION_INSERTED) ? " <%s>\t" : " [%s]\t";
+        log->printf(formatStr, getName(instr));
     } else {
-        trfprintf(pOutFile, "\n [%s]\t", getName(instr));
+        log->printf("\n [%s]\t", getName(instr));
     }
 
     return cursor;
 }
 
-void TR_Debug::printSnippetLabel(TR::FILE *pOutFile, TR::LabelSymbol *label, uint8_t *cursor, const char *comment1,
+void TR_Debug::printSnippetLabel(OMR::Logger *log, TR::LabelSymbol *label, uint8_t *cursor, const char *comment1,
     const char *comment2)
 {
     int addressFieldWidth = TR::Compiler->debug.hexAddressFieldWidthInChars();
@@ -653,114 +614,104 @@ void TR_Debug::printSnippetLabel(TR::FILE *pOutFile, TR::LabelSymbol *label, uin
 
     uint32_t offset = static_cast<uint32_t>(cursor - _comp->cg()->getCodeStart());
 
-    trfprintf(pOutFile, "\n\n" POINTER_PRINTF_FORMAT " %08x %*s", cursor, offset,
-        addressFieldWidth + codeByteColumnWidth + 2, " ");
+    log->printf("\n\n" POINTER_PRINTF_FORMAT " %08x %*s", cursor, offset, addressFieldWidth + codeByteColumnWidth + 2,
+        " ");
 
-    print(pOutFile, label);
-    trfprintf(pOutFile, ":");
+    print(log, label);
+    log->printc(':');
     if (comment1) {
-        trfprintf(pOutFile, "\t\t%c %s", (_comp->target().cpu.isX86() && _comp->target().isLinux()) ? '#' : ';',
-            comment1);
-        if (comment2)
-            trfprintf(pOutFile, " (%s)", comment2);
+        log->printf("\t\t%c %s", (_comp->target().cpu.isX86() && _comp->target().isLinux()) ? '#' : ';', comment1);
+        if (comment2) {
+            log->printf(" (%s)", comment2);
+        }
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_BitVector *bv)
+void TR_Debug::print(OMR::Logger *log, TR_BitVector *bv)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "{");
+    log->printc('{');
     bool firstOne = true;
     TR_BitVectorIterator bvi(*bv);
     int32_t num = 0;
     while (bvi.hasMoreElements()) {
-        if (!firstOne)
-            trfprintf(pOutFile, ", ");
-        else
+        char *formatStr;
+        if (firstOne) {
+            formatStr = "%d";
             firstOne = false;
-        trfprintf(pOutFile, "%d", bvi.getNextElement());
+        } else {
+            formatStr = ", %d";
+        }
+
+        log->printf(formatStr, bvi.getNextElement());
 
         if (num > 30) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
     }
-    trfprintf(pOutFile, "}");
+    log->printc('}');
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_SingleBitContainer *sbc)
+void TR_Debug::print(OMR::Logger *log, TR_SingleBitContainer *sbc) { log->prints(sbc->isEmpty() ? "{}" : "{0}"); }
+
+void TR_Debug::print(OMR::Logger *log, TR::BitVector *bv)
 {
-    if (pOutFile == NULL)
-        return;
-
-    if (sbc->isEmpty())
-        trfprintf(pOutFile, "{}");
-    else
-        trfprintf(pOutFile, "{0}");
-}
-
-void TR_Debug::print(TR::FILE *pOutFile, TR::BitVector *bv)
-{
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "{");
+    log->printc('{');
     bool firstOne = true;
     int32_t num = 0;
     TR::BitVector::Cursor bi(*bv);
     for (bi.SetToFirstOne(); bi.Valid(); bi.SetToNextOne()) {
-        if (!firstOne)
-            trfprintf(pOutFile, ", ");
-        else
+        char *formatStr;
+        if (firstOne) {
+            formatStr = "%d";
             firstOne = false;
-        trfprintf(pOutFile, "%d", (uint32_t)bi);
+        } else {
+            formatStr = ", %d";
+        }
+
+        log->printf(formatStr, static_cast<uint32_t>(bi));
 
         if (num > 30) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
     }
-    trfprintf(pOutFile, "}");
+    log->printc('}');
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::SparseBitVector *sparse)
+void TR_Debug::print(OMR::Logger *log, TR::SparseBitVector *sparse)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "{");
+    log->printc('{');
     bool firstOne = true;
     int32_t num = 0;
     TR::SparseBitVector::Cursor bi(*sparse);
     for (bi.SetToFirstOne(); bi.Valid(); bi.SetToNextOne()) {
-        if (!firstOne)
-            trfprintf(pOutFile, ", ");
-        else
+        char *formatStr;
+        if (firstOne) {
+            formatStr = "%d";
             firstOne = false;
-        trfprintf(pOutFile, "%d", (uint32_t)bi);
+        } else {
+            formatStr = ", %d";
+        }
+
+        log->printf(formatStr, static_cast<uint32_t>(bi));
 
         if (num > 30) {
-            trfprintf(pOutFile, "\n");
+            log->println();
             num = 0;
         }
         num++;
     }
-    trfprintf(pOutFile, "}");
+    log->printc('}');
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::SymbolReference *symRef)
+void TR_Debug::print(OMR::Logger *log, TR::SymbolReference *symRef)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR_PrettyPrinterString output(this);
     print(symRef, output);
-    trfprintf(pOutFile, "%s", output.getStr());
-    trfflush(pOutFile);
+    log->prints(output.getStr());
 }
 
 const char *TR_Debug::signature(TR::ResolvedMethodSymbol *s)
@@ -1123,13 +1074,11 @@ void TR_Debug::print(TR::SymbolReference *symRef, TR_PrettyPrinterString &output
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::LabelSymbol *labelSymbol)
+void TR_Debug::print(OMR::Logger *log, TR::LabelSymbol *labelSymbol)
 {
-    if (pOutFile == NULL)
-        return;
     TR_PrettyPrinterString output(this);
     print(labelSymbol, output);
-    trfprintf(pOutFile, "%s", output.getStr());
+    log->prints(output.getStr());
 }
 
 void TR_Debug::print(TR::LabelSymbol *labelSymbol, TR_PrettyPrinterString &output)
@@ -1485,51 +1434,45 @@ const char *TR_Debug::getName(TR::SymbolReference *symRef)
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::SymbolReferenceTable *symRefTab)
+void TR_Debug::print(OMR::Logger *log, TR::SymbolReferenceTable *symRefTab)
 {
-    if (pOutFile != NULL && symRefTab->baseArray.size() > 0 && _comp->getOption(TR_TraceAliases)) {
-        trfprintf(pOutFile, "Symbol Reference Map for this method:\n");
+    if (symRefTab->baseArray.size() > 0 && _comp->getOption(TR_TraceAliases)) {
+        log->prints("Symbol Reference Map for this method:\n");
         for (auto i = 0U; i < symRefTab->baseArray.size(); i++)
             if (symRefTab->getSymRef(static_cast<int32_t>(i)))
-                trfprintf(pOutFile, "  %d[" POINTER_PRINTF_FORMAT "]\n", i, symRefTab->getSymRef(i));
+                log->printf("  %d[" POINTER_PRINTF_FORMAT "]\n", i, symRefTab->getSymRef(i));
     }
 }
 
-void TR_Debug::printAliasInfo(TR::FILE *pOutFile, TR::SymbolReferenceTable *symRefTab)
+void TR_Debug::printAliasInfo(OMR::Logger *log, TR::SymbolReferenceTable *symRefTab)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "\nSymbol References with Aliases:\n\n");
+    log->prints("\nSymbol References with Aliases:\n\n");
     for (int32_t i = symRefTab->getIndexOfFirstSymRef(); i < symRefTab->getNumSymRefs(); ++i)
         if (symRefTab->getSymRef(i))
-            printAliasInfo(pOutFile, symRefTab->getSymRef(i));
+            printAliasInfo(log, symRefTab->getSymRef(i));
 }
 
-void TR_Debug::printAliasInfo(TR::FILE *pOutFile, TR::SymbolReference *symRef)
+void TR_Debug::printAliasInfo(OMR::Logger *log, TR::SymbolReference *symRef)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR_BitVector *useDefAliases = symRef->getUseDefAliasesBV();
     TR_BitVector *useOnlyAliases = symRef->getUseonlyAliasesBV(_comp->getSymRefTab());
     if (useDefAliases || useOnlyAliases) {
-        trfprintf(pOutFile, "Symref #%d %s \n", symRef->getReferenceNumber(), getName(symRef));
+        log->printf("Symref #%d %s \n", symRef->getReferenceNumber(), getName(symRef));
         if (useOnlyAliases) {
-            trfprintf(pOutFile, "   Use Aliases: %p   ", useOnlyAliases);
-            print(pOutFile, useOnlyAliases);
+            log->printf("   Use Aliases: %p   ", useOnlyAliases);
+            print(log, useOnlyAliases);
+            log->println();
         } else
-            trfprintf(pOutFile, "   Use Aliases: NULL ");
-        trfprintf(pOutFile, "\n");
+            log->prints("   Use Aliases: NULL \n");
 
         if (useDefAliases) {
-            trfprintf(pOutFile, "   Usedef Aliases: %p ", useDefAliases);
-            print(pOutFile, useDefAliases);
+            log->printf("   Usedef Aliases: %p ", useDefAliases);
+            print(log, useDefAliases);
+            log->println();
         } else
-            trfprintf(pOutFile, "   Usedef Aliases: NULL ");
-        trfprintf(pOutFile, "\n");
+            log->prints("   Usedef Aliases: NULL \n");
     } else {
-        trfprintf(pOutFile, "Symref #%d %s has no aliases\n", symRef->getReferenceNumber(), getName(symRef));
+        log->printf("Symref #%d %s has no aliases\n", symRef->getReferenceNumber(), getName(symRef));
     }
 }
 
@@ -1881,60 +1824,60 @@ const char *TR_Debug::getMetaDataName(TR::SymbolReference *symRef)
     return name ? name : "method meta data";
 }
 
-void TR_Debug::printBlockInfo(TR::FILE *pOutFile, TR::Node *node)
+void TR_Debug::printBlockInfo(OMR::Logger *log, TR::Node *node)
 {
     if (node) {
         if (node->getOpCodeValue() == TR::BBStart) {
-            trfprintf(pOutFile, " BBStart");
+            log->prints(" BBStart");
 
             TR::Block *block = node->getBlock();
             if (block->getNumber() >= 0)
-                trfprintf(pOutFile, " <block_%d>", block->getNumber());
+                log->printf(" <block_%d>", block->getNumber());
             if (block->getFrequency() >= 0)
-                trfprintf(pOutFile, " (frequency %d)", block->getFrequency());
+                log->printf(" (frequency %d)", block->getFrequency());
             if (block->isExtensionOfPreviousBlock())
-                trfprintf(pOutFile, " (extension of previous block)");
+                log->prints(" (extension of previous block)");
             if (block->isCatchBlock()) {
                 int32_t length;
                 const char *classNameChars = block->getExceptionClassNameChars();
                 if (classNameChars) {
                     length = block->getExceptionClassNameLength();
-                    trfprintf(pOutFile, " (catches %.*s)", length, getName(classNameChars, length));
+                    log->printf(" (catches %.*s)", length, getName(classNameChars, length));
                 } else {
                     classNameChars = "...";
                     length = 3;
-                    trfprintf(pOutFile, " (catches ...)");
+                    log->prints(" (catches ...)");
                 }
             }
             if (block->isSuperCold())
-                trfprintf(pOutFile, " (super cold)");
+                log->prints(" (super cold)");
             else if (block->isCold())
-                trfprintf(pOutFile, " (cold)");
+                log->prints(" (cold)");
 
             if (block->isLoopInvariantBlock())
-                trfprintf(pOutFile, " (loop pre-header)");
+                log->prints(" (loop pre-header)");
             TR_BlockStructure *blockStructure = block->getStructureOf();
             if (_comp->getFlowGraph()->getStructure() && blockStructure) {
                 TR_Structure *parent = blockStructure->getParent();
                 while (parent) {
                     TR_RegionStructure *region = parent->asRegion();
                     if (region->isNaturalLoop() || region->containsInternalCycles()) {
-                        trfprintf(pOutFile, " (in loop %d)", region->getNumber());
+                        log->printf(" (in loop %d)", region->getNumber());
                         break;
                     }
                     parent = parent->getParent();
                 }
                 TR_BlockStructure *dupBlock = blockStructure->getDuplicatedBlock();
                 if (dupBlock)
-                    trfprintf(pOutFile, " (dup of block_%d)", dupBlock->getNumber());
+                    log->printf(" (dup of block_%d)", dupBlock->getNumber());
             }
         } else if (node && node->getOpCodeValue() == TR::BBEnd) {
-            trfprintf(pOutFile, " BBEnd");
+            log->prints(" BBEnd");
 
             TR::Block *block = node->getBlock();
 
             if (block->getNumber() >= 0)
-                trfprintf(pOutFile, " </block_%d>", block->getNumber());
+                log->printf(" </block_%d>", block->getNumber());
         }
     }
 }
@@ -1945,15 +1888,11 @@ void TR_Debug::saveNodeChecklist(TR_BitVector &saveArea) { saveArea = _nodeCheck
 
 void TR_Debug::restoreNodeChecklist(TR_BitVector &saveArea) { _nodeChecklist = saveArea; }
 
-int32_t TR_Debug::dumpLiveRegisters()
+void TR_Debug::dumpLiveRegisters(OMR::Logger *log)
 {
-    TR::FILE *pOutFile = _comp->getOutFile();
     int i = 0;
 
-    if (pOutFile == NULL)
-        return 0;
-
-    trfprintf(pOutFile, "; Live regs:");
+    log->prints("; Live regs: ");
 
     // Dump the number of each kind
     //
@@ -1961,10 +1900,10 @@ int32_t TR_Debug::dumpLiveRegisters()
         TR_RegisterKinds kind = (TR_RegisterKinds)i;
         TR_LiveRegisters *liveRegisters = _comp->cg()->getLiveRegisters(kind);
         if (liveRegisters)
-            trfprintf(pOutFile, " %s=%d", getRegisterKindName(kind), liveRegisters->getNumberOfLiveRegisters());
+            log->printf("%s=%d ", getRegisterKindName(kind), liveRegisters->getNumberOfLiveRegisters());
     }
 
-    trfprintf(pOutFile, " {");
+    log->printc('{');
 
     // Dump all the registers of each kind
     //
@@ -1974,99 +1913,52 @@ int32_t TR_Debug::dumpLiveRegisters()
         TR_LiveRegisters *liveRegisters = _comp->cg()->getLiveRegisters(kind);
         if (liveRegisters) {
             for (TR_LiveRegisterInfo *info = liveRegisters->getFirstLiveRegister(); info; info = info->getNext()) {
-                trfprintf(pOutFile, "%s%s", separator, getName(info->getRegister()));
+                log->printf("%s%s", separator, getName(info->getRegister()));
                 separator = ", ";
             }
         }
     }
-    trfprintf(pOutFile, "}");
-    return 0;
-}
 
-int32_t TR_Debug::dumpLiveRegisters(TR::FILE *pOutFile, TR_RegisterKinds rk)
-{
-    if (pOutFile == NULL)
-        return 0;
-
-    int32_t n = 0;
-
-    TR::RegisterPair *regPair;
-    TR_LiveRegisters *liveReg = _comp->cg()->getLiveRegisters(rk);
-
-    if (!liveReg)
-        return 0;
-
-    trfprintf(pOutFile, "Live %s registers:\n", getRegisterKindName(rk));
-    for (TR_LiveRegisterInfo *p = liveReg->getFirstLiveRegister(); p; p = p->getNext()) {
-        regPair = p->getRegister()->getRegisterPair();
-
-        ++n;
-        if (regPair)
-            trfprintf(pOutFile,
-                "\t[" POINTER_PRINTF_FORMAT "] %d:  " POINTER_PRINTF_FORMAT " pair (" POINTER_PRINTF_FORMAT
-                ", " POINTER_PRINTF_FORMAT ")  ",
-                p, n, regPair, regPair->getLowOrder(), regPair->getHighOrder());
-        else {
-            TR::Register *reg = p->getRegister();
-            trfprintf(pOutFile, "\t[" POINTER_PRINTF_FORMAT "] %d:  " POINTER_PRINTF_FORMAT "  ", p, n, reg);
-        }
-
-        trfprintf(pOutFile, "\n");
-    }
-
-    if (n == 0)
-        trfprintf(pOutFile, "\tNo live %s.\n", getRegisterKindName(rk));
-
-    return n;
-}
-
-void TR_Debug::dumpLiveRealRegisters(TR::FILE *pOutFile, TR_RegisterKinds rk)
-{
-    if (pOutFile == NULL)
-        return;
-
-    TR_RegisterMask mask = _comp->cg()->getLiveRealRegisters(rk);
-    trfprintf(pOutFile, "Live real %s registers:\n\t", getRegisterKindName(rk));
-    if (mask)
-        printRegisterMask(pOutFile, mask, rk);
-    else
-        trfprintf(pOutFile, "None");
-
-    trfprintf(pOutFile, "\n");
+    log->printc('}');
 }
 
 void TR_Debug::setupToDumpTreesAndInstructions(const char *title)
 {
-    TR::FILE *pOutFile = _comp->getOutFile();
-    if (pOutFile == NULL)
-        return;
+    // REMOVE after downstream refactoring to use the Logger API
+    setupToDumpTreesAndInstructions(getLogger(), title);
+}
 
-    trfprintf(pOutFile, "\n%s:\n", title);
+void TR_Debug::setupToDumpTreesAndInstructions(OMR::Logger *log, const char *title)
+{
+    log->printf("\n%s:\n", title);
     _nodeChecklist.empty();
-    trfprintf(pOutFile, "\n\n============================================================\n");
+    log->prints("\n\n============================================================\n");
 }
 
 void TR_Debug::dumpSingleTreeWithInstrs(TR::TreeTop *treeTop, TR::Instruction *instr, bool dumpTrees, bool dumpInstrs,
     bool dumpRefCounts, bool dumpLiveRegs)
 {
-    TR::FILE *pOutFile = _comp->getOutFile();
-    if (pOutFile == NULL)
-        return;
+    // REMOVE after downstream refactoring to use the Logger API
+    dumpSingleTreeWithInstrs(getLogger(), treeTop, instr, dumpTrees, dumpInstrs, dumpRefCounts, dumpLiveRegs);
+}
 
+void TR_Debug::dumpSingleTreeWithInstrs(OMR::Logger *log, TR::TreeTop *treeTop, TR::Instruction *instr, bool dumpTrees,
+    bool dumpInstrs, bool dumpRefCounts, bool dumpLiveRegs)
+{
     if (dumpLiveRegs) {
-        dumpLiveRegisters();
-        trfprintf(pOutFile, "\n------------------------------\n");
+        dumpLiveRegisters(log);
+        log->prints("\n------------------------------\n");
     }
 
     if (dumpTrees)
-        printWithFixedPrefix(pOutFile, treeTop->getNode(), 1, true, dumpRefCounts, " ");
+        printWithFixedPrefix(log, treeTop->getNode(), 1, true, dumpRefCounts, " ");
 
     if (dumpInstrs) {
-        trfprintf(pOutFile, "\n------------------------------\n");
+        log->prints("\n------------------------------\n");
         if (treeTop->getLastInstruction()) {
             TR::Instruction *cursor = instr;
             while (cursor) {
-                print(pOutFile, cursor);
+                print(log, cursor);
                 if (cursor == treeTop->getLastInstruction())
                     break;
                 cursor = cursor->getNext();
@@ -2077,22 +1969,18 @@ void TR_Debug::dumpSingleTreeWithInstrs(TR::TreeTop *treeTop, TR::Instruction *i
             TR::Instruction *lastOutlinedTarget = NULL;
             cursor = instr;
             while (cursor) {
-#if defined(TR_TARGET_POWER)
                 TR::Instruction *outlinedCursor = getOutlinedTargetIfAny(cursor);
-#elif defined(TR_TARGET_S390)
-                TR::Instruction *outlinedCursor = getOutlinedTargetIfAny(cursor);
-#endif
 
                 if (outlinedCursor) {
                     // Separator between main line code and outlined code
                     if (!lastOutlinedTarget)
-                        trfprintf(pOutFile, "\n\n------------------------------\n");
+                        log->prints("\n\n------------------------------\n");
                     if (outlinedCursor != lastOutlinedTarget) {
                         // Avoiding dumping the same outlined code sequence more than once by keeping track of the last
                         // sequence we dumped Not fool-proof, but cheap
                         lastOutlinedTarget = outlinedCursor;
                         while (outlinedCursor) {
-                            print(pOutFile, outlinedCursor);
+                            print(log, outlinedCursor);
                             outlinedCursor = outlinedCursor->getNext();
                         }
                     }
@@ -2103,115 +1991,46 @@ void TR_Debug::dumpSingleTreeWithInstrs(TR::TreeTop *treeTop, TR::Instruction *i
             }
 #endif
         }
-        trfprintf(pOutFile, "\n\n============================================================\n");
+        log->prints("\n\n============================================================\n");
     }
 }
 
-void TR_Debug::dumpMethodInstrs(TR::FILE *pOutFile, const char *title, bool dumpTrees, bool header)
+void TR_Debug::dumpMethodInstrs(OMR::Logger *log, const char *title, bool dumpTrees, bool header)
 {
-    const char *methodName = NULL;
-    int32_t bfLineNo = -1;
-    int32_t efLineNo = -1;
-    int16_t sourceFileIndex = -1; // WCode related (for now)
-    int16_t lastSourceFileIndex = -1; // ditto
-    int32_t inlinedIndex = -1; // ditto
-    int16_t lastInlinedIndex = -1; // ditto
-    bool printLinenos = false;
-    bool printBIandEI = false;
-
-    if (pOutFile == NULL)
-        return;
-
     const char *hotnessString = _comp->getHotnessName(_comp->getMethodHotness());
 
-    trfprintf(pOutFile,
-        "\n<instructions\n"
-        "\ttitle=\"%s\"\n"
-        "\tmethod=\"%s\"\n"
-        "\thotness=\"%s\">\n",
+    log->printf("\n<instructions\n"
+                "\ttitle=\"%s\"\n"
+                "\tmethod=\"%s\"\n"
+                "\thotness=\"%s\">\n",
         title, signature(_comp->getMethodSymbol()), hotnessString);
 
     if (header)
-        printInstrDumpHeader(title);
+        printInstrDumpHeader(log, title);
 
     TR::Instruction *instr = _comp->cg()->getFirstInstruction();
     if (dumpTrees) {
         _nodeChecklist.empty();
-        trfprintf(pOutFile, "\n\n============================================================\n");
+        log->prints("\n\n============================================================\n");
         for (TR::TreeTop *treeTop = _comp->getStartTree(); treeTop; treeTop = treeTop->getNextTreeTop()) {
-            printWithFixedPrefix(_comp->getOutFile(), treeTop->getNode(), 1, true, false, " ");
+            printWithFixedPrefix(log, treeTop->getNode(), 1, true, false, " ");
             if (treeTop->getLastInstruction()) {
-                trfprintf(pOutFile, "\n------------------------------\n");
+                log->prints("\n------------------------------\n");
                 while (instr) {
-                    print(pOutFile, instr);
+                    print(log, instr);
                     if (instr == treeTop->getLastInstruction())
                         break;
                     instr = instr->getNext();
                 }
                 instr = instr->getNext();
-                trfprintf(pOutFile, "\n\n============================================================\n");
+                log->prints("\n\n============================================================\n");
             } else
-                trfprintf(pOutFile, "\n");
+                log->println();
         }
     }
 
-    int lastLineNoPrinted = -1;
-
     while (instr) {
-        // printLinenos is true for PPC, WCode, and -qlinedebug
-        if (printLinenos) {
-            int32_t crtLineNo = -1;
-            TR::Node *node = instr->getNode();
-            if (!node) {
-                // Current instruction has no node - so we have no location.
-                // To handle, search forward in stream to find a node and
-                // use that node's location for this instruction.  This works around
-                // the problem where the platform generates instructions with no
-                // node information. Having the platform reduce instructions with no
-                // nodes could provide better location information.
-                TR::Instruction *searchInstr = instr->getNext();
-                for (; searchInstr && !node; searchInstr = searchInstr->getNext())
-                    node = searchInstr->getNode();
-            }
-            // Ignore BB_End location info and any instructions with null nodes
-            if (node && (node->getOpCodeValue() != TR::BBEnd)) {
-                TR_ByteCodeInfo &byteCodeInfo = node->getByteCodeInfo();
-            } else {
-                crtLineNo = lastLineNoPrinted;
-            }
-
-            bool printEveryLine = _comp->target().cpu.isZ() && _comp->target().isLinux();
-            // Emit .line directive if there was change in line number, or source file or
-            // inlined method state since last time
-            if ((crtLineNo != -1)
-                && ((crtLineNo != lastLineNoPrinted) || (inlinedIndex != lastInlinedIndex)
-                    || (sourceFileIndex != lastSourceFileIndex) || printEveryLine)) {
-                // Following is somewhat PPC specific - line numbers for "primary" source are relative to
-                // the first line number of the method. Line numbrers for includes are absoluted .
-                // Since we treat Inlined methods (like include files - see previous), such line numbers
-                // are absolute as well.
-
-                int32_t lno;
-
-                if (_comp->target().cpu.isZ() && _comp->target().isLinux()) {
-                    lno = crtLineNo - 1;
-                } else {
-                    lno = ((sourceFileIndex == 0) && (inlinedIndex == -1)) ? (crtLineNo - bfLineNo + 1) : crtLineNo;
-                }
-
-                if (lno > 0) // this check is workaround for front end problem with line numbers
-                {
-                    trfprintf(pOutFile, "\n\t.line \t %d", lno);
-                    trfflush(_comp->getOutFile());
-                    lastLineNoPrinted = crtLineNo;
-                }
-                lastSourceFileIndex = sourceFileIndex;
-                lastInlinedIndex = inlinedIndex;
-            }
-        }
-
-        print(pOutFile, instr, title);
-
+        print(log, instr, title);
         instr = instr->getNext();
     }
 
@@ -2221,32 +2040,27 @@ void TR_Debug::dumpMethodInstrs(TR::FILE *pOutFile, const char *title, bool dump
     // After RA outlined code is linked to the regular instruction stream and will automatically be printed
     if (_comp->cg()->getCodeGeneratorPhase() < TR::CodeGenPhase::RegisterAssigningPhase)
 #if defined(TR_TARGET_POWER)
-        printPPCOOLSequences(pOutFile);
+        printPPCOOLSequences(log);
 #elif defined(TR_TARGET_ARM64)
-        printARM64OOLSequences(pOutFile);
+        printARM64OOLSequences(log);
 #else
-        printS390OOLSequences(pOutFile);
+        printS390OOLSequences(log);
 #endif
 #elif defined(TR_TARGET_X86)
     if (_comp->target().cpu.isX86())
-        printX86OOLSequences(pOutFile);
+        printX86OOLSequences(log);
 #endif
 
-    trfprintf(pOutFile, "\n</instructions>\n");
+    log->prints("\n</instructions>\n");
 }
 
-void TR_Debug::dumpMixedModeDisassembly()
+void TR_Debug::dumpMixedModeDisassembly(OMR::Logger *log)
 {
-    TR::FILE *pOutFile = _comp->getOutFile();
-    if (pOutFile == NULL)
-        return;
-
     const char *title = "Mixed Mode Disassembly";
 
-    trfprintf(pOutFile,
-        "<instructions\n"
-        "\ttitle=\"%s\"\n"
-        "\tmethod=\"%s\">\n",
+    log->printf("<instructions\n"
+                "\ttitle=\"%s\"\n"
+                "\tmethod=\"%s\">\n",
         title, signature(_comp->getMethodSymbol()));
 
     TR::Node *n = 0;
@@ -2260,24 +2074,21 @@ void TR_Debug::dumpMixedModeDisassembly()
                     && inst->getBinaryLength() > 0))) {
             n = inst->getNode();
 
-            trfprintf(pOutFile, "\n\n");
+            log->prints("\n\n");
             size_t indentLen = 0;
-            printByteCodeStack(n->getInlinedSiteIndex(), n->getByteCodeIndex(), &indentLen);
+            printByteCodeStack(log, n->getInlinedSiteIndex(), n->getByteCodeIndex(), &indentLen);
         }
 
-        print(pOutFile, inst);
+        print(log, inst);
     }
-    trfprintf(pOutFile, "\n</instructions>\n");
 
-    trfprintf(pOutFile, "<snippets>");
-    print(pOutFile, _comp->cg()->getSnippetList());
-    trfprintf(pOutFile, "\n</snippets>\n");
+    log->prints("\n</instructions>\n<snippets>");
+    print(log, _comp->cg()->getSnippetList());
+    log->prints("\n</snippets>\n");
 }
 
-void TR_Debug::dumpInstructionComments(TR::FILE *pOutFile, TR::Instruction *instr, bool needsStartComment)
+void TR_Debug::dumpInstructionComments(OMR::Logger *log, TR::Instruction *instr, bool needsStartComment)
 {
-    TR_ASSERT(_comp, "Required compilation object is NULL.\n");
-
     CS2::HashIndex hashIndex;
     if (_comp->getToCommentMap().Locate((void *)instr, hashIndex)) {
         char *data;
@@ -2285,127 +2096,119 @@ void TR_Debug::dumpInstructionComments(TR::FILE *pOutFile, TR::Instruction *inst
         ListIterator<char> itr(comments);
         // If this is the first annotation, need to add space and semicolon
         if (itr.getFirst() && needsStartComment) {
-            trfprintf(pOutFile, " ;");
+            log->prints(" ;");
             needsStartComment = false;
         }
 
         // Dump out all comments added to the instruction _comp->getToCommentMap() hashtable
-        for (data = itr.getFirst(); data != NULL; data = itr.getNext())
-            trfprintf(pOutFile, " %s", data);
+        for (data = itr.getFirst(); data != NULL; data = itr.getNext()) {
+            log->printf(" %s", data);
+        }
     }
 }
 
 #if !defined(TR_TARGET_POWER) && !defined(TR_TARGET_ARM) && !defined(TR_TARGET_ARM64) && !defined(TR_TARGET_RISCV)
-void TR_Debug::print(TR::FILE *pOutFile, TR::Instruction *inst) { print(pOutFile, inst, NULL); }
+void TR_Debug::print(OMR::Logger *log, TR::Instruction *inst) { print(log, inst, NULL); }
 #endif
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::Instruction *inst, const char *title)
+void TR_Debug::print(OMR::Logger *log, TR::Instruction *inst, const char *title)
 {
-    if (pOutFile == NULL)
-        return;
-
 #if defined(TR_TARGET_X86)
     if (_comp->target().cpu.isX86()) {
-        printx(pOutFile, inst);
+        printx(log, inst);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_POWER)
     if (_comp->target().cpu.isPower()) {
-        print(pOutFile, inst);
+        print(log, inst);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_ARM)
     if (_comp->target().cpu.isARM()) {
-        print(pOutFile, inst);
+        print(log, inst);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_ARM64)
     if (_comp->target().cpu.isARM64()) {
-        print(pOutFile, inst);
+        print(log, inst);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_RISCV)
     if (TR::Compiler->target.cpu.isRISCV()) {
-        print(pOutFile, inst);
+        print(log, inst);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_S390)
     if (_comp->target().cpu.isZ()) {
-        printz(pOutFile, inst, title);
+        printz(log, inst, title);
         return;
     }
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::GCRegisterMap *map)
+void TR_Debug::print(OMR::Logger *log, TR::GCRegisterMap *map)
 {
-    if (pOutFile == NULL)
-        return;
-
 #if defined(TR_TARGET_X86)
     if (_comp->target().cpu.isX86()) {
-        printX86GCRegisterMap(pOutFile, map);
+        printX86GCRegisterMap(log, map);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_POWER)
     if (_comp->target().cpu.isPower()) {
-        printPPCGCRegisterMap(pOutFile, map);
+        printPPCGCRegisterMap(log, map);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_ARM)
     if (_comp->target().cpu.isARM()) {
-        printARMGCRegisterMap(pOutFile, map);
+        printARMGCRegisterMap(log, map);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_S390)
     if (_comp->target().cpu.isZ()) {
-        printS390GCRegisterMap(pOutFile, map);
+        printS390GCRegisterMap(log, map);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_ARM64)
     if (_comp->target().cpu.isARM64()) {
-        printARM64GCRegisterMap(pOutFile, map);
+        printARM64GCRegisterMap(log, map);
         return;
     }
 #endif
 
 #if defined(TR_TARGET_RISCV)
     if (TR::Compiler->target.cpu.isRISCV()) {
-        printRVGCRegisterMap(pOutFile, map);
+        printRVGCRegisterMap(log, map);
         return;
     }
 #endif
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::list<TR::Snippet *> &snippetList)
+void TR_Debug::print(OMR::Logger *log, TR::list<TR::Snippet *> &snippetList)
 {
-    if (pOutFile == NULL)
-        return;
-
     for (auto snippets = snippetList.begin(); snippets != snippetList.end(); ++snippets) {
-        print(pOutFile, *snippets);
+        print(log, *snippets);
     }
 
     if (_comp->cg()->hasDataSnippets())
-        _comp->cg()->dumpDataSnippets(pOutFile);
+        _comp->cg()->dumpDataSnippets(log);
 }
 
 const char *TR_Debug::getName(TR::Snippet *snippet)
@@ -2425,35 +2228,35 @@ const char *TR_Debug::getName(TR::Snippet *snippet)
     return "<unknown snippet>"; // TODO: Return a more informative name
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::Snippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::Snippet *snippet)
 {
 #if defined(TR_TARGET_X86)
     if (_comp->target().cpu.isX86()) {
-        printx(pOutFile, snippet);
+        printx(log, snippet);
         return;
     }
 #endif
 #if defined(TR_TARGET_POWER)
     if (_comp->target().cpu.isPower()) {
-        printp(pOutFile, snippet);
+        printp(log, snippet);
         return;
     }
 #endif
 #if defined(TR_TARGET_ARM)
     if (_comp->target().cpu.isARM()) {
-        printa(pOutFile, snippet);
+        printa(log, snippet);
         return;
     }
 #endif
 #if defined(TR_TARGET_S390)
     if (_comp->target().cpu.isZ()) {
-        printz(pOutFile, (TR::Snippet *)snippet);
+        printz(log, (TR::Snippet *)snippet);
         return;
     }
 #endif
 #if defined(TR_TARGET_ARM64)
     if (_comp->target().cpu.isARM64()) {
-        printa64(pOutFile, snippet);
+        printa64(log, snippet);
         return;
     }
 #endif
@@ -2483,7 +2286,6 @@ const char *TR_Debug::getRealRegisterName(uint32_t regNum)
 
 const char *TR_Debug::getName(TR::Register *reg, TR_RegisterSizes size)
 {
-    TR_ASSERT(_comp, "Required compilation object is NULL.\n");
     if (!reg)
         return "(null)";
 
@@ -2616,11 +2418,8 @@ const char *TR_Debug::getRegisterKindName(TR_RegisterKinds rk)
     }
 }
 
-void TR_Debug::printRegisterMask(TR::FILE *pOutFile, TR_RegisterMask mask, TR_RegisterKinds rk)
+void TR_Debug::printRegisterMask(OMR::Logger *log, TR_RegisterMask mask, TR_RegisterKinds rk)
 {
-    if (pOutFile == NULL)
-        return;
-
     mask = mask & (TR::RealRegister::getAvailableRegistersMask(rk));
     int32_t n = populationCount(mask);
 
@@ -2630,11 +2429,11 @@ void TR_Debug::printRegisterMask(TR::FILE *pOutFile, TR_RegisterMask mask, TR_Re
         while (slider) {
             if (mask & slider) {
                 reg = TR::RealRegister::regMaskToRealRegister(slider, rk, _comp->cg());
-                trfprintf(pOutFile, "%s", getName(reg));
+                log->prints(getName(reg));
                 if (--n == 0)
                     break;
                 else
-                    trfprintf(pOutFile, " ");
+                    log->printc(' ');
             }
 
             slider <<= 1;
@@ -2642,14 +2441,12 @@ void TR_Debug::printRegisterMask(TR::FILE *pOutFile, TR_RegisterMask mask, TR_Re
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::Register *reg, TR_RegisterSizes size)
+void TR_Debug::print(OMR::Logger *log, TR::Register *reg, TR_RegisterSizes size)
 {
-    if (pOutFile == NULL)
-        return;
 #if defined(TR_TARGET_S390)
     if (reg == NULL && _comp->target().cpu.isZ()) // zero based ptr
     {
-        trfprintf(pOutFile, "%s", "GPR0");
+        log->prints("GPR0");
         return;
     }
 #endif
@@ -2657,88 +2454,54 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::Register *reg, TR_RegisterSizes siz
     if (reg->getRealRegister()) {
 #if defined(TR_TARGET_X86)
         if (_comp->target().cpu.isX86()) {
-            print(pOutFile, (TR::RealRegister *)reg, size);
+            print(log, (TR::RealRegister *)reg, size);
             return;
         }
 #endif
 #if defined(TR_TARGET_POWER)
         if (_comp->target().cpu.isPower()) {
-            print(pOutFile, (TR::RealRegister *)reg, size);
+            print(log, (TR::RealRegister *)reg, size);
             return;
         }
 #endif
 #if defined(TR_TARGET_ARM)
         if (_comp->target().cpu.isARM()) {
-            print(pOutFile, (TR::RealRegister *)reg, size);
+            print(log, (TR::RealRegister *)reg, size);
             return;
         }
 #endif
 #if defined(TR_TARGET_S390)
         if (_comp->target().cpu.isZ()) {
-            print(pOutFile, toRealRegister(reg), size);
+            print(log, toRealRegister(reg), size);
             return;
         }
 #endif
 #if defined(TR_TARGET_ARM64)
         if (_comp->target().cpu.isARM64()) {
-            print(pOutFile, (TR::RealRegister *)reg, size);
+            print(log, (TR::RealRegister *)reg, size);
             return;
         }
 #endif
 #if defined(TR_TARGET_RISCV)
         if (TR::Compiler->target.cpu.isRISCV()) {
-            print(pOutFile, (TR::RealRegister *)reg, size);
+            print(log, (TR::RealRegister *)reg, size);
             return;
         }
 #endif
     } else {
-        trfprintf(pOutFile, getName(reg));
+        log->prints(getName(reg));
         if (reg->getRegisterPair()) {
-            trfprintf(pOutFile, "(");
-            print(pOutFile, reg->getHighOrder());
-            trfprintf(pOutFile, ":");
-            print(pOutFile, reg->getLowOrder());
-            trfprintf(pOutFile, ")");
+            log->printc('(');
+            print(log, reg->getHighOrder());
+            log->printc(':');
+            print(log, reg->getLowOrder());
+            log->printc(')');
         }
     }
 }
 
-#if 0
-/* TODO: Work in progress, column based, side-by-side traceRA={*} format that looks like this (note order will change, columns will widen etc):
-   Initially for Java on z, then sTR on z, then Java on other platforms.
-   S = State; W = Weight; V = Virtual Register; RC = Ref Count)
-   +---------------------------------+------------------------------+------------------------------+
-   | Name   S   W  Flag     V    RC  | Name   S   W Flag   V    RC  | Name   S  W Flag    V    RC  |
-   +---------------------------------+------------------------------+------------------------------+
-   | GPR0       80 Free              | VRF16     80 Free            | FPR0     80 Free FPR_34  4/5 |
-   | GPR1       80 Free              | VRF17     80 Free            | FPR1     80 Free             |
-   ..
-*/
-void TR_Debug::printFullRegInfoNewFormat(TR::FILE *pOutFile, TR::Register * rr)
-   {
-   if (pOutFile == NULL) return;
-
-   static const char * stateNames[5] = { "Free", "Unlatched", "Assigned", "Blocked", "Locked" };
-
-   TR::Register * vr = rr->getAssignedRegister();
-
-   //                      | Name |Asgnd?| Weight|Flag   |Virtual | Ref Count  |mr|
-   trfprintf(pOutFile,"|%-7-%s|%-3-%c|%-6-%4x|%-11-%s|%-18-%s-|%-13-%5d/%5d|%d|",
-         getName(reg),
-         rr->getRealRegister()->getAssignedRegister()? 'A':' ',
-         rr->getRealRegister()->getWeight(),
-         stateNames[rr->getRealRegister()->getState()],
-         rr->getAssignedRegister() ? getName(rr->getAssignedRegister()) : " ",
-         vr->getTotalUseCount(), vr->getFutureUseCount(),
-         vr->isUsedInMemRef());
-   }
-#endif
-
-void TR_Debug::printFullRegInfo(TR::FILE *pOutFile, TR::Register *reg)
+void TR_Debug::printFullRegInfo(OMR::Logger *log, TR::Register *reg)
 {
-    if (pOutFile == NULL)
-        return;
-
     static const char *ignoreFreeRegs = feGetEnv("TR_ignoreFreeRegsDuringTraceRA");
     static const char *ignoreFreeAndLockedRegs = feGetEnv("TR_ignoreFreeAndLockedRegsDuringTraceRA");
 
@@ -2753,9 +2516,9 @@ void TR_Debug::printFullRegInfo(TR::FILE *pOutFile, TR::Register *reg)
 
         static const char *stateNames[5] = { "Free", "Unlatched", "Assigned", "Blocked", "Locked" };
 
-        trfprintf(pOutFile, "[ %-4s ]", getName(reg));
-        trfprintf(pOutFile, "[%c]", reg->getAssignedRegister() ? 'A' : ' ');
-        trfprintf(pOutFile, "[%4x]", reg->getRealRegister()->getWeight());
+        log->printf("[ %-4s ]", getName(reg));
+        log->printf("[%c]", reg->getAssignedRegister() ? 'A' : ' ');
+        log->printf("[%4x]", reg->getRealRegister()->getWeight());
         if (reg->getRealRegister()->getState() == TR::RealRegister::Assigned) {
             TR::Register *virtReg = reg->getAssignedRegister();
             TR_ASSERT(virtReg, "real register is assigned to an unknown virtual register");
@@ -2763,61 +2526,56 @@ void TR_Debug::printFullRegInfo(TR::FILE *pOutFile, TR::Register *reg)
                 TR_ASSERT(reg->getRealRegister()->getHasBeenAssignedInMethod(),
                     "Register state is assigned but register has never been assigned in method");
             }
-            trfprintf(pOutFile, "[ %-10s ]", getName(virtReg));
-            trfprintf(pOutFile, "[%5d/%5d]", virtReg->getFutureUseCount(), virtReg->getTotalUseCount());
+            log->printf("[ %-10s ]", getName(virtReg));
+            log->printf("[%5d/%5d]", virtReg->getFutureUseCount(), virtReg->getTotalUseCount());
 #ifdef TR_TARGET_S390
-            trfprintf(pOutFile, "[%d]\n", virtReg->isUsedInMemRef());
+            log->printf("[%d]\n", virtReg->isUsedInMemRef());
 #else
-            trfprintf(pOutFile, "\n");
+            log->println();
 #endif
         } else {
-            trfprintf(pOutFile, "[ %-10s ]", stateNames[reg->getRealRegister()->getState()]);
+            log->printf("[ %-10s ]", stateNames[reg->getRealRegister()->getState()]);
             // track restricted regs usage
             if (reg->getRealRegister()->getState() == TR::RealRegister::Locked && reg->getAssignedRegister() != NULL
                 && reg->getAssignedRegister() != reg) {
                 TR::Register *virtReg = reg->getAssignedRegister();
-                trfprintf(pOutFile, "[%5d/%5d]", virtReg->getFutureUseCount(), virtReg->getTotalUseCount());
+                log->printf("[%5d/%5d]", virtReg->getFutureUseCount(), virtReg->getTotalUseCount());
 
-                trfprintf(pOutFile, "[ %-10s ]", getName(virtReg));
+                log->printf("[ %-10s ]", getName(virtReg));
             }
-            trfprintf(pOutFile, "\n");
+            log->println();
         }
     } else {
-        trfprintf(pOutFile, "[ %-12s ][ ", getName(reg));
+        log->printf("[ %-12s ][ ", getName(reg));
+
         if (reg->getAssignedRegister())
-            trfprintf(pOutFile, "Assigned  ");
+            log->prints("Assigned  ");
         else if (reg->getFutureUseCount() != 0 && reg->getTotalUseCount() != reg->getFutureUseCount())
-            trfprintf(pOutFile, "Spilled   ");
+            log->prints("Spilled   ");
         else
-            trfprintf(pOutFile, "Unassigned");
+            log->prints("Unassigned");
 
-        trfprintf(pOutFile, " ][ ");
+        log->printf(" ][ %-12s", reg->getAssignedRegister() ? getName(reg->getAssignedRegister()) : " ");
 
-        trfprintf(pOutFile, "%-12s", reg->getAssignedRegister() ? getName(reg->getAssignedRegister()) : " ");
-
-        trfprintf(pOutFile, " ][%5d][%5d]\n", reg->getTotalUseCount(), reg->getFutureUseCount());
+        log->printf(" ][%5d][%5d]\n", reg->getTotalUseCount(), reg->getFutureUseCount());
     }
 }
 
-void TR_Debug::printGPRegisterStatus(TR::FILE *pOutFile, OMR::MachineConnector *machine)
+void TR_Debug::printGPRegisterStatus(OMR::Logger *log, OMR::MachineConnector *machine)
 {
-    if (pOutFile == NULL)
-        return;
 #if defined(TR_TARGET_S390)
     if (_comp->target().cpu.isZ()) {
-        printGPRegisterStatus(pOutFile, (TR::Machine *)machine);
+        printGPRegisterStatus(log, (TR::Machine *)machine);
         return;
     }
 #endif
 }
 
-void TR_Debug::printFPRegisterStatus(TR::FILE *pOutFile, OMR::MachineConnector *machine)
+void TR_Debug::printFPRegisterStatus(OMR::Logger *log, OMR::MachineConnector *machine)
 {
-    if (pOutFile == NULL)
-        return;
 #if defined(TR_TARGET_S390)
     if (_comp->target().cpu.isZ()) {
-        printFPRegisterStatus(pOutFile, (TR::Machine *)machine);
+        printFPRegisterStatus(log, (TR::Machine *)machine);
         return;
     }
 #endif
@@ -2845,77 +2603,74 @@ const char *TR_Debug::toString(TR_RematerializationInfo *info)
     return "unknown";
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RegisterMappedSymbol *localCursor, bool isSpillTemp)
+void TR_Debug::print(OMR::Logger *log, TR::RegisterMappedSymbol *localCursor, bool isSpillTemp)
 {
-    trfprintf(pOutFile, "  Local [%s] (GC map index : %3d, Offset : %3d, Size : %d) is an ", getName(localCursor),
+    log->printf("  Local [%s] (GC map index : %3d, Offset : %3d, Size : %d) is an ", getName(localCursor),
         localCursor->getGCMapIndex(), localCursor->getOffset(), localCursor->getSize());
     if (!localCursor->isInitializedReference())
-        trfprintf(pOutFile, "uninitialized ");
+        log->prints("uninitialized ");
     else
-        trfprintf(pOutFile, "initialized ");
+        log->prints("initialized ");
 
     if (localCursor->isCollectedReference())
-        trfprintf(pOutFile, "collected ");
+        log->prints("collected ");
     else if (!localCursor->isInternalPointer() && !localCursor->isPinningArrayPointer())
-        trfprintf(pOutFile, "uncollected ");
+        log->prints("uncollected ");
 
     if (localCursor->isInternalPointer())
-        trfprintf(pOutFile, "internal pointer ");
+        log->prints("internal pointer ");
     else if (localCursor->isPinningArrayPointer())
-        trfprintf(pOutFile, "pinning array pointer ");
+        log->prints("pinning array pointer ");
 
     if (isSpillTemp)
-        trfprintf(pOutFile, "spill ");
+        log->prints("spill ");
 
     if (localCursor->isLocalObject())
-        trfprintf(pOutFile, "local object ");
+        log->prints("local object ");
 
     if (localCursor->isParm())
-        trfprintf(pOutFile, "parm ");
+        log->prints("parm ");
     else
-        trfprintf(pOutFile, "auto ");
+        log->prints("auto ");
 
-    trfprintf(pOutFile, "\n");
+    log->println();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, uint8_t *instrStart, uint8_t *instrEnd) {}
+void TR_Debug::print(OMR::Logger *log, uint8_t *instrStart, uint8_t *instrEnd) {}
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::GCStackAtlas *atlas)
+void TR_Debug::print(OMR::Logger *log, TR::GCStackAtlas *atlas)
 {
-    if (pOutFile == NULL)
-        return;
-    trfprintf(pOutFile, "\n<atlas>\n");
-    trfprintf(pOutFile, "\nInternal stack atlas:\n");
-    trfprintf(pOutFile, "  numberOfMaps=%d\n", atlas->getNumberOfMaps());
-    trfprintf(pOutFile, "  numberOfSlotsMapped=%d\n", atlas->getNumberOfSlotsMapped());
-    trfprintf(pOutFile, "  numberOfParmSlots=%d\n", atlas->getNumberOfParmSlotsMapped());
-    trfprintf(pOutFile, "  parmBaseOffset=%d\n", atlas->getParmBaseOffset());
-    trfprintf(pOutFile, "  localBaseOffset=%d\n", atlas->getLocalBaseOffset());
-    trfprintf(pOutFile, "\n  Locals information : \n");
+    log->prints("\n<atlas>\n\nInternal stack atlas:\n");
+    log->printf("  numberOfMaps=%d\n", atlas->getNumberOfMaps());
+    log->printf("  numberOfSlotsMapped=%d\n", atlas->getNumberOfSlotsMapped());
+    log->printf("  numberOfParmSlots=%d\n", atlas->getNumberOfParmSlotsMapped());
+    log->printf("  parmBaseOffset=%d\n", atlas->getParmBaseOffset());
+    log->printf("  localBaseOffset=%d\n", atlas->getLocalBaseOffset());
+    log->prints("\n  Locals information : \n");
 
     TR::ResolvedMethodSymbol *methodSymbol = _comp->getMethodSymbol();
 
     ListIterator<TR::ParameterSymbol> parameterIterator(&methodSymbol->getParameterList());
     TR::ParameterSymbol *parmCursor;
     for (parmCursor = parameterIterator.getFirst(); parmCursor; parmCursor = parameterIterator.getNext())
-        print(pOutFile, parmCursor, false);
+        print(log, parmCursor, false);
 
     ListIterator<TR::AutomaticSymbol> automaticIterator(&methodSymbol->getAutomaticList());
     TR::AutomaticSymbol *localCursor;
     for (localCursor = automaticIterator.getFirst(); localCursor; localCursor = automaticIterator.getNext())
-        print(pOutFile, localCursor, false);
+        print(log, localCursor, false);
 
     // Print the map for spill temps
     //
     for (auto temps = _comp->cg()->getCollectedSpillList().begin(); temps != _comp->cg()->getCollectedSpillList().end();
          ++temps) {
         TR::AutomaticSymbol *s = (*temps)->getSymbolReference()->getSymbol()->getAutoSymbol();
-        print(pOutFile, s, true);
+        print(log, s, true);
     }
 
     TR_InternalPointerMap *internalPtrMap = atlas->getInternalPointerMap();
     if (internalPtrMap) {
-        trfprintf(pOutFile, "\n  Internal pointer autos information:\n");
+        log->prints("\n  Internal pointer autos information:\n");
         int32_t indexOfFirstInternalPtr = atlas->getIndexOfFirstInternalPointer();
         ListElement<TR_InternalPointerPair> *currElement = internalPtrMap->getInternalPointerPairs().getListHead();
         for (; currElement; currElement = currElement->getNextElement()) {
@@ -2927,7 +2682,7 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::GCStackAtlas *atlas)
             if (currElement->getData()->getInternalPointerAuto()) {
                 b = currElement->getData()->getInternalPointerAuto()->getGCMapIndex();
             }
-            trfprintf(pOutFile, "    Base array index : %d Internal pointer index : %d\n", a, b);
+            log->printf("    Base array index : %d Internal pointer index : %d\n", a, b);
         }
     }
 
@@ -2935,16 +2690,16 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::GCStackAtlas *atlas)
         int32_t indexOfFirstInternalPtr = atlas->getIndexOfFirstInternalPointer();
         ListElement<TR::AutomaticSymbol> *currElement = atlas->getPinningArrayPtrsForInternalPtrRegs().getListHead();
         for (; currElement; currElement = currElement->getNextElement())
-            trfprintf(pOutFile, "    Base array index : %d pins internal pointers only in regs\n",
+            log->printf("    Base array index : %d pins internal pointers only in regs\n",
                 currElement->getData()->getGCMapIndex());
     } else if (!internalPtrMap)
-        trfprintf(pOutFile, "\n  No internal pointers in this method\n");
+        log->prints("\n  No internal pointers in this method\n");
 
-    trfprintf(pOutFile, "\n");
+    log->println();
 
     if (atlas->getStackAllocMap()) {
-        trfprintf(pOutFile, "Stack alloc map size : %d ", atlas->getStackAllocMap()->getMapSizeInBytes());
-        trfprintf(pOutFile, "\n  Stack slots containing local objects --> {");
+        log->printf("Stack alloc map size : %d ", atlas->getStackAllocMap()->getMapSizeInBytes());
+        log->prints("\n  Stack slots containing local objects --> {");
         TR_GCStackAllocMap *stackAllocMap = atlas->getStackAllocMap();
 
         int mapBytes = (stackAllocMap->_numberOfSlotsMapped + 7) >> 3;
@@ -2956,41 +2711,37 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::GCStackAtlas *atlas)
                 if (bits < stackAllocMap->_numberOfSlotsMapped) {
                     if (mapByte & 1) {
                         if (!firstBitOn)
-                            trfprintf(pOutFile, ",%d", bits);
+                            log->printf(",%d", bits);
                         else
-                            trfprintf(pOutFile, "%d", bits);
+                            log->printf("%d", bits);
                         firstBitOn = false;
                     }
-                    // trfprintf(pOutFile,"%d", mapByte & 1);
                     mapByte >>= 1;
                     bits++;
                 }
         }
 
-        trfprintf(pOutFile, "}\n\n");
+        log->prints("}\n\n");
     }
 
     int32_t num = 1;
     ListIterator<TR_GCStackMap> maps(&atlas->getStackMapList());
     for (TR_GCStackMap *map = maps.getFirst(); map; map = maps.getNext()) {
-        trfprintf(pOutFile, "  Map number : %d", num);
-        print(pOutFile, map, atlas);
-        trfprintf(pOutFile, "\n");
+        log->printf("  Map number : %d", num);
+        print(log, map, atlas);
+        log->println();
         num++;
     }
 
-    trfprintf(pOutFile, "\n</atlas>\n");
+    log->prints("\n</atlas>\n");
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR_GCStackMap *map, TR::GCStackAtlas *atlas)
+void TR_Debug::print(OMR::Logger *log, TR_GCStackMap *map, TR::GCStackAtlas *atlas)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "\n  Code offset range starts at [%08x]", map->_lowestCodeOffset);
-    trfprintf(pOutFile, "\n  GC stack map information : ");
-    trfprintf(pOutFile, "\n    number of stack slots mapped = %d", map->_numberOfSlotsMapped);
-    trfprintf(pOutFile, "\n    live stack slots containing addresses --> {");
+    log->printf("\n  Code offset range starts at [%08x]", map->_lowestCodeOffset);
+    log->prints("\n  GC stack map information : ");
+    log->printf("\n    number of stack slots mapped = %d", map->_numberOfSlotsMapped);
+    log->prints("\n    live stack slots containing addresses --> {");
 
     int mapBytes = (map->_numberOfSlotsMapped + 7) >> 3;
     uint32_t bits = 0;
@@ -3001,50 +2752,47 @@ void TR_Debug::print(TR::FILE *pOutFile, TR_GCStackMap *map, TR::GCStackAtlas *a
             if (bits < map->_numberOfSlotsMapped) {
                 if (mapByte & 1) {
                     if (!firstBitOn)
-                        trfprintf(pOutFile, ",%d", bits);
+                        log->printf(",%d", bits);
                     else
-                        trfprintf(pOutFile, "%d", bits);
+                        log->printf("%d", bits);
                     firstBitOn = false;
                 }
-                // trfprintf(pOutFile,"%d", mapByte & 1);
                 mapByte >>= 1;
                 bits++;
             }
     }
 
-    trfprintf(pOutFile, "}\n");
-    trfprintf(pOutFile, "  GC register map information : \n");
+    log->prints("}\n  GC register map information : \n");
     TR_InternalPointerMap *internalPtrMap = map->getInternalPointerMap();
     if (internalPtrMap) {
         int32_t indexOfFirstInternalPtr = atlas->getIndexOfFirstInternalPointer();
-        trfprintf(pOutFile, "    internal pointer regs information :\n");
+        log->prints("    internal pointer regs information :\n");
         ListElement<TR_InternalPointerPair> *currElement = internalPtrMap->getInternalPointerPairs().getListHead();
         for (; currElement; currElement = currElement->getNextElement())
-            trfprintf(pOutFile, "      pinning array GC stack map index = %d Internal pointer regnum = %d\n",
+            log->printf("      pinning array GC stack map index = %d Internal pointer regnum = %d\n",
                 currElement->getData()->getPinningArrayPointer()->getGCMapIndex(),
                 currElement->getData()->getInternalPtrRegNum());
     }
 
-    print(pOutFile, &map->_registerMap);
+    print(log, &map->_registerMap);
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-void TR_Debug::dump(TR::FILE *pOutFile, TR_CHTable *chTable)
+void TR_Debug::dump(OMR::Logger *log, TR_CHTable *chTable)
 {
-    if (pOutFile == NULL)
-        return;
     const TR::Compilation::GuardSet &vguards = _comp->getVirtualGuards();
 
-    if (!chTable->_preXMethods && !chTable->_classes && vguards.empty())
+    if (!chTable->_preXMethods && !chTable->_classes && vguards.empty()) {
         return;
+    }
 
-    trfprintf(pOutFile, "                       Class Hierarchy Assumption Table\n");
-    trfprintf(pOutFile, "----------------------------------------------------------------------------------------\n");
+    log->prints("                       Class Hierarchy Assumption Table\n");
+    log->prints("----------------------------------------------------------------------------------------\n");
 
     if (!vguards.empty()) {
         uint8_t *startPC = _comp->cg()->getCodeStart();
 
-        trfprintf(pOutFile, "Following virtual guards are NOPed:\n");
+        log->prints("Following virtual guards are NOPed:\n");
         uint32_t i = 0;
         for (auto info = vguards.begin(); info != vguards.end(); ++info, ++i) {
             char guardKindName[49];
@@ -3052,40 +2800,39 @@ void TR_Debug::dump(TR::FILE *pOutFile, TR_CHTable *chTable)
                 (*info)->mergedWithHCRGuard() ? "+ HCRGuard " : "", (*info)->mergedWithOSRGuard() ? "+ OSRGuard " : "");
 
             if (!(*info)->getSymbolReference())
-                trfprintf(pOutFile, "[%4d] %-49s %s%s\n", i, guardKindName, (*info)->isInlineGuard() ? "inlined " : "",
+                log->printf("[%4d] %-49s %s%s\n", i, guardKindName, (*info)->isInlineGuard() ? "inlined " : "",
                     guardKindName);
             else
-                trfprintf(pOutFile, "[%4d] %-49s %scalleeSymbol=" POINTER_PRINTF_FORMAT "\n", i, guardKindName,
+                log->printf("[%4d] %-49s %scalleeSymbol=" POINTER_PRINTF_FORMAT "\n", i, guardKindName,
                     (*info)->isInlineGuard() ? "inlined " : "", (*info)->getSymbolReference()->getSymbol());
             ListIterator<TR_VirtualGuardSite> siteIt(&(*info)->getNOPSites());
             for (TR_VirtualGuardSite *site = siteIt.getFirst(); site; site = siteIt.getNext()) {
                 uint8_t *loc = site->getLocation();
                 uint8_t *&dest = site->getDestination();
 
-                trfprintf(pOutFile,
-                    "\tSite: location=" POINTER_PRINTF_FORMAT " (e+%5x) branch-dest=" POINTER_PRINTF_FORMAT
-                    " (e+%5x)\n",
+                log->printf("\tSite: location=" POINTER_PRINTF_FORMAT " (e+%5x) branch-dest=" POINTER_PRINTF_FORMAT
+                            " (e+%5x)\n",
                     loc, loc - startPC, dest, dest - startPC);
             }
             ListIterator<TR_InnerAssumption> innerIt(&(*info)->getInnerAssumptions());
             for (TR_InnerAssumption *inner = innerIt.getFirst(); inner; inner = innerIt.getNext()) {
-                trfprintf(pOutFile, "\tInner Assumption: calleeSymbol=" POINTER_PRINTF_FORMAT " for parm ordinal=%d\n",
+                log->printf("\tInner Assumption: calleeSymbol=" POINTER_PRINTF_FORMAT " for parm ordinal=%d\n",
                     inner->_guard->getSymbolReference()->getSymbol(), inner->_ordinal);
             }
         }
     }
 
     if (chTable->_preXMethods) {
-        trfprintf(pOutFile, "\nOverriding of the following methods will cause a recompilation:\n");
+        log->prints("\nOverriding of the following methods will cause a recompilation:\n");
 
         for (int32_t i = chTable->_preXMethods->lastIndex(); i >= 0; --i) {
             TR_ResolvedMethod *method = chTable->_preXMethods->element(i);
-            trfprintf(pOutFile, "[%s] %s\n", getName(method), method->signature(comp()->trMemory(), heapAlloc));
+            log->printf("[%s] %s\n", getName(method), method->signature(comp()->trMemory(), heapAlloc));
         }
     }
 
     if (chTable->_classes) {
-        trfprintf(pOutFile, "\nExtension of the following classes will cause a recompilation:\n");
+        log->prints("\nExtension of the following classes will cause a recompilation:\n");
 
         char buf[256];
         for (int32_t i = chTable->_classes->lastIndex(); i >= 0; --i) {
@@ -3099,11 +2846,11 @@ void TR_Debug::dump(TR::FILE *pOutFile, TR_CHTable *chTable)
             strncpy(buf, sig, len);
             buf[len] = 0;
 
-            trfprintf(pOutFile, "[%s] %s\n", getName(clazz), buf);
+            log->printf("[%s] %s\n", getName(clazz), buf);
         }
     }
 
-    trfprintf(pOutFile, "----------------------------------------------------------------------------------------\n");
+    log->prints("----------------------------------------------------------------------------------------\n");
 }
 #endif
 
@@ -4376,30 +4123,30 @@ const char *TR_Debug::getSpillKindName(uint8_t kind)
     }
 }
 
-void TR_Debug::dumpSimulatedNode(TR::Node *node, char tagChar)
+void TR_Debug::dumpSimulatedNode(OMR::Logger *log, TR::Node *node, char tagChar)
 {
-    trfprintf(_file, "\n               [%s]", getName(node));
+    log->printf("\n               [%s]", getName(node));
     if (_comp->cg()->simulatedNodeState(node)._willBeRematerialized) {
-        trfprintf(_file, " R/%-2d", node->getReferenceCount());
+        log->printf(" R/%-2d", node->getReferenceCount());
     } else if (node->getReferenceCount() >= 1) {
-        trfprintf(_file, "%2d/%-2d", node->getLocalIndex(), node->getReferenceCount());
+        log->printf("%2d/%-2d", node->getLocalIndex(), node->getReferenceCount());
     } else {
-        trfprintf(_file, "     ");
+        log->prints("     ");
     }
-    trfprintf(_file, " %c ", tagChar);
+    log->printf(" %c ", tagChar);
 
     // 16 chars is enough room for ArrayCopyBNDCHK which is reasonably common
     int32_t padding = 16 - static_cast<int32_t>(strlen(getName(node->getOpCode())));
     if (node->getOpCode().hasSymbolReference()) {
         // Yes, big methods can have 4-digit symref numbers
-        trfprintf(_file, "%s #%-4d", getName(node->getOpCode()), node->getSymbolReference()->getReferenceNumber());
+        log->printf("%s #%-4d", getName(node->getOpCode()), node->getSymbolReference()->getReferenceNumber());
         padding -= 6;
     } else if (node->getOpCode().isBranch()) {
         int32_t destBlockNum = node->getBranchDestination()->getNode()->getBlock()->getNumber();
-        trfprintf(_file, "%s %-4d", getName(node->getOpCode()), destBlockNum);
+        log->printf("%s %-4d", getName(node->getOpCode()), destBlockNum);
         padding -= 5;
     } else if (node->getOpCodeValue() == TR::BBStart || node->getOpCodeValue() == TR::BBEnd) {
-        trfprintf(_file, "%s %-4d", getName(node->getOpCode()), node->getBlock()->getNumber());
+        log->printf("%s %-4d", getName(node->getOpCode()), node->getBlock()->getNumber());
         padding -= 5;
     } else if (node->getOpCode().isLoadConst()) {
         const int32_t limit = 99999999;
@@ -4408,39 +4155,6 @@ void TR_Debug::dumpSimulatedNode(TR::Node *node, char tagChar)
         const char * const unsignedFormatString = "%s %-8u";
         if (node->getType().isIntegral()) {
             padding -= 9;
-            //          if (node->getOpCode().isUnsigned())
-            //             {
-            //             uint64_t value;
-            //             switch (node->getDataType())
-            //                {
-            //                case TR_UInt8:
-            //                   value = node->getUnsignedByte();
-            //                   break;
-            //                case TR_UInt16:
-            //                   value = node->getConst<uint16_t>();
-            //                   break;
-            //                case TR_UInt32:
-            //                   value = node->getUnsignedInt();
-            //                   break;
-            //                case TR_UInt64:
-            //                   value = node->getUnsignedLongInt();
-            //                   break;
-            //                default:
-            //                   TR_ASSERT(0, "Unsigned integral type should be one of the above");
-            //                   value = limit+1;
-            //                   break;
-            //                }
-            //             if (value <= limit)
-            //                {
-            //                trfprintf(_file, unsignedFormatString, getName(node->getOpCode()), value);
-            //                }
-            //             else
-            //                {
-            //                trfprintf(_file, opCodeOnlyFormatString, getName(node->getOpCode()));
-            //                }
-            //             }
-            //          else
-            //             {
             int64_t value;
             switch (node->getDataType()) {
                 case TR::Int8:
@@ -4461,62 +4175,60 @@ void TR_Debug::dumpSimulatedNode(TR::Node *node, char tagChar)
                     break;
             }
             if (value >= -limit && value <= limit) {
-                trfprintf(_file, signedFormatString, getName(node->getOpCode()), value);
+                log->printf(signedFormatString, getName(node->getOpCode()), value);
             } else {
-                trfprintf(_file, opCodeOnlyFormatString, getName(node->getOpCode()));
+                log->printf(opCodeOnlyFormatString, getName(node->getOpCode()));
             }
-            //            }
         } else if (node->getDataType() == TR::Float) {
-            trfprintf(_file, "%s %-8g", getName(node->getOpCode()), node->getFloat());
+            log->printf("%s %-8g", getName(node->getOpCode()), node->getFloat());
             padding -= 9;
         } else if (node->getDataType() == TR::Double) {
-            trfprintf(_file, "%s %-8g", getName(node->getOpCode()), node->getDouble());
+            log->printf("%s %-8g", getName(node->getOpCode()), node->getDouble());
             padding -= 9;
         } else if (node->getDataType() == TR::Address && node->getAddress() == 0) {
-            trfprintf(_file, "%s NULL", getName(node->getOpCode()));
+            log->printf("%s NULL", getName(node->getOpCode()));
             padding -= 5;
         } else {
-            trfprintf(_file, "%s", getName(node->getOpCode()));
+            log->prints(getName(node->getOpCode()));
         }
     } else {
-        trfprintf(_file, "%s", getName(node->getOpCode()));
+        log->prints(getName(node->getOpCode()));
     }
 
-    trfprintf(_file, " %*s", padding, "");
+    log->printf(" %*s", padding, "");
 }
 
-void TR_Debug::dumpGlobalRegisterTable()
+void TR_Debug::dumpGlobalRegisterTable(OMR::Logger *log)
 {
-    trfprintf(_file, "Global regs:\n");
+    log->prints("Global regs:\n");
     for (int32_t i = 0; i < _comp->cg()->getNumberOfGlobalRegisters(); i++) {
-        trfprintf(_file, "   %d: %s\n", i, getGlobalRegisterName((TR_GlobalRegisterNumber)i));
+        log->printf("   %d: %s\n", i, getGlobalRegisterName((TR_GlobalRegisterNumber)i));
     }
 }
 
-void TR_Debug::startTracingRegisterAssignment(TR_RegisterKinds kindsToAssign)
+void TR_Debug::startTracingRegisterAssignment(OMR::Logger *log, TR_RegisterKinds kindsToAssign)
 {
-    if (_file == NULL)
-        return;
     if (!_comp->getOption(TR_TraceRA))
         return;
-    trfprintf(_file, "\n\n<regassign method=\"%s\">\n", jitdCurrentMethodSignature(_comp));
-    trfprintf(_file,
-        "<legend>\n"
-        "  V(F/T)   virtual register V with future use count F and total use count T\n"
-        "  V=R      V assigned to real register R\n"
-        "  V:R      V assigned to R by association\n"
-        "  V#R      V assigned to R by graph colouring\n"
-        "  V=$R     another virtual register in R now spilled\n"
-        "  $V=R     spilled V now reloaded into R\n"
-        "  !V=R     coercion due to a pre-dependency\n"
-        "  V=R!     coercion due to a post-dependency\n"
-        "  (V=R)    coercion due to another assignment/coercion\n"
-        "  {V#R}    coercion due to colouring\n"
-        "  V~R      V evicted from R (spill, death, etc.)\n"
-        "  R[N]?    considering R with weight N\n"
-        "  V{I,D}?  considering V with association index I and interference distance D\n"
-        "</legend>\n");
-    trfflush(_file);
+
+    log->printf("\n\n<regassign method=\"%s\">\n", jitdCurrentMethodSignature(_comp));
+    log->prints("<legend>\n"
+                "  V(F/T)   virtual register V with future use count F and total use count T\n"
+                "  V=R      V assigned to real register R\n"
+                "  V:R      V assigned to R by association\n"
+                "  V#R      V assigned to R by graph colouring\n"
+                "  V=$R     another virtual register in R now spilled\n"
+                "  $V=R     spilled V now reloaded into R\n"
+                "  !V=R     coercion due to a pre-dependency\n"
+                "  V=R!     coercion due to a post-dependency\n"
+                "  (V=R)    coercion due to another assignment/coercion\n"
+                "  {V#R}    coercion due to colouring\n"
+                "  V~R      V evicted from R (spill, death, etc.)\n"
+                "  R[N]?    considering R with weight N\n"
+                "  V{I,D}?  considering V with association index I and interference distance D\n"
+                "</legend>\n");
+
+    log->flush();
     _registerAssignmentTraceFlags |= TRACERA_IN_PROGRESS;
     _registerAssignmentTraceCursor = 0;
     _registerKindsToAssign = kindsToAssign;
@@ -4533,32 +4245,31 @@ void TR_Debug::resumeTracingRegisterAssignment()
     _registerAssignmentTraceFlags = _pausedRegisterAssignmentTraceFlags;
 }
 
-void TR_Debug::stopTracingRegisterAssignment()
+void TR_Debug::stopTracingRegisterAssignment(OMR::Logger *log)
 {
-    if (_file == NULL)
-        return;
     if (!_comp->getOption(TR_TraceRA))
         return;
+
     if (_registerAssignmentTraceCursor)
-        trfprintf(_file, "\n");
-    trfprintf(_file, "</regassign>\n");
-    trfflush(_file);
+        log->println();
+
+    log->prints("</regassign>\n");
+    log->flush();
     _registerAssignmentTraceFlags &= ~TRACERA_IN_PROGRESS;
 }
 
-void TR_Debug::traceRegisterAssignment(const char *format, va_list args)
+void TR_Debug::traceRegisterAssignment(OMR::Logger *log, const char *format, va_list args)
 {
-    if (_file == NULL)
-        return;
     if (!_comp->getOption(TR_TraceRA))
         return;
+
     if (_registerAssignmentTraceCursor) {
-        trfprintf(_file, "\n");
+        log->println();
         _registerAssignmentTraceCursor = 0;
     }
 
     // indent the message.
-    trfprintf(_file, "details:                      ");
+    log->prints("details:                      ");
 
     int32_t j = 0;
     int32_t length = static_cast<int32_t>(strlen(format)) + 40;
@@ -4596,111 +4307,90 @@ void TR_Debug::traceRegisterAssignment(const char *format, va_list args)
     buffer[j] = 0;
 
     // print the rest of the arguments using the modified format
-    if (sawPercentR)
-        TR::IO::vfprintf(_file, buffer, args);
-    else
-        TR::IO::vfprintf(_file, format, args);
+    log->vprintf(sawPercentR ? buffer : format, args);
 
     va_end(args);
-    trfprintf(_file, "\n");
-    trfflush(_file);
+    log->println();
+    log->flush();
 }
 
-void TR_Debug::traceRegisterAssignment(TR::Instruction *instr, bool insertedByRA, bool postRA)
+void TR_Debug::traceRegisterAssignment(OMR::Logger *log, TR::Instruction *instr, bool insertedByRA, bool postRA)
 {
     TR_ASSERT(instr, "cannot trace assignment of NULL instructions\n");
-    if (_file == NULL)
-        return;
+
     if (!_comp->getOption(TR_TraceRA))
         return;
+
     if (insertedByRA)
         _registerAssignmentTraceFlags |= TRACERA_INSTRUCTION_INSERTED;
     else if (postRA)
         _registerAssignmentTraceFlags &= ~TRACERA_INSTRUCTION_INSERTED;
-    print(_file, instr);
+
+    print(log, instr);
     if (_registerAssignmentTraceCursor) {
-        trfprintf(_file, "\n");
+        log->println();
         _registerAssignmentTraceCursor = 0;
         if (postRA) {
             if (_comp->getOption(TR_TraceRA)) {
-                trfprintf(_file, "<regstates>\n");
-#if 0
-/* Work in progress side-by side traceRA={*} */
-            const bool isGPR = _registerKindsToAssign & TR_GPR_Mask;
-            const bool isVRF = _registerKindsToAssign & TR_VRF_Mask;
-            const bool isFPR = _registerKindsToAssign & TR_FPR_Mask;
+                log->prints("<regstates>\n");
 
-            TR::RegisterIterator *gprIter = _comp->cg()->getGPRegisterIterator();
-            TR::RegisterIterator *hprIter = _comp->cg()->getGPRegisterIterator();
-            TR::RegisterIterator *vrfIter = _comp->cg()->getGPRegisterIterator();
-            TR::RegisterIterator *fprIter = _comp->cg()->getGPRegisterIterator();
-            TR::RegisterIterator *arIter  = _comp->cg()->getGPRegisterIterator();
-            TR::RegisterIterator *x87Iter = _comp->cg()->getGPRegisterIterator();
-
-            // Print header
-
-            // Print regs
-            for (int row = 0; row < 16; row++)
-               {
-               // Call printFullRegInfoNewFormat(_file,...)
-               trfprintf("\n");
-               }
-
-            // Print footer
-#endif
                 if (_registerKindsToAssign & TR_GPR_Mask) {
-                    trfprintf(_file, "<gprs>\n");
+                    log->prints("<gprs>\n");
                     TR::RegisterIterator *iter = _comp->cg()->getGPRegisterIterator();
                     for (TR::Register *gpr = iter->getFirst(); gpr; gpr = iter->getNext()) {
-                        printFullRegInfo(_file, gpr);
+                        printFullRegInfo(log, gpr);
                     }
-                    trfprintf(_file, "</gprs>\n");
+                    log->prints("</gprs>\n");
                 }
 #if defined(TR_TARGET_S390)
                 if (_registerKindsToAssign & TR_VRF_Mask && _cg->getSupportsVectorRegisters()) {
-                    trfprintf(_file, "<vrfs>\n");
+                    log->prints("<vrfs>\n");
                     TR::RegisterIterator *iter = _cg->getVRFRegisterIterator();
                     for (TR::Register *vrf = iter->getFirst(); vrf; vrf = iter->getNext()) {
-                        printFullRegInfo(_file, vrf);
+                        printFullRegInfo(log, vrf);
                     }
-                    trfprintf(_file, "</vrfs>\n");
+                    log->prints("</vrfs>\n");
                 }
 #endif
                 if (_registerKindsToAssign & TR_FPR_Mask) {
-                    trfprintf(_file, "<fprs>\n");
+                    log->prints("<fprs>\n");
                     TR::RegisterIterator *iter = _comp->cg()->getFPRegisterIterator();
                     for (TR::Register *fpr = iter->getFirst(); fpr; fpr = iter->getNext()) {
-                        printFullRegInfo(_file, fpr);
+                        printFullRegInfo(log, fpr);
                     }
-                    trfprintf(_file, "</fprs>\n");
+                    log->prints("</fprs>\n");
                 }
 
                 if (_registerKindsToAssign & TR_VMR_Mask) {
-                    trfprintf(_file, "<vmrs>\n");
+                    log->prints("<vmrs>\n");
                     TR::RegisterIterator *iter = _comp->cg()->getVMRegisterIterator();
                     for (TR::Register *vmr = iter->getFirst(); vmr; vmr = iter->getNext()) {
-                        printFullRegInfo(_file, vmr);
+                        printFullRegInfo(log, vmr);
                     }
-                    trfprintf(_file, "</vmrs>\n");
+                    log->prints("</vmrs>\n");
                 }
 
-                trfprintf(_file, "</regstates>\n");
+                log->prints("</regstates>\n");
             }
-            trfprintf(_file, "\n");
+            log->println();
         }
     }
 }
 
-void TR_Debug::traceRegisterAssigned(TR_RegisterAssignmentFlags flags, TR::Register *virtReg, TR::Register *realReg)
+void TR_Debug::traceRegisterAssigned(OMR::Logger *log, TR_RegisterAssignmentFlags flags, TR::Register *virtReg,
+    TR::Register *realReg)
 {
     TR_ASSERT(realReg, "Cannot trace assignment of NULL Real Register\n");
     TR_ASSERT(virtReg, "Cannot trace assignment of NULL Virtual Register\n");
 
-    if (_file == NULL || !_comp->getOption(TR_TraceRA))
+    if (!_comp->getOption(TR_TraceRA)) {
         return;
+    }
+
     // Avoid superfluous traces, unless the user asks for them.
     if (virtReg->isPlaceholderReg() && !_comp->getOption(TR_TraceRA))
         return;
+
     char buf[30];
     const char *preCoercionSymbol = flags.testAny(TR_PreDependencyCoercion) ? "!" : "";
     const char *postCoercionSymbol = flags.testAny(TR_PostDependencyCoercion) ? "!" : "";
@@ -4713,71 +4403,78 @@ void TR_Debug::traceRegisterAssigned(TR_RegisterAssignmentFlags flags, TR::Regis
     sprintf(buf, "%s%s%s%s(%d/%d)%s%s%s%s%s ", preCoercionSymbol, openParen, regReloadSymbol, getName(virtReg),
         virtReg->getFutureUseCount(), virtReg->getTotalUseCount(), equalSign, regSpillSymbol, getName(realReg),
         closeParen, postCoercionSymbol);
+
     if ((_registerAssignmentTraceCursor += static_cast<int16_t>(strlen(buf))) > 80) {
         _registerAssignmentTraceCursor = static_cast<int16_t>(strlen(buf));
-        trfprintf(_file, "\n%s", buf);
+        log->printf("\n%s", buf);
     } else {
-        trfprintf(_file, buf);
+        log->prints(buf);
     }
-    trfflush(_file);
+    log->flush();
 }
 
-void TR_Debug::traceRegisterFreed(TR::Register *virtReg, TR::Register *realReg)
+void TR_Debug::traceRegisterFreed(OMR::Logger *log, TR::Register *virtReg, TR::Register *realReg)
 {
     TR_ASSERT(realReg, "Cannot trace assignment of NULL Real Register\n");
     TR_ASSERT(virtReg, "Cannot trace assignment of NULL Virtual Register\n");
 
-    if (_file == NULL || !_comp->getOption(TR_TraceRA))
+    if (!_comp->getOption(TR_TraceRA))
         return;
+
     // Avoid superfluous traces, unless the user asks for them.
     if (virtReg->isPlaceholderReg() && !_comp->getOption(TR_TraceRA))
         return;
+
     char buf[30];
     sprintf(buf, "%s(%d/%d)~%s ", getName(virtReg), virtReg->getFutureUseCount(), virtReg->getTotalUseCount(),
         getName(realReg));
+
     if ((_registerAssignmentTraceCursor += static_cast<int16_t>(strlen(buf))) > 80) {
         _registerAssignmentTraceCursor = static_cast<int16_t>(strlen(buf));
-        trfprintf(_file, "\n%s", buf);
+        log->printf("\n%s", buf);
     } else {
-        trfprintf(_file, buf);
+        log->prints(buf);
     }
-    trfflush(_file);
+    log->flush();
 }
 
-void TR_Debug::traceRegisterInterference(TR::Register *virtReg, TR::Register *interferingVirtual, int32_t distance)
+void TR_Debug::traceRegisterInterference(OMR::Logger *log, TR::Register *virtReg, TR::Register *interferingVirtual,
+    int32_t distance)
 {
     TR_ASSERT(virtReg && interferingVirtual, "cannot trace assignment of NULL registers\n");
-    if (_file == NULL)
-        return;
+
     if (!_comp->getOption(TR_TraceRA))
         return;
+
     char buf[40];
     sprintf(buf, "%s{%d,%d}? ", getName(interferingVirtual), interferingVirtual->getAssociation(), distance);
+
     if ((_registerAssignmentTraceCursor += static_cast<int16_t>(strlen(buf))) > 80) {
         _registerAssignmentTraceCursor = static_cast<int16_t>(strlen(buf));
-        trfprintf(_file, "\n%s", buf);
+        log->printf("\n%s", buf);
     } else {
-        trfprintf(_file, buf);
+        log->prints(buf);
     }
-    trfflush(_file);
+    log->flush();
 }
 
-void TR_Debug::traceRegisterWeight(TR::Register *realReg, uint32_t weight)
+void TR_Debug::traceRegisterWeight(OMR::Logger *log, TR::Register *realReg, uint32_t weight)
 {
     TR_ASSERT(realReg, "cannot trace weight of NULL register\n");
-    if (_file == NULL)
-        return;
+
     if (!_comp->getOption(TR_TraceRA))
         return;
+
     char buf[30];
     sprintf(buf, "%s[0x%x]? ", getName(realReg), weight);
+
     if ((_registerAssignmentTraceCursor += static_cast<int16_t>(strlen(buf))) > 80) {
         _registerAssignmentTraceCursor = static_cast<int16_t>(strlen(buf));
-        trfprintf(_file, "\n%s", buf);
+        log->printf("\n%s", buf);
     } else {
-        trfprintf(_file, buf);
+        log->prints(buf);
     }
-    trfflush(_file);
+    log->flush();
 }
 
 #if defined(AIXPPC)

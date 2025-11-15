@@ -51,6 +51,7 @@
 #include "infra/CfgEdge.hpp"
 #include "optimizer/Optimizer.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 class TR_OpaqueClassBlock;
 
@@ -144,6 +145,7 @@ TR_LocalAnalysisInfo::TR_LocalAnalysisInfo(TR::Compilation *c, bool t)
     , _trace(t)
     , _trMemory(c->trMemory())
 {
+    OMR::Logger *log = c->log();
     _numNodes = -1;
 
 #if 0 // somehow stops PRE from happening
@@ -271,8 +273,8 @@ TR_LocalAnalysisInfo::TR_LocalAnalysisInfo(TR::Compilation *c, bool t)
                 //
                 if (oldExpressionOnRhs == -1) {
                     if (trace()) {
-                        traceMsg(comp(), "\nExpression #%d is : \n", _numNodes);
-                        comp()->getDebug()->print(comp()->getOutFile(), firstNodeInTree, 6, true);
+                        log->printf("\nExpression #%d is : \n", _numNodes);
+                        comp()->getDebug()->print(log, firstNodeInTree, 6, true);
                     }
 
                     firstNodeInTree->setLocalIndex(_numNodes++);
@@ -286,8 +288,8 @@ TR_LocalAnalysisInfo::TR_LocalAnalysisInfo(TR::Compilation *c, bool t)
 
                     if (oldExpressionOnRhs == -1) {
                         if (trace()) {
-                            traceMsg(comp(), "\nExpression #%d is : \n", _numNodes);
-                            comp()->getDebug()->print(comp()->getOutFile(), firstNodeInTree->getFirstChild(), 6, true);
+                            log->printf("\nExpression #%d is : \n", _numNodes);
+                            comp()->getDebug()->print(log, firstNodeInTree->getFirstChild(), 6, true);
                         }
 
                         firstNodeInTree->getFirstChild()->setLocalIndex(_numNodes++);
@@ -849,6 +851,8 @@ TR::Node *TR_LocalAnalysisInfo::HashTable::Cursor::nextNode()
 //
 bool TR_LocalAnalysisInfo::countSupportedNodes(TR::Node *node, TR::Node *parent, bool &containsCallInStoreLhs)
 {
+    OMR::Logger *log = comp()->log();
+
     if (_visitCount == node->getVisitCount()) {
         return false;
     }
@@ -887,8 +891,8 @@ bool TR_LocalAnalysisInfo::countSupportedNodes(TR::Node *node, TR::Node *parent,
 
         if (oldExpressionOnRhs == -1) {
             if (trace()) {
-                traceMsg(comp(), "\nExpression #%d is : \n", _numNodes);
-                _compilation->getDebug()->print(_compilation->getOutFile(), node, 6, true);
+                log->printf("\nExpression #%d is : \n", _numNodes);
+                comp()->getDebug()->print(log, node, 6, true);
             }
 
             flag = true;
@@ -909,20 +913,10 @@ bool isExceptional(TR::Compilation *comp, TR::Node *node)
         return true;
 
     if (comp->cg()->nodeMayCauseException(node)) {
-        if (comp->cg()->traceBCDCodeGen())
-            traceMsg(comp, "d^d: %s (%p) may cause on exception so do not speculate in PRE\n",
-                node->getOpCode().getName(), node);
+        logprintf(comp->cg()->traceBCDCodeGen(), comp->log(),
+            "d^d: %s (%p) may cause on exception so do not speculate in PRE\n", node->getOpCode().getName(), node);
         return true;
     }
-
-#if 0
-   int i;
-   for (i = 0; i < node->getNumChildren(); i++)
-      {
-      if (isExceptional(comp, node->getChild(i)))
-	 return true;
-      }
-#endif
 
     return false;
 }

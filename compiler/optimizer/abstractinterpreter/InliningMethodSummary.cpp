@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "optimizer/abstractinterpreter/InliningMethodSummary.hpp"
+#include "ras/Logger.hpp"
 
 uint32_t TR::InliningMethodSummary::testArgument(TR::AbsValue *arg, uint32_t argPos)
 {
@@ -46,10 +47,12 @@ uint32_t TR::InliningMethodSummary::testArgument(TR::AbsValue *arg, uint32_t arg
 
 void TR::InliningMethodSummary::trace(TR::Compilation *comp)
 {
-    traceMsg(comp, "Inlining Method Summary:\n");
+    OMR::Logger *log = comp->log();
+
+    log->prints("Inlining Method Summary:\n");
 
     if (_optsByArg.size() == 0) {
-        traceMsg(comp, "EMPTY\n\n");
+        log->prints("EMPTY\n\n");
         return;
     }
 
@@ -58,9 +61,9 @@ void TR::InliningMethodSummary::trace(TR::Compilation *comp)
             for (size_t j = 0; j < _optsByArg[i]->size(); j++) {
                 TR::PotentialOptimizationPredicate *predicate = (*_optsByArg[i])[j];
 
-                traceMsg(comp, "%s @%d for Argument %d ", predicate->getName(), predicate->getBytecodeIndex(), i);
+                log->printf("%s @%d for Argument %d ", predicate->getName(), predicate->getBytecodeIndex(), i);
                 predicate->trace(comp);
-                traceMsg(comp, "\n");
+                log->println();
             }
         }
     }
@@ -169,6 +172,6 @@ bool TR::PotentialOptimizationVPPredicate::test(TR::AbsValue *value)
 
 void TR::PotentialOptimizationVPPredicate::trace(TR::Compilation *comp)
 {
-    traceMsg(comp, "Predicate Constraint: ");
+    comp->log()->prints("Predicate Constraint: ");
     _constraint->print(_vp);
 }

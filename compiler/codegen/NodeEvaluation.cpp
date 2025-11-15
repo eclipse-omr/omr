@@ -44,6 +44,7 @@
 #include "infra/Assert.hpp"
 #include "infra/Stack.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
 #ifdef TR_TARGET_S390
@@ -53,14 +54,17 @@
 
 TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
 {
+    TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
     TR::Register *reg;
 
     TR::ILOpCodes opcode = node->getOpCodeValue();
 
-    TR_ASSERT(!self()->comp()->getOption(TR_EnableParanoidRefCountChecks) || node->getOpCode().isTreeTop()
+    TR_ASSERT(!comp->getOption(TR_EnableParanoidRefCountChecks) || node->getOpCode().isTreeTop()
             || node->getReferenceCount() > 0,
         "OMR::CodeGenerator::evaluate invoked for nontreetop node [%s] with count == 0",
-        node->getName(self()->comp()->getDebug()));
+        node->getName(comp->getDebug()));
 
     if (opcode != TR::BBStart && node->getRegister()) {
         reg = node->getRegister();
@@ -178,10 +182,10 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
 
         reg = _nodeToInstrEvaluators[opcode](node, self());
 
-        if (self()->comp()->getOption(TR_TraceRegisterPressureDetails)) {
-            traceMsg(self()->comp(), "  evaluated %s", self()->getDebug()->getName(node));
-            self()->getDebug()->dumpLiveRegisters();
-            traceMsg(self()->comp(), "\n");
+        if (comp->getOption(TR_TraceRegisterPressureDetails)) {
+            log->printf("  evaluated %s", self()->getDebug()->getName(node));
+            self()->getDebug()->dumpLiveRegisters(log);
+            log->println();
         }
 
         // Pop off and decrement tracked nodes
@@ -204,11 +208,10 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
                 //     - register shuffling _could_ be seen in this case.
                 //     - but a bug might have been avoided: partial and complete evaluation of a commoned node occurred.
                 //
-                if (self()->comp()->getOption(TR_TraceCG)) {
-                    self()->comp()->getDebug()->trace(" _stackOfArtificiallyInflatedNodes.pop(): node %p part of "
-                                                      "commoned case, might have avoided a bug!\n",
-                        artificiallyInflatedNode);
-                }
+                logprintf(trace, log,
+                    " _stackOfArtificiallyInflatedNodes.pop(): node %p part of commoned case, might have avoided a "
+                    "bug!\n",
+                    artificiallyInflatedNode);
             }
 
             self()->decReferenceCount(artificiallyInflatedNode);
@@ -223,14 +226,11 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
 #endif
 #endif
 
-            if (self()->comp()->getOption(TR_TraceCG)) {
-                self()->comp()->getDebug()->trace(
-                    " _stackOfArtificiallyInflatedNodes.pop() %p, decReferenceCount(...) called. reg=%s\n",
-                    artificiallyInflatedNode,
-                    artificiallyInflatedNode->getRegister()
-                        ? artificiallyInflatedNode->getRegister()->getRegisterName(self()->comp())
-                        : "null");
-            }
+            logprintf(trace, log,
+                " _stackOfArtificiallyInflatedNodes.pop() %p, decReferenceCount(...) called. reg=%s\n",
+                artificiallyInflatedNode,
+                artificiallyInflatedNode->getRegister() ? artificiallyInflatedNode->getRegister()->getRegisterName(comp)
+                                                        : "null");
         }
 
 #if defined(TR_TARGET_S390)
@@ -241,9 +241,9 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
         // for anchor mode, if node is an indirect store, it can have
         // ref count <= 2
         // but for compressedRefs, the indirect store must be an address
-        if (self()->comp()->useAnchors()) {
+        if (comp->useAnchors()) {
             if (((node->getOpCode().isStoreIndirect()
-                     && (self()->comp()->useCompressedPointers()
+                     && (comp->useCompressedPointers()
                          && (node->getSymbolReference()->getSymbol()->getDataType() == TR::Address)))
                     || opcode == TR::awrtbari)
                 && node->getReferenceCount() <= 2 && !checkRefCount)
@@ -251,7 +251,7 @@ TR::Register *OMR::CodeGenerator::evaluate(TR::Node *node)
         }
 
         TR_ASSERT(checkRefCount, "evaluate: the node's register wasn't set (node [%s])",
-            node->getName(self()->comp()->getDebug()));
+            node->getName(comp->getDebug()));
     }
 
     return reg;
@@ -369,13 +369,12 @@ rcount_t OMR::CodeGenerator::decReferenceCount(TR::Node *node)
         storageReference->decrementTemporaryReferenceCount();
         if (node->getReferenceCount() == 1) {
             storageReference->decOwningRegisterCount();
-            if (self()->traceBCDCodeGen())
-                traceMsg(self()->comp(),
-                    "\tdecrement owningRegisterCount %d->%d on ref #%d (%s) for reg %s as %s (%p) refCount == 1 (going "
-                    "to 0)\n",
-                    storageReference->getOwningRegisterCount() + 1, storageReference->getOwningRegisterCount(),
-                    storageReference->getReferenceNumber(), self()->getDebug()->getName(storageReference->getSymbol()),
-                    self()->getDebug()->getName(reg), node->getOpCode().getName(), node);
+            logprintf(self()->traceBCDCodeGen(), self()->comp()->log(),
+                "\tdecrement owningRegisterCount %d->%d on ref #%d (%s) for reg %s as %s (%p) refCount == 1 (going to "
+                "0)\n",
+                storageReference->getOwningRegisterCount() + 1, storageReference->getOwningRegisterCount(),
+                storageReference->getReferenceNumber(), self()->getDebug()->getName(storageReference->getSymbol()),
+                self()->getDebug()->getName(reg), node->getOpCode().getName(), node);
         }
     } else if (node->getOpCode().hasSymbolReference() && node->getSymbolReference()
         && node->getSymbolReference()->isTempVariableSizeSymRef()) {

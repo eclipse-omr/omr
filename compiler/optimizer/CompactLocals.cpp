@@ -58,6 +58,7 @@
 #include "optimizer/Optimization.hpp"
 #include "optimizer/Optimization_inlines.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
+#include "ras/Logger.hpp"
 
 #define MAX_NUMBER_OF_LOCALS 2000
 // upper bound is determined by numChunk (defined as uint16_t) of interferenceMatrix BitVector (2800^2 / 2 / 64 < 64K)
@@ -86,6 +87,7 @@ int32_t TR_CompactLocals::perform()
         return 0;
     }
 
+    OMR::Logger *log = comp()->log();
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
     // If register maps are not implemented, spill temps must be included in
@@ -174,13 +176,13 @@ int32_t TR_CompactLocals::perform()
     if (trace()) {
         _localsIG->dumpIG("initial graph");
 
-        traceMsg(comp(), "SymInterferenceSets for %d locals\n", numLocals);
-        traceMsg(comp(), "   %4d : ", referenceLocals->elementCount());
-        referenceLocals->print(comp());
-        traceMsg(comp(), "\n");
-        traceMsg(comp(), "   %4d : ", nonReferenceLocals->elementCount());
-        nonReferenceLocals->print(comp());
-        traceMsg(comp(), "\n");
+        log->printf("SymInterferenceSets for %d locals\n", numLocals);
+        log->printf("   %4d : ", referenceLocals->elementCount());
+        referenceLocals->print(log, comp());
+        log->println();
+        log->printf("   %4d : ", nonReferenceLocals->elementCount());
+        nonReferenceLocals->print(log, comp());
+        log->println();
     }
 
     if (!referenceLocals->isEmpty() && !nonReferenceLocals->isEmpty()) {
@@ -189,8 +191,7 @@ int32_t TR_CompactLocals::perform()
 
     if (trace()) {
         _localsIG->dumpIG("after initial size interferences");
-        traceMsg(comp(), "after initial size interferences numChunks=%d\n",
-            _localsIG->getInterferenceMatrix()->numChunks());
+        log->printf("after initial size interferences numChunks=%d\n", _localsIG->getInterferenceMatrix()->numChunks());
     }
 
     // Build the live on exit sets for each block and determine interferences between the
@@ -215,8 +216,7 @@ int32_t TR_CompactLocals::perform()
         tt = block->getExit();
         lastBlock = block;
 
-        if (trace())
-            traceMsg(comp(), "Now in block_%d\n", block->getNumber());
+        logprintf(trace(), log, "Now in block_%d\n", block->getNumber());
 
         bool extendedByNextBlock = false;
         for (; tt != firstTT; tt = tt->getPrevTreeTop()) {
@@ -224,9 +224,7 @@ int32_t TR_CompactLocals::perform()
                 extendedByNextBlock = block->isExtensionOfPreviousBlock() ? true : false;
                 block = block->getPrevBlock();
 
-                if (trace())
-                    traceMsg(comp(), "Now in block_%d\n", block->getNumber());
-
+                logprintf(trace(), log, "Now in block_%d\n", block->getNumber());
             } else if (tt->getNode()->getOpCodeValue() == TR::BBEnd) {
                 // Compose the live-on-exit vector from the union of the live-on-entry
                 // vectors of this block's successors.
@@ -248,9 +246,9 @@ int32_t TR_CompactLocals::perform()
                 }
 
                 if (trace()) {
-                    traceMsg(comp(), "BB_End for block_%d: live vars = ", block->getNumber());
-                    _liveVars->print(comp());
-                    traceMsg(comp(), "\n");
+                    log->printf("BB_End for block_%d: live vars = ", block->getNumber());
+                    _liveVars->print(log, comp());
+                    log->println();
                 }
 
                 createInterferenceBetween(_liveVars);
@@ -260,11 +258,11 @@ int32_t TR_CompactLocals::perform()
         }
 
         if (trace()) {
-            traceMsg(comp(), "Computed entry vector: ");
-            _liveVars->print(comp());
-            traceMsg(comp(), "\nLiveness entry vector: ");
-            liveLocals._blockAnalysisInfo[block->getNumber()]->print(comp());
-            traceMsg(comp(), "\n");
+            log->prints("Computed entry vector: ");
+            _liveVars->print(log, comp());
+            log->prints("\nLiveness entry vector: ");
+            liveLocals._blockAnalysisInfo[block->getNumber()]->print(log, comp());
+            log->println();
         }
 
         TR_ASSERT(_localsIG->getNumNodes() >= MAX_NUMBER_OF_LOCALS
@@ -282,6 +280,8 @@ int32_t TR_CompactLocals::perform()
 void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount, TR_Liveness *liveLocals,
     TR::Block *block, bool directChildOfTreeTop)
 {
+    OMR::Logger *log = comp()->log();
+
     // First time this node has been encountered.
     //
     if (node->getVisitCount() != visitCount) {
@@ -289,9 +289,7 @@ void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount
         node->setLocalIndex(node->getReferenceCount());
     }
 
-    if (trace()) {
-        traceMsg(comp(), "---> visiting tt node %p\n", node);
-    }
+    logprintf(trace(), log, "---> visiting tt node %p\n", node);
 
     if (node->getOpCode().isStoreDirect() /* && directChildOfTreeTop */) {
         TR::AutomaticSymbol *local = node->getSymbolReference()->getSymbol()->getAutoSymbol();
@@ -309,9 +307,7 @@ void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount
             //
             if (local->getLocalIndex() == 0) {
                 _liveVars->reset(localIndex);
-                if (trace()) {
-                    traceMsg(comp(), "--- local index %d KILLED\n", localIndex);
-                }
+                logprintf(trace(), log, "--- local index %d KILLED\n", localIndex);
             }
         }
     } else if (node->getOpCode().isLoadVarDirect() || node->getOpCodeValue() == TR::loadaddr) {
@@ -334,15 +330,11 @@ void TR_CompactLocals::processNodeInPreorder(TR::Node *node, vcount_t visitCount
                 createInterferenceBetweenLocals(localIndex);
                 _liveVars->set(localIndex);
 
-                if (trace()) {
-                    traceMsg(comp(), "+++ local index %d LIVE\n", localIndex);
-                }
+                logprintf(trace(), log, "+++ local index %d LIVE\n", localIndex);
             } else if (node->getOpCodeValue() == TR::loadaddr) {
                 createInterferenceBetweenLocals(localIndex);
 
-                if (trace()) {
-                    traceMsg(comp(), "+++ local index %d address taken\n", localIndex);
-                }
+                logprintf(trace(), log, "+++ local index %d address taken\n", localIndex);
             }
 
             local->setLocalIndex(local->getLocalIndex() - 1);
@@ -406,7 +398,7 @@ void TR_CompactLocals::createInterferenceBetween(TR_BitVector *bv)
 
             if (ig1 && ig2) {
                 if (trace() && !_localsIG->hasInterference(ig1, ig2)) {
-                    traceMsg(comp(), "Adding interference between %d and %d\n", i1, i2);
+                    comp()->log()->printf("Adding interference between %d and %d\n", i1, i2);
                 }
                 _localsIG->addInterferenceBetween(ig1, ig2);
             }
@@ -433,7 +425,7 @@ void TR_CompactLocals::createInterferenceBetween(TR_BitVector *bv1, TR_BitVector
 
             if (ig1 && ig2) {
                 if (trace() && !_localsIG->hasInterference(ig1, ig2)) {
-                    traceMsg(comp(), "Adding interference between %d and %d\n", i1, i2);
+                    comp()->log()->printf("Adding interference between %d and %d\n", i1, i2);
                 }
                 _localsIG->addInterferenceBetween(ig1, ig2);
             }
@@ -460,7 +452,7 @@ void TR_CompactLocals::createInterferenceBetweenLocals(int32_t localIndex)
 
         if (ig1 && ig2) {
             if (trace() && !_localsIG->hasInterference(ig1, ig2)) {
-                traceMsg(comp(), "Adding interference between %d and %d\n", liveLocalIndex, localIndex);
+                comp()->log()->printf("Adding interference between %d and %d\n", liveLocalIndex, localIndex);
             }
             _localsIG->addInterferenceBetween(ig1, ig2);
         }
@@ -501,7 +493,7 @@ void TR_CompactLocals::doCompactLocals()
 
     if (trace()) {
         _localsIG->dumpIG("after colouring");
-        traceMsg(comp(), "\nOOOO: Original num locals=%d, max locals required=%d, %s\n", _localsIG->getNumNodes(),
+        comp()->log()->printf("\nOOOO: Original num locals=%d, max locals required=%d, %s\n", _localsIG->getNumNodes(),
             _localsIG->getNumberOfColoursUsedToColour(), comp()->signature());
     }
 

@@ -51,6 +51,7 @@
 #include "infra/Assert.hpp"
 #include "infra/List.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 #include "x/codegen/DataSnippet.hpp"
 #include "x/codegen/OutlinedInstructions.hpp"
 #include "x/codegen/X86Instruction.hpp"
@@ -65,72 +66,69 @@ namespace TR {
 class Register;
 }
 
-void TR_Debug::printx(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::printx(OMR::Logger *log, TR::Instruction *instr)
 {
-    // print all the X86 instructions here.
-    if (pOutFile == NULL)
-        return;
     switch (instr->getKind()) {
         case TR::Instruction::IsLabel:
-            print(pOutFile, (TR::X86LabelInstruction *)instr);
+            print(log, (TR::X86LabelInstruction *)instr);
             break;
         case TR::Instruction::IsPadding:
-            print(pOutFile, (TR::X86PaddingInstruction *)instr);
+            print(log, (TR::X86PaddingInstruction *)instr);
             break;
         case TR::Instruction::IsAlignment:
-            print(pOutFile, (TR::X86AlignmentInstruction *)instr);
+            print(log, (TR::X86AlignmentInstruction *)instr);
             break;
         case TR::Instruction::IsBoundaryAvoidance:
-            print(pOutFile, (TR::X86BoundaryAvoidanceInstruction *)instr);
+            print(log, (TR::X86BoundaryAvoidanceInstruction *)instr);
             break;
         case TR::Instruction::IsPatchableCodeAlignment:
-            print(pOutFile, (TR::X86PatchableCodeAlignmentInstruction *)instr);
+            print(log, (TR::X86PatchableCodeAlignmentInstruction *)instr);
             break;
 #ifdef J9_PROJECT_SPECIFIC
         case TR::Instruction::IsVirtualGuardNOP:
-            print(pOutFile, (TR::X86VirtualGuardNOPInstruction *)instr);
+            print(log, (TR::X86VirtualGuardNOPInstruction *)instr);
             break;
 #endif
         case TR::Instruction::IsFence:
-            print(pOutFile, (TR::X86FenceInstruction *)instr);
+            print(log, (TR::X86FenceInstruction *)instr);
             break;
         case TR::Instruction::IsImm:
-            print(pOutFile, (TR::X86ImmInstruction *)instr);
+            print(log, (TR::X86ImmInstruction *)instr);
             break;
         case TR::Instruction::IsImm64:
-            print(pOutFile, (TR::AMD64Imm64Instruction *)instr);
+            print(log, (TR::AMD64Imm64Instruction *)instr);
             break;
         case TR::Instruction::IsImm64Sym:
-            print(pOutFile, (TR::AMD64Imm64SymInstruction *)instr);
+            print(log, (TR::AMD64Imm64SymInstruction *)instr);
         case TR::Instruction::IsImmSnippet:
-            print(pOutFile, (TR::X86ImmSnippetInstruction *)instr);
+            print(log, (TR::X86ImmSnippetInstruction *)instr);
             break;
         case TR::Instruction::IsImmSym:
-            print(pOutFile, (TR::X86ImmSymInstruction *)instr);
+            print(log, (TR::X86ImmSymInstruction *)instr);
             break;
         case TR::Instruction::IsReg:
-            print(pOutFile, (TR::X86RegInstruction *)instr);
+            print(log, (TR::X86RegInstruction *)instr);
             break;
         case TR::Instruction::IsRegReg:
-            print(pOutFile, (TR::X86RegRegInstruction *)instr);
+            print(log, (TR::X86RegRegInstruction *)instr);
             break;
         case TR::Instruction::IsRegMaskReg:
-            print(pOutFile, (TR::X86RegMaskRegInstruction *)instr);
+            print(log, (TR::X86RegMaskRegInstruction *)instr);
             break;
         case TR::Instruction::IsRegMaskMem:
-            print(pOutFile, (TR::X86RegMaskMemInstruction *)instr);
+            print(log, (TR::X86RegMaskMemInstruction *)instr);
             break;
         case TR::Instruction::IsRegRegReg:
-            print(pOutFile, (TR::X86RegRegRegInstruction *)instr);
+            print(log, (TR::X86RegRegRegInstruction *)instr);
             break;
         case TR::Instruction::IsRegMaskRegReg:
-            print(pOutFile, (TR::X86RegMaskRegRegInstruction *)instr);
+            print(log, (TR::X86RegMaskRegRegInstruction *)instr);
             break;
         case TR::Instruction::IsRegMaskRegRegImm:
-            print(pOutFile, (TR::X86RegMaskRegRegImmInstruction *)instr);
+            print(log, (TR::X86RegMaskRegRegImmInstruction *)instr);
             break;
         case TR::Instruction::IsRegRegImm:
-            print(pOutFile, (TR::X86RegRegImmInstruction *)instr);
+            print(log, (TR::X86RegRegImmInstruction *)instr);
             break;
         case TR::Instruction::IsFPRegReg:
         case TR::Instruction::IsFPST0ST1RegReg:
@@ -139,101 +137,95 @@ void TR_Debug::printx(TR::FILE *pOutFile, TR::Instruction *instr)
         case TR::Instruction::IsFPArithmeticRegReg:
         case TR::Instruction::IsFPCompareRegReg:
         case TR::Instruction::IsFPRemainderRegReg:
-            print(pOutFile, (TR::X86FPRegRegInstruction *)instr);
+            print(log, (TR::X86FPRegRegInstruction *)instr);
             break;
 #ifdef TR_TARGET_64BIT
         case TR::Instruction::IsRegImm64:
         case TR::Instruction::IsRegImm64Sym:
-            print(pOutFile, (TR::AMD64RegImm64Instruction *)instr);
+            print(log, (TR::AMD64RegImm64Instruction *)instr);
             break;
 #endif
         case TR::Instruction::IsRegImm:
         case TR::Instruction::IsRegImmSym:
-            print(pOutFile, (TR::X86RegImmInstruction *)instr);
+            print(log, (TR::X86RegImmInstruction *)instr);
             break;
         case TR::Instruction::IsRegMem:
-            print(pOutFile, (TR::X86RegMemInstruction *)instr);
+            print(log, (TR::X86RegMemInstruction *)instr);
             break;
         case TR::Instruction::IsRegMemImm:
-            print(pOutFile, (TR::X86RegMemImmInstruction *)instr);
+            print(log, (TR::X86RegMemImmInstruction *)instr);
             break;
         case TR::Instruction::IsRegRegMem:
-            print(pOutFile, (TR::X86RegRegMemInstruction *)instr);
+            print(log, (TR::X86RegRegMemInstruction *)instr);
             break;
         case TR::Instruction::IsFPRegMem:
-            print(pOutFile, (TR::X86FPRegMemInstruction *)instr);
+            print(log, (TR::X86FPRegMemInstruction *)instr);
             break;
         case TR::Instruction::IsFPReg:
-            print(pOutFile, (TR::X86FPRegInstruction *)instr);
+            print(log, (TR::X86FPRegInstruction *)instr);
             break;
         case TR::Instruction::IsMem:
         case TR::Instruction::IsMemTable:
         case TR::Instruction::IsCallMem:
-            print(pOutFile, (TR::X86MemInstruction *)instr);
+            print(log, (TR::X86MemInstruction *)instr);
             break;
         case TR::Instruction::IsMemImm:
         case TR::Instruction::IsMemImmSym:
         case TR::Instruction::IsMemImmSnippet:
-            print(pOutFile, (TR::X86MemImmInstruction *)instr);
+            print(log, (TR::X86MemImmInstruction *)instr);
             break;
         case TR::Instruction::IsMemReg:
-            print(pOutFile, (TR::X86MemRegInstruction *)instr);
+            print(log, (TR::X86MemRegInstruction *)instr);
             break;
         case TR::Instruction::IsMemMaskReg:
-            print(pOutFile, (TR::X86MemMaskRegInstruction *)instr);
+            print(log, (TR::X86MemMaskRegInstruction *)instr);
             break;
         case TR::Instruction::IsMemRegImm:
-            print(pOutFile, (TR::X86MemRegImmInstruction *)instr);
+            print(log, (TR::X86MemRegImmInstruction *)instr);
             break;
         case TR::Instruction::IsFPMemReg:
-            print(pOutFile, (TR::X86FPMemRegInstruction *)instr);
+            print(log, (TR::X86FPMemRegInstruction *)instr);
             break;
         case TR::Instruction::IsVFPSave:
-            print(pOutFile, (TR::X86VFPSaveInstruction *)instr);
+            print(log, (TR::X86VFPSaveInstruction *)instr);
             break;
         case TR::Instruction::IsVFPRestore:
-            print(pOutFile, (TR::X86VFPRestoreInstruction *)instr);
+            print(log, (TR::X86VFPRestoreInstruction *)instr);
             break;
         case TR::Instruction::IsVFPDedicate:
-            print(pOutFile, (TR::X86VFPDedicateInstruction *)instr);
+            print(log, (TR::X86VFPDedicateInstruction *)instr);
             break;
         case TR::Instruction::IsVFPRelease:
-            print(pOutFile, (TR::X86VFPReleaseInstruction *)instr);
+            print(log, (TR::X86VFPReleaseInstruction *)instr);
             break;
         case TR::Instruction::IsVFPCallCleanup:
-            print(pOutFile, (TR::X86VFPCallCleanupInstruction *)instr);
+            print(log, (TR::X86VFPCallCleanupInstruction *)instr);
             break;
         default:
             TR_ASSERT(0, "Unknown instruction kind");
             // fall thru
         case TR::Instruction::IsFPCompareEval:
         case TR::Instruction::IsNotExtended: {
-            printPrefix(pOutFile, instr);
-            trfprintf(pOutFile, "%-32s", getMnemonicName(&instr->getOpCode()));
-            printInstructionComment(pOutFile, 0, instr);
-            dumpDependencies(pOutFile, instr);
-            trfflush(pOutFile);
+            printPrefix(log, instr);
+            log->printf("%-32s", getMnemonicName(&instr->getOpCode()));
+            printInstructionComment(log, 0, instr);
+            dumpDependencies(log, instr);
+            log->flush();
         } break;
     }
 }
 
-void TR_Debug::printPrefix(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::printPrefix(OMR::Logger *log, TR::Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr, instr->getBinaryEncoding(), instr->getBinaryLength());
+    printPrefix(log, instr, instr->getBinaryEncoding(), instr->getBinaryLength());
 }
 
-void TR_Debug::printDependencyConditions(TR::RegisterDependencyGroup *conditions, uint8_t numConditions, char *prefix,
-    TR::FILE *pOutFile)
+void TR_Debug::printDependencyConditions(OMR::Logger *log, TR::RegisterDependencyGroup *conditions,
+    uint8_t numConditions, char *prefix)
 {
     char buf[32];
     char *cursor;
     int len, i;
-
-    if (pOutFile == NULL)
-        return;
 
     for (i = 0; i < numConditions; i++) {
         cursor = buf;
@@ -262,32 +254,28 @@ void TR_Debug::printDependencyConditions(TR::RegisterDependencyGroup *conditions
         *(cursor + len) = ')';
         *(cursor + 9) = 0x00;
 
-        trfprintf(pOutFile, "%s", buf);
+        log->prints(buf);
 
         if (conditions->getRegisterDependency(i)->getRegister()) {
-            printFullRegInfo(pOutFile, conditions->getRegisterDependency(i)->getRegister());
+            printFullRegInfo(log, conditions->getRegisterDependency(i)->getRegister());
         } else {
-            trfprintf(pOutFile, "[ None        ]\n");
+            log->prints("[ None        ]\n");
         }
     }
 }
 
-void TR_Debug::printFullRegisterDependencyInfo(TR::FILE *pOutFile, TR::RegisterDependencyConditions *conditions)
+void TR_Debug::printFullRegisterDependencyInfo(OMR::Logger *log, TR::RegisterDependencyConditions *conditions)
 {
-    if (pOutFile == NULL)
-        return;
-
     if (conditions->getNumPreConditions() > 0) {
-        printDependencyConditions(conditions->getPreConditions(), conditions->getNumPreConditions(), "Pre", pOutFile);
+        printDependencyConditions(log, conditions->getPreConditions(), conditions->getNumPreConditions(), "Pre");
     }
 
     if (conditions->getNumPostConditions() > 0) {
-        printDependencyConditions(conditions->getPostConditions(), conditions->getNumPostConditions(), "Post",
-            pOutFile);
+        printDependencyConditions(log, conditions->getPostConditions(), conditions->getNumPostConditions(), "Post");
     }
 }
 
-void TR_Debug::dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGroup *group, int32_t numConditions,
+void TR_Debug::dumpDependencyGroup(OMR::Logger *log, TR::RegisterDependencyGroup *group, int32_t numConditions,
     char *prefix, bool omitNullDependencies)
 {
     TR::RealRegister::RegNum r;
@@ -295,7 +283,7 @@ void TR_Debug::dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGro
     int32_t i;
     bool foundDep = false;
 
-    trfprintf(pOutFile, "\n\t%s:", prefix);
+    log->printf("\n\t%s:", prefix);
     for (i = 0; i < numConditions; ++i) {
         TR::RegisterDependency *regDep = group->getRegisterDependency(i);
         virtReg = regDep->getRegister();
@@ -306,39 +294,38 @@ void TR_Debug::dumpDependencyGroup(TR::FILE *pOutFile, TR::RegisterDependencyGro
         }
 
         if (regDep->isAllFPRegisters()) {
-            trfprintf(pOutFile, " [All FPRs]");
+            log->prints(" [All FPRs]");
         } else {
             r = regDep->getRealRegister();
-            trfprintf(pOutFile, " [%s : ", getName(virtReg));
+            log->printf(" [%s : ", getName(virtReg));
             if (regDep->isNoReg())
-                trfprintf(pOutFile, "NoReg]");
+                log->prints("NoReg]");
             else if (regDep->isByteReg())
-                trfprintf(pOutFile, "ByteReg]");
+                log->prints("ByteReg]");
             else if (regDep->isBestFreeReg())
-                trfprintf(pOutFile, "BestFreeReg]");
+                log->prints("BestFreeReg]");
             else if (regDep->isSpilledReg())
-                trfprintf(pOutFile, "SpilledReg]");
+                log->prints("SpilledReg]");
             else
-                trfprintf(pOutFile, "%s]", getName(_cg->machine()->getRealRegister(r)));
+                log->printf("%s]", getName(_cg->machine()->getRealRegister(r)));
         }
 
         foundDep = true;
     }
 
     if (!foundDep)
-        trfprintf(pOutFile, " None");
+        log->prints(" None");
 }
 
-void TR_Debug::dumpDependencies(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::dumpDependencies(OMR::Logger *log, TR::Instruction *instr)
 {
     // If we are in instruction selection or register assignment and
     // dependency information is requested, dump it.
     //
-    if (pOutFile == NULL || // no dump file
-        (_cg->getStackAtlas() // not in instruction selection
-            && !(_registerAssignmentTraceFlags & TRACERA_IN_PROGRESS && // not in register assignment...
-                _comp->getOption(TR_TraceRA)) // or dependencies are not traced
-            ))
+    if (_cg->getStackAtlas() // not in instruction selection
+        && !(_registerAssignmentTraceFlags & TRACERA_IN_PROGRESS && // not in register assignment...
+            _comp->getOption(TR_TraceRA)) // or dependencies are not traced
+    )
         return;
 
     TR::RegisterDependencyConditions *deps = instr->getDependencyConditions();
@@ -346,181 +333,147 @@ void TR_Debug::dumpDependencies(TR::FILE *pOutFile, TR::Instruction *instr)
         return; // Nothing to dump
 
     if (deps->getNumPreConditions() > 0)
-        dumpDependencyGroup(pOutFile, deps->getPreConditions(), deps->getNumPreConditions(), " PRE", true);
+        dumpDependencyGroup(log, deps->getPreConditions(), deps->getNumPreConditions(), " PRE", true);
 
     if (deps->getNumPostConditions() > 0)
-        dumpDependencyGroup(pOutFile, deps->getPostConditions(), deps->getNumPostConditions(), "POST", true);
+        dumpDependencyGroup(log, deps->getPostConditions(), deps->getNumPostConditions(), "POST", true);
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::printRegisterInfoHeader(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::printRegisterInfoHeader(OMR::Logger *log, TR::Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    trfprintf(pOutFile, "\n  Referenced Regs:        Register         State        Assigned      Total Future Flags\n");
-    trfflush(pOutFile);
+    log->prints("\n  Referenced Regs:        Register         State        Assigned      Total Future Flags\n");
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::Instruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     if (instr->getDependencyConditions()) {
-        printRegisterInfoHeader(pOutFile, instr);
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printRegisterInfoHeader(log, instr);
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86PaddingInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86PaddingInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
     if (instr->getBinaryEncoding())
-        trfprintf(pOutFile, "nop (%d byte%s)\t\t%s Padding (%d byte%s)", instr->getBinaryLength(),
+        log->printf("nop (%d byte%s)\t\t%s Padding (%d byte%s)", instr->getBinaryLength(),
             (instr->getBinaryLength() == 1) ? "" : "s", commentString(), instr->getLength(),
             (instr->getLength() == 1) ? "" : "s");
     else
-        trfprintf(pOutFile, "nop\t\t\t%s Padding (%d byte%s)", commentString(), instr->getLength(),
+        log->printf("nop\t\t\t%s Padding (%d byte%s)", commentString(), instr->getLength(),
             (instr->getLength() == 1) ? "" : "s");
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86AlignmentInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86AlignmentInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     uint8_t length = instr->getBinaryLength();
     uint8_t margin = instr->getMargin();
 
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
     if (instr->getBinaryEncoding())
-        trfprintf(pOutFile, "nop (%d byte%s)\t\t%s ", instr->getBinaryLength(),
-            (instr->getBinaryLength() == 1) ? "" : "s", commentString());
+        log->printf("nop (%d byte%s)\t\t%s ", instr->getBinaryLength(), (instr->getBinaryLength() == 1) ? "" : "s",
+            commentString());
     else
-        trfprintf(pOutFile, "nop\t\t\t%s ", commentString());
+        log->printf("nop\t\t\t%s ", commentString());
 
     if (margin)
-        trfprintf(pOutFile, "Alignment (boundary=%d, margin=%d)", instr->getBoundary(), instr->getMargin());
+        log->printf("Alignment (boundary=%d, margin=%d)", instr->getBoundary(), instr->getMargin());
     else
-        trfprintf(pOutFile, "Alignment (boundary=%d)", instr->getBoundary());
+        log->printf("Alignment (boundary=%d)", instr->getBoundary());
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printBoundaryAvoidanceInfo(TR::FILE *pOutFile, TR::X86BoundaryAvoidanceInstruction *instr)
+void TR_Debug::printBoundaryAvoidanceInfo(OMR::Logger *log, TR::X86BoundaryAvoidanceInstruction *instr)
 {
-    trfprintf(pOutFile, " @%d", instr->getBoundarySpacing());
+    log->printf(" @%d", instr->getBoundarySpacing());
     if (instr->getMaxPadding() < instr->getBoundarySpacing() - 1)
-        trfprintf(pOutFile, " max %d", instr->getMaxPadding());
-    if (0) // We rarely care about the target instruction
-    {
-        if (instr->getTargetCode()) {
-            trfprintf(pOutFile, " [%s]", getName(instr->getTargetCode()));
-        } else {
-            trfprintf(pOutFile, " (anything)");
-        }
-        if (instr->getTargetCode() != instr->getNext()) {
-            trfprintf(pOutFile, " (actually %s)", getName(instr->getNext()));
-        }
-    }
+        log->printf(" max %d", instr->getMaxPadding());
 
-    trfprintf(pOutFile, " [");
+    log->prints(" [");
 
     const char *sep = "";
     for (const TR_AtomicRegion *region = instr->getAtomicRegions(); region->getLength(); region++) {
-        trfprintf(pOutFile, "%s0x%x:%d", sep, region->getStart(), region->getLength());
+        log->printf("%s0x%x:%d", sep, region->getStart(), region->getLength());
         sep = ",";
     }
-    trfprintf(pOutFile, "]");
+
+    log->printc(']');
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86BoundaryAvoidanceInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86BoundaryAvoidanceInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
     if (instr->getBinaryEncoding())
-        trfprintf(pOutFile, "nop (%d byte%s)\t\t%s ", instr->getBinaryLength(),
-            (instr->getBinaryLength() == 1) ? "" : "s", commentString());
+        log->printf("nop (%d byte%s)\t\t%s ", instr->getBinaryLength(), (instr->getBinaryLength() == 1) ? "" : "s",
+            commentString());
     else
-        trfprintf(pOutFile, "nop\t\t\t%s ", commentString());
+        log->printf("nop\t\t\t%s ", commentString());
 
-    trfprintf(pOutFile, "Avoid boundary");
-    printBoundaryAvoidanceInfo(pOutFile, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    log->prints("Avoid boundary");
+    printBoundaryAvoidanceInfo(log, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86PatchableCodeAlignmentInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86PatchableCodeAlignmentInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
     if (instr->getBinaryEncoding())
-        trfprintf(pOutFile, "nop (%d byte%s)\t\t%s ", instr->getBinaryLength(),
-            (instr->getBinaryLength() == 1) ? "" : "s", commentString());
+        log->printf("nop (%d byte%s)\t\t%s ", instr->getBinaryLength(), (instr->getBinaryLength() == 1) ? "" : "s",
+            commentString());
     else
-        trfprintf(pOutFile, "nop\t\t\t%s ", commentString());
+        log->printf("nop\t\t\t%s ", commentString());
 
-    trfprintf(pOutFile, "Align patchable code");
-    printBoundaryAvoidanceInfo(pOutFile, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    log->prints("Align patchable code");
+    printBoundaryAvoidanceInfo(log, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86LabelInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86LabelInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
     TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
     if (instr->getOpCodeValue() == TR::InstOpCode::label) {
-        print(pOutFile, label);
+        print(log, label);
 
-        trfprintf(pOutFile, ":");
-        printInstructionComment(pOutFile, snippet ? 2 : 3, instr);
+        log->printc(':');
+        printInstructionComment(log, snippet ? 2 : 3, instr);
 
         if (label->isStartInternalControlFlow())
-            trfprintf(pOutFile, "\t%s (Start of internal control flow)", commentString());
+            log->printf("\t%s (Start of internal control flow)", commentString());
         else if (label->isEndInternalControlFlow())
-            trfprintf(pOutFile, "\t%s (End of internal control flow)", commentString());
+            log->printf("\t%s (End of internal control flow)", commentString());
     } else {
-        trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+        log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
 
         if (label) {
-            print(pOutFile, label);
-            printInstructionComment(pOutFile, snippet ? 2 : 3, instr);
+            print(log, label);
+            printInstructionComment(log, snippet ? 2 : 3, instr);
         } else {
-            trfprintf(pOutFile, "Label L<null>");
-            printInstructionComment(pOutFile, 2, instr);
+            log->prints("Label L<null>");
+            printInstructionComment(log, 2, instr);
         }
 
         if (snippet)
-            trfprintf(pOutFile, "\t%s (%s)", commentString(), getName(snippet));
+            log->printf("\t%s (%s)", commentString(), getName(snippet));
     }
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FenceInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86FenceInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     // Omit fences from post-binary dumps unless they mark basic block boundaries.
     if (instr->getBinaryEncoding() && instr->getNode()->getOpCodeValue() != TR::BBStart
         && instr->getNode()->getOpCodeValue() != TR::BBEnd)
@@ -530,244 +483,206 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::X86FenceInstruction *instr)
     if (node && node->getOpCodeValue() == TR::BBStart) {
         TR::Block *block = node->getBlock();
         if (block->isExtensionOfPreviousBlock()) {
-            trfprintf(pOutFile, "\n........................................");
+            log->prints("\n........................................");
         } else {
-            trfprintf(pOutFile, "\n========================================");
+            log->prints("\n========================================");
         }
     }
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->prints(getMnemonicName(&instr->getOpCode()));
     if (instr->getFenceNode()->getNumRelocations() > 0) {
         if (instr->getFenceNode()->getRelocationType() == TR_AbsoluteAddress)
-            trfprintf(pOutFile, " Absolute [");
+            log->prints(" Absolute [");
         else if (instr->getFenceNode()->getRelocationType() == TR_ExternalAbsoluteAddress)
-            trfprintf(pOutFile, " External Absolute [");
+            log->prints(" External Absolute [");
         else
-            trfprintf(pOutFile, " Relative [");
+            log->prints(" Relative [");
 
         for (auto i = 0U; i < instr->getFenceNode()->getNumRelocations(); ++i)
-            trfprintf(pOutFile, " " POINTER_PRINTF_FORMAT, instr->getFenceNode()->getRelocationDestination(i));
+            log->printf(" " POINTER_PRINTF_FORMAT, instr->getFenceNode()->getRelocationDestination(i));
 
-        trfprintf(pOutFile, " ]");
+        log->prints(" ]");
     }
 
-    printInstructionComment(pOutFile, (instr->getFenceNode()->getNumRelocations() > 0) ? 1 : 3, instr);
+    printInstructionComment(log, (instr->getFenceNode()->getNumRelocations() > 0) ? 1 : 3, instr);
 
-    //   TR::Node *node = instr->getNode();
-    printBlockInfo(pOutFile, node);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printBlockInfo(log, node);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86VirtualGuardNOPInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86VirtualGuardNOPInstruction *instr)
 {
-    // *this    swipeable for degubbing purposes
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s Site:" POINTER_PRINTF_FORMAT ", ", getMnemonicName(&instr->getOpCode()), instr->getSite());
-    print(pOutFile, instr->getLabelSymbol());
-    printInstructionComment(pOutFile, 1, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s Site:" POINTER_PRINTF_FORMAT ", ", getMnemonicName(&instr->getOpCode()), instr->getSite());
+    print(log, instr->getLabelSymbol());
+    printInstructionComment(log, 1, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 #endif
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86ImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86ImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
 
     if (instr->getOpCode().isCallImmOp() && instr->getNode()->getSymbolReference()) {
         TR::SymbolReference *symRef = instr->getNode()->getSymbolReference();
         const char *symName = getName(symRef);
 
-        trfprintf(pOutFile, "%-24s", symName);
-        printInstructionComment(pOutFile, 0, instr);
+        log->printf("%-24s", symName);
+        printInstructionComment(log, 0, instr);
         if (symRef->isUnresolved())
-            trfprintf(pOutFile, " (unresolved method)");
+            log->prints(" (unresolved method)");
         else
-            trfprintf(pOutFile, " (" POINTER_PRINTF_FORMAT ")",
+            log->printf(" (" POINTER_PRINTF_FORMAT ")",
                 instr->getSourceImmediate()); // TODO:AMD64: Target address gets truncated
     } else {
-        printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-        printInstructionComment(pOutFile, 2, instr);
+        printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+        printInstructionComment(log, 2, instr);
     }
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::AMD64Imm64Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::AMD64Imm64Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
 
     if (instr->getOpCode().isCallImmOp() && instr->getNode()->getSymbolReference()) {
         TR::SymbolReference *symRef = instr->getNode()->getSymbolReference();
         const char *symName = getName(symRef);
 
-        trfprintf(pOutFile, "%-24s", symName);
-        printInstructionComment(pOutFile, 0, instr);
+        log->printf("%-24s", symName);
+        printInstructionComment(log, 0, instr);
         if (symRef->isUnresolved())
-            trfprintf(pOutFile, " (unresolved method)");
+            log->prints(" (unresolved method)");
         else
-            trfprintf(pOutFile, " (" POINTER_PRINTF_FORMAT ")", instr->getSourceImmediate());
+            log->printf(" (" POINTER_PRINTF_FORMAT ")", instr->getSourceImmediate());
     } else {
-        printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-        printInstructionComment(pOutFile, 2, instr);
+        printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+        printInstructionComment(log, 2, instr);
     }
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::AMD64Imm64SymInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::AMD64Imm64SymInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
+    printPrefix(log, instr);
     TR::Symbol *sym = instr->getSymbolReference()->getSymbol();
     const char *name = getName(instr->getSymbolReference());
 
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (sym->getMethodSymbol() && name) {
-        trfprintf(pOutFile, "%-24s%s %s (" POINTER_PRINTF_FORMAT ")", name, commentString(),
-            getOpCodeName(&instr->getOpCode()), instr->getSourceImmediate());
+        log->printf("%-24s%s %s (" POINTER_PRINTF_FORMAT ")", name, commentString(), getOpCodeName(&instr->getOpCode()),
+            instr->getSourceImmediate());
     } else if (sym->getLabelSymbol() && name) {
         if (sym->getLabelSymbol()->getSnippet())
-            trfprintf(pOutFile, "%-24s%s %s (%s)", name, commentString(), getOpCodeName(&instr->getOpCode()),
+            log->printf("%-24s%s %s (%s)", name, commentString(), getOpCodeName(&instr->getOpCode()),
                 getName(sym->getLabelSymbol()->getSnippet()));
         else
-            trfprintf(pOutFile, "%-24s%s %s (" POINTER_PRINTF_FORMAT ")", name, commentString(),
+            log->printf("%-24s%s %s (" POINTER_PRINTF_FORMAT ")", name, commentString(),
                 getOpCodeName(&instr->getOpCode()), instr->getSourceImmediate());
     } else {
-        printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-        printInstructionComment(pOutFile, 2, instr);
+        printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+        printInstructionComment(log, 2, instr);
     }
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::AMD64RegImm64Instruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::AMD64RegImm64Instruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), TR_DoubleWordReg);
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), TR_DoubleWordReg);
+        log->prints(", ");
     }
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    printInstructionComment(pOutFile, 1, instr);
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    printInstructionComment(log, 1, instr);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86VFPSaveInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86VFPSaveInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    printPrefix(log, instr);
+    log->prints("vfpSave");
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "vfpSave", getMnemonicName(&instr->getOpCode()));
+    printInstructionComment(log, 3, instr);
 
-    printInstructionComment(pOutFile, 3, instr);
-
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86VFPRestoreInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86VFPRestoreInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    printPrefix(log, instr);
+    log->printf("vfpRestore [%s]", getName(instr->getSaveInstruction()));
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "vfpRestore [%s]", getName(instr->getSaveInstruction()));
+    printInstructionComment(log, 3, instr);
 
-    printInstructionComment(pOutFile, 3, instr);
-
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86VFPDedicateInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86VFPDedicateInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    print(log, (TR::X86RegMemInstruction *)instr);
 
-    print(pOutFile, (TR::X86RegMemInstruction *)instr);
-
-    trfprintf(pOutFile, "%s vfpDedicate %s", commentString(), getName(instr->getTargetRegister()));
-    trfflush(pOutFile);
+    log->printf("%s vfpDedicate %s", commentString(), getName(instr->getTargetRegister()));
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86VFPReleaseInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86VFPReleaseInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    printPrefix(log, instr);
+    log->printf("vfpRelease [%s]", getName(instr->getDedicateInstruction()));
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "vfpRelease [%s]", getName(instr->getDedicateInstruction()));
+    printInstructionComment(log, 3, instr);
 
-    printInstructionComment(pOutFile, 3, instr);
-
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86VFPCallCleanupInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86VFPCallCleanupInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    printPrefix(log, instr);
+    log->printf("vfpCallCleanup (%d bytes)", instr->getStackPointerAdjustment());
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "vfpCallCleanup (%d bytes)", instr->getStackPointerAdjustment());
+    printInstructionComment(log, 3, instr);
 
-    printInstructionComment(pOutFile, 3, instr);
-
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86ImmSnippetInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86ImmSnippetInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    printInstructionComment(pOutFile, 2, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    printInstructionComment(log, 2, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86ImmSymInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86ImmSymInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR::Symbol *sym = instr->getSymbolReference()->getSymbol();
     const char *name = getName(instr->getSymbolReference());
 
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     intptr_t targetAddress = 0;
 
     //  64 bit always gets the targetAddress from the symRef
@@ -781,671 +696,588 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::X86ImmSymInstruction *instr)
     }
 
     if (name) {
-        trfprintf(pOutFile, "%-24s", name);
+        log->printf("%-24s", name);
     } else {
-        trfprintf(pOutFile, POINTER_PRINTF_FORMAT, targetAddress);
+        log->printf(POINTER_PRINTF_FORMAT, targetAddress);
     }
 
     if (sym->getMethodSymbol() && name) {
-        trfprintf(pOutFile, "%s %s (" POINTER_PRINTF_FORMAT ")", commentString(), getOpCodeName(&instr->getOpCode()),
+        log->printf("%s %s (" POINTER_PRINTF_FORMAT ")", commentString(), getOpCodeName(&instr->getOpCode()),
             targetAddress);
     } else if (sym->getLabelSymbol() && name) {
         if (sym->getLabelSymbol()->getSnippet())
-            trfprintf(pOutFile, "%s %s (%s)", commentString(), getOpCodeName(&instr->getOpCode()),
+            log->printf("%s %s (%s)", commentString(), getOpCodeName(&instr->getOpCode()),
                 getName(sym->getLabelSymbol()->getSnippet()));
         else
-            trfprintf(pOutFile, "%s %s (" POINTER_PRINTF_FORMAT ")", commentString(),
-                getOpCodeName(&instr->getOpCode()), targetAddress);
+            log->printf("%s %s (" POINTER_PRINTF_FORMAT ")", commentString(), getOpCodeName(&instr->getOpCode()),
+                targetAddress);
     } else {
-        trfprintf(pOutFile, " \t\t%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
+        log->printf(" \t\t%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
     }
 
-    printInstructionComment(pOutFile, 0, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 0, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0))
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 3, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+    printInstructionComment(log, 3, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86RegInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86RegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printRegisterInfoHeader(pOutFile, instr);
-    trfprintf(pOutFile, "    Target            ");
-    printFullRegInfo(pOutFile, instr->getTargetRegister());
+    printRegisterInfoHeader(log, instr);
+    log->prints("    Target            ");
+    printFullRegInfo(log, instr->getTargetRegister());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0))
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0) && !(instr->getOpCode().sourceRegIsImplicit() != 0))
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0))
-        print(pOutFile, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 2, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+        print(log, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
+    printInstructionComment(log, 2, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegMaskRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegMaskRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (instr->getOpCode().targetRegIsImplicit() == 0 || instr->getMaskRegister()) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
         if (instr->getMaskRegister()) {
-            trfprintf(pOutFile, "{");
-            print(pOutFile, instr->getMaskRegister());
-            trfprintf(pOutFile, "}");
+            log->printc('{');
+            print(log, instr->getMaskRegister());
+            log->printc('}');
         }
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     }
 
     if (instr->getOpCode().sourceRegIsImplicit() == 0)
-        print(pOutFile, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
+        print(log, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
 
-    printInstructionComment(pOutFile, 2, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 2, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86RegRegInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86RegRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printRegisterInfoHeader(pOutFile, instr);
-    trfprintf(pOutFile, "    Target            ");
-    printFullRegInfo(pOutFile, instr->getTargetRegister());
-    trfprintf(pOutFile, "    Source            ");
-    printFullRegInfo(pOutFile, instr->getSourceRegister());
+    printRegisterInfoHeader(log, instr);
+    log->prints("    Target            ");
+    printFullRegInfo(log, instr->getTargetRegister());
+    log->prints("    Source            ");
+    printFullRegInfo(log, instr->getSourceRegister());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        log->prints(", ");
     }
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    printInstructionComment(pOutFile, 1, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    printInstructionComment(log, 1, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegRegImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegRegImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        log->prints(", ");
     }
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
+        log->prints(", ");
     }
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    trfprintf(pOutFile, " \t%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    log->printf(" \t%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegMaskRegRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegMaskRegRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
 
     if (instr->getOpCode().targetRegIsImplicit() == 0 || instr->getMaskRegister()) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
         if (instr->getMaskRegister()) {
-            trfprintf(pOutFile, "{");
-            print(pOutFile, instr->getMaskRegister());
-            trfprintf(pOutFile, "}");
+            log->printc('{');
+            print(log, instr->getMaskRegister());
+            log->printc('}');
         }
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     }
 
     TR_RegisterSizes sourceSize = getSourceSizeFromInstruction(instr);
 
     if (instr->getOpCode().sourceRegIsImplicit() == 0) {
-        print(pOutFile, instr->getSource2ndRegister(), sourceSize);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSourceRegister(), sourceSize);
+        print(log, instr->getSource2ndRegister(), sourceSize);
+        log->prints(", ");
+        print(log, instr->getSourceRegister(), sourceSize);
     }
 
-    printInstructionComment(pOutFile, 2, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 2, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegMaskRegRegImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegMaskRegRegImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
 
     if (instr->getOpCode().targetRegIsImplicit() == 0 || instr->getMaskRegister()) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
         if (instr->getMaskRegister()) {
-            trfprintf(pOutFile, "{");
-            print(pOutFile, instr->getMaskRegister());
-            trfprintf(pOutFile, "}");
+            log->printc('{');
+            print(log, instr->getMaskRegister());
+            log->printc('}');
         }
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     }
 
     TR_RegisterSizes sourceSize = getSourceSizeFromInstruction(instr);
 
     if (instr->getOpCode().sourceRegIsImplicit() == 0) {
-        print(pOutFile, instr->getSource2ndRegister(), sourceSize);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSourceRegister(), sourceSize);
+        print(log, instr->getSource2ndRegister(), sourceSize);
+        log->prints(", ");
+        print(log, instr->getSourceRegister(), sourceSize);
     }
 
-    trfprintf(pOutFile, ", ");
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    log->prints(", ");
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
 
-    printInstructionComment(pOutFile, 2, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 2, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegRegRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegRegRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        log->prints(", ");
     }
     TR_RegisterSizes sourceSize = getSourceSizeFromInstruction(instr);
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getSource2ndRegister(), sourceSize);
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSourceRegister(), sourceSize);
+        print(log, instr->getSource2ndRegister(), sourceSize);
+        log->prints(", ");
+        print(log, instr->getSourceRegister(), sourceSize);
     }
 
-    printInstructionComment(pOutFile, 2, instr);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 2, instr);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86RegRegRegInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86RegRegRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printRegisterInfoHeader(pOutFile, instr);
-    trfprintf(pOutFile, "    Source            ");
-    printFullRegInfo(pOutFile, instr->getSourceRegister());
-    trfprintf(pOutFile, "    2ndSource         ");
-    printFullRegInfo(pOutFile, instr->getSource2ndRegister());
-    trfprintf(pOutFile, "    Target            ");
-    printFullRegInfo(pOutFile, instr->getTargetRegister());
+    printRegisterInfoHeader(log, instr);
+    log->prints("    Source            ");
+    printFullRegInfo(log, instr->getSourceRegister());
+    log->prints("    2ndSource         ");
+    printFullRegInfo(log, instr->getSource2ndRegister());
+    log->prints("    Target            ");
+    printFullRegInfo(log, instr->getTargetRegister());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-int32_t TR_Debug::printPrefixAndMnemonicWithoutBarrier(TR::FILE *pOutFile, TR::Instruction *instr, int32_t barrier)
+int32_t TR_Debug::printPrefixAndMnemonicWithoutBarrier(OMR::Logger *log, TR::Instruction *instr, int32_t barrier)
 {
     int32_t barrierLength = ::estimateMemoryBarrierBinaryLength(barrier, _comp->cg());
     int32_t nonBarrierLength = instr->getBinaryLength() - barrierLength;
 
-    printPrefix(pOutFile, instr, instr->getBinaryEncoding(), nonBarrierLength);
-    trfprintf(pOutFile, "%s%s\t", (barrier & LockPrefix) ? "lock " : "", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr, instr->getBinaryEncoding(), nonBarrierLength);
+    log->printf("%s%s\t", (barrier & LockPrefix) ? "lock " : "", getMnemonicName(&instr->getOpCode()));
 
     return nonBarrierLength;
 }
 
-void TR_Debug::printPrefixAndMemoryBarrier(TR::FILE *pOutFile, TR::Instruction *instr, int32_t barrier,
+void TR_Debug::printPrefixAndMemoryBarrier(OMR::Logger *log, TR::Instruction *instr, int32_t barrier,
     int32_t barrierOffset)
 {
     int32_t barrierLength = ::estimateMemoryBarrierBinaryLength(barrier, _comp->cg());
     uint8_t *barrierStart = instr->getBinaryEncoding() ? (instr->getBinaryEncoding() + barrierOffset) : NULL;
 
-    printPrefix(pOutFile, instr, barrierStart, barrierLength);
+    printPrefix(log, instr, barrierStart, barrierLength);
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86MemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86MemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
-    print(pOutFile, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 2, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
+    printInstructionComment(log, 2, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86MemInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86MemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printRegisterInfoHeader(pOutFile, instr);
-    printReferencedRegisterInfo(pOutFile, instr->getMemoryReference());
+    printRegisterInfoHeader(log, instr);
+    printReferencedRegisterInfo(log, instr->getMemoryReference());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86MemImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86MemImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
-    print(pOutFile, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
-    trfprintf(pOutFile, ", ");
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    printInstructionComment(pOutFile, 1, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
+    log->prints(", ");
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    printInstructionComment(log, 1, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86MemRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86MemRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
-    print(pOutFile, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
+    print(log, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0)) {
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
+        log->prints(", ");
+        print(log, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
     }
-    printInstructionComment(pOutFile, 2, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    printInstructionComment(log, 2, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86MemMaskRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86MemMaskRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
-    print(pOutFile, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
+    print(log, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
 
     if (instr->getOpCode().targetRegIsImplicit() == 0 || instr->getMaskRegister()) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
         if (instr->getMaskRegister()) {
-            trfprintf(pOutFile, "{");
-            print(pOutFile, instr->getMaskRegister());
-            trfprintf(pOutFile, "}");
+            log->printc('{');
+            print(log, instr->getMaskRegister());
+            log->printc('}');
         }
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     }
 
-    printInstructionComment(pOutFile, 2, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    printInstructionComment(log, 2, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86MemRegInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86MemRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
-    printRegisterInfoHeader(pOutFile, instr);
-    trfprintf(pOutFile, "    Source            ");
-    printFullRegInfo(pOutFile, instr->getSourceRegister());
-    printReferencedRegisterInfo(pOutFile, instr->getMemoryReference());
+    printRegisterInfoHeader(log, instr);
+    log->prints("    Source            ");
+    printFullRegInfo(log, instr->getSourceRegister());
+    printReferencedRegisterInfo(log, instr->getMemoryReference());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86MemRegImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86MemRegImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
-    print(pOutFile, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
-    trfprintf(pOutFile, ", ");
+    print(log, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
+    log->prints(", ");
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getSourceRegister(), getSourceSizeFromInstruction(instr));
+        log->prints(", ");
     }
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    printInstructionComment(pOutFile, 1, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    printInstructionComment(log, 1, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegMemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegMemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        log->prints(", ");
     }
-    print(pOutFile, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 2, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
+    printInstructionComment(log, 2, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
     TR::Symbol *symbol = instr->getMemoryReference()->getSymbolReference().getSymbol();
     if (symbol && symbol->isSpillTempAuto()) {
-        trfprintf(pOutFile, "%s, spilled for %s", commentString(), getName(instr->getNode()->getOpCode()));
+        log->printf("%s, spilled for %s", commentString(), getName(instr->getNode()->getOpCode()));
     }
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegMaskMemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegMaskMemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
     if (instr->getOpCode().targetRegIsImplicit() == 0 || instr->getMaskRegister()) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
         if (instr->getMaskRegister()) {
-            trfprintf(pOutFile, "{");
-            print(pOutFile, instr->getMaskRegister());
-            trfprintf(pOutFile, "}");
+            log->printc('{');
+            print(log, instr->getMaskRegister());
+            log->printc('}');
         }
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     }
 
-    print(pOutFile, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 2, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
+    printInstructionComment(log, 2, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
     TR::Symbol *symbol = instr->getMemoryReference()->getSymbolReference().getSymbol();
     if (symbol && symbol->isSpillTempAuto()) {
-        trfprintf(pOutFile, "%s, spilled for %s", commentString(), getName(instr->getNode()->getOpCode()));
+        log->printf("%s, spilled for %s", commentString(), getName(instr->getNode()->getOpCode()));
     }
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86RegMemInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86RegMemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    printRegisterInfoHeader(log, instr);
+    log->prints("    Target            ");
+    printFullRegInfo(log, instr->getTargetRegister());
 
-    printRegisterInfoHeader(pOutFile, instr);
-    trfprintf(pOutFile, "    Target            ");
-    printFullRegInfo(pOutFile, instr->getTargetRegister());
-
-    printReferencedRegisterInfo(pOutFile, instr->getMemoryReference());
+    printReferencedRegisterInfo(log, instr->getMemoryReference());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegMemImmInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegMemImmInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        log->prints(", ");
     }
 
-    print(pOutFile, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
-    trfprintf(pOutFile, ", ");
-    printIntConstant(pOutFile, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
-    printInstructionComment(pOutFile, 1, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
+    log->prints(", ");
+    printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
+    printInstructionComment(log, 1, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86RegRegMemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86RegRegMemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister(), getTargetSizeFromInstruction(instr));
+        log->prints(", ");
     }
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getSource2ndRegister(), getSourceSizeFromInstruction(instr));
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getSource2ndRegister(), getSourceSizeFromInstruction(instr));
+        log->prints(", ");
     }
-    print(pOutFile, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 2, instr);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
+    printInstructionComment(log, 2, instr);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
     TR::Symbol *symbol = instr->getMemoryReference()->getSymbolReference().getSymbol();
     if (symbol && symbol->isSpillTempAuto()) {
-        trfprintf(pOutFile, "%s, spilled for %s", commentString(), getName(instr->getNode()->getOpCode()));
+        log->printf("%s, spilled for %s", commentString(), getName(instr->getNode()->getOpCode()));
     }
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::X86RegRegMemInstruction *instr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86RegRegMemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
+    printReferencedRegisterInfo(log, instr->getMemoryReference());
 
-    printReferencedRegisterInfo(pOutFile, instr->getMemoryReference());
-
-    printFullRegInfo(pOutFile, instr->getSourceRegister());
-    trfprintf(pOutFile, "    2ndSource         ");
-    printFullRegInfo(pOutFile, instr->getSource2ndRegister());
-    trfprintf(pOutFile, "    Target            ");
-    printFullRegInfo(pOutFile, instr->getTargetRegister());
+    printFullRegInfo(log, instr->getSourceRegister());
+    log->prints("    2ndSource         ");
+    printFullRegInfo(log, instr->getSource2ndRegister());
+    log->prints("    Target            ");
+    printFullRegInfo(log, instr->getTargetRegister());
 
     if (instr->getDependencyConditions()) {
-        printFullRegisterDependencyInfo(pOutFile, instr->getDependencyConditions());
+        printFullRegisterDependencyInfo(log, instr->getDependencyConditions());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FPRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86FPRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0))
-        print(pOutFile, instr->getTargetRegister());
-    printInstructionComment(pOutFile, 3, instr);
-    printFPRegisterComment(pOutFile, instr->getTargetRegister(), NULL);
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+        print(log, instr->getTargetRegister());
+
+    printInstructionComment(log, 3, instr);
+    printFPRegisterComment(log, instr->getTargetRegister(), NULL);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FPRegRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86FPRegRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
     if (!(instr->getOpCode().targetRegIsImplicit() != 0))
-        print(pOutFile, instr->getTargetRegister());
+        print(log, instr->getTargetRegister());
     if (!(instr->getOpCode().targetRegIsImplicit() != 0) && !(instr->getOpCode().sourceRegIsImplicit() != 0))
-        trfprintf(pOutFile, ", ");
+        log->prints(", ");
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0))
-        print(pOutFile, instr->getSourceRegister());
-    printInstructionComment(pOutFile, 2, instr);
-    printFPRegisterComment(pOutFile, instr->getTargetRegister(), instr->getSourceRegister());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+        print(log, instr->getSourceRegister());
+    printInstructionComment(log, 2, instr);
+    printFPRegisterComment(log, instr->getTargetRegister(), instr->getSourceRegister());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FPMemRegInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86FPMemRegInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-    printPrefix(pOutFile, instr);
-    trfprintf(pOutFile, "%s\t", getMnemonicName(&instr->getOpCode()));
-    print(pOutFile, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
+    printPrefix(log, instr);
+    log->printf("%s\t", getMnemonicName(&instr->getOpCode()));
+    print(log, instr->getMemoryReference(), getTargetSizeFromInstruction(instr));
     if (!(instr->getOpCode().sourceRegIsImplicit() != 0)) {
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, instr->getSourceRegister());
+        log->prints(", ");
+        print(log, instr->getSourceRegister());
     }
-    printInstructionComment(pOutFile, 1, instr);
-    printFPRegisterComment(pOutFile, NULL, instr->getSourceRegister());
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    printInstructionComment(log, 1, instr);
+    printFPRegisterComment(log, NULL, instr->getSourceRegister());
+    printMemoryReferenceComment(log, instr->getMemoryReference());
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86FPRegMemInstruction *instr)
+void TR_Debug::print(OMR::Logger *log, TR::X86FPRegMemInstruction *instr)
 {
-    if (pOutFile == NULL)
-        return;
-
     int32_t barrier = memoryBarrierRequired(instr->getOpCode(), instr->getMemoryReference(), _cg, false);
-    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(pOutFile, instr, barrier);
+    int32_t barrierOffset = printPrefixAndMnemonicWithoutBarrier(log, instr, barrier);
 
     if (!(instr->getOpCode().targetRegIsImplicit() != 0)) {
-        print(pOutFile, instr->getTargetRegister());
-        trfprintf(pOutFile, ", ");
+        print(log, instr->getTargetRegister());
+        log->prints(", ");
     }
-    print(pOutFile, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
-    printInstructionComment(pOutFile, 1, instr);
-    printFPRegisterComment(pOutFile, instr->getTargetRegister(), NULL);
-    printMemoryReferenceComment(pOutFile, instr->getMemoryReference());
+    print(log, instr->getMemoryReference(), getSourceSizeFromInstruction(instr));
+    printInstructionComment(log, 1, instr);
+    printFPRegisterComment(log, instr->getTargetRegister(), NULL);
+    printMemoryReferenceComment(log, instr->getMemoryReference());
 
     if (barrier & NeedsExplicitBarrier)
-        printPrefixAndMemoryBarrier(pOutFile, instr, barrier, barrierOffset);
+        printPrefixAndMemoryBarrier(log, instr, barrier, barrierOffset);
 
-    dumpDependencies(pOutFile, instr);
-    trfflush(pOutFile);
+    dumpDependencies(log, instr);
+    log->flush();
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::MemoryReference *mr, TR_RegisterSizes operandSize)
+void TR_Debug::print(OMR::Logger *log, TR::MemoryReference *mr, TR_RegisterSizes operandSize)
 {
-    if (pOutFile == NULL)
-        return;
-
     const char *typeSpecifier[10] = { "byte", // TR_ByteReg
         "word", // TR_HalfWordReg
         "dword", // TR_WordReg
@@ -1460,20 +1292,20 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::MemoryReference *mr, TR_RegisterSiz
     TR_RegisterSizes addressSize = (_comp->target().cpu.isAMD64() ? TR_DoubleWordReg : TR_WordReg);
     bool hasTerm = false;
     bool hasPrecedingTerm = false;
-    trfprintf(pOutFile, "%s ptr [", typeSpecifier[operandSize]);
+    log->printf("%s ptr [", typeSpecifier[operandSize]);
     if (mr->getBaseRegister()) {
-        print(pOutFile, mr->getBaseRegister(), addressSize);
+        print(log, mr->getBaseRegister(), addressSize);
         hasPrecedingTerm = true;
         hasTerm = true;
     }
 
     if (mr->getIndexRegister()) {
         if (hasPrecedingTerm)
-            trfprintf(pOutFile, "+");
+            log->printc('+');
         else
             hasPrecedingTerm = true;
-        trfprintf(pOutFile, "%d*", mr->getStrideMultiplier());
-        print(pOutFile, mr->getIndexRegister(), addressSize);
+        log->printf("%d*", mr->getStrideMultiplier());
+        print(log, mr->getIndexRegister(), addressSize);
         hasTerm = true;
     }
 
@@ -1488,33 +1320,33 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::MemoryReference *mr, TR_RegisterSiz
             //
 #ifdef TR_TARGET_64BIT
             if (mr->getForceRIPRelative()) {
-                trfprintf(pOutFile, "rip $");
+                log->prints("rip $");
             } else
 #endif
             {
-                trfprintf(pOutFile, "$");
+                log->printc('$');
             }
 
             // Treat this as an absolute reference and display in base16.
             //
-            printIntConstant(pOutFile, disp32, 16, addressSize, true);
+            printIntConstant(log, disp32, 16, addressSize, true);
         } else {
             // Treat this as a relative offset and display in base10, or in base16 if the displacement was
             // explicitly forced wider.
             //
             if ((disp32 != 0) || mr->isForceWideDisplacement()) {
                 if (disp32 > 0) {
-                    trfprintf(pOutFile, "+");
+                    log->printc('+');
                 } else {
-                    trfprintf(pOutFile, "-");
+                    log->printc('-');
                     disp32 = -disp32;
                 }
             }
 
             if (mr->isForceWideDisplacement())
-                printIntConstant(pOutFile, disp32, 16, TR_WordReg);
+                printIntConstant(log, disp32, 16, TR_WordReg);
             else if (disp32 != 0)
-                printIntConstant(pOutFile, disp32, 16);
+                printIntConstant(log, disp32, 16);
         }
 
         hasTerm = true;
@@ -1534,38 +1366,35 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::MemoryReference *mr, TR_RegisterSiz
         int64_t disp = (int64_t)(label->getCodeLocation());
 
         if (mr->getLabel()) {
-            print(pOutFile, label);
+            print(log, label);
             if (disp) {
-                trfprintf(pOutFile, " : ");
-                printHexConstant(pOutFile, disp, _comp->target().is64Bit() ? 16 : 8, false);
+                log->prints(" : ");
+                printHexConstant(log, disp, _comp->target().is64Bit() ? 16 : 8, false);
             }
         } else if (disp) {
-            printHexConstant(pOutFile, _comp->target().is64Bit() ? disp : (uint32_t)disp,
-                _comp->target().is64Bit() ? 16 : 8, true);
+            printHexConstant(log, _comp->target().is64Bit() ? disp : (uint32_t)disp, _comp->target().is64Bit() ? 16 : 8,
+                true);
         } else if (cds) {
-            trfprintf(pOutFile, "Data ");
-            print(pOutFile, cds->getSnippetLabel());
-            trfprintf(pOutFile, ": ");
+            log->prints("Data ");
+            print(log, cds->getSnippetLabel());
+            log->prints(": ");
             auto data = cds->getRawData();
             for (auto i = 0; i < cds->getDataSize(); i++) {
-                trfprintf(pOutFile, "%02x ", 0xff & (unsigned int)(data[i]));
+                log->printf("%02x ", 0xff & (unsigned int)(data[i]));
             }
-            trfprintf(pOutFile, "| ");
-            cds->printValue(pOutFile, this);
+            log->prints("| ");
+            cds->printValue(log, this);
         } else {
-            trfprintf(pOutFile, "UNKNOWN DATA");
+            log->prints("UNKNOWN DATA");
         }
     }
 
-    trfprintf(pOutFile, "]");
+    log->printc(']');
 }
 
-int32_t TR_Debug::printIntConstant(TR::FILE *pOutFile, int64_t value, int8_t radix, TR_RegisterSizes size,
+int32_t TR_Debug::printIntConstant(OMR::Logger *log, int64_t value, int8_t radix, TR_RegisterSizes size,
     bool padWithZeros)
 {
-    if (pOutFile == NULL)
-        return 0;
-
     const int8_t registerSizeToWidth[7] = { 2, // TR_ByteReg
         4, // TR_HalfWordReg
         8, // TR_WordReg
@@ -1578,10 +1407,10 @@ int32_t TR_Debug::printIntConstant(TR::FILE *pOutFile, int64_t value, int8_t rad
 
     switch (radix) {
         case 10:
-            return printDecimalConstant(pOutFile, value, width, padWithZeros);
+            return printDecimalConstant(log, value, width, padWithZeros);
 
         case 16:
-            return printHexConstant(pOutFile, value, width, padWithZeros);
+            return printHexConstant(log, value, width, padWithZeros);
 
         default:
             TR_ASSERT(0, "Can't print in unimplemented radix %d\n", radix);
@@ -1591,51 +1420,48 @@ int32_t TR_Debug::printIntConstant(TR::FILE *pOutFile, int64_t value, int8_t rad
     return 0;
 }
 
-int32_t TR_Debug::printDecimalConstant(TR::FILE *pOutFile, int64_t value, int8_t width, bool padWithZeros)
+int32_t TR_Debug::printDecimalConstant(OMR::Logger *log, int64_t value, int8_t width, bool padWithZeros)
 {
-    trfprintf(pOutFile, "%lld", value);
+    log->printf("%lld", value);
     return 0;
 }
 
-int32_t TR_Debug::printHexConstant(TR::FILE *pOutFile, int64_t value, int8_t width, bool padWithZeros)
+int32_t TR_Debug::printHexConstant(OMR::Logger *log, int64_t value, int8_t width, bool padWithZeros)
 {
     // we probably need to revisit generateMasmListingSyntax
     const char *prefix = _comp->target().isLinux() ? "0x" : (_cg->generateMasmListingSyntax() ? "0" : "0x");
     const char *suffix = _comp->target().isLinux() ? "" : (_cg->generateMasmListingSyntax() ? "h" : "");
 
     if (padWithZeros)
-        trfprintf(pOutFile, "%s%0*llx%s", prefix, width, value, suffix);
+        log->printf("%s%0*llx%s", prefix, width, value, suffix);
     else
-        trfprintf(pOutFile, "%s%llx%s", prefix, value, suffix);
+        log->printf("%s%llx%s", prefix, value, suffix);
 
     return 0;
 }
 
-void TR_Debug::printFPRegisterComment(TR::FILE *pOutFile, TR::Register *source, TR::Register *target)
+void TR_Debug::printFPRegisterComment(OMR::Logger *log, TR::Register *source, TR::Register *target)
 {
-    trfprintf(pOutFile, " using ");
+    log->prints(" using ");
     if (target)
-        print(pOutFile, target);
+        print(log, target);
     if (source && target)
-        trfprintf(pOutFile, " & ");
+        log->prints(" & ");
     if (source)
-        print(pOutFile, source);
+        print(log, source);
 }
 
-void TR_Debug::printInstructionComment(TR::FILE *pOutFile, int32_t tabStops, TR::Instruction *instr)
+void TR_Debug::printInstructionComment(OMR::Logger *log, int32_t tabStops, TR::Instruction *instr)
 {
     while (tabStops-- > 0)
-        trfprintf(pOutFile, "\t");
+        log->printc('\t');
 
-    trfprintf(pOutFile, "%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
-    dumpInstructionComments(pOutFile, instr);
+    log->printf("%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
+    dumpInstructionComments(log, instr);
 }
 
-void TR_Debug::printMemoryReferenceComment(TR::FILE *pOutFile, TR::MemoryReference *mr)
+void TR_Debug::printMemoryReferenceComment(OMR::Logger *log, TR::MemoryReference *mr)
 {
-    if (pOutFile == NULL)
-        return;
-
     TR::Symbol *symbol = mr->getSymbolReference().getSymbol();
 
     if (symbol == NULL && mr->getSymbolReference().getOffset() == 0)
@@ -1643,12 +1469,12 @@ void TR_Debug::printMemoryReferenceComment(TR::FILE *pOutFile, TR::MemoryReferen
 
     if (symbol && symbol->isSpillTempAuto()) {
         const char *prefix = (symbol->getDataType() == TR::Float || symbol->getDataType() == TR::Double) ? "#FP" : "#";
-        trfprintf(pOutFile, ", %sSPILL%d", prefix, symbol->getSize());
+        log->printf(", %sSPILL%d", prefix, symbol->getSize());
     }
 
-    trfprintf(pOutFile, ", SymRef");
+    log->prints(", SymRef");
 
-    print(pOutFile, &mr->getSymbolReference());
+    print(log, &mr->getSymbolReference());
 }
 
 TR_RegisterSizes TR_Debug::getTargetSizeFromInstruction(TR::Instruction *instr)
@@ -1735,49 +1561,43 @@ TR_RegisterSizes TR_Debug::getImmediateSizeFromInstruction(TR::Instruction *inst
     return immedSize;
 }
 
-void TR_Debug::printReferencedRegisterInfo(TR::FILE *pOutFile, TR::MemoryReference *mr)
+void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::MemoryReference *mr)
 {
-    if (pOutFile == NULL)
-        return;
-
     if (mr->getBaseRegister()) {
-        trfprintf(pOutFile, "    Base Reg          ");
-        printFullRegInfo(pOutFile, mr->getBaseRegister());
+        log->prints("    Base Reg          ");
+        printFullRegInfo(log, mr->getBaseRegister());
     }
 
     if (mr->getIndexRegister()) {
-        trfprintf(pOutFile, "    Index Reg         ");
-        printFullRegInfo(pOutFile, mr->getIndexRegister());
+        log->prints("    Index Reg         ");
+        printFullRegInfo(log, mr->getIndexRegister());
     }
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
-void TR_Debug::printX86GCRegisterMap(TR::FILE *pOutFile, TR::GCRegisterMap *map)
+void TR_Debug::printX86GCRegisterMap(OMR::Logger *log, TR::GCRegisterMap *map)
 {
     TR::Machine *machine = _cg->machine();
 
-    trfprintf(pOutFile, "    slot pushes: %d", ((map->getMap() & _cg->getRegisterMapInfoBitsMask()) >> 16));
+    log->printf("    slot pushes: %d", ((map->getMap() & _cg->getRegisterMapInfoBitsMask()) >> 16));
 
-    trfprintf(pOutFile, "    registers: {");
+    log->prints("    registers: {");
     for (int i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastAssignableGPR; ++i) {
         if (map->getMap() & (1 << (i - 1))) // TODO:AMD64: Use the proper mask value
-            trfprintf(pOutFile, "%s ", getName(machine->getRealRegister((TR::RealRegister::RegNum)i)));
+            log->printf("%s ", getName(machine->getRealRegister((TR::RealRegister::RegNum)i)));
     }
 
-    trfprintf(pOutFile, "}\n");
+    log->prints("}\n");
 }
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::RealRegister *reg, TR_RegisterSizes size)
+void TR_Debug::print(OMR::Logger *log, TR::RealRegister *reg, TR_RegisterSizes size)
 {
-    if (pOutFile == NULL)
-        return;
-
     switch (size) {
         case TR_WordReg:
         case TR_FloatReg:
         case TR_DoubleReg:
-            trfprintf(pOutFile, "%s", getName(reg));
+            log->prints(getName(reg));
             break;
         case TR_VectorReg128:
         case TR_VectorReg256:
@@ -1786,29 +1606,26 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::RealRegister *reg, TR_RegisterSizes
         case TR_DoubleWordReg:
         case TR_HalfWordReg:
         case TR_ByteReg:
-            trfprintf(pOutFile, "%s", getName(reg, size));
+            log->prints(getName(reg, size));
             break;
         default:
             break;
     }
 }
 
-void TR_Debug::printFullRegInfo(TR::FILE *pOutFile, TR::RealRegister *reg)
+void TR_Debug::printFullRegInfo(OMR::Logger *log, TR::RealRegister *reg)
 {
-    if (pOutFile == NULL)
-        return;
+    log->prints("[ ");
 
-    trfprintf(pOutFile, "[ ");
-
-    trfprintf(pOutFile, "%-12s ][ ", getName(reg));
+    log->printf("%-12s ][ ", getName(reg));
 
     static const char *stateNames[5] = { "Free", "Unlatched", "Assigned", "Blocked", "Locked" };
 
-    trfprintf(pOutFile, "%-10s ][ ", stateNames[reg->getState()]);
+    log->printf("%-10s ][ ", stateNames[reg->getState()]);
 
-    trfprintf(pOutFile, "%-12s ]\n", reg->getAssignedRegister() ? getName(reg->getAssignedRegister()) : " ");
+    log->printf("%-12s ]\n", reg->getAssignedRegister() ? getName(reg->getAssignedRegister()) : " ");
 
-    trfflush(pOutFile);
+    log->flush();
 }
 
 static const char *unknownRegisterName(const char kind = 0)
@@ -2391,92 +2208,90 @@ const char *TR_Debug::getName(TR::RealRegister *reg, TR_RegisterSizes size)
     return getName(reg->getRegisterNumber(), size);
 }
 
-void TR_Debug::dumpInstructionWithVFPState(TR::Instruction *instr, const TR_VFPState *prevState)
+void TR_Debug::dumpInstructionWithVFPState(OMR::Logger *log, TR::Instruction *instr, const TR_VFPState *prevState)
 {
-    if (_file != NULL) {
-        const TR_VFPState &vfpState = _cg->vfpState();
-        print(_file, instr);
+    const TR_VFPState &vfpState = _cg->vfpState();
+    print(log, instr);
 
-        // Print the VFP state if something changed
-        //
-        // Note: IA32.cpp version 1.158 has code to compare the VFP state with
-        // that calculated using the old VFP scheme to make sure it's correct.
-        // TODO: Remove this note when we trust the new VFP scheme.
-        //
-        if (prevState && (vfpState != *prevState)) {
-            trfprintf(_file, "\n\t%s VFP=%s+%d", commentString(), getName(vfpState._register), vfpState._displacement);
-        }
-        trfflush(_file);
+    // Print the VFP state if something changed
+    //
+    // Note: IA32.cpp version 1.158 has code to compare the VFP state with
+    // that calculated using the old VFP scheme to make sure it's correct.
+    // TODO: Remove this note when we trust the new VFP scheme.
+    //
+    if (prevState && (vfpState != *prevState)) {
+        log->printf("\n\t%s VFP=%s+%d", commentString(), getName(vfpState._register), vfpState._displacement);
     }
+    log->flush();
 }
 
 //
 // IA32 Instructions
 //
 
-void TR_Debug::printRegRegInstruction(TR::FILE *pOutFile, const char *opCode, TR::RealRegister *reg1,
+void TR_Debug::printRegRegInstruction(OMR::Logger *log, const char *opCode, TR::RealRegister *reg1,
     TR::RealRegister *reg2)
 {
-    trfprintf(pOutFile, "%s\t", opCode);
-    print(pOutFile, reg1);
+    log->printf("%s\t", opCode);
+    print(log, reg1);
     if (reg2) {
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, reg2);
+        log->prints(", ");
+        print(log, reg2);
     }
 }
 
-void TR_Debug::printRegMemInstruction(TR::FILE *pOutFile, const char *opCode, TR::RealRegister *reg,
+void TR_Debug::printRegMemInstruction(OMR::Logger *log, const char *opCode, TR::RealRegister *reg,
     TR::RealRegister *base, int32_t offset)
 {
-    trfprintf(pOutFile, "%s\t", opCode);
-    print(pOutFile, reg);
+    log->printf("%s\t", opCode);
+    print(log, reg);
     if (base) {
-        trfprintf(pOutFile, ", [");
-        print(pOutFile, base);
-        trfprintf(pOutFile, " +%d]", offset);
+        log->prints(", [");
+        print(log, base);
+        log->printf(" +%d]", offset);
     }
 }
 
-void TR_Debug::printRegImmInstruction(TR::FILE *pOutFile, const char *opCode, TR::RealRegister *reg, int32_t imm)
+void TR_Debug::printRegImmInstruction(OMR::Logger *log, const char *opCode, TR::RealRegister *reg, int32_t imm)
 {
-    trfprintf(pOutFile, "%s\t", opCode);
-    print(pOutFile, reg);
+    log->printf("%s\t", opCode);
+    print(log, reg);
     if (imm <= 1024)
-        trfprintf(pOutFile, ", %d", imm);
+        log->printf(", %d", imm);
     else
-        trfprintf(pOutFile, ", " POINTER_PRINTF_FORMAT, imm);
+        log->printf(", " POINTER_PRINTF_FORMAT, imm);
 }
 
-void TR_Debug::printMemRegInstruction(TR::FILE *pOutFile, const char *opCode, TR::RealRegister *base, int32_t offset,
+void TR_Debug::printMemRegInstruction(OMR::Logger *log, const char *opCode, TR::RealRegister *base, int32_t offset,
     TR::RealRegister *reg)
 {
-    trfprintf(pOutFile, "%s\t", opCode);
-    trfprintf(pOutFile, "[");
-    print(pOutFile, base);
-    trfprintf(pOutFile, " +%d]", offset);
+    log->printf("%s\t", opCode);
+    log->printc('[');
+    print(log, base);
+    log->printf(" +%d]", offset);
     if (reg) {
-        trfprintf(pOutFile, ", ");
-        print(pOutFile, reg);
+        log->prints(", ");
+        print(log, reg);
     }
 }
 
-void TR_Debug::printMemImmInstruction(TR::FILE *pOutFile, const char *opCode, TR::RealRegister *base, int32_t offset,
+void TR_Debug::printMemImmInstruction(OMR::Logger *log, const char *opCode, TR::RealRegister *base, int32_t offset,
     int32_t imm)
 {
-    trfprintf(pOutFile, "%s\t", opCode);
-    trfprintf(pOutFile, "[");
-    print(pOutFile, base);
-    trfprintf(pOutFile, " +%d]", offset);
+    log->printf("%s\t", opCode);
+    log->printc('[');
+    print(log, base);
+    log->printf(" +%d]", offset);
     if (imm <= 1024)
-        trfprintf(pOutFile, ", %d", imm);
+        log->printf(", %d", imm);
     else
-        trfprintf(pOutFile, ", " POINTER_PRINTF_FORMAT, imm);
+        log->printf(", " POINTER_PRINTF_FORMAT, imm);
 }
 
-void TR_Debug::printLabelInstruction(TR::FILE *pOutFile, const char *opCode, TR::LabelSymbol *label)
+void TR_Debug::printLabelInstruction(OMR::Logger *log, const char *opCode, TR::LabelSymbol *label)
 {
-    trfprintf(pOutFile, "%s\t", opCode);
-    print(pOutFile, label);
+    log->printf("%s\t", opCode);
+    print(log, label);
 }
 
 //
@@ -2484,17 +2299,14 @@ void TR_Debug::printLabelInstruction(TR::FILE *pOutFile, const char *opCode, TR:
 //
 
 #ifdef J9_PROJECT_SPECIFIC
-void TR_Debug::print(TR::FILE *pOutFile, TR::X86CallSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::X86CallSnippet *snippet)
 {
-    if (pOutFile == NULL)
-        return;
-
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
     TR::Node *callNode = snippet->getNode();
     TR::SymbolReference *methodSymRef = callNode->getSymbolReference();
     TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
 
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 
     bool isJitInduceOSRCall = false;
     bool isJitDispatchJ9Method = false;
@@ -2546,20 +2358,18 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::X86CallSnippet *snippet)
                 // No need to check for VEX vs. legacy encoding. These instructions
                 // are the same length either way.
                 int32_t instrSize = 6 + (offset >= 0x80 ? 3 : 0);
-                printPrefix(pOutFile, NULL, bufferPos, instrSize);
-                trfprintf(pOutFile,
-                    "vmovs%c\t%cword ptr [rsp+0x%x], xmm%d"
-                    "\t\t# save registers for interpreter call snippet",
+                printPrefix(log, NULL, bufferPos, instrSize);
+                log->printf("vmovs%c\t%cword ptr [rsp+0x%x], xmm%d"
+                            "\t\t# save registers for interpreter call snippet",
                     is32Bit ? 's' : 'd', is32Bit ? 'd' : 'q', offset, fprIndex);
 
                 bufferPos += instrSize;
                 fprIndex++;
             } else if (!isFpr && gprIndex < numArgGPRs) {
                 int32_t instrSize = (is32Bit ? 4 : 5) + (offset >= 0x80 ? 3 : 0);
-                printPrefix(pOutFile, NULL, bufferPos, instrSize);
-                trfprintf(pOutFile,
-                    "mov\t%cword ptr [rsp+0x%x], %c%s"
-                    "\t\t# save registers for interpreter call snippet",
+                printPrefix(log, NULL, bufferPos, instrSize);
+                log->printf("mov\t%cword ptr [rsp+0x%x], %c%s"
+                            "\t\t# save registers for interpreter call snippet",
                     is32Bit ? 'd' : 'q', offset, is32Bit ? 'e' : 'r', gprStem[gprIndex]);
 
                 bufferPos += instrSize;
@@ -2569,47 +2379,47 @@ void TR_Debug::print(TR::FILE *pOutFile, TR::X86CallSnippet *snippet)
 
         if (hasMovRegJ9Method) {
             intptr_t ramMethod = (intptr_t)methodSymbol->getMethodAddress();
-            printPrefix(pOutFile, NULL, bufferPos, 10);
-            trfprintf(pOutFile, "mov\trdi, 0x%zx\t\t# MOV8RegImm64", ramMethod);
+            printPrefix(log, NULL, bufferPos, 10);
+            log->printf("mov\trdi, 0x%zx\t\t# MOV8RegImm64", ramMethod);
             bufferPos += 10;
         }
 
-        printPrefix(pOutFile, NULL, bufferPos, 5);
-        trfprintf(pOutFile, "jmp\t%s\t\t# jump out of snippet code", helperName);
+        printPrefix(log, NULL, bufferPos, 5);
+        log->printf("jmp\t%s\t\t# jump out of snippet code", helperName);
         bufferPos += 5;
     } else {
         if (hasMovRegJ9Method) {
             intptr_t ramMethod = (intptr_t)methodSymbol->getMethodAddress();
-            printPrefix(pOutFile, NULL, bufferPos, 5);
-            trfprintf(pOutFile, "mov\tedi, 0x%x\t\t# MOV8RegImm32", ramMethod);
+            printPrefix(log, NULL, bufferPos, 5);
+            log->printf("mov\tedi, 0x%x\t\t# MOV8RegImm32", ramMethod);
             bufferPos += 5;
         }
 
-        printPrefix(pOutFile, NULL, bufferPos, 5);
-        trfprintf(pOutFile, "jmp\t%s\t\t# jump out of snippet code", helperName);
+        printPrefix(log, NULL, bufferPos, 5);
+        log->printf("jmp\t%s\t\t# jump out of snippet code", helperName);
         bufferPos += 5;
     }
 }
 
 #endif
 
-void TR_Debug::printX86OOLSequences(TR::FILE *pOutFile)
+void TR_Debug::printX86OOLSequences(OMR::Logger *log)
 {
     auto oiIterator = _cg->getOutlinedInstructionsList().begin();
     while (oiIterator != _cg->getOutlinedInstructionsList().end()) {
-        trfprintf(pOutFile, "\n------------ start out-of-line instructions\n");
+        log->prints("\n------------ start out-of-line instructions\n");
 
         TR::Instruction *instr = (*oiIterator)->getFirstInstruction();
 
         do {
-            print(pOutFile, instr);
+            print(log, instr);
             instr = instr->getNext();
         } while (instr != (*oiIterator)->getAppendInstruction());
 
         if ((*oiIterator)->getAppendInstruction()) {
-            print(pOutFile, (*oiIterator)->getAppendInstruction());
+            print(log, (*oiIterator)->getAppendInstruction());
         }
-        trfprintf(pOutFile, "\n------------ end out-of-line instructions\n");
+        log->prints("\n------------ end out-of-line instructions\n");
 
         ++oiIterator;
     }
@@ -2620,7 +2430,7 @@ void TR_Debug::printX86OOLSequences(TR::FILE *pOutFile)
 //
 
 #ifdef TR_TARGET_64BIT
-uint8_t *TR_Debug::printArgumentFlush(TR::FILE *pOutFile, TR::Node *callNode,
+uint8_t *TR_Debug::printArgumentFlush(OMR::Logger *log, TR::Node *callNode,
     bool isFlushToStack, // flush to stack or flush to regs
     uint8_t *bufferPos)
 {
@@ -2703,11 +2513,11 @@ uint8_t *TR_Debug::printArgumentFlush(TR::FILE *pOutFile, TR::Node *callNode,
 
             // Print the instruction
             //
-            printPrefix(pOutFile, NULL, bufferPos, instrLength);
+            printPrefix(log, NULL, bufferPos, instrLength);
             if (isFlushToStack)
-                trfprintf(pOutFile, "%s\t[rsp +%d], %s", opCodeName, displacement, regName);
+                log->printf("%s\t[rsp +%d], %s", opCodeName, displacement, regName);
             else // Flush from stack to argument registers.
-                trfprintf(pOutFile, "%s\t%s, [rsp +%d]", opCodeName, regName, displacement);
+                log->printf("%s\t%s, [rsp +%d]", opCodeName, regName, displacement);
             bufferPos += instrLength;
         } else {
             // This argument is not in a register; skip it

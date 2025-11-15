@@ -33,6 +33,10 @@
 
 class TR_FrontEnd;
 
+namespace OMR {
+class Logger;
+} // namespace OMR
+
 namespace TR {
 class CFGEdge;
 class ResolvedMethodSymbol;
@@ -93,9 +97,9 @@ private:
 
         int32_t getIndex() { return _block ? _block->getNumber() + 1 : -1; }
 #ifdef DEBUG
-        void print(TR_FrontEnd *fe, TR::FILE *pOutFile);
+        void print(OMR::Logger *log, TR_FrontEnd *fe);
 #else
-        void print(TR_FrontEnd *fe, TR::FILE *pOutFile) {}
+        void print(OMR::Logger *log, TR_FrontEnd *fe) {}
 #endif
     };
 

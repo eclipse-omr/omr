@@ -65,6 +65,7 @@
 #include "optimizer/ValueNumberInfo.hpp"
 #include "optimizer/IsolatedStoreElimination.hpp"
 #include "optimizer/LoopCanonicalizer.hpp"
+#include "ras/Logger.hpp"
 
 TR_FieldPrivatizer::TR_FieldPrivatizer(TR::OptimizationManager *manager)
     : TR_LoopTransformer(manager)
@@ -125,6 +126,7 @@ bool TR_FieldPrivatizer::isFieldAliasAccessed(TR::SymbolReference *symRef)
 int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *loopStructure, TR_BitVector **optSetInfo,
     int32_t bitVectorSize)
 {
+    OMR::Logger *log = comp()->log();
     TR_RegionStructure *regionStructure = loopStructure->asRegion();
 
     if (regionStructure) {
@@ -138,8 +140,6 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
 
     if (!regionStructure || !regionStructure->getParent() || !regionStructure->isNaturalLoop())
         return 0;
-
-    //  traceMsg(comp(), "Considering Loop %d\n", regionStructure->getNumber());
 
     TR_ScratchList<TR::Block> blocksInRegion(trMemory());
     regionStructure->getBlocks(&blocksInRegion);
@@ -260,8 +260,7 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
         _needToStoreBack = new (trStackMemory()) TR_BitVector(symRefCount, trMemory(), stackAlloc, growable);
         _criticalEdgeBlock = 0;
 
-        if (trace())
-            traceMsg(comp(), "\nChecking loop %d for predictability\n", loopStructure->getNumber());
+        logprintf(trace(), log, "\nChecking loop %d for predictability\n", loopStructure->getNumber());
 
         _isAddition = false;
         int32_t isPredictableLoop = checkLoopForPredictability(loopStructure, loopInvariantBlock->getBlock(), 0);
@@ -308,13 +307,13 @@ int32_t TR_FieldPrivatizer::detectCanonicalizedPredictableLoops(TR_Structure *lo
                 _privatizedFieldNodes.deleteAll();
 
                 if (trace()) {
-                    traceMsg(comp(), "\nDetected a predictable loop %d\n", loopStructure->getNumber());
+                    log->printf("\nDetected a predictable loop %d\n", loopStructure->getNumber());
 
-                    traceMsg(comp(), "Fields that cannot be privatized:\n");
-                    _fieldsThatCannotBePrivatized->print(comp());
-                    traceMsg(comp(), "\n");
+                    log->prints("Fields that cannot be privatized:\n");
+                    _fieldsThatCannotBePrivatized->print(log, comp());
+                    log->println();
 
-                    traceMsg(comp(), "\nPossible new induction variable candidates :\n");
+                    log->prints("\nPossible new induction variable candidates :\n");
                 }
 
                 visitCount = comp()->incVisitCount();
@@ -864,6 +863,7 @@ void TR_FieldPrivatizer::placeInitializersInLoopInvariantBlock(TR::Block *block)
 
 void TR_FieldPrivatizer::placeStoresBackInExits(List<TR::Block> *exitBlocks, List<TR::Block> *blocksInLoop)
 {
+    OMR::Logger *log = comp()->log();
     TR::CFG *cfg = comp()->getFlowGraph();
     TR_BitVector *seenExitBlocks
         = new (trStackMemory()) TR_BitVector(cfg->getNextNodeNumber(), trMemory(), stackAlloc, growable);
@@ -953,9 +953,8 @@ void TR_FieldPrivatizer::placeStoresBackInExits(List<TR::Block> *exitBlocks, Lis
                     nnext->setFrequency(current->getFrequency());
                     TR::CFGEdge *newEdge = comp()->getFlowGraph()->addEdge(nnext, next);
                     newEdge->setFrequency(current->getFrequency());
-                    if (trace())
-                        traceMsg(comp(), "placeStoresBackInExits: added block %d freq %d\n", nnext->getNumber(),
-                            nnext->getFrequency());
+                    logprintf(trace(), log, "placeStoresBackInExits: added block %d freq %d\n", nnext->getNumber(),
+                        nnext->getFrequency());
                 }
                 TR::CFGEdge *newEdge = comp()->getFlowGraph()->addEdge(exitBlock, nnext);
                 newEdge->setFrequency(current->getFrequency());
@@ -963,11 +962,11 @@ void TR_FieldPrivatizer::placeStoresBackInExits(List<TR::Block> *exitBlocks, Lis
                     TR::Block *from = newEdge->getFrom()->asBlock();
                     TR::Block *to = newEdge->getTo()->asBlock();
 
-                    traceMsg(comp(), "new edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(), from->getFrequency(),
+                    log->printf("new edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(), from->getFrequency(),
                         to->getNumber(), to->getFrequency(), current->getFrequency());
                     from = current->getFrom()->asBlock();
                     to = current->getTo()->asBlock();
-                    traceMsg(comp(), "instead of orig edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(),
+                    log->printf("instead of orig edge %d(%d) -> %d(%d) freq %d\n", from->getNumber(),
                         from->getFrequency(), to->getNumber(), to->getFrequency(), current->getFrequency());
                 }
 

@@ -36,6 +36,7 @@
 #include "il/SymbolReference.hpp"
 #include "infra/IGNode.hpp"
 #include "infra/InterferenceGraph.hpp"
+#include "ras/Logger.hpp"
 
 typedef bool (*localSizeTestMethod)(uint32_t size);
 
@@ -57,6 +58,8 @@ void OMR::ARM64::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
     TR::AutomaticSymbol *localCursor;
     TR::CodeGenerator *cg = self()->cg();
     TR::Compilation *comp = self()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
 
     TR::GCStackAtlas *atlas = cg->getStackAtlas();
 
@@ -178,11 +181,9 @@ void OMR::ARM64::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
         for (localCursor = automaticIterator.getFirst(); localCursor; localCursor = automaticIterator.getNext()) {
             if (localCursor->getGCMapIndex() >= 0) {
                 int32_t newOffset = stackIndex + pointerSize * (localCursor->getGCMapIndex() - firstLocalGCIndex);
-                if (comp->getOption(TR_TraceCG)) {
-                    traceMsg(comp, "\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
-                        comp->getDebug()->getName(localCursor), localCursor->getGCMapIndex(), localCursor->getOffset(),
-                        newOffset);
-                }
+                logprintf(trace, log, "\nmapCompactedStack: changing %s (GC index %d) offset from %d to %d",
+                    comp->getDebug()->getName(localCursor), localCursor->getGCMapIndex(), localCursor->getOffset(),
+                    newOffset);
 
                 localCursor->setOffset(newOffset);
 
@@ -231,9 +232,8 @@ void OMR::ARM64::Linkage::mapCompactedStack(TR::ResolvedMethodSymbol *method)
 #endif
                             } else // share local with already mapped stack slot
                             {
-                                if (comp->getOption(TR_TraceCG))
-                                    traceMsg(comp, "O^O COMPACT LOCALS: Sharing slot for local %p (colour = %d)\n",
-                                        localCursor, colour);
+                                logprintf(trace, log, "O^O COMPACT LOCALS: Sharing slot for local %p (colour = %d)\n",
+                                    localCursor, colour);
 
                                 localCursor->setOffset(colourToOffsetMap[colour]);
                             }

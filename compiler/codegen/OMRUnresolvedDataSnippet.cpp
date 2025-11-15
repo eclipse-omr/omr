@@ -25,6 +25,7 @@
 #include "codegen/UnresolvedDataSnippet.hpp"
 #include "codegen/UnresolvedDataSnippet_inlines.hpp"
 #include "il/LabelSymbol.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class Node;
@@ -63,13 +64,10 @@ TR::UnresolvedDataSnippet *OMR::UnresolvedDataSnippet::create(TR::CodeGenerator 
  * J9-specific and therefore a simple clean version is needed for non-J9 builds.
  */
 
-void TR_Debug::print(TR::FILE *pOutFile, TR::UnresolvedDataSnippet *snippet)
+void TR_Debug::print(OMR::Logger *log, TR::UnresolvedDataSnippet *snippet)
 {
-    if (pOutFile == NULL)
-        return;
-
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    printSnippetLabel(pOutFile, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
 }
 
 #endif

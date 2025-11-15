@@ -38,6 +38,7 @@
 #include "infra/List.hpp"
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
+#include "ras/Logger.hpp"
 
 class TR_RegionStructure;
 class TR_RematAdjustments;
@@ -597,10 +598,9 @@ private:
             int i;
 
             for (i = _nextIndex; i > 0 && _array[i / 2]->objectGT(t->getObject()); i /= 2) {
-                // traceMsg("\tMoving %d to %d\n", i, i/2);
                 _array[i] = _array[i / 2];
             }
-            // traceMsg("Storing new item at location %d, _nextIndex is %d\n", i, _nextIndex);
+
             _array[i] = t;
 
             return _nextIndex++;
@@ -631,11 +631,12 @@ private:
 
         void dumpList(TR::Compilation *comp)
         {
-            traceMsg(comp, "heap dump\n");
+            OMR::Logger *log = comp->log();
+            log->prints("heap dump\n");
             for (uint32_t i = 0; i < _nextIndex; i++) {
-                traceMsg(comp, "%d [idx %d], ", _array[i]->getObject()->getNumber(), _array[i]->getIndex());
+                log->printf("%d [idx %d], ", _array[i]->getObject()->getNumber(), _array[i]->getIndex());
             }
-            traceMsg(comp, "end heap dump\n");
+            log->prints("end heap dump\n");
         }
 
     private:

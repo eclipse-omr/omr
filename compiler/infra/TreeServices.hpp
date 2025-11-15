@@ -33,6 +33,7 @@
 #include "il/Node_inlines.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Debug.hpp"
+#include "ras/Logger.hpp"
 
 class TR_AddressTree {
 public:
@@ -144,13 +145,14 @@ public:
 
     void dump(TR::Compilation *comp)
     {
-        traceMsg(comp, "{");
+        OMR::Logger *log = comp->log();
+        log->printc('{');
         const char *sep = "";
         for (TR_Mark i = 0; i < _undoCount; i++) {
-            traceMsg(comp, "%s%d:%s", sep, _undoStack[i], comp->getDebug()->getName(_unifiedNodes[_undoStack[i]]));
+            log->printf("%s%d:%s", sep, _undoStack[i], comp->getDebug()->getName(_unifiedNodes[_undoStack[i]]));
             sep = " ";
         }
-        traceMsg(comp, "}");
+        log->printc('}');
     }
 };
 
@@ -159,7 +161,7 @@ public: // TODO: should be protected.  Not sure why that doesn't work.
     TR_Pattern *_next; // Every pattern is assumed to be part of a conjunction because that's so common
     virtual const char *getName() = 0;
     virtual bool thisMatches(TR::Node *node, TR_Unification &uni, TR::Compilation *comp) = 0;
-    virtual void tracePattern(TR::Node *node);
+    virtual void tracePattern(TR::Node *node, TR::Compilation *comp);
 
 public:
     TR_ALLOC(TR_MemoryBase::TR_Pattern)
@@ -200,7 +202,7 @@ protected:
         return node->getOpCodeValue() == _opCode;
     }
 
-    virtual void tracePattern(TR::Node *node);
+    virtual void tracePattern(TR::Node *node, TR::Compilation *comp);
 
 public:
     TR_OpCodePattern(TR::ILOpCodes opCode, TR_Pattern *next = NULL)

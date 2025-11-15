@@ -48,6 +48,7 @@
 #include "il/TreeTop_inlines.hpp"
 #include "infra/Assert.hpp"
 #include "p/codegen/PPCInstruction.hpp"
+#include "ras/Logger.hpp"
 #include "runtime/Runtime.hpp"
 
 class TR_VirtualGuardSite;
@@ -555,6 +556,9 @@ TR::Instruction *generateTrg1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::
 int estimateLikeliness(TR::CodeGenerator *cg, TR::Node *n)
 {
     TR::Compilation *comp = cg->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceCG);
+
     static char *TR_PredictBranchRatio = feGetEnv("TR_PredictBranchRatio");
 
     if (TR_PredictBranchRatio) {
@@ -567,11 +571,15 @@ int estimateLikeliness(TR::CodeGenerator *cg, TR::Node *n)
             float currentBlockFreq = std::max<float>(n->getBlock()->getFrequency(), 1.0f);
             float targetBlockFreq = std::max<float>(destBlock->getFrequency(), 1.0f);
             float fallThroughBlockFreq = std::max<float>(fallThroughBlock->getFrequency(), 1.0f);
-            traceMsg(comp, "target block: %d, fall through block: %d\n", destBlock->getNumber(),
+
+            logprintf(trace, log, "target block: %d, fall through block: %d\n", destBlock->getNumber(),
                 fallThroughBlock->getNumber());
+
             bool biased = false;
             bool likeliness;
-            traceMsg(comp, "targetBlockFreq: %f, fallThroughBlockFreq: %f\n", targetBlockFreq, fallThroughBlockFreq);
+
+            logprintf(trace, log, "targetBlockFreq: %f, fallThroughBlockFreq: %f\n", targetBlockFreq,
+                fallThroughBlockFreq);
 
             if (fallThroughBlockFreq / targetBlockFreq > predictBranchRatio)
                 return -1;
