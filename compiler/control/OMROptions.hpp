@@ -1394,22 +1394,62 @@ protected:
     TR::Options *self();
     const TR::Options *self() const;
 
+    Options() {}
+
+    /**
+     * See corresponding `create()` function
+     */
+
 public:
     TR_ALLOC(TR_Memory::Options)
+
+    /**
+     * @brief Factory function to create and initialize a new \c TR::Options object.
+     *     Initializes the new object via the `initialize()` function.
+     *
+     * @param[in] t \c TR_Memory allocator type from which to allocate
+     *
+     * @return An allocated and initialized \c TR::Options object
+     */
+    template<typename AllocatorType> static TR::Options *create(AllocatorType t);
+
+    /**
+     * @brief This constructor uses copy construction to initialize a new \c TR::Options
+     *     object
+     *
+     * @param[in] m : \c TR_Memory object from which to allocate
+     * @param[in] index : \c int32_t option set index
+     * @param[in] lineNumber : \c int32_t option set line number
+     * @param[in] compilee : \c TR_ResolvedMethod* the resolved method for this compilee
+     * @param[in] oldStartPC : \c void* of previous method startPC
+     * @param[in] optimizationPlan : \c TR_OptimizationPlan* optimization plan
+     * @param[in] isAOT : \c bool indicating whether this is an AOT compile or not
+     * @param[in] compThreadID : \c int32_t
+     *     if >= 0, the compilation thread id
+     *     if -1, no compilation thread id
+     *
+     * @return An allocated and initialized \c TR::Options object
+     */
+    Options(TR_Memory *m, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC,
+        TR_OptimizationPlan *optimizationPlan, bool isAOT = false, int32_t compThreadID = -1);
+
+    /**
+     * @brief \c TR::Options copy constructor
+     */
+    Options(TR::Options &other);
+
+    /**
+     * @brief Initialize the OMR components of the \c TR::Options object.
+     *     Downstream projects may override, but should call this function to
+     *     complete the initialization of the OMR components.
+     */
+    void initialize();
 
     TR::CodeCacheKind getCodeCacheKind() { return _codeCacheKind; }
 
     TR::SimpleRegex *getTransientClassRegex() { return _transientClassRegex; }
 
     void setCodeCacheKind(TR::CodeCacheKind kind) { _codeCacheKind = kind; }
-
-    void init();
-
-    Options() { OMR::Options::init(); }
-
-    Options(TR_Memory *, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC,
-        TR_OptimizationPlan *optimizationPlan, bool isAOT = false, int32_t compThreadID = -1);
-    Options(TR::Options &other);
 
     enum TR_AggresivenessLevel {
         CONSERVATIVE_QUICKSTART = 0,

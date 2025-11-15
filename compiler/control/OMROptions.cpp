@@ -2740,7 +2740,7 @@ OMR::Options::Options(TR::Options &other)
     }
 }
 
-void OMR::Options::init()
+void OMR::Options::initialize()
 {
     _optionSets = NULL;
     _postRestoreOptionSets = NULL;
@@ -3361,10 +3361,10 @@ const char *OMR::Options::processOptionsJIT(const char *jitOptions, void *feBase
     // only do this if this the first time around we're processing options
     //
     if (!_jitCmdLineOptions) {
-        _jitCmdLineOptions = new (PERSISTENT_NEW) TR::Options();
+        _jitCmdLineOptions = TR::Options::create(trPersistentMemory);
         _cmdLineOptions = _jitCmdLineOptions;
     } else {
-        _jitCmdLineOptions->init();
+        _jitCmdLineOptions->initialize();
     }
 
     _feBase = feBase;
@@ -3398,9 +3398,9 @@ const char *OMR::Options::processOptionsAOT(const char *aotOptions, void *feBase
     // only do this if this the first time around we're processing options
     //
     if (!_aotCmdLineOptions)
-        _aotCmdLineOptions = new (PERSISTENT_NEW) TR::Options();
+        _aotCmdLineOptions = TR::Options::create(trPersistentMemory);
     else
-        _aotCmdLineOptions->init();
+        _aotCmdLineOptions->initialize();
 
     _feBase = feBase;
     _fe = fe;
@@ -6208,3 +6208,16 @@ void OMR::Options::setDefaultsForDeterministicMode()
         }
     }
 }
+
+template<typename AllocatorType>
+TR::Options *OMR::Options::create(AllocatorType t)
+{
+    TR::Options *opt = new (t) TR::Options();
+    TR_ASSERT_FATAL(opt, "Unable to allocate TR::Options");
+    opt->initialize();
+    return opt;
+}
+
+// Explicit instantiations
+template TR::Options *OMR::Options::create(TR_HeapMemory t);
+template TR::Options *OMR::Options::create(PERSISTENT_NEW_DECLARE t);
