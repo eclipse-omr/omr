@@ -66,23 +66,21 @@ public:
 
     /**
      * @brief Constructor
-     * @param[in] node : load or store node
-     * @param[in] len : length
+     * @param[in] rootLoadOrStore : load or store node
      * @param[in] cg : CodeGenerator object
      */
-    MemoryReference(TR::Node *node, uint32_t len, TR::CodeGenerator *cg)
-        : OMR::MemoryReferenceConnector(node, len, cg)
+    MemoryReference(TR::Node *rootLoadOrStore, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(rootLoadOrStore, cg)
     {}
 
     /**
      * @brief Constructor
      * @param[in] node : node
      * @param[in] symRef : symbol reference
-     * @param[in] len : length
      * @param[in] cg : CodeGenerator object
      */
-    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, uint32_t len, TR::CodeGenerator *cg)
-        : OMR::MemoryReferenceConnector(node, symRef, len, cg)
+    MemoryReference(TR::Node *node, TR::SymbolReference *symRef, TR::CodeGenerator *cg)
+        : OMR::MemoryReferenceConnector(node, symRef, cg)
     {}
 };
 } // namespace TR
