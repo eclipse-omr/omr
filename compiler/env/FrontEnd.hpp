@@ -243,7 +243,6 @@ public:
 
     virtual void acquireLogMonitor(); // used for multiple compilation threads
     virtual void releaseLogMonitor();
-    virtual char *getFormattedName(char *, int32_t, char *, char *, bool);
 
     virtual void printVerboseLogHeader(TR::Options *cmdLineOptions) {}
 
