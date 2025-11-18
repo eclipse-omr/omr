@@ -346,7 +346,7 @@ void TR::RVSystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Param
 
     // save link register (ra)
     if (machine->getLinkRegisterKilled()) {
-        TR::MemoryReference *stackSlot = new (trHeapMemory()) TR::MemoryReference(sp, 0, cg);
+        TR::MemoryReference *stackSlot = TR::MemoryReference::createWithDisplacement(cg, sp, 0);
         cursor = generateSTORE(TR::InstOpCode::_sd, firstNode, stackSlot, ra, cg, cursor);
     }
 
@@ -359,7 +359,7 @@ void TR::RVSystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Param
              || nextFltArgReg < getProperties().getNumFloatArgRegs());
          parameter = parameterIterator.getNext()) {
         TR::MemoryReference *stackSlot
-            = new (trHeapMemory()) TR::MemoryReference(sp, parameter->getParameterOffset(), cg);
+            = TR::MemoryReference::createWithDisplacement(cg, sp, parameter->getParameterOffset());
         TR::InstOpCode::Mnemonic op;
 
         switch (parameter->getDataType()) {
@@ -406,7 +406,8 @@ void TR::RVSystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Param
     // save callee-saved registers
     uint32_t offset = bodySymbol->getLocalMappingCursor();
     FOR_EACH_ASSIGNED_CALLEE_SAVED_REGISTER(
-        machine, _properties, TR::MemoryReference *stackSlot = new (trHeapMemory()) TR::MemoryReference(sp, offset, cg);
+        machine, _properties,
+        TR::MemoryReference *stackSlot = TR::MemoryReference::createWithDisplacement(cg, sp, offset);
         cursor = generateSTORE(TR::InstOpCode::_sd, firstNode, stackSlot, reg, this->cg(), cursor); offset += 8;)
 }
 
@@ -423,13 +424,14 @@ void TR::RVSystemLinkage::createEpilogue(TR::Instruction *cursor)
     // restore callee-saved registers
     uint32_t offset = bodySymbol->getLocalMappingCursor();
     FOR_EACH_ASSIGNED_CALLEE_SAVED_REGISTER(
-        machine, _properties, TR::MemoryReference *stackSlot = new (trHeapMemory()) TR::MemoryReference(sp, offset, cg);
+        machine, _properties,
+        TR::MemoryReference *stackSlot = TR::MemoryReference::createWithDisplacement(cg, sp, offset);
         cursor = generateLOAD(TR::InstOpCode::_ld, lastNode, reg, stackSlot, this->cg(), cursor); offset += 8;)
 
     // restore link register (x30)
     TR::RealRegister *ra = machine->getRealRegister(TR::RealRegister::ra);
     if (machine->getLinkRegisterKilled()) {
-        TR::MemoryReference *stackSlot = new (trHeapMemory()) TR::MemoryReference(sp, 0, cg);
+        TR::MemoryReference *stackSlot = TR::MemoryReference::createWithDisplacement(cg, sp, 0);
         cursor = generateLOAD(TR::InstOpCode::_ld, lastNode, ra, stackSlot, this->cg(), cursor);
     }
 
