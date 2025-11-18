@@ -62,7 +62,7 @@ static const char *optionCategoryNames[] = {
 TR::FILE *TR_Debug::findLogFile(TR::Options *cmdLineOptions, TR::OptionSet *optSet, char *logFileName,
     OMR::Logger *&logger)
 {
-    char *fileName = cmdLineOptions->getLogFileName();
+    char *fileName = cmdLineOptions->getLogFileNameBase();
     TR::FILE *logFile = NULL;
     logger = NULL;
 
@@ -72,7 +72,7 @@ TR::FILE *TR_Debug::findLogFile(TR::Options *cmdLineOptions, TR::OptionSet *optS
     } else {
         for (TR::OptionSet *prev = cmdLineOptions->getFirstOptionSet(); prev && prev != optSet;
              prev = prev->getNext()) {
-            fileName = prev->getOptions() ? prev->getOptions()->getLogFileName() : NULL;
+            fileName = prev->getOptions() ? prev->getOptions()->getLogFileNameBase() : NULL;
             if (fileName && !STRICMP(logFileName, fileName)) {
                 logFile = prev->getOptions()->getLogFile();
                 logger = prev->getOptions()->getLogger();
@@ -119,14 +119,14 @@ void TR_Debug::findLogFile(const char *logFileName, TR::Options *cmdOptions, TR:
 {
     if (!cmdOptions)
         return;
-    if (cmdOptions->getLogFileName() && !STRICMP(logFileName, cmdOptions->getLogFileName())) {
+    if (cmdOptions->getLogFileNameBase() && !STRICMP(logFileName, cmdOptions->getLogFileNameBase())) {
         if (index < arraySize)
             optionsArray[index] = cmdOptions;
         index++;
     }
     for (TR::OptionSet *optSet = cmdOptions->getFirstOptionSet(); optSet; optSet = optSet->getNext()) {
-        if (optSet->getOptions() && optSet->getOptions()->getLogFileName()
-            && !STRICMP(logFileName, optSet->getOptions()->getLogFileName())) {
+        if (optSet->getOptions() && optSet->getOptions()->getLogFileNameBase()
+            && !STRICMP(logFileName, optSet->getOptions()->getLogFileNameBase())) {
             if (index < arraySize)
                 optionsArray[index] = optSet->getOptions();
             index++;

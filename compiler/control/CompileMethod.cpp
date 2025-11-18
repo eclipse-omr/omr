@@ -315,7 +315,7 @@ uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMeth
         &compiler);
 
     try {
-        if (TR::Options::requiresDebugObject() || options.getLogFileName() || options.enableDebugCounters()) {
+        if (TR::Options::requiresDebugObject() || options.getLogFileNameBase() || options.enableDebugCounters()) {
             compiler.setDebug(createDebugObject(&compiler));
         }
 

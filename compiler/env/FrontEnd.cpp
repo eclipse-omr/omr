@@ -124,25 +124,6 @@ uintptr_t TR_FrontEnd::getOffsetOfIndexableSizeField()
     return 0;
 }
 
-char *TR_FrontEnd::getFormattedName(char *buf, int32_t bufLength, char *name, char *format, bool suffix)
-{
-#if defined(LINUX) || defined(OSX)
-    // FIXME: TODO: This is a temporary implementation -- we ignore the suffix format and
-    // use the pid only
-
-    if (suffix) {
-        pid_t pid = getpid();
-        snprintf(buf, bufLength, "%s-%d", name, pid);
-
-        // FIXME: proper error handling for snprintf
-        return buf;
-    }
-
-#endif
-
-    return strncpy(buf, name, bufLength);
-}
-
 TR_OpaqueMethodBlock *TR_FrontEnd::getMethodFromName(const char *className, const char *methodName,
     const char *signature)
 {

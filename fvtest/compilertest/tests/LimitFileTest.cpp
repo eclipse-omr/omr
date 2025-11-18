@@ -85,7 +85,7 @@ TestCompiler::LimitFileTest::fileExists(const char *name)
 void
 TestCompiler::LimitFileTest::generateVLog(const char *vlog, const char *limitFile)
    {
-   std::string args = std::string("-Xjit:verbose,disableSuffixLogs,vlog=");
+   std::string args = std::string("-Xjit:verbose,dontApplyLogFileNameSuffix,vlog=");
    args = args + vlog;
 
    // Add the limit file, if provided.
