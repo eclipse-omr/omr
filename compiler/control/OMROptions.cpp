@@ -142,6 +142,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      offsetof(OMR::Options, _newAotrtDebugLevel), 0, "F%d" },
     { "aotSecondRunDetection", "M\tperform second run detection for AOT", RESET_OPTION_BIT(TR_NoAotSecondRunDetection),
      "F", NOT_IN_SUBSET },
+    { "applyLogFileSuffix", "O\tadd a configurable suffix to log file names", SET_OPTION_BIT(TR_ApplyLogFileNameSuffix),
+     "F", NOT_IN_SUBSET },
     { "arraycopyRepMovsByteArrayThreshold=",
      "C<nnn>\tByte array copy threshold for using REP MOVS instructions. Only supports 32 or 64 bytes", TR::Options::set32BitNumeric, offsetof(OMR::Options, _arraycopyRepMovsByteArrayThreshold), 0, "F%d" },
     { "arraycopyRepMovsCharArrayThreshold=",
@@ -901,8 +903,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "O\tenable transforming StringBuilder constructor to preallocate a buffer for String concatenation operations", SET_OPTION_BIT(TR_DisableStringBuilderTransformer), "F" },
     { "disableStringPeepholes", "O\tdisable stringPeepholes", SET_OPTION_BIT(TR_DisableStringPeepholes), "F" },
     { "disableStripMining", "O\tdisable loop strip mining", SET_OPTION_BIT(TR_DisableStripMining), "F" },
-    { "disableSuffixLogs", "O\tdo not add the date/time/pid suffix to the file name of the logs",
-     RESET_OPTION_BIT(TR_EnablePIDExtension), "F", NOT_IN_SUBSET },
     { "disableSupportForCpuSpentInCompilation", "M\tdo not provide CPU spent in compilation",
      SET_OPTION_BIT(TR_DisableSupportForCpuSpentInCompilation), "F" },
     { "disableSVMDuringStartup", "O\tdisable SVM during startup", SET_OPTION_BIT(TR_DisableSVMDuringStartup), "F",
@@ -1026,6 +1026,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "M\tdo not activate another compilation thread when high priority request is blocked", RESET_OPTION_BIT(TR_ActivateCompThreadWhenHighPriReqIsBlocked), "F", NOT_IN_SUBSET },
     { "dontAddHWPDataToIProfiler", "O\tDont add HW Data to IProfiler", SET_OPTION_BIT(TR_DontAddHWPDataToIProfiler),
      "F", NOT_IN_SUBSET },
+    { "dontApplyLogFileNameSuffix", "O\tdo not add a configurable suffix to log file names",
+     RESET_OPTION_BIT(TR_ApplyLogFileNameSuffix), "F", NOT_IN_SUBSET },
     { "dontCompile=",
      "D{regex}\t regex which specifies a subset of methods not to compile. If the option is passed via -Xaot, then"
         " it is not AOT compiled, but may be jit compiled. The converse is true for -Xjit", TR::Options::setRegex, offsetof(OMR::Options, _dontCompile), 0, "F", NOT_IN_SUBSET },
@@ -1565,8 +1567,10 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      offsetof(OMR::Options, _lockReserveClass), 0, "P" },
     { "lockVecRegs=", "M<nn>\tThe number of vector register to lock (from end) Range: 0-32",
      TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_numVecRegsToLock, 0, "F%d", NOT_IN_SUBSET },
-    { "log=", "L<filename>\twrite log output to filename", TR::Options::setString, offsetof(OMR::Options, _logFileName),
-     0, "P%s" },
+    { "log=", "L<filename>\twrite log output to filename", TR::Options::setString,
+     offsetof(OMR::Options, _logFileNameBase), 0, "P%s" },
+    { "logFileNameSuffix=", "O\tconfigurable suffix with format specifiers to append to log file names",
+     TR::Options::setStaticString, (intptr_t)(&TR::Options::_logFileNameSuffix), 0, "F%s", NOT_IN_SUBSET },
     { "loi=", "O<nnn>\tindex of the last optimization transformation to perform", TR::Options::set32BitSignedNumeric,
      offsetof(OMR::Options, _lastOptTransformationIndex), 0, "F%d" },
     { "loopyAsyncCheckInsertionMaxEntryFreq=",
@@ -1829,10 +1833,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      SET_OPTION_BIT(TR_SubtractLoopyMethodCounts), "F", NOT_IN_SUBSET },
     { "subtractMethodCountsWhenIprofilerIsOff", "C\tSubtract method counts instead of dividing when Iprofiler is off",
      SET_OPTION_BIT(TR_SubtractMethodCountsWhenIprofilerIsOff), "F", NOT_IN_SUBSET },
-    { "suffixLogs", "O\tadd the date/time/pid suffix to the file name of the logs",
-     SET_OPTION_BIT(TR_EnablePIDExtension), "F", NOT_IN_SUBSET },
-    { "suffixLogsFormat=", "O\tadd the suffix in specified format to the file name of the logs", TR::Options::setString,
-     offsetof(OMR::Options, _suffixLogsFormat), 0, "P%s", NOT_IN_SUBSET },
     { "supportSwitchToInterpeter", "C\tGenerate code to allow each method to switch to the interpreter",
      SET_OPTION_BIT(TR_SupportSwitchToInterpreter), "P" },
     { "suppressEA=",
@@ -2583,7 +2583,6 @@ bool OMR::Options::createDebug()
     return _debug != 0;
 }
 
-
 OMR::Logger *OMR::Options::getDefaultLogger()
 {
     if (_defaultLogger == NULL) {
@@ -2660,7 +2659,7 @@ OMR::Options::Options(TR_Memory *trMemory, int32_t index, int32_t lineNum, TR_Re
     // At this point this object contains the log for compThreadId==0
     // If this is a different compilation thread we need to find the right log
     //
-    if (_logFileName && compThreadID > 0 && !_suppressLogFileBecauseDebugObjectNotCreated) {
+    if (getLogFileNameBase() && compThreadID > 0 && !_suppressLogFileBecauseDebugObjectNotCreated) {
         self()->setLogForCompilationThread(compThreadID, mainOptions);
     }
 
@@ -2762,8 +2761,7 @@ void OMR::Options::initialize()
     _postRestoreOptionSets = NULL;
     _startOptions = NULL;
     _envOptions = NULL;
-    _logFileName = NULL;
-    _suffixLogsFormat = NULL;
+    _logFileNameBase = NULL;
     _logFile = NULL;
     _logger = TR::Options::getDefaultLogger();
     _optFileName = NULL;
@@ -3296,20 +3294,20 @@ bool OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig)
         _logFile = NULL;
         _logger = TR::Options::getDefaultLogger();
 
-        if (_logFileName) {
-            if (_logFileName[0])
+        if (getLogFileNameBase()) {
+            if (getLogFileNameBase()[0])
                 _hasLogFile = true; // non-null log file name
             else
-                _logFileName = NULL; // null log file name ... treat as no log file
+                setLogFileNameBase(NULL); // null log file name ... treat as no log file
         }
 
-        if (_logFileName) {
+        if (getLogFileNameBase()) {
             if (!_debug)
                 TR::Options::createDebug();
 
             if (_debug) {
                 _logFile = _debug->findLogFile(TR::Options::getAOTCmdLineOptions(), TR::Options::getJITCmdLineOptions(),
-                    optionSet, _logFileName, _logger);
+                    optionSet, getLogFileNameBase(), _logger);
                 if (_logFile == NULL)
                     self()->openLogFileCreateLogger();
                 else
@@ -3498,14 +3496,11 @@ void OMR::Options::jitPreProcess()
     self()->setOption(TR_DisableIntrinsics);
 #endif
 
-#if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-    bool forceSuffixLogs = false;
-#else
-    bool forceSuffixLogs = true;
+#if !defined(DEBUG) && !defined(PROD_WITH_ASSUMES)
+    // Production (PROD) builds force the application of the log filename suffix
+    //
+    self()->setOption(TR_ApplyLogFileNameSuffix);
 #endif
-
-    if (forceSuffixLogs)
-        self()->setOption(TR_EnablePIDExtension);
 
     // The signature-hashing seed algorithm it the best default.
     // Unless the user specifies randomSeed=nosignature, we want to override the
@@ -4531,11 +4526,11 @@ bool OMR::Options::jitPostProcess()
     _enableDLTBytecodeIndex = -1;
     _disableDLTBytecodeIndex = -1;
 
-    if (_logFileName) {
-        if (_logFileName[0])
+    if (getLogFileNameBase()) {
+        if (getLogFileNameBase()[0])
             _hasLogFile = true; // non-null log file name
         else
-            _logFileName = NULL; // null log file name ... treat as no log file
+            setLogFileNameBase(NULL); // null log file name ... treat as no log file
     }
 
     if (self()->getOption(TR_ForceNonSMP)) {
@@ -4544,7 +4539,7 @@ bool OMR::Options::jitPostProcess()
         TR::Compiler->relocatableTarget.setSMP(false);
     }
 
-    if (_logFileName) {
+    if (getLogFileNameBase()) {
         if (!_debug)
             TR::Options::createDebug();
 
@@ -4670,9 +4665,6 @@ bool OMR::Options::requiresLogFile()
     return false;
 }
 
-void getTimeInSeconds(char *buf, size_t size);
-void getTRPID(char *buf, size_t size);
-
 OMR::Logger *OMR::Options::createLoggerForLogFile(TR::FILE *file)
 {
     OMR::Logger *logger = NULL;
@@ -4695,57 +4687,75 @@ OMR::Logger *OMR::Options::createLoggerForLogFile(TR::FILE *file)
     return logger;
 }
 
+char *OMR::Options::buildLogFileName(char *buf, int32_t bufSize, const char *baseLogFileName, int32_t idSuffix,
+    const char *logFileNameSuffix, bool applySuffix)
+{
+    char *cursor = buf;
+    int32_t remainingBufSizeChars = bufSize;
+
+    bool truncated;
+    int32_t charsWritten;
+
+    if (idSuffix >= 0) {
+        truncated = TR::snprintfTrunc(cursor, remainingBufSizeChars, &charsWritten, "%s.%d", baseLogFileName, idSuffix);
+    } else {
+        truncated = TR::snprintfTrunc(cursor, remainingBufSizeChars, &charsWritten, "%s", baseLogFileName);
+    }
+
+    if (truncated) {
+        return NULL;
+    }
+
+    // Return the log filename built from the base log filename if a suffix is not desired or
+    // provided.
+    //
+    // The port library is required to process format specifiers in the suffix.
+    // Return the log filename built from the base log filename if a port library not available.
+    //
+    if (!applySuffix || !logFileNameSuffix || TR::Compiler->omrPortLib == NULL) {
+        return buf;
+    }
+
+    cursor += charsWritten;
+    remainingBufSizeChars -= charsWritten;
+
+    OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
+
+    int64_t curTime = omrtime_current_time_millis();
+    J9StringTokens *tokens = omrstr_create_tokens(curTime);
+    if (tokens == NULL) {
+        return NULL;
+    }
+
+    // Write the suffix to the buffer, expanding tokens as necessary
+    //
+    uintptr_t substLength = omrstr_subst_tokens(cursor, remainingBufSizeChars, logFileNameSuffix, tokens);
+    omrstr_free_tokens(tokens);
+
+    // Check for insufficient buffer space for expanded tokens
+    //
+    return (substLength >= remainingBufSizeChars) ? NULL : buf;
+}
+
 void OMR::Options::openLogFileCreateLogger(int32_t idSuffix)
 {
     _logFile = NULL;
 
-    TR_ASSERT_FATAL(_logFileName, "assertion failure");
+    TR_ASSERT_FATAL(getLogFileNameBase(), "expecting base log filename");
 
-    if (_suffixLogsFormat)
-        self()->setOption(TR_EnablePIDExtension);
+    const int32_t bufSize = 1024;
+    char buf[bufSize];
 
-#define FN_BUF_SIZE 1025
-    char buf0[FN_BUF_SIZE];
-    char buf1[FN_BUF_SIZE];
-    char *destBuf = buf0;
-    char *otherBuf = buf1;
+    char *logFileName = TR::Options::buildLogFileName(buf, bufSize, getLogFileNameBase(), idSuffix,
+        TR::Options::getLogFileNameSuffix(), self()->getOption(TR_ApplyLogFileNameSuffix));
 
-    char *fn = _logFileName;
-
-    if (idSuffix >= 0) // Must add the suffix to the name
-    {
-        size_t len = strlen(_logFileName);
-        bool truncated = TR::snprintfTrunc(destBuf, FN_BUF_SIZE, "%s.%d", _logFileName, idSuffix);
-        if (truncated)
-            return;
-        fn = destBuf;
-        std::swap(destBuf, otherBuf);
+    if (!logFileName) {
+        mesg_printf("Could not build log file name for base name: %s", getLogFileNameBase());
+        return;
     }
 
     const char *fmodeString = "wb+";
-    if (self()->getOption(TR_EnablePIDExtension)) {
-        if (!_suffixLogsFormat) {
-            // Append time id. TPO may invoke TR multiple times with different partition
-            size_t len = strlen(fn);
-            char pid_buf[20];
-            char time_buf[20];
-            getTRPID(pid_buf, sizeof(pid_buf));
-            getTimeInSeconds(time_buf, sizeof(time_buf));
-            bool truncated = TR::snprintfTrunc(destBuf, FN_BUF_SIZE, "%s.%s.%s", fn, pid_buf, time_buf);
-            if (truncated)
-                return;
-            fn = destBuf;
-            std::swap(destBuf, otherBuf);
-        }
-
-        fn = _fe->getFormattedName(destBuf, FN_BUF_SIZE, fn, _suffixLogsFormat, true);
-        _logFile = trfopen(fn, fmodeString, false);
-    } else {
-        fn = _fe->getFormattedName(destBuf, FN_BUF_SIZE, fn, NULL, false);
-        _logFile = trfopen(fn, fmodeString, false);
-    }
-
-#undef FN_BUF_SIZE
+    _logFile = trfopen(buf, fmodeString, false);
 
     /**
      * Prepare a OMR::Logger wrapper for the newly opened log file and add the
@@ -4765,7 +4775,7 @@ void OMR::Options::openLogFileCreateLogger(int32_t idSuffix)
                             "Please check for ADDITIONAL log files named:");
 
             for (int i = 1; i < _numUsableCompilationThreads; i++)
-                _logger->printf("  %s.%d", _logFileName, i);
+                _logger->printf("  %s.%d", getLogFileNameBase(), i);
 
             _logger->prints("\n-->\n");
         }
@@ -4831,7 +4841,7 @@ void OMR::Options::setLogForCompilationThread(int32_t compThreadID, TR::Options 
 // find all the options objects that have a log file with given name
 #define OPTIONS_ARRAY_SIZE 256
             TR::Options *optionsArray[OPTIONS_ARRAY_SIZE];
-            int32_t reqSize = _debug->findLogFile(_logFileName, OMR::Options::getAOTCmdLineOptions(),
+            int32_t reqSize = _debug->findLogFile(getLogFileNameBase(), OMR::Options::getAOTCmdLineOptions(),
                 OMR::Options::getJITCmdLineOptions(), optionsArray, OPTIONS_ARRAY_SIZE);
             if (reqSize <= OPTIONS_ARRAY_SIZE) {
                 for (int32_t i = 0; i < reqSize; i++) {
@@ -4890,28 +4900,7 @@ TR_MCTLogs::TR_MCTLogs(int32_t compThreadID, TR::Options *options)
     , _logger(TR::Options::getDefaultLogger())
 {}
 
-char *TR_MCTLogs::getLogFileName() { return _options->getLogFileName(); }
-
-#include <ctime>
-
-void getTimeInSeconds(char *buf, size_t size)
-{
-    time_t timer = time(NULL);
-    TR::snprintfNoTrunc(buf, size, "%i", (int)(timer % 100000));
-}
-
-#ifdef _MSC_VER
-#include <process.h>
-
-int getTRPID() { return _getpid(); }
-#else
-#include <sys/types.h>
-#include <unistd.h>
-
-int getTRPID() { return (int)getpid(); }
-#endif
-
-void getTRPID(char *buf, size_t size) { TR::snprintfNoTrunc(buf, size, "%i", getTRPID()); }
+char *TR_MCTLogs::getLogFileName() { return _options->getLogFileNameBase(); }
 
 // -----------------------------------------------------------------------------
 // Optlevels and counts
@@ -6050,10 +6039,10 @@ bool OMR::Options::fePostProcessJIT(void *base)
 #if !defined(J9_PROJECT_SPECIFIC)
     auto jitConfig = TR::JitConfig::instance();
     if (jitConfig->options.vLogFileName) {
-        char *fileName;
         char tmp[1025];
-        fileName = _fe->getFormattedName(tmp, 1025, jitConfig->options.vLogFileName, NULL,
-            TR::Options::getCmdLineOptions()->getOption(TR_EnablePIDExtension));
+        char *fileName = TR::Options::buildLogFileName(tmp, 1025, jitConfig->options.vLogFileName, -1,
+            TR::Options::getLogFileNameSuffix(),
+            TR::Options::getCmdLineOptions()->getOption(TR_ApplyLogFileNameSuffix));
         jitConfig->options.vLogFile = trfopen(fileName, "w", false);
     } else {
         jitConfig->options.vLogFile = OMR::IO::Stderr;
@@ -6225,8 +6214,7 @@ void OMR::Options::setDefaultsForDeterministicMode()
     }
 }
 
-template<typename AllocatorType>
-TR::Options *OMR::Options::create(AllocatorType t)
+template<typename AllocatorType> TR::Options *OMR::Options::create(AllocatorType t)
 {
     TR::Options *opt = new (t) TR::Options();
     TR_ASSERT_FATAL(opt, "Unable to allocate TR::Options");
@@ -6237,3 +6225,9 @@ TR::Options *OMR::Options::create(AllocatorType t)
 // Explicit instantiations
 template TR::Options *OMR::Options::create(TR_HeapMemory t);
 template TR::Options *OMR::Options::create(PERSISTENT_NEW_DECLARE t);
+
+char *OMR::Options::_logFileNameSuffix = ".%tick.%pid";
+
+char *OMR::Options::getLogFileNameSuffix() { return TR::Options::_logFileNameSuffix; }
+
+void OMR::Options::setLogFileNameSuffix(char *s) { TR::Options::_logFileNameSuffix = s; }

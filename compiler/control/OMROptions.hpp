@@ -239,7 +239,7 @@ enum TR_CompilationOptions {
     TR_EnableAnnotations                                      = 0x00002000 + 4, // change to disable when on by default
     TR_UnresolvedAreNotColdAtCold                             = 0x00004000 + 4, // cold block marker marks unresolved blocks as cold at hotness cold or less
     TR_UseSymbolValidationManager                             = 0x00008000 + 4,
-    TR_EnablePIDExtension                                     = 0x00010000 + 4,
+    TR_ApplyLogFileNameSuffix                                 = 0x00010000 + 4,
     TR_GenerateCompleteInlineRanges                           = 0x00020000 + 4,
     TR_DisableInliningOfNatives                               = 0x00040000 + 4,
     TR_AssignEveryGlobalRegister                              = 0x00080000 + 4,
@@ -1503,15 +1503,45 @@ public:
      */
     static OMR::Logger *getDefaultLogger();
 
-    TR::FILE *getLogFile() { return _logFile; }
+    TR::FILE *getLogFile() const { return _logFile; }
 
     void setLogFile(TR::FILE *f) { _logFile = f; }
 
-    OMR::Logger *getLogger() { return _logger; }
+    OMR_FINAL OMR::Logger *getLogger() const { return _logger; }
 
-    void setLogger(OMR::Logger *log) { _logger = log; }
+    OMR_FINAL void setLogger(OMR::Logger *log) { _logger = log; }
 
-    char *getLogFileName() { return _logFileName; }
+    OMR_FINAL char *getLogFileNameBase() const { return _logFileNameBase; }
+
+    OMR_FINAL void setLogFileNameBase(char *l) { _logFileNameBase = l; }
+
+    /**
+     * @brief
+     *     Constructs the filename for a log file into the provided buffer from a common base
+     *     file name, an optional numeric id, and an optional suffix that may contain special
+     *     format specifiers
+     *
+     * @param[in] buf : \c char*
+     *     The buffer to write the assembled log file name into. It is NUL-terminated, and must
+     *     have sufficient space for the NUL character.
+     * @param[in] bufSize : \c int32_t
+     *     The size of the buffer in chars
+     * @param[in] baseLogFileName : \c char*
+     *     A base log file name
+     * @param[in] idSuffix : \c int32_t
+     *     if >=0, append as a numerical suffix to the \arg baseLogFileName before applying suffix
+     *     if negative, do not append a numerical suffix
+     * @param[in] logFileNameSuffix : \c char*
+     *     A NUL-terminated string to append to the base log. It may contain format specifiers as
+     *     described in the documentation for \c omrstr_create_tokens() in port/common/omrstr.c
+     * @param[in] applySuffix : \c bool
+     *     true : append the token-expanded \arg logFileNameSuffix to the filename
+     *     false : do not apply
+     *
+     * @return \c buf if a filename was successfully built; NULL on any error
+     */
+    static char *buildLogFileName(char *buf, int32_t bufSize, const char *baseLogFileName, int32_t idSuffix,
+        const char *logFileNameSuffix, bool applySuffix);
 
     /**
      * @brief Creates a \c OMR::Logger object for this compilation that wraps
@@ -1523,7 +1553,7 @@ public:
      *
      * @param[in] file : A \c TR::FILE handle to the log file
      *
-     * @return : a \c OMR::Logger object
+     * @return : an \c OMR::Logger object
      */
     OMR::Logger *createLoggerForLogFile(TR::FILE *file);
 
@@ -1542,7 +1572,18 @@ public:
 
     TR::OptionSet *getFirstOptionSet() { return _optionSets; }
 
-    char *getSuffixLogsFormat() { return _suffixLogsFormat; }
+    /**
+     * @brief Returns the suffix for log file names.
+     *
+     * @return Returns the most specialized name from downstream extensions.
+     */
+    static char *getLogFileNameSuffix();
+
+    /**
+     * @brief Sets the suffix for log file names.  Updates the most specialized name in downstream
+     *     extensions.
+     */
+    static void setLogFileNameSuffix(char *s);
 
     // methods that set or query the command line option and the option sets
     //
@@ -2529,6 +2570,7 @@ protected:
     const char *_startOptions;
     const char *_envOptions;
     static const char *_compilationStrategyName;
+    static char *_logFileNameSuffix;
 
     // Option flag words
     //
@@ -2536,8 +2578,7 @@ protected:
 
     // Logging and debugging options
     //
-    char *_logFileName;
-    char *_suffixLogsFormat;
+    char *_logFileNameBase;
     TR::FILE *_logFile;
     OMR::Logger *_logger;
 
