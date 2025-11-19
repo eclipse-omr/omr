@@ -50,6 +50,9 @@ class S390CallSnippet : public TR::Snippet {
 protected:
     TR::SymbolReference *_realMethodSymbolReference;
 
+    static uint8_t *S390flushArgumentsToStackHelper(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
+        TR::CodeGenerator *cg, int argStart, bool rightToLeft, TR::Linkage *linkage);
+
 public:
     S390CallSnippet(TR::CodeGenerator *cg, TR::Node *c, TR::LabelSymbol *lab, int32_t s)
         : TR::Snippet(cg, c, lab, false)
