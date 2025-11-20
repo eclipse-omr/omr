@@ -21,9 +21,9 @@
 
 if(OMR_OS_ZOS)
 	set(OMR_ZOS_COMPILE_ARCHITECTURE "arch10" CACHE STRING "z/OS compile machine architecture" FORCE)
-	set(OMR_ZOS_COMPILE_TARGET "ZOSV2R5" CACHE STRING "z/OS compile target operating system" FORCE)
+	set(OMR_ZOS_COMPILE_TARGET "ZOSV3R1" CACHE STRING "z/OS compile target operating system" FORCE)
 	set(OMR_ZOS_COMPILE_TUNE "12" CACHE STRING "z/OS compile machine architecture tuning" FORCE)
-	set(OMR_ZOS_LINK_COMPAT "ZOSV2R5" CACHE STRING "z/OS link compatible operating system" FORCE)
+	set(OMR_ZOS_LINK_COMPAT "ZOSV3R1" CACHE STRING "z/OS link compatible operating system" FORCE)
 	set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "--shared")
 	set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "--shared")
 
