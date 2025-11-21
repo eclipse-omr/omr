@@ -578,6 +578,8 @@ public:
     virtual const char *getName(TR_Structure *);
     virtual const char *getName(TR::CFGNode *);
 
+    virtual void nameRegister(TR::Register *, const char *);
+
     virtual const char *getName(TR_ResolvedMethod *m) { return getName((void *)m, "(TR_ResolvedMethod*)", 0, false); }
 
     virtual const char *getName(TR_OpaqueClassBlock *c)

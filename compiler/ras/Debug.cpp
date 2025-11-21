@@ -2366,6 +2366,33 @@ const char *TR_Debug::getName(TR::Register *reg, TR_RegisterSizes size)
     }
 }
 
+void TR_Debug::nameRegister(TR::Register *reg, const char *name)
+{
+    if (reg->getRealRegister() || reg->getRegisterPair()) {
+        // don't assign names to real registers or register pairs
+        return;
+    }
+
+    const int32_t maxPrefixSize = 4;
+    char prefix[maxPrefixSize + 1];
+    sprintf(prefix, "%s%s%s", reg->containsCollectedReference() ? "&" : "", reg->containsInternalPointer() ? "*" : "",
+        reg->isPlaceholderReg() ? "D_" : "");
+
+    const int maxNameLen = 30;
+    char *buf = (char *)_comp->trMemory()->allocateHeapMemory(maxPrefixSize + maxNameLen
+        + 2); // max register kind name size plus underscore plus max name size plus null terminator
+
+    sprintf(buf, "%s%s_%.*s", prefix, getRegisterKindName(reg->getKind()), maxNameLen, name);
+
+    if (!_comp->getToStringMap().Add((void *)reg, buf)) {
+        // add failed means there is an existing entry, need to update the entry instead
+        CS2::HashIndex hashIndex;
+        if (_comp->getToStringMap().Locate((void *)reg, hashIndex)) {
+            _comp->getToStringMap().SetDataAt(hashIndex, buf);
+        }
+    }
+}
+
 const char *TR_Debug::getGlobalRegisterName(TR_GlobalRegisterNumber regNum, TR_RegisterSizes size)
 {
     uint32_t realRegNum = _comp->cg()->getGlobalRegister(regNum);
