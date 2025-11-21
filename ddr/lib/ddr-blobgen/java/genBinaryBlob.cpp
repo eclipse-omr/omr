@@ -286,7 +286,7 @@ JavaBlobGenerator::genBinaryBlob(OMRPortLibrary *portLibrary, Symbol_IR *ir, con
 		/* compute offsets for each entry of string hash table
 		 * compute size of string data - update blob header
 		 */
-		rc = buildBlobData(portLibrary, ir);
+		rc = buildBlobData(ir);
 	}
 
 	intptr_t fd = -1;
@@ -373,13 +373,13 @@ JavaBlobGenerator::countStructsAndStrings(Symbol_IR *ir)
 }
 
 DDR_RC
-JavaBlobGenerator::buildBlobData(OMRPortLibrary *portLibrary, Symbol_IR *ir)
+JavaBlobGenerator::buildBlobData(Symbol_IR *ir)
 {
 	DDR_RC rc = DDR_RC_OK;
 
 	/* allocate hashtable */
 	_buildInfo.stringHash =
-		hashTableNew(portLibrary, OMR_GET_CALLSITE(), 0,
+		hashTableNew(_portLibrary, OMR_GET_CALLSITE(), 0,
 					 sizeof(StringTableEntry), 0, 0, OMRMEM_CATEGORY_UNKNOWN,
 					 stringTableHash, stringTableEquals, NULL, NULL);
 
@@ -783,12 +783,14 @@ JavaBlobGenerator::addBlobStruct(const string &name, const string &superName, ui
 class BlobFieldVisitor : public TypeVisitor
 {
 private:
+	OMRPortLibrary * const _portLibrary;
 	string * const _typePrefix;
 	string * const _typeSuffix;
 
 public:
-	explicit BlobFieldVisitor(string *prefix, string *suffix)
-		: _typePrefix(prefix)
+	explicit BlobFieldVisitor(OMRPortLibrary *portLibrary, string *prefix, string *suffix)
+		: _portLibrary(portLibrary)
+		, _typePrefix(prefix)
 		, _typeSuffix(suffix)
 	{
 	}
@@ -804,14 +806,18 @@ public:
 DDR_RC
 BlobFieldVisitor::visitType(Type *type) const
 {
+	OMRPORT_ACCESS_FROM_OMRPORT(_portLibrary);
 	const string & typeName = type->_name;
 	bool isSigned = false;
 	size_t bitWidth = 0;
 
 	if (Type::isStandardType(typeName.c_str(), (size_t)typeName.length(), &isSigned, &bitWidth)) {
+		
 #if defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__)
-		string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
-		*_typePrefix += newType;
+		//string newType = std::string(isSigned ? "I" : "U") + e2a_string(std::to_string(bitWidth).c_str());
+		char newType[32];
+		omrstr_printf(newType, sizeof(newType), "%c%d", isSigned ? "I" : "U", bitWidth);
+		*_typePrefix += string(newType);
 #else /* defined(J9ZOS390) && !defined(OMR_EBCDIC) && defined(__open_xl__) */
 		stringstream newType;
 
@@ -928,7 +934,7 @@ JavaBlobGenerator::formatFieldType(Field *field, string *fieldType)
 		} else {
 			typePrefix = field->_modifiers.getModifierNames();
 
-			rc = type->acceptVisitor(BlobFieldVisitor(&typePrefix, &typeSuffix));
+			rc = type->acceptVisitor(BlobFieldVisitor(_portLibrary,&typePrefix, &typeSuffix));
 		}
 	}
 
