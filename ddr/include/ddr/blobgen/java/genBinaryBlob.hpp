@@ -123,13 +123,14 @@ private:
 	};
 
 	BuildBlobInfo _buildInfo;
+	OMRPortLibrary *_portLibrary;
 	bool _printEmptyTypes;
 
 	void copyStringTable();
 	DDR_RC stringTableOffset(BlobHeader *blobHeader, J9HashTable *stringTable, const char *cString, uint32_t *offset);
 	DDR_RC countStructsAndStrings(Symbol_IR *ir);
 	DDR_RC addFieldAndConstCount(bool addStructureCount, size_t fieldCount, size_t constCount);
-	DDR_RC buildBlobData(OMRPortLibrary *portLibrary, Symbol_IR *ir);
+	DDR_RC buildBlobData(Symbol_IR *ir);
 	DDR_RC addBlobField(Field *field, uint32_t *fieldCount, size_t baseOffset, const string &prefix);
 	DDR_RC addBlobConst(const string &name, long long value, uint32_t *constCount);
 	DDR_RC addBlobStruct(const string &name, const string &superName, uint32_t constCount, uint32_t fieldCount, uint32_t size);
@@ -139,7 +140,11 @@ private:
 	friend class BlobEnumerateVisitor;
 
 public:
-	explicit JavaBlobGenerator(bool printEmptyTypes) : _printEmptyTypes(printEmptyTypes) {}
+	explicit JavaBlobGenerator(struct OMRPortLibrary *portLibrary, bool printEmptyTypes)
+		: _portLibrary(portLibrary),
+		  _printEmptyTypes(printEmptyTypes)
+	{
+	}
 	DDR_RC genBinaryBlob(struct OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *blobFile);
 };
 

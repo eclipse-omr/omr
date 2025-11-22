@@ -31,7 +31,7 @@ genBlob(struct OMRPortLibrary *portLibrary, Symbol_IR *ir, const char *supersetF
 	DDR_RC rc = DDR_RC_OK;
 
 	if (NULL != blobFile) {
-		JavaBlobGenerator blobGenerator(printEmptyTypes);
+		JavaBlobGenerator blobGenerator(portLibrary, printEmptyTypes);
 
 		rc = blobGenerator.genBinaryBlob(portLibrary, ir, blobFile);
 
