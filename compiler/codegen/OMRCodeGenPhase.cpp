@@ -397,10 +397,6 @@ void OMR::CodeGenPhase::performInstructionSelectionPhase(TR::CodeGenerator *cg, 
 void OMR::CodeGenPhase::performSetupForInstructionSelectionPhase(TR::CodeGenerator *cg, TR::CodeGenPhase *phase)
 {
     TR::Compilation *comp = cg->comp();
-    if (cg->shouldBuildStructure() && (comp->getFlowGraph()->getStructure() != NULL)) {
-        TR_Structure *rootStructure = TR_RegionAnalysis::getRegions(comp);
-        comp->getFlowGraph()->setStructure(rootStructure);
-    }
 
     phase->reportPhase(SetupForInstructionSelectionPhase);
 
