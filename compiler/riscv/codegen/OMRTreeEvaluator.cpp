@@ -1145,6 +1145,16 @@ TR::Register *OMR::RV::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGene
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+TR::Register *OMR::RV::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+}
+
+TR::Register *OMR::RV::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+}
+
 TR::Register *OMR::RV::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);

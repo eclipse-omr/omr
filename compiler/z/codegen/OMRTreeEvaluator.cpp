@@ -1126,6 +1126,16 @@ TR::Register *OMR::Z::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGener
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+TR::Register *OMR::Z::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+}
+
+TR::Register *OMR::Z::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+}
+
 /**
  * \brief
  * Expand boolean bytes to a full vector and convert to mask.

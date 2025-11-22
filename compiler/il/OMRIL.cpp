@@ -344,6 +344,10 @@ TR::ILOpCodes OMR::IL::opCodeForCorrespondingIndirectLoad(TR::ILOpCodes loadOpCo
 
         if (TR::ILOpCode::getVectorOperation(loadOpCode) == TR::mloadi)
             return TR::ILOpCode::createVectorOpCode(TR::mstorei, TR::ILOpCode::getVectorResultDataType(loadOpCode));
+
+        if (TR::ILOpCode::getVectorOperation(loadOpCode) == TR::mloadiFromArray)
+            return TR::ILOpCode::createVectorOpCode(TR::mstoreiToArray,
+                TR::ILOpCode::getVectorResultDataType(loadOpCode));
     }
 
     switch (loadOpCode) {
@@ -388,6 +392,10 @@ TR::ILOpCodes OMR::IL::opCodeForCorrespondingIndirectStore(TR::ILOpCodes storeOp
 
         if (TR::ILOpCode::getVectorOperation(storeOpCode) == TR::mstorei)
             return TR::ILOpCode::createVectorOpCode(TR::mloadi, TR::ILOpCode::getVectorResultDataType(storeOpCode));
+
+        if (TR::ILOpCode::getVectorOperation(storeOpCode) == TR::mstoreiToArray)
+            return TR::ILOpCode::createVectorOpCode(TR::mloadiFromArray,
+                TR::ILOpCode::getVectorResultDataType(storeOpCode));
     }
 
     switch (storeOpCode) {
@@ -688,7 +696,7 @@ TR::ILOpCodes OMR::IL::opCodeForIndirectArrayLoad(TR::DataType dt)
     if (dt.isVector())
         return TR::ILOpCode::createVectorOpCode(TR::vloadi, dt);
     if (dt.isMask())
-        return TR::ILOpCode::createVectorOpCode(TR::mloadi, dt);
+        return TR::ILOpCode::createVectorOpCode(TR::mloadiFromArray, dt);
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
 
@@ -704,7 +712,7 @@ TR::ILOpCodes OMR::IL::opCodeForIndirectArrayStore(TR::DataType dt)
     if (dt.isVector())
         return TR::ILOpCode::createVectorOpCode(TR::vstorei, dt);
     if (dt.isMask())
-        return TR::ILOpCode::createVectorOpCode(TR::mstorei, dt);
+        return TR::ILOpCode::createVectorOpCode(TR::mstoreiToArray, dt);
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
 

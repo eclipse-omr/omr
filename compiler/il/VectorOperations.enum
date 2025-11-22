@@ -325,7 +325,41 @@ VECTOR_OPERATION_MACRO(\
    /* .ifCompareOpCode         = */ TR::BadILOp, \
    /* .description             =    mask exclusive OR*/ \
 )
-// vector mask conversion opcodes
+// vector mask to/from array opcodes
+VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ mloadiFromArray, \
+   /* .name                    = */ "mloadiFromArray", \
+   /* .properties1             = */ ILProp1::LoadVar | ILProp1::Indirect | ILProp1::HasSymbolRef, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::MayUseSystemStack, \
+   /* .properties3             = */ ILProp3::LikeUse, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::MaskResult, \
+   /* .childProperties         = */ ONE_CHILD(TR::Address), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    load from array and convert to vector mask. assumes that a value of 1 is true and 0 is false*/ \
+)
+VECTOR_OPERATION_MACRO(\
+   /* .operation               = */ mstoreiToArray, \
+   /* .name                    = */ "mstoreiToArray", \
+   /* .properties1             = */ ILProp1::Store | ILProp1::Indirect | ILProp1::TreeTop | ILProp1::HasSymbolRef, \
+   /* .properties2             = */ ILProp2::ValueNumberShare | ILProp2::MayUseSystemStack, \
+   /* .properties3             = */ ILProp3::LikeDef, \
+   /* .properties4             = */ 0, \
+   /* .dataType                = */ TR::NoType, \
+   /* .typeProperties          = */ ILTypeProp::MaskResult, \
+   /* .childProperties         = */ TWO_CHILD(TR::Address, ILChildProp::UnspecifiedChildType), \
+   /* .swapChildrenOperation   = */ TR::vBadOperation, \
+   /* .reverseBranchOperation  = */ TR::vBadOperation, \
+   /* .booleanCompareOpCode    = */ TR::BadILOp, \
+   /* .ifCompareOpCode         = */ TR::BadILOp, \
+   /* .description             =    convert from vector mask and store to array. assumes that a value of 1 is true and 0 is false*/ \
+)
+
+// vector mask conversion opcodes (TO BE REMOVED)
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ b2m, \
    /* .name                    = */ "b2m", \

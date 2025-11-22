@@ -422,6 +422,8 @@
 #define mandSimplifierHandler dftSimplifier
 #define morSimplifierHandler dftSimplifier
 #define mxorSimplifierHandler dftSimplifier
+#define mloadiFromArraySimplifierHandler indirectLoadSimplifier
+#define mstoreiToArraySimplifierHandler indirectStoreSimplifier
 #define b2mSimplifierHandler dftSimplifier
 #define s2mSimplifierHandler dftSimplifier
 #define i2mSimplifierHandler dftSimplifier
