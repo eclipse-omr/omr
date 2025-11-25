@@ -85,7 +85,7 @@ typedef struct J9ThreadMonitorPool {
 
 typedef struct J9ThreadGlobal {
 	struct J9ThreadGlobal *next;
-	char *name;
+	const char *name;
 	uintptr_t data;
 } J9ThreadGlobal;
 

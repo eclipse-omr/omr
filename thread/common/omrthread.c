@@ -79,7 +79,7 @@ static void unblock_spinlock_threads(omrthread_t self, omrthread_monitor_t monit
 #endif /* !defined(OMR_THR_MCS_LOCKS) */
 #endif /* OMR_THR_THREE_TIER_LOCKING */
 
-static intptr_t init_threadParam(char *name, uintptr_t *pDefault);
+static intptr_t init_threadParam(const char *name, uintptr_t *pDefault);
 static intptr_t init_spinParameters(omrthread_library_t lib);
 
 static void threadInterrupt(omrthread_t thread, uintptr_t interruptFlag);
@@ -134,15 +134,15 @@ static void free_mcs_nodes(omrthread_library_t lib, omrthread_mcs_nodes_t mcsNod
 omrthread_t global_lock_owner = UNOWNED;
 #endif /* THREAD_ASSERTS */
 
-#ifdef OMR_THR_THREE_TIER_LOCKING
+#if defined(OMR_THR_THREE_TIER_LOCKING)
 #define ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor) do {} while (0)
-#else
+#else /* defined(OMR_THR_THREE_TIER_LOCKING) */
 #define ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor) \
 	do { \
 		ASSERT(NULL == (monitor)->owner); \
 		ASSERT(0    == (monitor)->count); \
 	} while (0)
-#endif
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
 #ifdef OMR_ENV_DATA64
 #if defined(AIXPPC)
@@ -324,7 +324,7 @@ omrthread_init(omrthread_library_t lib)
 	lib->gc_lock_tracing = NULL;
 #endif
 
-#if	defined(OMR_OS_WINDOWS)
+#if defined(OMR_OS_WINDOWS)
 	lib->flags |= J9THREAD_LIB_FLAG_DESTROY_MUTEX_ON_MONITOR_FREE;
 #endif /* defined(OMR_OS_WINDOWS) */
 
@@ -500,7 +500,6 @@ omrthread_lib_use_realtime_scheduling(void)
  *
  * @param[in] lib pointer to the thread library
  * @return 0 on success or negative value on failure
- *
  */
 static intptr_t
 init_global_monitor(omrthread_library_t lib)
@@ -524,18 +523,15 @@ init_global_monitor(omrthread_library_t lib)
 	return 0;
 }
 
-
-
 /**
  * Initialize one thread parameter
  * make it accessible to the outside world via the
  * omrthread globals.
- *
  */
 static intptr_t
-init_threadParam(char *name, uintptr_t *pDefault)
+init_threadParam(const char *name, uintptr_t *pDefault)
 {
-	uintptr_t *p;
+	uintptr_t *p = NULL;
 
 	ASSERT(name);
 	ASSERT(pDefault);
@@ -551,7 +547,7 @@ init_threadParam(char *name, uintptr_t *pDefault)
 }
 
 
-#if (defined(OMR_THR_THREE_TIER_LOCKING))
+#if defined(OMR_THR_THREE_TIER_LOCKING)
 /**
  * Initialize default spin counts and make them
  * accessible to the outside world via the
@@ -581,9 +577,9 @@ init_spinCounts(omrthread_library_t lib)
 	 * of time.
 	 */
 	lib->defaultMonitorSpinCount3 = 1;
-#else
+#else /* defined(J9ZOS390) */
 	lib->defaultMonitorSpinCount3 = 45;
-#endif
+#endif /* defined(J9ZOS390) */
 
 	/* Set up the globals so anyone can change the counts */
 	if (init_threadParam("defaultMonitorSpinCount1", &lib->defaultMonitorSpinCount1)) {
@@ -601,14 +597,13 @@ init_spinCounts(omrthread_library_t lib)
 	ASSERT(lib->defaultMonitorSpinCount3 != 0);
 
 	return 0;
-
 }
-#endif /* OMR_THR_THREE_TIER_LOCKING */
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
 /**
- * Initialize spin parameters
+ * Initialize spin parameters.
  *
- * Must be called after globals are initialized
+ * Must be called after globals are initialized.
  *
  * These numbers are taken from the GC spinlock.
  *
@@ -616,7 +611,6 @@ init_spinCounts(omrthread_library_t lib)
  *
  * @param[in] lib omrthread library
  * @see omrthread_init, omrthread_global, omrthread_spinlock_acquire
- *
  */
 static intptr_t
 init_spinParameters(omrthread_library_t lib)
@@ -648,9 +642,9 @@ init_spinParameters(omrthread_library_t lib)
 	if (init_threadParam("adaptSpinSampleCountStopRatio", &lib->adaptSpinSampleCountStopRatio)) {
 		return -1;
 	}
-#endif
+#endif /* defined(OMR_THR_ADAPTIVE_SPIN) */
 
-#if (defined(OMR_THR_YIELD_ALG))
+#if defined(OMR_THR_YIELD_ALG)
 	lib->yieldAlgorithm = 0;
 	if (init_threadParam("yieldAlgorithm", &lib->yieldAlgorithm)) {
 		return -1;
@@ -694,32 +688,29 @@ init_spinParameters(omrthread_library_t lib)
 	if (init_threadParam("parkSleepCpuUtilThreshold", &lib->parkSleepCpuUtilThreshold)) {
 		return -1;
 	}
-#endif
+#endif /* defined(OMR_THR_YIELD_ALG) */
 
 #if defined(OMR_THR_THREE_TIER_LOCKING)
 #if defined(OMR_THR_SPIN_WAKE_CONTROL)
-  	lib->maxSpinThreads = OMRTHREAD_MINIMUM_SPIN_THREADS;
-  	if (init_threadParam("maxSpinThreads", &lib->maxSpinThreads)) {
-  		return -1;
-  	}
+	lib->maxSpinThreads = OMRTHREAD_MINIMUM_SPIN_THREADS;
+	if (init_threadParam("maxSpinThreads", &lib->maxSpinThreads)) {
+		return -1;
+	}
 
-  	lib->maxWakeThreads = OMRTHREAD_MINIMUM_WAKE_THREADS;
-  	if (init_threadParam("maxWakeThreads", &lib->maxWakeThreads)) {
-  		return -1;
-  	}
+	lib->maxWakeThreads = OMRTHREAD_MINIMUM_WAKE_THREADS;
+	if (init_threadParam("maxWakeThreads", &lib->maxWakeThreads)) {
+		return -1;
+	}
 #endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 
 	return init_spinCounts(lib);
-
-#else
+#else /* defined(OMR_THR_THREE_TIER_LOCKING) */
 	return 0;
-#endif
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 }
 
 /**
  * Shut down the J9 threading library associated with the current thread.
- *
- * @return none
  *
  * @see omrthread_init
  */
@@ -766,7 +757,6 @@ omrthread_shutdown(void)
  *
  * @note This must not be called recursively by a thread that already owns the global lock.
  * @param[in] self omrthread_t for the current thread
- * @return none
  *
  * @see omrthread_lib_unlock
  */
@@ -787,8 +777,8 @@ omrthread_lib_lock(omrthread_t self)
 intptr_t
 omrthread_lib_try_lock(omrthread_t self)
 {
-#ifdef THREAD_ASSERTS
-	intptr_t retVal;
+#if defined(THREAD_ASSERTS)
+	intptr_t retVal = 0;
 
 	ASSERT(self);
 	retVal = GLOBAL_TRY_LOCK(self, CALLER_GLOBAL_LOCK);
@@ -797,10 +787,10 @@ omrthread_lib_try_lock(omrthread_t self)
 		global_lock_owner = self;
 	}
 	return retVal;
-#else
+#else /* defined(THREAD_ASSERTS) */
 	ASSERT(self);
 	return GLOBAL_TRY_LOCK(self, CALLER_GLOBAL_LOCK);
-#endif
+#endif /* defined(THREAD_ASSERTS) */
 }
 
 /**
@@ -808,7 +798,6 @@ omrthread_lib_try_lock(omrthread_t self)
  *
  * @note This must be called only by the thread that currently has the global lock locked.
  * @param[in] self omrthread_t for the current thread
- * @return none
  *
  * @see omrthread_lib_lock
  */
@@ -1058,8 +1047,6 @@ postForkResetMonitors(omrthread_t self)
  * is removed from the stack and freed.
  *
  * @param[in] forkSurvivorThread the fork survivor thread
- *
- * @return void
  */
 static void
 preserveMCSNodesInForkSurvivor(omrthread_t forkSurvivorThread)
@@ -1143,14 +1130,12 @@ omrthread_lib_get_flags(void)
  * @param[in] flags flags to be set (bit vector: 1 means set the flag, 0 means ignore)
  * @return old flags values
  * @see omrthread_lib_clear_flags, omrthread_lib_get_flags
- *
  */
 uintptr_t
 omrthread_lib_set_flags(uintptr_t flags)
 {
-	omrthread_t self;
-	uintptr_t oldFlags;
-	self = MACRO_SELF();
+	uintptr_t oldFlags = 0;
+	omrthread_t self = MACRO_SELF();
 
 	ASSERT(self);
 	ASSERT(self->library);
@@ -1161,7 +1146,6 @@ omrthread_lib_set_flags(uintptr_t flags)
 	GLOBAL_UNLOCK(self);
 
 	return oldFlags;
-
 }
 
 /**
@@ -1174,9 +1158,8 @@ omrthread_lib_set_flags(uintptr_t flags)
 uintptr_t
 omrthread_lib_clear_flags(uintptr_t flags)
 {
-	omrthread_t self;
-	uintptr_t oldFlags;
-	self = MACRO_SELF();
+	uintptr_t oldFlags = 0;
+	omrthread_t self = MACRO_SELF();
 
 	ASSERT(self);
 	ASSERT(self->library);
@@ -1199,20 +1182,19 @@ omrthread_lib_clear_flags(uintptr_t flags)
  * @param[in] name name of named global to read/create
  * @return a pointer to a uintptr_t associated with name<br>
  * 0 on failure.
- *
  */
 uintptr_t *
-omrthread_global(char *name)
+omrthread_global(const char *name)
 {
-	J9ThreadGlobal *global;
+	J9ThreadGlobal *global = NULL;
 	omrthread_library_t lib = GLOBAL_DATA(default_library);
 
 	OMROSMUTEX_ENTER(lib->global_mutex);
 
 	global = lib->globals;
 
-	while (global) {
-		if (strcmp(global->name, name) == 0) {
+	while (NULL != global) {
+		if (0 == strcmp(global->name, name)) {
 			OMROSMUTEX_EXIT(lib->global_mutex);
 			return &global->data;
 		}
@@ -1221,11 +1203,11 @@ omrthread_global(char *name)
 
 	/*
 	 * If we got here, we couldn't find it, therefore
-	 * we will create a new one
+	 * we will create a new one.
 	 */
 
 	global = pool_newElement(lib->global_pool);
-	if (global == NULL) {
+	if (NULL == global) {
 		OMROSMUTEX_EXIT(lib->global_mutex);
 		return NULL;
 	}
@@ -1261,7 +1243,7 @@ omrthread_waiting_to_acquire(omrthread_t thread) {
 
 BOOLEAN
 omrthread_monitor_is_acquired(omrthread_monitor_t monitor) {
-	return (monitor->count > 0);
+	return monitor->count > 0;
 }
 
 intptr_t
@@ -1306,7 +1288,7 @@ omrthread_attach(omrthread_t *handle)
 
 	thread = MACRO_SELF();
 	if (NULL != thread) {
-		if (handle) {
+		if (NULL != handle) {
 			*handle = thread;
 		}
 		THREAD_LOCK(thread, CALLER_ATTACH);
@@ -1321,7 +1303,7 @@ omrthread_attach(omrthread_t *handle)
 }
 
 /*
- * See thread_api.h for description
+ * See thread_api.h for description.
  */
 intptr_t
 omrthread_attach_ex(omrthread_t *handle, omrthread_attr_t *attr)
@@ -1337,7 +1319,7 @@ omrthread_attach_ex(omrthread_t *handle, omrthread_attr_t *attr)
 
 	thread = MACRO_SELF();
 	if (NULL != thread) {
-		if (handle) {
+		if (NULL != handle) {
 			*handle = thread;
 		}
 		THREAD_LOCK(thread, CALLER_ATTACH);
@@ -1418,7 +1400,7 @@ omrthread_attach_ex(omrthread_t *handle, omrthread_attr_t *attr)
 	 * and it will automatically get associated to the right category.
 	 * Ignore errors, the cpu monitor should not cause thread attach failure.
 	 */
-	if (!attr) {
+	if (NULL == attr) {
 		omrthread_set_category(thread, J9THREAD_CATEGORY_SYSTEM_THREAD, J9THREAD_TYPE_SET_ATTACH);
 	} else {
 		omrthread_set_category(thread, (*attr)->category, J9THREAD_TYPE_SET_ATTACH);
@@ -1521,7 +1503,6 @@ storeExitCpuUsage(omrthread_t thread)
  *
  * @param[in] thread a omrthread_t representing the thread to be detached.
  * If this is NULL, the current thread is detached.
- * @return none
  *
  * @see omrthread_attach
  */
@@ -1554,7 +1535,7 @@ omrthread_detach(omrthread_t thread)
 	}
 	THREAD_UNLOCK(thread);
 
-	if (destroy) {
+	if (0 != destroy) {
 		omrthread_library_t library = thread->library;
 
 		omrthread_tls_finalize(thread);
@@ -1632,7 +1613,7 @@ static intptr_t
 failedToSetAttr(intptr_t rc)
 {
 	rc &= ~J9THREAD_ERR_OS_ERRNO_SET;
-	return ((rc != J9THREAD_SUCCESS) && (rc != J9THREAD_ERR_UNSUPPORTED_ATTR));
+	return (rc != J9THREAD_SUCCESS) && (rc != J9THREAD_ERR_UNSUPPORTED_ATTR);
 }
 
 /**
@@ -1664,9 +1645,9 @@ omrthread_create_ex(omrthread_t *handle, const omrthread_attr_t *attr, uintptr_t
 
 /**
  * Function we pass to the OS for new threads.
+ * Does not return.
  *
  * @param arg pointer to the omrthread_t for the new thread
- * @return none
  */
 static WRAPPER_TYPE
 thread_wrapper(WRAPPER_ARG arg)
@@ -1688,7 +1669,6 @@ thread_wrapper(WRAPPER_ARG arg)
 		paint_stack(thread);
 	}
 #endif /* defined(OMR_OS_WINDOWS) */
-
 
 	if (thread->flags & J9THREAD_FLAG_CANCELED) {
 		threadInternalExit(globalAlreadyLocked);
@@ -1784,7 +1764,6 @@ thread_wrapper(WRAPPER_ARG arg)
  * may not even stop running if it refuses to cancel.
  *
  * @param[in] thread a thread to be terminated
- * @return none
  */
 void
 omrthread_cancel(omrthread_t thread)
@@ -1839,7 +1818,6 @@ omrthread_join(omrthread_t thread)
  * be closed.
  *
  * @param[in] monitor monitor to be exited before exiting (ignored if NULL)
- * @return none
  */
 void OMRNORETURN
 omrthread_exit(omrthread_monitor_t monitor)
@@ -2043,9 +2021,9 @@ threadCreateDone:
 static intptr_t
 copyAttr(omrthread_attr_t *attrTo, const omrthread_attr_t *attrFrom)
 {
-	intptr_t rc = J9THREAD_SUCCESS;
+	intptr_t rc = J9THREAD_ERR_INVALID_ATTR;
+
 	if (NULL == attrFrom) {
-		rc = J9THREAD_ERR_INVALID_ATTR;
 		goto copyAttrDone;
 	}
 
@@ -2116,7 +2094,7 @@ copyAttrDone:
 static omrthread_t
 threadAllocate(omrthread_library_t lib, int globalIsLocked)
 {
-	omrthread_t newThread;
+	omrthread_t newThread = NULL;
 	ASSERT(lib);
 	ASSERT(lib->thread_pool);
 
@@ -2126,23 +2104,21 @@ threadAllocate(omrthread_library_t lib, int globalIsLocked)
 
 	newThread = pool_newElement(lib->thread_pool);
 
-	if (newThread != NULL) {
+	if (NULL != newThread) {
 		lib->threadCount++;
 		newThread->library = lib;
 		newThread->os_errno = J9THREAD_INVALID_OS_ERRNO;
 #if defined(J9ZOS390)
 		newThread->os_errno2 = 0;
-#endif /* J9ZOS390 */
+#endif /* defined(J9ZOS390) */
 #if defined(OMR_THR_JLM)
-		if (newThread) {
-			if (IS_JLM_ENABLED(newThread)) {
-				if (jlm_thread_init(newThread) != 0) {
-					threadFree(newThread, GLOBAL_IS_LOCKED);
-					newThread = NULL;
-				}
+		if (IS_JLM_ENABLED(newThread)) {
+			if (jlm_thread_init(newThread) != 0) {
+				threadFree(newThread, GLOBAL_IS_LOCKED);
+				newThread = NULL;
 			}
 		}
-#endif /* OMR_THR_JLM */
+#endif /* defined(OMR_THR_JLM) */
 	}
 
 	if (!globalIsLocked) {
@@ -2228,7 +2204,6 @@ threadDestroy(omrthread_t thread, int globalAlreadyLocked)
  * @param[in] thread thread to be returned to the pool
  * @param[in] globalAlreadyLocked indicates whether the threading library global
  * mutex is already locked
- * @return none
  *
  * @see threadAllocate
  */
@@ -2265,7 +2240,6 @@ threadFree(omrthread_t thread, int globalAlreadyLocked)
  *
  * @param[in] globalAlreadyLocked indicates whether the thread library global mutex is already locked
  *            Also implies that omrthread_tls_finalize was called before the global mutex was locked
- * @return none
  */
 static void OMRNORETURN
 threadInternalExit(int globalAlreadyLocked)
@@ -2454,11 +2428,11 @@ intptr_t
 omrthread_sleep(int64_t millis)
 {
 	omrthread_t self = MACRO_SELF();
-#ifdef OMR_ENV_DATA64
+#if defined(OMR_ENV_DATA64)
 	intptr_t boundedMillis = millis;
-#else
+#else /* defined(OMR_ENV_DATA64) */
 	intptr_t boundedMillis = (millis > 0x7FFFFFFF ? 0x7FFFFFFF : (intptr_t)millis);
-#endif
+#endif /* defined(OMR_ENV_DATA64) */
 
 	ASSERT(self);
 
@@ -2482,10 +2456,9 @@ omrthread_sleep(int64_t millis)
 
 
 /**
-* @brief Yield the processor
-* @param sequencialYields, number of yields in a row that have been made
-* @return void
-*/
+ * @brief Yield the processor
+ * @param sequencialYields, number of yields in a row that have been made
+ */
 void
 omrthread_yield_new(uintptr_t sequentialYields)
 {
@@ -2498,8 +2471,6 @@ omrthread_yield_new(uintptr_t sequentialYields)
 
 /**
  * Yield the processor.
- *
- * @return none
  */
 void
 omrthread_yield(void)
@@ -2539,13 +2510,13 @@ omrthread_nanosleep(int64_t nanos)
 	sleeptime.tv_nsec = (long)(nanos % 1000000000);
 	while (clock_nanosleep(NANOSLEEP_CLOCK, NANOSLEEP_FLAGS, &sleeptime, NULL) == EINTR);
 	return 0;
-#else
+#else /* USE_CLOCK_NANOSLEEP */
 	/* Nanosecond sleep resolution is not supported. */
 	/* For now just use the millisecond resolution version.  */
 	int64_t millis = nanos / 1000000;
 	int32_t remNanos = (int32_t)(nanos % 1000000);
 	return omrthread_sleep(ADJUST_TIMEOUT(millis, remNanos));
-#endif
+#endif /* USE_CLOCK_NANOSLEEP */
 }
 
 
@@ -2553,16 +2524,15 @@ omrthread_nanosleep(int64_t nanos)
  * Tells whether nanosleep is supported on this platform.
  *
  * @return  1 if nanosleep supported, 0 if not
- *
  */
 intptr_t
 omrthread_nanosleep_supported(void)
 {
 #if USE_CLOCK_NANOSLEEP
 	return 1;
-#else
+#else /* USE_CLOCK_NANOSLEEP */
 	return 0;
-#endif
+#endif /* USE_CLOCK_NANOSLEEP */
 }
 
 
@@ -2570,7 +2540,7 @@ omrthread_nanosleep_supported(void)
  * Suspend the current thread from executing
  * until the specified absolute time.
  *
- * Should only be called if omrthread_nanosleep_supported returns true
+ * Should only be called if omrthread_nanosleep_supported returns true.
  *
  * @param[in] wakeTime absolute wake up time in nanoseconds since the epoch (Jan 1, 1970)
  * @return  0 on success<br>
@@ -2588,11 +2558,13 @@ omrthread_nanosleep_to(int64_t wakeTime)
 
 	sleeptime.tv_sec = (int)(wakeTime / 1000000000);
 	sleeptime.tv_nsec = wakeTime % 1000000000;
-	while (clock_nanosleep(NANOSLEEP_CLOCK, NANOSLEEP_ABS_FLAGS, &sleeptime, NULL) == EINTR);
+	while (EINTR == clock_nanosleep(NANOSLEEP_CLOCK, NANOSLEEP_ABS_FLAGS, &sleeptime, NULL)) {
+		/* keep sleeping */
+	}
 	return 0;
-#else
+#else /* USE_CLOCK_NANOSLEEP */
 	return J9THREAD_INVALID_ARGUMENT;
-#endif
+#endif /* USE_CLOCK_NANOSLEEP */
 }
 
 
@@ -2600,8 +2572,6 @@ omrthread_nanosleep_to(int64_t wakeTime)
  * Suspend the current thread.
  *
  * Stop the current thread from executing until it is resumed.
- *
- * @return none
  *
  * @see omrthread_resume
  */
@@ -2673,7 +2643,6 @@ omrthread_resume(omrthread_t thread)
  *
  * @returns 0 on success or negative value on failure (name wasn't changed).
  * Platforms that do not support thread naming will return 0.
- *
  */
 intptr_t
 omrthread_set_name(omrthread_t thread, const char *name)
@@ -2682,7 +2651,7 @@ omrthread_set_name(omrthread_t thread, const char *name)
 
 	ASSERT(thread);
 
-	if (name == NULL || !name[0]) {
+	if ((NULL == name) || ('\0' == name[0])) {
 		return -1;
 	}
 
@@ -2705,8 +2674,6 @@ omrthread_set_name(omrthread_t thread, const char *name)
  *				J9THREAD_PRIORITY_MIN<br>
  *
  * @returns 0 on success or negative value on failure (priority wasn't changed)
- *
- *
  */
 intptr_t
 omrthread_set_priority(omrthread_t thread, uintptr_t priority)
@@ -2732,7 +2699,7 @@ omrthread_set_priority(omrthread_t thread, uintptr_t priority)
 
 
 /**
- * spreads the native priorities so that they are not all mapped to the same value.
+ * Spreads the native priorities so that they are not all mapped to the same value.
  * Returns 0 on success.  If the spread is not possible returns non-zero.
  */
 intptr_t
@@ -2758,7 +2725,6 @@ omrthread_set_priority_spread(void)
  * J9THREAD_INTERRUPTED_MONITOR_ENTER
  *
  * @param[in] thread a thead to be aborted
- * @return none
  *
  * @see omrthread_priority_interrupt, omrthread_interrupt
  */
@@ -2777,7 +2743,6 @@ omrthread_abort(omrthread_t thread)
  * J9THREAD_INTERRUPTED.
  *
  * @param[in] thread a thead to be interrupted
- * @return none
  */
 void
 omrthread_interrupt(omrthread_t thread)
@@ -2810,7 +2775,7 @@ omrthread_interrupted(omrthread_t thread)
 uintptr_t
 omrthread_clear_interrupted(void)
 {
-	uintptr_t oldFlags;
+	uintptr_t oldFlags = 0;
 	omrthread_t self = MACRO_SELF();
 	ASSERT(self);
 
@@ -2820,7 +2785,6 @@ omrthread_clear_interrupted(void)
 	THREAD_UNLOCK(self);
 
 	return (oldFlags & J9THREAD_FLAG_INTERRUPTED) != 0;
-
 }
 
 
@@ -2832,7 +2796,6 @@ omrthread_clear_interrupted(void)
  * J9THREAD_PRIORITY_INTERRUPTED
  *
  * @param[in] thread a thead to be priority interrupted
- * @return none
  */
 void
 omrthread_priority_interrupt(omrthread_t thread)
@@ -2857,12 +2820,12 @@ omrthread_priority_interrupted(omrthread_t thread)
 /**
  * Clear the priority interrupted flag of the current thread and return its previous value.
  *
- * @return  previous value of priority interrupted flag: nonzero if the thread had been priority interrupted.
+ * @return previous value of priority interrupted flag: nonzero if the thread had been priority interrupted.
  */
 uintptr_t
 omrthread_clear_priority_interrupted(void)
 {
-	uintptr_t oldFlags;
+	uintptr_t oldFlags = 0;
 	omrthread_t self = MACRO_SELF();
 	ASSERT(self);
 
@@ -2889,13 +2852,12 @@ omrthread_clear_priority_interrupted(void)
  *
  * @param[in] thread thread to be interrupted
  * @param[in] interruptFlag indicates type of interrupt (normal/priority-interrupt/abort)
- * @return none
  */
 static void
 threadInterrupt(omrthread_t thread, uintptr_t interruptFlag)
 {
-	uintptr_t currFlags;
-	uintptr_t testFlags;
+	uintptr_t currFlags = 0;
+	uintptr_t testFlags = 0;
 	omrthread_t self = MACRO_SELF();
 	BOOLEAN threadMutexIsUnlocked = FALSE;
 
@@ -3029,7 +2991,7 @@ interrupt_waiting_thread(omrthread_t self, omrthread_t threadToInterrupt)
 	if (omrthread_monitor_try_enter_using_threadId(monitor, self) == 0) {
 		ASSERT(monitor->owner == self);
 
-#ifdef OMR_THR_THREE_TIER_LOCKING
+#if defined(OMR_THR_THREE_TIER_LOCKING)
 		/* CMVC 109361. Can't block in MONITOR_LOCK() while holding THREAD_LOCK() */
 		THREAD_UNLOCK(threadToInterrupt);
 
@@ -3054,13 +3016,13 @@ interrupt_waiting_thread(omrthread_t self, omrthread_t threadToInterrupt)
 
 			} /* J9THREAD_FLAG_WAITING */
 		} /* ->monitor == monitor */
-#else /* OMR_THR_THREE_TIER_LOCKING */
+#else /* defined(OMR_THR_THREE_TIER_LOCKING) */
 		/*
 		 * In the non-3-tier case, MONITOR_LOCK is acquired by try_enter,
 		 * so we don't need to release and reacquire THREAD_LOCK.
 		 */
 		threadInterruptWake(threadToInterrupt, monitor);
-#endif /* OMR_THR_THREE_TIER_LOCKING */
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
 		/*
 		 * THREAD_UNLOCK is required before monitor_exit
@@ -3070,12 +3032,12 @@ interrupt_waiting_thread(omrthread_t self, omrthread_t threadToInterrupt)
 
 #if defined(OMR_THR_THREE_TIER_LOCKING)
 		MONITOR_UNLOCK(monitor);
-#endif
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 		omrthread_monitor_exit_using_threadId(monitor, self);
 		retVal = 1;
 	}
 	else
-#endif /* ALWAYS_SPAWN_THREAD_TO_INTERRUPT */
+#endif /* !defined(ALWAYS_SPAWN_THREAD_TO_INTERRUPT) */
 	{
 		omrthread_library_t lib = self->library;
 
@@ -3180,12 +3142,13 @@ interruptServer(void *entryArg)
  *
  * @param[in] queue head of a monitor's queue
  * @param[in] thread thread to be removed from queue
- * @return none
  */
 static void
 threadDequeue(omrthread_t volatile *queue, omrthread_t thread)
 {
-	omrthread_t queued, next, prev;
+	omrthread_t queued = NULL;
+	omrthread_t next = NULL;
+	omrthread_t prev = NULL;
 
 	ASSERT(thread);
 
@@ -3221,14 +3184,12 @@ threadDequeue(omrthread_t volatile *queue, omrthread_t thread)
  * @note The calling thread must be the current owner of the monitor
  * @param[in] queue head of the monitor's wait queue
  * @param[in] thread thread to be added
- * @return none
- *
  */
 static void
 threadEnqueue(omrthread_t *queue, omrthread_t thread)
 {
 	omrthread_t qthread = *queue;
-	omrthread_t qtail;
+	omrthread_t qtail = NULL;
 
 	ASSERT(thread);
 	/* can't be on two queues at the same time */
@@ -3257,7 +3218,6 @@ threadEnqueue(omrthread_t *queue, omrthread_t thread)
  * thread being notified (and owns the monitor being notified on)
  * @param[in] threadToNotify thread to notify
  * @param[in] setNotifiedFlag indicates whether to set the notified thread's notified flag.
- * @return none
  */
 static void
 threadNotify(omrthread_t threadToNotify)
@@ -3275,7 +3235,6 @@ threadNotify(omrthread_t threadToNotify)
  *
  * @param[in] thread thread to interrupt
  * @param[in] monitor the monitor that the thread is waiting on
- * @return none
  * @note: assumes the caller owns the monitor and has THREAD_LOCK()'d the thread
  */
 static void
@@ -3416,8 +3375,8 @@ omrthread_current_stack_free(void)
 #if defined(OMR_OS_WINDOWS)
 	MEMORY_BASIC_INFORMATION memInfo;
 	SYSTEM_INFO sysInfo;
-	uintptr_t stackFree;
-	uintptr_t guardPageSize;
+	uintptr_t stackFree = 0;
+	uintptr_t guardPageSize = 0;
 
 	GetSystemInfo(&sysInfo);
 	VirtualQuery(&memInfo, &memInfo, sizeof(MEMORY_BASIC_INFORMATION));
@@ -3436,6 +3395,7 @@ omrthread_current_stack_free(void)
 /*
  * Monitors
  */
+
 /**
  * Acquire and initialize a new monitor from the threading library.
  *
@@ -3447,7 +3407,6 @@ omrthread_current_stack_free(void)
  * @return  0 on success or negative value on failure
  *
  * @see omrthread_monitor_destroy
- *
  */
 intptr_t
 omrthread_monitor_init_with_name(omrthread_monitor_t *handle, uintptr_t flags, const char *name)
@@ -3580,8 +3539,6 @@ omrthread_monitor_flush_destroyed_monitor_list(omrthread_t self)
  * @return NULL on failure, non-NULL on success
  *
  * @see omrthread_monitor_init_with_name, omrthread_monitor_destroy
- *
- *
  */
 static omrthread_monitor_t
 monitor_allocate(omrthread_t self, intptr_t policy, intptr_t policyData)
@@ -3614,7 +3571,6 @@ monitor_allocate(omrthread_t self, intptr_t policy, intptr_t policyData)
 		newMonitor = last_pool->next->next_free;
 	}
 
-
 	/* the first time that a mutex is acquired from the pool, we need to
 	 * initialize its mutex
 	 */
@@ -3633,7 +3589,7 @@ monitor_allocate(omrthread_t self, intptr_t policy, intptr_t policyData)
 	pool->next_free = (omrthread_monitor_t)newMonitor->owner;
 	newMonitor->count = 0;
 
-#if	defined(OMR_THR_JLM)
+#if defined(OMR_THR_JLM)
 	if (IS_JLM_ENABLED(self)) {
 		if (NULL == newMonitor->tracing) {
 			if (jlm_monitor_init(lib, newMonitor) != 0) {
@@ -3655,11 +3611,9 @@ monitor_allocate(omrthread_t self, intptr_t policy, intptr_t policyData)
 /**
  * Return a omrthread_monitor_t to the monitor pool.
  *
- * Must be called under the protection of GLOBAL LOCK
+ * Must be called under the protection of GLOBAL LOCK.
  *
  * @param[in] monitor monitor to be returned to the pool
-
- * @return none
  */
 static void
 monitor_free(omrthread_library_t lib, omrthread_monitor_t monitor)
@@ -3702,8 +3656,6 @@ monitor_free(omrthread_library_t lib, omrthread_monitor_t monitor)
  * @param[in] lib a pointer to the thread library
  * @param[in] thread the thread which is currently freeing this monitor
  * @param[in] monitor monitor to be returned to the pool
- *
- * @return none
  */
 static void
 monitor_free_nolock(omrthread_library_t lib, omrthread_t thread, omrthread_monitor_t monitor)
@@ -3817,7 +3769,7 @@ monitor_init(omrthread_monitor_t monitor, uintptr_t flags, omrthread_library_t l
 	}
 
 #if defined(OMR_THR_MCS_LOCKS)
- 	monitor->queueTail = NULL;
+	monitor->queueTail = NULL;
 #endif /* defined(OMR_THR_MCS_LOCKS) */
 
 	return 0;
@@ -4173,7 +4125,8 @@ monitor_enter_three_tier(omrthread_t self, omrthread_monitor_t monitor, BOOLEAN 
 static void
 unblock_spinlock_threads(omrthread_t self, omrthread_monitor_t monitor)
 {
-	omrthread_t queue, next;
+	omrthread_t queue = NULL;
+	omrthread_t next = NULL;
 #if defined(OMR_THR_SPIN_WAKE_CONTROL)
 	uintptr_t i = 0;
 #endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
@@ -4212,7 +4165,6 @@ unblock_spinlock_threads(omrthread_t self, omrthread_monitor_t monitor)
  * @return  0 on success or negative value on failure
  *
  * @see omrthread_monitor_try_enter_using_threadId
- *
  */
 intptr_t
 omrthread_monitor_try_enter(omrthread_monitor_t monitor)
@@ -4236,7 +4188,6 @@ omrthread_monitor_try_enter(omrthread_monitor_t monitor)
  * @return  0 on success or negative value on failure
  *
  * @see omrthread_monitor_try_enter
- *
  */
 intptr_t
 omrthread_monitor_try_enter_using_threadId(omrthread_monitor_t monitor, omrthread_t threadId)
@@ -4507,8 +4458,8 @@ omrthread_monitor_wait_abortable(omrthread_monitor_t monitor, int64_t millis, in
  * (i.e. omrthread_interrupt, omrthread_priority_interrupt, omrthread_abort)
  *
  * @param[in] monitor a monitor to be waited on
- * @param[in] millis >=0
- * @param[in] nanos >=0
+ * @param[in] millis >= 0
+ * @param[in] nanos >= 0
  *
  * @return status code
  * @retval 0 The monitor has been waited on, notified, and reobtained.
@@ -4536,8 +4487,8 @@ omrthread_monitor_wait_interruptable(omrthread_monitor_t monitor, int64_t millis
  * The wait may not be interrupted.
  *
  * @param[in] monitor a monitor to be waited on
- * @param[in] millis >=0
- * @param[in] nanos >=0
+ * @param[in] millis >= 0
+ * @param[in] nanos >= 0
  *
  * @return status code
  * @retval 0 The monitor has been waited on, notified, and reobtained.
@@ -4562,8 +4513,8 @@ omrthread_monitor_wait_timed(omrthread_monitor_t monitor, int64_t millis, intptr
  * The wait may not be interrupted.
  *
  * @param[in] monitor a monitor to be waited on
- * @param[in] millis >=0
- * @param[in] nanos >=0
+ * @param[in] millis >= 0
+ * @param[in] nanos >= 0
  * @param[in] callbackFunction the function to call when the monitor is released before waiting
  * @param[in] userData data to be passed to the callback function
  *
@@ -4598,15 +4549,15 @@ omrthread_monitor_wait_timed_with_callback(omrthread_monitor_t monitor, int64_t 
  * interrupt functions. (i.e. omrthread_interrupt, omrthread_priority_interrupt, omrthread_abort)
  *
  * @param[in] monitor monitor to be waited on
- * @param[in] millis >=0
- * @param[in] nanos >=0
+ * @param[in] millis >= 0
+ * @param[in] nanos >= 0
  * @param[in] interruptible bitflag that may have one or more of these bits set:<br>
  * J9THREAD_FLAG_INTERRUPTABLE, J9THREAD_FLAG_ABORTABLE
  *
  * @return status code
  * @retval 0 The monitor has been waited on, notified, and reobtained.
  * @retval J9THREAD_TIMED_OUT The timeout expired.
- * @retval J9THREAD_INVALID_ARGUMENT millis or nanos is out of range (millis or nanos<0, or nanos>=1E6).
+ * @retval J9THREAD_INVALID_ARGUMENT millis or nanos is out of range (millis or nanos < 0, or nanos >= 1E6).
  * @retval J9THREAD_ILLEGAL_MONITOR_STATE The current thread does not own the monitor.
  * @retval J9THREAD_INTERRUPTED The thread was interrupted.
  * @retval J9THREAD_PRIORITY_INTERRUPTED The thread was priority interrupted or aborted. The thread still owns the monitor.
@@ -4642,9 +4593,11 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 					  int64_t millis, intptr_t nanos, uintptr_t interruptible,
 					  omrthread_monitor_wait_callback callbackFunction, void *userData)
 {
-	omrthread_t *queue;
+	omrthread_t *queue = NULL;
 	intptr_t count = -1;
-	uintptr_t interrupted = 0, notified = 0, priorityinterrupted = 0;
+	uintptr_t interrupted = 0;
+	uintptr_t notified = 0;
+	uintptr_t priorityinterrupted = 0;
 	uintptr_t intrMask = 0;
 	uintptr_t intrFlags = 0;
 	uintptr_t timedOut = 0;
@@ -4864,7 +4817,7 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 #ifdef OMR_THR_THREE_TIER_LOCKING
 	if (monitor_enter_three_tier(
 			self, monitor,
-			(BOOLEAN)((interruptible & J9THREAD_FLAG_ABORTABLE)? SET_ABORTABLE: DONT_SET_ABORTABLE))
+			(BOOLEAN)((interruptible & J9THREAD_FLAG_ABORTABLE) ? SET_ABORTABLE : DONT_SET_ABORTABLE))
 		== J9THREAD_INTERRUPTED_MONITOR_ENTER
 	) {
 		/* we don't own the monitor */
@@ -4909,9 +4862,11 @@ monitor_wait_three_tier(omrthread_t self, omrthread_monitor_t monitor,
 						int64_t millis, intptr_t nanos, uintptr_t interruptible,
 						omrthread_monitor_wait_callback callbackFunction, void *userData)
 {
-	omrthread_t *queue;
+	omrthread_t *queue = NULL;
 	intptr_t count = -1;
-	uintptr_t interrupted = 0, notified = 0, priorityinterrupted = 0;
+	uintptr_t interrupted = 0;
+	uintptr_t notified = 0;
+	uintptr_t priorityinterrupted = 0;
 	uintptr_t intrMask = 0;
 	uintptr_t intrFlags = 0;
 	uintptr_t timedOut = 0;
@@ -5166,13 +5121,13 @@ uintptr_t
 omrthread_monitor_num_waiting(omrthread_monitor_t monitor)
 {
 	uintptr_t numWaiting = 0;
-	omrthread_t curr;
+	omrthread_t curr = NULL;
 
 	ASSERT(monitor);
 
-#ifdef OMR_THR_THREE_TIER_LOCKING
+#if defined(OMR_THR_THREE_TIER_LOCKING)
 	MONITOR_LOCK(monitor, CALLER_MONITOR_NUM_WAITING);
-#endif
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
 	curr = monitor->waiting;
 	while (curr != NULL) {
@@ -5185,12 +5140,11 @@ omrthread_monitor_num_waiting(omrthread_monitor_t monitor)
 		curr = curr->next;
 	}
 
-#ifdef OMR_THR_THREE_TIER_LOCKING
+#if defined(OMR_THR_THREE_TIER_LOCKING)
 	MONITOR_UNLOCK(monitor);
-#endif
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
 	return numWaiting;
-
 }
 
 
@@ -5261,9 +5215,9 @@ monitor_notify_one_or_all(omrthread_monitor_t monitor, int notifyall)
 	} else {
 		rc = monitor_notify_original(self, monitor, notifyall);
 	}
-#else
+#else /* defined(OMR_THR_THREE_TIER_LOCKING) */
 	rc = monitor_notify_original(self, monitor, notifyall);
-#endif
+#endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
 	Trc_THR_ThreadMonitorNotifyExit(self, monitor, rc);
 	return rc;
@@ -5278,7 +5232,8 @@ monitor_notify_one_or_all(omrthread_monitor_t monitor, int notifyall)
 static intptr_t
 monitor_notify_original(omrthread_t self, omrthread_monitor_t monitor, int notifyall)
 {
-	omrthread_t queue, next;
+	omrthread_t queue = NULL;
+	omrthread_t next = NULL;
 	int someoneNotified = 0;
 
 	ASSERT(self);
@@ -5327,7 +5282,7 @@ monitor_notify_original(omrthread_t self, omrthread_monitor_t monitor, int notif
 static intptr_t
 monitor_notify_three_tier(omrthread_t self, omrthread_monitor_t monitor, int notifyall)
 {
-	omrthread_t queue;
+	omrthread_t queue = NULL;
 
 	ASSERT(self);
 	ASSERT(monitor);
@@ -5402,7 +5357,6 @@ monitor_notify_three_tier(omrthread_t self, omrthread_monitor_t monitor, int not
  *
  * @param[in] self omrthread_t for the current thread
  * @param[in] monitor must be NULL
- * @return none
  *
  * @deprecated This has been replaced by omrthread_lib_lock.
  * @see omrthread_lib_lock, omrthread_lib_unlock
@@ -5426,7 +5380,6 @@ omrthread_monitor_lock(omrthread_t self, omrthread_monitor_t monitor)
  *
  * @param[in] self omrthread_t for the current thread
  * @param[in] monitor
- * @return none
  *
  * @deprecated This has been replaced by omrthread_lib_unlock.
  * @see omrthread_lib_lock, omrthread_lib_unlock
@@ -5453,15 +5406,16 @@ omrthread_monitor_unlock(omrthread_t self, omrthread_monitor_t monitor)
 static omrthread_monitor_pool_t
 allocate_monitor_pool(omrthread_library_t lib)
 {
-	int i;
-	omrthread_monitor_t entry;
+	int i = 0;
+	omrthread_monitor_t entry = NULL;
 	omrthread_monitor_pool_t pool = (omrthread_monitor_pool_t)omrthread_allocate_memory(lib, sizeof(J9ThreadMonitorPool), OMRMEM_CATEGORY_THREADS);
 	if (pool == NULL) {
 		return NULL;
 	}
 	memset(pool, 0, sizeof(J9ThreadMonitorPool));
 
-	pool->next_free = entry = &pool->entries[0];
+	entry = &pool->entries[0];
+	pool->next_free = entry;
 	for (i = 0; i < MONITOR_POOL_SIZE - 1; i++, entry++) {
 		entry->count = FREE_TAG;
 		entry->owner = (omrthread_t)(entry + 1);
@@ -5480,8 +5434,6 @@ allocate_monitor_pool(omrthread_library_t lib)
  *
  * This requires destroying each and every one of the
  * monitors in the pool.
- *
- * @return none
  */
 static void
 free_monitor_pools(void)
@@ -5494,7 +5446,7 @@ free_monitor_pools(void)
 	ASSERT(pool);
 
 	while (pool) {
-		int i;
+		int i = 0;
 		omrthread_monitor_pool_t next = pool->next;
 		omrthread_monitor_t entry = &pool->entries[0];
 		for (i = 0; i < MONITOR_POOL_SIZE - 1; i++, entry++) {
@@ -5545,7 +5497,6 @@ allocate_mcs_nodes(omrthread_library_t lib)
  * @param[in] lib pointer to the OMR thread library.
  * @param[in] mcsNodes pointer to the OMRThreadMCSNodes structure.
  *
- * @return void.
  */
 static void
 free_mcs_nodes(omrthread_library_t lib, omrthread_mcs_nodes_t mcsNodes)
@@ -5563,18 +5514,17 @@ free_mcs_nodes(omrthread_library_t lib, omrthread_mcs_nodes_t mcsNodes)
  * @param[in] self   the current thread with THREAD_LOCK() held on it
  *
  * @return  non-0 if thread is target of notify, otherwise 0
- *
  */
 static intptr_t
 check_notified(omrthread_t self, omrthread_monitor_t monitor)
 {
 	intptr_t rc = 0;
 	rc = self->flags & J9THREAD_FLAG_NOTIFIED;
-	if (rc) {
+	if (0 != rc) {
 		return rc;
 	}
 
-	/* was the thread a target of a notifyAll operation ? */
+	/* Was the thread a target of a notifyAll operation? */
 	rc = monitor_on_notify_all_wait_list(self, monitor);
 
 	return rc;
@@ -5587,12 +5537,11 @@ check_notified(omrthread_t self, omrthread_monitor_t monitor)
  * @param[monitor] the given monitor
  *
  * @return  The maximum wait number or 0 if no waiters
- *
  */
 static uintptr_t
 monitor_maximum_wait_number(omrthread_monitor_t monitor)
 {
-	uintptr_t hwn;
+	uintptr_t hwn = 0;
 
 	if (monitor->waiting) {
 		hwn = monitor->waiting->prev->waitNumber;
@@ -5615,12 +5564,11 @@ monitor_maximum_wait_number(omrthread_monitor_t monitor)
  *
  * @return  TRUE - the monitor is on the notifyAll wait list
  *          FALSE - otherwise
- *
  */
 static uintptr_t
 monitor_on_notify_all_wait_list(omrthread_t self, omrthread_monitor_t monitor)
 {
-	uintptr_t hwn;  /* highest wait number of a thread on notifyAll wait list */
+	uintptr_t hwn = 0; /* highest wait number of a thread on notifyAll wait list */
 	uintptr_t rc = FALSE;
 
 	if (monitor->notifyAllWaiting) {
@@ -5635,15 +5583,14 @@ monitor_on_notify_all_wait_list(omrthread_t self, omrthread_monitor_t monitor)
  * This method must be called with MONITOR_LOCK() held.
  *
  * @param[monitor] the given monitor
- *
- * @return  none
- *
  */
 static void
 monitor_notify_all_migration(omrthread_monitor_t monitor)
 {
-	omrthread_t waiting, wtail;
-	omrthread_t notifyAllWaiting, nawtail;
+	omrthread_t waiting = NULL;
+	omrthread_t wtail = NULL;
+	omrthread_t notifyAllWaiting = NULL;
+	omrthread_t nawtail = NULL;
 
 	notifyAllWaiting = monitor->notifyAllWaiting;
 	waiting = monitor->waiting;
@@ -5655,7 +5602,6 @@ monitor_notify_all_migration(omrthread_monitor_t monitor)
 		nawtail->next = waiting;
 		waiting->prev = nawtail;
 		notifyAllWaiting->prev = wtail;
-
 	} else {
 		/* The wait list becomes the notifyAlled wait list */
 		monitor->notifyAllWaiting = waiting;
@@ -5901,7 +5847,6 @@ omrthread_shutdown_library(void)
  * @brief Set the J9THREAD_FLAG_CPU_SAMPLING_ENABLED flag for the given thread
  *        if CPU Monitoring has been turned on.
  * @param thread
- * @return void
  */
 static void
 threadEnableCpuMonitor(omrthread_t thread)
@@ -5932,6 +5877,7 @@ j9thread_self(void)
 {
 	return omrthread_self();
 }
+
 void *
 j9thread_tls_get(omrthread_t thread, omrthread_tls_key_t key)
 {

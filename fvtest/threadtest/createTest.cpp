@@ -1246,7 +1246,7 @@ TEST_F(ThreadCreateTest, DISABLED_SetAttrThreadWeight)
 
 	initDefaultExpected(&expected);
 
-	weight = (const char **)omrthread_global((char *)"thread_weight");
+	weight = (const char **)omrthread_global("thread_weight");
 
 	*weight = "heavy";
 	expected.osThreadweight = OS_HEAVY_WEIGHT;

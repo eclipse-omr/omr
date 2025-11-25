@@ -139,7 +139,7 @@ omrthread_get_flags(omrthread_t thread, omrthread_monitor_t *blocker);
  * @return void
  */
 void
-omrthread_get_state(omrthread_t thread, omrthread_state_t *const state);
+omrthread_get_state(omrthread_t thread, omrthread_state_t *state);
 
 /**
 * @brief
@@ -521,8 +521,7 @@ omrthread_exit(omrthread_monitor_t monitor);
 * @return uintptr_t*
 */
 uintptr_t *
-omrthread_global(char *name);
-
+omrthread_global(const char *name);
 
 /**
 * @brief
@@ -614,7 +613,7 @@ omrthread_jlm_init(uintptr_t flags);
  */
 intptr_t
 jlm_adaptive_spin_init(void);
-#endif
+#endif /* defined(OMR_THR_ADAPTIVE_SPIN) */
 
 /**
 * @brief
@@ -716,7 +715,7 @@ omrthread_lib_postForkParent(void);
  */
 void
 omrthread_lib_preFork(void);
-#endif /* !defined(OMR_THR_FORK_SUPPORT) */
+#endif /* defined(OMR_THR_FORK_SUPPORT) */
 
 /**
 * @brief
