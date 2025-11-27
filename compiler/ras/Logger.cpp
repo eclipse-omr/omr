@@ -28,6 +28,7 @@
 #endif
 #include "env/FrontEnd.hpp"
 #include "env/IO.hpp"
+#include "env/TRMemory.hpp"
 #include "infra/Assert.hpp"
 #include "ras/Logger.hpp"
 
@@ -49,8 +50,6 @@ OMR::Logger::Logger()
  * -----------------------------------------------------------------------------
  */
 
-OMR::NullLogger *OMR::NullLogger::create() { return new OMR::NullLogger(); }
-
 int32_t OMR::NullLogger::close()
 {
     setLoggerClosed(true);
@@ -63,8 +62,6 @@ int32_t OMR::NullLogger::close()
  * AssertingLogger
  * -----------------------------------------------------------------------------
  */
-
-OMR::AssertingLogger *OMR::AssertingLogger::create() { return new OMR::AssertingLogger(); }
 
 int32_t OMR::AssertingLogger::printf(const char *format, ...)
 {
@@ -127,19 +124,6 @@ OMR::CStdIOStreamLogger::CStdIOStreamLogger(::FILE *stream, bool requiresStreamC
     : _stream(stream)
     , _requiresStreamClose(requiresStreamClose)
 {}
-
-OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(::FILE *stream) { return new OMR::CStdIOStreamLogger(stream); }
-
-OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(const char *filename)
-{
-    ::FILE *fd = fopen(filename, "w");
-    if (!fd) {
-        // Error opening/creating the Logger file
-        return NULL;
-    }
-
-    return new OMR::CStdIOStreamLogger(fd, true);
-}
 
 OMR::CStdIOStreamLogger::~CStdIOStreamLogger()
 {
@@ -207,9 +191,36 @@ int32_t OMR::CStdIOStreamLogger::close()
     return result;
 }
 
-OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::Stderr = OMR::CStdIOStreamLogger::create(stderr);
+OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::_stderr = NULL;
+OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::_stdout = NULL;
 
-OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::Stdout = OMR::CStdIOStreamLogger::create(stdout);
+OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::Stderr()
+{
+    if (!_stderr) {
+        /**
+         * Initializing this static field can be an unlikely race between compilation threads.
+         * However, the worst case result is that there will be multiple wrappers around stderr,
+         * which is perfectly fine.
+         */
+        _stderr = OMR::CStdIOStreamLogger::create(trPersistentMemory, stderr);
+    }
+
+    return _stderr;
+}
+
+OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::Stdout()
+{
+    if (!_stdout) {
+        /**
+         * Initializing this static field can be an unlikely race between compilation threads.
+         * However, the worst case result is that there will be multiple wrappers around stdout,
+         * which is perfectly fine.
+         */
+        _stdout = OMR::CStdIOStreamLogger::create(trPersistentMemory, stdout);
+    }
+
+    return _stdout;
+}
 
 /*
  * -----------------------------------------------------------------------------
@@ -219,8 +230,6 @@ OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::Stdout = OMR::CStdIOStreamLogg
 OMR::TRIOStreamLogger::TRIOStreamLogger(TR::FILE *stream)
     : _stream(stream)
 {}
-
-OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(TR::FILE *stream) { return new OMR::TRIOStreamLogger(stream); }
 
 int32_t OMR::TRIOStreamLogger::printf(const char *format, ...)
 {
@@ -279,11 +288,6 @@ OMR::CircularLogger::CircularLogger(OMR::Logger *innerLogger, int64_t rewindThre
     TR_ASSERT_FATAL(innerLogger->supportsRewinding(),
         "Inner logger must support rewinding for use in a circular logger");
     TR_ASSERT_FATAL(rewindThresholdInChars > 0, "Circular log threshold must be a non-zero, positive integer");
-}
-
-OMR::CircularLogger *OMR::CircularLogger::create(OMR::Logger *innerLogger, int64_t rewindThresholdInChars)
-{
-    return new OMR::CircularLogger(innerLogger, rewindThresholdInChars);
 }
 
 int32_t OMR::CircularLogger::printf(const char *format, ...)
@@ -354,11 +358,6 @@ int32_t OMR::CircularLogger::close()
  * MemoryBufferLogger
  * -----------------------------------------------------------------------------
  */
-
-OMR::MemoryBufferLogger *OMR::MemoryBufferLogger::create(char *buf, size_t maxBufLen)
-{
-    return new OMR::MemoryBufferLogger(buf, maxBufLen);
-}
 
 OMR::MemoryBufferLogger::MemoryBufferLogger(char *buf, size_t maxBufLen)
     : _buf(buf)

@@ -197,10 +197,10 @@ void NodeAssertionContext::printContext() const
     fprintf(stderr, "\nNode context:\n\n");
 
     if (printFullContext) {
-        debug->printIRTrees(OMR::CStdIOStreamLogger::Stderr, "Assertion Context", comp->getMethodSymbol());
-        debug->print(OMR::CStdIOStreamLogger::Stderr, comp->getMethodSymbol()->getFlowGraph());
+        debug->printIRTrees(OMR::CStdIOStreamLogger::Stderr(), "Assertion Context", comp->getMethodSymbol());
+        debug->print(OMR::CStdIOStreamLogger::Stderr(), comp->getMethodSymbol()->getFlowGraph());
         if (comp->getKnownObjectTable())
-            comp->getKnownObjectTable()->dumpTo(OMR::CStdIOStreamLogger::Stderr, comp);
+            comp->getKnownObjectTable()->dumpTo(OMR::CStdIOStreamLogger::Stderr(), comp);
     } else {
         fprintf(stderr, "...\n");
 
@@ -214,7 +214,7 @@ void NodeAssertionContext::printContext() const
             if (containsNode(it.currentNode(), _node, checkedNodeChecklist)) {
                 foundNode = true;
                 debug->restoreNodeChecklist(commonedNodeChecklist);
-                debug->print(OMR::CStdIOStreamLogger::Stderr, it.currentTree());
+                debug->print(OMR::CStdIOStreamLogger::Stderr(), it.currentTree());
                 break;
             } else {
                 markInChecklist(it.currentNode(), commonedNodeChecklist);
@@ -244,7 +244,7 @@ void InstructionAssertionContext::printContext() const
 
     if (printFullContext) {
         fprintf(stderr, "\n");
-        debug->dumpMethodInstrs(OMR::CStdIOStreamLogger::Stderr, "Assertion Context", false, false);
+        debug->dumpMethodInstrs(OMR::CStdIOStreamLogger::Stderr(), "Assertion Context", false, false);
     } else {
         TR::Instruction *cursor = _instruction;
         for (int i = 0; i < (numInstructionsInContext - 1) / 2 && cursor->getPrev(); i++)
@@ -254,7 +254,7 @@ void InstructionAssertionContext::printContext() const
             fprintf(stderr, "\n...");
 
         for (int i = 0; i < numInstructionsInContext && cursor; i++) {
-            debug->print(OMR::CStdIOStreamLogger::Stderr, cursor);
+            debug->print(OMR::CStdIOStreamLogger::Stderr(), cursor);
             cursor = cursor->getNext();
         }
 

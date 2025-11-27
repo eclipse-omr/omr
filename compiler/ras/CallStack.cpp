@@ -42,7 +42,7 @@ void TR_CallStackIterator::printStackBacktrace(TR::Compilation *comp)
         if (!log->isEnabled_DEPRECATED())
             return;
     } else
-        log = OMR::CStdIOStreamLogger::Stderr;
+        log = OMR::CStdIOStreamLogger::Stderr();
 
     while (!isDone()) {
         log->printf("%s+0x%" OMR_PRIxPTR "\n", getProcedureName(), getOffsetInProcedure());
@@ -232,7 +232,7 @@ void TR_LinuxCallStackIterator::printStackBacktrace(TR::Compilation *comp)
         if (!log->isEnabled_DEPRECATED())
             return;
     } else
-        log = OMR::CStdIOStreamLogger::Stderr;
+        log = OMR::CStdIOStreamLogger::Stderr();
 
     const uint32_t MAX_TRACE_SIZE = 30;
     const uint32_t SKIP_FRAMES = 0;

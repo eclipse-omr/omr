@@ -329,6 +329,7 @@ public:
         LiveReference,
         LiveRegisterInfo,
         LiveRegisters,
+        Logger,
         NodeMappings,
         Optimizer,
 

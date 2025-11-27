@@ -1929,9 +1929,9 @@ void OMR::Compilation::dumpMethodGraph(int index, TR::ResolvedMethodSymbol *meth
          * specialization by downstream projects.  Currently, it exists as a typedef in OMR
          * but a class in some projects like OpenJ9.
          */
-        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(pFile->_stream);
+        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(trHeapMemory(), pFile->_stream);
 #else
-        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create((::FILE *)pFile);
+        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(trHeapMemory(), (::FILE *)pFile);
 #endif
         vcgLog->setEnable();
         self()->getDebug()->printVCG(vcgLog, cfg, self()->signature());

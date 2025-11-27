@@ -80,8 +80,8 @@ const char *objectName[] = { "Array", "Instruction", "ListElement", "Node", "Bit
     "X86TOCHashTable",
 
     "IGBase", "IGNode", "InternalFunctionsBase", "InternalPointerMap", "InternalPointerPair", "LinkHead", "Linkage",
-    "List", "ListAppender", "ListIterator", "LiveReference", "LiveRegisterInfo", "LiveRegisters", "NodeMappings",
-    "Optimizer",
+    "List", "ListAppender", "ListIterator", "LiveReference", "LiveRegisterInfo", "LiveRegisters", "Logger",
+    "NodeMappings", "Optimizer",
 
     "Options", "OptionSet", "OrderedExceptionHandlerIterator", "PCMapEntry", "PersistentCHTable", "PersistentInfo",
     "PersistentMethodInfo", "PersistentJittedBodyInfo", "PersistentProfileInfo",

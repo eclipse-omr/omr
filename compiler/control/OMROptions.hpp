@@ -1498,8 +1498,8 @@ public:
 
     /**
      * @brief
-     *    Returns the default OMR::Logger object.  If this function is not overridden
-     *    by a consuming project, the default logger is a OMR::NullLogger.
+     *    Returns the default OMR::Logger singleton object.  If this function is not overridden
+     *    by a consuming project, the default logger is a \c OMR::NullLogger.
      */
     static OMR::Logger *getDefaultLogger();
 
@@ -2540,6 +2540,8 @@ protected:
     char *_suffixLogsFormat;
     TR::FILE *_logFile;
     OMR::Logger *_logger;
+
+    static OMR::Logger *_defaultLogger;
 
     char *_optFileName;
     int32_t *_customStrategy; // Actually array of TR_OptimizerImpl::Optimizations numbers read from optFileName

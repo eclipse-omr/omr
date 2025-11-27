@@ -711,7 +711,7 @@ void TR_VirtualGuardTailSplitter::remergeGuard(TR_BlockCloner &cloner, VGInfo *i
    char fileName[20];
    sprintf(fileName, "split%d.vcg", block->getNumber());
    FILE *file = fopen(fileName, "w");
-   OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(file);
+   OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(trHeapMemory(), file);
    comp->getDebug()->printVCG(vcgLog, _cfg, fileName);
    vcgLog->close();
    fclose(file);
