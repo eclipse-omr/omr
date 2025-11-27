@@ -10962,17 +10962,16 @@
     /*                   PPCOpProp_SyncSideEffectFree, */
     /* }, */
 
-    /* { */
-    /* .mnemonic    =    OMR::InstOpCode::xxbrw, */
-    /* .name        =    "xxbrw", */
-    /* .description =    "VSX Vector Byte-Reverse Word", */
-    /* .prefix      =    0x00000000, */
-    /* .opcode      =    0xF00F076C, */
-    /* .format      =    FORMAT_UNKNOWN, */
-    /* .minimumALS  =    OMR_PROCESSOR_PPC_P9, */
-    /* .properties  =    PPCOpProp_IsVSX | */
-    /*                   PPCOpProp_SyncSideEffectFree, */
-    /* }, */
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::xxbrw,
+        /* .name        = */ "xxbrw",
+        /* .description =    "VSX Vector Byte-Reverse Word", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0xF00F076C,
+        /* .format      = */ FORMAT_XT_XB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P9,
+        /* .properties  = */ PPCOpProp_IsVSX | PPCOpProp_SyncSideEffectFree,
+    },
 
     {
         /* .mnemonic    = */ OMR::InstOpCode::xxbrq,

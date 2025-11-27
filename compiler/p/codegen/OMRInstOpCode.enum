@@ -964,7 +964,7 @@
 // xvxsigsp,         // VSX Vector Extract Significand SP
 // xxbrd,            // VSX Vector Byte-Reverse Dword
 // xxbrh,            // VSX Vector Byte-Reverse Hword
-// xxbrw,            // VSX Vector Byte-Reverse Word
+   xxbrw,            // VSX Vector Byte-Reverse Word
    xxbrq,            // VSX Vector Byte-Reverse Qword
    fmrgew,           // Merge Even Word
    fmrgow,           // Merge Odd Word
