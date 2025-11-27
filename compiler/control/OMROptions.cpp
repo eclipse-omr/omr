@@ -2538,6 +2538,8 @@ int32_t OMR::Options::_TransactionalMemoryRetryCount = 1;
 
 int32_t OMR::Options::_minimalNumberOfTreeTopsInsideTMMonitor = 6;
 
+OMR::Logger *OMR::Options::_defaultLogger = NULL;
+
 TR::SimpleRegex *OMR::Options::_debugCounterInsertByteCode = NULL;
 TR::SimpleRegex *OMR::Options::_debugCounterInsertJittedBody = NULL;
 TR::SimpleRegex *OMR::Options::_debugCounterInsertMethod = NULL;
@@ -2581,7 +2583,21 @@ bool OMR::Options::createDebug()
     return _debug != 0;
 }
 
-OMR::Logger *OMR::Options::getDefaultLogger() { return OMR::NullLogger::create(); }
+
+OMR::Logger *OMR::Options::getDefaultLogger()
+{
+    if (_defaultLogger == NULL) {
+        /**
+         * Initializing this static field can be an unlikely race between compilation threads.
+         * However, this is unlikely (if not impossible) to occur in practice because it will be
+         * initialized when the top-level Options object is created.  Even if multiple default
+         * Loggers are somehow created, this is perfectly fine from a functional perspective.
+         */
+        _defaultLogger = OMR::NullLogger::create(trPersistentMemory);
+    }
+
+    return _defaultLogger;
+}
 
 bool OMR::Options::requiresDebugObject()
 {
@@ -4662,18 +4678,18 @@ OMR::Logger *OMR::Options::createLoggerForLogFile(TR::FILE *file)
     OMR::Logger *logger = NULL;
 
     if (self()->getOption(TR_ForceTRIOForLoggers)) {
-        logger = OMR::TRIOStreamLogger::create(file);
+        logger = OMR::TRIOStreamLogger::create(trPersistentMemory, file);
     } else {
         // An OMR::CStdIOStreamLogger is the default logger
         //
-        logger = OMR::CStdIOStreamLogger::create((::FILE *)file);
+        logger = OMR::CStdIOStreamLogger::create(trPersistentMemory, (::FILE *)file);
     }
 
     if (_traceFileLengthInMiB > 0) {
         // Wrap the logger in a CircularLogger if requested. The wrapped logger must be enabled first.
         //
         logger->setEnabled_DEPRECATED(true);
-        logger = OMR::CircularLogger::create(logger, _traceFileLengthInMiB << 20);
+        logger = OMR::CircularLogger::create(trPersistentMemory, logger, _traceFileLengthInMiB << 20);
     }
 
     return logger;
