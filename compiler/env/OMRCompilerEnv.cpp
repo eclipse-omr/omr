@@ -30,6 +30,7 @@ OMR::CompilerEnv::CompilerEnv(TR::RawAllocator raw, const TR::PersistentAllocato
     , _initialized(false)
     , _persistentAllocator(persistentAllocatorKit)
     , regionAllocator(_persistentAllocator)
+    , mesg(NULL)
     , omrPortLib(portLib)
 {}
 
@@ -37,6 +38,8 @@ TR::CompilerEnv *OMR::CompilerEnv::self() { return static_cast<TR::CompilerEnv *
 
 void OMR::CompilerEnv::initialize()
 {
+    self()->initializeMessageLogger();
+
     self()->initializeHostEnvironment();
 
     self()->initializeTargetEnvironment();
@@ -46,6 +49,17 @@ void OMR::CompilerEnv::initialize()
     om.initialize();
 
     _initialized = true;
+}
+
+void OMR::CompilerEnv::initializeMessageLogger()
+{
+    /**
+     * This Logger must be created with the raw allocator because compiler persistent
+     * memory is not available yet
+     *
+     * Default destination for messages is essentially stderr.
+     */
+    mesg = OMR::CStdIOStreamLogger::create(rawAllocator, stderr);
 }
 
 void OMR::CompilerEnv::initializeHostEnvironment()
