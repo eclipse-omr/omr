@@ -163,22 +163,19 @@ void TR_S390BinaryCommutativeAnalyser::genericAnalyser(TR::Node *root, TR::InstO
     bool adjustDiplacementOnSecondChild = false;
 
     if (root->getOpCode().isBooleanCompare() || nonClobberingDestination) {
-        if (firstChild->getOpCodeValue() == TR::bu2i && firstChild->getReferenceCount() == 1
-            && firstChild->getRegister() == NULL
-            && (firstChild->getFirstChild()->getOpCodeValue() == TR::bload
-                || firstChild->getFirstChild()->getOpCodeValue() == TR::bloadi)) {
+        if ((firstChild->getOpCodeValue() == TR::bu2i && firstChild->getReferenceCount() == 1
+                && firstChild->getRegister() == NULL
+                && (firstChild->getFirstChild()->getOpCodeValue() == TR::bload
+                    || firstChild->getFirstChild()->getOpCodeValue() == TR::bloadi))
+            && (secondChild->getOpCodeValue() == TR::bu2i && secondChild->getReferenceCount() == 1
+                && secondChild->getRegister() == NULL
+                && (secondChild->getFirstChild()->getOpCodeValue() == TR::bload
+                    || secondChild->getFirstChild()->getOpCodeValue() == TR::bloadi))) {
             initFirstChild = firstChild;
-
             firstChild = firstChild->getFirstChild();
             cg()->evaluate(firstChild);
-        }
 
-        if (secondChild->getOpCodeValue() == TR::bu2i && secondChild->getReferenceCount() == 1
-            && secondChild->getRegister() == NULL
-            && (secondChild->getFirstChild()->getOpCodeValue() == TR::bload
-                || secondChild->getFirstChild()->getOpCodeValue() == TR::bloadi)) {
             initSecondChild = secondChild;
-
             secondChild = secondChild->getFirstChild();
             cg()->evaluate(secondChild);
         }
