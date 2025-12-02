@@ -1038,7 +1038,44 @@ TR::Register *OMR::Power::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Power::TreeEvaluator::s2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *srcReg = cg->evaluate(child);
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+
+    TR::Register *tmpGPR = cg->allocateRegister(TR_GPR);
+    TR::Register *tmpVRF = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    // rearrange byte elements of src to convert to word-length elements
+    if (cg->comp()->target().cpu.isLittleEndian()) {
+        // on LE, need to reverse byte order
+        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwinm, node, tmpGPR, srcReg, 24, 0x000000FF);
+        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, tmpGPR, srcReg, 32, 0x000000FF00000000);
+    } else {
+        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, tmpGPR, srcReg, 24, 0xFFFFFFFF00000000);
+        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwimi, node, tmpGPR, srcReg, 0, 0x000000FF);
+    }
+
+    // move to VRF
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, tmpGPR);
+
+    // unpack word-length elements to doubleword-length elements
+    generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsw, node, dstReg, dstReg);
+
+    // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
+    // all 0/1 mask by subtracting from 0:
+    // 0-1 = -1 = 0xFF...
+    // 0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, tmpVRF, 0);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vsubudm, node, dstReg, tmpVRF, dstReg);
+
+    cg->stopUsingRegister(tmpGPR);
+    cg->stopUsingRegister(tmpVRF);
+    cg->decReferenceCount(child);
+
+    return dstReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::i2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
