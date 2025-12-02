@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "env/FilePointerDecl.hpp"
+#include "env/RawAllocator.hpp"
 #include "env/TRMemory.hpp"
 
 /**
@@ -102,6 +103,8 @@ namespace OMR {
 class Logger {
 public:
     TR_ALLOC(TR_Memory::Logger)
+
+    inline void *operator new(size_t size, TR::RawAllocator allocator) { return allocator.allocate(size); }
 
     Logger();
 
@@ -303,6 +306,7 @@ template OMR::NullLogger *OMR::NullLogger::create(TR_HeapMemory t);
 
 template OMR::NullLogger *OMR::NullLogger::create(PERSISTENT_NEW_DECLARE t);
 
+template OMR::NullLogger *OMR::NullLogger::create(TR::RawAllocator t);
 
 /**
  * A Logger class that fatally asserts if any of the logging functions
@@ -467,6 +471,8 @@ OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(AllocatorType t, const 
 template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(TR_HeapMemory t, ::FILE *stream);
 
 template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(PERSISTENT_NEW_DECLARE t, ::FILE *stream);
+
+template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(TR::RawAllocator t, ::FILE *stream);
 
 template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(TR_HeapMemory t, const char *filename);
 
