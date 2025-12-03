@@ -239,7 +239,7 @@ enum TR_CompilationOptions {
     TR_EnableAnnotations                                      = 0x00002000 + 4, // change to disable when on by default
     TR_UnresolvedAreNotColdAtCold                             = 0x00004000 + 4, // cold block marker marks unresolved blocks as cold at hotness cold or less
     TR_UseSymbolValidationManager                             = 0x00008000 + 4,
-    TR_EnablePIDExtension                                     = 0x00010000 + 4,
+    TR_ApplyLogFileNameSuffix                                 = 0x00010000 + 4,
     TR_GenerateCompleteInlineRanges                           = 0x00020000 + 4,
     TR_DisableInliningOfNatives                               = 0x00040000 + 4,
     TR_AssignEveryGlobalRegister                              = 0x00080000 + 4,
@@ -1394,22 +1394,62 @@ protected:
     TR::Options *self();
     const TR::Options *self() const;
 
+    Options() {}
+
+    /**
+     * See corresponding `create()` function
+     */
+
 public:
     TR_ALLOC(TR_Memory::Options)
+
+    /**
+     * @brief Factory function to create and initialize a new \c TR::Options object.
+     *     Initializes the new object via the `initialize()` function.
+     *
+     * @param[in] t \c TR_Memory allocator type from which to allocate
+     *
+     * @return An allocated and initialized \c TR::Options object
+     */
+    template<typename AllocatorType> static TR::Options *create(AllocatorType t);
+
+    /**
+     * @brief This constructor uses copy construction to initialize a new \c TR::Options
+     *     object
+     *
+     * @param[in] m : \c TR_Memory object from which to allocate
+     * @param[in] index : \c int32_t option set index
+     * @param[in] lineNumber : \c int32_t option set line number
+     * @param[in] compilee : \c TR_ResolvedMethod* the resolved method for this compilee
+     * @param[in] oldStartPC : \c void* of previous method startPC
+     * @param[in] optimizationPlan : \c TR_OptimizationPlan* optimization plan
+     * @param[in] isAOT : \c bool indicating whether this is an AOT compile or not
+     * @param[in] compThreadID : \c int32_t
+     *     if >= 0, the compilation thread id
+     *     if -1, no compilation thread id
+     *
+     * @return An allocated and initialized \c TR::Options object
+     */
+    Options(TR_Memory *m, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC,
+        TR_OptimizationPlan *optimizationPlan, bool isAOT = false, int32_t compThreadID = -1);
+
+    /**
+     * @brief \c TR::Options copy constructor
+     */
+    Options(TR::Options &other);
+
+    /**
+     * @brief Initialize the OMR components of the \c TR::Options object.
+     *     Downstream projects may override, but should call this function to
+     *     complete the initialization of the OMR components.
+     */
+    void initialize();
 
     TR::CodeCacheKind getCodeCacheKind() { return _codeCacheKind; }
 
     TR::SimpleRegex *getTransientClassRegex() { return _transientClassRegex; }
 
     void setCodeCacheKind(TR::CodeCacheKind kind) { _codeCacheKind = kind; }
-
-    void init();
-
-    Options() { OMR::Options::init(); }
-
-    Options(TR_Memory *, int32_t index, int32_t lineNumber, TR_ResolvedMethod *compilee, void *oldStartPC,
-        TR_OptimizationPlan *optimizationPlan, bool isAOT = false, int32_t compThreadID = -1);
-    Options(TR::Options &other);
 
     enum TR_AggresivenessLevel {
         CONSERVATIVE_QUICKSTART = 0,
@@ -1458,20 +1498,50 @@ public:
 
     /**
      * @brief
-     *    Returns the default OMR::Logger object.  If this function is not overridden
-     *    by a consuming project, the default logger is a OMR::NullLogger.
+     *    Returns the default OMR::Logger singleton object.  If this function is not overridden
+     *    by a consuming project, the default logger is a \c OMR::NullLogger.
      */
     static OMR::Logger *getDefaultLogger();
 
-    TR::FILE *getLogFile() { return _logFile; }
+    TR::FILE *getLogFile() const { return _logFile; }
 
     void setLogFile(TR::FILE *f) { _logFile = f; }
 
-    OMR::Logger *getLogger() { return _logger; }
+    OMR_FINAL OMR::Logger *getLogger() const { return _logger; }
 
-    void setLogger(OMR::Logger *log) { _logger = log; }
+    OMR_FINAL void setLogger(OMR::Logger *log) { _logger = log; }
 
-    char *getLogFileName() { return _logFileName; }
+    OMR_FINAL char *getLogFileNameBase() const { return _logFileNameBase; }
+
+    OMR_FINAL void setLogFileNameBase(char *l) { _logFileNameBase = l; }
+
+    /**
+     * @brief
+     *     Constructs the filename for a log file into the provided buffer from a common base
+     *     file name, an optional numeric id, and an optional suffix that may contain special
+     *     format specifiers
+     *
+     * @param[in] buf : \c char*
+     *     The buffer to write the assembled log file name into. It is NUL-terminated, and must
+     *     have sufficient space for the NUL character.
+     * @param[in] bufSize : \c int32_t
+     *     The size of the buffer in chars
+     * @param[in] baseLogFileName : \c char*
+     *     A base log file name
+     * @param[in] idSuffix : \c int32_t
+     *     if >=0, append as a numerical suffix to the \arg baseLogFileName before applying suffix
+     *     if negative, do not append a numerical suffix
+     * @param[in] logFileNameSuffix : \c char*
+     *     A NUL-terminated string to append to the base log. It may contain format specifiers as
+     *     described in the documentation for \c omrstr_create_tokens() in port/common/omrstr.c
+     * @param[in] applySuffix : \c bool
+     *     true : append the token-expanded \arg logFileNameSuffix to the filename
+     *     false : do not apply
+     *
+     * @return \c buf if a filename was successfully built; NULL on any error
+     */
+    static char *buildLogFileName(char *buf, int32_t bufSize, const char *baseLogFileName, int32_t idSuffix,
+        const char *logFileNameSuffix, bool applySuffix);
 
     /**
      * @brief Creates a \c OMR::Logger object for this compilation that wraps
@@ -1483,7 +1553,7 @@ public:
      *
      * @param[in] file : A \c TR::FILE handle to the log file
      *
-     * @return : a \c OMR::Logger object
+     * @return : an \c OMR::Logger object
      */
     OMR::Logger *createLoggerForLogFile(TR::FILE *file);
 
@@ -1502,7 +1572,18 @@ public:
 
     TR::OptionSet *getFirstOptionSet() { return _optionSets; }
 
-    char *getSuffixLogsFormat() { return _suffixLogsFormat; }
+    /**
+     * @brief Returns the suffix for log file names.
+     *
+     * @return Returns the most specialized name from downstream extensions.
+     */
+    static char *getLogFileNameSuffix();
+
+    /**
+     * @brief Sets the suffix for log file names.  Updates the most specialized name in downstream
+     *     extensions.
+     */
+    static void setLogFileNameSuffix(char *s);
 
     // methods that set or query the command line option and the option sets
     //
@@ -2489,6 +2570,7 @@ protected:
     const char *_startOptions;
     const char *_envOptions;
     static const char *_compilationStrategyName;
+    static char *_logFileNameSuffix;
 
     // Option flag words
     //
@@ -2496,10 +2578,11 @@ protected:
 
     // Logging and debugging options
     //
-    char *_logFileName;
-    char *_suffixLogsFormat;
+    char *_logFileNameBase;
     TR::FILE *_logFile;
     OMR::Logger *_logger;
+
+    static OMR::Logger *_defaultLogger;
 
     char *_optFileName;
     int32_t *_customStrategy; // Actually array of TR_OptimizerImpl::Optimizations numbers read from optFileName
