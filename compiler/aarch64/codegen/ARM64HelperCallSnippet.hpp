@@ -91,6 +91,10 @@ public:
      * @return Snippet length
      */
     virtual uint32_t getLength(int32_t estimatedSnippetStart);
+
+protected:
+    uint8_t *emitSnippetBodyHelper(uint8_t *cursor);
+
 };
 
 } // namespace TR
