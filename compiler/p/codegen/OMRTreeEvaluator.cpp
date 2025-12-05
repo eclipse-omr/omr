@@ -1021,9 +1021,83 @@ TR::Register *OMR::Power::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeG
     return TR::TreeEvaluator::vxorEvaluator(node, cg);
 }
 
+static TR::Register *mloadiFromArrayHelper(TR::Node *node, TR::CodeGenerator *cg,
+    TR::InstOpCode::Mnemonic reverseLoadOp, TR::InstOpCode::Mnemonic loadOp, TR::InstOpCode::Mnemonic subOp,
+    int dataSize)
+{
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+    TR::Register *zeroReg = cg->allocateRegister(TR_VRF);
+    TR::Register *tmpReg = NULL;
+
+    node->setRegister(dstReg);
+
+    auto ref = TR::LoadStoreHandlerImpl::generateMemoryReference(cg, node, dataSize, true, 0);
+
+    // Due to the semantics of the vector unpack instructions, we can only use vector load for Byte/ShortVector masks
+    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9) && (dataSize >= 8))
+        generateTrg1MemInstruction(cg, TR::InstOpCode::lxvb16x, node, dstReg, ref.getMemoryReference());
+    else {
+        tmpReg = cg->allocateRegister(TR_GPR);
+
+        // In order to preserve the boolean array element order, use reverse byte load on LE and normal load on BE
+        generateTrg1MemInstruction(cg, (cg->comp()->target().cpu.isLittleEndian()) ? reverseLoadOp : loadOp, node,
+            tmpReg, ref.getMemoryReference());
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, dstReg, tmpReg);
+    }
+
+    // unpack byte-length elements to halfword-length elements (needed for Short, Int, and LongVector mask load)
+    if (dataSize <= 8)
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vupkhsb, node, dstReg, dstReg);
+
+    // unpack halfword-length elements to word-length elements (needed for Int and LongVector mask load)
+    if (dataSize <= 4)
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vupklsh, node, dstReg, dstReg);
+
+    // unpack word-length elements to doubleword-length elements (needed for LongVector mask load)
+    if (dataSize <= 2)
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vupklsw, node, dstReg, dstReg);
+
+    // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
+    // all 0/1 mask by subtracting from 0:
+    // 0-1 = -1 = 0xFF...
+    // 0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, zeroReg, 0);
+    generateTrg1Src2Instruction(cg, subOp, node, dstReg, zeroReg, dstReg);
+
+    if (tmpReg)
+        cg->stopUsingRegister(tmpReg);
+    cg->stopUsingRegister(zeroReg);
+    cg->decReferenceCount(child);
+
+    return dstReg;
+}
+
 TR::Register *OMR::Power::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            TR_ASSERT_FATAL_WITH_NODE(node, cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9),
+                "mloadiFromArray for ByteVector is only supported on P9 and higher");
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::bad, TR::InstOpCode::bad, TR::InstOpCode::vsububm,
+                16);
+        case TR::Int16:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::ldbrx, TR::InstOpCode::ld, TR::InstOpCode::vsubuhm,
+                8);
+        case TR::Int32:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::lwbrx, TR::InstOpCode::lwa, TR::InstOpCode::vsubuwm,
+                4);
+        case TR::Int64:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::lhbrx, TR::InstOpCode::lha, TR::InstOpCode::vsubudm,
+                2);
+        default:
+            TR_ASSERT(false, "unsupported vector type %s\n", node->getDataType().toString());
+            return NULL;
+    }
 }
 
 TR::Register *OMR::Power::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
