@@ -27,13 +27,10 @@
 #include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
-uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
-{
-    uint8_t *cursor = cg()->getBinaryBufferCursor();
+uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBodyHelper(uint8_t *cursor)
+    {
     intptr_t distance
         = (intptr_t)(getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress()) - (intptr_t)cursor;
-
-    getSnippetLabel()->setCodeLocation(cursor);
 
     if (!constantIsSignedImm28(distance)) {
         distance = TR::CodeCacheManager::instance()->findHelperTrampoline(getDestination()->getReferenceNumber(),
@@ -65,6 +62,13 @@ uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
     }
 
     return cursor;
+    }
+
+uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
+{
+    uint8_t *cursor = cg()->getBinaryBufferCursor();
+    getSnippetLabel()->setCodeLocation(cursor);
+    return emitSnippetBodyHelper(cursor);
 }
 
 void TR_Debug::print(OMR::Logger *log, TR::ARM64HelperCallSnippet *snippet)
