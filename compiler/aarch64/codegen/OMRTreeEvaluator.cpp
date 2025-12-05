@@ -4767,8 +4767,7 @@ static TR::Instruction *compareIntsAndBranchForArrayCopyBNDCHK(TR::ARM64Conditio
 
     TR_ASSERT_FATAL_WITH_NODE(node, sr, "Must provide an ArrayCopyBNDCHK symref");
     cg->addSnippet(new (cg->trHeapMemory()) TR::ARM64HelperCallSnippet(cg, node, snippetLabel, sr));
-    TR::Instruction *instr
-        = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, snippetLabel, branchCond);
+    TR::Instruction *instr = generateConditionalBranchInstruction(cg, node, snippetLabel, branchCond);
 
     cg->machine()->setLinkRegisterKilled(true);
     cg->decReferenceCount(firstChild);
@@ -6010,7 +6009,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::C
                         generateMemSrc2Instruction(cg, TR::InstOpCode::vstppreq, node,
                             TR::MemoryReference::createWithDisplacement(cg, dstReg, 256), vectorValueReg,
                             vectorValueReg);
-                        generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, loopLabel, TR::CC_GT);
+                        generateConditionalBranchInstruction(cg, node, loopLabel, TR::CC_GT);
                         srm->reclaimScratchRegister(countReg);
                     }
                     int64_t remainingLength = useLoop ? ((length - 32) % constLoopLen) : (length - 32);
@@ -6181,8 +6180,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::C
         generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, dstEndReg, dstReg, lengthReg);
         TR::LabelSymbol *lessThan32Label = generateLabelSymbol(cg);
         generateCompareImmInstruction(cg, node, lengthReg, 32, true);
-        auto branchToLessThan32LabelInstr
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, lessThan32Label, TR::CC_CC);
+        auto branchToLessThan32LabelInstr = generateConditionalBranchInstruction(cg, node, lessThan32Label, TR::CC_CC);
 
         generateMemSrc2Instruction(cg, TR::InstOpCode::vstpoffq, node,
             TR::MemoryReference::createWithDisplacement(cg, dstReg, 0), vectorValueReg, vectorValueReg);
@@ -6190,7 +6188,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::C
         TR::LabelSymbol *lessThanOrEqual96Label = generateLabelSymbol(cg);
         generateCompareImmInstruction(cg, node, lengthReg, 96, true);
         auto branchToLessThanOrEqual96LabelInstr
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, lessThanOrEqual96Label, TR::CC_LS);
+            = generateConditionalBranchInstruction(cg, node, lessThanOrEqual96Label, TR::CC_LS);
         if (debugObj) {
             debugObj->addInstructionComment(branchToLessThan32LabelInstr, "Jumps to lessThan32Label if length < 32.");
             debugObj->addInstructionComment(branchToLessThanOrEqual96LabelInstr,
@@ -6224,8 +6222,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::C
             TR::MemoryReference::createWithDisplacement(cg, dstReg, 32), vectorValueReg, vectorValueReg);
         generateMemSrc2Instruction(cg, TR::InstOpCode::vstppreq, node,
             TR::MemoryReference::createWithDisplacement(cg, dstReg, 64), vectorValueReg, vectorValueReg);
-        auto branchBackToMainLoopLabelInstr
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, mainLoopLabel, TR::CC_HI);
+        auto branchBackToMainLoopLabelInstr = generateConditionalBranchInstruction(cg, node, mainLoopLabel, TR::CC_HI);
         auto adjustDstRegInstr = generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, dstReg, dstReg, lengthReg);
         generateMemSrc2Instruction(cg, TR::InstOpCode::vstpoffq, node,
             TR::MemoryReference::createWithDisplacement(cg, dstReg, 32), vectorValueReg, vectorValueReg);
@@ -6301,7 +6298,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::arraysetEvaluator(TR::Node *node, TR::C
             generateMemSrc1Instruction(cg, strOpCode, node,
                 TR::MemoryReference::createWithDisplacement(cg, dstReg, elementSize), valueReg);
             auto branchBackToElementLoopLabelInstr
-                = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, elementLoopLabel, TR::CC_HI);
+                = generateConditionalBranchInstruction(cg, node, elementLoopLabel, TR::CC_HI);
             if (debugObj) {
                 debugObj->addInstructionComment(lessThan16LabelInstr, "lessThan16Label");
                 debugObj->addInstructionComment(elementLoopLabelInstr, "elementLoopLabel");
@@ -6476,8 +6473,7 @@ static TR::Register *arraycmpEvaluatorHelper(TR::Node *node, TR::CodeGenerator *
                 "Compares lengthReg with 0 if src1 and src2 are not the same array. Otherwise, sets EQ flag.");
         }
     }
-    auto branchToDoneLabelInstr
-        = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, doneLabel, TR::CC_EQ);
+    auto branchToDoneLabelInstr = generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_EQ);
     if (debugObj) {
         debugObj->addInstructionComment(branchToDoneLabelInstr,
             "Done if src1 and src2 are the same array or length is 0.");
@@ -6493,8 +6489,7 @@ static TR::Register *arraycmpEvaluatorHelper(TR::Node *node, TR::CodeGenerator *
     TR::Register *data4Reg = srm->findOrCreateScratchRegister();
     if (!isLengthGreaterThan15) {
         generateCompareImmInstruction(cg, node, lengthReg, 16, /* is64bit */ true);
-        auto branchToLessThan16LabelInstr
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, lessThan16Label, TR::CC_CC);
+        auto branchToLessThan16LabelInstr = generateConditionalBranchInstruction(cg, node, lessThan16Label, TR::CC_CC);
         if (debugObj) {
             debugObj->addInstructionComment(branchToLessThan16LabelInstr, "Jumps to lessThan16Label if length < 16.");
         }
@@ -6514,12 +6509,10 @@ static TR::Register *arraycmpEvaluatorHelper(TR::Node *node, TR::CodeGenerator *
             generateCompareInstruction(cg, node, data1Reg, data2Reg, true);
         }
         generateConditionalCompareInstruction(cg, node, data3Reg, data4Reg, 0, TR::CC_EQ, true);
-        auto branchToNotEqual16LabelInstr2
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, notEqual16Label, TR::CC_NE);
+        auto branchToNotEqual16LabelInstr2 = generateConditionalBranchInstruction(cg, node, notEqual16Label, TR::CC_NE);
         auto subtractLengthInstr
             = generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subsimmx, node, lengthReg, lengthReg, 16);
-        auto branchBacktoLoop16LabelInstr
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, loop16Label, TR::CC_CS);
+        auto branchBacktoLoop16LabelInstr = generateConditionalBranchInstruction(cg, node, loop16Label, TR::CC_CS);
         if (debugObj) {
             debugObj->addInstructionComment(loop16LabelInstr, "loop16Label");
             debugObj->addInstructionComment(branchToNotEqual16LabelInstr2,
@@ -6530,8 +6523,7 @@ static TR::Register *arraycmpEvaluatorHelper(TR::Node *node, TR::CodeGenerator *
     }
     if (isLengthGreaterThan15) {
         generateCompareImmInstruction(cg, node, lengthReg, -16, true);
-        auto branchToDoneLabelInstr3
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, done0Label, TR::CC_EQ);
+        auto branchToDoneLabelInstr3 = generateConditionalBranchInstruction(cg, node, done0Label, TR::CC_EQ);
         auto adjustSrc1RegInstr
             = generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, src1Reg, src1Reg, lengthReg);
         generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, src2Reg, src2Reg, lengthReg);
@@ -6615,7 +6607,7 @@ static TR::Register *arraycmpEvaluatorHelper(TR::Node *node, TR::CodeGenerator *
             TR::MemoryReference::createWithDisplacement(cg, src2Reg, 1));
         generateConditionalCompareInstruction(cg, node, data1Reg, data2Reg, 0, TR::CC_HI);
         auto branchBacktoLessThan16LabelInstr
-            = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, lessThan16Label, TR::CC_EQ);
+            = generateConditionalBranchInstruction(cg, node, lessThan16Label, TR::CC_EQ);
         if (debugObj) {
             debugObj->addInstructionComment(branchToDone0LabelInstr, "Jumps to done0Label.");
             debugObj->addInstructionComment(lessThan16LabelInstr, "lessThan16Label");
@@ -6978,20 +6970,20 @@ static void inlinePrimitiveForwardArraycopy(TR::Node *node, TR::Register *srcAdd
 
     const int32_t inlineThresholdBytes = 63;
     generateCompareImmInstruction(cg, node, lengthReg, inlineThresholdBytes, true);
-    generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, oolArraycopyLabel, TR::CC_HI);
+    generateConditionalBranchInstruction(cg, node, oolArraycopyLabel, TR::CC_HI);
 
     generateTrg1Src2Instruction(cg, TR::InstOpCode::subsx, node, x3ScratchReg, dstAddrReg, srcAddrReg);
 
     // Skip if src and dest are the same
     //
-    generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, doneLabel, TR::CC_EQ);
+    generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_EQ);
 
     if (!node->isForwardArrayCopy()) {
         // Check for forward arraycopy dynamically if not known.  Forward arraycopies should be
         // the more common case and are optimized inline.
         //
         generateCompareInstruction(cg, node, lengthReg, x3ScratchReg, true);
-        generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, oolArraycopyLabel, TR::CC_HI);
+        generateConditionalBranchInstruction(cg, node, oolArraycopyLabel, TR::CC_HI);
     }
 
     // Copy 32 bytes

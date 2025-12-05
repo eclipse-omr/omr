@@ -97,21 +97,38 @@ TR::Instruction *generateLabelInstruction(TR::CodeGenerator *cg, TR::InstOpCode:
     return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(op, node, sym, cond, cg);
 }
 
+TR::Instruction *generateConditionalBranchInstruction(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym,
+    TR::ARM64ConditionCode cc, TR::Instruction *preced)
+{
+    if (preced)
+        return new (cg->trHeapMemory())
+            TR::ARM64ConditionalBranchInstruction(TR::InstOpCode::b_cond, node, sym, cc, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(TR::InstOpCode::b_cond, node, sym, cc, cg);
+}
+
+TR::Instruction *generateConditionalBranchInstruction(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym,
+    TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond, TR::Instruction *preced)
+{
+    if (preced)
+        return new (cg->trHeapMemory())
+            TR::ARM64ConditionalBranchInstruction(TR::InstOpCode::b_cond, node, sym, cc, cond, preced, cg);
+    return new (cg->trHeapMemory())
+        TR::ARM64ConditionalBranchInstruction(TR::InstOpCode::b_cond, node, sym, cc, cond, cg);
+}
+
 TR::Instruction *generateConditionalBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
     TR::Node *node, TR::LabelSymbol *sym, TR::ARM64ConditionCode cc, TR::Instruction *preced)
 {
-    if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(op, node, sym, cc, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(op, node, sym, cc, cg);
+    TR_ASSERT_FATAL(op == TR::InstOpCode::b_cond, "Unsupported opcode for Conditional branch");
+    return generateConditionalBranchInstruction(cg, node, sym, cc, preced);
 }
 
 TR::Instruction *generateConditionalBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
     TR::Node *node, TR::LabelSymbol *sym, TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond,
     TR::Instruction *preced)
 {
-    if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(op, node, sym, cc, cond, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(op, node, sym, cc, cond, cg);
+    TR_ASSERT_FATAL(op == TR::InstOpCode::b_cond, "Unsupported opcode for Conditional branch");
+    return generateConditionalBranchInstruction(cg, node, sym, cc, cond, preced);
 }
 
 TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,

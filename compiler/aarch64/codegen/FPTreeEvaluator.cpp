@@ -540,33 +540,32 @@ static TR::Instruction *iffcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
 
         TR::RegisterDependencyConditions *deps = generateRegisterDependencyConditions(cg, thirdChild, 0);
         if (!needsExplicitUnorderedCheck) {
-            result = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc, deps);
+            result = generateConditionalBranchInstruction(cg, node, dstLabel, cc, deps);
         } else {
             if (cc == TR::CC_NE) {
                 /* iffcmpne/ifdcmpne: false if CC_VS is set */
                 TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
-                generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, doneLabel, TR::CC_VS);
-                generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc, deps);
+                generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_VS);
+                generateConditionalBranchInstruction(cg, node, dstLabel, cc, deps);
                 result = generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);
             } else {
-                generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc);
-                result
-                    = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, TR::CC_VS, deps);
+                generateConditionalBranchInstruction(cg, node, dstLabel, cc);
+                result = generateConditionalBranchInstruction(cg, node, dstLabel, TR::CC_VS, deps);
             }
         }
     } else {
         if (!needsExplicitUnorderedCheck) {
-            result = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc);
+            result = generateConditionalBranchInstruction(cg, node, dstLabel, cc);
         } else {
             if (cc == TR::CC_NE) {
                 /* iffcmpne/ifdcmpne: false if CC_VS is set */
                 TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
-                generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, doneLabel, TR::CC_VS);
-                generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc);
+                generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_VS);
+                generateConditionalBranchInstruction(cg, node, dstLabel, cc);
                 result = generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);
             } else {
-                generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc);
-                result = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, TR::CC_VS);
+                generateConditionalBranchInstruction(cg, node, dstLabel, cc);
+                result = generateConditionalBranchInstruction(cg, node, dstLabel, TR::CC_VS);
             }
         }
     }
@@ -770,7 +769,7 @@ static TR::Register *floatThreeWayCompareHelper(TR::Node *node, bool isDouble, b
 
     generateSrc2Instruction(cg, cmpOp, node, src1Reg, src2Reg); // compare
     generateTrg1ImmInstruction(cg, TR::InstOpCode::movzx, node, trgReg, 0);
-    generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, doneLabel, TR::CC_EQ);
+    generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_EQ);
     generateTrg1ImmInstruction(cg, movOp, node, trgReg, movVal); // 1 or -1
     generateCondTrg1Src2Instruction(cg, TR::InstOpCode::csnegx, node, trgReg, trgReg, trgReg, cc);
     generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);

@@ -249,9 +249,9 @@ static TR::Instruction *ificmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
         cg->evaluate(thirdChild);
 
         deps = generateRegisterDependencyConditions(cg, thirdChild, 0);
-        result = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc, deps);
+        result = generateConditionalBranchInstruction(cg, node, dstLabel, cc, deps);
     } else {
-        result = generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node, dstLabel, cc);
+        result = generateConditionalBranchInstruction(cg, node, dstLabel, cc);
     }
 
     cg->decReferenceCount(firstChild);
@@ -595,8 +595,8 @@ TR::Register *OMR::ARM64::TreeEvaluator::lookupEvaluator(TR::Node *node, TR::Cod
             cg->evaluate(child->getFirstChild());
             cond = cond->clone(cg, generateRegisterDependencyConditions(cg, child->getFirstChild(), 0));
         }
-        generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node,
-            child->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ, cond);
+        generateConditionalBranchInstruction(cg, node, child->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ,
+            cond);
     }
 
     // Branch to default
@@ -643,7 +643,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::tableEvaluator(TR::Node *node, TR::Code
     if (5 > numBranchTableEntries) {
         for (i = 0; i < numBranchTableEntries; i++) {
             generateCompareImmInstruction(cg, node, selectorReg, i);
-            generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node,
+            generateConditionalBranchInstruction(cg, node,
                 node->getChild(2 + i)->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ);
         }
 
@@ -657,8 +657,8 @@ TR::Register *OMR::ARM64::TreeEvaluator::tableEvaluator(TR::Node *node, TR::Code
             generateCompareImmInstruction(cg, node, selectorReg, numBranchTableEntries);
         }
 
-        generateConditionalBranchInstruction(cg, TR::InstOpCode::b_cond, node,
-            defaultChild->getBranchDestination()->getNode()->getLabel(), TR::CC_CS);
+        generateConditionalBranchInstruction(cg, node, defaultChild->getBranchDestination()->getNode()->getLabel(),
+            TR::CC_CS);
         generateTrg1ImmInstruction(cg, TR::InstOpCode::adr, node, tmpRegister,
             12); // distance between this instruction to the jump table
         generateTrg1Src2ShiftedInstruction(cg, TR::InstOpCode::addx, node, tmpRegister, tmpRegister, selectorReg,
