@@ -66,17 +66,12 @@ uint8_t *TR::S390CallSnippet::storeArgumentItem(TR::InstOpCode::Mnemonic op, uin
     return buffer + opCode.getInstructionLength();
 }
 
-uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
-    TR::CodeGenerator *cg)
+uint8_t *TR::S390CallSnippet::S390flushArgumentsToStackHelper(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
+    TR::CodeGenerator *cg, int argStart, bool rightToLeft, TR::Linkage *linkage)
 {
     int32_t intArgNum = 0, floatArgNum = 0, offset;
     TR::Machine *machine = cg->machine();
-    TR::Linkage *linkage = cg->getLinkage(callNode->getSymbol()->castToMethodSymbol()->getLinkageConvention());
 
-    int32_t argStart = callNode->getFirstArgumentIndex();
-    bool rightToLeft = linkage->getRightToLeft() &&
-        // we want the arguments for induceOSR to be passed from left to right as in any other non-helper call
-        !callNode->getSymbolReference()->isOSRInductionHelper();
     if (rightToLeft) {
         offset = linkage->getOffsetToFirstParm();
     } else {
@@ -106,6 +101,7 @@ uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Nod
                 if (!rightToLeft) {
                     offset -= cg->comp()->target().is64Bit() ? 8 : 4;
                 }
+
                 if (intArgNum < linkage->getNumIntegerArgumentRegisters()) {
                     buffer = storeArgumentItem(TR::InstOpCode::getStoreOpCode(), buffer,
                         machine->getRealRegister(linkage->getIntegerArgumentRegister(intArgNum)), offset, cg);
@@ -172,6 +168,19 @@ uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Nod
     }
 
     return buffer;
+}
+
+uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
+    TR::CodeGenerator *cg)
+{
+    TR::Linkage *linkage = cg->getLinkage(callNode->getSymbol()->castToMethodSymbol()->getLinkageConvention());
+
+    int32_t argStart = callNode->getFirstArgumentIndex();
+    bool rightToLeft = linkage->getRightToLeft() &&
+        // we want the arguments for induceOSR to be passed from left to right as in any other non-helper call
+        !callNode->getSymbolReference()->isOSRInductionHelper();
+
+    return S390flushArgumentsToStackHelper(buffer, callNode, argSize, cg, argStart, rightToLeft, linkage);
 }
 
 int32_t TR::S390CallSnippet::adjustCallOffsetWithTrampoline(uintptr_t targetAddr, uint8_t *currentInst,

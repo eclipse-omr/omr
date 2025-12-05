@@ -47,19 +47,8 @@ namespace TR {
 class Node;
 }
 
-uint8_t *TR::S390HelperCallSnippet::emitSnippetBody()
+uint8_t *TR::S390HelperCallSnippet::emitSnippetBodyHelper(uint8_t *cursor, TR::SymbolReference *helperSymRef)
 {
-    uint8_t *cursor = cg()->getBinaryBufferCursor();
-    getSnippetLabel()->setCodeLocation(cursor);
-
-    TR::Node *callNode = getNode();
-    TR::SymbolReference *helperSymRef = getHelperSymRef();
-    bool jitInduceOSR = helperSymRef->isOSRInductionHelper();
-    if (jitInduceOSR) {
-        // Flush in-register arguments back to the stack for interpreter
-        cursor = TR::S390CallSnippet::S390flushArgumentsToStack(cursor, callNode, getSizeOfArguments(), cg());
-    }
-
     uint32_t rEP = (uint32_t)cg()->getEntryPointRegister() - 1;
 
     // load vm thread into gpr13
@@ -108,7 +97,6 @@ uint8_t *TR::S390HelperCallSnippet::emitSnippetBody()
     // If MCC is supported, we will look up the appropriate trampoline, if
     //     necessary.
     intptr_t destAddr = (intptr_t)(helperSymRef->getSymbol()->castToMethodSymbol()->getMethodAddress());
-
 #if defined(TR_TARGET_64BIT)
 #if defined(J9ZOS390)
     if (cg()->comp()->getOption(TR_EnableRMODE64))
@@ -141,6 +129,22 @@ uint8_t *TR::S390HelperCallSnippet::emitSnippetBody()
     gcMap().registerStackMap(cursor, cg());
 
     return cursor;
+}
+
+uint8_t *TR::S390HelperCallSnippet::emitSnippetBody()
+{
+    uint8_t *cursor = cg()->getBinaryBufferCursor();
+    getSnippetLabel()->setCodeLocation(cursor);
+
+    TR::Node *callNode = getNode();
+    TR::SymbolReference *helperSymRef = getHelperSymRef();
+    bool jitInduceOSR = helperSymRef->isOSRInductionHelper();
+    if (jitInduceOSR) {
+        // Flush in-register arguments back to the stack for interpreter
+        cursor = TR::S390CallSnippet::S390flushArgumentsToStack(cursor, callNode, getSizeOfArguments(), cg());
+    }
+
+    return emitSnippetBodyHelper(cursor, helperSymRef);
 }
 
 uint32_t TR::S390HelperCallSnippet::getLength(int32_t)
