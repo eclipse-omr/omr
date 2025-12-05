@@ -91,6 +91,15 @@ public:
      * @return Snippet length
      */
     virtual uint32_t getLength(int32_t estimatedSnippetStart);
+
+    /**
+     * @brief Prints the Snippet
+     */
+    virtual void print(OMR::Logger *log, TR_Debug *);
+
+protected:
+    uint8_t *emitSnippetBodyInner(uint8_t *cursor);
+    void printInner(OMR::Logger *log, TR_Debug *debug, uint8_t *cursor);
 };
 
 } // namespace TR
