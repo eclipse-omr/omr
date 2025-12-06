@@ -92,8 +92,7 @@ public:
      */
     static TR::ILOpCodes createVectorOpCode(TR::VectorOperation operation, TR::DataType vectorType)
     {
-        TR_ASSERT_FATAL(vectorType.isVector() || vectorType.isMask(),
-            "createVectorOpCode should take vector or mask type\n");
+        TR_ASSERT_FATAL(vectorType.isVectorOrMask(), "createVectorOpCode should take vector or mask type\n");
 
         TR_ASSERT_FATAL(operation < TR::firstTwoTypeVectorOperation,
             "Vector operation should be one vector type operation\n");
@@ -123,10 +122,8 @@ public:
     static TR::ILOpCodes createVectorOpCode(TR::VectorOperation operation, TR::DataType srcVectorType,
         TR::DataType resVectorType)
     {
-        TR_ASSERT_FATAL(srcVectorType.isVector() || srcVectorType.isMask(),
-            "createVectorOpCode should take vector or mask source type\n");
-        TR_ASSERT_FATAL(resVectorType.isVector() || resVectorType.isMask(),
-            "createVectorOpCode should take vector or mask result type\n");
+        TR_ASSERT_FATAL(srcVectorType.isVectorOrMask(), "createVectorOpCode should take vector or mask source type\n");
+        TR_ASSERT_FATAL(resVectorType.isVectorOrMask(), "createVectorOpCode should take vector or mask result type\n");
 
         TR_ASSERT_FATAL(operation >= TR::firstTwoTypeVectorOperation,
             "Vector operation should be two vector type operation\n");

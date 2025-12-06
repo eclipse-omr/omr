@@ -2211,7 +2211,7 @@ TR_GlobalRegisterNumber OMR::Z::CodeGenerator::getLinkageGlobalRegisterNumber(in
 
     if (isFloat) {
         result = self()->machine()->getLastLinkageFPR() - linkageRegisterIndex;
-    } else if (type.isVector()) {
+    } else if (type.isVectorOrMask()) {
         result = self()->machine()->getLastGlobalVRFRegisterNumber() - linkageRegisterIndex;
     } else {
         result = self()->getGlobalRegisterNumber(

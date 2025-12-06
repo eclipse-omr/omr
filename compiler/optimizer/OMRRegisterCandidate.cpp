@@ -194,7 +194,7 @@ TR_RegisterKinds OMR::RegisterCandidate::getRegisterKinds()
     TR::DataType dt = getDataType();
     if (dt == TR::Float || dt == TR::Double)
         return TR_FPR;
-    else if (dt.isVector() || dt.isMask())
+    else if (dt.isVectorOrMask())
         return TR_VRF;
     else
         return TR_GPR;
@@ -2091,7 +2091,7 @@ bool OMR::RegisterCandidates::assign(TR::Block **cfgBlocks, int32_t numberOfBloc
                 : "",
             rc->getWeight());
         bool isFloat = (rc->getDataType() == TR::Float || rc->getDataType() == TR::Double);
-        bool isVector = rc->getDataType().isVector() || rc->getDataType().isMask();
+        bool isVector = rc->getDataType().isVectorOrMask();
         bool needs2Regs = false;
 
         if (rc->rcNeeds2Regs(comp()))
@@ -2288,7 +2288,7 @@ bool OMR::RegisterCandidates::assign(TR::Block **cfgBlocks, int32_t numberOfBloc
             continue;
         }
 
-        if ((dt.isVector() || dt.isMask()) && !comp()->cg()->hasGlobalVRF()) {
+        if (dt.isVectorOrMask() && !comp()->cg()->hasGlobalVRF()) {
             logprintf(trace, log, "Leaving candidate because it has %s type but no global vector registers provided\n",
                 TR::DataType::getName(dt));
             TR_ASSERT(!comp()->target().cpu.isZ(), "ed : debug : Should never get here for vector GRA on z");
@@ -2329,7 +2329,7 @@ bool OMR::RegisterCandidates::assign(TR::Block **cfgBlocks, int32_t numberOfBloc
         }
 
         bool isFloat = (dt == TR::Float || dt == TR::Double);
-        bool isVector = dt.isVector() || dt.isMask();
+        bool isVector = dt.isVectorOrMask();
         int32_t firstRegister, lastRegister;
 
         if (isFloat) {

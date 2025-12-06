@@ -659,7 +659,7 @@ TR_BitVector *OMR::SymbolReference::getUseDefAliasesBV(bool isDirectCall, bool i
 #endif
 
             // alias vector arrays shadows  with corresponding scalar array shadows
-            if (_symbol->isArrayShadowSymbol() && _symbol->getDataType().isVector()) {
+            if (_symbol->isArrayShadowSymbol() && _symbol->getDataType().isVectorOrMask()) {
                 if (!aliases)
                     aliases = new (aliasRegion) TR_BitVector(bvInitialSize, aliasRegion, growability);
                 aliases->set(symRefTab->getArrayShadowIndex(_symbol->getDataType().getVectorElementType()));

@@ -121,7 +121,7 @@ static uint32_t countIntegerAndAddressTypesInGlRegDeps(TR::Node *glRegDepsNode, 
             child = child->getFirstChild();
         }
 
-        if (!(child->getDataType().isFloatingPoint() || child->getDataType().isVector())) {
+        if (!(child->getDataType().isFloatingPoint() || child->getDataType().isVectorOrMask())) {
             numIntNodes++;
         }
     }
