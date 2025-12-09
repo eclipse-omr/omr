@@ -45,10 +45,38 @@ typedef OMR::CompilerEnv CompilerEnvConnector;
 #include "env/VMEnv.hpp"
 #include "env/VMMethodEnv.hpp"
 #include "env/TRMemory.hpp"
+#include "ras/Logger.hpp"
 
 namespace TR {
 class CompilerEnv;
 }
+
+/*
+ * Message logger convenience macros
+ */
+
+/**
+ * @brief Convenience macro to output a NUL-terminated string with format specifiers to
+ *     the message Logger on the CompilerEnv object
+ *
+ * @param[in] fmt : NUL-terminated string to print with format specifiers
+ * @param[in] ... : variable arguments
+ */
+#define mesg_printf(fmt, ...)                           \
+    do {                                                \
+        TR::Compiler->mesg->printf(fmt, ##__VA_ARGS__); \
+    } while (0)
+
+/**
+ * @brief Convenience macro to output a NUL-terminated string to the message Logger on the
+ *     CompilerEnv object
+ *
+ * @param[in] str : NUL-terminated string to print
+ */
+#define mesg_prints(str)                 \
+    do {                                 \
+        TR::Compiler->mesg->prints(str); \
+    } while (0)
 
 namespace OMR {
 
@@ -116,7 +144,21 @@ public:
 
     OMRPortLibrary * const omrPortLib;
 
+    /**
+     * Logger for compiler messages. This Logger should be used instead of writing informational
+     * messages about exceptional situations directly to stderr. The message Logger can be changed
+     * from the default if a different destination for compiler messages is desired.
+     *
+     * Convenience macros `mesg_printf` and `mesg_prints` have been provided to simplify
+     * access to the message Logger.
+     */
+    OMR::Logger *mesg;
+
 protected:
+    // Initialize message Logger for this compiler
+    //
+    void initializeMessageLogger();
+
     // Initialize 'target' environment for this compiler
     //
     void initializeTargetEnvironment();

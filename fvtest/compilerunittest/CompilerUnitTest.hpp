@@ -80,7 +80,7 @@ public:
         , _dispatchRegion(_segmentProvider, _rawAllocator)
         , _trMemory(*(TR::FrontEnd::instance()->persistentMemory()), _dispatchRegion)
         , _types()
-        , _options()
+        , _options(*(TR::Options::create(_trMemory.trPersistentMemory())))
         , _ilGenRequest()
         , _method("compunittest", "0", "test", 0, NULL, _types.NoType, NULL, NULL)
         , _comp(0, NULL, TR::FrontEnd::instance(), &_method, _ilGenRequest, _options, _dispatchRegion, &_trMemory,
