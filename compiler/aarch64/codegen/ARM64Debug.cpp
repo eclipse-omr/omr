@@ -2728,7 +2728,7 @@ void TR_Debug::printa64(OMR::Logger *log, TR::Snippet *snippet)
             break;
 #endif
         case TR::Snippet::IsHelperCall:
-            print(log, (TR::ARM64HelperCallSnippet *)snippet);
+            snippet->print(log, this);
             break;
         case TR::Snippet::IsUnresolvedData:
             print(log, (TR::UnresolvedDataSnippet *)snippet);
