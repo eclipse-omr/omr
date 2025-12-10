@@ -23,16 +23,16 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 
 ## Native build
 
-*Note:* Following steps have been tested on Debian system creates using
-[debian-riscv][1]. The image built using these scripts should contain everything
+*Note:* Following steps have been tested on Debian system created using
+[debian-for-toys](1) scripts. The image built using these scripts should contain everything
 needed to build OMR on RISC-V. It should be possible to build OMR on RISC-V
 using Fedora images but this has not been tried.
 
 *Note:* You will need `riscv.h` and `riscv-opc.h` headers from GNU binutils. You
 can get them using (the image created using [debian-riscv][1] contains them):
 
-    sudo wget "-O/usr/local/include/riscv.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv.h;hb=HEAD'
-    sudo wget "-O/usr/local/include/riscv-opc.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv-opc.h;hb=HEAD'
+    sudo wget "-O/usr/local/include/riscv.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv.h;hb=2f973f134d7752cbc662ec65da8ad8bbe4c6fb8f'
+    sudo wget "-O/usr/local/include/riscv-opc.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv-opc.h;hb=2f973f134d7752cbc662ec65da8ad8bbe4c6fb8f'
 
 ### Building
 
@@ -41,10 +41,8 @@ git clone https://github.com/eclipse-omr/omr
 cd omr
 mkdir build
 cd build
-cmake .. \
-      -Wdev -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DOMR_COMPILER=ON -DOMR_TEST_COMPILER=ON \
-      -DOMR_JITBUILDER=ON -DOMR_JITBUILDER_TEST=ON
+cmake .. -Wdev -C../cmake/caches/Travis.cmake \
+         -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 make -j4
 ```
 
@@ -81,13 +79,11 @@ To run *ALL* TRIL tests:
     cd fvtest/compilertriltest
     TR_Options=softFailOnAssume ./comptest
 
-*Note*: At the time of writing, some opcodes used in TRIL tests are still unimplemented, causing `TR_ASSERT()` failure. `TR_Options=songftFailOnAssume` causes this (and all others) assertion to just abort the compilation. This way, hitting such and unimplemented opcode does not terminate whole test run.
-
-
+*Note*: At the time of writing, some opcodes used in TRIL tests are still unimplemented, causing `TR_ASSERT()` failure. `TR_Options=softFailOnAssume` causes this (and all others) assertion to just abort the compilation. This way, hitting such and unimplemented opcode does not terminate whole test run.
 
 ## Cross compiling
 
-*Note:* Following steps are for (Debian 10 "buster")[2]. It should work on Debian
+*Note:* Following steps are for (Debian 13 "Trixie"). It should work on Debian
 Testing ("bullseye"). It may work on other debian-based distributions, perhaps
 with some modification. However, it has been tested only on Debian 10 "buster".
 
@@ -95,93 +91,66 @@ with some modification. However, it has been tested only on Debian 10 "buster".
 
  1. Install RISCV64 toolchain:
 
-        sudo apt install gcc-riscv64-linux-gnu g++-riscv64-linux-gnu libgcc1-riscv64-cross libc6-dev-riscv64-cross libstdc++-8-dev-riscv64-cross linux-libc-dev-riscv64-cross
+        sudo apt install crossbuild-essential-riscv64 qemu-user-static
+
+    (Alternatively, if there's no `crossbuild-essential-riscv64` package,
+    installing `gcc-riscv64-linux-gnu` and `g++-riscv64-linux-gnu` should
+    suffice)
 
  2. Download required `riscv.h` and `riscv-opc.h` from GNU binutils:
 
-        sudo wget "-O/usr/riscv64-linux-gnu/include/riscv.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv.h;hb=HEAD'
-        sudo wget "-O/usr/riscv64-linux-gnu/include/riscv-opc.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv-opc.h;hb=HEAD'
+        sudo wget "-O$/usr/local/include/riscv.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv.h;hb=2f973f134d7752cbc662ec65da8ad8bbe4c6fb8f'
+        sudo wget "-O$/usr/local/include/riscv-opc.h" 'https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;a=blob_plain;f=include/opcode/riscv-opc.h;hb=2f973f134d7752cbc662ec65da8ad8bbe4c6fb8f'
 
- 3. Create a "root filesystem" containing all required libraries and tools to link and run OMR. Hhere we build it into `~/riscv-debian/rootfs`, modify according your taste):
+ 3. Create a "root filesystem" containing all required libraries and tools to link and run OMR. Here we build it into `/usr/gnemul/qemu-riscv64`, modify according your taste):
 
+        sudo apt install mmdebstrap fakeroot
         cd ~
-        git clone https://github.com/janvrany/riscv-debian.git
-        cd riscv-debian
-        mkdir rootfs
-        ./debian-mk-rootfs.sh
+        wget https://raw.githubusercontent.com/janvrany/debian-builders/refs/heads/master/scripts/build-sysroot.sh
+        bash build-sysroot.sh -a riscv64 -d /usr/gnemul/qemu-riscv64
 
-   **!!!BIG FAT WARNING!!!**
-   Script `./debian-mk-rootfs.sh` uses `sudo` a lot. IF THERE"S A BUG, IT MAY WIPE OUT YOUR SYSTEM. DO NOT RUN THIS SCRIPTS WITHOUT READING IT CAREFULLY FIRST.
-
- 4. Build latest QEMU for RISC-V. This is needed to run cross-compiled tests. Hhere we build it into `~/qemu`, modify according your taste):
-
-        git clone https://git.qemu.org/git/qemu.git
-        ./configure --target-list=riscv64-linux-user
-        make -j4
-
-    Once build finishes, QEMU executable is at `./riscv64-linux-user/qemu-riscv64`
-
-    *Note:* when running cross-compiled binaries, use this QEMU, not QEMU shipped with
-    Debian is it hangs up (at the time of writing). The reason is unknown.
-
+*Note*: you may create a complete container/VM image with everything set up
+ using ["debian-builders"](2) scripts.
 
 ### Building
 
-First, clone the repository:
-
-    git clone https://github.com/shingarov/omr -b riscv
-    cd omr
-
-Then build native version of OMR. This is required to have native versions of
-various custom tools:
-
-    mkdir build_native
-    cd build_native
-    cmake ..
-    make -j4
-
-Finally, cross-compile for RISC-V
-
-    mkdir build_riscv64
-    cd build_riscv64
-    cmake .. \
-      -Wdev -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DOMR_COMPILER=ON -DOMR_TEST_COMPILER=ON \
-      -DOMR_JITBUILDER=ON -DOMR_JITBUILDER_TEST=ON \
-      -DCMAKE_FIND_ROOT_PATH=/home/jv/Projects/riscv-debian/debian \
-      -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/riscv64-linux-cross.cmake \
-      -DOMR_TOOLS_IMPORTFILE=../build_native/tools/ImportTools.cmake
-    make -j4
-
-*Note*: you should point `-DCMAKE_FIND_ROOT_PATH=/home/jv/Projects/riscv-debian/rootfs` to the directory where you have Debian rootfs (see section *Preparing the cross-compilation environment*, step 3).
+```
+git clone https://github.com/eclipse-omr/omr
+cd omr
+mkdir build_cross
+cmake .. -Wdev -C../cmake/caches/Travis.cmake \
+         -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+         -DOMR_DDR=OFF  -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/riscv64-linux-cross.cmake \
+         "-DOMR_EXE_LAUNCHER=qemu-riscv64-static;-L;/usr/gnemul/qemu-riscv64" "-DCMAKE_SYSROOT=/usr/gnemul/qemu-riscv64"
+make -j4
+```
 
 ### Compiler tests
 
 To see what tests are in minimal testsuite run:
 
     cd fvtest/compilertest
-    ~/qemu/riscv64-linux-user/qemu-riscv64 -L ~/riscv-debian/rootfs ./compilertest --gtest_list_tests --gtest_filter=MinimalTest*
+    qemu-riscv64-static -L /usr/gnemul/qemu-riscv64 ./compilertest --gtest_list_tests --gtest_filter=MinimalTest*
 
 The above command assumes that:
 
- * you're in `build_riscv64` directory,
- * QEMU is at `~/qemu/riscv64-linux-user/qemu-riscv64` (see section *Preparing the cross-compilation environment*, step 4).
- * Debian root fs is at `/home/jv/Projects/riscv-debian/rootfs` (see section *Preparing the cross-compilation environment*, step 3).
+ * you're in `build_cross` directory,
+  * Debian RISCV sysroot fs is at `/usr/gnemul/qemu-riscv64` (see section *Preparing the cross-compilation environment*, step 3).
 
  To run specific test, say `MeaningOfLife`:
-
-    ~/qemu/riscv64-linux-user/qemu-riscv64 -L ~/riscv-debian/rootfs ./compilertest --gtest_filter=MinimalTest.MeaningOfLife
+7
+    ~qemu-riscv64-static -L /usr/gnemul/qemu-riscv64 ./compilertest --gtest_filter=MinimalTest.MeaningOfLife
 
  To run all tests in minimal test suite:
 
-    ~/qemu/riscv64-linux-user/qemu-riscv64 -L ~/riscv-debian/rootfs ./compilertest --gtest_filter=MinimalTest.*
+    qemu-riscv64-static -L /usr/gnemul/qemu-riscv64 ./compilertest --gtest_filter=MinimalTest.*
 
 ### TRIL tests
 
 To run selected TRIL tests:
 
     cd fvtest/compilertriltest
-    ~/qemu/riscv64-linux-user/qemu-riscv64 -L ~/riscv-debian/rootfs ./comptest --gtest_filter=*Arithmetic*/Int32*:LogicalTest/Int32*Unary*
+    qemu-riscv64-static -L /usr/gnemul/qemu-riscv64 ./comptest --gtest_filter=*Arithmetic*/Int32*:LogicalTest/Int32*Unary*
 
-[1]: https://github.com/janvrany/riscv-debian
-[2]: https://www.debian.org/News/2019/20190706
+[1]: https://github.com/janvrany/debian-for-toys
+[2]: https://github.com/janvrany/debian-builders
