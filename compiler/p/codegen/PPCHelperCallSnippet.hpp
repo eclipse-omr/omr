@@ -67,6 +67,11 @@ public:
     virtual uint8_t *emitSnippetBody();
 
     virtual uint32_t getLength(int32_t estimatedSnippetStart);
+
+    void print(OMR::Logger *log, TR_Debug *debug);
+
+protected:
+    void printInner(OMR::Logger *log, TR_Debug *debug, uint8_t *cursor);
 };
 
 class PPCArrayCopyCallSnippet : public TR::PPCHelperCallSnippet {
