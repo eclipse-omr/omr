@@ -1026,9 +1026,83 @@ TR::Register *OMR::Power::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+static TR::Register *mstoreiToArrayHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic reverseStoreOp, TR::InstOpCode::Mnemonic storeOp, TR::InstOpCode::Mnemonic splatOp, int dataSize)
+{
+    TR::Node *storeValNode = node->getSecondChild();
+    
+    TR::Register *storeValReg = cg->evaluate(storeValNode);
+    TR::Register *tmpVRF = cg->allocateRegister(TR_VRF);
+    TR::Register *tmpGPR = NULL;
+
+    // set all but least significant bit of each array element to 0
+    if (dataSize == 2) {
+        // since there is no splat immediate doubleword instruction, need to handle Long/DoubleVector mask separately
+        tmpGPR = cg->allocateRegister(TR_GPR);
+        generateTrg1ImmInstruction(cg, TR::InstOpCode::li, node, tmpGPR, 1);
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, tmpVRF, tmpGPR);
+        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, tmpVRF, tmpVRF, tmpVRF, 0);
+    }
+    else
+        generateTrg1ImmInstruction(cg, splatOp, node, tmpVRF, 1);
+
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vand, node, tmpVRF, storeValReg, tmpVRF);
+
+    // pack doubleword-length elements into word-length elements (for Long/DoubleVector mask store)
+    if (dataSize <= 2)
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vpksdus, node, tmpVRF, tmpVRF, tmpVRF);
+
+    // pack word-length elements into halfword-length elements (for Int/Float and Long/DoubleVector mask store)
+    if (dataSize <= 4)
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vpkuwum, node, tmpVRF, tmpVRF, tmpVRF);
+
+    // pack halfworld-length elements into byte-length elements (for Short, Int/Float, and Long/DoubleVector mask store)
+    if (dataSize <= 8)
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::vpkuhum, node, tmpVRF, tmpVRF, tmpVRF);
+    
+    auto ref = TR::LoadStoreHandlerImpl::generateMemoryReference(cg, node, dataSize, true, 0);
+
+    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9) && dataSize == 16)
+        generateMemSrc1Instruction(cg, TR::InstOpCode::stxvb16x, node, ref.getMemoryReference(), tmpVRF);
+    else {
+        // move to GPR
+        if (!tmpGPR) tmpGPR = cg->allocateRegister(TR_GPR);
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, tmpGPR, tmpVRF);
+
+        // In order to preserve the boolean array element order, use reverse byte store on LE and normal store on BE
+        generateMemSrc1Instruction(cg, (cg->comp()->target().cpu.isLittleEndian()) ? reverseStoreOp : storeOp,
+                                   node, ref.getMemoryReference(), tmpGPR);
+    }
+    
+    if (tmpGPR)
+        cg->stopUsingRegister(tmpGPR);
+    cg->stopUsingRegister(tmpVRF);
+    cg->decReferenceCount(storeValNode);
+    
+    return NULL;
+} 
+
 TR::Register *OMR::Power::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            TR_ASSERT_FATAL_WITH_NODE(node, cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9),
+                "mstoreiToArray for ByteVector is only supported on P9 and higher");
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::bad, TR::InstOpCode::bad, TR::InstOpCode::vspltisb, 16);
+        case TR::Int16:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::stdbrx, TR::InstOpCode::std, TR::InstOpCode::vspltish, 8);
+        case TR::Int32:
+        case TR::Float:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::stwbrx, TR::InstOpCode::stw, TR::InstOpCode::vspltisw, 4);
+        case TR::Int64:
+        case TR::Double:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::sthbrx, TR::InstOpCode::sth, TR::InstOpCode::bad, 2);
+        default:
+            TR_ASSERT(false, "unsupported vector type %s\n", node->getDataType().toString());
+            return NULL;
+    }
 }
 
 TR::Register *OMR::Power::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
