@@ -9055,17 +9055,16 @@
     /*                   PPCOpProp_SyncSideEffectFree, */
     /* }, */
 
-    /* { */
-    /* .mnemonic    =    OMR::InstOpCode::vupkhsw, */
-    /* .name        =    "vupkhsw", */
-    /* .description =    "Vector Unpack High Signed Word", */
-    /* .prefix      =    0x00000000, */
-    /* .opcode      =    0x1000064E, */
-    /* .format      =    FORMAT_UNKNOWN, */
-    /* .minimumALS  =    OMR_PROCESSOR_PPC_P8, */
-    /* .properties  =    PPCOpProp_IsVMX | */
-    /*                   PPCOpProp_SyncSideEffectFree, */
-    /* }, */
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::vupkhsw,
+        /* .name        = */ "vupkhsw",
+        /* .description =    "Vector Unpack High Signed Word", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x1000064E,
+        /* .format      = */ FORMAT_VRT_VRB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P8,
+        /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
+    },
 
     /* { */
     /* .mnemonic    =    OMR::InstOpCode::vpksdss, */

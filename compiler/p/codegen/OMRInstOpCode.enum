@@ -802,7 +802,7 @@
    vupklsh,          // vector unpack low signed halfword
 // vupklsw,          // Vector Unpack Low Signed Word
 // vupklpx,          // Vector Unpack Low Pixel
-// vupkhsw,          // Vector Unpack High Signed Word
+   vupkhsw,          // Vector Unpack High Signed Word
 // vpksdss,          // Vector Pack Signed Dword Signed Saturate
 // vpksdus,          // Vector Pack Signed Dword Unsigned Saturate
    vpkuhum,          // vector pack unsigned half word unsigned modulo
