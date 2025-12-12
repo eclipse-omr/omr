@@ -4414,16 +4414,19 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
             return (et == TR::Double && opcode.getVectorSourceDataType().getVectorElementType() == TR::Int64);
         case TR::vcast:
             return true;
-        case TR::mmAnyTrue:
-        case TR::mmAllTrue:
-        case TR::mAnyTrue:
-        case TR::mAllTrue:
         case TR::vcmpeq:
         case TR::vcmpne:
         case TR::vcmplt:
         case TR::vcmple:
         case TR::vcmpgt:
         case TR::vcmpge:
+            // Since these opcodes return a mask, verify the source type and CPU feature support.
+            return (opcode.getVectorSourceDataType().getVectorElementType() != TR::Float)
+                || cpu->supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1);
+        case TR::mmAnyTrue:
+        case TR::mmAllTrue:
+        case TR::mAnyTrue:
+        case TR::mAllTrue:
         case TR::m2v:
         case TR::m2l:
         case TR::m2i:

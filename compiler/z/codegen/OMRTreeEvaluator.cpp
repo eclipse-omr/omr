@@ -14006,14 +14006,14 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
 
+    TR::Node *firstChild = node->getFirstChild();
     // Before z14, vector instructions for floating point operations supported only long format (double) values.
     // Starting with z14, short format (float) values are also supported.
     TR_ASSERT_FATAL_WITH_NODE(node,
-        (node->getDataType().getVectorElementType() != TR::Float)
+        (firstChild->getDataType().getVectorElementType() != TR::Float)
             || cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1),
         "Unsupported float vector operation: short format floats require z14 or newer.");
 
-    TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
 
     TR::Register *targetReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
