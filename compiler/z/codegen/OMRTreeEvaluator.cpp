@@ -1128,12 +1128,89 @@ TR::Register *OMR::Z::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGener
 
 TR::Register *OMR::Z::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+    const uint8_t elementSizeMask = getVectorElementSizeMask(node);
+    TR::InstOpCode::Mnemonic opCode = TR::InstOpCode::bad;
+    uint8_t targetIndexOfVectorRegister = 0;
+    switch (elementSizeMask) {
+        case 0:
+            opCode = TR::InstOpCode::VL;
+            break;
+        case 1:
+            opCode = TR::InstOpCode::VLEG;
+            targetIndexOfVectorRegister = 1;
+            break;
+        case 2:
+            opCode = TR::InstOpCode::VLEF;
+            targetIndexOfVectorRegister = 3;
+            break;
+        case 3:
+            opCode = TR::InstOpCode::VLEH;
+            targetIndexOfVectorRegister = 7;
+            break;
+        default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "The provided element size (%d) is not supported!", elementSizeMask);
+            break;
+    }
+
+    TR::Register *maskRegister = cg->allocateRegister(TR_VRF);
+    TR::MemoryReference *srcMemRef = new (cg->trHeapMemory()) TR::MemoryReference(node, cg);
+    generateVRXInstruction(cg, opCode, node, maskRegister, srcMemRef, targetIndexOfVectorRegister);
+    srcMemRef->stopUsingMemRefRegister(cg);
+
+    for (uint8_t i = 0; i < elementSizeMask; i++) {
+        // Keep unpacking until get desired element size.
+        generateVRRaInstruction(cg, TR::InstOpCode::VUPLL, node, maskRegister, maskRegister, 0, 0, i);
+    }
+    // Convert boolean elements to mask elements. If the boolean element is zero, the mask element must be zero,
+    //  if the boolean element is 1, all bits of the mask element must be 1. All other values are undefined.
+    generateVRRaInstruction(cg, TR::InstOpCode::VLC, node, maskRegister, maskRegister, 0 /* mask5 */, 0 /* mask4 */,
+        elementSizeMask /* mask3 */);
+    node->setRegister(maskRegister);
+    return maskRegister;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *sourceNode = node->getSecondChild();
+    TR_ASSERT_FATAL_WITH_NODE(node, sourceNode->getDataType().getVectorLength() == TR::VectorLength128,
+        "A 128-bit vector was expected as the child node but %s was provided!", sourceNode->getDataType().toString());
+    TR::Register *maskRegister = cg->gprClobberEvaluate(sourceNode);
+    const uint8_t elementSizeMask = getVectorElementSizeMask(sourceNode);
+
+    for (uint8_t i = elementSizeMask; i > 0; i--) {
+        // Keep packing until element size is 1 byte.
+        generateVRRcInstruction(cg, TR::InstOpCode::VPK, node, maskRegister, maskRegister, maskRegister, i);
+    }
+    // Convert mask elements to boolean elements. If the mask element is zero, the boolean element must be zero,
+    //  if the mask element is all ones, the boolean element must be integer 1. All other values are undefined.
+    generateVRRaInstruction(cg, TR::InstOpCode::VLC, node, maskRegister, maskRegister, 0 /* mask5 */, 0 /* mask4 */,
+        0 /* mask3 */);
+    TR::InstOpCode::Mnemonic opCode = TR::InstOpCode::bad;
+    switch (elementSizeMask) {
+        case 0:
+            opCode = TR::InstOpCode::VST;
+            break;
+        case 1:
+            opCode = TR::InstOpCode::VSTEG;
+            break;
+        case 2:
+            opCode = TR::InstOpCode::VSTEF;
+            break;
+        case 3:
+            opCode = TR::InstOpCode::VSTEH;
+            break;
+        default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "The provided element size (%d) is not supported!", elementSizeMask);
+            break;
+    }
+    TR::MemoryReference *srcMemRef = new (cg->trHeapMemory()) TR::MemoryReference(node, cg);
+    generateVRXInstruction(cg, opCode, node, maskRegister, srcMemRef);
+    cg->decReferenceCount(sourceNode);
+    srcMemRef->stopUsingMemRefRegister(cg);
+
+    return NULL;
 }
 
 /**
