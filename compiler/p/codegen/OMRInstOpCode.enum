@@ -962,7 +962,7 @@
 // xvxexpsp,         // VSX Vector Extract Exponent SP
 // xvxsigdp,         // VSX Vector Extract Significand DP
 // xvxsigsp,         // VSX Vector Extract Significand SP
-// xxbrd,            // VSX Vector Byte-Reverse Dword
+   xxbrd,            // VSX Vector Byte-Reverse Dword
 // xxbrh,            // VSX Vector Byte-Reverse Hword
 // xxbrw,            // VSX Vector Byte-Reverse Word
    xxbrq,            // VSX Vector Byte-Reverse Qword
