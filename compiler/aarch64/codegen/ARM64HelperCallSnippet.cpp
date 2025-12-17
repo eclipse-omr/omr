@@ -27,13 +27,10 @@
 #include "ras/Logger.hpp"
 #include "runtime/CodeCacheManager.hpp"
 
-uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
+uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBodyInner(uint8_t *cursor)
 {
-    uint8_t *cursor = cg()->getBinaryBufferCursor();
     intptr_t distance
         = (intptr_t)(getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress()) - (intptr_t)cursor;
-
-    getSnippetLabel()->setCodeLocation(cursor);
 
     if (!constantIsSignedImm28(distance)) {
         distance = TR::CodeCacheManager::instance()->findHelperTrampoline(getDestination()->getReferenceNumber(),
@@ -63,37 +60,47 @@ uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
             TR_ASSERT(false, "Target too far away.  Not supported yet");
         }
     }
-
     return cursor;
 }
 
-void TR_Debug::print(OMR::Logger *log, TR::ARM64HelperCallSnippet *snippet)
+uint8_t *TR::ARM64HelperCallSnippet::emitSnippetBody()
 {
-    uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
-    auto restartLabel = snippet->getRestartLabel();
+    uint8_t *cursor = cg()->getBinaryBufferCursor();
+    getSnippetLabel()->setCodeLocation(cursor);
+    return emitSnippetBodyInner(cursor);
+}
 
-    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+void TR::ARM64HelperCallSnippet::print(OMR::Logger *log, TR_Debug *debug)
+{
+    uint8_t *bufferPos = getSnippetLabel()->getCodeLocation();
 
+    debug->printSnippetLabel(log, getSnippetLabel(), bufferPos, debug->getName(this));
+    printInner(log, debug, bufferPos);
+}
+
+void TR::ARM64HelperCallSnippet::printInner(OMR::Logger *log, TR_Debug *debug, uint8_t *bufferPos)
+{
+    auto restartLabel = getRestartLabel();
     char *info = "";
-    intptr_t target = (intptr_t)(snippet->getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress());
+    intptr_t target = (intptr_t)(getDestination()->getSymbol()->castToMethodSymbol()->getMethodAddress());
     int32_t distance;
-    if (isBranchToTrampoline(snippet->getDestination(), bufferPos, distance)) {
+    if (debug->isBranchToTrampoline(getDestination(), bufferPos, distance)) {
         target = (intptr_t)distance + (intptr_t)bufferPos;
         info = " Through trampoline";
         TR_ASSERT(constantIsSignedImm28(distance), "Trampoline too far away.");
     }
 
-    printPrefix(log, NULL, bufferPos, 4);
-    log->printf("bl \t" POINTER_PRINTF_FORMAT "\t\t; %s%s", target, getName(snippet->getDestination()), info);
+    debug->printPrefix(log, NULL, bufferPos, 4);
+    log->printf("bl \t" POINTER_PRINTF_FORMAT "\t\t; %s%s", target, debug->getName(getDestination()), info);
 
     if (restartLabel != NULL) {
         bufferPos += ARM64_INSTRUCTION_LENGTH;
         intptr_t restartLocation = (intptr_t)restartLabel->getCodeLocation();
         if (comp()->target().cpu.isTargetWithinUnconditionalBranchImmediateRange((intptr_t)restartLocation,
                 (intptr_t)bufferPos)) {
-            printPrefix(log, NULL, bufferPos, 4);
+            debug->printPrefix(log, NULL, bufferPos, 4);
             log->printf("b \t" POINTER_PRINTF_FORMAT "\t\t; Back to ", restartLocation);
-            print(log, restartLabel);
+            debug->print(log, restartLabel);
         } else {
             TR_ASSERT(false, "Target too far away.  Not supported yet");
         }

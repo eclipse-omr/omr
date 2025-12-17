@@ -1287,7 +1287,6 @@ public:
     void print(OMR::Logger *log, TR::ARM64RecompilationSnippet *);
     uint8_t *printARM64ArgumentsFlush(OMR::Logger *log, TR::Node *, uint8_t *, int32_t);
 #endif
-    void print(OMR::Logger *log, TR::ARM64HelperCallSnippet *);
 
 #endif
 #ifdef TR_TARGET_RISCV
