@@ -1919,8 +1919,9 @@ void OMR::Compilation::dumpMethodGraph(int index, TR::ResolvedMethodSymbol *meth
         sprintf(fileName, "cfg%d.vcg", index);
 
         char tmp[1025];
-        char *fn = self()->fe()->getFormattedName(tmp, 1025, fileName, NULL, false);
-        TR::FILE *pFile = trfopen(fn, "wb", false);
+        char *fn = TR::Options::buildLogFileName(tmp, 1025, fileName, -1, NULL, false);
+        TR_ASSERT_FATAL(fn, "Unable to build method graph filename");
+        TR::FILE *pFile = trfopen(tmp, "wb", false);
         TR_ASSERT(pFile != NULL, "unable to open cfg file");
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -1929,13 +1930,13 @@ void OMR::Compilation::dumpMethodGraph(int index, TR::ResolvedMethodSymbol *meth
          * specialization by downstream projects.  Currently, it exists as a typedef in OMR
          * but a class in some projects like OpenJ9.
          */
-        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(pFile->_stream);
+        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(trHeapMemory(), pFile->_stream);
 #else
-        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create((::FILE *)pFile);
+        OMR::Logger *vcgLog = OMR::CStdIOStreamLogger::create(trHeapMemory(), (::FILE *)pFile);
 #endif
         vcgLog->setEnable();
         self()->getDebug()->printVCG(vcgLog, cfg, self()->signature());
-        log->printf("VCG graph dumped in file %s\n", fn);
+        log->printf("VCG graph dumped in file %s\n", tmp);
         vcgLog->close();
         trfclose(pFile);
     } else
