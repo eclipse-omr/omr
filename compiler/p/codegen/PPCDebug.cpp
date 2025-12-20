@@ -1035,10 +1035,6 @@ void TR_Debug::printp(OMR::Logger *log, TR::Snippet *snippet)
             print(log, (TR::PPCRecompilationSnippet *)snippet);
             break;
 #endif
-        case TR::Snippet::IsArrayCopyCall:
-        case TR::Snippet::IsHelperCall:
-            print(log, (TR::PPCHelperCallSnippet *)snippet);
-            break;
         case TR::Snippet::IsUnresolvedData:
             print(log, (TR::UnresolvedDataSnippet *)snippet);
             break;
@@ -1051,6 +1047,8 @@ void TR_Debug::printp(OMR::Logger *log, TR::Snippet *snippet)
         case TR::Snippet::IsLockReservationExit:
         case TR::Snippet::IsAllocPrefetch:
         case TR::Snippet::IsNonZeroAllocPrefetch:
+        case TR::Snippet::IsHelperCall:
+        case TR::Snippet::IsArrayCopyCall:
             snippet->print(log, this);
             break;
         default:
