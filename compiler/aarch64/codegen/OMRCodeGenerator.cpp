@@ -756,7 +756,7 @@ bool OMR::ARM64::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::ILOpCode opcode
 
 bool OMR::ARM64::CodeGenerator::considerTypeForGRA(TR::Node *node) { return !node->getOpCode().isVectorOpCode(); }
 
-bool OMR::ARM64::CodeGenerator::considerTypeForGRA(TR::DataType dt) { return !(dt.isVector() || dt.isMask()); }
+bool OMR::ARM64::CodeGenerator::considerTypeForGRA(TR::DataType dt) { return !dt.isVectorOrMask(); }
 
 bool OMR::ARM64::CodeGenerator::considerTypeForGRA(TR::SymbolReference *symRef)
 {

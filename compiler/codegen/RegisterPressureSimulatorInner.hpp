@@ -330,7 +330,7 @@ uint8_t gprCount(TR::DataType type, int32_t size);
 
 uint8_t fprCount(TR::DataType type) { return type.isFloatingPoint() ? 1 : 0; }
 
-uint8_t vrfCount(TR::DataType type) { return type.isVector() ? 1 : 0; }
+uint8_t vrfCount(TR::DataType type) { return type.isVectorOrMask() ? 1 : 0; }
 
 void initializeRegisterPressureSimulator();
 
