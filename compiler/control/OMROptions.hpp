@@ -239,7 +239,7 @@ enum TR_CompilationOptions {
     TR_EnableAnnotations                                      = 0x00002000 + 4, // change to disable when on by default
     TR_UnresolvedAreNotColdAtCold                             = 0x00004000 + 4, // cold block marker marks unresolved blocks as cold at hotness cold or less
     TR_UseSymbolValidationManager                             = 0x00008000 + 4,
-    TR_ApplyLogFileNameSuffix                                 = 0x00010000 + 4,
+    TR_DontApplyLogFileNameSuffix                             = 0x00010000 + 4,
     TR_GenerateCompleteInlineRanges                           = 0x00020000 + 4,
     TR_DisableInliningOfNatives                               = 0x00040000 + 4,
     TR_AssignEveryGlobalRegister                              = 0x00080000 + 4,
@@ -2356,7 +2356,7 @@ private:
     static void closeLogsForOtherCompilationThreads(TR_FrontEnd *fe);
 
 protected:
-    void openLogFileCreateLogger(int32_t idSuffix = -1);
+    void openLogFileCreateLogger(int32_t idSuffix = -1, bool applyLogFileNameSuffix = true);
     static void closeLogFile(TR_FrontEnd *fe, TR::FILE *file, OMR::Logger *log);
 
 private:

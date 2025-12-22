@@ -142,8 +142,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      offsetof(OMR::Options, _newAotrtDebugLevel), 0, "F%d" },
     { "aotSecondRunDetection", "M\tperform second run detection for AOT", RESET_OPTION_BIT(TR_NoAotSecondRunDetection),
      "F", NOT_IN_SUBSET },
-    { "applyLogFileSuffix", "O\tadd a configurable suffix to log file names", SET_OPTION_BIT(TR_ApplyLogFileNameSuffix),
-     "F", NOT_IN_SUBSET },
     { "arraycopyRepMovsByteArrayThreshold=",
      "C<nnn>\tByte array copy threshold for using REP MOVS instructions. Only supports 32 or 64 bytes", TR::Options::set32BitNumeric, offsetof(OMR::Options, _arraycopyRepMovsByteArrayThreshold), 0, "F%d" },
     { "arraycopyRepMovsCharArrayThreshold=",
@@ -1030,7 +1028,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
     { "dontAddHWPDataToIProfiler", "O\tDont add HW Data to IProfiler", SET_OPTION_BIT(TR_DontAddHWPDataToIProfiler),
      "F", NOT_IN_SUBSET },
     { "dontApplyLogFileNameSuffix", "O\tdo not add a configurable suffix to log file names",
-     RESET_OPTION_BIT(TR_ApplyLogFileNameSuffix), "F", NOT_IN_SUBSET },
+     SET_OPTION_BIT(TR_DontApplyLogFileNameSuffix), "F", NOT_IN_SUBSET },
     { "dontCompile=",
      "D{regex}\t regex which specifies a subset of methods not to compile. If the option is passed via -Xaot, then"
         " it is not AOT compiled, but may be jit compiled. The converse is true for -Xjit", TR::Options::setRegex, offsetof(OMR::Options, _dontCompile), 0, "F", NOT_IN_SUBSET },
@@ -3514,12 +3512,6 @@ void OMR::Options::jitPreProcess()
     self()->setOption(TR_DisableIntrinsics);
 #endif
 
-#if !defined(DEBUG) && !defined(PROD_WITH_ASSUMES)
-    // Production (PROD) builds force the application of the log filename suffix
-    //
-    self()->setOption(TR_ApplyLogFileNameSuffix);
-#endif
-
     // The signature-hashing seed algorithm it the best default.
     // Unless the user specifies randomSeed=nosignature, we want to override the
     // default seed we just set above in order to improve reproducibility.
@@ -4755,17 +4747,19 @@ char *OMR::Options::buildLogFileName(char *buf, int32_t bufSize, const char *bas
     return (substLength >= remainingBufSizeChars) ? NULL : buf;
 }
 
-void OMR::Options::openLogFileCreateLogger(int32_t idSuffix)
+void OMR::Options::openLogFileCreateLogger(int32_t idSuffix, bool applyLogFileNameSuffix)
 {
     _logFile = NULL;
 
     TR_ASSERT_FATAL(getLogFileNameBase(), "expecting base log filename");
 
+    applyLogFileNameSuffix = applyLogFileNameSuffix && !self()->getOption(TR_DontApplyLogFileNameSuffix);
+
     const int32_t bufSize = 1024;
     char buf[bufSize];
 
     char *logFileName = TR::Options::buildLogFileName(buf, bufSize, getLogFileNameBase(), idSuffix,
-        TR::Options::getLogFileNameSuffix(), self()->getOption(TR_ApplyLogFileNameSuffix));
+        TR::Options::getLogFileNameSuffix(), applyLogFileNameSuffix);
 
     if (!logFileName) {
         mesg_printf("Could not build log file name for base name: %s", getLogFileNameBase());
@@ -6062,7 +6056,7 @@ bool OMR::Options::fePostProcessJIT(void *base)
         char tmp[1025];
         char *fileName = TR::Options::buildLogFileName(tmp, 1025, jitConfig->options.vLogFileName, -1,
             TR::Options::getLogFileNameSuffix(),
-            TR::Options::getCmdLineOptions()->getOption(TR_ApplyLogFileNameSuffix));
+            !TR::Options::getCmdLineOptions()->getOption(TR_DontApplyLogFileNameSuffix));
         jitConfig->options.vLogFile = trfopen(fileName, "w", false);
     } else {
         jitConfig->options.vLogFile = OMR::IO::Stderr;
@@ -6247,7 +6241,11 @@ template TR::Options *OMR::Options::create(TR_HeapMemory t);
 template TR::Options *OMR::Options::create(PERSISTENT_NEW_DECLARE t);
 template TR::Options *OMR::Options::create(TR_PersistentMemory *p);
 
+#if !defined(DEBUG) && !defined(PROD_WITH_ASSUMES)
 char *OMR::Options::_logFileNameSuffix = ".%tick.%pid";
+#else
+char *OMR::Options::_logFileNameSuffix = "";
+#endif
 
 char *OMR::Options::getLogFileNameSuffix() { return TR::Options::_logFileNameSuffix; }
 
