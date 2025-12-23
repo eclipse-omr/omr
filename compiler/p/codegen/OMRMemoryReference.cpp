@@ -525,6 +525,7 @@ static bool isLoadConstAndShift(TR::Node *subTree, TR::CodeGenerator *cg)
             //       iconst
             //    iconst
             else if (subTree->getFirstChild()->getOpCodeValue() == TR::i2l
+                && subTree->getFirstChild()->getReferenceCount() == 1 && subTree->getFirstChild()->getRegister() == NULL
                 && subTree->getFirstChild()->getFirstChild()->getOpCode().isLoadConst()
                 && subTree->getSecondChild()->getOpCode().isLoadConst())
                 return true;
@@ -624,6 +625,7 @@ void OMR::Power::MemoryReference::populateMemoryReference(TR::Node *subTree, TR:
                     cg);
             cg->decReferenceCount(subTree->getFirstChild());
             cg->decReferenceCount(subTree->getSecondChild());
+            cg->decReferenceCount(subTree);
         } else if ((subTree->getOpCodeValue() == TR::loadaddr) && !cg->comp()->compileRelocatableCode()) {
             TR::SymbolReference *ref = subTree->getSymbolReference();
             TR::Symbol *symbol = ref->getSymbol();
@@ -663,6 +665,7 @@ void OMR::Power::MemoryReference::populateMemoryReference(TR::Node *subTree, TR:
             subTree->getOpCodeValue() == TR::lconst) {
             int64_t amount = (subTree->getOpCodeValue() == TR::iconst) ? subTree->getInt() : subTree->getLongInt();
             self()->addToOffset(subTree, amount, cg);
+            cg->decReferenceCount(subTree);
         } else {
             if (_baseRegister != NULL) {
                 self()->consolidateRegisters(cg->evaluate(subTree), subTree, cg->canClobberNodesRegister(subTree), cg);
