@@ -40,7 +40,7 @@ TR::FILE *OMR::IO::Stderr = TR::FilePointer::Stderr();
 
 TR::FILE *OMR::IO::fopen(char *fileName, const char *mode, bool encrypt) { return (TR::FILE *)::fopen(fileName, mode); }
 
-void OMR::IO::fclose(TR::FILE *fileId) { ::fclose((::FILE *)fileId); }
+int32_t OMR::IO::fclose(TR::FILE *fileId) { return ::fclose((::FILE *)fileId); }
 
 void OMR::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
 {
@@ -49,7 +49,7 @@ void OMR::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
 
 long OMR::IO::ftell(TR::FILE *fileId) { return ::ftell((::FILE *)fileId); }
 
-void OMR::IO::fflush(TR::FILE *fileId) { ::fflush((::FILE *)fileId); }
+int32_t OMR::IO::fflush(TR::FILE *fileId) { return ::fflush((::FILE *)fileId); }
 
 int32_t OMR::IO::printf(const char *format, ...)
 {
@@ -75,6 +75,6 @@ int32_t OMR::IO::vfprintf(TR::FILE *fileId, const char *format, va_list args)
 }
 
 TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt) = TR::IO::fopen;
-void (*trfclose)(TR::FILE *fileId) = TR::IO::fclose;
-void (*trfflush)(TR::FILE *fileId) = TR::IO::fflush;
+int32_t (*trfclose)(TR::FILE *fileId) = TR::IO::fclose;
+int32_t (*trfflush)(TR::FILE *fileId) = TR::IO::fflush;
 int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...) = TR::IO::fprintf;

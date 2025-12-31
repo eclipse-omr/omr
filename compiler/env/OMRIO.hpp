@@ -71,8 +71,8 @@ typedef OMR::IO IOConnector;
 #endif
 
 extern TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt);
-extern void (*trfclose)(TR::FILE *fileId);
-extern void (*trfflush)(TR::FILE *fileId);
+extern int32_t (*trfclose)(TR::FILE *fileId);
+extern int32_t (*trfflush)(TR::FILE *fileId);
 extern int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...);
 
 namespace OMR {
@@ -89,13 +89,13 @@ public:
 
     static TR::FILE *fopen(char *fileName, const char *attrs, bool encrypt);
 
-    static void fclose(TR::FILE *fileId);
+    static int32_t fclose(TR::FILE *fileId);
 
     static void fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
 
     static long ftell(TR::FILE *fileId);
 
-    static void fflush(TR::FILE *fileId);
+    static int32_t fflush(TR::FILE *fileId);
 
     static int32_t printf(const char *format, ...);
 
