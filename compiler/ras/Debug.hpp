@@ -455,10 +455,6 @@ public:
 
     TR_Debug(TR::Compilation *c);
 
-    TR::FILE *getOutFile() { return _outFile; }
-
-    virtual void setOutFile(TR::FILE *f) { _outFile = f; }
-
     OMR::Logger *getLogger() { return _logger; }
 
     void setLogger(OMR::Logger *log) { _logger = log; }
@@ -842,8 +838,6 @@ public:
 
     const char *getShadowName(TR::SymbolReference *);
     const char *getMetaDataName(TR::SymbolReference *);
-
-    TR::FILE *findLogFile(TR::Options *, TR::OptionSet *, char *, OMR::Logger *&logger);
 
     void printPreds(OMR::Logger *log, TR::CFGNode *);
     void printBaseInfo(OMR::Logger *log, TR_Structure *structure, uint32_t indentation);
@@ -1317,7 +1311,6 @@ public:
     friend class TR_CFGChecker;
 
 protected:
-    TR::FILE *_outFile;
     TR::Compilation *_comp;
     TR_FrontEnd *_fe;
     OMR::Logger *_logger;

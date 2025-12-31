@@ -1509,10 +1509,6 @@ public:
      */
     static OMR::Logger *getDefaultLogger();
 
-    TR::FILE *getLogFile() const { return _logFile; }
-
-    void setLogFile(TR::FILE *f) { _logFile = f; }
-
     OMR_FINAL OMR::Logger *getLogger() const { return _logger; }
 
     OMR_FINAL void setLogger(OMR::Logger *log) { _logger = log; }
@@ -1550,18 +1546,19 @@ public:
         const char *logFileNameSuffix, bool applySuffix);
 
     /**
-     * @brief Creates a \c OMR::Logger object for this compilation that wraps
-     *    around the log file.  The default logger is a \c OMR::CStdIOStreamLogger.
+     * @brief Creates a \c OMR::Logger object for this compilation whose output will go to
+     *    a file with the given log file name. The default logger is a \c OMR::CStdIOStreamLogger.
      *
      * @details
      *    This function may be specialized by downstream projects to provide their
      *    own choice of \c OMR::Logger.
      *
-     * @param[in] file : A \c TR::FILE handle to the log file
+     * @param[in] logFileName : A NUL-terminated log file name
+     * @param[in] fileMode : mode to open the underlying log file
      *
      * @return : an \c OMR::Logger object
      */
-    OMR::Logger *createLoggerForLogFile(TR::FILE *file);
+    OMR::Logger *createLoggerForLogFileName(const char *logFileName, const char *fileMode = "wb+");
 
     char *getBlockShufflingSequence() { return _blockShufflingSequence; }
 
@@ -2348,9 +2345,9 @@ private:
     void setAOTCompile(bool isAOT);
     bool getAOTCompile();
 
-    TR_MCTLogs *getLogListForOtherCompThreads() { return _logListForOtherCompThreads; }
+    TR_MCTLogs *getLoggerListForOtherCompThreads() { return _loggerListForOtherCompThreads; }
 
-    void setLogListForOtherCompThreads(TR_MCTLogs *l) { _logListForOtherCompThreads = l; }
+    void setLoggerListForOtherCompThreads(TR_MCTLogs *l) { _loggerListForOtherCompThreads = l; }
 
     /**
      * @brief
@@ -2401,8 +2398,8 @@ private:
     OMR::Logger *findLoggerForCompilationThread(int32_t compThreadID);
 
     void setLogForCompilationThread(int32_t compThreadID, TR::Options *mainOptions);
-    static void safelyCloseLogs(TR::Options *options, TR_MCTLogs *&closedLogs, TR_FrontEnd *fe);
-    static void closeLogsForOtherCompilationThreads(TR_FrontEnd *fe);
+    static void safelyCloseLoggers(TR::Options *options, TR_MCTLogs *&closedLoggers, TR_FrontEnd *fe);
+    static void closeLoggersForOtherCompilationThreads(TR_FrontEnd *fe);
 
 protected:
     /**
@@ -2452,8 +2449,8 @@ protected:
      *     if the log file name could not be built or the file could not be opened.
      */
     OMR::Logger *openLogFileCreateLogger(int32_t idSuffix = -1, bool applyLogFileNameSuffix = true);
-
-    static void closeLogFile(TR_FrontEnd *fe, TR::FILE *file, OMR::Logger *log);
+    static void closeLogger(OMR::Logger *log);
+    static void safelyCloseLoggersInner(TR::Options *options, TR_MCTLogs *&closedLoggers, TR_FrontEnd *fe);
 
 private:
     // Standard option processing methods
@@ -2679,7 +2676,6 @@ protected:
     // Logging and debugging options
     //
     char *_logFileNameBase;
-    TR::FILE *_logFile;
     OMR::Logger *_logger;
 
     static OMR::Logger *_defaultLogger;
@@ -2852,10 +2848,13 @@ protected:
     int32_t _jProfilingLoopRecompThreshold;
     char *_blockShufflingSequence;
     int32_t _randomSeed;
-    TR_MCTLogs *_logListForOtherCompThreads;
-    static bool _dualLogging; // a log file is used in two different option sets, or in
-                              // in the main TR::Options object and in an option set
-    static bool _logsForOtherCompilationThreadsExist;
+    TR_MCTLogs *_loggerListForOtherCompThreads;
+
+    // A log file is used in two different option sets, or
+    // in the main TR::Options object and in an option set
+    //
+    static bool _dualLogging;
+    static bool _loggersForOtherCompilationThreadsExist;
 
     char *_induceOSR;
     int32_t _bigCalleeThreshold;
@@ -2907,10 +2906,6 @@ public:
 
     TR_MCTLogs(int32_t compThreadID, TR::Options *options);
 
-    TR::FILE *getLogFile() const { return _logFile; }
-
-    void setLogFile(TR::FILE *f) { _logFile = f; }
-
     OMR::Logger *getLogger() const { return _logger; }
 
     void setLogger(OMR::Logger *log) { _logger = log; }
@@ -2925,7 +2920,6 @@ public:
 
 private:
     TR_MCTLogs *_next; ///< logs are linked
-    TR::FILE *_logFile; ///< file descriptor for this log; comp thread will create these
     OMR::Logger *_logger; ///< Logger object for this log
     TR::Options *_options; ///< pointer back to the TR::Options obj that contains this list
     int32_t _compThreadID; ///< the ID of the compilation thread that can use this log
