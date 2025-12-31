@@ -227,8 +227,9 @@ OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::Stdout()
  * TRIOStreamLogger
  * -----------------------------------------------------------------------------
  */
-OMR::TRIOStreamLogger::TRIOStreamLogger(TR::FILE *stream)
+OMR::TRIOStreamLogger::TRIOStreamLogger(TR::FILE *stream, bool requiresStreamClose)
     : _stream(stream)
+    , _requiresStreamClose(requiresStreamClose)
 {}
 
 int32_t OMR::TRIOStreamLogger::printf(const char *format, ...)
@@ -273,7 +274,24 @@ int32_t OMR::TRIOStreamLogger::close()
     // Just disable the Logger and flush it.
     //
     setEnabled_DEPRECATED(false);
-    return this->flush();
+
+    int32_t result = this->flush();
+    if (result != 0) {
+        return result;
+    }
+
+    // result must be 0 at this point
+
+    if (getRequiresStreamClose()) {
+        // Indicate that the stream was closed (or at least attempted to close)
+        // to prevent further attempts
+        //
+        setRequiresStreamClose(false);
+
+        result = TR::IO::fclose(getStream());
+    }
+
+    return result;
 }
 
 /*

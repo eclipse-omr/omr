@@ -38,7 +38,12 @@ TR::FILE *OMR::IO::Stdin = TR::FilePointer::Stdin();
 TR::FILE *OMR::IO::Stdout = TR::FilePointer::Stdout();
 TR::FILE *OMR::IO::Stderr = TR::FilePointer::Stderr();
 
-TR::FILE *OMR::IO::fopen(char *fileName, const char *mode, bool encrypt) { return (TR::FILE *)::fopen(fileName, mode); }
+TR::FILE *OMR::IO::fopen(const char *fileName, const char *mode) { return (TR::FILE *)::fopen(fileName, mode); }
+
+TR::FILE *OMR::IO::fopen(const char *fileName, const char *mode, bool encrypt)
+{
+    return (TR::FILE *)::fopen(fileName, mode);
+}
 
 int32_t OMR::IO::fclose(TR::FILE *fileId) { return ::fclose((::FILE *)fileId); }
 
@@ -74,7 +79,7 @@ int32_t OMR::IO::vfprintf(TR::FILE *fileId, const char *format, va_list args)
     return ::vfprintf((::FILE *)fileId, format, args);
 }
 
-TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt) = TR::IO::fopen;
+TR::FILE *(*trfopen)(const char *fileName, const char *attrs, bool encrypt) = TR::IO::fopen;
 int32_t (*trfclose)(TR::FILE *fileId) = TR::IO::fclose;
 int32_t (*trfflush)(TR::FILE *fileId) = TR::IO::fflush;
 int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...) = TR::IO::fprintf;

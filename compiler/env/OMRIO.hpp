@@ -70,7 +70,7 @@ typedef OMR::IO IOConnector;
 #endif
 #endif
 
-extern TR::FILE *(*trfopen)(char *fileName, const char *attrs, bool encrypt);
+extern TR::FILE *(*trfopen)(const char *fileName, const char *attrs, bool encrypt);
 extern int32_t (*trfclose)(TR::FILE *fileId);
 extern int32_t (*trfflush)(TR::FILE *fileId);
 extern int32_t (*trfprintf)(TR::FILE *fileId, const char *format, ...);
@@ -87,7 +87,9 @@ public:
 
     static TR::FILE *Stderr;
 
-    static TR::FILE *fopen(char *fileName, const char *attrs, bool encrypt);
+    static TR::FILE *fopen(const char *fileName, const char *attrs);
+
+    static TR::FILE *fopen(const char *fileName, const char *attrs, bool encrypt);
 
     static int32_t fclose(TR::FILE *fileId);
 

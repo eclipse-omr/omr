@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "env/FilePointerDecl.hpp"
+#include "env/IO.hpp"
 #include "env/RawAllocator.hpp"
 #include "env/TRMemory.hpp"
 
@@ -388,11 +389,12 @@ public:
      *
      * @param[in] t : \c TR_Memory allocator type from which to allocate
      * @param[in] filename : name of file to direct logging output to
+     * @param[in] fileMode : mode to open logging file
      *
      * @return A \c CStdIOStreamLogger object if successful; NULL on any error
      */
     template<typename AllocatorType>
-    static CStdIOStreamLogger *create(AllocatorType t, const char *filename);
+    static CStdIOStreamLogger *create(AllocatorType t, const char *filename, const char *fileMode = "wb+");
 
     ~CStdIOStreamLogger();
 
@@ -458,9 +460,9 @@ OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(AllocatorType t, ::FILE
 }
 
 template<typename AllocatorType>
-OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(AllocatorType t, const char *filename)
+OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(AllocatorType t, const char *filename, const char *fileMode)
 {
-    ::FILE *fd = fopen(filename, "w");
+    ::FILE *fd = fopen(filename, fileMode);
     if (!fd) {
         // Error opening/creating the Logger file
         return NULL;
@@ -477,9 +479,11 @@ template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(PERSISTENT_NEW
 
 template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(TR::RawAllocator t, ::FILE *stream);
 
-template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(TR_HeapMemory t, const char *filename);
+template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(TR_HeapMemory t, const char *filename,
+    const char *fileMode);
 
-template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(PERSISTENT_NEW_DECLARE t, const char *filename);
+template OMR::CStdIOStreamLogger *OMR::CStdIOStreamLogger::create(PERSISTENT_NEW_DECLARE t, const char *filename,
+    const char *fileMode);
 
 /**
  * A Logger class that implements logging using TR IO functions.
@@ -496,6 +500,22 @@ public:
      * @return A \c TRIOStreamLogger object if successful; NULL on any error
      */
     template<typename AllocatorType> static TRIOStreamLogger *create(AllocatorType t, TR::FILE *stream);
+
+    /**
+     * @brief
+     *     A convenience function to create a Logger by directing output to
+     *     the given filename. The file will be created first if necessary or
+     *     overwritten if it already exists. The file will be opened for
+     *     writing.
+     *
+     * @param[in] t : \c TR_Memory allocator type from which to allocate
+     * @param[in] filename : name of file to direct logging output to
+     * @param[in] fileMode : mode to open logging file
+     *
+     * @return A \c TRIOStreamLogger object if successful; NULL on any error
+     */
+    template<typename AllocatorType>
+    static TRIOStreamLogger *create(AllocatorType t, const char *filename, const char *fileMode = "wb+");
 
     virtual int32_t printf(const char *format, ...);
 
@@ -517,14 +537,25 @@ public:
 
     virtual bool supportsRewinding() { return true; }
 
+    /**
+     * @brief
+     *     Answers whether the underlying stream should be closed when the
+     *     Logger is closed. Generally, this should only return true if
+     *     the stream was first opened by this Logger.
+     */
+    bool getRequiresStreamClose() { return _requiresStreamClose; }
+
+    void setRequiresStreamClose(bool b) { _requiresStreamClose = b; }
+
     TR::FILE *getStream() { return _stream; }
 
     void setStream(TR::FILE *s) { _stream = s; }
 
 private:
-    TRIOStreamLogger(TR::FILE *stream);
+    TRIOStreamLogger(TR::FILE *stream, bool requiresStreamClose = false);
 
     TR::FILE *_stream;
+    bool _requiresStreamClose;
 };
 
 template<typename AllocatorType> OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(AllocatorType t, TR::FILE *stream)
@@ -532,11 +563,29 @@ template<typename AllocatorType> OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::c
     return new (t) OMR::TRIOStreamLogger(stream);
 }
 
+template<typename AllocatorType>
+OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(AllocatorType t, const char *filename, const char *fileMode)
+{
+    TR::FILE *fd = TR::IO::fopen(filename, fileMode);
+    if (!fd) {
+        // Error opening/creating the Logger file
+        return NULL;
+    }
+
+    return new (t) OMR::TRIOStreamLogger(fd, true);
+}
+
 // Explicit instantiations
 //
 template OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(TR_HeapMemory t, TR::FILE *stream);
 
 template OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(PERSISTENT_NEW_DECLARE t, TR::FILE *stream);
+
+template OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(TR_HeapMemory t, const char *filename,
+    const char *fileMode);
+
+template OMR::TRIOStreamLogger *OMR::TRIOStreamLogger::create(PERSISTENT_NEW_DECLARE t, const char *filename,
+    const char *fileMode);
 
 /**
  * A Logger class that implements circular logging functionality by rewinding
