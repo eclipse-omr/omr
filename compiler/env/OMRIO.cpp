@@ -47,9 +47,14 @@ TR::FILE *OMR::IO::fopen(const char *fileName, const char *mode, bool encrypt)
 
 int32_t OMR::IO::fclose(TR::FILE *fileId) { return ::fclose((::FILE *)fileId); }
 
-void OMR::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
+int32_t OMR::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
 {
-    ::fseek((::FILE *)fileId, static_cast<long>(offset), whence);
+    return ::fseek((::FILE *)fileId, static_cast<long>(offset), whence);
+}
+
+intptr_t OMR::IO::fread(TR::FILE *fileId, void *buf, intptr_t nbytes)
+{
+    return ::fread(buf, 1, nbytes, (::FILE *)fileId);
 }
 
 long OMR::IO::ftell(TR::FILE *fileId) { return ::ftell((::FILE *)fileId); }

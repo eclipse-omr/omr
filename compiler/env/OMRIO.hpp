@@ -93,7 +93,9 @@ public:
 
     static int32_t fclose(TR::FILE *fileId);
 
-    static void fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
+    static int32_t fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
+
+    static intptr_t fread(TR::FILE *fileId, void *buf, intptr_t nbytes);
 
     static long ftell(TR::FILE *fileId);
 
