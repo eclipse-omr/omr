@@ -55,8 +55,6 @@ public:
 
     // no ctor so that it can be zero initialized by the TR_Array template
 
-    inline TR::GlobalRegister *self();
-
     TR::RegisterCandidate *getRegisterCandidateOnEntry() { return _rcOnEntry; }
 
     TR::RegisterCandidate *getRegisterCandidateOnExit() { return _rcOnExit; }
@@ -111,6 +109,7 @@ public:
     TR::Node *createLoadFromRegister(TR::Node *, TR::Compilation *);
 
 protected:
+    inline TR::GlobalRegister *self();
     TR::RegisterCandidate *_rcOnEntry;
     TR::RegisterCandidate *_rcOnExit;
     TR::RegisterCandidate *_rcCurrent;

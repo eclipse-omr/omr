@@ -55,12 +55,12 @@ namespace OMR {
 class OMR_EXTENSIBLE MethodSymbol : public TR::Symbol {
 protected:
     MethodSymbol(TR_LinkageConventions lc = TR_Private, TR::Method *m = 0);
+    
+    TR::MethodSymbol *self();
 
 public:
     template<typename AllocatorType>
     static TR::MethodSymbol *create(AllocatorType t, TR_LinkageConventions lc = TR_Private, TR::Method *m = 0);
-
-    TR::MethodSymbol *self();
 
     bool firstArgumentIsReceiver();
 

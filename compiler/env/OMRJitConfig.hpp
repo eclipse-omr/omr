@@ -48,11 +48,11 @@ namespace OMR {
 class OMR_EXTENSIBLE JitConfig {
 protected:
     JitConfig();
+    
+    TR::JitConfig *self();
 
 public:
     static TR::JitConfig *instance();
-
-    TR::JitConfig *self();
 
     // possibly temporary place for options to be stored?
     struct {

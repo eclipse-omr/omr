@@ -52,8 +52,6 @@ namespace OMR {
 
 class OMR_EXTENSIBLE VMEnv {
 public:
-    TR::VMEnv *self();
-
     int64_t maxHeapSizeInBytes() { return -1; }
 
     uintptr_t heapTailPaddingSizeInBytes();
@@ -163,6 +161,9 @@ public:
      * to be used in a purely heuristic way.
      */
     bool isVMInStartupPhase(TR::Compilation *comp) { return false; }
+
+protected:
+    TR::VMEnv *self();
 };
 
 } // namespace OMR
