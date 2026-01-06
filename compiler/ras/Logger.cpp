@@ -152,6 +152,11 @@ int32_t OMR::CStdIOStreamLogger::vprintf(const char *format, va_list args)
     return ::vfprintf(getStream(), format, args);
 }
 
+size_t OMR::CStdIOStreamLogger::read(char *buf, size_t bufSizeInBytes)
+{
+    return ::fread(buf, sizeof(char), bufSizeInBytes, getStream());
+}
+
 int64_t OMR::CStdIOStreamLogger::tell() { return ::ftell(getStream()); }
 
 int32_t OMR::CStdIOStreamLogger::flush()
@@ -250,6 +255,11 @@ int32_t OMR::TRIOStreamLogger::println() { return TR::IO::fprintf(getStream(), "
 int32_t OMR::TRIOStreamLogger::vprintf(const char *format, va_list args)
 {
     return TR::IO::vfprintf(getStream(), format, args);
+}
+
+size_t OMR::TRIOStreamLogger::read(char *buf, size_t bufSizeInBytes)
+{
+    return TR::IO::fread(getStream(), buf, bufSizeInBytes);
 }
 
 int64_t OMR::TRIOStreamLogger::tell() { return TR::IO::ftell(getStream()); }
