@@ -4465,6 +4465,15 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::mstoreiToArray:
         case TR::mloadiFromArray:
             return true;
+        case TR::vushr:
+        case TR::vmushr:
+        case TR::vshr:
+        case TR::vmshr:
+        case TR::vshl:
+        case TR::vmshl:
+        case TR::vrol:
+        case TR::vmrol:
+            return true;
         default:
             return false;
     }

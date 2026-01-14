@@ -1674,42 +1674,42 @@ TR::Register *OMR::Z::TreeEvaluator::vexpandEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Z::TreeEvaluator::vshlEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VESLV);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmshlEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vshlEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vshrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VESRAV);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmshrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vshrEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vushrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VESRLV);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmushrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vushrEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vrolEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VERLLV);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmrolEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vrolEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -14172,6 +14172,24 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
             break;
         case TR::InstOpCode::VMX:
         case TR::InstOpCode::VMN:
+            breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, mask4);
+            break;
+        case TR::InstOpCode::VERLLV:
+        case TR::InstOpCode::VESLV:
+        case TR::InstOpCode::VESRAV:
+        case TR::InstOpCode::VESRLV:
+            if (isMasked) {
+                // If the shift or rotate operation is masked, we can set the shift/rotate
+                // values to zero on the unmasked lanes. This ensures that the unmasked lanes
+                // in the destination register remain identical to those in the source register.
+                TR::Node *maskChild = node->getThirdChild();
+                generateVRRcInstruction(cg, TR::InstOpCode::VN, node, targetReg, sourceReg2, cg->evaluate(maskChild), 0,
+                    0, 0);
+                cg->decReferenceCount(maskChild);
+                // Reset isMask since the masked scenario has already been handled.
+                isMasked = FALSE;
+                sourceReg2 = targetReg;
+            }
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, mask4);
             break;
         default:
