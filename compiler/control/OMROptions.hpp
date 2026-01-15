@@ -1556,7 +1556,7 @@ public:
      * @param[in] logFileName : A NUL-terminated log file name
      * @param[in] fileMode : mode to open the underlying log file
      *
-     * @return : an \c OMR::Logger object
+     * @return : an \c OMR::Logger object; or NULL on any error
      */
     OMR::Logger *createLoggerForLogFileName(const char *logFileName, const char *fileMode = "wb+");
 

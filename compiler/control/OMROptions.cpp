@@ -3314,10 +3314,7 @@ bool OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig)
 
                 if (!logger) {
                     logger = self()->openLogFileCreateLogger();
-                    if (!logger) {
-                        mesg_printf("Unable to open log file with basename %s\n", getLogFileNameBase());
-                        logger = TR::Options::getDefaultLogger();
-                    }
+                    TR_ASSERT_FATAL(logger, "A Logger was not created for this option set");
                 } else {
                     // A log file is used in two different option sets, or
                     // in the main TR::Options object and in an option set
@@ -4566,9 +4563,8 @@ bool OMR::Options::jitPostProcess()
 
         if (_debug) {
             OMR::Logger *logger = self()->openLogFileCreateLogger();
-            if (logger) {
-                setLogger(logger);
-            }
+            TR_ASSERT_FATAL(logger, "A Logger was not created");
+            setLogger(logger);
         }
     } else if (self()->requiresLogFile()) {
         TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE,
@@ -4784,7 +4780,11 @@ OMR::Logger *OMR::Options::openLogFileCreateLogger(int32_t idSuffix, bool applyL
      * boilerplate header.
      */
     OMR::Logger *logger = self()->createLoggerForLogFileName(logFileName);
-    TR_ASSERT_FATAL(logger, "Unable to create required Logger object");
+    if (!logger) {
+        mesg_printf("Unable to create Logger for log file name: %s\n", logFileName);
+        return TR::Options::getDefaultLogger();
+    }
+
     logger->setEnabled_DEPRECATED(true);
 
     logger->prints("<?xml version=\"1.0\" standalone=\"no\"?>\n"
@@ -4958,22 +4958,19 @@ void OMR::Options::setLogForCompilationThread(int32_t compThreadID, TR::Options 
     TR_MCTLogs *optionLogEntry = new (PERSISTENT_NEW) TR_MCTLogs(compThreadID, self());
     if (optionLogEntry) {
         OMR::Logger *logger = self()->openLogFileCreateLogger(compThreadID);
-        if (logger) {
-            setLogger(logger);
+        TR_ASSERT_FATAL(logger, "A Logger was not created for this compilation thread");
 
-            // Cache the Logger in the mainOptions
-            //
-            optionLogEntry->setLogger(logger);
+        setLogger(logger);
 
-            // Attach the new logInfo to the list
-            //
-            optionLogEntry->setNext(mainOptions->getLoggerListForOtherCompThreads());
-            mainOptions->setLoggerListForOtherCompThreads(optionLogEntry);
-            OMR::Options::_loggersForOtherCompilationThreadsExist = true;
-        } else {
-            mesg_prints("Unable to create Logger on comp thread");
-            TR::Options::jitPersistentFree(optionLogEntry);
-        }
+        // Cache the Logger in the mainOptions
+        //
+        optionLogEntry->setLogger(logger);
+
+        // Attach the new logInfo to the list
+        //
+        optionLogEntry->setNext(mainOptions->getLoggerListForOtherCompThreads());
+        mainOptions->setLoggerListForOtherCompThreads(optionLogEntry);
+        OMR::Options::_loggersForOtherCompilationThreadsExist = true;
     } else {
         mesg_prints("Unable to allocate TR_MCTLogs");
         _logger = TR::Options::getDefaultLogger();
