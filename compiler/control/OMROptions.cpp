@@ -2593,6 +2593,13 @@ bool OMR::Options::createDebug()
 
 OMR::Logger *OMR::Options::getDefaultLogger()
 {
+    /**
+     * Use an environment variable to control the AssertingLogger selection because
+     * the default Logger may be requested before JIT command-line options are
+     * processed.
+     */
+    static bool installAssertingLogger = feGetEnv("TR_InstallAssertingLoggerAsDefaultLogger") ? true : false;
+
     if (_defaultLogger == NULL) {
         /**
          * Initializing this static field can be an unlikely race between compilation threads.
@@ -2600,7 +2607,11 @@ OMR::Logger *OMR::Options::getDefaultLogger()
          * initialized when the top-level Options object is created.  Even if multiple default
          * Loggers are somehow created, this is perfectly fine from a functional perspective.
          */
-        _defaultLogger = OMR::NullLogger::create(trPersistentMemory);
+        if (installAssertingLogger) {
+            _defaultLogger = OMR::AssertingLogger::create(trPersistentMemory);
+        } else {
+            _defaultLogger = OMR::NullLogger::create(trPersistentMemory);
+        }
     }
 
     return _defaultLogger;
@@ -4806,7 +4817,10 @@ OMR::Logger *OMR::Options::openLogFileCreateLogger(int32_t idSuffix, bool applyL
 
 void OMR::Options::closeLogger(OMR::Logger *log)
 {
-    log->prints("</jitlog>\n");
+    if (log->isEnabled_DEPRECATED()) {
+        log->prints("</jitlog>\n");
+    }
+
     log->close();
 }
 

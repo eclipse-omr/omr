@@ -109,10 +109,9 @@ int32_t OMR::AssertingLogger::flush()
 
 int32_t OMR::AssertingLogger::close()
 {
-    TR_ASSERT_FATAL(false, "Unexpected Logger close");
     setLoggerClosed(true);
     setEnabled_DEPRECATED(false);
-    return -1;
+    return 0;
 }
 
 /*
