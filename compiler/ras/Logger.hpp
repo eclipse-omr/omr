@@ -84,6 +84,44 @@
             log->println();   \
     } while (0)
 
+/**
+ * @brief Convenience macro to log a literal string and accumulate the length
+ *     of that string (excluding the trailing NUL-terminator) into a provided
+ *     variable. The length of the string literal is a compile-time constant.
+ *
+ * @details
+ *     No error checking is performed on the result from the \c Logger::prints
+ *     function.
+ *
+ * @param[in] len : int32_t variable to accumulate string length in
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] str : the string literal. This must be a string literal whose
+ *     length can be determined at compile-time.
+ */
+#define len_logprints_literal(len, log, str) \
+    do {                                     \
+        log->prints(str);                    \
+        len += sizeof(str) - 1;              \
+    } while (0)
+
+/**
+ * @brief Convenience macro to log a single char and accumulate the length
+ *     into a provided variable.
+ *
+ * @details
+ *     No error checking is performed on the result from the \c Logger::printc
+ *     function.
+ *
+ * @param[in] len : int32_t variable to accumulate char length in
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] c : the char to log
+ */
+#define len_logprintc(len, log, c) \
+    do {                           \
+        log->printc(c);            \
+        len++;                     \
+    } while (0)
+
 namespace OMR {
 
 /**

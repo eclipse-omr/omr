@@ -111,7 +111,6 @@ void TR_Debug::printBottomLegend(OMR::Logger *log)
 //
 void TR_Debug::printSymRefTable(OMR::Logger *log, bool printFullTable)
 {
-    TR_PrettyPrinterString output(this);
     TR::SymbolReferenceTable *symRefTab = _comp->getSymRefTab();
     TR::SymbolReference *symRefIterator;
     int32_t currSymRefTabSize = symRefTab->baseArray.size();
@@ -128,11 +127,10 @@ void TR_Debug::printSymRefTable(OMR::Logger *log, bool printFullTable)
         else
             log->prints("\nSymbol References (incremental):\n--------------------------------\n");
 
-        for (int i = _comp->getPrevSymRefTabSize(); i < currSymRefTabSize; i++) {
+        for (int32_t i = _comp->getPrevSymRefTabSize(); i < currSymRefTabSize; i++) {
             if ((symRefIterator = symRefTab->getSymRef(i))) {
-                output.reset();
-                print(symRefIterator, output, false /*hideHelperMethodInfo*/, true /*verbose*/);
-                log->printf("%s\n", output.getStr());
+                print(log, symRefIterator, false /*hideHelperMethodInfo*/, true /*verbose*/);
+                log->println();
             }
         }
         log->flush();
@@ -171,74 +169,72 @@ static bool valueIsProbablyHex(TR::Node *node)
 
 void TR_Debug::printLoadConst(OMR::Logger *log, TR::Node *node)
 {
-    TR_PrettyPrinterString output(this);
-    printLoadConst(node, output);
-    log->prints(output.getStr());
-    _comp->incrNodeOpCodeLength(output.getLength());
-}
-
-void TR_Debug::printLoadConst(TR::Node *node, TR_PrettyPrinterString &output)
-{
+    int32_t len = 0;
     char const *fmtStr;
     bool isUnsigned = node->getOpCode().isUnsigned();
+
     switch (node->getDataType()) {
         case TR::Int8:
             if (isUnsigned)
-                output.appendf(" %3u", node->getUnsignedByte());
+                len = log->printf(" %3u", node->getUnsignedByte());
             else
-                output.appendf(" %3d", node->getByte());
+                len = log->printf(" %3d", node->getByte());
             break;
         case TR::Int16:
             fmtStr = valueIsProbablyHex(node) ? " 0x%4x" : " '%5d' ";
-            output.appendf(fmtStr, node->getConst<uint16_t>());
+            len = log->printf(fmtStr, node->getConst<uint16_t>());
             break;
         case TR::Int32:
             if (isUnsigned) {
                 fmtStr = valueIsProbablyHex(node) ? " 0x%x" : " %u";
-                output.appendf(fmtStr, node->getUnsignedInt());
+                len = log->printf(fmtStr, node->getUnsignedInt());
             } else {
                 fmtStr = valueIsProbablyHex(node) ? " 0x%x" : " %d";
-                output.appendf(fmtStr, node->getInt());
+                len = log->printf(fmtStr, node->getInt());
             }
             break;
         case TR::Int64:
             if (isUnsigned) {
                 fmtStr = valueIsProbablyHex(node) ? " " UINT64_PRINTF_FORMAT_HEX : " " UINT64_PRINTF_FORMAT;
-                output.appendf(fmtStr, node->getUnsignedLongInt());
+                len = log->printf(fmtStr, node->getUnsignedLongInt());
             } else {
                 fmtStr = valueIsProbablyHex(node) ? " " INT64_PRINTF_FORMAT_HEX : " " INT64_PRINTF_FORMAT;
-                output.appendf(fmtStr, node->getLongInt());
+                len = log->printf(fmtStr, node->getLongInt());
             }
             break;
-        case TR::Float: {
-            output.appendf(" %g [0x%08x]", node->getFloat(), node->getFloatBits());
-        } break;
-        case TR::Double: {
-            output.appendf(" %g [" UINT64_PRINTF_FORMAT_HEX "]", node->getDouble(), node->getDoubleBits());
-        } break;
+        case TR::Float:
+            len = log->printf(" %g [0x%08x]", node->getFloat(), node->getFloatBits());
+            break;
+        case TR::Double:
+            len = log->printf(" %g [" UINT64_PRINTF_FORMAT_HEX "]", node->getDouble(), node->getDoubleBits());
+            break;
         case TR::Address:
-            if (node->getAddress() == 0)
-                output.appends(" NULL");
-            else
-                output.appendf(" " UINT64_PRINTF_FORMAT_HEX, node->getAddress());
+            if (node->getAddress() == 0) {
+                len_logprints_literal(len, log, " NULL");
+            } else {
+                len = log->printf(" " UINT64_PRINTF_FORMAT_HEX, node->getAddress());
+            }
+
             if (node->isClassPointerConstant()) {
                 TR_OpaqueClassBlock *clazz = (TR_OpaqueClassBlock *)node->getAddress();
-                int32_t len;
-                const char *sig = TR::Compiler->cls.classNameChars(_comp, clazz, len);
+                int32_t sigLen;
+                const char *sig = TR::Compiler->cls.classNameChars(_comp, clazz, sigLen);
                 if (clazz) {
                     if (TR::Compiler->cls.isInterfaceClass(_comp, clazz))
-                        output.appends(" Interface");
+                        len_logprints_literal(len, log, " Interface");
                     else if (TR::Compiler->cls.isAbstractClass(_comp, clazz))
-                        output.appends(" Abstract");
+                        len_logprints_literal(len, log, " Abstract");
                 }
-                output.appendf(" (%.*s.class)", len, sig);
+                len += log->printf(" (%.*s.class)", sigLen, sig);
             }
             break;
 
         default:
-            output.appendf(" Bad Type %s", node->getDataType().toString());
+            len = log->printf(" Bad Type %s", node->getDataType().toString());
             break;
     }
+
+    _comp->incrNodeOpCodeLength(len);
 }
 
 void TR_Debug::print(OMR::Logger *log, TR::CFG *cfg)
@@ -759,14 +755,6 @@ void TR_Debug::printBlockOrders(OMR::Logger *log, const char *title, TR::Resolve
     }
 }
 
-TR_PrettyPrinterString::TR_PrettyPrinterString(TR_Debug *debug)
-{
-    len = 0;
-    buffer[0] = '\0';
-    _comp = debug->comp();
-    _debug = debug;
-}
-
 char *TR_Debug::formattedString(char *buf, uint32_t bufLen, const char *format, va_list args,
     TR_AllocationKind allocationKind)
 {
@@ -797,31 +785,6 @@ char *TR_Debug::formattedString(char *buf, uint32_t bufLen, const char *format, 
     vsnprintf(buf, bufLen, format, args);
 
     return buf;
-}
-
-void TR_PrettyPrinterString::appendf(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    len += vsnprintf(buffer + len, maxBufferLength - len, format, args);
-    va_end(args);
-}
-
-void TR_PrettyPrinterString::appends(char const *str)
-{
-    size_t const strLen0 = strlen(str) + 1; // include terminating '\0'
-    size_t const bufLenBytes = maxBufferLength - len;
-
-    char *buf = buffer + len;
-
-    if (strLen0 < bufLenBytes) {
-        memcpy(buf, str, strLen0);
-        len += static_cast<int32_t>(strLen0 - 1);
-    } else if (bufLenBytes != 0) {
-        memcpy(buf, str, bufLenBytes - 1);
-        buf[bufLenBytes - 1] = '\0';
-        len += static_cast<int32_t>(bufLenBytes - 1);
-    }
 }
 
 int32_t TR_Debug::print(OMR::Logger *log, TR::TreeTop *tt)
@@ -864,9 +827,8 @@ int32_t TR_Debug::print(OMR::Logger *log, TR::Node *node, uint32_t indentation, 
 
     log->println();
 
-    TR_PrettyPrinterString output(this);
-
     if (printChildren) {
+        int32_t len = 0;
         indentation += DEFAULT_INDENT_INCREMENT;
         if (node->getOpCode().isSwitch()) {
             nodeCount += print(log, node->getFirstChild(), indentation, true);
@@ -874,10 +836,8 @@ int32_t TR_Debug::print(OMR::Logger *log, TR::Node *node, uint32_t indentation, 
             printBasicPreNodeInfoAndIndent(log, node->getSecondChild(), indentation);
             nodeCount++;
 
-            output.appends("default ");
-            _comp->incrNodeOpCodeLength(output.getLength());
-            log->prints(output.getStr());
-            output.reset();
+            len_logprints_literal(len, log, "default ");
+            _comp->incrNodeOpCodeLength(len);
 
             printDestination(log, node->getSecondChild()->getBranchDestination());
             printBasicPostNodeInfo(log, node->getSecondChild(), indentation);
@@ -909,11 +869,9 @@ int32_t TR_Debug::print(OMR::Logger *log, TR::Node *node, uint32_t indentation, 
                     } else {
                         fmtStr = unsigned_case ? "%u:\t" : "%d:\t";
                     }
-                    output.appendf(fmtStr, node->getChild(i)->getCaseConstant());
 
-                    _comp->incrNodeOpCodeLength(output.getLength());
-                    log->prints(output.getStr());
-                    output.reset();
+                    len = log->printf(fmtStr, node->getChild(i)->getCaseConstant());
+                    _comp->incrNodeOpCodeLength(len);
 
                     printDestination(log, node->getChild(i)->getBranchDestination());
 
@@ -933,10 +891,9 @@ int32_t TR_Debug::print(OMR::Logger *log, TR::Node *node, uint32_t indentation, 
                 for (i = 2; i < upperBound; i++) {
                     printBasicPreNodeInfoAndIndent(log, node->getChild(i), indentation);
                     nodeCount++;
-                    output.appendf("%d", i - 2);
-                    _comp->incrNodeOpCodeLength(output.getLength());
-                    log->prints(output.getStr());
-                    output.reset();
+
+                    len = log->printf("%d", i - 2);
+                    _comp->incrNodeOpCodeLength(len);
 
                     printDestination(log, node->getChild(i)->getBranchDestination());
                     printBasicPostNodeInfo(log, node->getChild(i), indentation);
@@ -1025,14 +982,14 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
 {
     uint32_t numSpaces, globalIndex;
 
-    TR_PrettyPrinterString output(this);
-
     _comp->setNodeOpCodeLength(0);
 
     char const * const globalIndexPrefix = "n";
 
     globalIndex = node->getGlobalIndex();
     numSpaces = getNumSpacesAfterIndex(globalIndex, MAX_GLOBAL_INDEX_LENGTH);
+
+    int32_t len = 0;
 
     // If this node has already been printed, just print a reference to it.
     //
@@ -1053,10 +1010,8 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
 
         if (_comp->cg()->getAppendInstruction() != NULL && node->getDataType() != TR::NoType
             && node->getRegister() != NULL) {
-            output.appendf(" (in %s)", getName(node->getRegister()));
-            _comp->incrNodeOpCodeLength(output.getLength());
-            log->prints(output.getStr());
-            output.reset();
+            len = log->printf(" (in %s)", getName(node->getRegister()));
+            _comp->incrNodeOpCodeLength(len);
         }
         if (!debug("disableDumpNodeFlags"))
             printNodeFlags(log, node);
@@ -1079,10 +1034,8 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
     printNodeInfo(log, node);
     if (_comp->cg()->getAppendInstruction() != NULL && node->getDataType() != TR::NoType
         && node->getRegister() != NULL) {
-        output.appendf(" (in %s)", getName(node->getRegister()));
-        _comp->incrNodeOpCodeLength(output.getLength());
-        log->prints(output.getStr());
-        output.reset();
+        len = log->printf(" (in %s)", getName(node->getRegister()));
+        _comp->incrNodeOpCodeLength(len);
     }
     if (!debug("disableDumpNodeFlags"))
         printNodeFlags(log, node);
@@ -1099,10 +1052,9 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
 
             log->printf("\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation, " ");
             nodeCount++;
-            output.appends("default ");
-            _comp->incrNodeOpCodeLength(output.getLength());
-            log->prints(output.getStr());
-            output.reset();
+
+            len_logprints_literal(len, log, "default ");
+            _comp->incrNodeOpCodeLength(len);
 
             printDestination(log, node->getSecondChild()->getBranchDestination());
             printBasicPostNodeInfo(log, node->getSecondChild(), indentation);
@@ -1128,10 +1080,9 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
                     } else {
                         fmtStr = (node->getFirstChild()->getOpCode().isUnsigned()) ? "%u:\t" : "%d:\t";
                     }
-                    output.appendf(fmtStr, node->getChild(i)->getCaseConstant());
-                    _comp->incrNodeOpCodeLength(output.getLength());
-                    log->prints(output.getStr());
-                    output.reset();
+
+                    len = log->printf(fmtStr, node->getChild(i)->getCaseConstant());
+                    _comp->incrNodeOpCodeLength(len);
 
                     printDestination(log, node->getChild(i)->getBranchDestination());
 
@@ -1149,10 +1100,9 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
                     log->printf("\n%s%s%dn%*s  %*s", prefix, globalIndexPrefix, globalIndex, numSpaces, "", indentation,
                         " ");
                     nodeCount++;
-                    output.appendf("%d", i - 2);
-                    _comp->incrNodeOpCodeLength(output.getLength());
-                    log->prints(output.getStr());
-                    output.reset();
+
+                    len = log->printf("%d", i - 2);
+                    _comp->incrNodeOpCodeLength(len);
 
                     printDestination(log, node->getChild(i)->getBranchDestination());
                     if (node->getChild(i)->getNumChildren() == 1) // a GlRegDep
@@ -1185,23 +1135,21 @@ int32_t TR_Debug::printWithFixedPrefix(OMR::Logger *log, TR::Node *node, uint32_
 
 void TR_Debug::printDestination(OMR::Logger *log, TR::TreeTop *treeTop)
 {
-    TR_PrettyPrinterString output(this);
-    printDestination(treeTop, output);
-    log->prints(output.getStr());
-    _comp->incrNodeOpCodeLength(output.getLength());
-}
-
-void TR_Debug::printDestination(TR::TreeTop *treeTop, TR_PrettyPrinterString &output)
-{
     if (treeTop == NULL)
         return;
 
     TR::Node *node = treeTop->getNode();
     TR::Block *block = node->getBlock();
-    output.appends(" --> ");
-    if (block->getNumber() >= 0)
-        output.appendf("block_%d", block->getNumber());
-    output.appendf(" BBStart at n%dn", node->getGlobalIndex());
+
+    int32_t len = 0;
+    len_logprints_literal(len, log, " --> ");
+    if (block->getNumber() >= 0) {
+        len += log->printf("block_%d", block->getNumber());
+    }
+
+    len += log->printf(" BBStart at n%dn", node->getGlobalIndex());
+
+    _comp->incrNodeOpCodeLength(len);
 }
 
 void TR_Debug::printBasicPreNodeInfoAndIndent(OMR::Logger *log, TR::Node *node, uint32_t indentation)
@@ -1225,70 +1173,54 @@ void TR_Debug::printBasicPreNodeInfoAndIndent(OMR::Logger *log, TR::Node *node, 
 
 void TR_Debug::printBasicPostNodeInfo(OMR::Logger *log, TR::Node *node, uint32_t indentation)
 {
-    TR_PrettyPrinterString output(this);
-
-    output.appends("  ");
+    log->prints("  ");
     if ((_comp->getNodeOpCodeLength() + indentation) < DEFAULT_NODE_LENGTH + DEFAULT_INDENT_INCREMENT)
-        output.appendf("%*s",
+        log->printf("%*s",
             DEFAULT_NODE_LENGTH + DEFAULT_INDENT_INCREMENT - (_comp->getNodeOpCodeLength() + indentation), "");
+
+    log->printf("[%s] ", getName(node));
 
     int32_t lineNumber = _comp->getLineNumber(node);
 
-    output.appendf("[%s] ", getName(node));
-
-    char const *bciOrLoc = "bci";
-
     if (lineNumber < 0) {
-        output.appendf("%s=[%d,%d,-] rc=", bciOrLoc, node->getByteCodeInfo().getCallerIndex(),
+        log->printf("bci=[%d,%d,-] rc=", node->getByteCodeInfo().getCallerIndex(),
             node->getByteCodeInfo().getByteCodeIndex());
     } else {
-        output.appendf("%s=[%d,%d,%d] rc=", bciOrLoc, node->getByteCodeInfo().getCallerIndex(),
+        log->printf("bci=[%d,%d,%d] rc=", node->getByteCodeInfo().getCallerIndex(),
             node->getByteCodeInfo().getByteCodeIndex(), lineNumber);
     }
 
-    output.appendf("%d vc=%d", node->getReferenceCount(), node->getVisitCount());
+    log->printf("%d vc=%d", node->getReferenceCount(), node->getVisitCount());
 
     if (_comp->getOptimizer() && _comp->getOptimizer()->getValueNumberInfo())
-        output.appendf(" vn=%d", _comp->getOptimizer()->getValueNumberInfo()->getValueNumber(node));
+        log->printf(" vn=%d", _comp->getOptimizer()->getValueNumberInfo()->getValueNumber(node));
     else
-        output.appends(" vn=-");
+        log->prints(" vn=-");
 
     if (node->getLocalIndex())
-        output.appendf(" li=%d", node->getLocalIndex());
+        log->printf(" li=%d", node->getLocalIndex());
     else
-        output.appends(" li=-");
+        log->prints(" li=-");
 
     if (node->getUseDefIndex())
-        output.appendf(" udi=%d", node->getUseDefIndex());
+        log->printf(" udi=%d", node->getUseDefIndex());
     else
-        output.appends(" udi=-");
+        log->prints(" udi=-");
 
-    output.appendf(" nc=%d", node->getNumChildren());
+    log->printf(" nc=%d", node->getNumChildren());
 
     if (node->getFlags().getValue())
-        output.appendf(" flg=0x%x", node->getFlags().getValue());
-
-    log->prints(output.getStr());
+        log->printf(" flg=0x%x", node->getFlags().getValue());
 
     _comp->setNodeOpCodeLength(0); // redundant - just to be safe
 }
 
-void TR_Debug::printNodeInfo(OMR::Logger *log, TR::Node *node)
-{
-    TR_PrettyPrinterString output(this);
-    printNodeInfo(node, output, false);
-    log->prints(output.getStr());
-    _comp->incrNodeOpCodeLength(output.getLength());
-}
-
 // Dump the node information for this node
-void TR_Debug::printNodeInfo(TR::Node *node, TR_PrettyPrinterString &output, bool prettyPrint)
+void TR_Debug::printNodeInfo(OMR::Logger *log, TR::Node *node)
 {
     char const * const globalIndexPrefix = "n";
 
-    if (!prettyPrint || (node->getOpCodeValue() != TR::BBStart && node->getOpCodeValue() != TR::BBEnd)) {
-        output.appendf("%s", getName(node->getOpCode()));
-    }
+    int32_t len = log->prints_len(getName(node->getOpCode()));
 
     // print vector type immediately after opcode name
     if (node->getOpCode().isVectorOpCode()) {
@@ -1296,88 +1228,87 @@ void TR_Debug::printNodeInfo(TR::Node *node, TR_PrettyPrinterString &output, boo
 
         if (opcode.isTwoTypeVectorOpCode()) {
             // example: vconvVector128Int32_Vector128Float
-            output.appendf("%s_%s", getName(opcode.getVectorSourceDataType()),
+            len += log->printf("%s_%s", getName(opcode.getVectorSourceDataType()),
                 getName(opcode.getVectorResultDataType()));
         } else {
             // example: vaddVector128Int32
-            output.appendf("%s", getName(opcode.getVectorResultDataType()));
+            len += log->prints_len(getName(opcode.getVectorResultDataType()));
         }
     }
 
 #ifdef TR_ALLOW_NON_CONST_KNOWN_OBJECTS
     if (node->hasKnownObjectIndex()) {
-        output.appendf(" (node obj%d)", node->getKnownObjectIndex());
+        len += log->printf(" (node obj%d)", node->getKnownObjectIndex());
     }
 #endif
 
     if (node->getOpCode().isNullCheck()) {
         if (node->getNullCheckReference())
-            output.appendf(" on %s%dn", globalIndexPrefix, node->getNullCheckReference()->getGlobalIndex());
+            len += log->printf(" on %s%dn", globalIndexPrefix, node->getNullCheckReference()->getGlobalIndex());
         else
-            output.appends(" on null NullCheckReference ----- INVALID tree!!");
+            len_logprints_literal(len, log, " on null NullCheckReference ----- INVALID tree!!");
     } else if (node->getOpCodeValue() == TR::allocationFence) {
         if (node->getAllocation())
-            output.appendf(" on %s%dn", globalIndexPrefix, node->getAllocation()->getGlobalIndex());
+            len += log->printf(" on %s%dn", globalIndexPrefix, node->getAllocation()->getGlobalIndex());
         else
-            output.appends(" on ALL");
+            len_logprints_literal(len, log, " on ALL");
     }
 
     if (node->getOpCode().hasSymbolReference() && node->getSymbolReference()) {
-        bool hideHelperMethodInfo = false;
-        if (node->getOpCode().isCheck()) // Omit helper method info for OpCodes that are checked
-            hideHelperMethodInfo = true;
-
-        print(node->getSymbolReference(), output, hideHelperMethodInfo);
+        // Omit helper method info for OpCodes that are checked
+        len += print(log, node->getSymbolReference(), node->getOpCode().isCheck());
     } else if (node->getOpCode().isBranch()) {
-        printDestination(node->getBranchDestination(), output);
+        // printDestination adjusts incrNodeOpCodeLength()
+        printDestination(log, node->getBranchDestination());
     } else if (node->getOpCodeValue() == TR::exceptionRangeFence) {
         if (node->getNumRelocations() > 0) {
             if (node->getRelocationType() == TR_AbsoluteAddress)
-                output.appends(" Absolute [");
+                len_logprints_literal(len, log, " Absolute [");
             else if (node->getRelocationType() == TR_ExternalAbsoluteAddress)
-                output.appends(" External Absolute [");
+                len_logprints_literal(len, log, " External Absolute [");
             else
-                output.appends(" Relative [");
+                len_logprints_literal(len, log, " Relative [");
 
             for (auto i = 0U; i < node->getNumRelocations(); ++i)
-                output.appendf(" " POINTER_PRINTF_FORMAT, node->getRelocationDestination(i));
+                len += log->printf(" " POINTER_PRINTF_FORMAT, node->getRelocationDestination(i));
 
-            output.appends(" ]");
+            len_logprints_literal(len, log, " ]");
         }
     } else if (node->getOpCodeValue() == TR::BBStart) {
         TR::Block *block = node->getBlock();
         if (block->getNumber() >= 0) {
-            output.appendf(" <block_%d>", block->getNumber());
+            len += log->printf(" <block_%d>", block->getNumber());
         }
 
         if (block->getFrequency() >= 0)
-            output.appendf(" (freq %d)", block->getFrequency());
+            len += log->printf(" (freq %d)", block->getFrequency());
         if (block->isExtensionOfPreviousBlock())
-            output.appends(" (extension of previous block)");
+            len_logprints_literal(len, log, " (extension of previous block)");
         if (block->isCatchBlock()) {
-            int32_t length;
+            int32_t classNameLen;
             const char *classNameChars = block->getExceptionClassNameChars();
             if (classNameChars) {
-                length = block->getExceptionClassNameLength();
-                output.appendf(" (catches %.*s)", length, getName(classNameChars, length));
+                classNameLen = block->getExceptionClassNameLength();
+                len += log->printf(" (catches %.*s)", classNameLen, getName(classNameChars, classNameLen));
             } else {
                 classNameChars = "...";
-                length = 3;
-                output.appendf(" (catches %.*s)", length,
+                classNameLen = 3;
+                len += log->printf(" (catches %.*s)", classNameLen,
                     classNameChars); // passing literal string shouldn't use getName()
             }
 
             if (block->isOSRCatchBlock()) {
-                output.appends(" (OSR handler)");
+                len_logprints_literal(len, log, " (OSR handler)");
             }
         }
         if (block->isSuperCold())
-            output.appends(" (super cold)");
+            len_logprints_literal(len, log, " (super cold)");
         else if (block->isCold())
-            output.appends(" (cold)");
+            len_logprints_literal(len, log, " (cold)");
 
         if (block->isLoopInvariantBlock())
-            output.appends(" (loop pre-header)");
+            len_logprints_literal(len, log, " (loop pre-header)");
+
         TR_BlockStructure *blockStructure = block->getStructureOf();
         if (blockStructure) {
             if (_comp->getFlowGraph()->getStructure()) {
@@ -1385,66 +1316,67 @@ void TR_Debug::printNodeInfo(TR::Node *node, TR_PrettyPrinterString &output, boo
                 while (parent) {
                     TR_RegionStructure *region = parent->asRegion();
                     if (region->isNaturalLoop() || region->containsInternalCycles()) {
-                        output.appendf(" (in loop %d)", region->getNumber());
+                        len += log->printf(" (in loop %d)", region->getNumber());
                         break;
                     }
                     parent = parent->getParent();
                 }
                 TR_BlockStructure *dupBlock = blockStructure->getDuplicatedBlock();
                 if (dupBlock)
-                    output.appendf(" (dup of block_%d)", dupBlock->getNumber());
+                    len += log->printf(" (dup of block_%d)", dupBlock->getNumber());
             }
         }
     } else if (node->getOpCodeValue() == TR::BBEnd) {
         TR::Block *block = node->getBlock(), *nextBlock;
         if (block->getNumber() >= 0) {
-            output.appendf(" </block_%d>", block->getNumber());
+            len += log->printf(" </block_%d>", block->getNumber());
             if (block->isSuperCold())
-                output.appends(" (super cold)");
+                len_logprints_literal(len, log, " (super cold)");
             else if (block->isCold())
-                output.appends(" (cold)");
+                len_logprints_literal(len, log, " (cold)");
         }
 
         if ((nextBlock = block->getNextBlock())
             && !nextBlock->isExtensionOfPreviousBlock()) // end of a block that is not the last block and the next block
                                                          // is not an extension of it
-            output.appends(" =====");
+            len_logprints_literal(len, log, " =====");
     } else if (node->getOpCode().isArrayLength()) {
         int32_t stride = node->getArrayStride();
 
         if (stride > 0)
-            output.appendf(" (stride %d)", stride);
+            len += log->printf(" (stride %d)", stride);
     } else if (node->getOpCode().isLoadReg() || node->getOpCode().isStoreReg()) {
         TR::DataType dt = node->getDataType();
         if ((node->getType().isInt64() && _comp->target().is32Bit() && !_comp->cg()->use64BitRegsOn32Bit()))
-            output.appendf(" %s:%s ", getGlobalRegisterName(node->getHighGlobalRegisterNumber(), dt),
+            len += log->printf(" %s:%s ", getGlobalRegisterName(node->getHighGlobalRegisterNumber(), dt),
                 getGlobalRegisterName(node->getLowGlobalRegisterNumber(), dt));
         else
-            output.appendf(" %s ", getGlobalRegisterName(node->getGlobalRegisterNumber(), dt));
+            len += log->printf(" %s ", getGlobalRegisterName(node->getGlobalRegisterNumber(), dt));
 
         if (node->getOpCode().isLoadReg())
-            print(node->getRegLoadStoreSymbolReference(), output);
+            len += print(log, node->getRegLoadStoreSymbolReference());
     } else if (node->getOpCodeValue() == TR::PassThrough) {
         // print only if under a GlRegDep
         bool isParentGlRegDep = getCurrentParent() ? (getCurrentParent()->getOpCodeValue() == TR::GlRegDeps) : false;
         if (isParentGlRegDep) {
             TR::DataType dt = node->getDataType();
             if ((node->getFirstChild()->getType().isInt64() && _comp->target().is32Bit()))
-                output.appendf(" %s:%s ", getGlobalRegisterName(node->getHighGlobalRegisterNumber(), dt),
+                len += log->printf(" %s:%s ", getGlobalRegisterName(node->getHighGlobalRegisterNumber(), dt),
                     getGlobalRegisterName(node->getLowGlobalRegisterNumber(), dt));
             else
-                output.appendf(" %s ", getGlobalRegisterName(node->getGlobalRegisterNumber(), dt));
+                len += log->printf(" %s ", getGlobalRegisterName(node->getGlobalRegisterNumber(), dt));
         }
     } else if (node->getOpCode().hasNoDataType()) {
-        output.appendf(" (%s)", getName(node->getDataType()));
+        len += log->printf(" (%s)", getName(node->getDataType()));
     }
 
     if (node->getOpCode().isLoadConst()) {
-        printLoadConst(node, output);
+        // printLoadConst adjusts incrNodeOpCodeLength()
+        printLoadConst(log, node);
 
         if (getCurrentParent() && getCurrentParent()->getOpCodeValue() == TR::newarray
             && getCurrentParent()->getSecondChild() == node) {
-            output.appends("   ; array type is ");
+            len_logprints_literal(len, log, "   ; array type is ");
 
             const char *typeStr;
             switch (node->getInt()) {
@@ -1477,101 +1409,96 @@ void TR_Debug::printNodeInfo(TR::Node *node, TR_PrettyPrinterString &output, boo
                     typeStr = "unknown";
             }
 
-            output.appends(typeStr);
+            len += log->prints_len(typeStr);
         }
     }
 
 #ifdef J9_PROJECT_SPECIFIC
-    printBCDNodeInfo(node, output);
+    // printBCDNodeInfo adjusts incrNodeOpCodeLength()
+    printBCDNodeInfo(log, node);
 #endif
+
+    _comp->incrNodeOpCodeLength(len);
 }
 
 // Dump the node flags for this node
 // All flag printers should be called from here
 void TR_Debug::printNodeFlags(OMR::Logger *log, TR::Node *node)
 {
-    TR_PrettyPrinterString output(this);
-
     if (node->getFlags().getValue()) {
-        output.appends(" (");
-        nodePrintAllFlags(node, output);
-        output.appends(")");
+        int32_t len = 0;
+        len_logprints_literal(len, log, " (");
+        len += nodePrintAllFlags(log, node);
+        len_logprintc(len, log, ')');
+        _comp->incrNodeOpCodeLength(len);
     }
-
-    log->prints(output.getStr());
-
-    _comp->incrNodeOpCodeLength(output.getLength());
 }
 
 #ifdef J9_PROJECT_SPECIFIC
 void TR_Debug::printBCDNodeInfo(OMR::Logger *log, TR::Node *node)
 {
-    TR_PrettyPrinterString output(this);
-    printBCDNodeInfo(node, output);
-    log->prints(output.getStr());
-    _comp->incrNodeOpCodeLength(output.getLength());
-}
+    int32_t len = 0;
 
-void TR_Debug::printBCDNodeInfo(TR::Node *node, TR_PrettyPrinterString &output)
-{
     if (node->getType().isBCD()) {
         if (node->getOpCode().isStore() || node->getOpCode().isCall() || node->getOpCode().isLoadConst()
             || (node->getOpCode().isConversion() && !node->getOpCode().isConversionWithFraction())) {
             if (node->hasSourcePrecision()) {
-                output.appendf(" <prec=%d (len=%d) srcprec=%d> ", node->getDecimalPrecision(), node->getSize(),
+                len += log->printf(" <prec=%d (len=%d) srcprec=%d> ", node->getDecimalPrecision(), node->getSize(),
                     node->getSourcePrecision());
             } else {
-                output.appendf(" <prec=%d (len=%d)> ", node->getDecimalPrecision(), node->getSize());
+                len += log->printf(" <prec=%d (len=%d)> ", node->getDecimalPrecision(), node->getSize());
             }
         } else if (node->getOpCode().isLoad()) {
-            output.appendf(" <prec=%d (len=%d) adj=%d> ", node->getDecimalPrecision(), node->getSize(),
+            len += log->printf(" <prec=%d (len=%d) adj=%d> ", node->getDecimalPrecision(), node->getSize(),
                 node->getDecimalAdjust());
         } else if (node->canHaveSourcePrecision()) {
-            output.appendf(" <prec=%d (len=%d) srcprec=%d %s=%d round=%d> ", node->getDecimalPrecision(),
+            len += log->printf(" <prec=%d (len=%d) srcprec=%d %s=%d round=%d> ", node->getDecimalPrecision(),
                 node->getSize(), node->getSourcePrecision(),
                 node->getOpCode().isConversionWithFraction() ? "frac" : "adj",
                 node->getOpCode().isConversionWithFraction() ? node->getDecimalFraction() : node->getDecimalAdjust(),
                 node->getDecimalRound());
         } else {
-            output.appendf(" <prec=%d (len=%d) %s=%d round=%d> ", node->getDecimalPrecision(), node->getSize(),
+            len += log->printf(" <prec=%d (len=%d) %s=%d round=%d> ", node->getDecimalPrecision(), node->getSize(),
                 node->getOpCode().isConversionWithFraction() ? "frac" : "adj",
                 node->getOpCode().isConversionWithFraction() ? node->getDecimalFraction() : node->getDecimalAdjust(),
                 node->getDecimalRound());
         }
         if (!node->getOpCode().isStore()) {
-            output.appends("sign=");
+            len_logprints_literal(len, log, "sign=");
             if (node->hasKnownOrAssumedCleanSign() || node->hasKnownOrAssumedPreferredSign()
                 || node->hasKnownOrAssumedSignCode()) {
                 if (node->signStateIsKnown())
-                    output.appends("known(");
+                    len_logprints_literal(len, log, "known(");
                 else
-                    output.appends("assumed(");
+                    len_logprints_literal(len, log, "assumed(");
                 if (node->hasKnownOrAssumedCleanSign())
-                    output.appends("clean");
+                    len_logprints_literal(len, log, "clean");
                 if (node->hasKnownOrAssumedPreferredSign())
-                    output.appendf("%spreferred", node->hasKnownOrAssumedCleanSign() ? "/" : "");
+                    len += log->printf("%spreferred", node->hasKnownOrAssumedCleanSign() ? "/" : "");
                 if (node->hasKnownOrAssumedSignCode())
-                    output.appendf("%s%s",
+                    len += log->printf("%s%s",
                         node->hasKnownOrAssumedCleanSign() || node->hasKnownOrAssumedPreferredSign() ? "/" : "",
                         getName(node->hasKnownSignCode() ? node->getKnownSignCode() : node->getAssumedSignCode()));
-                output.appends(") ");
+                len_logprints_literal(len, log, ") ");
             } else if (node->getOpCode().isLoad()) {
-                output.appendf("%s ", node->hasSignStateOnLoad() ? "hasState" : "noState");
+                len += log->printf("%s ", node->hasSignStateOnLoad() ? "hasState" : "noState");
             } else {
-                output.appends("? ");
+                len_logprints_literal(len, log, "? ");
             }
         }
         if (node->isSetSignValueOnNode()) {
-            output.appendf("setSign=%s ", getName(node->getSetSign()));
+            len += log->printf("setSign=%s ", getName(node->getSetSign()));
         }
     } else if (node->getOpCode().isConversionWithFraction()) {
-        output.appendf(" <frac=%d> ", node->getDecimalFraction());
+        len += log->printf(" <frac=%d> ", node->getDecimalFraction());
     } else if ((node->getType()).isAggregate()) {
-        output.appendf(" <size=%lld bytes>", (int64_t)0);
+        len += log->printf(" <size=%lld bytes>", (int64_t)0);
     }
     if (node->castedToBCD()) {
-        output.appends(" <castedToBCD=true> ");
+        len_logprints_literal(len, log, " <castedToBCD=true> ");
     }
+
+    _comp->incrNodeOpCodeLength(len);
 }
 #endif
 
