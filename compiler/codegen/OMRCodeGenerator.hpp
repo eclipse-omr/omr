@@ -1862,6 +1862,8 @@ public:
 
     void addCountersToEdges(TR::Block *block);
 
+    int32_t getMaxLengthOfIncMemoryInstruction() { return 0; }
+
     bool getSupportsBitOpCodes() { return false; }
 
     bool getMappingAutomatics() { return _flags1.testAny(MappingAutomatics); }
