@@ -90,10 +90,10 @@ protected:
      * @param[in] OMRProcessorDesc : the input processor description
      */
     CPU(const OMRProcessorDesc &processorDescription);
-
-public:
+    
     TR::CPU *self();
 
+public:
     /**
      * @brief Detects the underlying processor type and features using the port library and constructs a TR::CPU object
      * @param[in] omrPortLib : the port library

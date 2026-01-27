@@ -63,8 +63,6 @@ public:
         , numLockedVRFs(-1)
     {}
 
-    inline TR::Machine *self();
-
     /**
      * @brief Converts RegNum to RealRegister
      * @param[in] regNum : register number
@@ -153,6 +151,8 @@ private:
     TR::CodeGenerator *_cg;
 
 protected:
+    inline TR::Machine *self();
+
     TR::RealRegister *_registerFile[TR::RealRegister::NumRegisters];
 };
 } // namespace OMR

@@ -72,10 +72,10 @@ protected:
     Register(uint32_t f = 0);
     Register(TR_RegisterKinds rk);
     Register(TR_RegisterKinds rk, uint16_t ar);
-
-public:
+    
     TR::Register *self();
 
+public:
     TR_ALLOC(TR_Memory::Register)
 
     /*
