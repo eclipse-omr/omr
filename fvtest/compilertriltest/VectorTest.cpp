@@ -39,7 +39,7 @@ void generateIO(TR::ILOpCode scalarOpcode, TR::VectorLength vl, void *output, vo
     char inputTrees[1024];
 
     if (inputB) {
-        std::snprintf(inputTrees, sizeof(inputTrees),
+        Tril::format(inputTrees, sizeof(inputTrees),
                       "(method return=NoType args=[Address, Address, Address]"
                       "  (block"
                       "    (%s"
@@ -54,7 +54,7 @@ void generateIO(TR::ILOpCode scalarOpcode, TR::VectorLength vl, void *output, vo
                       loadOpcode.getName()
         );
     } else {
-        std::snprintf(inputTrees, sizeof(inputTrees),
+        Tril::format(inputTrees, sizeof(inputTrees),
                       "(method return=NoType args=[Address, Address]"
                       "  (block"
                       "    (%s"
@@ -125,7 +125,7 @@ void generateAndExecuteVectorTest(TR::ILOpCode vectorOpcode, void *expected, voi
     std::snprintf(type, sizeof(type), "Vector%i%s", TRTest::vectorSize(vl) * 8, TR::DataType::getName(elementType));
 
     if (vectorOpcode.expectedChildCount() == 1) {
-        std::snprintf(inputTrees, sizeof(inputTrees),
+        Tril::format(inputTrees, sizeof(inputTrees),
                       "(method return= NoType args=[Address,Address]                   "
                       "  (block                                                        "
                       "     (%s%s  offset=0                                            "
@@ -142,7 +142,7 @@ void generateAndExecuteVectorTest(TR::ILOpCode vectorOpcode, void *expected, voi
                       type
         );
     } else if (vectorOpcode.expectedChildCount() == 2) {
-        std::snprintf(inputTrees, sizeof(inputTrees),
+        Tril::format(inputTrees, sizeof(inputTrees),
                       "(method return= NoType args=[Address,Address,Address]           "
                       "  (block                                                        "
                       "     (%s%s  offset=0                                            "
@@ -162,7 +162,7 @@ void generateAndExecuteVectorTest(TR::ILOpCode vectorOpcode, void *expected, voi
                       type
         );
     } else if (vectorOpcode.expectedChildCount() == 3) {
-        std::snprintf(inputTrees, sizeof(inputTrees),
+        Tril::format(inputTrees, sizeof(inputTrees),
                       "(method return= NoType args=[Address,Address,Address,Address]   "
                       "  (block                                                        "
                       "     (%s%s  offset=0                                            "

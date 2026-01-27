@@ -33,6 +33,7 @@ omr_add_executable(triltest NOWARNINGS
 	MethodInfoTest.cpp
 	IlGenTest.cpp
 	CompileTest.cpp
+	FormatTest.cpp
 )
 
 target_link_libraries(triltest
