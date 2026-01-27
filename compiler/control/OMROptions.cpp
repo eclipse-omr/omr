@@ -1280,6 +1280,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "F" },
     { "enableParanoidRefCountChecks", "O\tenable extra reference count verification",
      SET_OPTION_BIT(TR_EnableParanoidRefCountChecks), "F" },
+    { "enablePatchableJProfiling", "O\tenable patchable JProfiling for low optimization compilations",
+     SET_OPTION_BIT(TR_EnablePatchableJProfiling), "F" },
     { "enablePerfAsserts", "O\tenable asserts for serious performance problems found during compilation",
      SET_OPTION_BIT(TR_EnablePerfAsserts), "F" },
     { "enableProfiledDevirtualization", "O\tenable devirtualization based on interpreter profiling",

@@ -443,7 +443,7 @@ enum TR_CompilationOptions {
     TR_DisableRetryCodeCacheAllocAndIgnoreKind               = 0x00000020 + 11,
     TR_DisableVectorAPIBoxing                                = 0x00000040 + 11,
     TR_EnableSelectiveEnterExitHooks                         = 0x00000080 + 11,
-    // Available                                             = 0x00000100 + 11,
+    TR_EnablePatchableJProfiling                             = 0x00000100 + 11,
     // Available                                             = 0x00000200 + 11,
     // Available                                             = 0x00000400 + 11,
     TR_DisableConstProvenance                                = 0x00000800 + 11,
