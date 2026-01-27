@@ -1182,6 +1182,58 @@ omrsysinfo_cgroup_subsystem_iterator_destroy(struct OMRPortLibrary *portLibrary,
 }
 
 /**
+ * Gather block device statistics.
+ *
+ * This function returns block device statistics for the given block device. A block device
+ * is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ *
+ * @param[in] portLibrary The port library
+ * @param[in] device The device to gather stats for
+ * @param[out] stats Structure to be filled with block device stats
+ *
+ * @return 0 on success, error code on failure
+ */
+int32_t
+omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats)
+{
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
+
+/**
+ * Return the block device for the given path.
+ *
+ * This function returns block device for the given path. A block device
+ * is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ *
+ * @param[in] portLibrary The port library
+ * @param[in] path The path who's block device will be returned
+ *
+ * @return Pointer to a string representing the device on success, NULL on failure
+ */
+char*
+omrsysinfo_get_block_device_for_path(struct OMRPortLibrary *portLibrary, const char *path)
+{
+	return NULL;
+}
+
+/**
+ * Return the block device for the system swap area.
+ *
+ * This function returns block device for the highest priority system swap area. Swap areas on
+ * devices and swap areas on files are both supported.
+ * A block device is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ *
+ * @param[in] portLibrary The port library
+ *
+ * @return Pointer to a string representing the device on success, NULL on failure
+ */
+char*
+omrsysinfo_get_block_device_for_swap(struct OMRPortLibrary *portLibrary)
+{
+	return NULL;
+}
+
+/**
  * Get the process start time in ns precision epoch time.
  * @param[in] portLibrary The port library
  * @param[in] pid The process ID

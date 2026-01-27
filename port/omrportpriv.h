@@ -666,6 +666,12 @@ omrsysinfo_cgroup_subsystem_iterator_next(struct OMRPortLibrary *portLibrary, st
 extern J9_CFUNC void
 omrsysinfo_cgroup_subsystem_iterator_destroy(struct OMRPortLibrary *portLibrary, struct OMRCgroupMetricIteratorState *state);
 extern J9_CFUNC int32_t
+omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats);
+extern J9_CFUNC char*
+omrsysinfo_get_block_device_for_path(struct OMRPortLibrary *portLibrary, const char *path);
+extern J9_CFUNC char*
+omrsysinfo_get_block_device_for_swap(struct OMRPortLibrary *portLibrary);
+extern J9_CFUNC int32_t
 omrsysinfo_get_process_start_time(struct OMRPortLibrary *portLibrary, uintptr_t pid, uint64_t *processStartTimeInNanoseconds);
 extern J9_CFUNC int32_t
 omrsysinfo_get_number_context_switches(struct OMRPortLibrary *portLibrary, uint64_t *numSwitches);
