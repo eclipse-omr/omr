@@ -556,6 +556,14 @@ public:
     inline bool isMask();
 
     /** \brief
+     *     Checks if the type is Vector or  Mask type
+     *
+     *  \return
+     *     true iff is Vector or  Mask type
+     */
+    bool isVectorOrMask() { return isVector() || isMask(); }
+
+    /** \brief
      *     Creates mask type based on element type and vector length
      *
      *  \param elementType
