@@ -391,3 +391,32 @@ MM_GCExtensionsBase::getUniqueGCCycleCount()
 	}
 	return result;
 }
+
+UDATA
+MM_GCExtensionsBase::getTenureThreshold()
+{
+	UDATA result = 0;
+
+	switch (configurationOptions._gcPolicy) {
+	case OMR_GC_POLICY_OPTTHRUPUT:
+	case OMR_GC_POLICY_OPTAVGPAUSE:
+	case OMR_GC_POLICY_METRONOME:
+		break;
+	case OMR_GC_POLICY_GENCON:
+#if defined(OMR_GC_MODRON_SCAVENGER)
+		result = scavengerStats._tenureAge;
+#endif /* defined(OMR_GC_MODRON_SCAVENGER) */
+		break;
+	case OMR_GC_POLICY_BALANCED:
+#if defined(OMR_GC_VLHGC)
+#endif /* defined(OMR_GC_VLHGC) */
+		break;
+	case OMR_GC_POLICY_NOGC:
+		break;
+	default :
+		/* Unknown GC policy. */
+		Assert_MM_unreachable();
+		break;
+	}
+	return result;
+}
