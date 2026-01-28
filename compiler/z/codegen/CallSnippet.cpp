@@ -66,17 +66,12 @@ uint8_t *TR::S390CallSnippet::storeArgumentItem(TR::InstOpCode::Mnemonic op, uin
     return buffer + opCode.getInstructionLength();
 }
 
-uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
-    TR::CodeGenerator *cg)
+uint8_t *TR::S390CallSnippet::S390flushArgumentsToStackHelper(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
+    TR::CodeGenerator *cg, int argStart, bool rightToLeft, TR::Linkage *linkage)
 {
     int32_t intArgNum = 0, floatArgNum = 0, offset;
     TR::Machine *machine = cg->machine();
-    TR::Linkage *linkage = cg->getLinkage(callNode->getSymbol()->castToMethodSymbol()->getLinkageConvention());
 
-    int32_t argStart = callNode->getFirstArgumentIndex();
-    bool rightToLeft = linkage->getRightToLeft() &&
-        // we want the arguments for induceOSR to be passed from left to right as in any other non-helper call
-        !callNode->getSymbolReference()->isOSRInductionHelper();
     if (rightToLeft) {
         offset = linkage->getOffsetToFirstParm();
     } else {
@@ -106,6 +101,7 @@ uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Nod
                 if (!rightToLeft) {
                     offset -= cg->comp()->target().is64Bit() ? 8 : 4;
                 }
+
                 if (intArgNum < linkage->getNumIntegerArgumentRegisters()) {
                     buffer = storeArgumentItem(TR::InstOpCode::getStoreOpCode(), buffer,
                         machine->getRealRegister(linkage->getIntegerArgumentRegister(intArgNum)), offset, cg);
@@ -174,6 +170,19 @@ uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Nod
     return buffer;
 }
 
+uint8_t *TR::S390CallSnippet::S390flushArgumentsToStack(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
+    TR::CodeGenerator *cg)
+{
+    TR::Linkage *linkage = cg->getLinkage(callNode->getSymbol()->castToMethodSymbol()->getLinkageConvention());
+
+    int32_t argStart = callNode->getFirstArgumentIndex();
+    bool rightToLeft = linkage->getRightToLeft() &&
+        // we want the arguments for induceOSR to be passed from left to right as in any other non-helper call
+        !callNode->getSymbolReference()->isOSRInductionHelper();
+
+    return S390flushArgumentsToStackHelper(buffer, callNode, argSize, cg, argStart, rightToLeft, linkage);
+}
+
 int32_t TR::S390CallSnippet::adjustCallOffsetWithTrampoline(uintptr_t targetAddr, uint8_t *currentInst,
     TR::SymbolReference *callSymRef, TR::Snippet *snippet)
 {
@@ -209,9 +218,14 @@ int32_t TR::S390CallSnippet::adjustCallOffsetWithTrampoline(uintptr_t targetAddr
  */
 int32_t TR::S390CallSnippet::instructionCountForArguments(TR::Node *callNode, TR::CodeGenerator *cg)
 {
+    int32_t argStart = callNode->getFirstArgumentIndex();
+    return instructionCountForArgumentsInner(callNode, cg, argStart);
+}
+
+int32_t TR::S390CallSnippet::instructionCountForArgumentsInner(TR::Node *callNode, TR::CodeGenerator *cg, int32_t argStart)
+{
     int32_t intArgNum = 0, floatArgNum = 0, count = 0;
     TR::Linkage *linkage = cg->getLinkage(callNode->getSymbol()->castToMethodSymbol()->getLinkageConvention());
-    int32_t argStart = callNode->getFirstArgumentIndex();
 
     for (int32_t i = argStart; i < callNode->getNumChildren(); i++) {
         TR::Node *child = callNode->getChild(i);
@@ -254,6 +268,138 @@ int32_t TR::S390CallSnippet::instructionCountForArguments(TR::Node *callNode, TR
         }
     }
     return count;
+}
+
+uint8_t *TR::S390CallSnippet::printS390ArgumentsFlush(OMR::Logger *log, TR::Node *node, uint8_t *bufferPos, int32_t argSize, TR_Debug *debug, int32_t argStart, TR::Machine *machine, TR::Linkage *privateLinkage)
+{
+   int32_t offset = 0, intArgNum = 0, floatArgNum = 0;
+
+   TR::RealRegister *stackPtr = privateLinkage->getStackPointerRealRegister();
+
+   if (privateLinkage->getRightToLeft()) {
+        offset = privateLinkage->getOffsetToFirstParm();
+    } else {
+        offset = argSize + privateLinkage->getOffsetToFirstParm();
+    }
+
+    for (int i = node->getFirstArgumentIndex(); i < node->getNumChildren(); i++) {
+        TR::Node *child = node->getChild(i);
+        switch (child->getDataType()) {
+            case TR::Int8:
+            case TR::Int16:
+            case TR::Int32:
+            case TR::Address:
+                if (!privateLinkage->getRightToLeft()) {
+                    offset -= comp()->target().is64Bit() ? 8 : 4;
+                }
+                if (intArgNum < privateLinkage->getNumIntegerArgumentRegisters()) {
+                    if (comp()->target().is64Bit() && child->getDataType() == TR::Address) {
+                        debug->printPrefix(log, NULL, bufferPos, 6);
+                        log->prints("STG  \t");
+                    } else {
+                        debug->printPrefix(log, NULL, bufferPos, 4);
+                        log->prints("ST   \t");
+                    }
+
+                    debug->print(log, machine->getRealRegister(privateLinkage->getIntegerArgumentRegister(intArgNum)));
+                    log->printf(",%d(,", offset);
+                    debug->print(log, stackPtr);
+                    log->printc(')');
+
+                    if (comp()->target().is64Bit() && child->getDataType() == TR::Address) {
+                        bufferPos += 6;
+                    } else {
+                        bufferPos += 4;
+                    }
+                }
+                intArgNum++;
+                if (privateLinkage->getRightToLeft()) {
+                    offset -= comp()->target().is64Bit() ? 8 : 4;
+                }
+                break;
+
+            case TR::Int64:
+                if (!privateLinkage->getRightToLeft()) {
+                    offset -= (comp()->target().is64Bit() ? 16 : 8);
+                }
+                if (intArgNum < privateLinkage->getNumIntegerArgumentRegisters()) {
+                    if (comp()->target().is64Bit()) {
+                        debug->printPrefix(log, NULL, bufferPos, 6);
+                        log->prints("STG  \t");
+                        debug->print(log, machine->getRealRegister(privateLinkage->getIntegerArgumentRegister(intArgNum)));
+                        log->printf(",%d(,", offset);
+                        debug->print(log, stackPtr);
+                        log->printc(')');
+                        bufferPos += 6;
+                    } else {
+                        debug->printPrefix(log, NULL, bufferPos, 4);
+                        log->prints("ST   \t");
+                        debug->print(log, machine->getRealRegister(privateLinkage->getIntegerArgumentRegister(intArgNum)));
+                        log->printf(", %d(,", offset);
+                        debug->print(log, stackPtr);
+                        log->printc(')');
+                        bufferPos += 4;
+
+                        if (intArgNum < privateLinkage->getNumIntegerArgumentRegisters() - 1) {
+                            debug->printPrefix(log, NULL, bufferPos, 4);
+                            log->prints("ST   \t");
+
+                            debug->print(log,
+                                machine->getRealRegister(privateLinkage->getIntegerArgumentRegister(intArgNum + 1)));
+                            log->printf(",%d(,", offset + 4);
+                            debug->print(log, stackPtr);
+                            log->printc(')');
+                            bufferPos += 4;
+                        }
+                    }
+                }
+                intArgNum += comp()->target().is64Bit() ? 1 : 2;
+                if (privateLinkage->getRightToLeft()) {
+                    offset += comp()->target().is64Bit() ? 16 : 8;
+                }
+                break;
+
+            case TR::Float:
+                if (!privateLinkage->getRightToLeft()) {
+                    offset -= 4;
+                }
+                if (floatArgNum < privateLinkage->getNumFloatArgumentRegisters()) {
+                    debug->printPrefix(log, NULL, bufferPos, 4);
+                    log->prints("STD   \t");
+                    debug->print(log, machine->getRealRegister(privateLinkage->getFloatArgumentRegister(floatArgNum)));
+                    log->printf(",%d(,", offset);
+                    debug->print(log, stackPtr);
+                    log->printc(')');
+                    bufferPos += 4;
+                }
+                floatArgNum++;
+                if (privateLinkage->getRightToLeft()) {
+                    offset += 4;
+                }
+                break;
+
+            case TR::Double:
+                if (!privateLinkage->getRightToLeft()) {
+                    offset -= 8;
+                }
+                if (floatArgNum < privateLinkage->getNumFloatArgumentRegisters()) {
+                    debug->printPrefix(log, NULL, bufferPos, 4);
+                    log->prints("STE  \t");
+                    debug->print(log, machine->getRealRegister(privateLinkage->getFloatArgumentRegister(floatArgNum)));
+                    log->printf(",%d(,", offset);
+                    debug->print(log, stackPtr);
+                    log->printc(')');
+                    bufferPos += 4;
+                }
+                floatArgNum++;
+                if (privateLinkage->getRightToLeft()) {
+                    offset += 8;
+                }
+                break;
+        }
+    }
+
+    return bufferPos;
 }
 
 uint8_t *TR::S390CallSnippet::getCallRA()
