@@ -1113,17 +1113,17 @@ TR::Register *OMR::Z::TreeEvaluator::mRegStoreEvaluator(TR::Node *node, TR::Code
 
 TR::Register *OMR::Z::TreeEvaluator::mandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vandEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::morEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vorEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vxorEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1489,47 +1489,47 @@ TR::Register *OMR::Z::TreeEvaluator::vmabsEvaluator(TR::Node *node, TR::CodeGene
 
 TR::Register *OMR::Z::TreeEvaluator::vmaddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vaddEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vandEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmcmpeqEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vcmpeqEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmcmpneEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vcmpneEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmcmpgtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vcmpgtEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmcmpgeEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vcmpgeEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmcmpltEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vcmpltEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmcmpleEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vcmpleEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmdivEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vdivEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmfmaEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1549,17 +1549,17 @@ TR::Register *OMR::Z::TreeEvaluator::vmloadiEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Z::TreeEvaluator::vmmaxEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vmaxEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmminEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vminEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmmulEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vmulEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmnegEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1574,7 +1574,7 @@ TR::Register *OMR::Z::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::CodeGene
 
 TR::Register *OMR::Z::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vorEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmorUncheckedEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1639,12 +1639,12 @@ TR::Register *OMR::Z::TreeEvaluator::vmstoreiEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *OMR::Z::TreeEvaluator::vmsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vsubEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vxorEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmfirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -14097,7 +14097,12 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::Cod
 TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::CodeGenerator *cg,
     TR::InstOpCode::Mnemonic op)
 {
-    TR_ASSERT(node->getNumChildren() <= 2, "Binary Node must only contain 2 or less children");
+    /* Binary operations can optionally use a mask. When a mask is present, it is provided as the third operand. The
+    operation is applied only to the lanes where the mask is set; lanes that are not masked retain their original value
+    from the first operand. For comparison operations, unmasked lanes are set to zero instead.*/
+    bool isMasked = node->getOpCode().isVectorMasked();
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getNumChildren() == (isMasked ? 3 : 2),
+        "Binary node must have 2 children, or 3 if a mask is present.");
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
 
@@ -14111,12 +14116,15 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
 
     TR::Node *secondChild = node->getSecondChild();
 
-    TR::Register *targetReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
+    // For masked operations, both the mask register and the first source register must remain unchanged.
+    TR::Register *targetReg
+        = isMasked ? cg->allocateRegister(TR_VRF) : TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
     TR::Register *sourceReg1 = cg->evaluate(firstChild);
     TR::Register *sourceReg2 = cg->evaluate(secondChild);
 
-    // !!! Masks change per instruction. *Ref to zPoP for masks* !!!
     uint8_t mask4 = getVectorElementSizeMask(node);
+    // If masked, zero unmasked lanes for compare ops; otherwise copy source to result.
+    bool isCompare = false;
 
     switch (op) {
         // These don't use mask
@@ -14146,12 +14154,14 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
         case TR::InstOpCode::VFCH:
         case TR::InstOpCode::VFCHE:
             breakInst = generateVRRcInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, 0, mask4);
+            isCompare = true;
             break;
         // These are VRRb
         case TR::InstOpCode::VCH:
         case TR::InstOpCode::VCHL:
         case TR::InstOpCode::VCEQ:
             breakInst = generateVRRbInstruction(cg, op, node, targetReg, sourceReg1, sourceReg2, 0, mask4);
+            isCompare = true;
             break;
         case TR::InstOpCode::VFMAX:
         case TR::InstOpCode::VFMIN:
@@ -14166,6 +14176,20 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::Co
             break;
         default:
             TR_ASSERT(false, "Binary Vector IL evaluation unimplemented for node : %s", cg->getDebug()->getName(node));
+    }
+
+    if (isMasked) {
+        TR::Node *maskChild = node->getThirdChild();
+        if (isCompare) {
+            // Zero unmasked lanes.
+            generateVRRcInstruction(cg, TR::InstOpCode::VN, node, targetReg, targetReg, cg->evaluate(maskChild), 0, 0,
+                0);
+        } else {
+            // Copy the source1 to the result if the lane is unmasked.
+            generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, targetReg, targetReg, sourceReg1,
+                cg->evaluate(maskChild), 0, 0);
+        }
+        cg->decReferenceCount(maskChild);
     }
 
     node->setRegister(targetReg);
@@ -15269,7 +15293,7 @@ TR::Register *OMR::Z::TreeEvaluator::vaddEvaluator(TR::Node *node, TR::CodeGener
     if ((node->getDataType().getVectorElementType() == TR::Double
             || node->getDataType().getVectorElementType() == TR::Float)
         && (canUseNodeForFusedMultiply(node->getFirstChild()) || canUseNodeForFusedMultiply(node->getSecondChild()))
-        && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMA)) {
+        && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMA) && !node->getOpCode().isVectorMasked()) {
         logprints(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
             "Successfully changed vadd with vmul child to fused multiply and add operation\n");
 
@@ -15303,7 +15327,7 @@ TR::Register *OMR::Z::TreeEvaluator::vsubEvaluator(TR::Node *node, TR::CodeGener
     if ((node->getDataType().getVectorElementType() == TR::Double
             || node->getDataType().getVectorElementType() == TR::Float)
         && canUseNodeForFusedMultiply(node->getFirstChild())
-        && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMS)) {
+        && generateFusedMultiplyAddIfPossible(cg, node, TR::InstOpCode::VFMS) && !node->getOpCode().isVectorMasked()) {
         logprints(cg->comp()->getOption(TR_TraceCG), cg->comp()->log(),
             "Successfully changed vsub with vmul child to fused multiply and sub operation\n");
 
@@ -15377,6 +15401,14 @@ TR::Register *OMR::Z::TreeEvaluator::vmulEvaluator(TR::Node *node, TR::CodeGener
             generateVRRcInstruction(cg, TR::InstOpCode::VML, node, multLow, tempReg, firstChildReg, 2);
             generateVRRcInstruction(cg, TR::InstOpCode::VA, node, returnReg, multLow, returnReg, 3);
 
+            if (node->getOpCode().isVectorMasked()) {
+                TR::Node *maskChild = node->getThirdChild();
+                // Copy the source 1 to the result if the lane is unmasked.
+                generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, returnReg, returnReg, firstChildReg,
+                    cg->evaluate(maskChild), 0, 0);
+                cg->decReferenceCount(maskChild);
+            }
+
             node->setRegister(returnReg);
 
             cg->stopUsingRegister(multHigh);
@@ -15416,9 +15448,20 @@ TR::Register *OMR::Z::TreeEvaluator::vDivOrRemHelper(TR::Node *node, TR::CodeGen
         generateVRIaInstruction(cg, TR::InstOpCode::VREPI, node, resultVRF, isDivision ? 1 : 0, mask4);
 
         node->setRegister(resultVRF);
-
-        // not evaluating, so recursively decrement reference count
-        cg->recursivelyDecReferenceCount(dividend);
+        if (node->getOpCode().isVectorMasked()) {
+            TR::Node *maskChild = node->getThirdChild();
+            // Copy source 1 to result if the lane is not masked.
+            generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultVRF, resultVRF, cg->evaluate(dividend),
+                cg->evaluate(maskChild), 0, 0);
+            cg->decReferenceCount(maskChild);
+            cg->decReferenceCount(dividend);
+        } else {
+            // Since the dividend and divisor are identical, the result is value‑independent.
+            // No need to evaluate the child nodes; recursively decrement their reference counts instead.
+            cg->recursivelyDecReferenceCount(dividend);
+        }
+        // Since the dividend and divisor are identical, the result is value‑independent.
+        // No need to evaluate the child nodes; recursively decrement their reference counts instead.
         cg->recursivelyDecReferenceCount(divisor);
     } else {
         TR::Register *dividendGPRHigh = cg->allocateRegister();
@@ -15467,12 +15510,18 @@ TR::Register *OMR::Z::TreeEvaluator::vDivOrRemHelper(TR::Node *node, TR::CodeGen
                 isDivision ? dividendGPRLow : dividendGPRHigh, generateS390MemoryReference(i, cg), mask4);
         }
 
+        if (node->getOpCode().isVectorMasked()) {
+            TR::Node *maskChild = node->getThirdChild();
+            // Copy source 1 to result if the lane is not masked.
+            generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultVRF, resultVRF, dividendVRF,
+                cg->evaluate(maskChild), 0, 0);
+            cg->decReferenceCount(maskChild);
+        }
+
         node->setRegister(resultVRF);
 
         cg->stopUsingRegister(dividendGPR);
         cg->stopUsingRegister(divisorGPR);
-        cg->stopUsingRegister(dividendVRF);
-        cg->stopUsingRegister(divisorVRF);
 
         cg->decReferenceCount(dividend);
         cg->decReferenceCount(divisor);
@@ -15557,12 +15606,15 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpneEvaluator(TR::Node *node, TR::CodeGen
             TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString());
             break;
     }
-
-    // vector nor with zero vector
-    TR::Register *vecZeroReg = cg->allocateRegister(TR_VRF);
-    generateZeroVector(node, cg, vecZeroReg);
-    generateVRRcInstruction(cg, TR::InstOpCode::VNO, node, targetReg, targetReg, vecZeroReg, 0, 0, 0);
-    cg->stopUsingRegister(vecZeroReg);
+    if (node->getOpCode().isVectorMasked()) {
+        TR::Node *maskChild = node->getThirdChild();
+        // Invert the result if the lane is masked otherwise zero it.
+        generateVRRcInstruction(cg, TR::InstOpCode::VNC, node, targetReg, cg->evaluate(maskChild), targetReg, 0, 0, 0);
+        cg->decReferenceCount(maskChild);
+    } else {
+        // Invert the result.
+        generateVRRcInstruction(cg, TR::InstOpCode::VNO, node, targetReg, targetReg, targetReg, 0, 0, 0);
+    }
     return node->getRegister();
 }
 
@@ -15604,8 +15656,6 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::CodeGen
     TR_ASSERT_FATAL_WITH_NODE(node, node->getFirstChild()->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
 
-    TR::InstOpCode::Mnemonic op = node->getOpCode().isUnsignedCompare() ? TR::InstOpCode::VCHL : TR::InstOpCode::VCH;
-
     TR::DataType dt = node->getFirstChild()->getDataType().getVectorElementType();
     if (dt == TR::Double || dt == TR::Float)
         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::VFCHE);
@@ -15621,15 +15671,23 @@ TR::Register *OMR::Z::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::CodeGen
         int32_t mask4 = getVectorElementSizeMask(node);
         // vector int types need compare equal part
         generateVRRbInstruction(cg, TR::InstOpCode::VCEQ, node, equalReg, firstReg, secondReg, 0, mask4);
+        TR::InstOpCode::Mnemonic op
+            = node->getOpCode().isUnsignedCompare() ? TR::InstOpCode::VCHL : TR::InstOpCode::VCH;
         generateVRRbInstruction(cg, op, node, targetReg, firstReg, secondReg, 0, mask4);
         generateVRRcInstruction(cg, TR::InstOpCode::VO, node, targetReg, targetReg, equalReg, 0, 0, 0);
 
+        cg->stopUsingRegister(equalReg);
+
+        if (node->getOpCode().isVectorMasked()) {
+            TR::Node *maskChild = node->getThirdChild();
+            // Zero any lane that is not covered by mask.
+            generateVRRcInstruction(cg, TR::InstOpCode::VN, node, targetReg, targetReg, cg->evaluate(maskChild), 0, 0,
+                0);
+            cg->decReferenceCount(maskChild);
+        }
+
         cg->decReferenceCount(firstChild);
         cg->decReferenceCount(secondChild);
-
-        cg->stopUsingRegister(equalReg);
-        cg->stopUsingRegister(firstReg);
-        cg->stopUsingRegister(secondReg);
 
         node->setRegister(targetReg);
         return targetReg;
