@@ -39,6 +39,7 @@ if(OMR_OS_ZOS)
 	endif()
 
 	list(APPEND OMR_PLATFORM_COMPILE_OPTIONS
+		"-fno-short-enums"
 		"-fstrict-aliasing"
 		"-mzos-target=${OMR_ZOS_COMPILE_TARGET}"
 		"-m64"
