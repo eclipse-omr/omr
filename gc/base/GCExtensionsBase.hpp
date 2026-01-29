@@ -1468,6 +1468,13 @@ public:
 	 */
 	uintptr_t getUniqueGCCycleCount();
 
+	/**
+	 * Get the tenure age by type of gc.
+	 *
+	 * @return tenure age
+	 */
+	UDATA getTenureThreshold();
+
 #if defined(J9VM_OPT_CRIU_SUPPORT)
 	/**
 	 * Helper function to determine whether a GC reinitialization is taking place
