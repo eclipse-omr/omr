@@ -330,7 +330,7 @@ typedef enum {
     TR_InlinedMethodPointer = 108,
     TR_VMINLMethod = 109,
     TR_ValidateJ2IThunkFromMethod = 110,
-    TR_StaticDefaultValueInstance = 111,
+    TR_StaticDefaultValueInstance_Unused = 111,
     TR_ValidateIsClassVisible = 112,
     TR_CatchBlockCounter = 113,
     TR_StartPC = 114,

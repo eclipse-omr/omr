@@ -1400,8 +1400,6 @@ const char *TR_Debug::getName(TR::SymbolReference *symRef)
                 return "<J9JNIMethodIDvTableIndexField>";
             case TR::SymbolReferenceTable::contiguousArrayDataAddrFieldSymbol:
                 return "<contiguousArrayDataAddrField>";
-            case TR::SymbolReferenceTable::defaultValueSymbol:
-                return "<defaultValue>";
             case TR::SymbolReferenceTable::jitDispatchJ9MethodSymbol:
                 return "<jitDispatchJ9Method>";
             case TR::SymbolReferenceTable::jProfileValueSymbol:
@@ -1690,15 +1688,6 @@ const char *TR_Debug::getStaticName(TR::SymbolReference *symRef)
     if (sym->isConst())
         return "<constant>";
 
-    // Value Type default value instance slot address
-    if (sym->isStaticDefaultValueInstance() && staticAddress) {
-        const uint8_t EXTRA_SPACE = 5;
-        char *name = (char *)_comp->trMemory()->allocateHeapMemory(
-            TR::Compiler->debug.pointerPrintfMaxLenInChars() + EXTRA_SPACE);
-        sprintf(name, POINTER_PRINTF_FORMAT, staticAddress);
-        return name;
-    }
-
     if (symRef->getCPIndex() >= 0)
         return getOwningMethod(symRef)->staticName(symRef->getCPIndex(), comp()->trMemory());
 
@@ -1736,28 +1725,28 @@ const char *TR_Debug::getStaticName(TR::SymbolReference *symRef)
 }
 
 // Note: This array needs to match up with what is in compile/SymbolReferenceTable.hpp
-static const char *commonNonhelperSymbolNames[] = { "<contiguousArraySize>", "<discontiguousArraySize>",
-    "<arrayClassRomPtr>", "<classRomPtr>", "<javaLangClassFromClass>", "<classFromJavaLangClass>",
-    "<addressOfClassOfMethod>", "<ramStaticsFromClass>", "<componentClass>", "<componentClassAsPrimitive>", "<isArray>",
-    "<isClassDepthAndFlags>", "<initializeStatusFromClass>", "<isClassFlags>", "<vft>", "<currentThread>",
-    "<recompilationCounter>", "<excp>", "<indexableSize>", "<resolveCheck>", "<arrayTranslate>",
-    "<arrayTranslateAndTest>", "<long2String>", "<bitOpMem>", "<reverseLoad>", "<reverseStore>",
-    "<currentTimeMaxPrecision>", "<encodeASCII>", "<headerFlags>", "<singlePrecisionSQRT>", "<threadPrivateFlags>",
-    "<arrayletSpineFirstElement>", "<dltBlock>", "<countForRecompile>", "<gcrPatchPoint>", "<counterAddress>",
-    "<startPC>", "<compiledMethod>", "<thisRangeExtension>", "<profilingBufferCursor>", "<profilingBufferEnd>",
-    "<profilingBuffer>", "<osrBuffer>", "<osrScratchBuffer>", "<osrFrameIndex>", "<osrReturnAddress>",
-    "<contiguousArrayDataAddrField>", "<potentialOSRPointHelper>", "<osrFearPointHelper>", "<eaEscapeHelper>",
-    "<lowTenureAddress>", "<highTenureAddress>", "<fragmentParent>", "<globalFragment>", "<instanceShape>",
-    "<instanceDescription>", "<descriptionWordFromPtr>", "<classFromJavaLangClassAsPrimitive>", "<javaVM>",
-    "<heapBase>", "<heapTop>", "<j9methodExtraField>", "<j9methodConstantPoolField>", "<startPCLinkageInfo>",
-    "<instanceShapeFromROMClass>", "<objectEqualityComparison>", "<objectInequalityComparison>",
-    "<nonNullableArrayNullStoreCheck>", "<loadFlattenableArrayElementNonHelper>",
-    "<storeFlattenableArrayElementNonHelper>", "<isIdentityObject>", "<synchronizedFieldLoad>", "<atomicAdd>",
-    "<atomicFetchAndAdd>", "<atomicFetchAndAdd32Bit>", "<atomicFetchAndAdd64Bit>", "<atomicSwap>", "<atomicSwap32Bit>",
-    "<atomicSwap64Bit>", "<atomicCompareAndSwapReturnStatus>", "<atomicCompareAndSwapReturnValue>",
-    "<jProfileValueSymbol>", "<jProfileValueWithNullCHKSymbol>", "<j9VMThreadTempSlotField>",
-    "<computedStaticCallSymbol>", "<j9VMThreadFloatTemp1>", "<J9JNIMethodIDvTableIndexFieldSymbol>", "<defaultValue>",
-    "<jitDispatchJ9Method>" };
+static const char *commonNonhelperSymbolNames[]
+    = { "<contiguousArraySize>", "<discontiguousArraySize>", "<arrayClassRomPtr>", "<classRomPtr>",
+          "<javaLangClassFromClass>", "<classFromJavaLangClass>", "<addressOfClassOfMethod>", "<ramStaticsFromClass>",
+          "<componentClass>", "<componentClassAsPrimitive>", "<isArray>", "<isClassDepthAndFlags>",
+          "<initializeStatusFromClass>", "<isClassFlags>", "<vft>", "<currentThread>", "<recompilationCounter>",
+          "<excp>", "<indexableSize>", "<resolveCheck>", "<arrayTranslate>", "<arrayTranslateAndTest>", "<long2String>",
+          "<bitOpMem>", "<reverseLoad>", "<reverseStore>", "<currentTimeMaxPrecision>", "<encodeASCII>",
+          "<headerFlags>", "<singlePrecisionSQRT>", "<threadPrivateFlags>", "<arrayletSpineFirstElement>", "<dltBlock>",
+          "<countForRecompile>", "<gcrPatchPoint>", "<counterAddress>", "<startPC>", "<compiledMethod>",
+          "<thisRangeExtension>", "<profilingBufferCursor>", "<profilingBufferEnd>", "<profilingBuffer>", "<osrBuffer>",
+          "<osrScratchBuffer>", "<osrFrameIndex>", "<osrReturnAddress>", "<contiguousArrayDataAddrField>",
+          "<potentialOSRPointHelper>", "<osrFearPointHelper>", "<eaEscapeHelper>", "<lowTenureAddress>",
+          "<highTenureAddress>", "<fragmentParent>", "<globalFragment>", "<instanceShape>", "<instanceDescription>",
+          "<descriptionWordFromPtr>", "<classFromJavaLangClassAsPrimitive>", "<javaVM>", "<heapBase>", "<heapTop>",
+          "<j9methodExtraField>", "<j9methodConstantPoolField>", "<startPCLinkageInfo>", "<instanceShapeFromROMClass>",
+          "<objectEqualityComparison>", "<objectInequalityComparison>", "<nonNullableArrayNullStoreCheck>",
+          "<loadFlattenableArrayElementNonHelper>", "<storeFlattenableArrayElementNonHelper>", "<isIdentityObject>",
+          "<synchronizedFieldLoad>", "<atomicAdd>", "<atomicFetchAndAdd>", "<atomicFetchAndAdd32Bit>",
+          "<atomicFetchAndAdd64Bit>", "<atomicSwap>", "<atomicSwap32Bit>", "<atomicSwap64Bit>",
+          "<atomicCompareAndSwapReturnStatus>", "<atomicCompareAndSwapReturnValue>", "<jProfileValueSymbol>",
+          "<jProfileValueWithNullCHKSymbol>", "<j9VMThreadTempSlotField>", "<computedStaticCallSymbol>",
+          "<j9VMThreadFloatTemp1>", "<J9JNIMethodIDvTableIndexFieldSymbol>", "<jitDispatchJ9Method>" };
 
 const char *TR_Debug::getShadowName(TR::SymbolReference *symRef)
 {
