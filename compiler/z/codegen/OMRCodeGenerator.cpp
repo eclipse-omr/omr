@@ -4366,7 +4366,9 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
     // implemented vector opcodes
     switch (opcode.getVectorOperation()) {
         case TR::vadd:
+        case TR::vmadd:
         case TR::vsub:
+        case TR::vmsub:
         case TR::vload:
         case TR::vloadi:
         case TR::vstore:
@@ -4381,11 +4383,13 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vmpopcnt:
             return true;
         case TR::vmul:
+        case TR::vmmul:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Float || et == TR::Double)
                 return true;
             else
                 return false;
         case TR::vdiv:
+        case TR::vmdiv:
         case TR::vfma:
         case TR::vsqrt:
         case TR::vmsqrt:
@@ -4394,8 +4398,11 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
             else
                 return false;
         case TR::vxor:
+        case TR::vmxor:
         case TR::vor:
+        case TR::vmor:
         case TR::vand:
+        case TR::vmand:
         case TR::vnotz:
         case TR::vnolz:
         case TR::vmnotz:
@@ -4412,6 +4419,8 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
                 return false;
         case TR::vmax:
         case TR::vmin:
+        case TR::vmmax:
+        case TR::vmmin:
             if ((et == TR::Float || et == TR::Double)
                 && !cpu->supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1))
                 return false;
@@ -4427,6 +4436,12 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vcmple:
         case TR::vcmpgt:
         case TR::vcmpge:
+        case TR::vmcmpeq:
+        case TR::vmcmpne:
+        case TR::vmcmplt:
+        case TR::vmcmple:
+        case TR::vmcmpgt:
+        case TR::vmcmpge:
             // Since these opcodes return a mask, verify the source type and CPU feature support.
             return (opcode.getVectorSourceDataType().getVectorElementType() != TR::Float)
                 || cpu->supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1);
