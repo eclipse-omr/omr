@@ -1326,23 +1326,11 @@ public:
 	 * @param base low address of Old subspace range
 	 * @param size size of Old subspace in bytes
 	 */
-	virtual void setTenureAddressRange(void* base, uintptr_t size)
+	virtual void
+	setTenureAddressRange(void* base, uintptr_t size)
 	{
 		_tenureBase = base;
 		_tenureSize = size;
-
-		/* todo: dagar move back to MemorySubSpaceGeneric addTenureRange() and removeTenureRange() once
-		 * heapBaseForBarrierRange0 heapSizeForBarrierRange0 can be removed from J9VMThread
-		 *
-		 * setTenureAddressRange() can be removed from GCExtensions.hpp and made inline again
-		 */
-		GC_OMRVMThreadListIterator vmThreadListIterator(_omrVM);
-		while (OMR_VMThread* walkThread = vmThreadListIterator.nextOMRVMThread()) {
-			walkThread->lowTenureAddress = heapBaseForBarrierRange0;
-			walkThread->highTenureAddress = (void*)((uintptr_t)heapBaseForBarrierRange0 + heapSizeForBarrierRange0);
-			walkThread->heapBaseForBarrierRange0 = heapBaseForBarrierRange0;
-			walkThread->heapSizeForBarrierRange0 = heapSizeForBarrierRange0;
-		}
 	}
 
 	virtual void identityHashDataAddRange(MM_EnvironmentBase* env, MM_MemorySubSpace* subspace, uintptr_t size, void* lowAddress, void* highAddress);

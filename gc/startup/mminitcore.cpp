@@ -52,31 +52,6 @@ initializeMutatorModel(OMR_VMThread *omrVMThread)
 	MM_GCExtensionsBase* extensions = MM_GCExtensionsBase::getExtensions(omrVMThread->_vm);
 	omrVMThread->_gcOmrVMThreadExtensions = extensions->configuration->createEnvironment(extensions, omrVMThread);
 	if (NULL != omrVMThread->_gcOmrVMThreadExtensions) {
-		if (extensions->isStandardGC()) {
-			void *lowAddress = extensions->heapBaseForBarrierRange0;
-			void *highAddress = (void *)((uintptr_t)extensions->heapBaseForBarrierRange0 + extensions->heapSizeForBarrierRange0);
-			omrVMThread->lowTenureAddress = lowAddress;
-			omrVMThread->highTenureAddress = highAddress;
-
-			/* replacement values for lowTenureAddress and highTenureAddress */
-			omrVMThread->heapBaseForBarrierRange0 = extensions->heapBaseForBarrierRange0;
-			omrVMThread->heapSizeForBarrierRange0 = extensions->heapSizeForBarrierRange0;
-		} else if (extensions->isVLHGC()) {
-			MM_Heap *heap = extensions->getHeap();
-			void *heapBase = heap->getHeapBase();
-			void *heapTop = heap->getHeapTop();
-
-			/* replacement values for lowTenureAddress and highTenureAddress */
-			omrVMThread->heapBaseForBarrierRange0 = heapBase;
-			omrVMThread->heapSizeForBarrierRange0 = (uintptr_t)heapTop - (uintptr_t)heapBase;
-
-			/* lowTenureAddress and highTenureAddress are actually supposed to be the low and high addresses of the heap for which card
-			 * dirtying is required (the JIT uses this as a range check to determine if it needs to dirty a card when writing into an
-			 * object).  Setting these for Tarok is just a work-around until a more generic solution is implemented
-			 */
-			omrVMThread->lowTenureAddress = heapBase;
-			omrVMThread->highTenureAddress = heapTop;
-		}
 		omrVMThread->memorySpace = extensions->heap->getDefaultMemorySpace();
 	} else {
 		return -1;
