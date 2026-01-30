@@ -511,11 +511,6 @@ public:
         J9JNIMethodIDvTableIndexFieldSymbol,
 
         /** \brief
-         * This symbol is used to access the default instance associated with a class, if any exists
-         */
-        defaultValueSymbol,
-
-        /** \brief
          * Dispatch directly to a dynamically-specified method.
          */
         jitDispatchJ9MethodSymbol,

@@ -123,20 +123,6 @@ public:
      */
     int32_t flattenedArrayElementSize(TR::Compilation *comp, TR_OpaqueClassBlock *arrayClass) { return 0; }
 
-    /**
-     * \brief
-     *    Checks whether instances of the specified class can be trivially initialized by
-     *    "zeroing" their fields
-     *
-     * \param clazz
-     *    The class that is to be checked
-     *
-     * \return
-     *    `true` if instances of the specified class can be initialized by zeroing their fields;
-     *    `false` otherwise (if some special initialization is required for some fields)
-     */
-    bool isZeroInitializable(TR_OpaqueClassBlock *clazz) { return true; }
-
     bool isPrimitiveArray(TR::Compilation *comp, TR_OpaqueClassBlock *) { return false; }
 
     TR::DataTypes primitiveArrayComponentType(TR::Compilation *comp, TR_OpaqueClassBlock *) { return TR::NoType; }
