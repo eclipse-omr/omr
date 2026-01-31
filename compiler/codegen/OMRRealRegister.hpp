@@ -48,8 +48,6 @@ namespace OMR {
 
 class OMR_EXTENSIBLE RealRegister : public TR::Register {
 public:
-    TR::RealRegister *self();
-
     typedef enum {
         Free = 0,
         Unlatched = 1,
@@ -87,6 +85,8 @@ public:
 protected:
     RealRegister(TR::CodeGenerator *cg, RegNum n);
     RealRegister(TR_RegisterKinds, uint16_t, RegState, uint16_t, RegNum, RegMask, TR::CodeGenerator *);
+
+    TR::RealRegister *self();
 
 public:
     /*

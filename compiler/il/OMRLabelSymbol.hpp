@@ -65,8 +65,6 @@ namespace OMR {
  */
 class OMR_EXTENSIBLE LabelSymbol : public TR::Symbol {
 public:
-    TR::LabelSymbol *self();
-
     template<typename AllocatorType> static TR::LabelSymbol *create(AllocatorType, TR::CodeGenerator *);
 
     template<typename AllocatorType> static TR::LabelSymbol *create(AllocatorType, TR::CodeGenerator *, TR::Block *);
@@ -74,6 +72,8 @@ public:
 protected:
     LabelSymbol(TR::CodeGenerator *cg);
     LabelSymbol(TR::CodeGenerator *cg, TR::Block *labb);
+
+    TR::LabelSymbol *self();
 
 public:
     // Using declaration is required here or else the

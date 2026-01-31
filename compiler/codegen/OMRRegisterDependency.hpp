@@ -61,8 +61,6 @@ public:
 #endif /* defined(OMR_ARCH_S390) */
     {}
 
-    TR::RegisterDependencyGroup *self();
-
     void *operator new(size_t s, int32_t numDependencies, TR_Memory *m)
     {
         TR_ASSERT(numDependencies >= 0, "Number of dependencies must be non-negative");
@@ -189,6 +187,8 @@ public:
     }
 
 protected:
+    TR::RegisterDependencyGroup *self();
+
 #if defined(OMR_ARCH_S390)
     int8_t _numUses;
 #elif defined(__GNUC__) && !defined(__clang__) /* defined(OMR_ARCH_S390) */

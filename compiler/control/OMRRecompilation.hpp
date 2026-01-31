@@ -50,8 +50,6 @@ class Recompilation {
 public:
     TR_ALLOC(TR_Memory::Recompilation)
 
-    TR::Recompilation *self();
-
     virtual TR::Instruction *generatePrePrologue() { return 0; }
 
     virtual TR::Instruction *generatePrologue(TR::Instruction *) { return 0; }
@@ -76,6 +74,8 @@ public:
 
 protected:
     Recompilation(TR::Compilation *);
+
+    TR::Recompilation *self();
 
     TR::Compilation *comp() { return _compilation; }
 

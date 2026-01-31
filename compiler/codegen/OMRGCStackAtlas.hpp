@@ -55,6 +55,9 @@ class CodeGenerator;
 namespace OMR {
 
 class OMR_EXTENSIBLE GCStackAtlas {
+protected:
+    TR::GCStackAtlas *self();
+
 public:
     TR_ALLOC(TR_Memory::GCStackAtlas)
 
@@ -83,8 +86,6 @@ public:
         , _mapList(m)
         , _hasUninitializedPinningArrayPointer(false)
     {}
-
-    TR::GCStackAtlas *self();
 
     TR_Memory *trMemory() { return _trMemory; }
 

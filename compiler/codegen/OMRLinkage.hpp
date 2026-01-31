@@ -65,8 +65,6 @@ template<class T> class List;
 namespace OMR {
 class OMR_EXTENSIBLE Linkage {
 public:
-    inline TR::Linkage *self();
-
     /**
      * @return Cached CodeGenerator object
      */
@@ -211,6 +209,8 @@ public:
     }
 
 protected:
+    inline TR::Linkage *self();
+
     TR::CodeGenerator *_cg;
 
     int32_t _offsetToFirstParm;

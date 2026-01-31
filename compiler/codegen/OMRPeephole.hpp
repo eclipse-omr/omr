@@ -52,8 +52,6 @@ public:
 
     Peephole(TR::Compilation *comp);
 
-    TR::Peephole *self();
-
     TR::CodeGenerator *cg() const;
     TR::Compilation *comp() const;
 
@@ -85,6 +83,8 @@ private:
     TR::CodeGenerator *_cg;
 
 protected:
+    TR::Peephole *self();
+
     /// Represents the previous instruction on which peepholes were performed, which is also the restart point in case a
     /// transformation was performed on the current instruction being processed
     TR::Instruction *prevInst;

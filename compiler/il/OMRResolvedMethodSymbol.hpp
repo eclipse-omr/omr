@@ -80,9 +80,9 @@ class OMR_EXTENSIBLE ResolvedMethodSymbol : public TR::MethodSymbol {
 protected:
     ResolvedMethodSymbol(TR_ResolvedMethod *, TR::Compilation *);
 
-public:
     TR::ResolvedMethodSymbol *self();
 
+public:
     template<typename AllocatorType>
     static TR::ResolvedMethodSymbol *create(AllocatorType, TR_ResolvedMethod *, TR::Compilation *);
 

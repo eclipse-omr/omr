@@ -78,8 +78,6 @@ public:
      */
     virtual ~Optimization() {}
 
-    inline TR::Optimization *self();
-
     Optimization(TR::OptimizationManager *manager)
         : TR_HasRandomGenerator(manager->comp())
         , _manager(manager)
@@ -178,6 +176,7 @@ public:
     void removeNode(TR::Node *node, TR::TreeTop *anchorTree);
 
 protected:
+    inline TR::Optimization *self();
     TR::OptimizationManager *_manager;
 };
 

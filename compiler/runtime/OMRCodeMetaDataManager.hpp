@@ -72,8 +72,6 @@ class OMR_EXTENSIBLE CodeMetaDataManager {
 public:
     TR_PERSISTENT_ALLOC(TR_Memory::CodeMetaData);
 
-    inline TR::CodeMetaDataManager *self();
-
     static TR::CodeMetaDataManager *codeMetaDataManager() { return _codeMetaDataManager; }
 
     bool initializeCodeMetaDataManager();
@@ -144,6 +142,8 @@ public:
     TR::MetaDataHashTable *addCodeCache(TR::CodeCache *codeCache);
 
 protected:
+    inline TR::CodeMetaDataManager *self();
+
     /**
      * @brief Initializes the translation metadata manager's members.
      *

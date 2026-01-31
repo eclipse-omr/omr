@@ -52,9 +52,10 @@ class Compilation;
 namespace OMR {
 
 class OMR_EXTENSIBLE ArithEnv {
-public:
+protected:
     TR::ArithEnv *self();
 
+public:
     template<typename T> inline T fpSquareRoot(T a) { return std::sqrt(a); }
 
     float floatAddFloat(float a, float b);

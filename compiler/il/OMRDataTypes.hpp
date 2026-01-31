@@ -424,9 +424,6 @@ public:
         : _type(t)
     {}
 
-    inline TR::DataType *self();
-    inline const TR::DataType *self() const;
-
     TR::DataTypes getDataType() const { return _type; }
 
     inline TR::DataType &operator=(const TR::DataType &rhs);
@@ -652,6 +649,9 @@ public:
     }
 
 protected:
+    inline TR::DataType *self();
+    inline const TR::DataType *self() const;
+
     TR::DataTypes _type;
 };
 

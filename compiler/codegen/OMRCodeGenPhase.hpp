@@ -54,8 +54,6 @@ public:
 #include "codegen/CodeGenPhaseEnum.hpp"
     };
 
-    TR::CodeGenPhase *self();
-
     /* This method will step through the PhaseList
      * and call perform on all the phases.
      */
@@ -105,6 +103,8 @@ protected:
     CodeGenPhase(TR::CodeGenerator *cg)
         : _cg(cg)
     {}
+
+    TR::CodeGenPhase *self();
 
     /*
      * Each product/project provide it's own list of phases

@@ -55,8 +55,6 @@ public:
     UnresolvedDataSnippet(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *symRef, bool isStore,
         bool isGCSafePoint);
 
-    TR::UnresolvedDataSnippet *self();
-
     static TR::UnresolvedDataSnippet *create(TR::CodeGenerator *cg, TR::Node *node, TR::SymbolReference *s,
         bool isStore, bool canCauseGC);
 
@@ -83,6 +81,8 @@ public:
     virtual uint32_t getLength(int32_t estimatedSnippetStart) { return 0; }
 
 protected:
+    TR::UnresolvedDataSnippet *self();
+
     enum {
         IsUnresolvedStore = TR::Snippet::NextSnippetFlag,
         NextSnippetFlag

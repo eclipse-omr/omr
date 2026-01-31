@@ -91,8 +91,6 @@ class OMR_EXTENSIBLE SymbolReference {
 public:
     TR_ALLOC(TR_Memory::SymbolReference)
 
-    TR::SymbolReference *self();
-
     void init(TR::SymbolReferenceTable *symRefTab, uint32_t refNumber, TR::Symbol *sym = 0, intptr_t offset = 0,
         mcount_t owningMethodIndex = JITTED_METHOD_INDEX, int32_t cpIndex = -1, int32_t unresolvedIndex = 0,
         bool checkNoNamedShadow = true);
@@ -318,6 +316,8 @@ protected:
      * Create a symbol reference, however, don't check named shadows
      */
     SymbolReference(TR::SymbolReferenceTable *symRefTab, TR::Symbol *symbol, intptr_t offset, const char *name);
+
+    TR::SymbolReference *self();
 
     friend class ::TR_Debug;
 

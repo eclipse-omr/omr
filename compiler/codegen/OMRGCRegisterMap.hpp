@@ -44,6 +44,9 @@ class GCRegisterMap;
 namespace OMR {
 
 class GCRegisterMap {
+protected:
+    TR::GCRegisterMap *self();
+
 public:
     TR_ALLOC(TR_Memory::GCRegisterMap)
 
@@ -51,8 +54,6 @@ public:
         : _map(0)
         , _registerSaveDescription(0)
     {}
-
-    TR::GCRegisterMap *self();
 
     uint32_t getMap() { return _map; }
 

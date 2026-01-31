@@ -64,9 +64,9 @@ public:
      */
     TR::IDT *buildIDT();
 
+protected:
     TR::IDTBuilder *self();
 
-protected:
     class Visitor : public TR::AbsVisitor {
     public:
         Visitor(TR::IDTBuilder *idtBuilder, TR::IDTNode *idtNode, TR_CallStack *callStack)

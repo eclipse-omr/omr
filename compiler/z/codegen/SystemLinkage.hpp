@@ -57,8 +57,6 @@ class SystemLinkage : public TR::Linkage {
 public:
     SystemLinkage(TR::CodeGenerator *cg, TR_LinkageConventions elc = TR_None);
 
-    TR::SystemLinkage *self();
-
     virtual int32_t getRegisterSaveOffset(TR::RealRegister::RegNum) = 0;
 
     int32_t setStackFrameSize(int32_t StackFrameSize) { return _StackFrameSize = StackFrameSize; }
@@ -219,6 +217,8 @@ public:
     virtual intptr_t entryPointFromInterpretedMethod();
 
 protected:
+    TR::SystemLinkage *self();
+
     int32_t _StackFrameSize;
 
 private:

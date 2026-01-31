@@ -57,9 +57,6 @@ class Logger;
  */
 class OMR_EXTENSIBLE IlGeneratorMethodDetails {
 public:
-    inline TR::IlGeneratorMethodDetails *self();
-    inline const TR::IlGeneratorMethodDetails *self() const;
-
     virtual bool isMethodInProgress() const { return false; }
 
     bool supportsInvalidation() { return false; }
@@ -78,6 +75,9 @@ protected:
     IlGeneratorMethodDetails()
         : _ilVerifier(NULL)
     {}
+
+    inline TR::IlGeneratorMethodDetails *self();
+    inline const TR::IlGeneratorMethodDetails *self() const;
 
     virtual ~IlGeneratorMethodDetails() {}
 

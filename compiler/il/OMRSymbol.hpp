@@ -87,7 +87,6 @@ public:
     /**
      * \brief Downcast to concrete instance
      */
-    inline TR::Symbol *self();
 
     template<typename AllocatorType> static TR::Symbol *create(AllocatorType);
 
@@ -96,6 +95,8 @@ public:
     template<typename AllocatorType> static TR::Symbol *create(AllocatorType, TR::DataType, uint32_t);
 
 protected:
+    inline TR::Symbol *self();
+
     /**
      * @brief Generic constructor for the creation of a new symbol.  The
      *        size is set to 0.

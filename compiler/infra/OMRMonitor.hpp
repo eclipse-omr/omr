@@ -42,10 +42,12 @@ class Monitor;
 namespace OMR {
 
 class Monitor {
+protected:
+    TR::Monitor *self();
+
 public:
     ~Monitor();
 
-    TR::Monitor *self();
     static TR::Monitor *create(const char *name);
     static void destroy(TR::Monitor *monitor);
     void enter();

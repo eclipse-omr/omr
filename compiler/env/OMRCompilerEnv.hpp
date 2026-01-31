@@ -57,8 +57,6 @@ public:
     CompilerEnv(TR::RawAllocator raw, const TR::PersistentAllocatorKit &persistentAllocatorKit,
         OMRPortLibrary * const omrPortLib = NULL);
 
-    TR::CompilerEnv *self();
-
     /// Primordial raw allocator.  This is guaranteed to be thread safe.
     ///
     TR::RawAllocator rawAllocator;
@@ -117,6 +115,8 @@ public:
     OMRPortLibrary * const omrPortLib;
 
 protected:
+    TR::CompilerEnv *self();
+
     // Initialize 'target' environment for this compiler
     //
     void initializeTargetEnvironment();

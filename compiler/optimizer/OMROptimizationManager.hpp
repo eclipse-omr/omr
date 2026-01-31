@@ -83,8 +83,6 @@ public:
      */
     virtual ~OptimizationManager() {}
 
-    TR::OptimizationManager *self();
-
     OptimizationManager(TR::Optimizer *o, OptimizationFactory factory, OMR::Optimizations optNum,
         const OptimizationStrategy *groupOfOpts = NULL);
 
@@ -291,6 +289,8 @@ public:
     void setDoNotSetFrequencies(bool b) { _flags.set(doNotSetFrequencies, b); }
 
 protected:
+    TR::OptimizationManager *self();
+
     TR::Optimizer *_optimizer;
     OptimizationFactory _factory;
 
