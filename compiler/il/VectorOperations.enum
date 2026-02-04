@@ -340,7 +340,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    load from array and convert to vector mask. assumes that a value of 1 is true and 0 is false*/ \
+   /* .description             =    load from boolean array and convert to vector mask. Assumes that, within the array, a value of 1 is true and 0 is false*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ mstoreiToArray, \
@@ -356,7 +356,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    convert from vector mask and store to array. assumes that a value of 1 is true and 0 is false*/ \
+   /* .description             =    convert from vector mask and store to boolean array. assumes that, within the array, a value of 1 is true and 0 is false*/ \
 )
 
 // vector mask conversion opcodes (TO BE REMOVED)
