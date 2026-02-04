@@ -186,7 +186,6 @@ Presentations about Eclipse OMR
 * Charlie Gracie's slides from Java One in October, 2015:
   [What's in an Object? Java Garbage Collection for the Polyglot](http://www.slideshare.net/charliegracie1/javaone-whats-in-an-object)
 * Angela Lin, Robert Young, Craig Lehmann and Xiaoli Liang CASCON Workshop in November, 2015
-  [Building Your Own Runtime](https://ibm.box.com/s/7xdg25we2ezmdjjbqdys30d7dl1iyo49)
 * Charlie Gracie's talk from FOSDEM in February, 2016:
   [Ruby and OMR: Experiments in utilizing OMR technologies in MRI](http://bofh.nikhef.nl/events/FOSDEM/2016/h2213/ruby-and-omr.mp4)
 * Charlie Gracie's slides from jFokus in February, 2016
