@@ -33,6 +33,8 @@ public:
     CodeCacheManager(TR::RawAllocator rawAllocator)
         : OMR::CodeCacheManagerConnector(rawAllocator)
     {}
+
+    void *operator new(size_t s, TR::CodeCacheManager *m) { return m; }
 };
 
 } // namespace TR
