@@ -429,15 +429,14 @@ const char *TR::ExternalRelocation::_externalRelocationTargetKindNames[TR_NumExt
     "TR_InlinedMethodPointer (108)",
     "TR_VMINLMethod (109)",
     "TR_ValidateJ2IThunkFromMethod (110)",
-    "TR_StaticDefaultValueInstance (111)",
-    "TR_ValidateIsClassVisible (112)",
-    "TR_CatchBlockCounter (113)",
-    "TR_StartPC (114)",
-    "TR_MethodEnterExitHookAddress (115)",
-    "TR_ValidateDynamicMethodFromCallsiteIndex (116)",
-    "TR_ValidateHandleMethodFromCPIndex (117)",
-    "TR_CallsiteTableEntryAddress (118)",
-    "TR_MethodTypeTableEntryAddress (119)",
+    "TR_ValidateIsClassVisible (111)",
+    "TR_CatchBlockCounter (112)",
+    "TR_StartPC (113)",
+    "TR_MethodEnterExitHookAddress (114)",
+    "TR_ValidateDynamicMethodFromCallsiteIndex (115)",
+    "TR_ValidateHandleMethodFromCPIndex (116)",
+    "TR_CallsiteTableEntryAddress (117)",
+    "TR_MethodTypeTableEntryAddress (118)",
 };
 
 uintptr_t TR::ExternalRelocation::_globalValueList[TR_NumGlobalValueItems] = {

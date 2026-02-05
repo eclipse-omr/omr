@@ -611,17 +611,6 @@ void OMR::Symbol::setDummyResolvedMethod() { _flags2.set(DummyResolvedMethod); }
 
 bool OMR::Symbol::isDummyResolvedMethod() { return _flags2.testAny(DummyResolvedMethod); }
 
-void OMR::Symbol::setStaticDefaultValueInstance()
-{
-    TR_ASSERT(self()->isStatic(), "Symbol must be static");
-    _flags2.set(StaticDefaultValueInstance);
-}
-
-bool OMR::Symbol::isStaticDefaultValueInstance()
-{
-    return self()->isStatic() && _flags2.testAny(StaticDefaultValueInstance);
-}
-
 TR::RegisterMappedSymbol *OMR::Symbol::getRegisterMappedSymbol()
 {
     return self()->isRegisterMappedSymbol() ? (TR::RegisterMappedSymbol *)this : 0;
