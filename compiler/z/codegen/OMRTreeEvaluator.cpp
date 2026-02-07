@@ -1078,17 +1078,116 @@ TR::Register *OMR::Z::TreeEvaluator::msplatsEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::Z::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *sourceNode = node->getFirstChild();
+    TR_ASSERT_FATAL_WITH_NODE(node, sourceNode->getDataType().getVectorLength() == TR::VectorLength128,
+        "A 128-bit vector was expected as the child node but %s was provided!", sourceNode->getDataType().toString());
+
+    TR::Register *sourceReg = cg->gprClobberEvaluate(sourceNode);
+    // Compute per-lane population counts for both the low and high halves of the vector in sourceReg.
+    generateVRRaInstruction(cg, TR::InstOpCode::VPOPCT, node, sourceReg, sourceReg, 0, 0, 3);
+    // We need to add the popcounts from the upper and lower halves. VSUMQ adds the rightmost element
+    // from a third vector operand. By shifting left to clear the rightmost element, we can safely
+    // reuse sourceReg as that third operand without affecting the sum we care about.
+    generateVRSaInstruction(cg, TR::InstOpCode::VESL, node, sourceReg, sourceReg, generateS390MemoryReference(32, cg),
+        3);
+    // Now reduce 32-bit lanes: lanes 1 and 3 are zero after the shift, so using sourceReg as the
+    // third operand for VSUMQ is safe and produces the desired sum of the remaining lanes.
+    generateVRRcInstruction(cg, TR::InstOpCode::VSUMQ, node, sourceReg, sourceReg, sourceReg, 0, 0, 2);
+    // Move the scalar sum from the source register into a GPR.
+    TR::Register *resultRegister = cg->allocateRegister();
+    generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, resultRegister, sourceReg,
+        generateS390MemoryReference(1, cg), 3);
+    // Each "true" lane has all bits set, so the popcount reflects the lane bit-width.
+    // Divide by the lane size to get the count of true lanes.
+    int32_t shiftAmount = getVectorElementSizeMask(sourceNode) + 3;
+    generateRSInstruction(cg, TR::InstOpCode::SRLG, node, resultRegister, resultRegister, shiftAmount);
+    cg->decReferenceCount(sourceNode);
+    node->setRegister(resultRegister);
+    return resultRegister;
+}
+
+/**
+ * \brief
+ * Compute the index of the first true lane in a mask, from either the left or the right.
+ *
+ * \details
+ * This helper determines the index of the first lane set to true in a vector mask by counting
+ * the number of leading or trailing zero bits (depending on isFromLeft parameter) and then dividing
+ * the resulting bit index by the lane size (in bits) to convert the bit position to a lane index.
+ *
+ * \param node
+ *   The IL node for the operation.
+ *
+ * \param cg
+ *   The code generator.
+ *
+ * \param isFromLeft
+ *   If true, find the first true lane scanning from the most significant side (left);
+ *   otherwise, scan from the least significant side (right).
+ *
+ * \return
+ *   A GPR containing the scalar lane index of the first true lane. If no lane is true,
+ *   the return value is the total number of lanes.
+ */
+static TR::Register *firstTrueHelper(TR::Node *node, TR::CodeGenerator *cg, bool isFromLeft)
+{
+    TR::Node *sourceNode = node->getFirstChild();
+    TR_ASSERT_FATAL_WITH_NODE(node, sourceNode->getDataType().getVectorLength() == TR::VectorLength128,
+        "A 128-bit vector was expected as the child node but %s was provided!", sourceNode->getDataType().toString());
+    TR::Register *sourceReg = cg->gprClobberEvaluate(sourceNode);
+    // Shift amount for converting a bit index into a lane index.
+    int32_t shiftAmount = getVectorElementSizeMask(sourceNode) + 3;
+    // Quadword mode.
+    uint8_t laneSizeMask = 4;
+    // On pre‑z17 hardware, VCLZ/VCTZ on 128-bit (quadword) elements is unsupported.
+    // Pack the mask and use 64-bit (doubleword) operations instead.
+    if (!cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z17)) {
+        if (sourceNode->getDataType().getVectorElementType() == TR::Int8) {
+            // The smallest packing step here is 16->8 bits. For 8-bit lanes, shift each 16-bit element
+            // right by 4 so each byte holds two 4-bit masks suitable for packing.
+            generateVRSaInstruction(cg, TR::InstOpCode::VESRL, node, sourceReg, sourceReg,
+                generateS390MemoryReference(4, cg), 1);
+        }
+        // Pack the mask down to 64-bit granularity so we can count trailing/leading zeros on older HW.
+        generateVRRcInstruction(cg, TR::InstOpCode::VPK, node, sourceReg, sourceReg, sourceReg, 1);
+        // After packing, we have half the original width, so reduce the lane-index shift accordingly.
+        shiftAmount -= 1;
+        // Fall back to 64-bit (doubleword) element operations.
+        laneSizeMask = 3;
+    }
+    // Count leading or trailing zeros per the requested direction.
+    generateVRRaInstruction(cg, isFromLeft ? TR::InstOpCode::VCLZ : TR::InstOpCode::VCTZ, node, sourceReg, sourceReg, 0,
+        0, laneSizeMask);
+    TR::Register *resultRegister = cg->allocateRegister();
+    // Extract the scalar zero-count (bit index of the first 'true' bit) from the vector register into a GPR.
+    generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, resultRegister, sourceReg,
+        generateS390MemoryReference(1, cg), 3);
+    // Convert the bit index to a lane index by dividing by the lane size in bits.
+    generateRSInstruction(cg, TR::InstOpCode::SRLG, node, resultRegister, resultRegister, shiftAmount);
+
+    cg->decReferenceCount(sourceNode);
+    return resultRegister;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mFirstTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Register *resultRegister = firstTrueHelper(node, cg, true /* isFromLeft */);
+    node->setRegister(resultRegister);
+    return resultRegister;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Register *resultRegister = firstTrueHelper(node, cg, false /* isFromLeft */);
+    // firstTrueHelper(..., false) returns the lane index of the first 'true' when scanning from the right.
+    // To get the index of the last 'true' when scanning from the left, compute:
+    //   lastIndex = (lastLaneIndex) - (indexFromRight).
+    // If no lane is true, resultRegister is -1 (expected behavior).
+    int lastLaneIndex = 15 / getVectorElementSize(node->getFirstChild());
+    generateRREInstruction(cg, TR::InstOpCode::LCGR, node, resultRegister, resultRegister);
+    generateRIInstruction(cg, TR::InstOpCode::AGHI, node, resultRegister, lastLaneIndex);
+    node->setRegister(resultRegister);
+    return resultRegister;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::mToLongBitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
