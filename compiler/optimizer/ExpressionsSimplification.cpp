@@ -498,12 +498,38 @@ void TR_ExpressionsSimplification::removeCandidate(TR::Node *node, TR::TreeTop *
     for (SimplificationCandidateTuple *nextCandidate = candidates.getFirst(); nextCandidate;
          nextCandidate = candidates.getNext()) {
         TR::TreeTop *candidateTT = nextCandidate->getTreeTop();
-        if (tt != candidateTT && node->getOpCode().hasSymbolReference()
-            && candidateTT->getNode()->mayKill(true).contains(node->getSymbolReference(), comp())) {
-            logprintf(trace(), log, "Removing candidate %p which has aliases in the loop\n", candidateTT->getNode());
+        if (tt != candidateTT) {
+            TR::Node *candidateNode = candidateTT->getNode();
+            if (node->getOpCode().hasSymbolReference()
+                && candidateNode->mayKill(true).contains(node->getSymbolReference(), comp())) {
+                logprintf(trace(), log, "Removing candidate %p which has aliases in the loop\n",
+                    candidateTT->getNode());
 
-            _candidates->remove(nextCandidate);
-            continue;
+                _candidates->remove(nextCandidate);
+                continue;
+            }
+
+            // Summation reduction transforms "x = x + inv" in the loop into a single
+            // preheader update (e.g., x += inv * iters). This transformation is only legal
+            // if the loop body does not observe the intermediate values of x (i.e., x is not
+            // read/used elsewhere in the loop).
+            TR::SymbolReference *candidateSymRef
+                = candidateNode->getOpCode().hasSymbolReference() ? candidateNode->getSymbolReference() : NULL;
+            if (candidateSymRef && nextCandidate->isSummationReductionCandidate()) {
+                TR::Symbol *candidateSym = candidateSymRef->getSymbol();
+                bool isNonLocal
+                    = candidateSym->isStatic() || candidateSym->isShadow() || candidateSym->isMethodMetaData();
+                if (node->getOpCode().isCall() && isNonLocal
+                    && (node->mayUse().contains(candidateSymRef, comp())
+                        || node->mayKill(true).contains(candidateSymRef, comp()))) {
+                    logprintf(trace(), log,
+                        "Removing candidate %p n%dn which may be used or killed by call %p n%dn in the loop\n",
+                        candidateNode, candidateNode->getGlobalIndex(), node, node->getGlobalIndex());
+
+                    _candidates->remove(nextCandidate);
+                    continue;
+                }
+            }
         }
     }
 
