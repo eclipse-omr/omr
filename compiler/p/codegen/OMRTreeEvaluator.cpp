@@ -7477,8 +7477,32 @@ TR::Register *OMR::Power::TreeEvaluator::passThroughEvaluator(TR::Node *node, TR
             && srcReg->getKind() == TR_GPR)) {
         TR::Register *copyReg;
         TR_RegisterKinds kind = srcReg->getKind();
-        TR_ASSERT(kind == TR_GPR || kind == TR_FPR, "passThrough does not work for this type of register\n");
-        TR::InstOpCode::Mnemonic move_opcode = (srcReg->getKind() == TR_GPR) ? TR::InstOpCode::mr : TR::InstOpCode::fmr;
+        TR::InstOpCode::Mnemonic move_opcode;
+        bool move_with_or = false;
+        switch (kind) {
+            case TR_GPR:
+                move_opcode = TR::InstOpCode::mr;
+                break;
+            case TR_FPR:
+                move_opcode = TR::InstOpCode::fmr;
+                break;
+            case TR_CCR:
+                move_opcode = TR::InstOpCode::mcrf;
+                break;
+            case TR_VRF:
+                move_opcode = TR::InstOpCode::vor;
+                move_with_or = true;
+                break;
+            case TR_VSX_SCALAR:
+            case TR_VSX_VECTOR:
+                move_opcode = TR::InstOpCode::xxlor;
+                move_with_or = true;
+                break;
+
+            default:
+                TR_ASSERT_FATAL(false, "passThrough does not work for this type of register\n");
+                break;
+        }
 
         if (srcReg->containsInternalPointer() || !srcReg->containsCollectedReference()) {
             copyReg = cg->allocateRegister(kind);
@@ -7491,12 +7515,16 @@ TR::Register *OMR::Power::TreeEvaluator::passThroughEvaluator(TR::Node *node, TR
         }
 
         if (srcReg->getRegisterPair()) {
+            TR_ASSERT_FATAL(!move_with_or, "passThrough does not work for pairs of this type of register\n");
             TR::Register *copyRegLow = cg->allocateRegister(kind);
             generateTrg1Src1Instruction(cg, move_opcode, node, copyReg, srcReg->getHighOrder());
             generateTrg1Src1Instruction(cg, move_opcode, node, copyRegLow, srcReg->getLowOrder());
             copyReg = cg->allocateRegisterPair(copyRegLow, copyReg);
         } else {
-            generateTrg1Src1Instruction(cg, move_opcode, node, copyReg, srcReg);
+            if (move_with_or)
+                generateTrg1Src2Instruction(cg, move_opcode, node, copyReg, srcReg, srcReg);
+            else
+                generateTrg1Src1Instruction(cg, move_opcode, node, copyReg, srcReg);
         }
 
         srcReg = copyReg;
