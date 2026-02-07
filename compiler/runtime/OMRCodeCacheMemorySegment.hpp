@@ -48,6 +48,9 @@ class CodeCacheManager;
 namespace OMR {
 
 class OMR_EXTENSIBLE CodeCacheMemorySegment {
+protected:
+    TR::CodeCacheMemorySegment *self();
+
 public:
     CodeCacheMemorySegment()
         : _base(NULL)
@@ -66,8 +69,6 @@ public:
         , _alloc(memory)
         , _top(top)
     {}
-
-    TR::CodeCacheMemorySegment *self();
 
     void *operator new(size_t size, TR::CodeCacheMemorySegment *segment) { return segment; }
 

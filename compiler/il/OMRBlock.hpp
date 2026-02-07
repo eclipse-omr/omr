@@ -108,10 +108,11 @@ namespace OMR {
  *
  */
 class OMR_EXTENSIBLE Block : public TR::CFGNode {
-public:
+protected:
     /// Downcast to concrete type
     TR::Block *self();
 
+public:
     Block(TR_Memory *m);
     Block(TR::CFG &cfg);
 

@@ -47,10 +47,10 @@ class OMR_EXTENSIBLE MemoryReference {
 public:
     TR_ALLOC(TR_Memory::MemoryReference)
 
-    TR::MemoryReference *self();
-
 protected:
     MemoryReference() {};
+
+    TR::MemoryReference *self();
 };
 
 } // namespace OMR

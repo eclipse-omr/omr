@@ -53,9 +53,6 @@ class OMR_EXTENSIBLE TreeTop {
 public:
     TR_ALLOC_WITHOUT_NEW(TR_Memory::TreeTop)
 
-    /// Downcast to concrete type
-    TR::TreeTop *self();
-
     static TR::TreeTop *create(TR::Compilation *comp);
     static TR::TreeTop *create(TR::Compilation *comp, TR::Node *node, TR::TreeTop *next = NULL,
         TR::TreeTop *prev = NULL);
@@ -114,6 +111,9 @@ public:
     void setLastInstruction(TR::Instruction *i) { *(TR::Instruction **)((char *)self() - sizeof(void *)) = i; }
 
 protected:
+    /// Downcast to concrete type
+    TR::TreeTop *self();
+
     TR::TreeTop *_pNext;
     TR::TreeTop *_pPrev;
     TR::Node *_pNode;

@@ -57,9 +57,10 @@ template<typename ListKind> class List;
 namespace OMR {
 
 class OMR_EXTENSIBLE ClassEnv {
-public:
+protected:
     TR::ClassEnv *self();
 
+public:
     // Are classes allocated on the object heap?
     //
     bool classesOnHeap() { return false; }

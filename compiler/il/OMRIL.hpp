@@ -45,6 +45,9 @@ class IL;
 namespace OMR {
 
 class OMR_EXTENSIBLE IL {
+protected:
+    TR::IL *self();
+
 private:
     // these tables require special treatment of vector opcodes
     static TR::ILOpCodes opCodesForConst[];
@@ -75,8 +78,6 @@ private:
     static TR::ILOpCodes opCodesForSelect[];
 
 public:
-    TR::IL *self();
-
     TR::ILOpCodes opCodeForCorrespondingIndirectLoad(TR::ILOpCodes loadOpCode);
     TR::ILOpCodes opCodeForCorrespondingIndirectStore(TR::ILOpCodes storeOpCode);
     /**

@@ -268,6 +268,8 @@ protected:
     TR_BitVector *_localsThatAreStored;
     int32_t _numLocalsWhenStoreAnalysisWasDone;
 
+    inline TR::CodeGenerator *self();
+
     /**
      * @brief Constructor
      *
@@ -291,8 +293,6 @@ public:
      * @brief Initialize a \c TR::CodeGenerator object
      */
     void initialize();
-
-    inline TR::CodeGenerator *self();
 
     TR_StackMemory trStackMemory();
 

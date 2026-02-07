@@ -47,9 +47,11 @@ class TR_MethodEvent; // defined in downstream project
 
 namespace OMR {
 class OMR_EXTENSIBLE CompilationStrategy {
+protected:
+    TR::CompilationStrategy *self();
+
 public:
     TR_PERSISTENT_ALLOC(TR_Memory::PersistentInfo);
-    TR::CompilationStrategy *self();
 
     CompilationStrategy() {}
 

@@ -63,8 +63,6 @@ public:
 
     Snippet(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *label, bool isGCSafePoint);
 
-    TR::Snippet *self();
-
     TR::CodeGenerator *cg() { return _cg; }
 
     void setCodeGenerator(TR::CodeGenerator *cg) { _cg = cg; }
@@ -104,6 +102,8 @@ public:
     TR::SnippetGCMap &gcMap() { return _gcMap; }
 
 protected:
+    TR::Snippet *self();
+
     enum {
         NeedsExceptionTableEntry = 0,
 

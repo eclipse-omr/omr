@@ -52,12 +52,13 @@ class TransformUtil;
 namespace OMR {
 
 class OMR_EXTENSIBLE TransformUtil {
+protected:
+    TR::TransformUtil *self();
+
 public:
     TR_ALLOC(TR_Memory::Optimizer)
 
     TransformUtil() {}
-
-    TR::TransformUtil *self();
 
     static TR::Node *scalarizeArrayCopy(TR::Compilation *comp, TR::Node *node, TR::TreeTop *tt, bool useElementType,
         bool &didTransformArrayCopy, TR::SymbolReference *sourceRef = NULL, TR::SymbolReference *targetRef = NULL,

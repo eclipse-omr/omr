@@ -72,10 +72,10 @@ protected:
     Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
         TR::Node *node = 0);
 
+    inline TR::Instruction *self();
+
 public:
     typedef uint32_t TCollectableReferenceMask;
-
-    inline TR::Instruction *self();
 
     /*
      * Need to move them to FE specific files once more clean up is done.

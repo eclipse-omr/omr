@@ -50,6 +50,9 @@ class AheadOfTimeCompile;
 namespace OMR {
 
 class OMR_EXTENSIBLE AheadOfTimeCompile {
+protected:
+    TR::AheadOfTimeCompile *self();
+
 public:
     TR_ALLOC(TR_Memory::AheadOfTimeCompile)
 
@@ -59,8 +62,6 @@ public:
         , _relocationData(NULL)
         , _aotRelocationKindToHeaderSizeMap(headerSizeMap)
     {}
-
-    TR::AheadOfTimeCompile *self();
 
     TR::Compilation *comp() { return _comp; }
 

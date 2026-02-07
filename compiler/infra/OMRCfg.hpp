@@ -139,8 +139,6 @@ public:
         _edgeProbabilities = NULL;
     }
 
-    TR::CFG *self();
-
     TR::Compilation *comp() { return _compilation; }
 
     TR::ResolvedMethodSymbol *getMethodSymbol() { return _method; }
@@ -385,6 +383,8 @@ public:
     static const char *blockFrequencyNames[];
 
 protected:
+    TR::CFG *self();
+
     TR::Compilation *_compilation;
     TR::ResolvedMethodSymbol *_method;
 

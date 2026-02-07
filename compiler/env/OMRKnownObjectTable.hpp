@@ -62,12 +62,11 @@ class OMR_EXTENSIBLE KnownObjectTable {
 
 protected:
     KnownObjectTable(TR::Compilation *comp);
+    TR::KnownObjectTable *self();
     TR::Compilation *_comp;
     TR_BitVector *_arrayWithConstantElements;
 
 public:
-    TR::KnownObjectTable *self();
-
     typedef int32_t Index;
     static const Index UNKNOWN = -1;
 

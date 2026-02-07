@@ -81,8 +81,6 @@ public:
         , _persistentTOC(NULL)
     {}
 
-    TR::PersistentInfo *self();
-
     TR::DebugCounterGroup *getStaticCounters()
     {
         if (!_staticCounters)
@@ -132,6 +130,7 @@ public:
     bool isRuntimeInstrumentationEnabled() { return false; }
 
 protected:
+    TR::PersistentInfo *self();
     TR_PersistentMemory *_persistentMemory;
     TR_PseudoRandomNumbersListElement *_pseudoRandomNumbersListHead;
     TR_PseudoRandomNumbersListElement *_curPseudoRandomNumbersListElem;

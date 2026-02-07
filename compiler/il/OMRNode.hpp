@@ -148,6 +148,8 @@ protected:
 
     Node(TR::Node *from, uint16_t numChildren = 0);
 
+    inline TR::Node *self();
+
     static void copyValidProperties(TR::Node *fromNode, TR::Node *toNode);
 
     static TR::Node *createInternal(TR::Node *originatingByteCodeNode, TR::ILOpCodes op, uint16_t numChildren,
@@ -160,8 +162,6 @@ protected:
      * Public constructors and helpers
      */
 public:
-    inline TR::Node *self();
-
     Node();
     ~Node();
 

@@ -50,8 +50,6 @@ namespace OMR {
 
 class OMR_EXTENSIBLE CodeMetaData {
 public:
-    TR::CodeMetaData *self();
-
     /**
      * @brief Constructor method to create metadata for a method.
      */
@@ -103,6 +101,8 @@ public:
     TR_Hotness codeHotness() { return _hotness; }
 
 protected:
+    TR::CodeMetaData *self();
+
     uintptr_t _codeAllocStart;
     uint32_t _codeAllocSize;
 

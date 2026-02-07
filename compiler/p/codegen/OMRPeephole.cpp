@@ -890,7 +890,7 @@ bool OMR::Power::Peephole::tryToSwapTrapAndLoad()
                         }
                     }
                 }
-                if (performTransformation(self()->cg()->self()->comp(),
+                if (performTransformation(self()->cg()->comp(),
                         "O^O PPC PEEPHOLE: Swap trap %p and load %p instructions.\n", trap, load)) {
                     if (i > 0) {
                         TR::Instruction *loadPrev = load->getPrev();

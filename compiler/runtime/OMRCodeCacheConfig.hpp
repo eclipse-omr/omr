@@ -118,8 +118,6 @@ public:
 #endif
     }
 
-    TR::CodeCacheConfig *self();
-
     size_t trampolineCodeSize() const { return _trampolineCodeSize; }
 
     int32_t trampolineSpacePercentage() const { return _trampolineSpacePercentage; }
@@ -222,6 +220,8 @@ public:
     char * const coldEyeCatcher() { return _coldEyeCatcher; }
 
 protected:
+    TR::CodeCacheConfig *self();
+
     char _warmEyeCatcher[4];
     char _coldEyeCatcher[4];
 
