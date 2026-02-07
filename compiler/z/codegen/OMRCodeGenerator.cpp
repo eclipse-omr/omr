@@ -4410,6 +4410,12 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vnolz:
         case TR::vmnotz:
         case TR::vmnolz:
+        case TR::vreductionAnd:
+        case TR::vmreductionAnd:
+        case TR::vreductionOr:
+        case TR::vmreductionOr:
+        case TR::vreductionXor:
+        case TR::vmreductionXor:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Int64)
                 return true;
             else
