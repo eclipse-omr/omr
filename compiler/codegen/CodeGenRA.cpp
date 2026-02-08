@@ -586,13 +586,13 @@ void OMR::CodeGenerator::jettisonAllSpills()
     _internalPointerSpillFreeList.clear();
 }
 
-TR::Register *OMR::CodeGenerator::allocateRegister(TR_RegisterKinds rk)
+TR::Register *OMR::CodeGenerator::allocateRegister(TR_RegisterKinds rk, const char *name)
 {
     TR_ASSERT(rk != TR_SSR, "use allocatePseudoRegister for TR_SSR registers\n");
     TR::Register *temp = new (self()->trHeapMemory()) TR::Register(rk);
     self()->addAllocatedRegister(temp);
     if (self()->getDebug())
-        self()->getDebug()->newRegister(temp);
+        self()->getDebug()->newRegister(temp, name);
 
     return temp;
 }

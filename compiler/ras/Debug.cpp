@@ -317,18 +317,26 @@ void TR_Debug::newInstruction(TR::Instruction *instr)
     _nextInstructionNumber++;
 }
 
-void TR_Debug::newRegister(TR::Register *reg)
+void TR_Debug::newRegister(TR::Register *reg, const char *name)
 {
-    if (_comp->getAddressEnumerationOption(TR_EnumerateRegister))
-        _comp->getToNumberMap().Add((void *)reg, (intptr_t)_nextRegisterNumber);
+    // calculate name without prefix
+    const int maxNameLen = 30;
+    char *buf = (char *)_comp->trMemory()->allocateHeapMemory(
+        6 + maxNameLen + 1); // max register kind name size plus underscore plus max name size plus null terminator
+    if (name) {
+        sprintf(buf, "%s_%.*s", getRegisterKindName(reg->getKind()), maxNameLen, name);
+    } else {
+        sprintf(buf, "%s_%04d", getRegisterKindName(reg->getKind()), _nextRegisterNumber);
+        _nextRegisterNumber++;
+    }
 
+    // break or debug
     if (_comp->getOptions()->getBreakOnCreate() || _comp->getOptions()->getDebugOnCreate()) {
-        char buf[20];
-        sprintf(buf, "GPR_%04x", _nextRegisterNumber);
         breakOrDebugOnCreate(buf);
     }
 
-    _nextRegisterNumber++;
+    // add to string map
+    _comp->getToStringMap().Add((void *)reg, buf);
 }
 
 void TR_Debug::newVariableSizeSymbol(TR::AutomaticSymbol *sym)
@@ -2339,7 +2347,19 @@ const char *TR_Debug::getName(TR::Register *reg, TR_RegisterSizes size)
             return name;
         //
         // Prefix mismatch means some important flags have changed since the name
-        // string was generated.  Ignore the cached string and generate a new one.
+        // string was generated.  Strip the incorrect prefixes off the name and
+        // add the correct prefix.
+
+        // The first non-prefix char is the first char of the register kind name.
+        char start = *getRegisterKindName(reg->getKind());
+        while (*name != start)
+            name++;
+
+        char *buf = (char *)_comp->trMemory()->allocateHeapMemory(strlen(name) + maxPrefixSize + 1);
+        sprintf(buf, "%s%s", prefix, name);
+
+        _comp->getToStringMap().SetDataAt(hashIndex, buf);
+        return buf;
     }
 
     if (reg->getRegisterPair()) {
@@ -2347,14 +2367,6 @@ const char *TR_Debug::getName(TR::Register *reg, TR_RegisterSizes size)
         const char *low = getName(reg->getLowOrder());
         char *buf = (char *)_comp->trMemory()->allocateHeapMemory(strlen(high) + strlen(low) + 2);
         sprintf(buf, "%s:%s", high, low);
-        _comp->getToStringMap().Add((void *)reg, buf);
-        return buf;
-    } else if (_comp->getAddressEnumerationOption(TR_EnumerateRegister)
-        && _comp->getToNumberMap().Locate((void *)reg, hashIndex)) {
-        char *buf = (char *)_comp->trMemory()->allocateHeapMemory(maxPrefixSize + 6
-            + 11); // max register kind name size plus underscore plus 10-digit reg num plus null terminator
-        uint32_t regNum = (uint32_t)(intptr_t)_comp->getToNumberMap().DataAt(hashIndex);
-        sprintf(buf, "%s%s_%04d", prefix, getRegisterKindName(reg->getKind()), regNum);
         _comp->getToStringMap().Add((void *)reg, buf);
         return buf;
     } else {

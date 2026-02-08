@@ -1173,16 +1173,16 @@ int32_t OMR::CodeGenerator::getMaximumNumberOfGPRsAllowedAcrossEdge(TR::Block *b
     return self()->getMaximumNumberOfGPRsAllowedAcrossEdge(node);
 }
 
-TR::Register *OMR::CodeGenerator::allocateCollectedReferenceRegister()
+TR::Register *OMR::CodeGenerator::allocateCollectedReferenceRegister(const char *name)
 {
-    TR::Register *temp = self()->allocateRegister();
+    TR::Register *temp = self()->allocateRegister(name);
     temp->setContainsCollectedReference();
     return temp;
 }
 
-TR::Register *OMR::CodeGenerator::allocateSinglePrecisionRegister(TR_RegisterKinds rk)
+TR::Register *OMR::CodeGenerator::allocateSinglePrecisionRegister(TR_RegisterKinds rk, const char *name)
 {
-    TR::Register *temp = self()->allocateRegister(rk);
+    TR::Register *temp = self()->allocateRegister(rk, name);
     temp->setIsSinglePrecision();
     return temp;
 }
