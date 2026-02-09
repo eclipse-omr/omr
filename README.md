@@ -193,10 +193,4 @@ Presentations about Eclipse OMR
 * Mark Stoodley's slides from EclipseCON in March, 2016
   [Eclipse OMR: a modern toolkit for building language runtimes](http://www.slideshare.net/MarkStoodley/omr-a-modern-toolkit-for-building-language-runtimes)
 
-Blog Posts about OMR technologies
----------------------------------
-
-* [Introducing Eclipse OMR: Building Language Runtimes](https://developer.ibm.com/code/2016/03/08/introducing-omr-building-language-runtimes/)
-* [JitBuilder Library and Eclipse OMR: Just-In-Time Compilers made easy](https://developer.ibm.com/code/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/)
-
 Copyright IBM Corp. 2016
