@@ -42,7 +42,7 @@ MM_ParallelCompactTask::getVMStateID()
 void
 MM_ParallelCompactTask::run(MM_EnvironmentBase *env)
 {
-	_compactScheme->compact(env, _rebuildMarkBits, _aggressive);
+	_compactScheme->compact(env, _rebuildMarkBits, _aggressive, _nurseryOnly);
 }
 
 void
