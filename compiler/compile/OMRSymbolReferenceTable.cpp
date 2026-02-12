@@ -634,8 +634,9 @@ TR::SymbolReference *OMR::SymbolReferenceTable::createKnownStaticReferenceSymbol
 {
     const char *name = "<known-static-reference>";
     if (knownObjectIndex != TR::KnownObjectTable::UNKNOWN) {
-        char *nameBuffer = (char *)trMemory()->allocateMemory(25, heapAlloc);
-        sprintf(nameBuffer, "<known-obj%d>", knownObjectIndex);
+        const size_t nameBufferSize = 25;
+        char *nameBuffer = (char *)trMemory()->allocateMemory(nameBufferSize, heapAlloc);
+        snprintf(nameBuffer, nameBufferSize, "<known-obj%d>", knownObjectIndex);
         name = nameBuffer;
     }
     TR::StaticSymbol *sym = TR::StaticSymbol::createNamed(trHeapMemory(), TR::Address, dataAddress, name);
@@ -842,9 +843,9 @@ TR::SymbolReference *OMR::SymbolReferenceTable::methodSymRefFromName(TR::Resolve
     //
     TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
-    auto fullSignatureLength = strlen(className) + 1 + strlen(methodName) + strlen(methodSignature);
+    const size_t fullSignatureLength = strlen(className) + 1 + strlen(methodName) + strlen(methodSignature);
     char *fullSignature = (char *)trMemory()->allocateMemory(1 + fullSignatureLength, stackAlloc);
-    sprintf(fullSignature, "%s.%s%s", className, methodName, methodSignature);
+    snprintf(fullSignature, fullSignatureLength + 1, "%s.%s%s", className, methodName, methodSignature);
     TR_ASSERT(strlen(fullSignature) == fullSignatureLength,
         "Computed fullSignatureLength must match actual length of fullSignature");
     CS2::HashIndex hashIndex = 0;
@@ -1090,8 +1091,10 @@ TR::SymbolReference *OMR::SymbolReferenceTable::findOrCreateGenericIntNonArraySh
 TR::Symbol *OMR::SymbolReferenceTable::findOrCreateConstantAreaSymbol()
 {
     if (!_constantAreaSymbol) {
-        char *symName = (char *)TR_MemoryBase::jitPersistentAlloc(strlen("CONSTANT_AREA") + 1);
-        sprintf(symName, "CONSTANT_AREA");
+        const char *constantAreaString = "CONSTANT_AREA";
+        const size_t symNameSize = strlen(constantAreaString) + 1;
+        char *symName = (char *)TR_MemoryBase::jitPersistentAlloc(symNameSize);
+        snprintf(symName, symNameSize, "%s", constantAreaString);
         _constantAreaSymbol = TR::StaticSymbol::createNamed(comp()->trHeapMemory(), TR::NoType, symName);
     }
     return _constantAreaSymbol;

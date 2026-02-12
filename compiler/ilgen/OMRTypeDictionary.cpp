@@ -223,8 +223,8 @@ public:
         , _baseType(baseType)
     {
         char *baseName = (char *)_baseType->getName();
-        TR_ASSERT_FATAL(strlen(baseName) < 45, "cannot store name of pointer type");
-        sprintf(_nameArray, "L%s;", baseName);
+        TR_ASSERT_FATAL(strlen(baseName) + 3 < nameArraySize, "cannot store name of pointer type");
+        snprintf(_nameArray, nameArraySize, "L%s;", baseName);
     }
 
     virtual bool isPointer() { return true; }
@@ -241,7 +241,8 @@ public:
 
 protected:
     TR::IlType *_baseType;
-    char _nameArray[48];
+    const static size_t nameArraySize = 128;
+    char _nameArray[nameArraySize];
 };
 
 } // namespace OMR
@@ -322,9 +323,9 @@ TR::SymbolReference *OMR::StructType::getFieldSymRef(const char *fieldName)
 
         TR::DataType type = info->getPrimitiveType();
 
-        char *fullName = (char *)comp->trMemory()->allocateHeapMemory(
-            (strlen(info->_name) + 1 + strlen(_name) + 1) * sizeof(char));
-        sprintf(fullName, "%s.%s", _name, info->_name);
+        const size_t fullNameSize = (strlen(info->_name) + 1 + strlen(_name) + 1) * sizeof(char);
+        char *fullName = (char *)comp->trMemory()->allocateHeapMemory(fullNameSize);
+        snprintf(fullName, fullNameSize, "%s.%s", _name, info->_name);
         TR::Symbol *symbol = TR::Symbol::createNamedShadow(comp->trHeapMemory(), type,
             static_cast<uint32_t>(info->_type->getSize()), fullName);
 
@@ -407,9 +408,9 @@ TR::SymbolReference *OMR::UnionType::getFieldSymRef(const char *fieldName)
         auto symRefTab = comp->getSymRefTab();
         TR::DataType type = info->getPrimitiveType();
 
-        char *fullName = (char *)comp->trMemory()->allocateHeapMemory(
-            (strlen(info->_name) + 1 + strlen(_name) + 1) * sizeof(char));
-        sprintf(fullName, "%s.%s", _name, info->_name);
+        const size_t fullNameSize = (strlen(info->_name) + 1 + strlen(_name) + 1) * sizeof(char);
+        char *fullName = (char *)comp->trMemory()->allocateHeapMemory(fullNameSize);
+        snprintf(fullName, fullNameSize, "%s.%s", _name, info->_name);
         TR::Symbol *symbol = TR::Symbol::createNamedShadow(comp->trHeapMemory(), type,
             static_cast<uint32_t>(info->_type->getSize()), fullName);
         symRef = new (comp->trHeapMemory())

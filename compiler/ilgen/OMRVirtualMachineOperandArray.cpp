@@ -185,9 +185,9 @@ void OMR::VirtualMachineOperandArray::init()
     TR::SymbolReference *symRef = comp->getSymRefTab()->createTemporary(_mb->methodSymbol(),
         _mb->typeDictionary()->PointerTo(_elementType)->getPrimitiveType());
     symRef->getSymbol()->setNotCollected();
-    char *name = (char *)comp->trMemory()->allocateHeapMemory(
-        (11 + 10 + 1) * sizeof(char)); // 11 ("_ArrayBase_") + max 10 digits + trailing zero
-    sprintf(name, "_ArrayBase_%u", symRef->getCPIndex());
+    const size_t nameSize = (11 + 10 + 1) * sizeof(char); // 11 ("_ArrayBase_") + max 10 digits + trailing zero
+    char *name = (char *)comp->trMemory()->allocateHeapMemory(nameSize);
+    snprintf(name, nameSize, "_ArrayBase_%u", symRef->getCPIndex());
     symRef->getSymbol()->getAutoSymbol()->setName(name);
     _mb->defineSymbol(name, symRef);
 

@@ -50,9 +50,9 @@ void OMR::IlValue::storeToAuto()
         TR::SymbolReference *symRef = comp->getSymRefTab()->createTemporary(_methodBuilder->methodSymbol(),
             _nodeThatComputesValue->getDataType());
         symRef->getSymbol()->setNotCollected();
-        char *name = (char *)comp->trMemory()->allocateHeapMemory(
-            (2 + 10 + 1) * sizeof(char)); // 2 ("_T") + max 10 digits + trailing zero
-        sprintf(name, "_T%u", symRef->getCPIndex());
+        const size_t nameSize = (2 + 10 + 1) * sizeof(char); // 2 ("_T") + max 10 digits + trailing zero
+        char *name = (char *)comp->trMemory()->allocateHeapMemory(nameSize);
+        snprintf(name, nameSize, "_T%u", symRef->getCPIndex());
         symRef->getSymbol()->getAutoSymbol()->setName(name);
         _methodBuilder->defineSymbol(name, symRef);
 

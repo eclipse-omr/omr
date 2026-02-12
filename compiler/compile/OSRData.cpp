@@ -940,8 +940,9 @@ TR::Compilation &operator<<(TR::Compilation &out, const TR_OSRCompilationData &o
         for (auto itr = array1.begin(), end = array1.end(); itr != end; ++itr) {
             if (!first)
                 out << ",\n";
-            char tmp[20];
-            sprintf(tmp, "%x", (*itr).instructionPC);
+            const size_t tmpSize = 20;
+            char tmp[tmpSize];
+            snprintf(tmp, tmpSize, "%x", (*itr).instructionPC);
             const TR_OSRCompilationData::TR_ScratchBufferInfos &array2 = (*itr).scratchBufferInfos;
             out << tmp << " -> " << array2.size() << "[ ";
             for (auto j = 0U; j < array2.size(); j++) {
@@ -1297,8 +1298,9 @@ TR::Compilation &operator<<(TR::Compilation &out, const TR_OSRMethodData &osrMet
     for (c.SetToFirst(); c.Valid(); c.SetToNext()) {
         if (!first)
             out << ",\n";
-        char bcIndex[20];
-        sprintf(bcIndex, "%x", table.KeyAt(c));
+        size_t bcIndexSize = 20;
+        char bcIndex[bcIndexSize];
+        snprintf(bcIndex, bcIndexSize, "%x", table.KeyAt(c));
 
         out << bcIndex << " -> " << table.DataAt(c);
         first = false;

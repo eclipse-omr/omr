@@ -251,9 +251,9 @@ TR::IlValue *OMR::IlBuilder::Copy(TR::IlValue *value)
 {
     TR::DataType dt = value->getDataType();
     TR::SymbolReference *newSymRef = symRefTab()->createTemporary(_methodSymbol, dt);
-    char *name = (char *)_comp->trMemory()->allocateHeapMemory(
-        (2 + 10 + 1) * sizeof(char)); // 2 ("_T") + max 10 digits + trailing zero
-    sprintf(name, "_T%u", newSymRef->getCPIndex());
+    const size_t nameSize = (2 + 10 + 1) * sizeof(char); // 2 ("_T") + max 10 digits + trailing zero
+    char *name = (char *)_comp->trMemory()->allocateHeapMemory(nameSize);
+    snprintf(name, nameSize, "_T%u", newSymRef->getCPIndex());
     newSymRef->getSymbol()->getAutoSymbol()->setName(name);
     newSymRef->getSymbol()->setNotCollected();
     _methodBuilder->defineSymbol(name, newSymRef);
@@ -659,9 +659,9 @@ TR::IlValue *OMR::IlBuilder::CreateLocalArray(int32_t numElements, TR::IlType *e
     uint32_t size = static_cast<uint32_t>(numElements * elementType->getSize());
     TR::SymbolReference *localArraySymRef
         = symRefTab()->createLocalPrimArray(size, methodSymbol(), 8 /*FIXME: JVM-specific - byte*/);
-    char *name = (char *)_comp->trMemory()->allocateHeapMemory(
-        (2 + 10 + 1) * sizeof(char)); // 2 ("_T") + max 10 digits + trailing zero
-    sprintf(name, "_T%u", localArraySymRef->getCPIndex());
+    const size_t nameSize = (2 + 10 + 1) * sizeof(char); // 2 ("_T") + max 10 digits + trailing zero
+    char *name = (char *)_comp->trMemory()->allocateHeapMemory(nameSize);
+    snprintf(name, nameSize, "_T%u", localArraySymRef->getCPIndex());
     localArraySymRef->getSymbol()->getAutoSymbol()->setName(name);
     localArraySymRef->setStackAllocatedArrayAccess();
     _methodBuilder->defineSymbol(name, localArraySymRef);
@@ -680,9 +680,9 @@ TR::IlValue *OMR::IlBuilder::CreateLocalStruct(TR::IlType *structType)
     uint32_t size = static_cast<uint32_t>(structType->getSize());
     TR::SymbolReference *localStructSymRef
         = symRefTab()->createLocalPrimArray(size, methodSymbol(), 8 /*FIXME: JVM-specific - byte*/);
-    char *name = (char *)_comp->trMemory()->allocateHeapMemory(
-        (2 + 10 + 1) * sizeof(char)); // 2 ("_T") + max 10 digits + trailing zero
-    sprintf(name, "_T%u", localStructSymRef->getCPIndex());
+    const size_t nameSize = (2 + 10 + 1) * sizeof(char); // 2 ("_T") + max 10 digits + trailing zero
+    char *name = (char *)_comp->trMemory()->allocateHeapMemory(nameSize);
+    snprintf(name, nameSize, "_T%u", localStructSymRef->getCPIndex());
     localStructSymRef->getSymbol()->getAutoSymbol()->setName(name);
     localStructSymRef->setStackAllocatedArrayAccess();
     _methodBuilder->defineSymbol(name, localStructSymRef);
@@ -1155,9 +1155,9 @@ void OMR::IlBuilder::Return(TR::IlValue *value)
         if (returnSymbol == NULL) {
             TR::DataType dt = value->getDataType();
             TR::SymbolReference *newSymRef = symRefTab()->createTemporary(_methodSymbol, dt);
-            returnSymbol = (char *)_comp->trMemory()->allocateHeapMemory(
-                (3 + 10 + 1) * sizeof(char)); // 3 ("_RV") + max 10 digits + trailing zero
-            sprintf(returnSymbol, "_RV%u", newSymRef->getCPIndex());
+            const size_t symbolSize = (3 + 10 + 1) * sizeof(char); // 3 ("_RV") + max 10 digits + trailing zero
+            returnSymbol = (char *)_comp->trMemory()->allocateHeapMemory(symbolSize);
+            snprintf(returnSymbol, symbolSize, "_RV%u", newSymRef->getCPIndex());
             newSymRef->getSymbol()->getAutoSymbol()->setName(returnSymbol);
             newSymRef->getSymbol()->setNotCollected();
             _methodBuilder->defineSymbol(returnSymbol, newSymRef);

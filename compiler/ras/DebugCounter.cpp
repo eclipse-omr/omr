@@ -185,8 +185,8 @@ const char *TR::DebugCounter::debugCounterBucketName(TR::Compilation *comp, int3
     }
 
     TR::StackMemoryRegion stackMemoryRegion(*comp->trMemory());
-    char *bucketFormat = (char *)comp->trMemory()->allocateStackMemory(
-        strlen(format) + 40); // appending "=%d..%d" where each %d could be 11 characters
+    const size_t bucketFormatSize = strlen(format) + 40; // appending "=%d..%d" where each %d could be 11 characters
+    char *bucketFormat = (char *)comp->trMemory()->allocateStackMemory(bucketFormatSize);
 
     int32_t low = value;
     int32_t high = value;
@@ -237,9 +237,9 @@ const char *TR::DebugCounter::debugCounterBucketName(TR::Compilation *comp, int3
     }
 
     if (low == high)
-        sprintf(bucketFormat, "%s=%d", format, low);
+        snprintf(bucketFormat, bucketFormatSize, "%s=%d", format, low);
     else
-        sprintf(bucketFormat, "%s=%d..%d", format, low, high);
+        snprintf(bucketFormat, bucketFormatSize, "%s=%d..%d", format, low, high);
 
     va_list args;
     va_start(args, format);
@@ -527,10 +527,11 @@ TR::DebugCounter *TR::DebugCounterGroup::createCounter(const char *name, int8_t 
         if (!denominator) {
             // Can't be lazy anymore; we really need to make a copy of part of the name string
             //
-            char *denominatorName = (char *)persistentMemory->allocatePersistentMemory(separator - name + 1);
+            const size_t nameSize = separator - name + 1;
+            char *denominatorName = (char *)persistentMemory->allocatePersistentMemory(nameSize);
             TR_ASSERT(denominatorName,
                 "char *denominatorName must not be null. Ensure availability of persistent memory");
-            sprintf(denominatorName, "%.*s", (int)(separator - name), name);
+            snprintf(denominatorName, nameSize, "%.*s", (int)(separator - name), name);
 
             // Counter has negligible cost, assuming it's only used as a denominator
             //
