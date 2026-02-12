@@ -1391,7 +1391,16 @@ TR::Register *OMR::Z::TreeEvaluator::m2vEvaluator(TR::Node *node, TR::CodeGenera
 // vector evaluators
 TR::Register *OMR::Z::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    TR::Register *resultReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
+    TR::Register *sourceReg = cg->evaluate(node->getFirstChild());
+    // NAND the source with itself to perform NOT operation.
+    generateVRRcInstruction(cg, TR::InstOpCode::VNN, node, resultReg, sourceReg, sourceReg, 0);
+    node->setRegister(resultReg);
+    cg->decReferenceCount(node->getFirstChild());
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1403,12 +1412,23 @@ TR::Register *OMR::Z::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeGener
             || (node->getDataType().getVectorElementType() == TR::Float
                 && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1)),
         "VFMA is only supported for VectorElementDataType TR::Double on z13 and onwards and TR::Float on z14 onwards");
-    TR::Register *resultReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
+    bool isMasked = node->getOpCode().isVectorMasked();
+    TR::Register *resultReg
+        = isMasked ? cg->allocateRegister(TR_VRF) : TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
     TR::Register *va = cg->evaluate(node->getFirstChild());
     TR::Register *vb = cg->evaluate(node->getSecondChild());
     TR::Register *vc = cg->evaluate(node->getThirdChild());
     generateVRReInstruction(cg, TR::InstOpCode::VFMA, node, resultReg, va, vb, vc,
         static_cast<uint8_t>(getVectorElementSizeMask(node)), 0);
+    if (isMasked) {
+        TR::Node *maskChild = node->getChild(3);
+        // The result should reflect the outcome of the operation only if the mask for that lane is true;
+        // otherwise, the first child value remains unchanged in the result register.
+        generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultReg, resultReg, va, cg->evaluate(maskChild), 0,
+            0);
+        cg->decReferenceCount(maskChild);
+    }
+
     node->setRegister(resultReg);
     cg->decReferenceCount(node->getFirstChild());
     cg->decReferenceCount(node->getSecondChild());
@@ -1534,7 +1554,7 @@ TR::Register *OMR::Z::TreeEvaluator::vmdivEvaluator(TR::Node *node, TR::CodeGene
 
 TR::Register *OMR::Z::TreeEvaluator::vmfmaEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vfmaEvaluator(node, cg);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmindexVectorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1569,7 +1589,18 @@ TR::Register *OMR::Z::TreeEvaluator::vmnegEvaluator(TR::Node *node, TR::CodeGene
 
 TR::Register *OMR::Z::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    TR::Register *resultReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
+    TR::Register *sourceReg = cg->evaluate(node->getFirstChild());
+    TR::Register *maskReg = cg->evaluate(node->getSecondChild());
+    // XOR the source with mask to perform NOT operation on the bits selected by mask.
+    generateVRRcInstruction(cg, TR::InstOpCode::VX, node, resultReg, maskReg, sourceReg, 0);
+    node->setRegister(resultReg);
+    cg->decReferenceCount(node->getFirstChild());
+    cg->decReferenceCount(node->getSecondChild());
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -14269,11 +14300,46 @@ TR::Register *OMR::Z::TreeEvaluator::vstoreEvaluator(TR::Node *node, TR::CodeGen
     return NULL;
 }
 
-TR::Register *OMR::Z::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+/**
+ * \brief
+ * Generates a vector by selecting lanes from the value children based on a mask.
+ *
+ * \details
+ * This helper function selects each lane from either the "true" child or the
+ * "false" child, depending on the corresponding mask lane. A lane is taken from
+ * the true child when the mask lane is set, and from the false child when it is
+ * not set.
+ *
+ * The interpretation and ordering of the children depend on the value of
+ * the \p isBlend flag:
+ *
+ * - If \p isBlend is true:
+ *     - Child 0: false child
+ *     - Child 1: true child
+ *     - Child 2: mask child
+ *
+ * - If \p isBlend is false:
+ *     - Child 0: mask child
+ *     - Child 1: true child
+ *     - Child 2: false child
+ *
+ * \param node
+ *     The IL node representing the vector selection operation.
+ *
+ * \param cg
+ *     The code generator.
+ *
+ * \param isBlend
+ *     Determines the ordering of children (mask, true, false) in the IL node.
+ *
+ * \return
+ *     A vector register containing the blended vector result.
+ */
+static TR::Register *vbitselectHelper(TR::Node *node, TR::CodeGenerator *cg, bool isBlend)
 {
-    TR::Node *selectorChild = node->getFirstChild();
+    TR::Node *selectorChild = isBlend ? node->getThirdChild() : node->getFirstChild();
     TR::Node *trueChild = node->getSecondChild();
-    TR::Node *falseChild = node->getThirdChild();
+    TR::Node *falseChild = isBlend ? node->getFirstChild() : node->getThirdChild();
 
     TR::Register *falseVecReg = cg->evaluate(falseChild);
     TR::Register *trueVecReg = cg->evaluate(trueChild);
@@ -14294,9 +14360,14 @@ TR::Register *OMR::Z::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::Cod
     return returnVecReg;
 }
 
+TR::Register *OMR::Z::TreeEvaluator::vbitselectEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return vbitselectHelper(node, cg, false /* isBlend */);
+}
+
 TR::Register *OMR::Z::TreeEvaluator::vblendEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vbitselectHelper(node, cg, true /* isBlend */);
 }
 
 TR::Register *OMR::Z::TreeEvaluator::arraytranslateDecodeSIMDEvaluator(TR::Node *node, TR::CodeGenerator *cg,
