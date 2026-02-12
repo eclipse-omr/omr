@@ -117,6 +117,9 @@ public:
     template<typename AllocatorType>
     static TR::LabelSymbol *createRelativeLabel(AllocatorType m, TR::CodeGenerator *cg, intptr_t offset);
 
+    intptr_t getDistance();
+
+private:
     /**
      * Mark a LabelSymbol as a RelativeLabelSymbol, inializing members as
      * appropriate.
@@ -126,11 +129,8 @@ public:
      *
      * @todo This leaks memory right now.
      */
-    void makeRelativeLabelSymbol(intptr_t offset);
+    void makeRelativeLabelSymbol(TR::CodeGenerator *cg, intptr_t offset);
 
-    intptr_t getDistance();
-
-private:
     intptr_t _offset;
 };
 

@@ -100,15 +100,16 @@ const char *OMR::LabelSymbol::getName(TR_Debug *debug)
         return "<unknown labelsym>";
 }
 
-void OMR::LabelSymbol::makeRelativeLabelSymbol(intptr_t offset)
+void OMR::LabelSymbol::makeRelativeLabelSymbol(TR::CodeGenerator *cg, intptr_t offset)
 {
     // Is this assert here purely to ensure that the label size doesn't blow the buffer?
-    TR_ASSERT(offset * 2 > -9999999 && offset * 2 < +9999999, "assertion failure");
+    TR_ASSERT(offset * 2 > -9999999 && offset * 2 < +9999999, "unexpectedly large offset");
 
     self()->setRelativeLabel();
     _offset = offset;
-    char *name = (char *)calloc(10, sizeof(char)); // FIXME: Leaked.
-    sprintf(name, "%d", (int)(offset * 2));
+    const size_t nameSize = 10; // sign plus 7 digits plus terminating zero plus one extra?
+    char *name = (char *)cg->trMemory()->allocateHeapMemory(nameSize);
+    snprintf(name, nameSize, "%d", (int)(offset * 2));
     self()->setName(name);
 }
 
@@ -124,7 +125,7 @@ template<typename AllocatorType>
 TR::LabelSymbol *OMR::LabelSymbol::createRelativeLabel(AllocatorType m, TR::CodeGenerator *cg, intptr_t offset)
 {
     TR::LabelSymbol *rel = new (m) TR::LabelSymbol(cg);
-    rel->makeRelativeLabelSymbol(offset);
+    rel->makeRelativeLabelSymbol(cg, offset);
     return rel;
 }
 
