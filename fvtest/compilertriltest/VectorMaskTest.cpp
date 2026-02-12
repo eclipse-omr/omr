@@ -190,16 +190,16 @@ uint64_t maskXor(uint64_t maskA, uint64_t maskB, int32_t numLanes) {
   return (maskA ^ maskB) & ((1ULL << numLanes) - 1);
 }
 
-void getOpcodeName(TR::ILOpCode opcode, char buf[]) {
+void getOpcodeName(TR::ILOpCode opcode, char buf[], const size_t bufSize) {
    if (opcode.isVectorOpCode() && opcode.isTwoTypeVectorOpCode()) {
       TR::DataType srcType = opcode.getVectorSourceDataType();
       TR::DataType resultType = opcode.getVectorResultDataType();
-      sprintf(buf, "%s%s_%s", opcode.getName(), srcType.toString(), resultType.toString());
+      snprintf(buf, bufSize, "%s%s_%s", opcode.getName(), srcType.toString(), resultType.toString());
    } else if (opcode.isVectorOpCode()) {
       TR::DataType opcodeType = opcode.getVectorDataType();
-      sprintf(buf, "%s%s", opcode.getName(), opcodeType.toString());
+      snprintf(buf, bufSize, "%s%s", opcode.getName(), opcodeType.toString());
    } else {
-      sprintf(buf, "%s", opcode.getName());
+      snprintf(buf, bufSize, "%s", opcode.getName());
    }
 }
 
@@ -230,7 +230,8 @@ TEST_P(ParameterizedMaskTest, mLoadStore) {
    bool platformSupport = TR::CodeGenerator::getSupportsOpCodeForAutoSIMD(&cpu, loadOp) && TR::CodeGenerator::getSupportsOpCodeForAutoSIMD(&cpu, storeOp);
    SKIP_IF(!platformSupport, MissingImplementation) << "Opcode is not supported by the target platform";
 
-   char inputTrees[1024];
+   const size_t inputTreesSize = 1024;
+   char inputTrees[inputTreesSize];
    char *formatStr = "(method return= NoType args=[Address,Address]   "
                      "  (block                                        "
                      "     (mstorei%s  offset=0                       "
@@ -238,7 +239,7 @@ TEST_P(ParameterizedMaskTest, mLoadStore) {
                      "         (mloadi%s (aload parm=1)))             "
                      "     (return)))                                 ";
 
-   sprintf(inputTrees, formatStr, vt.toString(), vt.toString());
+   snprintf(inputTrees, inputTreesSize, formatStr, vt.toString(), vt.toString());
    auto trees = parseString(inputTrees);
    ASSERT_NOTNULL(trees);
 
@@ -286,9 +287,12 @@ TEST_P(ParameterizedBinaryMaskTest, bitwiseMaskTests) {
    bool platformSupport = isSupported(&cpu, loadOp, maskOpcode, a2m, m2LongOpcode);
    SKIP_IF(!platformSupport, MissingImplementation) << "Opcode is not supported by the target platform";
 
+   const size_t inputTreesSize = 1024;
    char inputTrees[1024];
-   char bits2m[64];
-   char binaryMaskOp[64];
+   const size_t bits2mSize = 64;
+   char bits2m[bits2mSize];
+   const size_t binaryMaskOpSize = 64;
+   char binaryMaskOp[binaryMaskOpSize];
 
    char *formatStr = "(method return= NoType args=[Address,Address,Address]"
                      "  (block                                        "
@@ -300,11 +304,11 @@ TEST_P(ParameterizedBinaryMaskTest, bitwiseMaskTests) {
                      "              (%s (%s%s (aload parm=2))))))     "
                      "     (return)))                                 ";
 
-   getOpcodeName(a2m, bits2m);
-   getOpcodeName(maskOpcode, binaryMaskOp);
+   getOpcodeName(a2m, bits2m, bits2mSize);
+   getOpcodeName(maskOpcode, binaryMaskOp, binaryMaskOpSize);
 
    const char *arraySizeType = vt.getVectorNumLanes() > 8 ? vt.toString() : "";
-   sprintf(inputTrees, formatStr, mt.toString(),
+   snprintf(inputTrees, inputTreesSize, formatStr, mt.toString(),
            binaryMaskOp,
            bits2m,
            loadOp.getName(), arraySizeType,
@@ -372,9 +376,12 @@ TEST_P(ParameterizedMaskTest, boolToMaskToBool) {
    SKIP_IF(!support, MissingImplementation) << "Opcode is not supported by the target platform";
    const char *arraySizeType = vt.getVectorNumLanes() > 8 ? vt.toString() : "";
 
-   char inputTrees[1024];
-   char m2bits[64];
-   char bits2m[64];
+   const size_t inputTreesSize = 1024;
+   char inputTrees[inputTreesSize];
+   const size_t m2bitsSize = 64;
+   char m2bits[m2bitsSize];
+   const size_t bits2mSize = 64;
+   char bits2m[bits2mSize];
 
    char *formatStr = "(method return= NoType args=[Address,Address]  \n"
                      "  (block                                       \n"
@@ -385,9 +392,9 @@ TEST_P(ParameterizedMaskTest, boolToMaskToBool) {
                      "               (%s%s (aload parm=1)))))        \n"
                      "     (return)))                                \n";
 
-   getOpcodeName(m2a, m2bits);
-   getOpcodeName(a2m, bits2m);
-   sprintf(inputTrees, formatStr,
+   getOpcodeName(m2a, m2bits, m2bitsSize);
+   getOpcodeName(a2m, bits2m, bits2mSize);
+   snprintf(inputTrees, inputTreesSize, formatStr,
          storeOpcode.getName(), arraySizeType,
          m2bits,
          bits2m,
@@ -460,9 +467,12 @@ TEST_P(ParameterizedUnaryMaskTest, unaryTest) {
    SKIP_IF(!support, MissingImplementation) << "Opcode is not supported by the target platform";
    const char *arraySizeType = vt.getVectorNumLanes() > 8 ? vt.toString() : "";
 
-   char inputTrees[1024];
-   char bits2m[64];
-   char unaryMaskOp[64];
+   const size_t inputTreesSize = 1024;
+   char inputTrees[inputTreesSize];
+   const size_t bits2mSize = 64;
+   char bits2m[bits2mSize];
+   const size_t unaryMaskOpSize = 64;
+   char unaryMaskOp[unaryMaskOpSize];
 
    char *formatStr = "(method return= NoType args=[Address,Address]  \n"
                      "  (block                                       \n"
@@ -473,9 +483,9 @@ TEST_P(ParameterizedUnaryMaskTest, unaryTest) {
                      "               (%s%s (aload parm=1)))))        \n"
                      "     (return)))                                \n";
 
-   getOpcodeName(a2m, bits2m);
-   getOpcodeName(maskOpcode, unaryMaskOp);
-   sprintf(inputTrees, formatStr,
+   getOpcodeName(a2m, bits2m, bits2mSize);
+   getOpcodeName(maskOpcode, unaryMaskOp, unaryMaskOpSize);
+   snprintf(inputTrees, inputTreesSize, formatStr,
            maskOpcode.is8Byte() ? "lstorei" : "istorei",
            unaryMaskOp,
            bits2m,
@@ -537,8 +547,10 @@ TEST_P(ParameterizedVBlendTest, vblend) {
    bool platformSupport = isSupported(&cpu, loadOp, a2m, blend);
    SKIP_IF(!platformSupport, MissingImplementation) << "Opcode is not supported by the target platform";
 
-   char inputTrees[1024];
-   char bits2m[64];
+   const size_t inputTreesSize = 1024;
+   char inputTrees[inputTreesSize];
+   const size_t bits2mSize = 64;
+   char bits2m[bits2mSize];
 
    char *formatStr = "(method return= NoType args=[Address,Address,Address,Address]"
                      "  (block                                        "
@@ -550,10 +562,10 @@ TEST_P(ParameterizedVBlendTest, vblend) {
                      "              (%s (%s%s (aload parm=3)))))      "
                      "     (return)))                                 ";
 
-   getOpcodeName(a2m, bits2m);
+   getOpcodeName(a2m, bits2m, bits2mSize);
 
    const char *arraySizeType = vt.getVectorNumLanes() > 8 ? vt.toString() : "";
-   sprintf(inputTrees, formatStr,
+   snprintf(inputTrees, inputTreesSize, formatStr,
            vt.toString(), vt.toString(), vt.toString(), vt.toString(),
            bits2m,
            loadOp.getName(), arraySizeType);
