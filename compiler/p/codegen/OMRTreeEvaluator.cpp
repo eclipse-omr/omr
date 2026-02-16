@@ -3422,13 +3422,27 @@ TR::Register *OMR::Power::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR:
     TR::InstOpCode::Mnemonic op)
 {
     TR::Node *firstChild = node->getFirstChild();
-    TR::Register *srcReg = NULL;
+    TR::Node *secondChild = NULL;
+    TR::Register *srcReg = NULL, *maskReg = NULL;
+    bool masked = false;
 
     srcReg = cg->evaluate(firstChild);
+
+    if (node->getOpCode().isVectorMasked()) {
+        masked = true;
+        secondChild = node->getSecondChild();
+        maskReg = cg->evaluate(secondChild);
+    }
 
     TR::Register *resReg = cg->allocateRegister(TR_VRF);
     node->setRegister(resReg);
     generateTrg1Src1Instruction(cg, op, node, resReg, srcReg);
+
+    if (masked) {
+        // Note: Both VFR and VSX registers are supported by xxsel
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, srcReg, resReg, maskReg);
+    }
+
     cg->decReferenceCount(firstChild);
     return resReg;
 }
