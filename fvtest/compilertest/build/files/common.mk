@@ -282,7 +282,6 @@ JIT_PRODUCT_SOURCE_FILES+=\
     $(JIT_PRODUCT_DIR)/control/TestJit.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/IlInjector.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/TestIlGeneratorMethodDetails.cpp \
-    $(JIT_PRODUCT_DIR)/runtime/TestCodeCacheManager.cpp
 
 include $(JIT_MAKE_DIR)/files/host/$(HOST_ARCH).mk
 include $(JIT_MAKE_DIR)/files/target/$(TARGET_ARCH).mk

@@ -268,7 +268,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_PRODUCT_DIR)/control/Jit.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/JBIlGeneratorMethodDetails.cpp \
     $(JIT_PRODUCT_DIR)/optimizer/JBOptimizer.cpp \
-    $(JIT_PRODUCT_DIR)/runtime/JBCodeCacheManager.cpp \
 
 CPP_GENERATED_SOURCE_DIR=$(JIT_PRODUCT_DIR)/client/cpp
 CPP_GENERATED_API_SOURCES+=\
