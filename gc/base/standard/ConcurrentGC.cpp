@@ -173,6 +173,7 @@ void oldToOldReferenceCreated(MM_EnvironmentBase *env, omrobjectptr_t objectPtr)
 void
 MM_ConcurrentGC::reportConcurrentKickoff(MM_EnvironmentBase *env)
 {
+	env->_collectionReason = MM_EnvironmentBase::gc_reason_concurrent_kickoff;
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
 
 	Trc_MM_ConcurrentKickoff(env->getLanguageVMThread(),
