@@ -63,12 +63,6 @@ public:
 		state_final_roots_complete,
 	} _markDelegateState; /**< The state of the MarkDelegate's incremental state machine (part of the cycle since multiple cycles could be in different places in the machine) */
 
-	enum CollectionReason {
-		gc_reason_other = 0,
-		gc_reason_alloc_failure = 1,
-		gc_reason_system_gc = 2,
-	} _collectionReason; /**< The reason for the collection (used for event reporting [JFR]) */
-
 	struct {
 		uintptr_t _survivorSetRegionCount; /**< Count of regions Copy Forward used as destination. Effective usage of regions is accounted, thus the count is not a cardinal number. */
 	} _pgcData;
@@ -114,7 +108,6 @@ public:
 		, _noCompactionAfterSweep(false)
 		, _collectionType(CT_GLOBAL_GARBAGE_COLLECTION)
 		, _markDelegateState(state_mark_idle)
-		, _collectionReason(gc_reason_other)
 		, _currentIncrement(0)
 		, _currentCycleID(0)
 		, _startTime(0)

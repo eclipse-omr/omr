@@ -236,6 +236,7 @@ MM_MemorySubSpace::reportAllocationFailureStart(MM_EnvironmentBase* env, MM_Allo
 	generateAllocationFailureStats(env, allocDescription);
 
 	env->allocationFailureStartReportIfRequired(allocDescription, getTypeFlags());
+	env->_collectionReason = MM_EnvironmentBase::gc_reason_alloc_failure;
 
 	Trc_MM_AllocationFailureCycleStart(env->getLanguageVMThread(),
 									   _extensions->heap->getApproximateActiveFreeMemorySize(MEMORY_TYPE_NEW),
@@ -922,6 +923,7 @@ MM_MemorySubSpace::systemGarbageCollect(MM_EnvironmentBase* env, uint32_t gcCode
 		_extensions->heap->getResizeStats()->setFreeBytesAtSystemGCStart(getApproximateActiveFreeMemorySize());
 
 		env->acquireExclusiveVMAccessForGC(_collector);
+		env->_collectionReason = MM_EnvironmentBase::gc_reason_system_gc;
 		reportSystemGCStart(env, gcCode);
 
 		/* system GCs are accounted into "user" time in GC/total time ratio calculation */
