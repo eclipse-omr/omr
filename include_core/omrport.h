@@ -1367,6 +1367,25 @@ typedef struct OMROSKernelInfo {
 	uint32_t minorRevision;
 } OMROSKernelInfo;
 
+/**
+ * Structure to hold block device statistics.
+ * Primarily derived from Linux's /proc/diskstats and /sys/block/<device>/stat.
+ * Used by omrsysinfo_get_block_device_stats.
+ */
+typedef struct OMRBlockDeviceStats {
+	uintptr_t rd_ios;
+	uintptr_t rd_merges;
+	uintptr_t rd_sectors;
+	uintptr_t rd_ticks_ms;
+	uintptr_t wr_ios;
+	uintptr_t wr_merges;
+	uintptr_t wr_sectors;
+	uintptr_t wr_ticks_ms;
+	uintptr_t in_flight;
+	uintptr_t io_ticks_ms;
+	uintptr_t time_in_queue_ms;
+} OMRBlockDeviceStats;
+
 /* bitwise flags indicating cgroup subsystems supported by portlibrary */
 #define OMR_CGROUP_SUBSYSTEM_CPU ((uint64_t)0x1)
 #define OMR_CGROUP_SUBSYSTEM_MEMORY ((uint64_t)0x2)
@@ -2610,6 +2629,12 @@ typedef struct OMRPortLibrary {
 	int32_t (*sysinfo_cgroup_subsystem_iterator_next)(struct OMRPortLibrary *portLibrary, struct OMRCgroupMetricIteratorState *state, struct OMRCgroupMetricElement *metricElement);
 	/** see @ref omrsysinfo.c::omrsysinfo_cgroup_subsystem_iterator_destroy "omrsysinfo_cgroup_subsystem_iterator_destroy"*/
 	void (*sysinfo_cgroup_subsystem_iterator_destroy)(struct OMRPortLibrary *portLibrary, struct OMRCgroupMetricIteratorState *state);
+	/** see @ref omrsysinfo.c::omrsysinfo_get_block_device_stats "omrsysinfo_get_block_device_stats"*/
+	int32_t (*sysinfo_get_block_device_stats)(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats);
+	/** see @ref omrsysinfo.c::omrsysinfo_get_block_device_for_path "omrsysinfo_get_block_device_for_path"*/
+	char* (*sysinfo_get_block_device_for_path)(struct OMRPortLibrary *portLibrary, const char *path);
+	/** see @ref omrsysinfo.c::omrsysinfo_get_block_device_for_swap "omrsysinfo_get_block_device_for_swap"*/
+	char* (*sysinfo_get_block_device_for_swap)(struct OMRPortLibrary *portLibrary);
 	/** see @ref omrsysinfo.c::omrsysinfo_get_process_start_time "omrsysinfo_get_process_start_time"*/
 	int32_t (*sysinfo_get_process_start_time)(struct OMRPortLibrary *portLibrary, uintptr_t pid, uint64_t *processStartTimeInNanoseconds);
 	/** see @ref omrsysinfo.c::omrsysinfo_get_number_context_switches "omrsysinfo_get_number_context_switches"*/
@@ -3261,6 +3286,9 @@ extern J9_CFUNC int32_t omrport_getVersion(struct OMRPortLibrary *portLibrary);
 #define omrsysinfo_cgroup_subsystem_iterator_next(param1, param2) privateOmrPortLibrary->sysinfo_cgroup_subsystem_iterator_next(privateOmrPortLibrary, param1, param2)
 #define omrsysinfo_cgroup_subsystem_iterator_destroy(param1) privateOmrPortLibrary->sysinfo_cgroup_subsystem_iterator_destroy(privateOmrPortLibrary, param1)
 #define omrsysinfo_get_process_start_time(param1, param2) privateOmrPortLibrary->sysinfo_get_process_start_time(privateOmrPortLibrary, param1, param2)
+#define omrsysinfo_get_block_device_stats(param1, param2) privateOmrPortLibrary->sysinfo_get_block_device_stats(privateOmrPortLibrary, (param1), (param2))
+#define omrsysinfo_get_block_device_for_path(param1) privateOmrPortLibrary->sysinfo_get_block_device_for_path(privateOmrPortLibrary, (param1))
+#define omrsysinfo_get_block_device_for_swap() privateOmrPortLibrary->sysinfo_get_block_device_for_swap(privateOmrPortLibrary)
 #define omrsysinfo_get_number_context_switches(param1) privateOmrPortLibrary->sysinfo_get_number_context_switches(privateOmrPortLibrary, param1)
 #define omrintrospect_startup() privateOmrPortLibrary->introspect_startup(privateOmrPortLibrary)
 #define omrintrospect_shutdown() privateOmrPortLibrary->introspect_shutdown(privateOmrPortLibrary)

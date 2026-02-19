@@ -63,6 +63,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
+#include <libgen.h>
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
@@ -7960,4 +7961,267 @@ omrsysinfo_get_process_name(struct OMRPortLibrary *portLibrary, uintptr_t pid)
 	}
 #endif /* defined(AIXPPC) */
 	return NULL;
+}
+
+/**
+ * Gather block device statistics.
+ *
+ * This function examines the given device and returns its stats. The given device and stat file
+ * should exist at /sys/block/<device>/stat and contain the expected fields.
+ *
+ * @param[in] portLibrary The port library
+ * @param[in] device The device to gather stats for
+ * @param[out] stats Structure to be filled with block device stats
+ *
+ * @return 0 on success, error code on failure
+ */
+int32_t
+omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats)
+{
+	Assert_PRT_true(NULL != device);
+	Assert_PRT_true(NULL != stats);
+#if defined(LINUX) && !defined(OMRZTPF)
+	char buf[PATH_MAX];
+	intptr_t fd = -1;
+	intptr_t bytesRead = -1;
+	int32_t fieldsScanned = -1;
+
+	portLibrary->str_printf(portLibrary, buf, sizeof(buf), "/sys/block/%s/stat", device);
+
+	fd = portLibrary->file_open(portLibrary, buf, EsOpenRead, 0);
+	if (-1 == fd) {
+		return portLibrary->error_last_error_number(portLibrary);
+	}
+
+	bytesRead = portLibrary->file_read(portLibrary, fd, buf, sizeof(buf) - 1);
+	if (0 >= bytesRead) {
+		portLibrary->file_close(portLibrary, fd);
+		return portLibrary->error_last_error_number(portLibrary);
+	}
+	buf[bytesRead] = '\0';
+	portLibrary->file_close(portLibrary, fd);
+
+	memset(stats, 0, sizeof(*stats));
+
+	fieldsScanned = sscanf(buf,
+		"%" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR " %" SCNuPTR,
+		&stats->rd_ios,
+		&stats->rd_merges,
+		&stats->rd_sectors,
+		&stats->rd_ticks_ms,
+		&stats->wr_ios,
+		&stats->wr_merges,
+		&stats->wr_sectors,
+		&stats->wr_ticks_ms,
+		&stats->in_flight,
+		&stats->io_ticks_ms,
+		&stats->time_in_queue_ms);
+
+	if (11 != fieldsScanned) {
+		return OMRPORT_ERROR_SYSINFO_GET_STATS_FAILED;
+	}
+#endif /* defined(LINUX) && !defined(OMRZTPF) */
+	return 0;
+}
+
+/**
+ * Helper: resolve /sys/dev/block/<maj>:<min> to /sys/block/<dev>
+ * Walks upward to find a directory present under /sys/block/<dev>.
+ * Returns device name (e.g., "sda", "nvme0n1", "dm-0"), or NULL.
+ * Returned pointer needs to be freed via portLibrary->mem_free_memory.
+ */
+static char*
+resolveTopBlockDeviceFromMajMin(struct OMRPortLibrary *portLibrary, uint32_t majorNum, uint32_t minorNum)
+{
+    char devpath[PATH_MAX];
+	char resolved[PATH_MAX];
+	char *cursor = NULL;
+    char *result = NULL;
+
+	/*
+	 * /sys/dev/block/<maj>:<min> is typically a symlink, and might look like one of the following examples:
+	 * /sys/dev/block/252:0 -> ../../devices/pci0000:00/0000:00:10.0/virtio6/block/vda
+	 * /sys/dev/block/253:0 -> ../../devices/virtual/block/dm-0
+	 * /sys/dev/block/8:0 -> ../../devices/pci0000:00/0000:00:17.0/ata3/host2/target2:0:0/2:0:0:0/block/sda
+	 * /sys/dev/block/252:1 -> ../../devices/pci0000:00/0000:00:10.0/virtio6/block/vda/vda1
+	 * realpath() will give us the absolute version of the target.
+	 * From there we want to find the corresponding device in /sys/block/.
+	 * That corresponding device might simply be the last element of the absolute path, or it might
+	 * be an earlier element in that path.
+	 * For example, /sys/block/{vda,dm-0,sda} are probably valid, but /sys/block/vda1 is not and we need
+	 * to try the previous elements of that path in order to find that /sys/block/vda exists.
+	 */
+
+	portLibrary->str_printf(portLibrary, devpath, sizeof(devpath), "/sys/dev/block/%u:%u", majorNum, minorNum);
+
+    if (NULL == realpath(devpath, resolved)) {
+        return NULL;
+    }
+
+    cursor = resolved;
+
+	/* Starting at the end of the complete resolved path, find the first element that exists in /sys/block. */
+    for (;;) {
+        char *base = NULL;
+		char *dir = NULL;
+        char sysblk[PATH_MAX];
+
+		/* This code depends on the GNU version of basename; it assumes basename won't modify the string at cursor. */
+		base = basename(cursor);
+        portLibrary->str_printf(portLibrary, sysblk, sizeof(sysblk), "/sys/block/%s", base);
+
+        if (0 == access(sysblk, F_OK)) {
+			/* Found */
+			result = portLibrary->mem_allocate_memory(portLibrary, strlen(base) + 1, OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+			strcpy(result, base);
+            break;
+        }
+
+        dir = dirname(cursor);
+        if (NULL == dir) {
+			/* Error */
+            break;
+        }
+
+		if (0 == strcmp(dir, "/") || 0 == strcmp(dir, ".")) {
+			/*
+			 * Reached the beginning of the resolved path without finding anything in /sys/block.
+			 * This is expected if the target is not stored on a block device (tmpfs, nfs, etc).
+			 */
+            break;
+        }
+
+        cursor = dir;
+    }
+
+    return result;
+}
+
+/**
+ * Return the block device for the given path.
+ *
+ * This function returns block device for the given path. A block device
+ * is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ *
+ * @param[in] portLibrary The port library
+ * @param[in] path The path who's block device will be returned
+ *
+ * @return Pointer to a string representing the device on success, NULL on failure. The pointer needs to be freed via portLibrary->mem_free_memory.
+ *
+ */
+char*
+omrsysinfo_get_block_device_for_path(struct OMRPortLibrary *portLibrary, const char *path)
+{
+	struct stat st;
+	dev_t dev;
+	uint32_t majorNum;
+	uint32_t minorNum;
+
+    if (0 != stat(path, &st)) {
+        return NULL;
+    }
+
+    dev = st.st_dev;
+    majorNum = major(dev);
+    minorNum = minor(dev);
+
+    return resolveTopBlockDeviceFromMajMin(portLibrary, majorNum, minorNum);
+}
+
+/*
+ * Helper: resolve a block device node (/dev/XXX) to top-level /sys/block/<dev>.
+ * Uses st_rdev (device special file) rather than st_dev. Use this function if
+ * the file at path represents a block device; use omrsysinfo_get_block_device_for_path instead
+ * if the path is a regular file on a device.
+ * Returns a pointer to a string representing the device on success, NULL on failure.
+ * The pointer needs to be freed via portLibrary->mem_free_memory..
+ */
+static char*
+getBlockDeviceFromDevNode(struct OMRPortLibrary *portLibrary, const char *path)
+{
+	struct stat st;
+	dev_t rdev;
+	uint32_t majorNum;
+	uint32_t minorNum;
+
+    if (0 != stat(path, &st) || !S_ISBLK(st.st_mode)) {
+        return NULL;
+    }
+
+	rdev = st.st_rdev;
+    majorNum = major(rdev);
+    minorNum = minor(rdev);
+
+    return resolveTopBlockDeviceFromMajMin(portLibrary, majorNum, minorNum);
+}
+
+/**
+ * Return the block device for the system swap area.
+ *
+ * This function returns block device for the highest priority system swap area. Swap areas on
+ * devices and swap areas on files are both supported.
+ * A block device is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ *
+ * @param[in] portLibrary The port library
+ *
+ * @return Pointer to a string representing the device on success, NULL on failure. The pointer needs to be freed via portLibrary->mem_free_memory.
+ *
+ */
+char*
+omrsysinfo_get_block_device_for_swap(struct OMRPortLibrary *portLibrary)
+{
+    char *device = NULL;
+	BOOLEAN found = FALSE;
+    int32_t highestPriority = INT32_MIN;
+    char highestPriorityType[32];
+    char highestPriorityPath[PATH_MAX];
+	char line[1024];
+	FILE *fp = fopen("/proc/swaps", "r");
+
+	if (NULL == fp) {
+        return NULL;
+    }
+
+    /* Skip header */
+    if (NULL == fgets(line, sizeof(line), fp)) {
+        fclose(fp);
+        return NULL;
+    }
+
+    while (NULL != fgets(line, sizeof(line), fp)) {
+        char path[PATH_MAX];
+        char type[32];
+        uintptr_t size, used;
+        int32_t priority;
+
+        int32_t fieldsScanned = sscanf(line, "%s %31s %" SCNuPTR " %" SCNuPTR " %" SCNd32,
+                                       path, type, &size, &used, &priority);
+		/* Skip malformed lines */
+        if (5 != fieldsScanned) {
+            continue;
+        }
+
+        if (priority > highestPriority) {
+			found = TRUE;
+            highestPriority = priority;
+            strncpy(highestPriorityType, type, sizeof(highestPriorityType) - 1);
+            highestPriorityType[sizeof(highestPriorityType) - 1] = '\0';
+            strncpy(highestPriorityPath, path, sizeof(highestPriorityPath) - 1);
+            highestPriorityPath[sizeof(highestPriorityPath) - 1] = '\0';
+        }
+    }
+
+    fclose(fp);
+
+    if (FALSE == found) {
+        return NULL;
+    }
+
+    if (0 == strcmp(highestPriorityType, "file")) {
+        device = omrsysinfo_get_block_device_for_path(portLibrary, highestPriorityPath);
+    } else if (0 == strcmp(highestPriorityType, "partition")) {
+        device = getBlockDeviceFromDevNode(portLibrary, highestPriorityPath);
+	}
+
+    return device;
 }
