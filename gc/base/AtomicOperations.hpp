@@ -122,6 +122,18 @@ public:
 		VM_AtomicSupport::readBarrier();
 	}
 
+	MMINLINE_DEBUG static uint8_t
+	lockCompareExchangeU8(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+		return VM_AtomicSupport::lockCompareExchangeU8(address, oldValue, newValue);
+	}
+
+	MMINLINE_DEBUG static uint16_t
+	lockCompareExchangeU16(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+		return VM_AtomicSupport::lockCompareExchangeU16(address, oldValue, newValue);
+	}
+
 	/**
 	 * Store unsigned 32 bit value at memory location as an atomic operation.
 	 * Compare the unsigned 32 bit value at memory location pointed to by <b>address</b>.  If it is

@@ -379,6 +379,36 @@ public:
 #endif /* defined(ATOMIC_SUPPORT_STUB) */
 	}
 
+	VMINLINE static uint8_t
+	lockCompareExchangeU8(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+#if defined(ATOMIC_SUPPORT_STUB)
+		return 0;
+#else /* defined(ATOMIC_SUPPORT_STUB) */
+#if defined(__GNUC__)  /* defined(__xlC__) || defined(__open_xl__) */
+		/* Assume GCC >= 4.2 */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#else
+#error "lockCompareExchangeU8(): unsupported platform!"
+#endif
+#endif /* defined(ATOMIC_SUPPORT_STUB) */
+	}
+
+	VMINLINE static uint16_t
+	lockCompareExchangeU16(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+#if defined(ATOMIC_SUPPORT_STUB)
+		return 0;
+#else /* defined(ATOMIC_SUPPORT_STUB) */
+#if defined(__GNUC__)  /* defined(__xlC__) || defined(__open_xl__) */
+		/* Assume GCC >= 4.2 */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#else
+#error "lockCompareExchangeU16(): unsupported platform!"
+#endif
+#endif /* defined(ATOMIC_SUPPORT_STUB) */
+	}
+
 	/**
 	 * Store unsigned 64 bit value at memory location as an atomic operation.
 	 * Compare the unsigned 64 bit value at memory location pointed to by <b>address</b>.  If it is
