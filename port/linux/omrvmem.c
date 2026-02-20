@@ -999,6 +999,13 @@ omrvmem_supported_page_flags(struct OMRPortLibrary *portLibrary)
 	return PPG_vmem_pageFlags;
 }
 
+const char *
+omrvmem_disclaim_dir(struct OMRPortLibrary *portLibrary)
+{
+	return PPG_vmemTmpDirPath;
+}
+
+
 /* Get the state of Transparent HugePage (THP) from OS
  *
  * return 0 if THP is set to never/always
@@ -1160,14 +1167,11 @@ reserve_memory_with_mmap(struct OMRPortLibrary *portLibrary, void *address, uint
 		if (OMR_ARE_ANY_BITS_SET(mode, OMRPORT_VMEM_MEMORY_MODE_SHARE_TMP_FILE_OPEN)) {
 			/* Generate a unique temporary filename from template and open the file. */
 			char filename[FILE_NAME_SIZE + 1];
-			const char *tmpdir = NULL;
 			size_t filenameLen = 0;
 			char *filenameBuf = filename;
 
 			/* Check for user-specified temporary directory. */
-#if defined(PPG_vmemTmpDirPath)
-			tmpdir = PPG_vmemTmpDirPath;
-#endif /* defined(PPG_vmemTmpDirPath) */
+			const char *tmpdir = omrvmem_disclaim_dir(portLibrary);
 			/* Fall back to /tmp if not set. */
 			if (NULL == tmpdir) {
 				tmpdir = "/tmp";
