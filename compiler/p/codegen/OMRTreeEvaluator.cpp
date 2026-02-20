@@ -1280,46 +1280,21 @@ TR::Register *OMR::Power::TreeEvaluator::vcmpeqEvaluator(TR::Node *node, TR::Cod
 
     switch (elementType) {
         case TR::Int8:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequb);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpequb, false, false);
         case TR::Int16:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequh);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpequh, false, false);
         case TR::Int32:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequw);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpequw, false, false);
         case TR::Int64:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequd);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpequd, false, false);
         case TR::Float:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpeqsp);
+            return vcmpHelper(node, cg, TR::InstOpCode::xvcmpeqsp, false, false);
         case TR::Double:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpeqdp);
+            return vcmpHelper(node, cg, TR::InstOpCode::xvcmpeqdp, false, false);
         default:
             TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", elementType.toString());
             return NULL;
     }
-}
-
-TR::Register *vcmpHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, bool complement,
-    bool switchOperands)
-{
-    TR::Node *firstChild = node->getFirstChild();
-    TR::Node *secondChild = node->getSecondChild();
-
-    TR::Register *lhsReg = cg->evaluate(firstChild);
-    TR::Register *rhsReg = cg->evaluate(secondChild);
-    TR::Register *resReg = cg->allocateRegister(TR_VRF);
-
-    node->setRegister(resReg);
-
-    if (switchOperands)
-        generateTrg1Src2Instruction(cg, op, node, resReg, rhsReg, lhsReg);
-    else
-        generateTrg1Src2Instruction(cg, op, node, resReg, lhsReg, rhsReg);
-
-    if (complement)
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlnor, node, resReg, resReg, resReg);
-
-    cg->decReferenceCount(firstChild);
-    cg->decReferenceCount(secondChild);
-    return resReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vcmpneEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1336,17 +1311,17 @@ TR::Register *OMR::Power::TreeEvaluator::vcmpneEvaluator(TR::Node *node, TR::Cod
     switch (elementType) {
         case TR::Int8:
             if (p9Plus)
-                return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpneb);
+                return vcmpHelper(node, cg, TR::InstOpCode::vcmpneb, false, false);
             else
                 return vcmpHelper(node, cg, TR::InstOpCode::vcmpequb, true, false);
         case TR::Int16:
             if (p9Plus)
-                return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpneh);
+                return vcmpHelper(node, cg, TR::InstOpCode::vcmpneh, false, false);
             else
                 return vcmpHelper(node, cg, TR::InstOpCode::vcmpequh, true, false);
         case TR::Int32:
             if (p9Plus)
-                return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpnew);
+                return vcmpHelper(node, cg, TR::InstOpCode::vcmpnew, false, false);
             else
                 return vcmpHelper(node, cg, TR::InstOpCode::vcmpequw, true, false);
         case TR::Int64:
@@ -1397,17 +1372,17 @@ TR::Register *OMR::Power::TreeEvaluator::vcmpgtEvaluator(TR::Node *node, TR::Cod
 
     switch (elementType) {
         case TR::Int8:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsb);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpgtsb, false, false);
         case TR::Int16:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsh);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpgtsh, false, false);
         case TR::Int32:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsw);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpgtsw, false, false);
         case TR::Int64:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsd);
+            return vcmpHelper(node, cg, TR::InstOpCode::vcmpgtsd, false, false);
         case TR::Float:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgtsp);
+            return vcmpHelper(node, cg, TR::InstOpCode::xvcmpgtsp, false, false);
         case TR::Double:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgtdp);
+            return vcmpHelper(node, cg, TR::InstOpCode::xvcmpgtdp, false, false);
         default:
             TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", elementType.toString());
             return NULL;
@@ -1461,13 +1436,50 @@ TR::Register *OMR::Power::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::Cod
         case TR::Int64:
             return vcmpHelper(node, cg, TR::InstOpCode::vcmpgtsd, true, true);
         case TR::Float:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgesp);
+            return vcmpHelper(node, cg, TR::InstOpCode::xvcmpgesp, false, false);
         case TR::Double:
-            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgedp);
+            return vcmpHelper(node, cg, TR::InstOpCode::xvcmpgedp, false, false);
         default:
             TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", elementType.toString());
             return NULL;
     }
+}
+
+TR::Register *OMR::Power::TreeEvaluator::vcmpHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    bool complement, bool switchOperands)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Node *secondChild = node->getSecondChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
+
+    TR::Register *lhsReg = cg->evaluate(firstChild);
+    TR::Register *rhsReg = cg->evaluate(secondChild);
+    TR::Register *resReg = cg->allocateRegister(TR_VRF);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
+
+    node->setRegister(resReg);
+
+    if (switchOperands)
+        generateTrg1Src2Instruction(cg, op, node, resReg, rhsReg, lhsReg);
+    else
+        generateTrg1Src2Instruction(cg, op, node, resReg, lhsReg, rhsReg);
+
+    if (complement)
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlnor, node, resReg, resReg, resReg);
+
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::xxland, node, resReg, resReg, maskReg);
+
+    if (maskReg)
+        cg->stopUsingRegister(maskReg);
+
+    cg->decReferenceCount(firstChild);
+    cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
+
+    return resReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vloadiEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -1483,19 +1495,25 @@ TR::Register *OMR::Power::TreeEvaluator::vstoreiEvaluator(TR::Node *node, TR::Co
 static TR::Register *vreductionAddSubWordHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic sumOp)
 {
     TR::Node *firstChild = node->getFirstChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
 
     TR::Register *srcReg = cg->evaluate(firstChild);
     TR::Register *resReg = cg->allocateRegister();
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *tempRes = cg->allocateRegister(TR_VRF);
     TR::Register *zeroReg = cg->allocateRegister(TR_VRF);
 
     node->setRegister(resReg);
 
+    // apply mask if provided
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, zeroReg, 0);
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, tempRes, zeroReg, srcReg, maskReg);
+
     // Evaluate sum across vector operand. Since the operands will be either 8 or 16 bytes long, and thus the results
     // cannot overflow, it is safe to use saturate sum instructions here
-    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, zeroReg, 0);
-    generateTrg1Src2Instruction(cg, sumOp, node, tempRes, srcReg, zeroReg); // Sum across each word element
+    generateTrg1Src2Instruction(cg, sumOp, node, tempRes, tempRes, zeroReg); // Sum across each word element
     generateTrg1Src2Instruction(cg, TR::InstOpCode::vsumsws, node, tempRes, tempRes,
         zeroReg); // Sum word elements across entire vector operand
 
@@ -1511,6 +1529,8 @@ static TR::Register *vreductionAddSubWordHelper(TR::Node *node, TR::CodeGenerato
     cg->stopUsingRegister(tempRes);
     cg->stopUsingRegister(zeroReg);
     cg->decReferenceCount(firstChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return resReg;
 }
@@ -1518,11 +1538,14 @@ static TR::Register *vreductionAddSubWordHelper(TR::Node *node, TR::CodeGenerato
 static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
 {
     TR::Node *firstChild = node->getFirstChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
 
     TR::Register *srcReg = cg->evaluate(firstChild);
     TR::Register *resReg;
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *temp = cg->allocateRegister(TR_VRF);
+    TR::Register *maskedSrcReg = maskReg ? cg->allocateRegister(TR_VRF) : NULL; // only used if mask needs to be applied
     TR::Register *tempGPR;
     TR::Register *tempVSX;
 
@@ -1549,6 +1572,13 @@ static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *
 
     node->setRegister(resReg);
 
+    // apply mask if provided
+    if (maskReg) {
+        generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, maskedSrcReg, 0);
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, maskedSrcReg, maskedSrcReg, srcReg, maskReg);
+        srcReg = maskedSrcReg;
+    }
+
     // Evaluate sum across vector operand by rotating and performing lanewise addition
     generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxsldwi, node, temp, srcReg, srcReg, 3);
     generateTrg1Src2Instruction(cg, addOp, node, tempVSX, srcReg, temp);
@@ -1564,7 +1594,11 @@ static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *
     }
 
     cg->stopUsingRegister(temp);
+    if (maskedSrcReg)
+        cg->stopUsingRegister(maskedSrcReg);
     cg->decReferenceCount(firstChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return resReg;
 }
@@ -1572,10 +1606,13 @@ static TR::Register *vreductionAddWordHelper(TR::Node *node, TR::CodeGenerator *
 static TR::Register *vreductionAddDoubleWordHelper(TR::Node *node, TR::CodeGenerator *cg, TR::DataType type)
 {
     TR::Node *firstChild = node->getFirstChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
 
     TR::Register *srcReg = cg->evaluate(firstChild);
     TR::Register *resReg;
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
+    TR::Register *maskedSrcReg = maskReg ? cg->allocateRegister(TR_VRF) : NULL;
     TR::Register *tempGPR;
     TR::Register *tempVSX;
 
@@ -1602,6 +1639,13 @@ static TR::Register *vreductionAddDoubleWordHelper(TR::Node *node, TR::CodeGener
 
     node->setRegister(resReg);
 
+    // apply mask if provided
+    if (maskReg) {
+        generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, maskedSrcReg, 0);
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, maskedSrcReg, maskedSrcReg, srcReg, maskReg);
+        srcReg = maskedSrcReg;
+    }
+
     // Evaluate sum across vector operand by rotating and performing lanewise addition
     generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, tempVSX, srcReg, srcReg, 2);
     generateTrg1Src2Instruction(cg, addOp, node, tempVSX, srcReg, tempVSX);
@@ -1612,15 +1656,17 @@ static TR::Register *vreductionAddDoubleWordHelper(TR::Node *node, TR::CodeGener
         cg->stopUsingRegister(tempVSX);
     }
 
+    if (maskedSrcReg)
+        cg->stopUsingRegister(maskedSrcReg);
     cg->decReferenceCount(firstChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return resReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vreductionAddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    TR_ASSERT_FATAL_WITH_NODE(node, node->getNumChildren() == 1, "vreductionAdd node should have exactly one child");
-
     TR::Node *firstChild = node->getFirstChild();
     TR::DataType type = firstChild->getDataType().getVectorElementType();
 
@@ -3422,13 +3468,27 @@ TR::Register *OMR::Power::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR:
     TR::InstOpCode::Mnemonic op)
 {
     TR::Node *firstChild = node->getFirstChild();
-    TR::Register *srcReg = NULL;
+    TR::Node *secondChild = NULL;
+    TR::Register *srcReg = NULL, *maskReg = NULL;
+    bool masked = false;
 
     srcReg = cg->evaluate(firstChild);
+
+    if (node->getOpCode().isVectorMasked()) {
+        masked = true;
+        secondChild = node->getSecondChild();
+        maskReg = cg->evaluate(secondChild);
+    }
 
     TR::Register *resReg = cg->allocateRegister(TR_VRF);
     node->setRegister(resReg);
     generateTrg1Src1Instruction(cg, op, node, resReg, srcReg);
+
+    if (masked) {
+        // Note: Both VFR and VSX registers are supported by xxsel
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, srcReg, resReg, maskReg);
+    }
+
     cg->decReferenceCount(firstChild);
     return resReg;
 }
@@ -3579,14 +3639,22 @@ TR::Register *OMR::Power::TreeEvaluator::vxorEvaluator(TR::Node *node, TR::CodeG
 TR::Register *OMR::Power::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::Node *firstChild = node->getFirstChild();
-    TR::Register *srcReg = NULL;
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
 
-    srcReg = cg->evaluate(firstChild);
+    TR::Register *srcReg = cg->evaluate(firstChild);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *resReg = cg->allocateRegister(TR_VRF);
     node->setRegister(resReg);
     generateTrg1Src2Instruction(cg, TR::InstOpCode::vnor, node, resReg, srcReg, srcReg);
+
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, srcReg, resReg, maskReg);
+
     cg->decReferenceCount(firstChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
     return resReg;
 }
 
@@ -4103,8 +4171,10 @@ TR::Register *OMR::Power::TreeEvaluator::vnegIntHelper(TR::Node *node, TR::CodeG
     }
 
     TR::Node *firstChild;
+    TR::Node *maskNode;
     TR::Register *srcReg;
     TR::Register *resReg;
+    TR::Register *maskReg;
 
     TR::InstOpCode::Mnemonic sub;
 
@@ -4126,14 +4196,22 @@ TR::Register *OMR::Power::TreeEvaluator::vnegIntHelper(TR::Node *node, TR::CodeG
     }
 
     firstChild = node->getFirstChild();
+    maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
     srcReg = cg->evaluate(firstChild);
+    maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     resReg = cg->allocateRegister(TR_VRF);
     generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, srcReg, srcReg);
     generateTrg1Src2Instruction(cg, sub, node, resReg, resReg, srcReg);
     node->setRegister(resReg);
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, srcReg, resReg, maskReg);
+
     cg->decReferenceCount(firstChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
     return resReg;
 }
 
@@ -4175,25 +4253,37 @@ TR::Register *OMR::Power::TreeEvaluator::vabsIntHelper(TR::Node *node, TR::CodeG
     TR::InstOpCode::Mnemonic shift, TR::InstOpCode::Mnemonic add)
 {
     TR::Node *firstChild = node->getFirstChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getSecondChild() : NULL;
+
     TR::Register *srcReg = cg->evaluate(firstChild);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *resReg = cg->allocateRegister(TR_VRF);
     TR::Register *shiftReg = cg->allocateRegister(TR_VRF);
-    TR::Register *maskReg = cg->allocateRegister(TR_VRF);
+    TR::Register *signReg = cg->allocateRegister(TR_VRF);
 
     node->setRegister(resReg);
 
     // set shift amount to size of operand - 1
     generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, shiftReg, -1);
 
-    // set mask to 0000... if src is positive, 1111... if src is negative
-    generateTrg1Src2Instruction(cg, shift, node, maskReg, srcReg, shiftReg);
+    // set signReg to 0000... if src is positive, 1111... if src is negative
+    generateTrg1Src2Instruction(cg, shift, node, signReg, srcReg, shiftReg);
 
-    // res = (mask + src) ^ mask
-    generateTrg1Src2Instruction(cg, add, node, resReg, maskReg, srcReg);
-    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, resReg, maskReg);
+    // res = (signReg + src) ^ signReg
+    generateTrg1Src2Instruction(cg, add, node, resReg, signReg, srcReg);
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, resReg, signReg);
+
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, srcReg, resReg, maskReg);
+
+    cg->stopUsingRegister(shiftReg);
+    cg->stopUsingRegister(signReg);
 
     cg->decReferenceCount(firstChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
     return resReg;
 }
 
@@ -4217,9 +4307,11 @@ static TR::Register *vminFPHelper(TR::Node *node, TR::CodeGenerator *cg, TR::Dat
 {
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
 
     TR::Register *firstReg = cg->evaluate(firstChild);
     TR::Register *secondReg = cg->evaluate(secondChild);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *resReg = cg->allocateRegister(TR_VSX_VECTOR);
 
@@ -4264,12 +4356,18 @@ static TR::Register *vminFPHelper(TR::Node *node, TR::CodeGenerator *cg, TR::Dat
     // VSX minimum (will return NaN if both operands are NaN)
     generateTrg1Src2Instruction(cg, minOp, node, resReg, tempA, tempB);
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, firstReg, resReg, maskReg);
+
     cg->stopUsingRegister(cmpReg);
     cg->stopUsingRegister(tempA);
     cg->stopUsingRegister(tempB);
 
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return resReg;
 }
@@ -4301,9 +4399,11 @@ TR::Register *vmaxFPHelper(TR::Node *node, TR::CodeGenerator *cg, TR::DataType t
 {
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
 
     TR::Register *firstReg = cg->evaluate(firstChild);
     TR::Register *secondReg = cg->evaluate(secondChild);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *resReg = cg->allocateRegister(TR_VSX_VECTOR);
 
@@ -4348,12 +4448,18 @@ TR::Register *vmaxFPHelper(TR::Node *node, TR::CodeGenerator *cg, TR::DataType t
     // VSX maximum (will return NaN if both operands are NaN)
     generateTrg1Src2Instruction(cg, maxOp, node, resReg, tempA, tempB);
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, firstReg, resReg, maskReg);
+
     cg->stopUsingRegister(cmpReg);
     cg->stopUsingRegister(tempA);
     cg->stopUsingRegister(tempB);
 
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return resReg;
 }
@@ -4409,16 +4515,19 @@ TR::Register *OMR::Power::TreeEvaluator::vmulInt8Helper(TR::Node *node, TR::Code
 {
     TR::Node *firstChild;
     TR::Node *secondChild;
-    TR::Register *lhsReg, *rhsReg;
+    TR::Node *maskNode;
+    TR::Register *lhsReg, *rhsReg, *maskReg;
     TR::Register *productReg;
     TR::Register *temp;
     TR::Register *shiftReg;
 
     firstChild = node->getFirstChild();
     secondChild = node->getSecondChild();
+    maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
 
     lhsReg = cg->evaluate(firstChild);
     rhsReg = cg->evaluate(secondChild);
+    maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     productReg = cg->allocateRegister(TR_VRF);
     temp = cg->allocateRegister(TR_VRF);
@@ -4442,10 +4551,16 @@ TR::Register *OMR::Power::TreeEvaluator::vmulInt8Helper(TR::Node *node, TR::Code
     // add odd and even bytes together to get full vector of products
     generateTrg1Src2Instruction(cg, TR::InstOpCode::vaddubm, node, productReg, productReg, temp);
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, productReg, lhsReg, productReg, maskReg);
+
     cg->stopUsingRegister(temp);
     cg->stopUsingRegister(shiftReg);
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return productReg;
 }
@@ -4454,15 +4569,18 @@ TR::Register *OMR::Power::TreeEvaluator::vmulInt16Helper(TR::Node *node, TR::Cod
 {
     TR::Node *firstChild;
     TR::Node *secondChild;
-    TR::Register *lhsReg, *rhsReg;
+    TR::Node *maskNode;
+    TR::Register *lhsReg, *rhsReg, *maskReg;
     TR::Register *productReg;
     TR::Register *temp;
 
     firstChild = node->getFirstChild();
     secondChild = node->getSecondChild();
+    maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
 
     lhsReg = cg->evaluate(firstChild);
     rhsReg = cg->evaluate(secondChild);
+    maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     productReg = cg->allocateRegister(TR_VRF);
     temp = cg->allocateRegister(TR_VRF);
@@ -4472,9 +4590,15 @@ TR::Register *OMR::Power::TreeEvaluator::vmulInt16Helper(TR::Node *node, TR::Cod
     generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltish, node, temp, 0);
     generateTrg1Src3Instruction(cg, TR::InstOpCode::vmladduhm, node, productReg, lhsReg, rhsReg, temp);
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, productReg, lhsReg, productReg, maskReg);
+
     cg->stopUsingRegister(temp);
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return productReg;
 }
@@ -4504,9 +4628,11 @@ TR::Register *OMR::Power::TreeEvaluator::vmulInt64Helper(TR::Node *node, TR::Cod
 
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
 
     TR::Register *lhsReg = cg->evaluate(firstChild);
     TR::Register *rhsReg = cg->evaluate(secondChild);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *productReg = cg->allocateRegister(TR_VRF);
     TR::Register *tempA = cg->allocateRegister(TR_VRF);
@@ -4533,11 +4659,17 @@ TR::Register *OMR::Power::TreeEvaluator::vmulInt64Helper(TR::Node *node, TR::Cod
     // add everything together to get final product
     generateTrg1Src2Instruction(cg, TR::InstOpCode::vaddudm, node, productReg, productReg, tempB);
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, productReg, lhsReg, productReg, maskReg);
+
     cg->stopUsingRegister(tempA);
     cg->stopUsingRegister(tempB);
     cg->stopUsingRegister(shiftReg);
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return productReg;
 }
@@ -4587,7 +4719,9 @@ TR::Register *OMR::Power::TreeEvaluator::vdivInt32Helper(TR::Node *node, TR::Cod
 
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
     TR::Register *lhsReg = NULL, *rhsReg = NULL;
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     lhsReg = cg->evaluate(firstChild);
     rhsReg = cg->evaluate(secondChild);
@@ -4632,11 +4766,17 @@ TR::Register *OMR::Power::TreeEvaluator::vdivInt32Helper(TR::Node *node, TR::Cod
     generateTrg1MemInstruction(cg, TR::InstOpCode::lxvw4x, node, resReg,
         TR::MemoryReference::createWithIndexReg(cg, NULL, srcV1IdxReg, 16));
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, lhsReg, resReg, maskReg);
+
     cg->stopUsingRegister(srcV1IdxReg);
     cg->stopUsingRegister(srcV2IdxReg);
     node->setRegister(resReg);
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
 
     return resReg;
 }
@@ -4655,10 +4795,14 @@ TR::Register *OMR::Power::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeG
     TR::Node *secondChild = node->getSecondChild();
     TR::Node *thirdChild = node->getThirdChild();
 
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getChild(3) : NULL;
+
     // resReg = firstReg * secondReg + thirdReg
     TR::Register *firstReg = cg->evaluate(firstChild);
     TR::Register *secondReg = cg->evaluate(secondChild);
     TR::Register *thirdReg = cg->evaluate(thirdChild);
+
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
 
     TR::Register *resReg;
 
@@ -4668,7 +4812,7 @@ TR::Register *OMR::Power::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeG
         resReg = thirdReg;
         op = (type == TR::Float) ? TR::InstOpCode::xvmaddasp : TR::InstOpCode::xvmaddadp;
         generateTrg1Src2Instruction(cg, op, node, thirdReg, firstReg, secondReg);
-    } else if (cg->canClobberNodesRegister(firstChild)) {
+    } else if (cg->canClobberNodesRegister(firstChild) && !maskReg) { // need to preserve firstReg if doing masked FMA
         resReg = firstReg;
         op = (type == TR::Float) ? TR::InstOpCode::xvmaddmsp : TR::InstOpCode::xvmaddmdp;
         generateTrg1Src2Instruction(cg, op, node, firstReg, secondReg, thirdReg);
@@ -4685,10 +4829,17 @@ TR::Register *OMR::Power::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeG
         generateTrg1Src2Instruction(cg, op, node, resReg, firstReg, secondReg);
     }
 
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, firstReg, resReg, maskReg);
+
     node->setRegister(resReg);
     cg->decReferenceCount(firstChild);
     cg->decReferenceCount(secondChild);
     cg->decReferenceCount(thirdChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
+
     return resReg;
 }
 
@@ -4718,7 +4869,7 @@ TR::Register *OMR::Power::TreeEvaluator::vfirstNonZeroEvaluator(TR::Node *node, 
 
 TR::Register *OMR::Power::TreeEvaluator::vmabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vabsEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmaddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4733,42 +4884,42 @@ TR::Register *OMR::Power::TreeEvaluator::vmandEvaluator(TR::Node *node, TR::Code
 
 TR::Register *OMR::Power::TreeEvaluator::vmcmpeqEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vcmpeqEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmcmpneEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vcmpneEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmcmpgtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vcmpgtEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmcmpgeEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vcmpgeEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmcmpltEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vcmpltEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmcmpleEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vcmpleEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmdivEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vdivEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmfmaEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vfmaEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmindexVectorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4783,27 +4934,27 @@ TR::Register *OMR::Power::TreeEvaluator::vmloadiEvaluator(TR::Node *node, TR::Co
 
 TR::Register *OMR::Power::TreeEvaluator::vmmaxEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vmaxEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmminEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vminEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmmulEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vmulEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmnegEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vnegEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vnotEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4818,7 +4969,7 @@ TR::Register *OMR::Power::TreeEvaluator::vmorUncheckedEvaluator(TR::Node *node, 
 
 TR::Register *OMR::Power::TreeEvaluator::vmreductionAddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vreductionAddEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmreductionAndEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4863,7 +5014,7 @@ TR::Register *OMR::Power::TreeEvaluator::vmreductionXorEvaluator(TR::Node *node,
 
 TR::Register *OMR::Power::TreeEvaluator::vmsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vsqrtEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmstoreiEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4873,7 +5024,7 @@ TR::Register *OMR::Power::TreeEvaluator::vmstoreiEvaluator(TR::Node *node, TR::C
 
 TR::Register *OMR::Power::TreeEvaluator::vmsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vsubEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
