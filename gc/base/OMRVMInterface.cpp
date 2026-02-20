@@ -102,7 +102,7 @@ GC_OMRVMInterface::flushCachesForWalk(OMR_VM *omrVM)
 
 	while ((omrVMThread = threadListIterator.nextOMRVMThread()) != NULL) {
 		MM_EnvironmentBase *envToFlush = MM_EnvironmentBase::getEnvironment(omrVMThread);
-		GC_OMRVMThreadInterface::flushCachesForWalk(envToFlush);
+		GC_OMRVMThreadInterface::flushCachesForWalk(envToFlush, envToFlush);
 	}
 }
 
@@ -137,7 +137,7 @@ GC_OMRVMInterface::flushCachesForGC(MM_EnvironmentBase *env)
 			allocatedBytesMax = allocatedBytes;
 			vmThreadMax = omrVMThread;
 		}
-		GC_OMRVMThreadInterface::flushCachesForGC(threadEnv);
+		GC_OMRVMThreadInterface::flushCachesForGC(env, threadEnv);
 	}
 
 	extensions->bytesAllocatedMost = allocatedBytesMax;

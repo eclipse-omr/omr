@@ -30,23 +30,35 @@
 #include "OMRVMThreadInterface.hpp"
 
 void
-GC_OMRVMThreadInterface::flushCachesForWalk(MM_EnvironmentBase *env)
+GC_OMRVMThreadInterface::flushCachesForWalk(MM_EnvironmentBase *targetEnv)
 {
-	env->_objectAllocationInterface->flushCache(env);
+  flushCachesForWalk(targetEnv, targetEnv);
+}
+
+void
+GC_OMRVMThreadInterface::flushCachesForWalk(MM_EnvironmentBase *currentEnv, MM_EnvironmentBase *targetEnv)
+{
+	targetEnv->_objectAllocationInterface->flushCache(currentEnv);
 	/* If we are in a middle of a concurrent GC, we want to flush GC caches, typically for mutator threads doing GC work.
 	 * (GC threads are  smart enough to do it themselves, before they let the walk occur) */
-	env->flushGCCaches(true);
+	targetEnv->flushGCCaches(true);
 }
 
 void
-GC_OMRVMThreadInterface::flushNonAllocationCaches(MM_EnvironmentBase *env)
+GC_OMRVMThreadInterface::flushNonAllocationCaches(MM_EnvironmentBase *targetEnv)
 {
-	env->flushNonAllocationCaches();
+	targetEnv->flushNonAllocationCaches();
 }
 
 void
-GC_OMRVMThreadInterface::flushCachesForGC(MM_EnvironmentBase *env)
+GC_OMRVMThreadInterface::flushCachesForGC(MM_EnvironmentBase *targetEnv)
 {
-	flushCachesForWalk(env);
-	flushNonAllocationCaches(env);
+  flushCachesForGC(targetEnv, targetEnv);
+}
+
+void
+GC_OMRVMThreadInterface::flushCachesForGC(MM_EnvironmentBase *currentEnv, MM_EnvironmentBase *targetEnv)
+{
+	flushCachesForWalk(currentEnv, targetEnv);
+	flushNonAllocationCaches(targetEnv);
 }
