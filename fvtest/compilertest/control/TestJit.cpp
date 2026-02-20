@@ -124,7 +124,7 @@ initializeCodeCache(TR::CodeCacheManager & codeCacheManager)
 
 
 // An individual test program is intended to load the JIT as a shared library, then call:
-//     initializeTestJit() providing addresses of required helpers (all others will be NULL)
+//     initializeTestJitWithPort() providing addresses of required helpers (all others will be NULL)
 //     compileMethod() as many times as needed to create compiled code
 //         resolved method passed in must have an IlGenerator responsible for injecting the IL for the compilation
 //     shuwdownTestJit() when the test is complete
@@ -136,9 +136,10 @@ initializeCodeCache(TR::CodeCacheManager & codeCacheManager)
 // helperIDs is an array of helper id corresponding to the addresses passed in "helpers"
 // helpers is an array of pointers to helpers that compiled code for tests needs to reference
 // options is any JIT option string passed in to globally influence compilation
+// portLib is the OMRPortLibrary to use in compiler environment
 extern "C"
 bool
-initializeTestJit(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t numHelpers, char *options)
+initializeTestJitWithPort(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t numHelpers, char *options, void *portLib)
    {
     // Force enable tree verifier
     std::string optionsWithVerifier = options;
@@ -155,7 +156,7 @@ initializeTestJit(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t n
       {
       // Allocate the host environment structure
       //
-      TR::Compiler = new (rawAllocator) TR::CompilerEnv(rawAllocator, TR::PersistentAllocatorKit(rawAllocator));
+      TR::Compiler = static_cast<TR::CompilerEnv *>(new (rawAllocator) OMR::CompilerEnv(rawAllocator, TR::PersistentAllocatorKit(rawAllocator), (OMRPortLibrary *)portLib));
       }
    catch (const std::bad_alloc&)
       {
@@ -182,9 +183,23 @@ initializeTestJit(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t n
 
 extern "C"
 bool
+initializeTestJit(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_t numHelpers, char *options)
+   {
+      return initializeTestJitWithPort(helperIDs, helperAddresses, numHelpers, options, (void *)NULL);
+   }
+
+extern "C"
+bool
 initializeJitWithOptions(char *options)
    {
    return initializeTestJit(0, 0, 0, options);
+   }
+
+extern "C"
+bool
+initializeJitWithOptionsAndPort(char *options, void *portLib)
+   {
+   return initializeTestJitWithPort(0, 0, 0, options, portLib);
    }
 
 extern "C"
