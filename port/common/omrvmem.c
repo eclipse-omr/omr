@@ -433,3 +433,16 @@ omrvmem_get_process_memory_size(struct OMRPortLibrary *portLibrary, J9VMemMemory
 {
 	return OMRPORT_ERROR_VMEM_NOT_SUPPORTED;
 }
+
+/**
+ * Get the name of the directory used to store backing files of disclaimed memory.
+ *
+ * @param[in] portLibrary The port library.
+ *
+ * @return A 0 terminated char array with the name of the directory.
+ */
+const char *
+omrvmem_disclaim_dir(struct OMRPortLibrary *portLibrary)
+{
+	return NULL;
+}

@@ -627,7 +627,7 @@ extern J9_CFUNC intptr_t
 omrsysinfo_get_cwd(struct OMRPortLibrary *portLibrary, char *buf, uintptr_t bufLen);
 extern J9_CFUNC intptr_t
 omrsysinfo_get_tmp(struct OMRPortLibrary *portLibrary, char *buf, uintptr_t bufLen, BOOLEAN ignoreEnvVariable);
-extern J9_CFUNC int32_t 
+extern J9_CFUNC int32_t
 omrsysinfo_get_open_file_count(struct OMRPortLibrary *portLibrary, uint64_t *count);
 extern J9_CFUNC intptr_t
 omrsysinfo_get_os_description(struct OMRPortLibrary *portLibrary, struct OMROSDesc *desc);
@@ -635,11 +635,11 @@ extern J9_CFUNC BOOLEAN
 omrsysinfo_os_has_feature(struct OMRPortLibrary *portLibrary, struct OMROSDesc *desc, uint32_t feature);
 extern J9_CFUNC BOOLEAN
 omrsysinfo_os_kernel_info(struct OMRPortLibrary *portLibrary, struct OMROSKernelInfo *kernelInfo);
-extern J9_CFUNC BOOLEAN 
+extern J9_CFUNC BOOLEAN
 omrsysinfo_cgroup_is_system_available(struct OMRPortLibrary *portLibrary);
 extern J9_CFUNC uint64_t
 omrsysinfo_cgroup_get_available_subsystems(struct OMRPortLibrary *portLibrary);
-extern J9_CFUNC uint64_t 
+extern J9_CFUNC uint64_t
 omrsysinfo_cgroup_are_subsystems_available(struct OMRPortLibrary *portLibrary, uint64_t subsystemFlags);
 extern J9_CFUNC uint64_t
 omrsysinfo_cgroup_get_enabled_subsystems(struct OMRPortLibrary *portLibrary);
@@ -647,7 +647,7 @@ extern J9_CFUNC uint64_t
 omrsysinfo_cgroup_enable_subsystems(struct OMRPortLibrary *portLibrary, uint64_t requestedSubsystems);
 extern J9_CFUNC uint64_t
 omrsysinfo_cgroup_are_subsystems_enabled(struct OMRPortLibrary *portLibrary, uint64_t subsystemFlags);
-extern J9_CFUNC int32_t 
+extern J9_CFUNC int32_t
 omrsysinfo_cgroup_get_memlimit(struct OMRPortLibrary *portLibrary, uint64_t *limit);
 extern J9_CFUNC BOOLEAN
 omrsysinfo_cgroup_is_memlimit_set(struct OMRPortLibrary *portLibrary);
@@ -923,7 +923,8 @@ extern J9_CFUNC int32_t
 omrvmem_get_available_physical_memory(struct OMRPortLibrary *portLibrary, uint64_t *freePhysicalMemorySize);
 extern J9_CFUNC int32_t
 omrvmem_get_process_memory_size(struct OMRPortLibrary *portLibrary, J9VMemMemoryQuery queryType, uint64_t *memorySize);
-
+extern J9_CFUNC const char *
+omrvmem_disclaim_dir(struct OMRPortLibrary *portLibrary);
 /* J9SourcePort*/
 extern J9_CFUNC int32_t
 omrport_shutdown_library(struct OMRPortLibrary *portLibrary);
