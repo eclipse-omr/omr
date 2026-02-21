@@ -1038,3 +1038,5 @@ TraceEntry=Trc_MM_double_map_EntryNew Obsolete Overhead=1 Level=3 Group=arraylet
 TraceException=Trc_MM_getSparseAddressAndDecommitLeaves_allocFailed Overhead=1 Level=1 Group=arraylet Template="Failed to allocate sparse memory sparseEntrySize: %zu"
 TraceException=Trc_MM_getSparseAddressAndDecommitLeaves_reserveFailed Overhead=1 Level=1 Group=arraylet Template="Failed to reserve region, ReservedRegionCount: %zu"
 
+TraceEvent=Trc_MM_MemorySubSpaceTarok_checkResize Overhead=1 Level=1 Group=resize Template="MM_MemorySubSpaceTarok_checkResize heapSizeChange = %zu edenChangeRegionsBytes = %zu"
+
