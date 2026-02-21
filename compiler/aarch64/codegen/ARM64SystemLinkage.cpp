@@ -236,7 +236,7 @@ void TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
     while (localCursor != NULL) {
         if (localCursor->getGCMapIndex() < 0 && localCursor->getDataType() != TR::Int64
             && localCursor->getDataType() != TR::Double && localCursor->getDataType() != TR::Address
-            && !localCursor->getDataType().isVector()) {
+            && !localCursor->getDataType().isVectorOrMask()) {
             localCursor->setOffset(stackIndex);
             stackIndex += (localCursor->getSize() + 3) & (~3);
             frameNeeded = true;
@@ -265,7 +265,7 @@ void TR::ARM64SystemLinkage::mapStack(TR::ResolvedMethodSymbol *method)
 
     // map vector automatics
     while (localCursor != NULL) {
-        if (localCursor->getDataType().isVector()) {
+        if (localCursor->getDataType().isVectorOrMask()) {
             localCursor->setOffset(stackIndex);
             stackIndex += (localCursor->getSize() + 15) & (~15);
             frameNeeded = true;
@@ -867,4 +867,3 @@ intptr_t TR::ARM64SystemLinkage::entryPointFromInterpretedMethod()
 {
     return reinterpret_cast<intptr_t>(cg()->getCodeStart());
 }
-

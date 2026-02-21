@@ -3238,7 +3238,7 @@ bool OMR::X86::CodeGenerator::directCallRequiresTrampoline(intptr_t targetAddres
 
 bool OMR::X86::CodeGenerator::considerTypeForGRA(TR::Node *node) { return !node->getOpCode().isVectorOpCode(); }
 
-bool OMR::X86::CodeGenerator::considerTypeForGRA(TR::DataType dt) { return !(dt.isVector() || dt.isMask()); }
+bool OMR::X86::CodeGenerator::considerTypeForGRA(TR::DataType dt) { return !dt.isVectorOrMask(); }
 
 bool OMR::X86::CodeGenerator::considerTypeForGRA(TR::SymbolReference *symRef)
 {
