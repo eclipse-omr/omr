@@ -28,7 +28,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(TRIL_BACKEND_LIB      testcompiler)
+set(TRIL_BACKEND_LIB      jitbuilder)
 
 omr_add_library(tril NOWARNINGS STATIC
 	ast.cpp
@@ -45,8 +45,11 @@ omr_add_library(tril NOWARNINGS STATIC
 make_compiler_target(tril PUBLIC COMPILER ${TRIL_BACKEND_LIB})
 
 target_include_directories(tril PUBLIC
+	${CMAKE_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${omr_SOURCE_DIR}/include_core
+	${JITBUILDER_CPP_API_HEADER_DIR}
 )
 
 target_link_libraries(tril PUBLIC

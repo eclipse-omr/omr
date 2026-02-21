@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright IBM Corp. and others 2000
+ * Copyright IBM Corp. and others 2014
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,26 +20,30 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#include "codegen/CodeGenerator.hpp"
-#include "env/FrontEnd.hpp"
-#include "z/codegen/S390GenerateInstructions.hpp"
-#include "z/codegen/SystemLinkage.hpp"
-#include "codegen/S390Snippets.hpp"
-#include "il/Node.hpp"
-#include "il/Node_inlines.hpp"
-#include "env/IO.hpp"
-#include "ras/Logger.hpp"
+#ifndef SIMPLEJIT_INCL
+#define SIMPLEJIT_INCL
 
-uint32_t TR::S390RestoreGPR7Snippet::getLength(int32_t estimatedSnippetStart)
+#include "stdint.h"
+#include "compile/CompilationTypes.hpp"
+
+// An individual program should link statically against the compiler, then call:
+//     initializeSimpleJit() or initializeSimpleJitWithOptions() to initialize the Jit
+//     compile as many times as needed to create compiled code
+//     run the compiled code as needed
+//     shuwdownJit() when the test is complete (at which time compiled code will be freed)
+//
+
+namespace TR { class IlGeneratorMethodDetails; }
+
+extern "C"
 {
-    TR_UNIMPLEMENTED();
-    return 0;
-}
 
-uint8_t *TR::S390RestoreGPR7Snippet::emitSnippetBody()
-{
-    TR_UNIMPLEMENTED();
-    return NULL;
-}
+bool initializeSimpleJitWithOptions(char *options);
+bool initializeSimpleJit();
+uint8_t *compileMethod(TR::IlGeneratorMethodDetails & details, TR_Hotness hotness, int32_t &rc);
+void shutdownSimpleJit();
 
-void TR_Debug::print(OMR::Logger *log, TR::S390RestoreGPR7Snippet *snippet) { TR_UNIMPLEMENTED(); }
+} // extern "C"
+
+
+#endif // defined(SIMPLEJIT_INCL)

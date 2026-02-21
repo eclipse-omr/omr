@@ -22,10 +22,9 @@
 #ifndef TR_OPTIMIZER_INCL
 #define TR_OPTIMIZER_INCL
 
-#include "optimizer/OMROptimizer.hpp"
-
 #include <stddef.h>
 #include <stdint.h>
+#include "optimizer/OMROptimizer.hpp"
 
 namespace TR {
 class Compilation;
@@ -35,12 +34,17 @@ struct OptimizationStrategy;
 
 namespace TR {
 
-class Optimizer : public OMR::OptimizerConnector {
+class Optimizer : public OMR::Optimizer {
 public:
     Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
         const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0)
         : OMR::OptimizerConnector(comp, methodSymbol, isIlGen, strategy, VNType)
     {}
+
+    static const OptimizationStrategy *optimizationStrategy(TR::Compilation *c)
+    {
+        return OMR::Optimizer::optimizationStrategy(c);
+    };
 };
 
 } // namespace TR

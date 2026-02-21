@@ -47,10 +47,6 @@ class Optimizer;
 class TreeTop;
 } // namespace TR
 
-namespace OMR {
-class Optimizer;
-}
-
 /**
  * Use/def information.
  *
@@ -161,13 +157,12 @@ public:
         friend class TR_ReachingDefinitions;
         friend class TR_OSRDefInfo;
     };
-
-    friend class OMR::Optimizer;
+    friend class OMR::SmallOptimizer;
 
 protected:
     /**
      * Constructs TR_UseDefInfo instance. Note that this should not be called directly.
-     * Instead construction is handled by OMR::Optimizer::createUseDefInfo() method.
+     * Instead construction is handled by TR::Optimizer::createUseDefInfo() method.
      *
      * @param cfg                        The compilation instance
      * @param requiresGlobals

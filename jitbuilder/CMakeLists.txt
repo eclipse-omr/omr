@@ -33,26 +33,12 @@ endif()
 
 # JitBuilder Files
 set(JITBUILDER_OBJECTS
-	compile/ResolvedMethod.cpp
 	control/Jit.cpp
-	ilgen/JBIlGeneratorMethodDetails.cpp
-	optimizer/JBOptimizer.hpp
-	optimizer/JBOptimizer.cpp
-	optimizer/Optimizer.hpp
-	runtime/JBCodeCacheManager.cpp
+	${omr_SOURCE_DIR}/compiler/control/SimpleJit.cpp
 )
 
-if(OMR_ARCH_X86)
+if(OMR_ARCH_POWER)
 	list(APPEND JITBUILDER_OBJECTS
-		x/codegen/Evaluator.cpp
-	)
-elseif(OMR_ARCH_S390)
-	list(APPEND JITBUILDER_OBJECTS
-		z/codegen/Evaluator.cpp
-	)
-elseif(OMR_ARCH_POWER)
-	list(APPEND JITBUILDER_OBJECTS
-		p/codegen/Evaluator.cpp
 		p/runtime/CodeSync.cpp
 		p/runtime/AsmUtil.spp
 		p/runtime/CodeDispatch.spp
@@ -128,6 +114,7 @@ create_omr_compiler_library(
 	NAME    jitbuilder
 	OBJECTS ${JITBUILDER_OBJECTS}
 	DEFINES PROD_WITH_ASSUMES JITTEST
+	FILTER	${omr_SOURCE_DIR}/compiler/optimizer/OMRFullOptimizer.cpp
 )
 
 # Add interface path so that include paths propagate.
@@ -142,6 +129,7 @@ target_include_directories(jitbuilder
 target_link_libraries(jitbuilder
 	PUBLIC
 		${OMR_PORT_LIB}
+		#${JITBUILDER_API_HEADERS}
 )
 
 # JitBuilder examples only work on 64 bit currently.

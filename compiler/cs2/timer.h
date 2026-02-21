@@ -258,12 +258,12 @@ public:
     }
 
     // alternativeFormat is in seconds/millisecs
-    static uint32_t sprintfMetric(char *line, Metric value, Metric total, bool alternativeFormat = false,
-        bool csv = false)
+    static uint32_t snprintfMetric(char *line, size_t lineSize, Metric value, Metric total,
+        bool alternativeFormat = false, bool csv = false)
     {
         uint32_t offset = 0;
         if (csv)
-            offset = sprintf(line, "%.4f", (double)(value) / 1000000.0);
+            offset = snprintf(line, lineSize, "%.4f", (double)(value) / 1000000.0);
         else {
             uint64_t usecs = value;
 
@@ -283,19 +283,19 @@ public:
                 float ratio = total ? (float(usecs) / float(total)) * 100 : 0;
 
                 if (alternativeFormat) {
-                    offset += sprintf(line + offset, "%8lld.%03d ", (long long)secs, ms);
+                    offset += snprintf(line + offset, lineSize - offset, "%8lld.%03d ", (long long)secs, ms);
                 } else {
                     if (h)
-                        offset += sprintf(line + offset, "%0d:%02d:%02d.%03d ", h, m, s, ms);
+                        offset += snprintf(line + offset, lineSize - offset, "%0d:%02d:%02d.%03d ", h, m, s, ms);
                     else
-                        offset += sprintf(line + offset, "   %d:%02d.%03d ", m, s, ms);
+                        offset += snprintf(line + offset, lineSize - offset, "   %d:%02d.%03d ", m, s, ms);
                 }
                 if (ratio < 0.01 || ratio > 99.99)
-                    offset += sprintf(line + offset, " (%d%%)", int(ratio));
+                    offset += snprintf(line + offset, lineSize - offset, " (%d%%)", int(ratio));
                 else
-                    offset += sprintf(line + offset, " (%.2f%%)", ratio);
+                    offset += snprintf(line + offset, lineSize - offset, " (%.2f%%)", ratio);
             } else
-                offset += sprintf(line + offset, "nil");
+                offset += snprintf(line + offset, lineSize - offset, "nil");
         }
         return offset;
     }
@@ -450,10 +450,11 @@ public:
         return fTotalMetric;
     }
 
-    uint32_t sprintfMetric(char *line, Metric total, bool alternativeFormat = false, bool csv = false) const
+    uint32_t snprintfMetric(char *line, size_t lineSize, Metric total, bool alternativeFormat = false,
+        bool csv = false) const
     {
         CS2Assert(!fRunning, ("Cannot read running meter: %s", Name()));
-        return Meter::sprintfMetric(line, fTotalMetric, total, alternativeFormat, csv);
+        return Meter::snprintfMetric(line, lineSize, fTotalMetric, total, alternativeFormat, csv);
     }
 
     ListIndex FindChild(const char *name, HashValue hv = 0) const
@@ -624,20 +625,21 @@ template<class ostream>
 inline void PhaseMeasuringNode<Meter, Allocator>::Dump(ostream &out, uint32_t indent, Metric total, bool running,
     bool alternativeFormat, bool csv)
 {
-    char line[2048];
+    const size_t lineSize = 2048;
+    char line[lineSize];
 
     if (csv) {
-        uint32_t offset = sprintf(line, "%d,\"%s\",", indent, fName);
-        offset += sprintfMetric(line + offset, total, alternativeFormat, csv);
-        // offset = sprintf(line+offset, "%.4f", (double) (Read()) / 1000000.0);
-        offset += sprintf(line + offset, ",%d", fCount);
+        uint32_t offset = snprintf(line, lineSize, "%d,\"%s\",", indent, fName);
+        offset += snprintfMetric(line + offset, lineSize - offset, total, alternativeFormat, csv);
+        // offset = snprintf(line + offset, lineSize - offset"%.4f", (double) (Read()) / 1000000.0);
+        offset += snprintf(line + offset, lineSize - offset, ",%d", fCount);
         out << line << "\n";
         return;
     }
 
     uint32_t offset = indent;
     if (indent > 12)
-        offset = sprintf(line, "|%10.10d>", indent);
+        offset = snprintf(line, lineSize, "|%10.10d>", indent);
     else if (indent > 0)
         memset(line, '|', indent);
 
@@ -646,14 +648,14 @@ inline void PhaseMeasuringNode<Meter, Allocator>::Dump(ostream &out, uint32_t in
         Stop();
     }
 
-    offset += sprintf(line + offset, "%-40.40s ", fName);
-    offset += sprintfMetric(line + offset, total, alternativeFormat, csv);
+    offset += snprintf(line + offset, lineSize - offset, "%-40.40s ", fName);
+    offset += snprintfMetric(line + offset, lineSize - offset, total, alternativeFormat, csv);
 
     if (offset < 72)
-        offset += sprintf(line + offset, "%*s", 72 - offset, "");
-    offset += sprintf(line + offset, "|%d", int(fCount));
+        offset += snprintf(line + offset, lineSize - offset, "%*s", 72 - offset, "");
+    offset += snprintf(line + offset, lineSize - offset, "|%d", int(fCount));
     if (running)
-        offset += sprintf(line + offset, "*");
+        offset += snprintf(line + offset, lineSize - offset, "*");
     out << line << "\n";
 }
 
@@ -690,13 +692,14 @@ inline void PhaseMeasuringSummary<Meter, Allocator>::DumpSummary(ostream &out, b
         out << "Level, Phase, " << Meter::Name(csv) << ", Count" << "\n";
         DumpSummaryNode(out, 0, 0, total, running, alternativeFormat, csv);
     } else {
-        char line[256];
+        const size_t lineSize = 256;
+        char line[lineSize];
         uint32_t offset = 0;
         out << "Summary of Phase " << Meter::Name(csv) << "\n"
             << "========================================================================" << "\n";
 
-        offset
-            = sprintf(line, "Phase                           %s  |count *=active", Meter::UnitsText(alternativeFormat));
+        offset = snprintf(line, lineSize, "Phase                           %s  |count *=active",
+            Meter::UnitsText(alternativeFormat));
 
         out << line << "\n";
         out << "========================================================================" << "\n";
@@ -801,7 +804,7 @@ public:
     {
         if (s.Collect()) {
             char pname[1024];
-            sprintf(pname, "%s %d", phase, count);
+            snprintf(pname, 1024, "%s %d", phase, count);
             PhaseProfiler<Meter, Allocator>::SetName(pname);
             PhaseProfiler<Meter, Allocator>::Start();
         }
@@ -812,8 +815,9 @@ public:
         : PhaseProfiler<Meter, Allocator>(NULL, s)
     {
         if (s.Collect()) {
-            char pname[1024];
-            sprintf(pname, "%s %s", phase, name);
+            const size_t pnameSize = 1024;
+            char pname[pnameSize];
+            snprintf(pname, pnameSize, "%s %s", phase, name);
             PhaseProfiler<Meter, Allocator>::SetName(pname);
             PhaseProfiler<Meter, Allocator>::Start();
         }

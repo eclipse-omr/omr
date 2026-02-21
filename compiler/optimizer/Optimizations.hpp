@@ -24,7 +24,7 @@
 
 namespace OMR {
 // Note: Optimizations enum needs to match optimizer_name array
-// defined in compiler/optimizer/OMROptimizer.cpp
+// defined in compiler/optimizer/OMRSmallOptimizer.cpp
 enum Optimizations {
 #define OPTIMIZATION(name) name,
 #define OPTIMIZATION_ENUM_ONLY(entry) entry,

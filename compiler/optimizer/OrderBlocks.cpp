@@ -2020,9 +2020,9 @@ void checkOrderingConsistency(TR::Compilation *comp)
         if (!block->isCold()) {
             if (seenColdBlock) {
                 const char *fmt = "Non-cold block_%d found after a cold block in method %s\n";
-                char *buffer = (char *)comp->trMemory()->allocateStackMemory(
-                    (strlen(fmt) + strlen(comp->signature()) + 15) * sizeof(char));
-                sprintf(buffer, const_cast<char *>(fmt), block->getNumber(), comp->signature());
+                const size_t bufferSize = (strlen(fmt) + strlen(comp->signature()) + 15) * sizeof(char);
+                char *buffer = (char *)comp->trMemory()->allocateStackMemory(bufferSize);
+                snprintf(buffer, bufferSize, const_cast<char *>(fmt), block->getNumber(), comp->signature());
                 // TR_ASSERT(0, buffer);
             }
         } else if (!seenColdBlock) {

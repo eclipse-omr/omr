@@ -35,17 +35,17 @@ typedef OMR::FrontEnd FrontEndConnector;
 #endif
 
 #include "compile/CompilationTypes.hpp"
-#include "compiler/env/FrontEnd.hpp"
+#include "compiler/env/TRFrontEnd.hpp"
 #include "env/CompilerEnv.hpp"
 #include "env/JitConfig.hpp"
 #include "env/jittypes.h"
 #include "infra/Annotations.hpp"
 #include "runtime/CodeCache.hpp"
-#include "runtime/CodeCacheManager.hpp"
 
 namespace TR {
+class CodeCacheManager;
 class FrontEnd;
-}
+} // namespace TR
 class TR_ResolvedMethod;
 
 namespace OMR {
@@ -53,6 +53,7 @@ namespace OMR {
 class OMR_EXTENSIBLE FrontEnd : public ::TR_FrontEnd {
 public:
     FrontEnd();
+    virtual ~FrontEnd();
 
     static TR::FrontEnd *instance();
 
@@ -80,7 +81,7 @@ public:
 
     TR::JitConfig *jitConfig() { return &_config; }
 
-    TR::CodeCacheManager &codeCacheManager() { return _codeCacheManager; }
+    TR::CodeCacheManager &codeCacheManager() { return *_codeCacheManager; }
 
     virtual uint8_t *allocateRelocationData(TR::Compilation *comp, uint32_t size);
 
@@ -96,7 +97,7 @@ public:
 
 private:
     TR::JitConfig _config;
-    TR::CodeCacheManager _codeCacheManager;
+    TR::CodeCacheManager *_codeCacheManager;
 
     // this is deprecated in favour of TR::Allocator
     TR_PersistentMemory _persistentMemory; // global memory

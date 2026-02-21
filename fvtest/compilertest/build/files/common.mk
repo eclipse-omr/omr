@@ -22,15 +22,16 @@
 JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/compile/OSRData.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRMethod.cpp \
-    $(JIT_OMR_DIRTY_DIR)/compile/ResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/compile/OMRResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/compile/TRResolvedMethod.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/VirtualGuard.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OMROptions.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OptimizationPlan.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OMRRecompilation.cpp  \
     $(JIT_OMR_DIRTY_DIR)/env/ExceptionTable.cpp \
-    $(JIT_OMR_DIRTY_DIR)/env/FrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRFrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRJitConfig.cpp \
+    $(JIT_OMR_DIRTY_DIR)/env/TRFrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/infra/Assert.cpp \
     $(JIT_OMR_DIRTY_DIR)/infra/BitVector.cpp \
     $(JIT_OMR_DIRTY_DIR)/infra/Checklist.cpp \
@@ -149,7 +150,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimization.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizationManager.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMRTransformUtil.cpp \
-    $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizer.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OrderBlocks.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OSRDefAnalysis.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/PartialRedundancy.cpp \
@@ -212,6 +212,7 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/codegen/OMRInstruction.cpp \
     $(JIT_OMR_DIRTY_DIR)/codegen/ELFGenerator.cpp \
     $(JIT_OMR_DIRTY_DIR)/codegen/OMRELFRelocationResolver.cpp \
+    $(JIT_OMR_DIRTY_DIR)/optimizer/OMRSmallOptimizer.cpp \
 
 
 JIT_PRODUCT_SOURCE_FILES+=\
@@ -278,11 +279,9 @@ JIT_PRODUCT_SOURCE_FILES+=\
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRCodeCacheMemorySegment.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRCodeCacheConfig.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRRSSReport.cpp \
-    $(JIT_PRODUCT_DIR)/compile/ResolvedMethod.cpp \
     $(JIT_PRODUCT_DIR)/control/TestJit.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/IlInjector.cpp \
     $(JIT_PRODUCT_DIR)/ilgen/TestIlGeneratorMethodDetails.cpp \
-    $(JIT_PRODUCT_DIR)/runtime/TestCodeCacheManager.cpp
 
 include $(JIT_MAKE_DIR)/files/host/$(HOST_ARCH).mk
 include $(JIT_MAKE_DIR)/files/target/$(TARGET_ARCH).mk

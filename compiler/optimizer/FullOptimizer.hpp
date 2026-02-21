@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright IBM Corp. and others 2021
+ * Copyright IBM Corp. and others 2000
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,7 +19,30 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#ifndef OMR_OPTIMIZER_INLINES_INCL
-#define OMR_OPTIMIZER_INLINES_INCL
+#ifndef TR_FULLOPTIMIZER_INCL
+#define TR_FULLOPTIMIZER_INCL
 
-#endif
+#include "optimizer/OMRFullOptimizer.hpp"
+
+#include <stddef.h>
+#include <stdint.h>
+
+namespace TR {
+class Compilation;
+class ResolvedMethodSymbol;
+} // namespace TR
+struct OptimizationStrategy;
+
+namespace TR {
+
+class FullOptimizer : public OMR::FullOptimizerConnector {
+public:
+    FullOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
+        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0)
+        : OMR::FullOptimizerConnector(comp, methodSymbol, isIlGen, strategy, VNType)
+    {}
+};
+
+} // namespace TR
+
+#endif // defined(TR_FULLOPTIMIZER_INCL)

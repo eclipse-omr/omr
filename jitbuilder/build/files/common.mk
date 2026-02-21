@@ -24,7 +24,8 @@
 JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/compile/OSRData.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRMethod.cpp \
-    $(JIT_OMR_DIRTY_DIR)/compile/ResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/compile/OMRResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/compile/TRResolvedMethod.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/VirtualGuard.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OMROptions.cpp \
     $(JIT_OMR_DIRTY_DIR)/control/OptimizationPlan.cpp \
@@ -67,7 +68,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/il/Aliases.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OSRData.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRMethod.cpp \
-    $(JIT_OMR_DIRTY_DIR)/compile/ResolvedMethod.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/VirtualGuard.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRSymbolReferenceTable.cpp \
     $(JIT_OMR_DIRTY_DIR)/compile/OMRAliasBuilder.cpp \
@@ -93,9 +93,9 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/env/TRMemory.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/TRPersistentMemory.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/VerboseLog.cpp \
-    $(JIT_OMR_DIRTY_DIR)/env/FrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRFrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRJitConfig.cpp \
+    $(JIT_OMR_DIRTY_DIR)/env/TRFrontEnd.cpp \
     $(JIT_OMR_DIRTY_DIR)/il/OMRDataTypes.cpp \
     $(JIT_OMR_DIRTY_DIR)/il/OMRTreeTop.cpp \
     $(JIT_OMR_DIRTY_DIR)/il/OMRILOps.cpp \
@@ -164,7 +164,6 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimization.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizationManager.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OMRTransformUtil.cpp \
-    $(JIT_OMR_DIRTY_DIR)/optimizer/OMROptimizer.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OrderBlocks.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/OSRDefAnalysis.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/PartialRedundancy.cpp \
@@ -264,11 +263,8 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRRSSReport.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRCompilerEnv.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/PersistentAllocator.cpp \
-    $(JIT_PRODUCT_DIR)/compile/ResolvedMethod.cpp \
+    $(JIT_OMR_DIRTY_DIR)/optimizer/OMRSmallOptimizer.cpp \
     $(JIT_PRODUCT_DIR)/control/Jit.cpp \
-    $(JIT_PRODUCT_DIR)/ilgen/JBIlGeneratorMethodDetails.cpp \
-    $(JIT_PRODUCT_DIR)/optimizer/JBOptimizer.cpp \
-    $(JIT_PRODUCT_DIR)/runtime/JBCodeCacheManager.cpp \
 
 CPP_GENERATED_SOURCE_DIR=$(JIT_PRODUCT_DIR)/client/cpp
 CPP_GENERATED_API_SOURCES+=\

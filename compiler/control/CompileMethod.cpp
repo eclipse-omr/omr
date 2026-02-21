@@ -115,13 +115,15 @@ static void writePerfToolEntry(void *start, uint32_t size, const char *name)
 
 static void generatePerfToolEntry(uint8_t *startPC, uint8_t *endPC, const char *sig, const char *hotness)
 {
-    char buffer[1024];
-    char *name;
-    if (strlen(sig) + 1 + strlen(hotness) + 1 < 1024) {
-        sprintf(buffer, "%s_%s (compiled code)", sig, hotness);
+    const char *compiledCodeString = "(cmopiled code)";
+    const size_t bufferSize = 1024;
+    char buffer[bufferSize];
+    const char *name;
+    if (strlen(sig) + 1 + strlen(hotness) + 1 + strlen(compiledCodeString) + 1 < bufferSize) {
+        snprintf(buffer, bufferSize, "%s_%s %s", sig, hotness, compiledCodeString);
         name = buffer;
     } else
-        name = "(compiled code)";
+        name = compiledCodeString;
 
     writePerfToolEntry(startPC, static_cast<uint32_t>(endPC - startPC), name);
 }

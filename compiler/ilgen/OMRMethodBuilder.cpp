@@ -386,9 +386,10 @@ const char *OMR::MethodBuilder::adjustNameForInlinedSite(const char *name)
         return name;
 
     // prefix with _INL<index>_ and return
-    char *newName = (char *)_comp->trMemory()->allocateHeapMemory((4 + 10 + 1 + 1 + strlen(name))
-        * sizeof(char)); // 4 ("_INL") + max 10 digits + 1 ("_") + original name string + trailing zero
-    sprintf(newName, "_INL%u_%s", _inlineSiteIndex, name);
+    // 4 ("_INL") + max 10 digits + 1 ("_") + original name string + trailing zero
+    const size_t newNameSize = (4 + 10 + 1 + 1 + strlen(name)) * sizeof(char);
+    char *newName = (char *)_comp->trMemory()->allocateHeapMemory(newNameSize);
+    snprintf(newName, newNameSize, "_INL%u_%s", _inlineSiteIndex, name);
     return (const char *)newName;
 }
 
@@ -532,14 +533,18 @@ void OMR::MethodBuilder::DefineFunction(const char * const name, const char * co
 {
     TR_ASSERT_FATAL(_functions.find(name) == _functions.end(), "Function '%s' already defined", name);
 
-    // copy parameter types so don't have to force caller to keep the parmTypes array alive
-    TR::IlType **copiedParmTypes
-        = (TR::IlType **)trMemory()->heapMemoryRegion().allocate(numParms * sizeof(TR::IlType *));
-    for (int32_t p = 0; p < numParms; p++)
-        copiedParmTypes[p] = parmTypes[p];
+    // convert parameter types to TR::DataType, which also allows caller to free parmTypes array on return
+    const char **parmNames = (const char **)trMemory()->heapMemoryRegion().allocate(numParms * sizeof(char *));
+    TR::DataType *methodParmTypes
+        = (TR::DataType *)trMemory()->heapMemoryRegion().allocate(numParms * sizeof(TR::IlType *));
+    for (int32_t p = 0; p < numParms; p++) {
+        parmNames[p] = "(unknown parameter name)";
+        methodParmTypes[p] = parmTypes[p]->getPrimitiveType();
+    }
+    TR::DataType methodReturnType = returnType->getPrimitiveType();
 
-    TR::ResolvedMethod *method = new (trMemory()->heapMemoryRegion()) TR::ResolvedMethod((char *)fileName,
-        (char *)lineNumber, (char *)name, numParms, copiedParmTypes, returnType, entryPoint, 0);
+    TR::ResolvedMethod *method = new (trMemory()->heapMemoryRegion()) TR::ResolvedMethod(fileName, lineNumber, name,
+        numParms, parmNames, methodParmTypes, methodReturnType, entryPoint, 0);
 
     _functions.insert(std::make_pair(name, method));
 }
@@ -646,7 +651,19 @@ int32_t OMR::MethodBuilder::GetNextBytecodeFromWorklist()
 
 int32_t OMR::MethodBuilder::Compile(void **entry)
 {
-    TR::ResolvedMethod resolvedMethod(static_cast<TR::MethodBuilder *>(this));
+    TR::IlType **paramTypes = getParameterTypes();
+    TR::DataType *methodParmTypes
+        = (TR::DataType *)trMemory()->heapMemoryRegion().allocate(_numParameters * sizeof(TR::IlType *));
+    const char **methodParmNames
+        = (const char **)trMemory()->heapMemoryRegion().allocate(_numParameters * sizeof(char *));
+    for (int32_t p = 0; p < _numParameters; p++) {
+        methodParmTypes[p] = paramTypes[p]->getPrimitiveType();
+        methodParmNames[p] = getSymbolName(p);
+    }
+    TR::DataType methodReturnType = _returnType->getPrimitiveType();
+
+    TR::ResolvedMethod resolvedMethod(getDefiningFile(), getDefiningLine(), GetMethodName(), getNumParameters(),
+        methodParmNames, methodParmTypes, methodReturnType, 0, static_cast<TR::IlInjector *>(this));
     TR::IlGeneratorMethodDetails details(&resolvedMethod);
 
     int32_t rc = 0;

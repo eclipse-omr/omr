@@ -3013,8 +3013,9 @@ static void decomposeMultiply(TR::Node *node, TR::Simplifier *s, bool isLong)
                     strcat(line, "- ");
                     break;
             }
-            char tmp[10] = "";
-            sprintf(tmp, "2^%d ", (int32_t)(bitPosition[i]));
+            const size_t tmpSize = 10;
+            char tmp[tmpSize] = "";
+            snprintf(tmp, tmpSize, "2^%d ", (int32_t)(bitPosition[i]));
             strcat(line, tmp);
         }
         dumpOptDetails(comp, "%s\n", line);

@@ -22,18 +22,12 @@
 include(OmrCompilerSupport)
 
 set(COMPILERTEST_FILES
-	compile/ResolvedMethod.cpp
 	control/TestJit.cpp
 	ilgen/IlInjector.cpp
-	ilgen/TestIlGeneratorMethodDetails.cpp
-	runtime/TestCodeCacheManager.cpp
+	${omr_SOURCE_DIR}/compiler/control/SimpleJit.cpp
 )
 
-if(OMR_ARCH_X86)
-	list(APPEND COMPILERTEST_FILES
-		x/codegen/Evaluator.cpp
-	)
-elseif(OMR_ARCH_POWER)
+if(OMR_ARCH_POWER)
 	list(APPEND COMPILERTEST_FILES
 		#Host
 		p/runtime/AsmUtil.spp
@@ -41,12 +35,10 @@ elseif(OMR_ARCH_POWER)
 		p/runtime/CodeSync.cpp
 		${omr_SOURCE_DIR}/compiler/p/runtime/OMRCodeCacheConfig.cpp
 		#target
-		p/codegen/Evaluator.cpp
 		${omr_SOURCE_DIR}/compiler/p/env/OMRDebugEnv.cpp
 	)
 elseif(OMR_ARCH_S390)
 	list(APPEND COMPILERTEST_FILES
-		z/codegen/Evaluator.cpp
 		${omr_SOURCE_DIR}/compiler/z/env/OMRCPU.cpp
 		${omr_SOURCE_DIR}/compiler/z/env/OMRDebugEnv.cpp
 	)

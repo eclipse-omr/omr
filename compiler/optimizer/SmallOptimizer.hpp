@@ -19,20 +19,30 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#ifndef TR_CODECACHEMANAGER_INCL
-#define TR_CODECACHEMANAGER_INCL
+#ifndef TR_SMALLOPTIMIZER_INCL
+#define TR_SMALLOPTIMIZER_INCL
 
-#include "runtime/TestCodeCacheManager.hpp"
+#include "optimizer/OMRSmallOptimizer.hpp"
 
-namespace TR
-{
+#include <stddef.h>
+#include <stdint.h>
 
-class OMR_EXTENSIBLE CodeCacheManager : public TestCompiler::CodeCacheManagerConnector
-   {
-   public:
-   CodeCacheManager(TR::RawAllocator rawAllocator) : TestCompiler::CodeCacheManagerConnector(rawAllocator) { }
-   };
+namespace TR {
+class Compilation;
+class ResolvedMethodSymbol;
+} // namespace TR
+struct OptimizationStrategy;
+
+namespace TR {
+
+class SmallOptimizer : public OMR::SmallOptimizerConnector {
+public:
+    SmallOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
+        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0)
+        : OMR::SmallOptimizerConnector(comp, methodSymbol, isIlGen, strategy, VNType)
+    {}
+};
 
 } // namespace TR
 
-#endif // defined(TR_CODECACHEMANAGER_INCL)
+#endif // defined(TR_SMALLOPTIMIZER_INCL)

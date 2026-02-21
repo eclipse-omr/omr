@@ -19,9 +19,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
+#include "optimizer/SmallOptimizer.hpp"
 #include "optimizer/Optimizer.hpp"
 
-#include "optimizer/Optimizer_inlines.hpp"
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -64,7 +64,6 @@
 #include "infra/SimpleRegex.hpp"
 #include "infra/CfgNode.hpp"
 #include "infra/Timer.hpp"
-#include "optimizer/LoadExtensions.hpp"
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 #include "optimizer/OptimizationStrategies.hpp"
@@ -73,46 +72,25 @@
 #include "optimizer/StructuralAnalysis.hpp"
 #include "optimizer/UseDefInfo.hpp"
 #include "optimizer/ValueNumberInfo.hpp"
-#include "optimizer/AsyncCheckInsertion.hpp"
 #include "optimizer/DeadStoreElimination.hpp"
 #include "optimizer/DeadTreesElimination.hpp"
-#include "optimizer/CatchBlockRemover.hpp"
-#include "optimizer/CFGSimplifier.hpp"
-#include "optimizer/CompactLocals.hpp"
 #include "optimizer/CopyPropagation.hpp"
-#include "optimizer/ExpressionsSimplification.hpp"
 #include "optimizer/GeneralLoopUnroller.hpp"
 #include "optimizer/LocalCSE.hpp"
 #include "optimizer/LocalDeadStoreElimination.hpp"
-#include "optimizer/LocalLiveRangeReducer.hpp"
 #include "optimizer/LocalOpts.hpp"
-#include "optimizer/LocalReordering.hpp"
 #include "optimizer/LoopCanonicalizer.hpp"
-#include "optimizer/LoopReducer.hpp"
-#include "optimizer/LoopReplicator.hpp"
-#include "optimizer/LoopVersioner.hpp"
 #include "optimizer/OrderBlocks.hpp"
-#include "optimizer/RedundantAsyncCheckRemoval.hpp"
 #include "optimizer/Simplifier.hpp"
-#include "optimizer/VirtualGuardCoalescer.hpp"
-#include "optimizer/VirtualGuardHeadMerger.hpp"
 #include "optimizer/Inliner.hpp"
 #include "ras/Debug.hpp"
 #include "optimizer/InductionVariable.hpp"
 #include "optimizer/GlobalValuePropagation.hpp"
 #include "optimizer/LocalValuePropagation.hpp"
 #include "optimizer/RegDepCopyRemoval.hpp"
-#include "optimizer/SinkStores.hpp"
-#include "optimizer/PartialRedundancy.hpp"
-#include "optimizer/OSRDefAnalysis.hpp"
-#include "optimizer/StripMiner.hpp"
-#include "optimizer/FieldPrivatizer.hpp"
-#include "optimizer/ReorderIndexExpr.hpp"
 #include "optimizer/GlobalRegisterAllocator.hpp"
-#include "optimizer/RecognizedCallTransformer.hpp"
 #include "optimizer/SwitchAnalyzer.hpp"
 #include "env/RegionProfiler.hpp"
-#include "ras/Logger.hpp"
 
 namespace TR {
 class AutomaticSymbol;
@@ -122,546 +100,6 @@ using namespace OMR; // Note: used here only to avoid having to prepend all opts
 
 #define MAX_LOCAL_OPTS_ITERS 5
 
-const OptimizationStrategy localValuePropagationOpts[] = {
-    { localCSE },
-    { localValuePropagation },
-    { localCSE, IfEnabled },
-    { localValuePropagation, IfEnabled },
-    { endGroup }
-};
-
-const OptimizationStrategy arrayPrivatizationOpts[] = {
-    { globalValuePropagation, IfMoreThanOneBlock }, // reduce # of null/bounds checks and setup iv info
-    { veryCheapGlobalValuePropagationGroup, IfEnabled }, // enabled by blockVersioner
-    { inductionVariableAnalysis, IfLoops },
-    { loopCanonicalization, IfLoops }, // setup for any unrolling in arrayPrivatization
-    { treeSimplification }, // get rid of null/bnd checks if possible
-    { deadTreesElimination },
-    { basicBlockOrdering, IfLoops }, // required for loop reduction
-    { treesCleansing, IfLoops },
-    { inductionVariableAnalysis, IfLoops }, // required for array Privatization
-    { basicBlockOrdering, IfEnabled }, // cleanup if unrolling happened
-    { globalValuePropagation, IfEnabledAndMoreThanOneBlock }, // ditto
-    { endGroup }
-};
-
-// To be run just before PRE
-const OptimizationStrategy reorderArrayIndexOpts[] = {
-    { inductionVariableAnalysis, IfLoops }, // need to id the primary IVs
-    { reorderArrayIndexExpr, IfLoops }, // try to maximize loop invarient
-                                        // expressions in index calculations and be hoisted
-    { endGroup }
-};
-
-const OptimizationStrategy cheapObjectAllocationOpts[] = {
-    { explicitNewInitialization, IfNews }, // do before local dead store
-    { endGroup }
-};
-
-const OptimizationStrategy expensiveObjectAllocationOpts[] = {
-    { eachEscapeAnalysisPassGroup, IfEAOpportunities },
-    { explicitNewInitialization, IfNews }, // do before local dead store
-    { endGroup }
-};
-
-const OptimizationStrategy eachEscapeAnalysisPassOpts[] = {
-    { preEscapeAnalysis, IfOSR },
-    { escapeAnalysis },
-    { postEscapeAnalysis, IfOSR },
-    { eachEscapeAnalysisPassGroup, IfEnabled }, // if another pass requested
-    { endGroup }
-};
-
-const OptimizationStrategy veryCheapGlobalValuePropagationOpts[] = {
-    { globalValuePropagation, IfMoreThanOneBlock },
-    { endGroup }
-};
-
-const OptimizationStrategy cheapGlobalValuePropagationOpts[] = {
-    //{ catchBlockRemoval,                     },
-    { CFGSimplification, IfOptServer }, // for WAS trace folding
-    { treeSimplification, IfOptServer }, // for WAS trace folding
-    { localCSE, IfEnabledAndOptServer }, // for WAS trace folding
-    { treeSimplification, IfEnabledAndOptServer }, // for WAS trace folding
-    { globalValuePropagation, IfLoopsMarkLastRun },
-    { treeSimplification, IfEnabled },
-    { cheapObjectAllocationGroup },
-    { treeSimplification, IfEnabled },
-    { catchBlockRemoval, IfEnabled }, // if checks were removed
-    { osrExceptionEdgeRemoval }, // most inlining is done by now
-    { globalValuePropagation, IfEnabledAndMoreThanOneBlockMarkLastRun }, // mark monitors requiring sync
-    { virtualGuardTailSplitter, IfEnabled }, // merge virtual guards
-    { CFGSimplification },
-    { endGroup }
-};
-
-const OptimizationStrategy expensiveGlobalValuePropagationOpts[] = {
-    /////   { innerPreexistence                             },
-    { CFGSimplification, IfOptServer }, // for WAS trace folding
-    { treeSimplification, IfOptServer }, // for WAS trace folding
-    { localCSE, IfEnabledAndOptServer }, // for WAS trace folding
-    { treeSimplification, IfEnabled }, // may be enabled by inner prex
-    { globalValuePropagation, IfMoreThanOneBlock },
-    { treeSimplification, IfEnabled },
-    { deadTreesElimination }, // clean up left-over accesses before escape analysis
-#ifdef J9_PROJECT_SPECIFIC
-    { expensiveObjectAllocationGroup },
-#endif
-    { globalValuePropagation, IfEnabledAndMoreThanOneBlock }, // if inlined a call or an object
-    { treeSimplification, IfEnabled },
-    { catchBlockRemoval, IfEnabled }, // if checks were removed
-    { osrExceptionEdgeRemoval }, // most inlining is done by now
-#ifdef J9_PROJECT_SPECIFIC
-    { redundantMonitorElimination, IfEnabled }, // performed if method has monitors
-    { redundantMonitorElimination, IfEnabled }, // performed if method has monitors
-#endif
-    { globalValuePropagation, IfEnabledAndMoreThanOneBlock }, // mark monitors requiring sync
-    { virtualGuardTailSplitter, IfEnabled }, // merge virtual guards
-    { CFGSimplification },
-    { endGroup }
-};
-
-const OptimizationStrategy eachExpensiveGlobalValuePropagationOpts[] = {
-    //{ blockSplitter                                        },
-    ///   { innerPreexistence                                      },
-    { globalValuePropagation, IfMoreThanOneBlock },
-    { treeSimplification, IfEnabled },
-    { veryCheapGlobalValuePropagationGroup, IfEnabled }, // enabled by blockversioner
-    { deadTreesElimination }, // clean up left-over accesses before escape analysis
-#ifdef J9_PROJECT_SPECIFIC
-    { expensiveObjectAllocationGroup },
-#endif
-    { eachExpensiveGlobalValuePropagationGroup, IfEnabled }, // if inlining was done
-    { endGroup }
-};
-
-const OptimizationStrategy veryExpensiveGlobalValuePropagationOpts[] = {
-    { eachExpensiveGlobalValuePropagationGroup },
-    //{ basicBlockHoisting,                           }, // merge block into pred and prepare for local dead store
-    { localDeadStoreElimination }, // remove local/parm/some field stores
-    { treeSimplification, IfEnabled },
-    { catchBlockRemoval, IfEnabled }, // if checks were removed
-    { osrExceptionEdgeRemoval }, // most inlining is done by now
-#ifdef J9_PROJECT_SPECIFIC
-    { redundantMonitorElimination, IfEnabled }, // performed if method has monitors
-    { redundantMonitorElimination, IfEnabled }, // performed if method has monitors
-#endif
-    { globalValuePropagation, IfEnabledAndMoreThanOneBlock }, // mark monitors requiring syncs
-    { virtualGuardTailSplitter, IfEnabled }, // merge virtual guards
-    { CFGSimplification },
-    { endGroup }
-};
-
-const OptimizationStrategy partialRedundancyEliminationOpts[] = {
-    { globalValuePropagation, IfMoreThanOneBlock }, // GVP (before PRE)
-    { deadTreesElimination },
-    { treeSimplification, IfEnabled },
-    { treeSimplification }, // might fold expressions created by versioning/induction variables
-    { treeSimplification, IfEnabled }, // Array length simplification shd be followed by reassoc before PRE
-    { reorderArrayExprGroup, IfEnabled }, // maximize opportunities hoisting of index array expressions
-    { partialRedundancyElimination, IfMoreThanOneBlock },
-    {
-     localCSE, }, // common up expression which can benefit EA
-    { catchBlockRemoval, IfEnabled }, // if checks were removed
-    { deadTreesElimination, IfEnabled }, // if checks were removed
-    { compactNullChecks, IfEnabled }, // PRE creates explicit null checks in large numbers
-    { localReordering, IfEnabled }, // PRE may create temp stores that can be moved closer to uses
-    { globalValuePropagation, IfEnabledAndMoreThanOneBlockMarkLastRun }, // GVP (after PRE)
-#ifdef J9_PROJECT_SPECIFIC
-    { preEscapeAnalysis, IfOSR },
-    { escapeAnalysis, IfEAOpportunitiesMarkLastRun }, // to stack-allocate after loopversioner and localCSE
-    { postEscapeAnalysis, IfOSR },
-#endif
-    { basicBlockOrdering, IfLoops }, // early ordering with no extension
-    { globalCopyPropagation, IfLoops }, // for Loop Versioner
-
-    { loopVersionerGroup, IfEnabledAndLoops },
-    { treeSimplification, IfEnabled }, // loop reduction block should be after PRE so that privatization
-    { treesCleansing }, // clean up gotos in code and convert to fall-throughs for loop reducer
-    { redundantGotoElimination, IfNotJitProfiling }, // clean up for loop reducer.  Note: NEVER run this before PRE
-    { loopReduction, IfLoops }, // will have happened and it needs to be before loopStrider
-    { localCSE, IfEnabled }, // so that it will not get confused with internal pointers.
-    { globalDeadStoreElimination,
-     IfEnabledAndMoreThanOneBlock }, // It may need to be run twice if deadstore elimination is required,
-    {
-     deadTreesElimination, }, // but this only happens for unsafe access (arraytranslate.twoToOne)
-    {
-     loopReduction, }, // and so is conditional
-#ifdef J9_PROJECT_SPECIFIC
-    { idiomRecognition, IfLoopsAndNotProfiling }, // after loopReduction!!
-#endif
-    { lastLoopVersionerGroup, IfLoops },
-    {
-     treeSimplification, }, // cleanup before AutoVectorization
-    {
-     deadTreesElimination, }, // cleanup before AutoVectorization
-    { inductionVariableAnalysis, IfLoopsAndNotProfiling },
-#ifdef J9_PROJECT_SPECIFIC
-    { SPMDKernelParallelization, IfLoops },
-#endif
-    { loopStrider, IfLoops },
-    { treeSimplification, IfEnabled },
-    { lastLoopVersionerGroup, IfEnabledAndLoops },
-    {
-     treeSimplification, }, // cleanup before strider
-    {
-     localCSE, }, // cleanup before strider so it will not be confused by commoned nodes (mandatory to run local CSE before
-    // strider)
-    {
-     deadTreesElimination, }, // cleanup before strider so that dead stores can be eliminated more effcientlly (i.e. false uses are not seen)
-    { loopStrider, IfLoops },
-
-    { treeSimplification, IfEnabled }, // cleanup after strider
-    { loopInversion, IfLoops },
-    { endGroup }
-};
-
-const OptimizationStrategy methodHandleInvokeInliningOpts[] = {
-    {
-     treeSimplification, }, // Supply some known-object info, and help CSE
-    {
-     localCSE, }, // Especially copy propagation to replace temps with more descriptive trees
-    { localValuePropagation }, // Propagate known-object info and derive more specific archetype specimen symbols for
-// inlining
-#ifdef J9_PROJECT_SPECIFIC
-    {
-     targetedInlining, },
-#endif
-    { deadTreesElimination },
-    { methodHandleInvokeInliningGroup,
-     IfEnabled }, // Repeat as required to inline all the MethodHandle.invoke calls we can afford
-    { endGroup },
-};
-
-const OptimizationStrategy earlyGlobalOpts[] = {
-    { methodHandleInvokeInliningGroup, IfMethodHandleInvokes },
-#ifdef J9_PROJECT_SPECIFIC
-    { inlining },
-#endif
-    { osrExceptionEdgeRemoval }, // most inlining is done by now
-    //{ basicBlockOrdering,          IfLoops }, // early ordering with no extension
-    { treeSimplification, IfEnabled },
-    { compactNullChecks }, // cleans up after inlining; MUST be done before PRE
-#ifdef J9_PROJECT_SPECIFIC
-    { virtualGuardTailSplitter }, // merge virtual guards
-    { treeSimplification },
-    { CFGSimplification },
-#endif
-    { endGroup }
-};
-
-const OptimizationStrategy earlyLocalOpts[] = {
-    { localValuePropagation },
-    //{ localValuePropagationGroup           },
-    { localReordering },
-    {
-     switchAnalyzer, },
-    { treeSimplification, IfEnabled }, // simplify any exprs created by LCP/LCSE
-#ifdef J9_PROJECT_SPECIFIC
-    { catchBlockRemoval }, // if all possible exceptions in a try were removed by inlining/LCP/LCSE
-#endif
-    { deadTreesElimination }, // remove any anchored dead loads
-    { profiledNodeVersioning },
-    { endGroup }
-};
-
-const OptimizationStrategy isolatedStoreOpts[]
-    = { { isolatedStoreElimination }, { deadTreesElimination }, { endGroup } };
-
-const OptimizationStrategy globalDeadStoreOpts[] = {
-    { globalDeadStoreElimination, IfMoreThanOneBlock },
-    { localDeadStoreElimination, IfOneBlock },
-    { deadTreesElimination },
-    { endGroup }
-};
-
-const OptimizationStrategy loopAliasRefinerOpts[] = {
-    { inductionVariableAnalysis, IfLoops },
-    { loopCanonicalization },
-    { globalValuePropagation, IfMoreThanOneBlock }, // create ivs
-    { loopAliasRefiner },
-    { endGroup }
-};
-
-const OptimizationStrategy loopSpecializerOpts[] = {
-    { inductionVariableAnalysis, IfLoops },
-    { loopCanonicalization },
-    { loopSpecializer },
-    { endGroup }
-};
-
-const OptimizationStrategy loopVersionerOpts[] = {
-    { basicBlockOrdering },
-    { inductionVariableAnalysis, IfLoops },
-    { loopCanonicalization },
-    { loopVersioner },
-    { endGroup }
-};
-
-const OptimizationStrategy lastLoopVersionerOpts[] = {
-    { inductionVariableAnalysis, IfLoops },
-    { loopCanonicalization },
-    { loopVersioner, MarkLastRun },
-    { endGroup }
-};
-
-const OptimizationStrategy loopCanonicalizationOpts[] = {
-    { globalCopyPropagation, IfLoops }, // propagate copies to allow better invariance detection
-    { loopVersionerGroup },
-    { deadTreesElimination }, // remove dead anchors created by check removal (versioning)
-    //{ loopStrider                        }, // use canonicalized loop to insert initializations
-    { treeSimplification }, // remove unreachable blocks (with nullchecks etc.) left by LoopVersioner
-    { fieldPrivatization }, // use canonicalized loop to privatize fields
-    { treeSimplification }, // might fold expressions created by versioning/induction variables
-    { loopSpecializerGroup, IfEnabledAndLoops }, // specialize the versioned loop if possible
-    { deadTreesElimination, IfEnabledAndLoops }, // remove dead anchors created by specialization
-    { treeSimplification, IfEnabledAndLoops }, // might fold expressions created by specialization
-    { endGroup }
-};
-
-const OptimizationStrategy stripMiningOpts[] = {
-    { inductionVariableAnalysis, IfLoops },
-    { loopCanonicalization },
-    { inductionVariableAnalysis },
-    { stripMining },
-    { endGroup }
-};
-
-const OptimizationStrategy blockManipulationOpts[] = {
-    //   { generalLoopUnroller,       IfLoops   }, //Unroll Loops
-    { coldBlockOutlining },
-    { CFGSimplification, IfNotJitProfiling },
-    { basicBlockHoisting, IfNotJitProfiling },
-    { treeSimplification },
-    { redundantGotoElimination, IfNotJitProfiling }, // redundant gotos gone
-    { treesCleansing }, // maximize fall throughs
-    { virtualGuardHeadMerger },
-    { basicBlockExtension, MarkLastRun }, // extend blocks; move trees around if reqd
-    { treeSimplification }, // revisit; not really required ?
-    { basicBlockPeepHole, IfEnabled },
-    { endGroup }
-};
-
-const OptimizationStrategy eachLocalAnalysisPassOpts[] = {
-    { localValuePropagationGroup, IfEnabled },
-#ifdef J9_PROJECT_SPECIFIC
-    { arraycopyTransformation },
-#endif
-    { treeSimplification, IfEnabled },
-    { localCSE, IfEnabled },
-    { localDeadStoreElimination, IfEnabled }, // after local copy/value propagation
-    { rematerialization, IfEnabled },
-    { compactNullChecks, IfEnabled },
-    { deadTreesElimination, IfEnabled }, // remove dead anchors created by check/store removal
-    //{ eachLocalAnalysisPassGroup, IfEnabled  }, // if another pass requested
-    { endGroup }
-};
-
-const OptimizationStrategy lateLocalOpts[] = {
-    { OMR::eachLocalAnalysisPassGroup },
-    { OMR::andSimplification }, // needs commoning across blocks to work well; must be done after versioning
-    { OMR::treesCleansing }, // maximize fall throughs after LCP has converted some conditions to gotos
-    { OMR::eachLocalAnalysisPassGroup },
-    { OMR::localDeadStoreElimination }, // after latest copy propagation
-    { OMR::deadTreesElimination }, // remove dead anchors created by check/store removal
-    {
-     OMR::globalDeadStoreGroup,
-     },
-    { OMR::eachLocalAnalysisPassGroup },
-    { OMR::treeSimplification },
-    { OMR::endGroup }
-};
-
-static const OptimizationStrategy tacticalGlobalRegisterAllocatorOpts[] = {
-    { OMR::inductionVariableAnalysis, OMR::IfLoops },
-    { OMR::loopCanonicalization, OMR::IfLoops },
-    { OMR::liveRangeSplitter, OMR::IfLoops },
-    { OMR::redundantGotoElimination, OMR::IfNotJitProfiling }, // need to be run before global register allocator
-    { OMR::treeSimplification, OMR::MarkLastRun }, // Cleanup the trees after redundantGotoElimination
-    { OMR::tacticalGlobalRegisterAllocator, OMR::IfEnabled },
-    { OMR::localCSE },
-    // { isolatedStoreGroup,                    IfEnabled                    }, // if global register allocator created
-    // stores from registers
-    { OMR::globalCopyPropagation, OMR::IfEnabledAndMoreThanOneBlock }, // if live range splitting created copies
-    { OMR::localCSE }, // localCSE after post-PRE + post-GRA globalCopyPropagation to clean up whole expression remat
-    // (rtc 64659)
-    { OMR::globalDeadStoreGroup, OMR::IfEnabled },
-    { OMR::redundantGotoElimination,
-     OMR::IfEnabledAndNotJitProfiling }, // if global register allocator created new block
-    { OMR::deadTreesElimination }, // remove dangling GlRegDeps
-    { OMR::deadTreesElimination, OMR::IfEnabled }, // remove dead RegStores produced by previous deadTrees pass
-    { OMR::deadTreesElimination, OMR::IfEnabled }, // remove dead RegStores produced by previous deadTrees pass
-    { OMR::endGroup }
-};
-
-const OptimizationStrategy finalGlobalOpts[] = {
-    { rematerialization },
-    { compactNullChecks, IfEnabled },
-    { deadTreesElimination },
-    //{ treeSimplification,       IfEnabled  },
-    { localLiveRangeReduction },
-    { compactLocals, IfNotJitProfiling }, // analysis results are invalidated by jitProfilingGroup
-#ifdef J9_PROJECT_SPECIFIC
-    { globalLiveVariablesForGC },
-#endif
-    { endGroup }
-};
-
-// **************************************************************************
-//
-// Strategy that is run for each non-peeking IlGeneration - this allows early
-// optimizations to be run even before the IL is available to Inliner
-//
-// **************************************************************************
-static const OptimizationStrategy ilgenStrategyOpts[] = {
-#ifdef J9_PROJECT_SPECIFIC
-    { osrLiveRangeAnalysis, IfOSR },
-    { osrDefAnalysis, IfInvoluntaryOSR },
-    {
-                              methodHandleTransformer, },
-    { varHandleTransformer, MustBeDone },
-    { handleRecompilationOps, MustBeDone },
-    { unsafeFastPath },
-    { recognizedCallTransformer },
-    { coldBlockMarker },
-    { CFGSimplification },
-    { allocationSinking, IfNews },
-    { invariantArgumentPreexistence,
-                              IfNotClassLoadPhaseAndNotProfiling }, // Should not run if a recompilation is possible
-#endif
-    { endOpts },
-};
-
-// **********************************************************
-//
-// OMR Strategies
-//
-// **********************************************************
-
-static const OptimizationStrategy omrNoOptStrategyOpts[] = {
-    { endOpts },
-};
-
-static const OptimizationStrategy omrColdStrategyOpts[] = {
-    { basicBlockExtension },
-    { localCSE },
-    //{ localValuePropagation                },
-    { treeSimplification },
-    { localCSE },
-    { endOpts },
-};
-
-static const OptimizationStrategy omrWarmStrategyOpts[] = {
-    { basicBlockExtension },
-    { localCSE },
-    //{ localValuePropagation               },
-    { treeSimplification },
-    { localCSE },
-    { localDeadStoreElimination },
-    { globalDeadStoreGroup },
-    { endOpts },
-};
-
-static const OptimizationStrategy omrHotStrategyOpts[] = {
-    { OMR::coldBlockOutlining },
-    { OMR::earlyGlobalGroup },
-    { OMR::earlyLocalGroup },
-    { OMR::andSimplification }, // needs commoning across blocks to work well; must be done after versioning
-    {
-     OMR::stripMiningGroup,
-     }, // strip mining in loops
-    {
-     OMR::loopReplicator,
-     }, // tail-duplication in loops
-    {
-     OMR::blockSplitter,
-     }, // treeSimplification + blockSplitter + VP => opportunity for EA
-    {
-     OMR::arrayPrivatizationGroup,
-     }, // must preceed escape analysis
-    { OMR::veryExpensiveGlobalValuePropagationGroup },
-    {
-     OMR::globalDeadStoreGroup,
-     },
-    {
-     OMR::globalCopyPropagation,
-     },
-    {
-     OMR::loopCanonicalizationGroup,
-     }, // canonicalize loops (improve fall throughs)
-    {
-     OMR::expressionsSimplification,
-     },
-    { OMR::partialRedundancyEliminationGroup },
-    {
-     OMR::globalDeadStoreElimination,
-     },
-    {
-     OMR::inductionVariableAnalysis,
-     },
-    {
-     OMR::loopSpecializerGroup,
-     },
-    {
-     OMR::inductionVariableAnalysis,
-     },
-    {
-     OMR::generalLoopUnroller,
-     }, // unroll Loops
-    { OMR::blockSplitter, OMR::MarkLastRun },
-    { OMR::blockManipulationGroup },
-    { OMR::lateLocalGroup },
-    { OMR::redundantAsyncCheckRemoval }, // optimize async check placement
-#ifdef J9_PROJECT_SPECIFIC
-    {
-     OMR::recompilationModifier,
-     }, // do before GRA to avoid commoning of longs afterwards
-#endif
-    {
-     OMR::globalCopyPropagation,
-     }, // Can produce opportunities for store sinking
-    { OMR::generalStoreSinking },
-    {
-     OMR::localCSE,
-     }, //  common up lit pool refs in the same block
-    {
-     OMR::treeSimplification,
-     }, // cleanup the trees after sunk store and localCSE
-    { OMR::trivialBlockExtension },
-    {
-     OMR::localDeadStoreElimination,
-     }, //  remove the astore if no literal pool is required
-    {
-     OMR::localCSE,
-     }, //  common up lit pool refs in the same block
-    { OMR::arraysetStoreElimination },
-    { OMR::localValuePropagation, OMR::MarkLastRun },
-    { OMR::checkcastAndProfiledGuardCoalescer },
-    { OMR::osrExceptionEdgeRemoval, OMR::MarkLastRun },
-    {
-     OMR::tacticalGlobalRegisterAllocatorGroup,
-     },
-    {
-     OMR::globalDeadStoreElimination,
-     }, // global dead store removal
-    { OMR::deadTreesElimination }, // cleanup after dead store removal
-    { OMR::compactNullChecks }, // cleanup at the end
-    { OMR::finalGlobalGroup }, // done just before codegen
-    { OMR::regDepCopyRemoval },
-    { endOpts },
-};
-
-// The following arrays of Optimization pointers are externally declared in OptimizerStrategies.hpp
-// This allows frontends to assist in selection of optimizer strategies.
-// (They cannot be made 'static const')
-
-const OptimizationStrategy *omrCompilationStrategies[] = {
-    omrNoOptStrategyOpts, // empty strategy
-    omrColdStrategyOpts, // <<  specialized
-    omrWarmStrategyOpts, // <<  specialized
-    omrHotStrategyOpts, // currently used to test available omr optimizations
-};
-
 #ifdef OPT_TIMING // provide statistics on time taken by individual optimizations
 TR_Stats statOptTiming[OMR::numOpts];
 TR_Stats statStructuralAnalysisTiming("Structural Analysis");
@@ -669,16 +107,85 @@ TR_Stats statUseDefsTiming("Use Defs");
 TR_Stats statGlobalValNumTiming("Global Value Numbering");
 #endif // OPT_TIMING
 
-TR::Optimizer *OMR::Optimizer::createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol,
+static const OptimizationStrategy cheapTacticalGlobalRegisterAllocatorOpts[] = {
+    { OMR::redundantGotoElimination, OMR::IfNotProfiling }, // need to be run before global register allocator
+    { OMR::tacticalGlobalRegisterAllocator, OMR::IfEnabled },
+    { OMR::endGroup }
+};
+
+static const OptimizationStrategy globalDeadStoreOpts[] = {
+    { OMR::globalDeadStoreElimination, OMR::IfMoreThanOneBlock },
+    { OMR::localDeadStoreElimination, OMR::IfOneBlock },
+    { OMR::deadTreesElimination },
+    { OMR::endGroup }
+};
+
+static const OptimizationStrategy JBnoOptStrategyOpts[] = { { OMR::endOpts } };
+
+static const OptimizationStrategy JBcoldStrategyOpts[]
+    = { { OMR::deadTreesElimination }, { OMR::treeSimplification }, { OMR::localCSE }, { OMR::basicBlockExtension },
+          { OMR::cheapTacticalGlobalRegisterAllocatorGroup }, { OMR::endOpts } };
+
+static const OptimizationStrategy JBwarmStrategyOpts[] = {
+    { OMR::deadTreesElimination },
+    { OMR::inlining },
+    { OMR::treeSimplification },
+    { OMR::localCSE },
+    { OMR::basicBlockOrdering }, // straighten goto's
+    { OMR::globalCopyPropagation },
+    { OMR::globalDeadStoreElimination, OMR::IfMoreThanOneBlock },
+    { OMR::deadTreesElimination },
+    { OMR::treeSimplification },
+    { OMR::basicBlockHoisting },
+    { OMR::treeSimplification },
+    { OMR::globalValuePropagation, OMR::IfMoreThanOneBlock },
+    { OMR::localValuePropagation, OMR::IfOneBlock },
+    {
+     OMR::switchAnalyzer,
+     },
+    { OMR::localCSE },
+    { OMR::treeSimplification },
+    { OMR::trivialDeadTreeRemoval, OMR::IfEnabled },
+    { OMR::basicBlockOrdering, OMR::IfLoops }, // clean up block order for loop canonicalization, if it will run
+    { OMR::loopCanonicalization,
+     OMR::IfLoops }, // canonicalization must run before inductionVariableAnalysis else indvar data gets messed up
+    { OMR::inductionVariableAnalysis, OMR::IfLoops }, // needed for loop unroller
+    { OMR::generalLoopUnroller, OMR::IfLoops },
+    { OMR::basicBlockExtension, OMR::MarkLastRun }, // clean up order and extend blocks now
+    { OMR::treeSimplification },
+    { OMR::localCSE },
+    { OMR::treeSimplification, OMR::IfEnabled },
+    { OMR::trivialDeadTreeRemoval, OMR::IfEnabled },
+    { OMR::cheapTacticalGlobalRegisterAllocatorGroup },
+    {
+     OMR::globalDeadStoreGroup,
+     },
+    { OMR::redundantGotoElimination, OMR::IfEnabled }, // if global register allocator created new block
+    { OMR::rematerialization },
+    { OMR::deadTreesElimination, OMR::IfEnabled }, // remove dead anchors created by check/store removal
+    { OMR::deadTreesElimination, OMR::IfEnabled }, // remove dead RegStores produced by previous deadTrees pass
+    { OMR::regDepCopyRemoval },
+    { OMR::endOpts },
+};
+
+static const OptimizationStrategy *omrCompilationStrategies[] = {
+    JBnoOptStrategyOpts,
+    JBcoldStrategyOpts,
+    JBwarmStrategyOpts,
+    JBwarmStrategyOpts,
+};
+
+TR::Optimizer *OMR::SmallOptimizer::createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol,
     bool isIlGen)
 {
     // returns IL optimizer, performs tree-to-tree optimizing transformations.
-    if (isIlGen)
-        return new (comp->trHeapMemory()) TR::Optimizer(comp, methodSymbol, isIlGen, ilgenStrategyOpts);
+    if (isIlGen) {
+        return new (comp->trHeapMemory()) TR::Optimizer(comp, methodSymbol, isIlGen, JBnoOptStrategyOpts);
+    }
 
     if (comp->getOptions()->getCustomStrategy()) {
         if (comp->getOption(TR_TraceOptDetails))
-            comp->log()->prints("Using custom optimization strategy\n");
+            comp->log()->printf("Using custom optimization strategy\n");
 
         // Reformat custom strategy as array of Optimization rather than array of int32_t
         //
@@ -708,7 +215,7 @@ TR::Optimizer *OMR::Optimizer::createOptimizer(TR::Compilation *comp, TR::Resolv
 //
 // ************************************************************************
 
-OMR::Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
+OMR::SmallOptimizer::SmallOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
     const OptimizationStrategy *strategy, uint16_t VNType)
     : _compilation(comp)
     , _cg(comp->cg())
@@ -742,51 +249,16 @@ OMR::Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *metho
     // zero opts table
     memset(_opts, 0, sizeof(_opts));
 
-/*
- * Allow downstream projects to disable the default initialization of optimizations
- * and allow them to take full control over this process.  This can be an advantage
- * if they don't use all of the optimizations initialized here as they can avoid
- * getting linked in to the binary in their entirety.
- */
-#if !defined(TR_OVERRIDE_OPTIMIZATION_INITIALIZATION)
-    // initialize OMR optimizations
-
-    _opts[OMR::andSimplification]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_SimplifyAnds::create, OMR::andSimplification);
-    _opts[OMR::arraysetStoreElimination] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_ArraysetStoreElimination::create, OMR::arraysetStoreElimination);
-    _opts[OMR::asyncCheckInsertion] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_AsyncCheckInsertion::create, OMR::asyncCheckInsertion);
     _opts[OMR::basicBlockExtension] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_ExtendBasicBlocks::create, OMR::basicBlockExtension);
     _opts[OMR::basicBlockHoisting]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_HoistBlocks::create, OMR::basicBlockHoisting);
     _opts[OMR::basicBlockOrdering]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_OrderBlocks::create, OMR::basicBlockOrdering);
-    _opts[OMR::basicBlockPeepHole] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_PeepHoleBasicBlocks::create, OMR::basicBlockPeepHole);
-    _opts[OMR::blockShuffling]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_BlockShuffling::create, OMR::blockShuffling);
-    _opts[OMR::blockSplitter]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_BlockSplitter::create, OMR::blockSplitter);
-    _opts[OMR::catchBlockRemoval]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_CatchBlockRemover::create, OMR::catchBlockRemoval);
-    _opts[OMR::CFGSimplification]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR::CFGSimplifier::create, OMR::CFGSimplification);
-    _opts[OMR::checkcastAndProfiledGuardCoalescer] = new (comp->allocator()) TR::OptimizationManager(self(),
-        TR_CheckcastAndProfiledGuardCoalescer::create, OMR::checkcastAndProfiledGuardCoalescer);
-    _opts[OMR::coldBlockMarker]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_ColdBlockMarker::create, OMR::coldBlockMarker);
-    _opts[OMR::coldBlockOutlining] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_ColdBlockOutlining::create, OMR::coldBlockOutlining);
-    _opts[OMR::compactLocals]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_CompactLocals::create, OMR::compactLocals);
     _opts[OMR::compactNullChecks]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_CompactNullChecks::create, OMR::compactNullChecks);
     _opts[OMR::deadTreesElimination] = new (comp->allocator())
         TR::OptimizationManager(self(), TR::DeadTreesElimination::create, OMR::deadTreesElimination);
-    _opts[OMR::expressionsSimplification] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_ExpressionsSimplification::create, OMR::expressionsSimplification);
     _opts[OMR::generalLoopUnroller] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_GeneralLoopUnroller::create, OMR::generalLoopUnroller);
     _opts[OMR::globalCopyPropagation] = new (comp->allocator())
@@ -795,85 +267,29 @@ OMR::Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *metho
         TR::OptimizationManager(self(), TR_DeadStoreElimination::create, OMR::globalDeadStoreElimination);
     _opts[OMR::inlining]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_TrivialInliner::create, OMR::inlining);
-    _opts[OMR::innerPreexistence]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_InnerPreexistence::create, OMR::innerPreexistence);
-    _opts[OMR::invariantArgumentPreexistence] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_InvariantArgumentPreexistence::create, OMR::invariantArgumentPreexistence);
-    _opts[OMR::loadExtensions]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoadExtensions::create, OMR::loadExtensions);
     _opts[OMR::localCSE] = new (comp->allocator()) TR::OptimizationManager(self(), TR::LocalCSE::create, OMR::localCSE);
     _opts[OMR::localDeadStoreElimination] = new (comp->allocator())
         TR::OptimizationManager(self(), TR::LocalDeadStoreElimination::create, OMR::localDeadStoreElimination);
-    _opts[OMR::localLiveRangeReduction] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_LocalLiveRangeReduction::create, OMR::localLiveRangeReduction);
-    _opts[OMR::localReordering]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LocalReordering::create, OMR::localReordering);
     _opts[OMR::loopCanonicalization] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_LoopCanonicalizer::create, OMR::loopCanonicalization);
-    _opts[OMR::loopVersioner]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopVersioner::create, OMR::loopVersioner);
-    _opts[OMR::loopReduction]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopReducer::create, OMR::loopReduction);
-    _opts[OMR::loopReplicator]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopReplicator::create, OMR::loopReplicator);
-    _opts[OMR::profiledNodeVersioning] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_ProfiledNodeVersioning::create, OMR::profiledNodeVersioning);
-    _opts[OMR::redundantAsyncCheckRemoval] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_RedundantAsyncCheckRemoval::create, OMR::redundantAsyncCheckRemoval);
     _opts[OMR::redundantGotoElimination] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_EliminateRedundantGotos::create, OMR::redundantGotoElimination);
     _opts[OMR::rematerialization]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_Rematerialization::create, OMR::rematerialization);
-    _opts[OMR::treesCleansing]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_CleanseTrees::create, OMR::treesCleansing);
     _opts[OMR::treeSimplification]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR::Simplifier::create, OMR::treeSimplification);
-    _opts[OMR::trivialBlockExtension] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_TrivialBlockExtension::create, OMR::trivialBlockExtension);
     _opts[OMR::trivialDeadTreeRemoval] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_TrivialDeadTreeRemoval::create, OMR::trivialDeadTreeRemoval);
-    _opts[OMR::virtualGuardHeadMerger] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_VirtualGuardHeadMerger::create, OMR::virtualGuardHeadMerger);
-    _opts[OMR::virtualGuardTailSplitter] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_VirtualGuardTailSplitter::create, OMR::virtualGuardTailSplitter);
-    _opts[OMR::generalStoreSinking] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_GeneralSinkStores::create, OMR::generalStoreSinking);
     _opts[OMR::globalValuePropagation] = new (comp->allocator())
         TR::OptimizationManager(self(), TR::GlobalValuePropagation::create, OMR::globalValuePropagation);
     _opts[OMR::localValuePropagation] = new (comp->allocator())
         TR::OptimizationManager(self(), TR::LocalValuePropagation::create, OMR::localValuePropagation);
-    _opts[OMR::redundantInductionVarElimination] = new (comp->allocator()) TR::OptimizationManager(self(),
-        TR_RedundantInductionVarElimination::create, OMR::redundantInductionVarElimination);
-    _opts[OMR::partialRedundancyElimination] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_PartialRedundancy::create, OMR::partialRedundancyElimination);
-    _opts[OMR::loopInversion]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopInverter::create, OMR::loopInversion);
     _opts[OMR::inductionVariableAnalysis] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_InductionVariableAnalysis::create, OMR::inductionVariableAnalysis);
-    _opts[OMR::osrExceptionEdgeRemoval] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_OSRExceptionEdgeRemoval::create, OMR::osrExceptionEdgeRemoval);
     _opts[OMR::regDepCopyRemoval] = new (comp->allocator())
         TR::OptimizationManager(self(), TR::RegDepCopyRemoval::create, OMR::regDepCopyRemoval);
-    _opts[OMR::stripMining]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_StripMiner::create, OMR::stripMining);
-    _opts[OMR::fieldPrivatization]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_FieldPrivatizer::create, OMR::fieldPrivatization);
-    _opts[OMR::reorderArrayIndexExpr] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_IndexExprManipulator::create, OMR::reorderArrayIndexExpr);
-    _opts[OMR::loopStrider]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopStrider::create, OMR::loopStrider);
-    _opts[OMR::osrDefAnalysis]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_OSRDefAnalysis::create, OMR::osrDefAnalysis);
-    _opts[OMR::osrLiveRangeAnalysis] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR_OSRLiveRangeAnalysis::create, OMR::osrLiveRangeAnalysis);
     _opts[OMR::tacticalGlobalRegisterAllocator] = new (comp->allocator())
         TR::OptimizationManager(self(), TR_GlobalRegisterAllocator::create, OMR::tacticalGlobalRegisterAllocator);
-    _opts[OMR::liveRangeSplitter]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LiveRangeSplitter::create, OMR::liveRangeSplitter);
-    _opts[OMR::loopSpecializer]
-        = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopSpecializer::create, OMR::loopSpecializer);
-    _opts[OMR::recognizedCallTransformer] = new (comp->allocator())
-        TR::OptimizationManager(self(), TR::RecognizedCallTransformer::create, OMR::recognizedCallTransformer);
     _opts[OMR::switchAnalyzer]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR::SwitchAnalyzer::create, OMR::switchAnalyzer);
     // NOTE: Please add new OMR optimizations here!
@@ -882,48 +298,21 @@ OMR::Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *metho
 
     _opts[OMR::globalDeadStoreGroup]
         = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::globalDeadStoreGroup, globalDeadStoreOpts);
-    _opts[OMR::loopCanonicalizationGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::loopCanonicalizationGroup, loopCanonicalizationOpts);
-    _opts[OMR::loopVersionerGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::loopVersionerGroup, loopVersionerOpts);
-    _opts[OMR::lastLoopVersionerGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::lastLoopVersionerGroup, lastLoopVersionerOpts);
-    _opts[OMR::methodHandleInvokeInliningGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::methodHandleInvokeInliningGroup, methodHandleInvokeInliningOpts);
-    _opts[OMR::earlyGlobalGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::earlyGlobalGroup, earlyGlobalOpts);
-    _opts[OMR::earlyLocalGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::earlyLocalGroup, earlyLocalOpts);
-    _opts[OMR::stripMiningGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::stripMiningGroup, stripMiningOpts);
-    _opts[OMR::arrayPrivatizationGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::arrayPrivatizationGroup, arrayPrivatizationOpts);
-    _opts[OMR::veryCheapGlobalValuePropagationGroup] = new (comp->allocator()) TR::OptimizationManager(self(), NULL,
-        OMR::veryCheapGlobalValuePropagationGroup, veryCheapGlobalValuePropagationOpts);
-    _opts[OMR::eachExpensiveGlobalValuePropagationGroup] = new (comp->allocator()) TR::OptimizationManager(self(), NULL,
-        OMR::eachExpensiveGlobalValuePropagationGroup, eachExpensiveGlobalValuePropagationOpts);
-    _opts[OMR::veryExpensiveGlobalValuePropagationGroup] = new (comp->allocator()) TR::OptimizationManager(self(), NULL,
-        OMR::veryExpensiveGlobalValuePropagationGroup, veryExpensiveGlobalValuePropagationOpts);
-    _opts[OMR::loopSpecializerGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::loopSpecializerGroup, loopSpecializerOpts);
-    _opts[OMR::lateLocalGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::lateLocalGroup, lateLocalOpts);
-    _opts[OMR::eachLocalAnalysisPassGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::eachLocalAnalysisPassGroup, eachLocalAnalysisPassOpts);
-    _opts[OMR::tacticalGlobalRegisterAllocatorGroup] = new (comp->allocator()) TR::OptimizationManager(self(), NULL,
-        OMR::tacticalGlobalRegisterAllocatorGroup, tacticalGlobalRegisterAllocatorOpts);
-    _opts[OMR::partialRedundancyEliminationGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::partialRedundancyEliminationGroup, partialRedundancyEliminationOpts);
-    _opts[OMR::reorderArrayExprGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::reorderArrayExprGroup, reorderArrayIndexOpts);
-    _opts[OMR::blockManipulationGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::blockManipulationGroup, blockManipulationOpts);
-    _opts[OMR::localValuePropagationGroup] = new (comp->allocator())
-        TR::OptimizationManager(self(), NULL, OMR::localValuePropagationGroup, localValuePropagationOpts);
-    _opts[OMR::finalGlobalGroup]
-        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::finalGlobalGroup, finalGlobalOpts);
-
     // NOTE: Please add new OMR optimization groups here!
+
+    // From JBOptimizer, should be folded into above
+    // Initialize optimization groups
+    _opts[OMR::cheapTacticalGlobalRegisterAllocatorGroup] = new (comp->allocator()) TR::OptimizationManager(self(),
+        NULL, OMR::cheapTacticalGlobalRegisterAllocatorGroup, cheapTacticalGlobalRegisterAllocatorOpts);
+    _opts[OMR::globalDeadStoreGroup]
+        = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::globalDeadStoreGroup, globalDeadStoreOpts);
+
+// turn requested on for optimizations/groups
+#if 0
+   // these don't seem to work for the compiler unit tests
+   self()->setRequestOptimization(OMR::cheapTacticalGlobalRegisterAllocatorGroup, true);
+   self()->setRequestOptimization(OMR::tacticalGlobalRegisterAllocatorGroup, true);
+   self()->setRequestOptimization(OMR::tacticalGlobalRegisterAllocator, true);
 #endif
 }
 
@@ -940,24 +329,24 @@ static const char *optimizer_name[] = {
 #undef OPTIMIZATION_ENUM_ONLY
 };
 
-const char *OMR::Optimizer::getOptimizationName(OMR::Optimizations opt) { return ::optimizer_name[opt]; }
+const char *OMR::SmallOptimizer::getOptimizationName(OMR::Optimizations opt) { return ::optimizer_name[opt]; }
 
-bool OMR::Optimizer::isEnabled(OMR::Optimizations i)
+bool OMR::SmallOptimizer::isEnabled(OMR::Optimizations i)
 {
     if (_opts[i] != NULL)
         return _opts[i]->enabled();
     return false;
 }
 
-TR_Debug *OMR::Optimizer::getDebug() { return _compilation->getDebug(); }
+TR_Debug *OMR::SmallOptimizer::getDebug() { return _compilation->getDebug(); }
 
-void OMR::Optimizer::setCachedExtendedBBInfoValid(bool b)
+void OMR::SmallOptimizer::setCachedExtendedBBInfoValid(bool b)
 {
     TR_ASSERT(!comp()->isPeekingMethod(), "ERROR: Should not modify _cachedExtendedBBInfoValid while peeking");
     _cachedExtendedBBInfoValid = b;
 }
 
-TR_UseDefInfo *OMR::Optimizer::setUseDefInfo(TR_UseDefInfo *u)
+TR_UseDefInfo *OMR::SmallOptimizer::setUseDefInfo(TR_UseDefInfo *u)
 {
     if (_useDefInfo != NULL) {
         dumpOptDetails(comp(), "     (Invalidating use/def info)\n");
@@ -966,7 +355,7 @@ TR_UseDefInfo *OMR::Optimizer::setUseDefInfo(TR_UseDefInfo *u)
     return (_useDefInfo = u);
 }
 
-TR_ValueNumberInfo *OMR::Optimizer::setValueNumberInfo(TR_ValueNumberInfo *v)
+TR_ValueNumberInfo *OMR::SmallOptimizer::setValueNumberInfo(TR_ValueNumberInfo *v)
 {
     if (_valueNumberInfo && !v)
         dumpOptDetails(comp(), "     (Invalidating value number info)\n");
@@ -976,14 +365,15 @@ TR_ValueNumberInfo *OMR::Optimizer::setValueNumberInfo(TR_ValueNumberInfo *v)
     return (_valueNumberInfo = v);
 }
 
-TR_UseDefInfo *OMR::Optimizer::createUseDefInfo(TR::Compilation *comp, bool requiresGlobals, bool prefersGlobals,
+TR_UseDefInfo *OMR::SmallOptimizer::createUseDefInfo(TR::Compilation *comp, bool requiresGlobals, bool prefersGlobals,
     bool loadsShouldBeDefs, bool cannotOmitTrivialDefs, bool conversionRegsOnly, bool doCompletion)
 {
     return new (comp->allocator()) TR_UseDefInfo(comp, comp->getFlowGraph(), self(), requiresGlobals, prefersGlobals,
         loadsShouldBeDefs, cannotOmitTrivialDefs, conversionRegsOnly, doCompletion, getCallsAsUses());
 }
 
-TR_ValueNumberInfo *OMR::Optimizer::createValueNumberInfo(bool requiresGlobals, bool preferGlobals, bool noUseDefInfo)
+TR_ValueNumberInfo *OMR::SmallOptimizer::createValueNumberInfo(bool requiresGlobals, bool preferGlobals,
+    bool noUseDefInfo)
 {
     LexicalTimer t("global value numbering (for globals definitely)", comp()->phaseTimer());
     TR::LexicalMemProfiler mp("global value numbering (for globals definitely)", comp()->phaseMemProfiler());
@@ -1008,7 +398,7 @@ TR_ValueNumberInfo *OMR::Optimizer::createValueNumberInfo(bool requiresGlobals, 
     return valueNumberInfo;
 }
 
-void OMR::Optimizer::optimize()
+void OMR::SmallOptimizer::optimize()
 {
     TR::Compilation::CompilationPhaseScope mainCompilationPhaseScope(comp());
     OMR::Logger *log = comp()->log();
@@ -1101,7 +491,7 @@ void OMR::Optimizer::optimize()
     TR_SingleTimer myTimer;
     TR_FrontEnd *fe = comp()->fe();
     bool doTiming = comp()->getOption(TR_Timing);
-    if (doTiming && log->isEnabled_DEPRECATED()) {
+    if (doTiming && comp()->getOutFile() != NULL) {
         myTimer.initialize("all optimizations", trMemory());
     }
 
@@ -1138,19 +528,19 @@ void OMR::Optimizer::optimize()
 
     if (comp()->getOption(TR_TraceOpts)) {
         if (comp()->isOutermostMethod())
-            log->prints("</strategy>\n");
+            log->printf("</strategy>\n");
     }
 
     if (comp()->getOption(TR_TraceOptDetails)) {
         if (comp()->isOutermostMethod())
-            log->prints("</optimize>\n");
+            log->printf("</optimize>\n");
     }
 
     comp()->setOptimizer(stackedOptimizer);
     _stackedOptimizer = false;
 }
 
-void OMR::Optimizer::dumpPostOptTrees()
+void OMR::SmallOptimizer::dumpPostOptTrees()
 {
     // do nothing for IlGen optimizer
     if (isIlGenOpt())
@@ -1159,6 +549,52 @@ void OMR::Optimizer::dumpPostOptTrees()
     TR::Method *method = comp()->getMethodSymbol()->getMethod();
     if ((debug("dumpPostLocalOptTrees") || comp()->getOption(TR_TraceTrees)))
         comp()->dumpMethodTrees(comp()->log(), "Post Optimization Trees");
+}
+
+void dumpName(TR::Optimizer *op, TR_FrontEnd *fe, TR::Compilation *comp, OMR::Optimizations optNum)
+{
+    static int level = 1;
+    TR::OptimizationManager *manager = op->getOptimization(optNum);
+
+    if (level > 6)
+        return;
+
+    if (optNum > endGroup && optNum < OMR::numGroups) {
+        trfprintf(comp->getOutFile(), "%*s<%s>\n", level * 6, " ", manager->name());
+
+        level++;
+
+        const OptimizationStrategy *subGroup = ((TR::OptimizationManager *)manager)->groupOfOpts();
+
+        while (subGroup->_num != endOpts && subGroup->_num != endGroup) {
+            dumpName(op, fe, comp, subGroup->_num);
+            subGroup++;
+        }
+
+        level--;
+
+        trfprintf(comp->getOutFile(), "%*s</%s>", level * 6, " ", manager->name());
+    } else if (optNum > endOpts && optNum < OMR::numOpts)
+        trfprintf(comp->getOutFile(), "%*s%s", level * 6, " ", manager->name());
+    else
+        trfprintf(comp->getOutFile(), "%*s<%d>", level * 6, " ", optNum);
+
+    trfprintf(comp->getOutFile(), "\n");
+}
+
+void OMR::SmallOptimizer::dumpStrategy(const OptimizationStrategy *opt)
+{
+    TR_FrontEnd *fe = comp()->fe();
+
+    trfprintf(comp()->getOutFile(), "endOpts:%d OMR::numOpts:%d endGroup:%d numGroups:%d\n", endOpts, OMR::numOpts,
+        endGroup, OMR::numGroups);
+
+    while (opt->_num != endOpts) {
+        dumpName(self(), fe, comp(), opt->_num);
+        opt++;
+    }
+
+    trfprintf(comp()->getOutFile(), "\n");
 }
 
 static bool hasMoreThanOneBlock(TR::Compilation *comp)
@@ -1182,7 +618,7 @@ static void breakForTesting(int index)
     }
 }
 
-int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimization, int32_t firstOptIndex,
+int32_t OMR::SmallOptimizer::performOptimization(const OptimizationStrategy *optimization, int32_t firstOptIndex,
     int32_t lastOptIndex, int32_t doTiming)
 {
     OMR::Logger *log = comp()->log();
@@ -1596,7 +1032,6 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
             delete opt;
             return 0;
         }
-        comp()->reportOptimizationPhase(optNum);
 
         if (comp()->getOption(TR_TraceOptDetails)) {
             if (comp()->isOutermostMethod())
@@ -1836,6 +1271,8 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
             comp()->generateAccurateNodeCount();
         }
 
+        // dumpOptDetails(comp(), "\n");
+
 #ifdef OPT_TIMING
         if (*(statOptTiming[optNum].getName()) == 0) // has no name yet
             statOptTiming[optNum].setName(manager->name());
@@ -1902,6 +1339,7 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
             }
         }
 
+        comp()->reportOptimizationPhase(optNum);
         breakForTesting(optNum);
         if (!doThisOptimizationIfEnabled
             || manager->getRequestedBlocks()->find(toBlock(comp()->getFlowGraph()->getStart()))
@@ -1998,20 +1436,21 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
 
 #ifdef DEBUG
         if (manager->getDumpStructure() && debug("dumpStructure")) {
-            log->prints("\nStructures:\n");
-            getDebug()->print(log, comp()->getFlowGraph()->getStructure(), 6);
+            log->printf("\nStructures:\n");
+            getDebug()->print(comp()->log(), comp()->getFlowGraph()->getStructure(), 6);
         }
+
 #endif
 
         if (methodTreeDumpPermitted && comp()->isOutermostMethod()) {
             if (manager->getDoesNotRequireTreeDumps()) {
                 dumpOptDetails(comp(), "Trivial opt -- omitting listings\n");
-            } else if ((needTreeDump || (finalOptMsgIndex != origOptMsgIndex)) && log->isEnabled_DEPRECATED())
+            } else if (needTreeDump || (finalOptMsgIndex != origOptMsgIndex))
                 comp()->dumpMethodTrees(log, "Trees after ", manager->name(), getMethodSymbol());
             else if (finalOptMsgIndex == origOptMsgIndex) {
                 dumpOptDetails(comp(), "No transformations done by this pass -- omitting listings\n");
-                if (needStructureDump && log->isEnabled_DEPRECATED() && comp()->getFlowGraph()->getStructure()) {
-                    comp()->getDebug()->print(log, comp()->getFlowGraph()->getStructure(), 6);
+                if (needStructureDump && comp()->getDebug() && comp()->getFlowGraph()->getStructure()) {
+                    comp()->getDebug()->print(comp()->log(), comp()->getFlowGraph()->getStructure(), 6);
                 }
             }
         }
@@ -2027,8 +1466,7 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
         if (enableCountTemps) {
             int32_t tempCount = 0;
 
-            if (comp()->getOption(TR_TraceOptDetails))
-                log->prints("Temps seen (if any): ");
+            log->printf("Temps seen (if any): ");
 
             for (TR::TreeTop *tt = getMethodSymbol()->getFirstTreeTop(); tt; tt = tt->getNextTreeTop()) {
                 TR::Node *ttNode = tt->getNode();
@@ -2042,41 +1480,34 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
 
                     if ((symRef->getSymbol()->getKind() == TR::Symbol::IsAutomatic) && symRef->isTemporary(comp())) {
                         ++tempCount;
-                        if (comp()->getOption(TR_TraceOptDetails))
-                            log->printf("%s ", comp()->getDebug()->getName(ttNode->getSymbolReference()));
+                        log->printf("%s ", comp()->getDebug()->getName(ttNode->getSymbolReference()));
                     }
                 }
             }
 
-            if (comp()->getOption(TR_TraceOptDetails))
-                log->printf("\nNumber of temps seen = %d\n", tempCount);
+            log->printf("\nNumber of temps seen = %d\n", tempCount);
         }
 
         if (comp()->getOption(TR_TraceOptDetails)) {
             if (comp()->isOutermostMethod())
-                log->prints("</optimization>\n\n");
+                log->printf("</optimization>\n\n");
         }
     }
 
     return actualCost;
 }
 
-void OMR::Optimizer::enableAllLocalOpts()
+void OMR::SmallOptimizer::enableAllLocalOpts()
 {
-    setRequestOptimization(lateLocalGroup, true);
     setRequestOptimization(localCSE, true);
-    setRequestOptimization(localValuePropagationGroup, true);
     setRequestOptimization(treeSimplification, true);
     setRequestOptimization(localDeadStoreElimination, true);
     setRequestOptimization(deadTreesElimination, true);
-    setRequestOptimization(catchBlockRemoval, true);
     setRequestOptimization(compactNullChecks, true);
-    setRequestOptimization(localReordering, true);
-    setRequestOptimization(andSimplification, true);
     setRequestOptimization(redundantGotoElimination, true);
 }
 
-int32_t OMR::Optimizer::doStructuralAnalysis()
+int32_t OMR::SmallOptimizer::doStructuralAnalysis()
 {
     // Only perform structural analysis if there may be loops in the method
     //
@@ -2090,7 +1521,7 @@ int32_t OMR::Optimizer::doStructuralAnalysis()
         comp()->getFlowGraph()->setStructure(rootStructure);
 
         if (debug("dumpStructure")) {
-            comp()->log()->prints("\nStructures:\n");
+            comp()->log()->printf("\nStructures:\n");
             getDebug()->print(comp()->log(), rootStructure, 6);
         }
     }
@@ -2098,7 +1529,7 @@ int32_t OMR::Optimizer::doStructuralAnalysis()
     return 10;
 }
 
-int32_t OMR::Optimizer::changeContinueLoopsToNestedLoops()
+int32_t OMR::SmallOptimizer::changeContinueLoopsToNestedLoops()
 {
     TR_RegionStructure *rootStructure = comp()->getFlowGraph()->getStructure()->asRegion();
     if (rootStructure && rootStructure->changeContinueLoopsToNestedLoops(rootStructure)) {
@@ -2109,7 +1540,7 @@ int32_t OMR::Optimizer::changeContinueLoopsToNestedLoops()
     return 10;
 }
 
-bool OMR::Optimizer::prepareForNodeRemoval(TR::Node *node, bool deferInvalidatingUseDefInfo)
+bool OMR::SmallOptimizer::prepareForNodeRemoval(TR::Node *node, bool deferInvalidatingUseDefInfo)
 {
     int32_t index;
 
@@ -2148,7 +1579,7 @@ bool OMR::Optimizer::prepareForNodeRemoval(TR::Node *node, bool deferInvalidatin
     return useDefInfoAreInvalid;
 }
 
-void OMR::Optimizer::getStaticFrequency(TR::Block *block, int32_t *currentWeight)
+void OMR::SmallOptimizer::getStaticFrequency(TR::Block *block, int32_t *currentWeight)
 {
     if (comp()->getUsesBlockFrequencyInGRA())
         *currentWeight = block->getFrequency();
@@ -2156,7 +1587,7 @@ void OMR::Optimizer::getStaticFrequency(TR::Block *block, int32_t *currentWeight
         block->getStructureOf()->calculateFrequencyOfExecution(currentWeight);
 }
 
-TR_Hotness OMR::Optimizer::checkMaxHotnessOfInlinedMethods(TR::Compilation *comp)
+TR_Hotness OMR::SmallOptimizer::checkMaxHotnessOfInlinedMethods(TR::Compilation *comp)
 {
     TR_Hotness strategy = comp->getMethodHotness();
 #ifdef J9_PROJECT_SPECIFIC
@@ -2182,7 +1613,7 @@ TR_Hotness OMR::Optimizer::checkMaxHotnessOfInlinedMethods(TR::Compilation *comp
     return strategy;
 }
 
-bool OMR::Optimizer::checkNumberOfLoopsAndBasicBlocks(TR::Compilation *comp, TR_Structure *rootStructure)
+bool OMR::SmallOptimizer::checkNumberOfLoopsAndBasicBlocks(TR::Compilation *comp, TR_Structure *rootStructure)
 {
     TR::CFGNode *node;
     _numBasicBlocksInMethod = 0;
@@ -2214,7 +1645,7 @@ bool OMR::Optimizer::checkNumberOfLoopsAndBasicBlocks(TR::Compilation *comp, TR_
     return false;
 }
 
-void OMR::Optimizer::countNumberOfLoops(TR_Structure *rootStructure)
+void OMR::SmallOptimizer::countNumberOfLoops(TR_Structure *rootStructure)
 {
     TR_RegionStructure *regionStructure = rootStructure->asRegion();
     if (regionStructure) {
@@ -2227,7 +1658,7 @@ void OMR::Optimizer::countNumberOfLoops(TR_Structure *rootStructure)
     }
 }
 
-bool OMR::Optimizer::areNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Compilation *_comp,
+bool OMR::SmallOptimizer::areNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Compilation *_comp,
     bool allowBCDSignPromotion)
 {
     // WCodeLinkageFixup runs a version of LocalCSE that is not owned by
@@ -2331,8 +1762,9 @@ bool OMR::Optimizer::areNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Co
                     && !node1->isSignStateEquivalent(node2)) {
                     if (allowBCDSignPromotion && node1->isSignStateAnImprovementOver(node2)) {
                         if (_comp->cg()->traceBCDCodeGen())
-                            _comp->log()->printf("y^y : found sign state mismatch node1 %s (%p), node2 %s (%p) but "
-                                                 "node1 improves sign state over node2\n",
+                            _comp->log()->printf(
+                                "y^y : found sign state mismatch node1 %s (%p), node2 %s (%p) but node1 improves sign "
+                                "state over node2\n",
                                 node1->getOpCode().getName(), node1, node2->getOpCode().getName(), node2);
                         return true;
                     } else {
@@ -2405,7 +1837,7 @@ bool OMR::Optimizer::areNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Co
 }
 
 #ifdef J9_PROJECT_SPECIFIC
-bool OMR::Optimizer::areBCDAggrConstantNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Compilation *_comp)
+bool OMR::SmallOptimizer::areBCDAggrConstantNodesEquivalent(TR::Node *node1, TR::Node *node2, TR::Compilation *_comp)
 {
     size_t size1 = (node1->getDataType().isBCD()) ? node1->getDecimalPrecision() : 0;
     size_t size2 = (node2->getDataType().isBCD()) ? node2->getDecimalPrecision() : 0;
@@ -2422,7 +1854,7 @@ bool OMR::Optimizer::areBCDAggrConstantNodesEquivalent(TR::Node *node1, TR::Node
 }
 #endif
 
-bool OMR::Optimizer::areSyntacticallyEquivalent(TR::Node *node1, TR::Node *node2, vcount_t visitCount)
+bool OMR::SmallOptimizer::areSyntacticallyEquivalent(TR::Node *node1, TR::Node *node2, vcount_t visitCount)
 {
     if (node1->getVisitCount() == visitCount) {
         if (node2->getVisitCount() == visitCount)
@@ -2467,7 +1899,7 @@ bool OMR::Optimizer::areSyntacticallyEquivalent(TR::Node *node1, TR::Node *node2
  * This table allows a fast determination of whether two symbol references
  * represent the same symbol.
  */
-int32_t *OMR::Optimizer::getSymReferencesTable()
+int32_t *OMR::SmallOptimizer::getSymReferencesTable()
 {
     if (_symReferencesTable == NULL) {
         int32_t symRefCount = comp()->getSymRefCount();
@@ -2503,7 +1935,7 @@ int32_t *OMR::Optimizer::getSymReferencesTable()
 }
 
 #ifdef DEBUG
-void OMR::Optimizer::doStructureChecks()
+void OMR::SmallOptimizer::doStructureChecks()
 {
     TR::CFG *cfg = getMethodSymbol()->getFlowGraph();
     if (cfg) {
@@ -2520,20 +1952,20 @@ void OMR::Optimizer::doStructureChecks()
 }
 #endif
 
-bool OMR::Optimizer::getLastRun(OMR::Optimizations opt)
+bool OMR::SmallOptimizer::getLastRun(OMR::Optimizations opt)
 {
     if (!_opts[opt])
         return false;
     return _opts[opt]->getLastRun();
 }
 
-void OMR::Optimizer::setRequestOptimization(OMR::Optimizations opt, bool value, TR::Block *block)
+void OMR::SmallOptimizer::setRequestOptimization(OMR::Optimizations opt, bool value, TR::Block *block)
 {
     if (_opts[opt])
         _opts[opt]->setRequested(value, block);
 }
 
-void OMR::Optimizer::setAliasSetsAreValid(bool b, bool setForWCode)
+void OMR::SmallOptimizer::setAliasSetsAreValid(bool b, bool setForWCode)
 {
     if (_aliasSetsAreValid && !b)
         dumpOptDetails(comp(), "     (Invalidating alias info)\n");
@@ -2541,18 +1973,18 @@ void OMR::Optimizer::setAliasSetsAreValid(bool b, bool setForWCode)
     _aliasSetsAreValid = b;
 }
 
-const OptimizationStrategy *OMR::Optimizer::_mockStrategy = NULL;
+const OptimizationStrategy *OMR::SmallOptimizer::_mockStrategy = NULL;
 
-const OptimizationStrategy *OMR::Optimizer::optimizationStrategy(TR::Compilation *c)
+const OptimizationStrategy *OMR::SmallOptimizer::optimizationStrategy(TR::Compilation *c)
 {
     // Mock strategies are used for testing, and override
     // the compilation strategy.
-    if (OMR::Optimizer::_mockStrategy != NULL) {
+    if (NULL != OMR::SmallOptimizer::_mockStrategy) {
         OMR::Logger *log = c->log();
         if (log->isEnabled_DEPRECATED())
-            log->printf("Using mock optimization strategy %p\n", OMR::Optimizer::_mockStrategy);
+            log->printf("Using mock optimization strategy %p\n", OMR::SmallOptimizer::_mockStrategy);
 
-        return OMR::Optimizer::_mockStrategy;
+        return OMR::SmallOptimizer::_mockStrategy;
     }
 
     TR_Hotness strategy = c->getMethodHotness();
@@ -2565,11 +1997,11 @@ const OptimizationStrategy *OMR::Optimizer::optimizationStrategy(TR::Compilation
     return omrCompilationStrategies[strategy];
 }
 
-ValueNumberInfoBuildType OMR::Optimizer::valueNumberInfoBuildType() { return PrePartitionVN; }
+ValueNumberInfoBuildType OMR::SmallOptimizer::valueNumberInfoBuildType() { return PrePartitionVN; }
 
-TR::Optimizer *OMR::Optimizer::self() { return (static_cast<TR::Optimizer *>(this)); }
+TR::Optimizer *OMR::SmallOptimizer::self() { return (static_cast<TR::Optimizer *>(this)); }
 
-const char *OMR::Optimizer::getAnalysisPhaseName(OMR::Optimizer::AnalysisPhases phaseId)
+const char *OMR::SmallOptimizer::getAnalysisPhaseName(OMR::SmallOptimizer::AnalysisPhases phaseId)
 {
 #define OPTIMIZER_ANALYSIS_PHASES_MACRO(analysis_phase, name, id, ...) \
     case id:                                                           \
@@ -2584,6 +2016,9 @@ const char *OMR::Optimizer::getAnalysisPhaseName(OMR::Optimizer::AnalysisPhases 
     return "Unknown analysis phase";
 }
 
-OMR_InlinerPolicy *OMR::Optimizer::getInlinerPolicy() { return new (comp()->allocator()) OMR_InlinerPolicy(comp()); }
+OMR_InlinerPolicy *OMR::SmallOptimizer::getInlinerPolicy()
+{
+    return new (comp()->allocator()) OMR_InlinerPolicy(comp());
+}
 
-OMR_InlinerUtil *OMR::Optimizer::getInlinerUtil() { return new (comp()->allocator()) OMR_InlinerUtil(comp()); }
+OMR_InlinerUtil *OMR::SmallOptimizer::getInlinerUtil() { return new (comp()->allocator()) OMR_InlinerUtil(comp()); }
