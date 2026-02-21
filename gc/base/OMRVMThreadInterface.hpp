@@ -34,9 +34,11 @@ class MM_EnvironmentBase;
 class GC_OMRVMThreadInterface
 {
 public:
-	static void flushCachesForWalk(MM_EnvironmentBase *env);
-	static void flushCachesForGC(MM_EnvironmentBase *env);
-	static void flushNonAllocationCaches(MM_EnvironmentBase *env);
+	static void flushCachesForWalk(MM_EnvironmentBase *currentEnv, MM_EnvironmentBase *targetEnv);
+	static void flushCachesForGC(MM_EnvironmentBase *currentEnv, MM_EnvironmentBase *targetEnv);
+	static void flushCachesForWalk(MM_EnvironmentBase *targetEnv);
+	static void flushCachesForGC(MM_EnvironmentBase *targetEnv);
+	static void flushNonAllocationCaches(MM_EnvironmentBase *targetEnv);
 };
 
 #endif /* OMRVMTHREADINTERFACE_HPP_ */
