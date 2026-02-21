@@ -324,7 +324,7 @@ public:
     }
 
     virtual int32_t buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies, bool isFastJNI,
-        int64_t killMask, TR::Register *&vftReg, bool PassReceiver = true);
+        int64_t killMask, TR::Register *&vftReg, bool PassReceiver = true, bool isRightToLeft = true);
     TR::Instruction *storeArgumentOnStack(TR::Node *callNode, TR::InstOpCode::Mnemonic opCode, TR::Register *argReg,
         int32_t *stackOffsetPtr, TR::Register *stackRegister);
     TR::Instruction *storeLongDoubleArgumentOnStack(TR::Node *callNode, TR::DataType argType,

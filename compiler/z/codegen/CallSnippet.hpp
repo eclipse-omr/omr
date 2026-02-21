@@ -50,6 +50,9 @@ class S390CallSnippet : public TR::Snippet {
 protected:
     TR::SymbolReference *_realMethodSymbolReference;
 
+    static uint8_t *S390flushArgumentsToStackHelper(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
+        TR::CodeGenerator *cg, int argStart, bool rightToLeft, TR::Linkage *linkage);
+
 public:
     S390CallSnippet(TR::CodeGenerator *cg, TR::Node *c, TR::LabelSymbol *lab, int32_t s)
         : TR::Snippet(cg, c, lab, false)
@@ -91,6 +94,7 @@ public:
     static uint8_t *S390flushArgumentsToStack(uint8_t *buffer, TR::Node *callNode, int32_t argSize,
         TR::CodeGenerator *cg);
     static int32_t instructionCountForArguments(TR::Node *callNode, TR::CodeGenerator *cg);
+    static int32_t instructionCountForArgumentsInner(TR::Node *callNode, TR::CodeGenerator *cg, int32_t argStart);
 
     /**
      * @brief For a given call from snippet (Usually helper calls) calculate the
@@ -105,6 +109,8 @@ public:
      */
     static int32_t adjustCallOffsetWithTrampoline(uintptr_t targetAddr, uint8_t *currentInst,
         TR::SymbolReference *callSymRef, TR::Snippet *snippet);
+
+    static uint8_t *printS390ArgumentsFlush(OMR::Logger *log, TR::Node *node, uint8_t *bufferPos, int32_t argSize, TR_Debug *debug, int32_t argStart, TR::Machine *machine, TR::Linkage *privateLinkage);
 };
 
 } // namespace TR
