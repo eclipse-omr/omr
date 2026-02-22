@@ -133,6 +133,11 @@ public:
 
     void setDowngradedDueToSamplingJProfiling(bool b) { _flags.set(DowngradedDueToSamplingJProfiling, b); }
 
+    // Insert JProfiling code that can be patched to turn on/off data collection
+    bool insertPatchableJProfiling() const { return _flags.testAny(InsertPatchableJProfiling); }
+
+    void setInsertPatchableJProfiling(bool b) { _flags.set(InsertPatchableJProfiling, b); }
+
     // Insert epilogue yieldpoints if the method is being sampled
     bool getInsertEpilogueYieldpoints() const { return _flags.testAny(UseSampling); }
 
@@ -285,6 +290,7 @@ public:
             = 0x00400000, // Compilation was downgraded to cold just because we wanted to do JProfiling
         InducedByDLT = 0x00800000, // Compilation that follows a DLT compilation
         DisableEDO = 0x01000000, // Do not insert EDO profiling trees for this compilation
+        InsertPatchableJProfiling = 0x02000000, // Insert patchable JProfiling trees for this compilation
     };
 
 private:
