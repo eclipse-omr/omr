@@ -6269,8 +6269,7 @@ TR::Register *OMR::X86::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::Co
 void OMR::X86::TreeEvaluator::vectorMaskToGPRHelper(TR::Node *node, TR::DataType type, TR::Register *gprReg,
     TR::Register *maskReg, TR::CodeGenerator *cg)
 {
-    TR_ASSERT_FATAL(type.isVector() || type.isMask(),
-        "vectorMaskToGPRHelper requires vector type, not raw element type");
+    TR_ASSERT_FATAL(type.isVectorOrMask(), "vectorMaskToGPRHelper requires vector type, not raw element type");
     TR::DataType et = type.getVectorElementType();
 
     if (maskReg->getKind() == TR_VMR) {

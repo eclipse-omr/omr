@@ -548,7 +548,7 @@ TR::ILOpCodes OMR::IL::opCodeForSelect(TR::DataType dt)
     static_assert(TR::NumOMRTypes == (sizeof(OMR::IL::opCodesForSelect) / sizeof(OMR::IL::opCodesForSelect[0])),
         "OMR::IL::opCodesForSelect is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "Unexpected data type");
@@ -561,7 +561,7 @@ TR::ILOpCodes OMR::IL::opCodeForConst(TR::DataType dt)
     static_assert(TR::NumOMRTypes == (sizeof(OMR::IL::opCodesForConst) / sizeof(OMR::IL::opCodesForConst[0])),
         "OMR::IL::opCodesForConst is not the correct size");
 
-    TR_ASSERT_FATAL(!dt.isVector() && !dt.isMask(), "Vector and Mask constants are not supported\n");
+    TR_ASSERT_FATAL(!dt.isVectorOrMask(), "Vector and Mask constants are not supported\n");
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
 
@@ -589,7 +589,7 @@ TR::ILOpCodes OMR::IL::opCodeForDirectReadBarrier(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForDirectReadBarrier) / sizeof(OMR::IL::opCodesForDirectReadBarrier[0])),
         "OMR::IL::opCodesForDirectReadBarrier is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -619,7 +619,7 @@ TR::ILOpCodes OMR::IL::opCodeForDirectWriteBarrier(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForDirectWriteBarrier) / sizeof(OMR::IL::opCodesForDirectWriteBarrier[0])),
         "OMR::IL::opCodesForDirectWriteBarrier is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -649,7 +649,7 @@ TR::ILOpCodes OMR::IL::opCodeForIndirectReadBarrier(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIndirectReadBarrier) / sizeof(OMR::IL::opCodesForIndirectReadBarrier[0])),
         "OMR::IL::opCodesForIndirectReadBarrier is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -679,7 +679,7 @@ TR::ILOpCodes OMR::IL::opCodeForIndirectWriteBarrier(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIndirectWriteBarrier) / sizeof(OMR::IL::opCodesForIndirectWriteBarrier[0])),
         "OMR::IL::opCodesForIndirectWriteBarrier is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -773,7 +773,7 @@ TR::ILOpCodes OMR::IL::opCodeForIfCompareEquals(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIfCompareEquals) / sizeof(OMR::IL::opCodesForIfCompareEquals[0])),
         "OMR::IL::opCodesForIfCompareEquals is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -803,7 +803,7 @@ TR::ILOpCodes OMR::IL::opCodeForIfCompareNotEquals(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIfCompareNotEquals) / sizeof(OMR::IL::opCodesForIfCompareNotEquals[0])),
         "OMR::IL::opCodesForIfCompareNotEquals is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -849,7 +849,7 @@ TR::ILOpCodes OMR::IL::opCodeForIfCompareLessThan(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIfCompareLessThan) / sizeof(OMR::IL::opCodesForIfCompareLessThan[0])),
         "OMR::IL::opCodesForIfCompareLessThan is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -863,7 +863,7 @@ TR::ILOpCodes OMR::IL::opCodeForIfCompareLessOrEquals(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIfCompareLessOrEquals) / sizeof(OMR::IL::opCodesForIfCompareLessOrEquals[0])),
         "OMR::IL::opCodesForIfCompareLessOrEquals is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -910,7 +910,7 @@ TR::ILOpCodes OMR::IL::opCodeForIfCompareGreaterThan(TR::DataType dt)
             == (sizeof(OMR::IL::opCodesForIfCompareGreaterThan) / sizeof(OMR::IL::opCodesForIfCompareGreaterThan[0])),
         "OMR::IL::opCodesForIfCompareGreaterThan is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");
@@ -925,7 +925,7 @@ TR::ILOpCodes OMR::IL::opCodeForIfCompareGreaterOrEquals(TR::DataType dt)
                 / sizeof(OMR::IL::opCodesForIfCompareGreaterOrEquals[0])),
         "OMR::IL::opCodesForIfCompareGreaterOrEquals is not the correct size");
 
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return TR::BadILOp;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "unexpected opcode");

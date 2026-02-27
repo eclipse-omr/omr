@@ -5137,8 +5137,9 @@ TR::Node *indirectLoadSimplifier(TR::Node *node, TR::Block *block, TR::Simplifie
         if ((node->getType().isIntegral() || node->getType().isDouble())
             && ((addressNode->getOpCode().isArrayRef() && addressNode->getSecondChild()->getOpCode().isLoadConst()
                     && addressNode->getFirstChild()->getOpCode().hasSymbolReference()
-                    && addressNode->getFirstChild()->getSymbol()->getType().isVector())
-                || (addressNode->getOpCode().hasSymbolReference() && addressNode->getSymbol()->getType().isVector()))
+                    && addressNode->getFirstChild()->getSymbol()->getType().isVectorOrMask())
+                || (addressNode->getOpCode().hasSymbolReference()
+                    && addressNode->getSymbol()->getType().isVectorOrMask()))
             && performTransformation(s->comp(), "%sReplace indirect load [" POINTER_PRINTF_FORMAT "] with vgetelem",
                 s->optDetailString(), node)) {
             int32_t offset = 0;
@@ -5297,8 +5298,9 @@ TR::Node *indirectStoreSimplifier(TR::Node *node, TR::Block *block, TR::Simplifi
             && (!valueNode->getOpCode().isLoadConst() || s->getLastRun())
             && ((addressNode->getOpCode().isArrayRef() && addressNode->getSecondChild()->getOpCode().isLoadConst()
                     && addressNode->getFirstChild()->getOpCode().hasSymbolReference()
-                    && addressNode->getFirstChild()->getSymbol()->getType().isVector())
-                || (addressNode->getOpCode().hasSymbolReference() && addressNode->getSymbol()->getType().isVector()))
+                    && addressNode->getFirstChild()->getSymbol()->getType().isVectorOrMask())
+                || (addressNode->getOpCode().hasSymbolReference()
+                    && addressNode->getSymbol()->getType().isVectorOrMask()))
             && performTransformation(s->comp(), "%sReplace indirect store [" POINTER_PRINTF_FORMAT "] with vsetelem",
                 s->optDetailString(), node)) {
             int32_t offset = 0;
