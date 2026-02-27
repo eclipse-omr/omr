@@ -30,6 +30,7 @@
 #include <process.h>
 
 #include "omrmutex.h"
+#pragma comment(lib, "winmm.lib")
 
 /* ostypes */
 

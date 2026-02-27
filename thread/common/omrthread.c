@@ -2444,10 +2444,16 @@ omrthread_sleep(int64_t millis)
 
 	self->flags |= J9THREAD_FLAGM_SLEEPING_TIMED;
 
+#if defined(OMR_OS_WINDOWS)
+	timeBeginPeriod(1L);
+#endif /* defined(OMR_OS_WINDOWS) */
 	OMROSCOND_WAIT_IF_TIMEDOUT(self->condition, self->mutex, boundedMillis, 0) {
 		break;
 	}
 	OMROSCOND_WAIT_TIMED_LOOP();
+#if defined(OMR_OS_WINDOWS)
+	timeEndPeriod(1L)
+#endif /* defined(OMR_OS_WINDOWS) */
 
 	self->flags &= ~J9THREAD_FLAGM_SLEEPING_TIMED;
 	THREAD_UNLOCK(self);
