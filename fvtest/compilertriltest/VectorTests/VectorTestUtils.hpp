@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright IBM Corp. and others 2025
+* Copyright IBM Corp. and others 2026
 *
 * This program and the accompanying materials are made available under
 * the terms of the Eclipse Public License 2.0 which accompanies this
