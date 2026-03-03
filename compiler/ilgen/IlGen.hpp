@@ -26,7 +26,10 @@
 
 namespace TR {
 class Block;
+class FrontEnd;
+class IlGeneratorMethodDetails;
 class ResolvedMethodSymbol;
+class SymbolReferenceTable;
 } // namespace TR
 
 class TR_IlGenerator {
@@ -40,6 +43,10 @@ public:
     virtual void setCallerMethod(TR::ResolvedMethodSymbol *caller) {}
 
     virtual TR::ResolvedMethodSymbol *methodSymbol() const = 0;
+
+    virtual void initialize(TR::IlGeneratorMethodDetails *details, TR::ResolvedMethodSymbol *methodSymbol,
+        TR::FrontEnd *fe, TR::SymbolReferenceTable *symRefTab)
+    {}
 
     // contributes to eliminate warnings in JitBuilder builds
     virtual ~TR_IlGenerator() {}

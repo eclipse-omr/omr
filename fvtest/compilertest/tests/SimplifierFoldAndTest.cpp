@@ -83,10 +83,8 @@ class SimplifierFoldAndInfo : public TestCompiler::MethodInfo
       _ilInjector(&_types, test)
       {
       // TODO: make it easier to access Int32/Int64/etc.
-      TR::IlType* Int32 = _types.PrimitiveType(TR::Int32);
-      TR::IlType* Int64 = _types.PrimitiveType(TR::Int64);
-      _args[0] = Int32;
-      DefineFunction(__FILE__, LINETOSTR(__LINE__), "simplifierFoldAnd", 1, _args, Int64);
+      _args[0] = TR::Int32;
+      DefineFunction(__FILE__, LINETOSTR(__LINE__), "simplifierFoldAnd", 1, _args, TR::Int64);
       DefineILInjector(&_ilInjector);
       }
 
@@ -95,7 +93,7 @@ class SimplifierFoldAndInfo : public TestCompiler::MethodInfo
    private:
    TR::TypeDictionary _types;
    TestCompiler::SimplifierFoldAndIlInjector _ilInjector;
-   TR::IlType *_args[1];
+   TR::DataType _args[1];
    };
 
 /* Verify the optimization was correctly applied.

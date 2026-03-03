@@ -43,7 +43,7 @@ if (defined $ENV{"TR_BUILD_NAME"}) {
     $snapshot_name = $rel . "_" . $time . "_" . $ENV{LOGNAME};
 }
 
-my $code = "#include \"control/OMROptions.hpp\"\n"
+my $code = "#include \"control/Options.hpp\"\n"
 		 . "\n"
 		 . "const char TR_BUILD_NAME[] = \"$snapshot_name\";\n";
 

@@ -1006,6 +1006,8 @@ public:
 
     static void shutdown(TR_FrontEnd *);
 
+    TR::Optimizer *createOptimizer(TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen);
+
     void performOptimizations();
 
     bool isOptServer() const { return _isOptServer; }

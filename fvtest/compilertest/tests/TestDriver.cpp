@@ -26,6 +26,7 @@
 #include "TestDriver.hpp"
 #include "compile/ResolvedMethod.hpp"
 #include "ilgen/IlGeneratorMethodDetails.hpp"
+#include "ilgen/IlType.hpp"
 #include "ilgen/MethodBuilder.hpp"
 
 namespace TestCompiler
@@ -40,11 +41,29 @@ TestDriver::RunTest()
 int32_t
 TestDriver::compileMethodBuilder(TR::MethodBuilder *m, uint8_t ** entry)
    {
-   TR::ResolvedMethod resolvedMethod(m);
+   const char **paramNames = new const char *[m->getNumParameters()];
+   TR::DataType *paramTypes = new TR::DataType[m->getNumParameters()];
+   for (int32_t p=0;p < m->getNumParameters();p++)
+      {
+      paramNames[p] = m->getSymbolName(p);
+      paramTypes[p] = m->getParameterTypes()[p]->getPrimitiveType();
+      }
+   
+   TR::ResolvedMethod resolvedMethod((char *)m->getDefiningFile(),
+                                     (char *)m->getDefiningLine(),
+                                     (char *)m->GetMethodName(),
+                                     m->getNumParameters(),
+                                     paramNames,
+                                     paramTypes,
+                                     m->getReturnType()->getPrimitiveType(),
+                                     0,
+                                     static_cast<TR::IlInjector *>(m));
    TR::IlGeneratorMethodDetails details(&resolvedMethod);
 
    int32_t rc=0;
    *entry = (uint8_t *) compileMethod(details, warm, rc);
+
+   delete[] paramNames;
    return rc;
    }
 

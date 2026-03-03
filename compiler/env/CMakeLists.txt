@@ -21,7 +21,6 @@
 
 compiler_library(env
 	${CMAKE_CURRENT_LIST_DIR}/ExceptionTable.cpp
-	${CMAKE_CURRENT_LIST_DIR}/FrontEnd.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRCPU.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRObjectModel.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRArithEnv.cpp
@@ -37,6 +36,7 @@ compiler_library(env
 	${CMAKE_CURRENT_LIST_DIR}/Region.cpp
 	${CMAKE_CURRENT_LIST_DIR}/StackMemoryRegion.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRPersistentInfo.cpp
+	${CMAKE_CURRENT_LIST_DIR}/TRFrontEnd.cpp
 	${CMAKE_CURRENT_LIST_DIR}/TRMemory.cpp
 	${CMAKE_CURRENT_LIST_DIR}/TRPersistentMemory.cpp
 	${CMAKE_CURRENT_LIST_DIR}/VerboseLog.cpp

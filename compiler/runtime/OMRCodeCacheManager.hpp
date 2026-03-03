@@ -127,6 +127,10 @@ protected:
 public:
     CodeCacheManager(TR::RawAllocator rawAllocator);
 
+    void *operator new(size_t s, TR::CodeCacheManager *m) { return m; }
+
+    static TR::CodeCacheManager *instance() { return _codeCacheManager; }
+
     class CacheListCriticalSection : public CriticalSection {
     public:
         CacheListCriticalSection(TR::CodeCacheManager *mgr);
@@ -302,6 +306,9 @@ public:
     uint8_t *allocateCodeMemoryWithRetries(size_t warmCodeSize, size_t coldCodeSize, TR::CodeCache **codeCache_pp,
         int32_t allocationRetries, uint8_t **coldCode, bool needsToBeContiguous, bool isMethodHeaderNeeded = true);
 
+    TR::CodeCacheMemorySegment *allocateCodeCacheSegment(size_t segmentSize, size_t &codeCacheSizeToAllocate,
+        void *preferredStartAddress);
+
     void setHasFailedCodeCacheAllocation() {}
 
     bool initialized() const { return _initialized; }
@@ -325,7 +332,7 @@ public:
      * @param memSegment is a pointer to the TR::CodeCacheMemorySegment instance
      *        that handles the segment memory to be freed.
      */
-    void freeCodeCacheSegment(TR::CodeCacheMemorySegment *memSegment) {}
+    void freeCodeCacheSegment(TR::CodeCacheMemorySegment *memSegment);
 
     void increaseCurrTotalUsedInBytes(size_t size);
     void decreaseCurrTotalUsedInBytes(size_t size);
@@ -391,6 +398,9 @@ protected:
     const char *_objectFileName; /**< filename of the object file to generate, obtained from cmd line options */
 
 #endif // HOST_OS == OMR_LINUX
+
+private:
+    static TR::CodeCacheManager *_codeCacheManager;
 };
 
 } // namespace OMR

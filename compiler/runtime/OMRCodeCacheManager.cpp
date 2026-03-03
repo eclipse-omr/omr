@@ -45,6 +45,12 @@
 #include "runtime/CodeCacheConfig.hpp"
 #include "runtime/Runtime.hpp"
 
+#if defined(OMR_OS_WINDOWS)
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#endif /* OMR_OS_WINDOWS */
+
 #if (HOST_OS == OMR_LINUX)
 #include <elf.h>
 #include <unistd.h>
@@ -60,7 +66,11 @@ OMR::CodeCacheManager::CodeCacheManager(TR::RawAllocator rawAllocator)
     , _codeCacheFull(false)
     , _currTotalUsedInBytes(0)
     , _maxUsedInBytes(0)
-{}
+{
+    _codeCacheManager = self();
+}
+
+TR::CodeCacheManager *OMR::CodeCacheManager::_codeCacheManager = NULL;
 
 TR::CodeCacheManager *OMR::CodeCacheManager::self() { return static_cast<TR::CodeCacheManager *>(this); }
 
@@ -774,6 +784,60 @@ TR::CodeCacheMemorySegment *OMR::CodeCacheManager::allocateCodeCacheRepository(s
     }
 
     return _codeCacheRepositorySegment;
+}
+
+TR::CodeCacheMemorySegment *OMR::CodeCacheManager::allocateCodeCacheSegment(size_t segmentSize,
+    size_t &codeCacheSizeToAllocate, void *preferredStartAddress)
+{
+    // ignore preferredStartAddress for now, since it's NULL anyway
+    //   goal would be to allocate code cache segments near the JIT library address
+    codeCacheSizeToAllocate = segmentSize;
+    TR::CodeCacheConfig &config = self()->codeCacheConfig();
+    if (segmentSize < config.codeCachePadKB() << 10)
+        codeCacheSizeToAllocate = config.codeCachePadKB() << 10;
+
+#if defined(OMR_OS_WINDOWS)
+    auto memorySlab
+        = reinterpret_cast<uint8_t *>(VirtualAlloc(NULL, codeCacheSizeToAllocate, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+#elif defined(J9ZOS390)
+    // TODO: This is an absolute hack to get z/OS JITBuilder building and even remotely close to working. We really
+    // ought to be using the port library to allocate such memory. This was the quickest "workaround" I could think
+    // of to just get us off the ground.
+    auto memorySlab = reinterpret_cast<uint8_t *>(__malloc31(codeCacheSizeToAllocate));
+#else
+    auto memorySlab
+        = reinterpret_cast<uint8_t *>(mmap(NULL, codeCacheSizeToAllocate, PROT_READ | PROT_WRITE | PROT_EXEC,
+#if defined(OMR_ARCH_AARCH64) && defined(OSX)
+            MAP_ANONYMOUS | MAP_PRIVATE | MAP_JIT,
+#else
+            MAP_ANONYMOUS | MAP_PRIVATE,
+#endif /* OMR_ARCH_AARCH64 && OSX */
+            -1, 0));
+#endif /* OMR_OS_WINDOWS */
+#if defined(OMR_ARCH_AARCH64) && defined(OSX)
+    TR::CodeCacheMemorySegment *memSegment = (TR::CodeCacheMemorySegment *)malloc(sizeof(TR::CodeCacheMemorySegment));
+    new (memSegment)
+        TR::CodeCacheMemorySegment(memorySlab, reinterpret_cast<uint8_t *>(memorySlab) + codeCacheSizeToAllocate);
+#else /* OMR_ARCH_AARCH64 && OSX */
+    TR::CodeCacheMemorySegment *memSegment = (TR::CodeCacheMemorySegment *)((size_t)memorySlab + codeCacheSizeToAllocate
+        - sizeof(TR::CodeCacheMemorySegment));
+    new (memSegment) TR::CodeCacheMemorySegment(memorySlab, reinterpret_cast<uint8_t *>(memSegment));
+#endif
+    return memSegment;
+}
+
+void OMR::CodeCacheManager::freeCodeCacheSegment(TR::CodeCacheMemorySegment *memSegment)
+{
+#if defined(OMR_OS_WINDOWS)
+    VirtualFree(memSegment->_base, 0, MEM_RELEASE); // second arg must be zero when calling with MEM_RELEASE
+#elif defined(J9ZOS390)
+    free(memSegment->_base);
+#elif defined(OMR_ARCH_AARCH64) && defined(OSX)
+    munmap(memSegment->_base, memSegment->_top - memSegment->_base);
+    free(memSegment);
+#else
+    munmap(memSegment->_base, memSegment->_top - memSegment->_base + sizeof(TR::CodeCacheMemorySegment));
+#endif
 }
 
 void OMR::CodeCacheManager::repositoryCodeCacheCreated()

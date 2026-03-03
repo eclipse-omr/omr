@@ -56,17 +56,21 @@ int32_t Tril::SimpleCompiler::compileWithVerifier(TR::IlVerifier* verifier) {
     // get a list of the method's argument types and transform it
     // into a list of `TR::IlType`
     auto argTypes = methodInfo.getArgTypes();
-    auto argIlTypes = std::vector<TR::IlType*>(argTypes.size());
+    auto argIlTypes = std::vector<TR::DataType>(argTypes.size());
+    auto argNames = std::vector<const char *>(argTypes.size());
     auto it_argIlTypes = argIlTypes.begin();
+    auto it_argNames = argNames.begin();
     for (auto it = argTypes.begin(); it != argTypes.end(); it++) {
-          *it_argIlTypes++ = types.PrimitiveType(*it);
+          *it_argIlTypes++ = types.PrimitiveType(*it)->getPrimitiveType();
+          *it_argNames++ = "(unknown parameter name)";
     }
     // construct a `TR::ResolvedMethod` instance from the IL generator and use
     // to compile the method
     TR::ResolvedMethod resolvedMethod("file", "line", "name",
                                       static_cast<int32_t>(argIlTypes.size()),
+                                      argNames.size() != 0 ? &argNames[0] : NULL,
                                       argIlTypes.size() != 0 ? &argIlTypes[0] : NULL,
-                                      types.PrimitiveType(methodInfo.getReturnType()),
+                                      types.PrimitiveType(methodInfo.getReturnType())->getPrimitiveType(),
                                       0,
                                       &ilgenerator);
     TR::IlGeneratorMethodDetails methodDetails(&resolvedMethod);

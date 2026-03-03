@@ -20,7 +20,7 @@
  *******************************************************************************/
 
 #include "default_compiler.hpp"
-#include "Jit.hpp"
+#include "JitBuilder.hpp"
 #include <cstdio>
 #include <string>
 

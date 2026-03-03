@@ -1183,9 +1183,21 @@ TR_YesNoMaybe OMR::Compilation::isCpuExpensiveCompilation(int64_t threshold)
     return t < 0 ? TR_maybe : (t > threshold ? TR_yes : TR_no);
 }
 
+TR::Optimizer *OMR::Compilation::createOptimizer(TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen)
+{
+    TR::Optimizer *optimizer = new (self()->trHeapMemory()) TR::Optimizer(self(), methodSymbol, isIlGen);
+
+    if (self()->getOptions()->getCustomStrategy()) {
+        optimizer->useCustomStrategy(self()->getOptions()->getCustomStrategySize(),
+            self()->getOptions()->getCustomStrategy());
+    }
+
+    return optimizer;
+}
+
 void OMR::Compilation::performOptimizations()
 {
-    _optimizer = TR::Optimizer::createOptimizer(self(), self()->getJittedMethodSymbol(), false);
+    _optimizer = createOptimizer(self()->getJittedMethodSymbol(), false);
 
     if (_optimizer) {
         _optimizer->optimize();

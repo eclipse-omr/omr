@@ -54,14 +54,18 @@ TR::Node *CallConverter::impl(const ASTNode *tree, IlGenState *state)
          * (method ...)
          */
         const auto argList = parseArgTypes(tree);
-        auto argIlTypes = std::vector<TR::IlType *>(argList.size());
+        auto argIlTypes = std::vector<TR::DataType>(argList.size());
+        auto argNames = new (compilation->trHeapMemory()) const char *[argList.size()];
         auto output = argIlTypes.begin();
-        for (auto iter = argList.begin(); iter != argList.end(); iter++, output++) {
-            *output = state->getTypes()->PrimitiveType(*iter);
+        int32_t a = 0;
+        for (auto iter = argList.begin(); iter != argList.end(); iter++, output++, a++) {
+            *output = state->getTypes()->PrimitiveType(*iter)->getPrimitiveType();
+            argNames[a] = "(unknown parameter name)";
         }
         auto returnIlType = state->getTypes()->PrimitiveType(opcode.getType());
-        TR::ResolvedMethod *method = new (compilation->trHeapMemory()) TR::ResolvedMethod("file", "line", "name",
-            static_cast<int32_t>(argIlTypes.size()), &argIlTypes[0], returnIlType, targetAddress, 0);
+        TR::ResolvedMethod *method = new (compilation->trHeapMemory())
+            TR::ResolvedMethod("file", "line", "name", static_cast<int32_t>(argIlTypes.size()), argNames,
+                &argIlTypes[0], returnIlType->getPrimitiveType(), targetAddress, 0);
 
         TR::SymbolReference *methodSymRef
             = state->symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, method);

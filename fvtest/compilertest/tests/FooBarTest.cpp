@@ -48,11 +48,12 @@ FooBarTest::compileTestMethods()
    //_bar = &FooBarTest::bar;
    BarIlInjector barIlInjector(&types, this);
    int32_t numberOfArguments = 1;
-   TR::IlType *Int32 = types.PrimitiveType(TR::Int32);
-   TR::IlType **argTypes = new TR::IlType*[numberOfArguments];
-   argTypes[0] = Int32;
+   TR::DataType *argTypes = new TR::DataType[numberOfArguments];
+   const char **argNames = new const char *[numberOfArguments];
+   argTypes[0] = TR::Int32;
+   argNames[0] = "p0";
    bool argIsArray[1] = { false };
-   TR::ResolvedMethod barCompilee(__FILE__, LINETOSTR(__LINE__), "bar", numberOfArguments, argTypes, Int32, 0, &barIlInjector);
+   TR::ResolvedMethod barCompilee(__FILE__, LINETOSTR(__LINE__), "bar", numberOfArguments, argNames, argTypes, TR::Int32, 0, &barIlInjector);
    _barCompilee = &barCompilee;
    TR::IlGeneratorMethodDetails barDetails(&barCompilee);
 
@@ -60,7 +61,7 @@ FooBarTest::compileTestMethods()
    barCompilee.setEntryPoint((void *)_bar);
 
    FooIlInjector fooIlInjector(&types, this);
-   TR::ResolvedMethod fooCompilee(__FILE__, LINETOSTR(__LINE__), "foo", numberOfArguments, argTypes, Int32, 0, &fooIlInjector);
+   TR::ResolvedMethod fooCompilee(__FILE__, LINETOSTR(__LINE__), "foo", numberOfArguments, argNames, argTypes, TR::Int32, 0, &fooIlInjector);
    TR::IlGeneratorMethodDetails fooDetails(&fooCompilee);
    _foo = (FooMethodType *)(reinterpret_cast<void *>(compileMethod(fooDetails, warm, rc)));
 

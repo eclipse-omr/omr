@@ -40,7 +40,7 @@ class MethodInfo
    MethodInfo()
    :
       _file(NULL), _line(NULL), _name(NULL),
-      _numArgs(0), _argTypes(NULL), _returnType(NULL)
+      _numArgs(0), _argNames(NULL), _argTypes(NULL), _returnType(TR::NoType)
       {
       }
 
@@ -51,13 +51,16 @@ class MethodInfo
                        char *line,
                        char *name,
                        int32_t numArgs,
-                       TR::IlType **argTypes,
-                       TR::IlType *returnType)
+                       TR::DataType *argTypes,
+                       TR::DataType returnType)
       {
       _file = file;
       _line = line;
       _name = name;
       _numArgs = numArgs;
+      _argNames = new const char *[numArgs];
+      for (auto a=0;a < numArgs;a++)
+          _argNames[a] = "(unknown parameter name)";
       _argTypes = argTypes;
       _returnType = returnType;
       }
@@ -87,7 +90,7 @@ class MethodInfo
          "Cannot create ResolvedMethod without signature");
       TR_ASSERT(_ilInjector != NULL,
                 "Cannot create ResolvedMethod without IlInjector");
-      return TR::ResolvedMethod(_file, _line, _name, _numArgs, _argTypes, _returnType, 0, _ilInjector);
+      return TR::ResolvedMethod(_file, _line, _name, _numArgs, _argNames, _argTypes, _returnType, 0, _ilInjector);
       }
 
    private:
@@ -95,8 +98,9 @@ class MethodInfo
    char *_line;
    char *_name;
    int32_t _numArgs;
-   TR::IlType **_argTypes;
-   TR::IlType *_returnType;
+   const char **_argNames;
+   TR::DataType *_argTypes;
+   TR::DataType _returnType;
    TR::IlInjector *_ilInjector;
    };
 

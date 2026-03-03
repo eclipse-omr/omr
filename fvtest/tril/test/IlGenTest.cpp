@@ -47,14 +47,14 @@ TEST_F(IlGenTest, Return3) {
     auto trees = parseString("(block (ireturn (iconst 3)))");
 
     TR::TypeDictionary types;
-    auto Int32 = types.PrimitiveType(TR::Int32);
-    TR::IlType* argTypes[] = { Int32 };
+    TR::DataType argTypes[] = { TR::Int32 };
+    const char *argNames[] = { "p0" };
 
     Tril::GenericNodeConverter genericNodeConverter;
     Tril::CallConverter callConverter(&genericNodeConverter);
 
     Tril::TRLangBuilder injector(trees, &types, &callConverter);
-    TR::ResolvedMethod compilee(__FILE__, LINETOSTR(__LINE__), "Return3InIL", sizeof(argTypes)/sizeof(TR::IlType*), argTypes, Int32, 0, &injector);
+    TR::ResolvedMethod compilee(__FILE__, LINETOSTR(__LINE__), "Return3InIL", sizeof(argTypes)/sizeof(TR::DataType), argNames, argTypes, TR::Int32, 0, &injector);
     TR::IlGeneratorMethodDetails methodDetails(&compilee);
     int32_t rc = 0;
     auto entry_point = compileMethodFromDetails(NULL, methodDetails, warm, rc);
