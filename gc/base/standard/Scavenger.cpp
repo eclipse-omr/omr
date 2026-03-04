@@ -4353,6 +4353,7 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 	/* merge stats from this increment/phase to aggregate cycle stats */
 	mergeIncrementGCStats(env, lastIncrement);
 	reportScavengeEnd(env, lastIncrement);
+	reportGCIncrementEnd(env);
 
 	if (lastIncrement) {
 		/* defer to collector language interface */
@@ -4429,8 +4430,6 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 
 	} // if lastIncrement
 
-
-	reportGCIncrementEnd(env);
 	reportGCEnd(env);
 	if (lastIncrement) {
 		reportGCCycleEnd(env);
