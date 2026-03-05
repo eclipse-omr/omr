@@ -29,6 +29,7 @@ compiler_library(optimizer
 	${CMAKE_CURRENT_LIST_DIR}/OMRCFGSimplifier.cpp
 	${CMAKE_CURRENT_LIST_DIR}/CompactLocals.cpp
 	${CMAKE_CURRENT_LIST_DIR}/CopyPropagation.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ConstRefPrivatization.cpp
 	${CMAKE_CURRENT_LIST_DIR}/DataFlowAnalysis.cpp
 	${CMAKE_CURRENT_LIST_DIR}/DeadStoreElimination.cpp
 	${CMAKE_CURRENT_LIST_DIR}/DeadTreesElimination.cpp

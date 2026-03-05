@@ -119,3 +119,4 @@
    OPTIMIZATION(asyncCheckInsertion)
    OPTIMIZATION(methodHandleTransformer)
    OPTIMIZATION(catchBlockProfiler)
+   OPTIMIZATION(constRefPrivatization)

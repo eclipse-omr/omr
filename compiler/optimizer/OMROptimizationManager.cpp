@@ -115,6 +115,9 @@ OMR::OptimizationManager::OptimizationManager(TR::Optimizer *o, OptimizationFact
             break;
         case OMR::deadTreesElimination:
             break;
+        case OMR::constRefPrivatization:
+            _flags.set(requiresStructure);
+            break;
         case OMR::tacticalGlobalRegisterAllocator:
             _flags.set(requiresStructure);
             if (self()->comp()->getMethodHotness() >= hot && o->comp()->target().is64Bit())

@@ -79,6 +79,7 @@
 #include "optimizer/CatchBlockRemover.hpp"
 #include "optimizer/CFGSimplifier.hpp"
 #include "optimizer/CompactLocals.hpp"
+#include "optimizer/ConstRefPrivatization.hpp"
 #include "optimizer/CopyPropagation.hpp"
 #include "optimizer/ExpressionsSimplification.hpp"
 #include "optimizer/GeneralLoopUnroller.hpp"
@@ -475,6 +476,7 @@ const OptimizationStrategy lateLocalOpts[] = {
 static const OptimizationStrategy tacticalGlobalRegisterAllocatorOpts[] = {
     { OMR::inductionVariableAnalysis, OMR::IfLoops },
     { OMR::loopCanonicalization, OMR::IfLoops },
+    { OMR::constRefPrivatization, OMR::IfEnabled },
     { OMR::liveRangeSplitter, OMR::IfLoops },
     { OMR::redundantGotoElimination, OMR::IfNotJitProfiling }, // need to be run before global register allocator
     { OMR::treeSimplification, OMR::MarkLastRun }, // Cleanup the trees after redundantGotoElimination
@@ -876,6 +878,8 @@ OMR::Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *metho
         TR::OptimizationManager(self(), TR::RecognizedCallTransformer::create, OMR::recognizedCallTransformer);
     _opts[OMR::switchAnalyzer]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR::SwitchAnalyzer::create, OMR::switchAnalyzer);
+    _opts[OMR::constRefPrivatization] = new (comp->allocator())
+        TR::OptimizationManager(self(), TR::ConstRefPrivatization::create, OMR::constRefPrivatization);
     // NOTE: Please add new OMR optimizations here!
 
     // initialize OMR optimization groups
