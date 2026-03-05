@@ -13235,8 +13235,8 @@
         /* .name        = */ "vdivsd",
         /* .description =    "Vector Divide Signed Doubleword", */
         /* .prefix      = */ 0x00000000,
-        /* .opcode      = */ 0x00000000,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .opcode      = */ 0x100001CB,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },
@@ -13257,8 +13257,8 @@
         /* .name        = */ "vdivsw",
         /* .description =    "Vector Divide Signed Word", */
         /* .prefix      = */ 0x00000000,
-        /* .opcode      = */ 0x00000000,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .opcode      = */ 0x1000018B,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },

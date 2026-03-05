@@ -1637,32 +1637,41 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
     // implemented vector opcodes
     switch (opcode.getVectorOperation()) {
         case TR::vadd:
+        case TR::vmadd:
         case TR::vsub:
+        case TR::vmsub:
         case TR::vmul:
+        case TR::vmmul:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
                 || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)) || et == TR::Float || et == TR::Double)
                 return true;
             else
                 return false;
         case TR::vdiv:
-            if (et == TR::Int32 || et == TR::Float || et == TR::Double)
+        case TR::vmdiv:
+            if (et == TR::Int32 || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P10)) || et == TR::Float
+                || et == TR::Double)
                 return true;
             else
                 return false;
         case TR::vneg:
+        case TR::vmneg:
             return true;
         case TR::vabs:
+        case TR::vmabs:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
                 || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)) || et == TR::Float || et == TR::Double)
                 return true;
             else
                 return false;
         case TR::vsqrt:
+        case TR::vmsqrt:
             if (et == TR::Float || et == TR::Double)
                 return true;
             else
                 return false;
         case TR::vreductionAdd:
+        case TR::vmreductionAdd:
             return true;
         case TR::mToLongBits:
             if (et == TR::Int8 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P10))
@@ -1712,6 +1721,8 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
         case TR::vmor:
         case TR::vand:
         case TR::vmand:
+        case TR::vnot:
+        case TR::vmnot:
         case TR::mxor:
         case TR::mor:
         case TR::mand:
@@ -1723,7 +1734,9 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
         case TR::msplats:
             return true;
         case TR::vmin:
+        case TR::vmmin:
         case TR::vmax:
+        case TR::vmmax:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
                 || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)) || et == TR::Float
                 || (et == TR::Double && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)))
@@ -1731,6 +1744,7 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
             else
                 return false;
         case TR::vfma:
+        case TR::vmfma:
             if (et == TR::Float || et == TR::Double)
                 return true;
             else
@@ -1745,18 +1759,18 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
                 return true;
             else
                 return false;
-        case TR::vmadd:
-            if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
-                || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)) || et == TR::Float || et == TR::Double)
-                return true;
-            else
-                return false;
         case TR::vcmpeq:
+        case TR::vmcmpeq:
         case TR::vcmpne:
+        case TR::vmcmpne:
         case TR::vcmplt:
+        case TR::vmcmplt:
         case TR::vcmpgt:
+        case TR::vmcmpgt:
         case TR::vcmple:
+        case TR::vmcmple:
         case TR::vcmpge:
+        case TR::vmcmpge:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
                 || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)) || et == TR::Float || et == TR::Double)
                 return true;
