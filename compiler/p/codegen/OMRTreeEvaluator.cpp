@@ -4908,42 +4908,102 @@ TR::Register *OMR::Power::TreeEvaluator::vexpandEvaluator(TR::Node *node, TR::Co
 
 TR::Register *OMR::Power::TreeEvaluator::vshlEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vslb);
+        case TR::Int16:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vslh);
+        case TR::Int32:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vslw);
+        case TR::Int64:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsld);
+        default:
+            TR_ASSERT_FATAL(false, "vshl is only supported for Integral-type vectors %s\n");
+            return NULL;
+    }
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmshlEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vshlEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vshrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrab);
+        case TR::Int16:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrah);
+        case TR::Int32:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsraw);
+        case TR::Int64:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrad);
+        default:
+            TR_ASSERT_FATAL(false, "vshr is only supported for Integral-type vectors %s\n");
+            return NULL;
+    }
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmshrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vshrEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vushrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrb);
+        case TR::Int16:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrh);
+        case TR::Int32:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrw);
+        case TR::Int64:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vsrd);
+        default:
+            TR_ASSERT_FATAL(false, "vushr is only supported for Integral-type vectors %s\n");
+            return NULL;
+    }
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmushrEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vushrEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vrolEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vrlb);
+        case TR::Int16:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vrlh);
+        case TR::Int32:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vrlw);
+        case TR::Int64:
+            return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vrld);
+        default:
+            TR_ASSERT_FATAL(false, "vrol is only supported for Integral-type vectors %s\n");
+            return NULL;
+    }
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmrolEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vrolEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::CodeGenerator *cg)

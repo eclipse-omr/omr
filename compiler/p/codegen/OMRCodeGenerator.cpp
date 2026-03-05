@@ -1719,6 +1719,19 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
                 return true;
             else
                 return false;
+        case TR::vrol:
+        case TR::vmrol:
+        case TR::vshl:
+        case TR::vmshl:
+        case TR::vshr:
+        case TR::vmshr:
+        case TR::vushr:
+        case TR::vmushr:
+            if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
+                || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)))
+                return true;
+            else
+                return false;
         case TR::vsplats:
         case TR::msplats:
             return true;
