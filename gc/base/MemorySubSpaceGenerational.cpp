@@ -36,7 +36,7 @@
 #include "EnvironmentBase.hpp"
 #include "Heap.hpp"
 #include "MemoryPool.hpp"
-#include "MemorySpace.hpp" 
+#include "MemorySpace.hpp"
 #include "MemorySubSpace.hpp"
 
 /****************************************
@@ -81,11 +81,24 @@ MM_MemorySubSpaceGenerational::allocationRequestFailed(MM_EnvironmentBase *env, 
 		/* Handle a failure coming from new space - attempt the old area before doing any collection work */
 		Trc_MM_MSSGenerational_allocationRequestFailed1(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), _memorySubSpaceNew, _memorySubSpaceOld);
 		addr = _memorySubSpaceOld->allocationRequestFailed(env, allocateDescription, allocationType, objectAllocationInterface, baseSubSpace, this);
-		if(NULL != addr) {
+		if (NULL != addr) {
 			Trc_MM_MSSGenerational_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 1, addr);
 			return addr;
 		}
 	}
+
+  if (allocateDescription->getBytesRequested() > _memorySubSpaceNew->getCurrentSize())
+  {
+    /* No point in performing scavenge if we know the object probably doesn't fit in new space */
+		Trc_MM_MSSGenerational_allocationRequestFailed1(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), _memorySubSpaceNew, _memorySubSpaceOld);
+		addr = _memorySubSpaceOld->allocationRequestFailed(env, allocateDescription, allocationType, objectAllocationInterface, baseSubSpace, this);
+		if (NULL != addr) {
+			Trc_MM_MSSGenerational_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 1, addr);
+			return addr;
+		}
+    /* If the object doesn't fit regardless again a scavenge doesn't make sense */
+    return NULL;
+  }
 
 	allocateDescription->saveObjects(env);
 	if (!env->acquireExclusiveVMAccessForGC(_collector, true)) {
@@ -149,7 +162,7 @@ MM_MemorySubSpaceGenerational::allocationRequestFailed(MM_EnvironmentBase *env, 
 	allocateDescription->saveObjects(env);
 	addr = _collector->garbageCollect(env, this, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_AGGRESSIVE, objectAllocationInterface, baseSubSpace, NULL);
 	allocateDescription->restoreObjects(env);
-	
+
 	reportAllocationFailureEnd(env);
 	Trc_MM_MSSGenerational_allocationRequestFailed_exit(env->getLanguageVMThread(), allocateDescription->getBytesRequested(), 6, addr);
 	return addr;
@@ -166,7 +179,7 @@ MM_MemorySubSpaceGenerational::allocateArrayletLeaf(MM_EnvironmentBase *env, MM_
 			/* The allocate request is coming from new space - forward on to the old area */
 			return _memorySubSpaceOld->allocateArrayletLeaf(env, allocDescription, baseSubSpace, this, shouldCollectOnFailure);
 		}
-	
+
 		/* The allocate comes from the old area - failure */
 		return NULL;
 	}
@@ -184,7 +197,7 @@ MM_MemorySubSpaceGenerational::allocateTLH(MM_EnvironmentBase *env, MM_AllocateD
 			/* The allocate request is coming from new space - forward on to the old area */
 			return _memorySubSpaceOld->allocateTLH(env, allocDescription, objectAllocationInterface, baseSubSpace, this, false);
 		}
-	
+
 		/* The allocate comes from the old area - failure */
 		return NULL;
 	}
@@ -222,7 +235,7 @@ MM_MemorySubSpaceGenerational *
 MM_MemorySubSpaceGenerational::newInstance(MM_EnvironmentBase *env, MM_MemorySubSpace *memorySubSpaceNew, MM_MemorySubSpace *memorySubSpaceOld, bool usesGlobalCollector, uintptr_t minimumSize, uintptr_t minimumSizeNew, uintptr_t initialSizeNew, uintptr_t maximumSizeNew, uintptr_t minimumSizeOld, uintptr_t initialSizeOld, uintptr_t maximumSizeOld, uintptr_t maximumSize)
 {
 	MM_MemorySubSpaceGenerational *memorySubSpace;
-	
+
 	memorySubSpace = (MM_MemorySubSpaceGenerational *)env->getForge()->allocate(sizeof(MM_MemorySubSpaceGenerational), OMR::GC::AllocationCategory::FIXED, OMR_GET_CALLSITE());
 	if (memorySubSpace) {
 		new(memorySubSpace) MM_MemorySubSpaceGenerational(env, memorySubSpaceNew, memorySubSpaceOld, usesGlobalCollector, minimumSize, minimumSizeNew, initialSizeNew, maximumSizeNew, minimumSizeOld, initialSizeOld, maximumSizeOld, maximumSize);
@@ -244,7 +257,7 @@ MM_MemorySubSpaceGenerational::initialize(MM_EnvironmentBase *env)
 	/* attach the children */
 	registerMemorySubSpace(_memorySubSpaceOld);
 	registerMemorySubSpace(_memorySubSpaceNew);
-	
+
 	return true;
 }
 
@@ -283,7 +296,7 @@ MM_MemorySubSpaceGenerational::checkResize(MM_EnvironmentBase *env, MM_AllocateD
  * Get the size of heap available for contraction.
  * @return Size of heap available for contraction.
  */
-uintptr_t 
+uintptr_t
 MM_MemorySubSpaceGenerational::getAvailableContractionSize(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription)
 {
 	return getMemorySubSpaceOld()->getAvailableContractionSize(env, allocDescription);
@@ -313,12 +326,12 @@ MM_MemorySubSpaceGenerational::counterBalanceContract(
 	}
 	expandSize = _minimumSize - (_currentSize - contractSize);
 	assume0(expandSize == MM_Math::roundToFloor(MM_GCExtensions::getExtensions(env)->heapAlignment, expandSize)); /* contract delta should be the same alignment as expand delta */
-	
+
 	/* Find the space that needs to expand, and do it */
 	if(previousSubSpace == _memorySubSpaceNew) {
 		return _memorySubSpaceOld->counterBalanceContractWithExpand(env, this, contractSubSpace, contractSize, contractAlignment, expandSize);
 	}
-	
+
 	return _memorySubSpaceNew->counterBalanceContractWithExpand(env, this, contractSubSpace, contractSize, contractAlignment, expandSize);
 }
 
