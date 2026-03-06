@@ -123,15 +123,51 @@ public:
 	}
 
 	/**
-	 * Store unsigned 32 bit value at memory location as an atomic operation.
-	 * Compare the unsigned 32 bit value at memory location pointed to by <b>address</b>.  If it is
+	 * Store an unsigned 8-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 8-bit value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
-	 * 
-	 * @param address The memory location to be updated
-	 * @param oldValue The expected value at memory address
-	 * @param newValue The new value to be stored at memory address
-	 * 
+	 *
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 *
+	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
+	 */
+	MMINLINE_DEBUG static uint8_t
+	lockCompareExchangeU8(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+		return VM_AtomicSupport::lockCompareExchangeU8(address, oldValue, newValue);
+	}
+
+	/**
+	 * Store an unsigned 16-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 16-bit value at memory location pointed to by <b>address</b>. If it is
+	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
+	 * else retain the <b>oldValue</b>.
+	 *
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 *
+	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
+	 */
+	MMINLINE_DEBUG static uint16_t
+	lockCompareExchangeU16(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+		return VM_AtomicSupport::lockCompareExchangeU16(address, oldValue, newValue);
+	}
+
+	/**
+	 * Store an unsigned 32-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 32-bit value at memory location pointed to by <b>address</b>. If it is
+	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
+	 * else retain the <b>oldValue</b>.
+	 *
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 *
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
 	MMINLINE_DEBUG static uint32_t
@@ -142,7 +178,7 @@ public:
 
 	/**
 	 * Store value at memory location as an atomic operation.
-	 * Compare the value at memory location pointed to by <b>address</b>.  If it is
+	 * Compare the value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
 	 * 
@@ -159,15 +195,15 @@ public:
 	}
 
 	/**
-	 * Store unsigned 64 bit value at memory location as an atomic operation.
-	 * Compare the unsigned 64 bit value at memory location pointed to by <b>address</b>.  If it is
+	 * Store an unsigned 64-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 64-bit value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
-	 * 
-	 * @param address The memory location to be updated
-	 * @param oldValue The expected value at memory address
-	 * @param newValue The new value to be stored at memory address
-	 * 
+	 *
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 *
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
 	MMINLINE_DEBUG static uint64_t
@@ -193,7 +229,7 @@ public:
 	}
 
 	/**
-	 * Add a 32 bit number to the value at a specific memory location as an atomic operation.
+	 * Add a 32-bit number to the value at a specific memory location as an atomic operation.
 	 * Adds the value <b>addend</b> to the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 *
@@ -209,7 +245,7 @@ public:
 	}
 
 	/**
-	 * Add a 64 bit number to the value at a specific memory location as an atomic operation.
+	 * Add a 64-bit number to the value at a specific memory location as an atomic operation.
 	 * Adds the value <b>addend</b> to the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 *
@@ -257,7 +293,7 @@ public:
 	}
 	
 	/**
-	 * Subtracts a 32 bit number from the value at a specific memory location as an atomic operation.
+	 * Subtracts a 32-bit number from the value at a specific memory location as an atomic operation.
 	 * Subtracts the value <b>value</b> from the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 * 
@@ -273,7 +309,7 @@ public:
 	}
 
 	/**
-	 * Subtracts a 64 bit number from the value at a specific memory location as an atomic operation.
+	 * Subtracts a 64-bit number from the value at a specific memory location as an atomic operation.
 	 * Subtracts the value <b>value</b> from the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 *

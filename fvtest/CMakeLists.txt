@@ -34,6 +34,7 @@ add_subdirectory(util)
 
 add_subdirectory(omrGtestGlue)
 add_subdirectory(algotest)
+add_subdirectory(atomictest)
 add_subdirectory(coretest)
 add_subdirectory(porttest)
 add_subdirectory(rastest)

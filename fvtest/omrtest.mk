@@ -106,6 +106,9 @@ omr_utiltest:
 omr_vmtest:
 	./omrvmtest
 
+omr_atomictest:
+	./omratomictest
+
 .NOTPARALLEL:
 test: omr_algotest omr_utiltest
 ifeq (1,$(OMR_EXAMPLE))
@@ -130,4 +133,8 @@ ifeq (1,$(ENABLE_DDR))
 test: omr_ddrgentest
 endif
 
-.PHONY: all test omr_algotest omr_ddrgentest omr_gctest omr_jitbuilderexamples omr_jitbuildertest omr_jittest omr_porttest omr_rastest omr_subscriberforktest omr_sigtest omr_threadextendedtest omr_threadtest omr_utiltest omr_vmtest
+.PHONY: \
+	all omr_algotest omr_atomictest omr_ddrgentest omr_gctest \
+	omr_jitbuilderexamples omr_jitbuildertest omr_jittest omr_porttest \
+	omr_rastest omr_sigtest omr_subscriberforktest omr_threadextendedtest \
+	omr_threadtest omr_utiltest omr_vmtest test

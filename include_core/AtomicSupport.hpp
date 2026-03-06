@@ -146,6 +146,82 @@
  */
 class VM_AtomicSupport
 {
+private:
+#if defined(OMRZTPF) || defined(J9ZOS390) || defined(__riscv)
+	VMINLINE static uint32_t
+	lockCompareAndExchangeSmallTypeHelper(
+		uintptr_t addressValue,
+		uint32_t oldValue,
+		uint32_t newValue,
+		uintptr_t offsetMask,
+		uint32_t valueMask)
+	{
+		uint32_t result = 0;
+
+		/* Calculate offset within 32-bits, accounting for endianness. */
+#if defined(OMR_ENV_LITTLE_ENDIAN)
+		uintptr_t offset = addressValue & offsetMask;
+#else /* defined(OMR_ENV_LITTLE_ENDIAN) */
+		uintptr_t offset = offsetMask - (addressValue & offsetMask);
+#endif /* defined(OMR_ENV_LITTLE_ENDIAN) */
+
+		/* Calculate the 32-bit aligned address containing the small type destination. */
+		uintptr_t addressValue32Aligned = addressValue & ~offsetMask;
+		volatile uint32_t *address = (volatile uint32_t *)addressValue32Aligned;
+
+		uint32_t shiftAmount = offset * 8;
+		uint32_t valueMaskShifted = valueMask << shiftAmount;
+
+		for (;;) {
+			/* Get the value contained at this address to use in CAS call. */
+			uint32_t existingValue = *address;
+
+			/* Compare oldValue with corresponding bits. */
+			uint32_t oldValueShifted = oldValue << shiftAmount;
+			uint32_t existingValueMasked = existingValue & valueMaskShifted;
+			if (oldValueShifted != existingValueMasked) {
+				/* Fail: the compare value has changed. Return the value that was found. */
+				result = existingValueMasked >> shiftAmount;
+				break;
+			}
+
+			uint32_t newValueShifted = newValue << shiftAmount;
+			uint32_t newValueWithExisting = (existingValue & ~valueMaskShifted) | newValueShifted;
+			uint32_t currentValue = lockCompareExchangeU32(address, existingValue, newValueWithExisting);
+
+			if (currentValue != existingValue) {
+				/* If bit to be swapped was the one that changed, fail. Otherwise try again. */
+				currentValue &= valueMaskShifted;
+				if (currentValue != oldValueShifted) {
+					result = currentValue >> shiftAmount;
+					break;
+				}
+			} else {
+				/* CAS succeeded, return the old value. */
+				result = oldValue;
+				break;
+			}
+		}
+		return result;
+	}
+
+	VMINLINE static uint8_t
+	lockCompareAndExchangeU8Helper(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+		size_t U8_OFFSET_MASK = 0x3;
+		uint32_t U8_VALUE_MASK = 0xFF;
+		return lockCompareAndExchangeSmallTypeHelper((uintptr_t)address, oldValue, newValue, U8_OFFSET_MASK, U8_VALUE_MASK);
+	}
+
+	VMINLINE static uint16_t
+	lockCompareAndExchangeU16Helper(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+		size_t U16_OFFSET_MASK = 0x1;
+		uint32_t U16_VALUE_MASK = 0xFFFF;
+		return lockCompareAndExchangeSmallTypeHelper((uintptr_t)address, oldValue, newValue, U16_OFFSET_MASK, U16_VALUE_MASK);
+	}
+#endif /* defined(OMRZTPF) || defined(J9ZOS390)  || defined(__riscv) */
+
 public:
 
 	/**
@@ -323,15 +399,15 @@ public:
 	}
 
 	/**
-	 * Store unsigned 32 bit value at memory location as an atomic operation.
-	 * Compare the unsigned 32 bit value at memory location pointed to by <b>address</b>.  If it is
+	 * Store an unsigned 32-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 32-bit value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
 	 *
-	 * @param address The memory location to be updated
-	 * @param oldValue The expected value at memory address
-	 * @param newValue The new value to be stored at memory address
-	 * @param readBeforeCAS Controls whether a pre-read occurs before the CAS attempt (default false)
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 * @param readBeforeCAS controls whether a pre-read occurs before the CAS attempt (default false)
 	 *
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
@@ -380,15 +456,93 @@ public:
 	}
 
 	/**
-	 * Store unsigned 64 bit value at memory location as an atomic operation.
-	 * Compare the unsigned 64 bit value at memory location pointed to by <b>address</b>.  If it is
+	 * Store an unsigned 8-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 8-bit value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
 	 *
-	 * @param address The memory location to be updated
-	 * @param oldValue The expected value at memory address
-	 * @param newValue The new value to be stored at memory address
-	 * @param readBeforeCAS Controls whether a pre-read occurs before the CAS attempt (default false)
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 * @param readBeforeCAS controls whether a pre-read occurs before the CAS attempt (default false)
+	 *
+	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
+	 */
+	VMINLINE static uint8_t
+	lockCompareExchangeU8(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+#if defined(ATOMIC_SUPPORT_STUB)
+		return 0;
+#elif defined(OMRZTPF) || defined(J9ZOS390) /* defined(ATOMIC_SUPPORT_STUB) */
+		return lockCompareAndExchangeU8Helper(address, oldValue, newValue);
+#elif defined(__xlC__) && (__xlC__ >= 0x1001) /* XLC >= 16.1.0 */ /* defined(OMRZTPF) || defined(J9ZOS390) */
+		atomic_compare_exchange_strong(address, &oldValue, newValue);
+		return oldValue;
+#elif defined(__xlC__) || defined(__open_xl__) /* defined(__xlC__) && (__xlC__ >= 0x1001) */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#elif defined(__GNUC__) /* defined(__xlC__) || defined(__open_xl__) */
+#if defined(__riscv)
+		return lockCompareAndExchangeU8Helper(address, oldValue, newValue);
+#else /* defined(__riscv) */
+		/* Assume GCC >= 4.2. */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#endif /* defined(__riscv) */
+#elif defined(_MSC_VER) /* defined(__GNUC__) */
+		return (uint8_t)_InterlockedCompareExchange8((volatile char *)address, (char)newValue, (char)oldValue);
+#else /* defined(_MSC_VER) */
+#error "lockCompareExchangeU8(): unsupported platform!"
+#endif /* defined(ATOMIC_SUPPORT_STUB) */
+	}
+
+	/**
+	 * Store an unsigned 16-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 16-bit value at memory location pointed to by <b>address</b>. If it is
+	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
+	 * else retain the <b>oldValue</b>.
+	 *
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 * @param readBeforeCAS controls whether a pre-read occurs before the CAS attempt (default false)
+	 *
+	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
+	 */
+	VMINLINE static uint16_t
+	lockCompareExchangeU16(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+#if defined(ATOMIC_SUPPORT_STUB)
+		return 0;
+#elif defined(OMRZTPF) || defined(J9ZOS390) /* defined(ATOMIC_SUPPORT_STUB) */
+		return lockCompareAndExchangeU16Helper(address, oldValue, newValue);
+#elif defined(__xlC__) && (__xlC__ >= 0x1001) /* XLC >= 16.1.0 */ /* defined(OMRZTPF) || defined(J9ZOS390) */
+		atomic_compare_exchange_strong(address, &oldValue, newValue);
+		return oldValue;
+#elif defined(__xlC__) || defined(__open_xl__) /* defined(__xlC__) && (__xlC__ >= 0x1001) */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#elif defined(__GNUC__) /* defined(__xlC__) || defined(__open_xl__) */
+#if defined(__riscv)
+		return lockCompareAndExchangeU16Helper(address, oldValue, newValue);
+#else /* defined(__riscv) */
+		/* Assume GCC >= 4.2. */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#endif /* defined(__riscv) */
+#elif defined(_MSC_VER) /* defined(__GNUC__) */
+		return (uint16_t)_InterlockedCompareExchange16((volatile short *)address, (short)newValue, (short)oldValue);
+#else /* defined(_MSC_VER) */
+#error "lockCompareExchangeU16(): unsupported platform!"
+#endif /* defined(ATOMIC_SUPPORT_STUB) */
+	}
+
+	/**
+	 * Store an unsigned 64-bit value at memory location as an atomic operation.
+	 * Compare the unsigned 64-bit value at memory location pointed to by <b>address</b>. If it is
+	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
+	 * else retain the <b>oldValue</b>.
+	 *
+	 * @param address the memory location to be updated
+	 * @param oldValue the expected value at memory address
+	 * @param newValue the new value to be stored at memory address
+	 * @param readBeforeCAS controls whether a pre-read occurs before the CAS attempt (default false)
 	 *
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
@@ -456,7 +610,7 @@ public:
 
 	/**
 	 * Store value at memory location as an atomic operation.
-	 * Compare the value at memory location pointed to by <b>address</b>.  If it is
+	 * Compare the value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
 	 *
@@ -699,7 +853,7 @@ public:
 	}
 
 	/**
-	 * Add a 32 bit number to the value at a specific memory location as an atomic operation.
+	 * Add a 32-bit number to the value at a specific memory location as an atomic operation.
 	 * Adds the value <b>addend</b> to the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 *
@@ -723,7 +877,7 @@ public:
 	}
 
 	/**
-	 * Add a 64 bit number to the value at a specific memory location as an atomic operation.
+	 * Add a 64-bit number to the value at a specific memory location as an atomic operation.
 	 * Adds the value <b>addend</b> to the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 *
@@ -833,7 +987,7 @@ public:
 	}
 
 	/**
-	 * Subtracts a 32 bit number from the value at a specific memory location asn an atomic operation.
+	 * Subtracts a 32-bit number from the value at a specific memory location asn an atomic operation.
 	 * Subtracts the value <b>value</b> from the value stored at memory location pointed
 	 * to by <b>address</b>.
 	 *
