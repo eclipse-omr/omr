@@ -4470,6 +4470,7 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::l2m:
         case TR::mstoreiToArray:
         case TR::mloadiFromArray:
+        case TR::mcompress:
             return true;
         default:
             return false;

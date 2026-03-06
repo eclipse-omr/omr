@@ -1714,7 +1714,37 @@ TR::Register *OMR::Z::TreeEvaluator::vmrolEvaluator(TR::Node *node, TR::CodeGene
 
 TR::Register *OMR::Z::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    const uint8_t elementSizeMask = getVectorElementSizeMask(node);
+    const uint32_t elementSize = getVectorElementSize(node);
+
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+    TR::Register *sourceReg = cg->gprClobberEvaluate(node->getFirstChild());
+
+    // Compute the population count of each doubleword in the source vector.
+    generateVRRaInstruction(cg, TR::InstOpCode::VPOPCT, node, sourceReg, sourceReg, 0, 0, 3);
+
+    // Initialize the result register to all 1 bits.
+    generateVRRcInstruction(cg, TR::InstOpCode::VOC, node, resultReg, resultReg, resultReg, 0);
+
+    // VSLDB cannot shift by 16 bytes; therefore, we sum the popcount values for the two lanes separately.
+    // First, shift in zeros from the right and accumulate the popcount for element 0.
+    generateVRRcInstruction(cg, TR::InstOpCode::VSRLB, node, resultReg, resultReg, sourceReg, 0);
+
+    // Shift the source vector by 8 bytes to process the second lane.
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, sourceReg, sourceReg, sourceReg, 8, 0);
+
+    // Again, shift in zeros from the right and accumulate the popcount for element 1.
+    generateVRRcInstruction(cg, TR::InstOpCode::VSRLB, node, resultReg, resultReg, sourceReg, 0);
+
+    // Since zeros were shifted in during accumulation, invert the register so zero bits become ones.
+    generateVRRcInstruction(cg, TR::InstOpCode::VNN, node, resultReg, resultReg, resultReg, 0);
+
+    node->setRegister(resultReg);
+    cg->decReferenceCount(node->getFirstChild());
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmnotzEvaluator(TR::Node *node, TR::CodeGenerator *cg)
