@@ -379,6 +379,151 @@ public:
 #endif /* defined(ATOMIC_SUPPORT_STUB) */
 	}
 
+#if defined(OMRZTPF) || defined(J9ZOS390) || defined(__riscv)
+	VMINLINE static uint32_t
+	lockCompareAndExchangeSmallTypeHelper(
+		size_t addressValue,
+		uint32_t oldValue,
+		uint32_t newValue,
+		size_t offsetMask,
+		uint32_t valueMask)
+	{
+		uint32_t result = 0;
+
+		/* Calculate offset within 32-bits, accounting for endianness. */
+#if defined(OMR_ENV_LITTLE_ENDIAN)
+		size_t offset = addressValue & offsetMask;
+#else /* defined(OMR_ENV_LITTLE_ENDIAN) */
+		size_t offset = offsetMask - (addressValue & offsetMask);
+#endif /* defined(OMR_ENV_LITTLE_ENDIAN) */
+
+		/* Calculate the 32-bit aligned address containing the small type destination. */
+		addressValue &= ~offsetMask;
+		volatile uint32_t *address = (volatile uint32_t *)addressValue;
+
+		uint32_t shiftAmount = offset * 8;
+		valueMask = valueMask << shiftAmount;
+
+		for (;;) {
+			/* Get the value contained at this address to use in CAS call. */
+			uint32_t existingValue = *address;
+
+			/* Compare oldValue with corresponding bits. */
+			uint32_t oldValueShifted = oldValue << shiftAmount;
+			uint32_t existingValueMasked = existingValue & valueMask;
+			if (oldValueShifted != existingValueMasked) {
+				/* Fail: the compare value has changed. Return the value that was found. */
+				result = (existingValueMasked >> shiftAmount);
+				break;
+			}
+
+			/* Create value to pass into CAS. */
+			uint32_t newValueShifted = newValue << shiftAmount;
+			uint32_t newValueWithExisting = (existingValue & ~valueMask) | newValueShifted;
+
+			uint32_t currentValue = 0;
+			uint32_t valueAtAddressChanged = 0;
+#if defined(OMRZTPF)
+			currentValue = existingValue;
+			valueAtAddressChanged = cs((cs_t *)&currentValue, (cs_t *)address, (cs_t)newValueWithExisting);
+#elif defined(J9ZOS390) /* defined(OMRZTPF) */
+			/* 390 cs() function defined in <stdlib.h>, doesn't expand properly to __cs1() which correctly deals with aliasing. */
+			currentValue = existingValue;
+			valueAtAddressChanged = __cs1((uint32_t *)&currentValue, (uint32_t *)address, (uint32_t *)&newValueWithExisting);
+#elif defined(__riscv) /* defined(J9ZOS390) */
+			currentValue = RiscvCAS32Helper(address, existingValue, newValueWithExisting);
+			valueAtAddressChanged = (currentValue != existingValue);
+#endif /* defined(OMRZTPF) */
+
+			if (valueAtAddressChanged) {
+				/* If bit to be swapped was the one that changed, fail. Otherwise try again. */
+				currentValue &= valueMask;
+				if (currentValue != oldValueShifted) {
+					result = (currentValue >> shiftAmount);
+					break;
+				}
+			} else {
+				/* CAS succeeded, return the old value. */
+				result = oldValue;
+				break;
+			}
+		}
+		return result;
+	}
+
+	VMINLINE static uint8_t
+	lockCompareAndExchangeU8Helper(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+		size_t U8_OFFSET_MASK = 0x3;
+		uint32_t U8_VALUE_MASK = 0xFF;
+		return lockCompareAndExchangeSmallTypeHelper((size_t)address, oldValue, newValue, U8_OFFSET_MASK, U8_VALUE_MASK);
+	}
+
+	VMINLINE static uint16_t
+	lockCompareAndExchangeU16Helper(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+		size_t U16_OFFSET_MASK = 0x1;
+		uint32_t U16_VALUE_MASK = 0xFFFF;
+		return lockCompareAndExchangeSmallTypeHelper((size_t)address, oldValue, newValue, U16_OFFSET_MASK, U16_VALUE_MASK);
+	}
+#endif /* defined(OMRZTPF) || defined(J9ZOS390)  || defined(__riscv) */
+
+	VMINLINE static uint8_t
+	lockCompareExchangeU8(volatile uint8_t *address, uint8_t oldValue, uint8_t newValue)
+	{
+#if defined(ATOMIC_SUPPORT_STUB)
+		return 0;
+#elif defined(OMRZTPF) || defined(J9ZOS390)  /* defined(ATOMIC_SUPPORT_STUB) */
+		return lockCompareAndExchangeU8Helper(address, oldValue, newValue);
+#elif defined(__xlC__) || defined(__open_xl__) /* defined(OMRZTPF) || defined(J9ZOS390) */
+#if ((__xlC__ >= 0x1001) || defined(__open_xl__)) /* XLC >= 16.1.0 */
+		atomic_compare_exchange_strong(address, &oldValue, newValue);
+		return oldValue;
+#else /* ((__xlC__ >= 0x1001) || defined(__open_xl__)) */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#endif /* ((__xlC__ >= 0x1001) || defined(__open_xl__)) */
+#elif defined(__GNUC__) /* defined(__xlC__) || defined(__open_xl__) */
+#if defined(__riscv)
+		return lockCompareAndExchangeU8Helper(address, oldValue, newValue);
+#else  /* defined(__riscv) */
+		/* Assume GCC >= 4.2. */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#endif  /* defined(__riscv) */
+#elif defined(_MSC_VER) /* defined(__GNUC__) */
+		return (uint8_t)_InterlockedCompareExchange8((volatile char *)address, (char)newValue, (char)oldValue);
+#else /* defined(_MSC_VER) */
+#error "lockCompareExchangeU8(): unsupported platform!"
+#endif /* defined(ATOMIC_SUPPORT_STUB) */
+	}
+
+	VMINLINE static uint16_t
+	lockCompareExchangeU16(volatile uint16_t *address, uint16_t oldValue, uint16_t newValue)
+	{
+#if defined(ATOMIC_SUPPORT_STUB)
+		return 0;
+#elif defined(OMRZTPF) || defined(J9ZOS390)  /* defined(ATOMIC_SUPPORT_STUB) */
+		return lockCompareAndExchangeU16Helper(address, oldValue, newValue);
+#elif defined(__xlC__) || defined(__open_xl__) /* defined(OMRZTPF) || defined(J9ZOS390) */
+#if ((__xlC__ >= 0x1001) || defined(__open_xl__)) /* XLC >= 16.1.0 */
+		atomic_compare_exchange_strong(address, &oldValue, newValue);
+		return oldValue;
+#else /* ((__xlC__ >= 0x1001) || defined(__open_xl__)) */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#endif /* ((__xlC__ >= 0x1001) || defined(__open_xl__)) */
+#elif defined(__GNUC__) /* defined(__xlC__) || defined(__open_xl__) */
+#if defined(__riscv)
+		return lockCompareAndExchangeU16Helper(address, oldValue, newValue);
+#else  /* defined(__riscv) */
+		/* Assume GCC >= 4.2. */
+		return __sync_val_compare_and_swap(address, oldValue, newValue);
+#endif  /* defined(__riscv) */
+#elif defined(_MSC_VER) /* defined(__GNUC__) */
+		return (uint8_t)_InterlockedCompareExchange16((volatile short *)address, (short)newValue, (short)oldValue);
+#else /* defined(_MSC_VER) */
+#error "lockCompareExchangeU16(): unsupported platform!"
+#endif /* defined(ATOMIC_SUPPORT_STUB) */
+	}
+
 	/**
 	 * Store unsigned 64 bit value at memory location as an atomic operation.
 	 * Compare the unsigned 64 bit value at memory location pointed to by <b>address</b>.  If it is
