@@ -2821,6 +2821,15 @@ uint32_t OMR::Node::getSize()
     return _opCode.getSize();
 }
 
+uint32_t OMR::Node::getVectorOrMaskResultElementSize()
+{
+    TR_ASSERT_FATAL_WITH_NODE(self(), getOpCode().isVectorOrMaskResult(),
+        "Error: element size requested on a non-vector/mask result node.");
+    return TR::DataType::getElementSize(getDataType());
+}
+
+uint32_t OMR::Node::getVectorOrMaskResultElementBitLength() { return getVectorOrMaskResultElementSize() * 8; }
+
 uint32_t OMR::Node::getRoundedSize()
 {
     int32_t roundedSize = (self()->getSize() + 3) & (~3);

@@ -128,7 +128,7 @@ TR::DataType OMR::DataType::getFloatTypeFromSize(int32_t size)
 
 int32_t OMR::DataType::getVectorSize()
 {
-    TR_ASSERT_FATAL(isVector() || isMask(), "getVectorSize() can only be called on vector or mask type\n");
+    TR_ASSERT_FATAL(isVectorOrMask(), "getVectorSize() can only be called on vector or mask type\n");
 
     switch (getVectorLength()) {
         case TR::VectorLength64:
@@ -148,7 +148,7 @@ int32_t OMR::DataType::getVectorSize()
 
 int32_t OMR::DataType::getVectorNumLanes()
 {
-    TR_ASSERT_FATAL(isVector() || isMask(), "getVectorNumlanes() can only be called on vector or mask type\n");
+    TR_ASSERT_FATAL(isVectorOrMask(), "getVectorNumlanes() can only be called on vector or mask type\n");
 
     return getVectorSize() / getSize(getVectorElementType());
 }
@@ -207,11 +207,17 @@ int32_t OMR::DataType::getSize(TR::DataType dt)
 
 void OMR::DataType::setSize(TR::DataType dt, int32_t newSize)
 {
-    if (dt.isVector() || dt.isMask())
+    if (dt.isVectorOrMask())
         return;
 
     TR_ASSERT(dt < TR::NumOMRTypes, "setDataTypeSizeInMap called on unrecognized data type");
     OMRDataTypeSizes[dt] = newSize;
+}
+
+int32_t OMR::DataType::getElementSize(TR::DataType dt)
+{
+    TR_ASSERT_FATAL(dt.isVectorOrMask(), "getElementSize can only be called on vector or mask types\n");
+    return getSize(dt.getVectorElementType());
 }
 
 static const char *OMRDataTypeNames[TR::NumAllTypes] = {
