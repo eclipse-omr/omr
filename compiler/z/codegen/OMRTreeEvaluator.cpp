@@ -1664,12 +1664,116 @@ TR::Register *OMR::Z::TreeEvaluator::vmpopcntEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *OMR::Z::TreeEvaluator::vcompressEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    /*
+     * Algorithm
+     *  a) Replace unset lanes of the mask with a lane size (adjusted for VSLB instruction)
+     *     and set lanes with zero.
+     *  b) Start a loop to process lane by lane:
+     *   1) Copy the rightmost lane of source into the leftmost lane of result.
+     *   2) Shift the result left by the rightmost number in the mask:
+     *        masked   -> shift 0 bytes (keep lane)
+     *        unmasked -> shift lane_size bytes (drop lane)
+     *   3) Rotate source and the mask by one lane so the next candidate becomes
+     *      the rightmost lane.
+     * Repeat for the number of lanes. result register ends with masked-in lanes packed
+     * left and zeros elsewhere. source is restored after a full-width rotation.
+     */
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+    const uint8_t elementSizeMask = getVectorElementSizeMask(node);
+    const uint32_t elementSize = getVectorElementSize(node);
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+    TR::Register *loopCountReg = cg->allocateRegister();
+    TR::Register *sourceReg = cg->evaluate(node->getFirstChild());
+    TR::Register *maskReg = cg->gprClobberEvaluate(node->getSecondChild());
+
+    // Fill the unmasked lanes with the number that would shift one element in VSLB instruction.
+    generateVRIaInstruction(cg, TR::InstOpCode::VREPI, node, resultReg, elementSize << 3, elementSizeMask);
+    generateVRRcInstruction(cg, TR::InstOpCode::VNC, node, maskReg, resultReg, maskReg, 0);
+    // VSLB uses the byte element 7 of V3 so we need to rotate the mask to move byte 15 to byte 7.
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, maskReg, maskReg, maskReg, 8, 0);
+    // Zero the result register.
+    generateVRIaInstruction(cg, TR::InstOpCode::VGBM, node, resultReg, 0, 0);
+
+    // Start a loop to compress the vector lane by lane.
+    generateRIInstruction(cg, TR::InstOpCode::LHI, node, loopCountReg, 16 / elementSize);
+    TR::LabelSymbol *loopTopLabel = generateLabelSymbol(cg);
+    generateS390LabelInstruction(cg, TR::InstOpCode::label, node, loopTopLabel);
+    // Shift the rightmost element of the source to the result leftmost.
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, resultReg, sourceReg, resultReg, 16 - elementSize, 0);
+    // Remove the last inserted element if it was unmasked.
+    generateVRRcInstruction(cg, TR::InstOpCode::VSLB, node, resultReg, resultReg, maskReg, 0);
+    // rotate source and mask to the right by one element for the next loop
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, sourceReg, sourceReg, sourceReg, 16 - elementSize, 0);
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, maskReg, maskReg, maskReg, 16 - elementSize, 0);
+    // Repeat until all lanes are processed.
+    generateS390BranchInstruction(cg, TR::InstOpCode::BRCT, node, loopCountReg, loopTopLabel);
+
+    cg->stopUsingRegister(loopCountReg);
+    node->setRegister(resultReg);
+    cg->decReferenceCount(node->getFirstChild());
+    cg->decReferenceCount(node->getSecondChild());
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vexpandEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    /*
+     * Algorithm
+     *  a) Create a register with lane size (adjusted for VSLB instruction) for masked lanes.
+     *  b) Start a loop to process lane by lane:
+     *   1) Copy the leftmost lane of source into the rightmost lane of result.
+     *   2) Shift the source right by the leftmost number in the shiftCountReg:
+     *        masked   -> shift lane_size bytes (Move to the next element)
+     *        unmasked -> shift 0 bytes (keeo the lane)
+     *   3) Rotate the mask by one lane so the next candidate becomes the left lane.
+     *   Repeat for the number of lanes. result register ends with masked-in lanes but
+     *   the value is repeated in the following unmasked lanes.
+     *  c) AND the result and the mask to zero values in unmasked lanes.
+     */
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+    const uint8_t elementSizeMask = getVectorElementSizeMask(node);
+    const uint32_t elementSize = getVectorElementSize(node);
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+    TR::Register *loopCountReg = cg->allocateRegister();
+    TR::Register *sourceReg = cg->gprClobberEvaluate(node->getFirstChild());
+    TR::Register *maskReg = cg->evaluate(node->getSecondChild());
+    TR::Register *shiftCountReg = cg->allocateRegister(TR_VRF);
+
+    // Fill the masked lanes of the shiftCountReg with the number that would shift one element in VSLB instruction.
+    generateVRIaInstruction(cg, TR::InstOpCode::VREPI, node, shiftCountReg, elementSize << 3, elementSizeMask);
+    generateVRRcInstruction(cg, TR::InstOpCode::VN, node, shiftCountReg, shiftCountReg, maskReg, 0);
+    // VSLB uses the byte element 7 of V3 so we need to rotate the mask to move the rightmost byte of the leftmost
+    // element to position 7. In case of 8 byte element size, the rightmost byte of the leftmost element is in correct
+    // position.
+    if (elementSize < 8)
+        generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, shiftCountReg, shiftCountReg, shiftCountReg,
+            8 + elementSize, 0);
+
+    // Start a loop to expand the vector lane by lane.
+    generateRIInstruction(cg, TR::InstOpCode::LHI, node, loopCountReg, 16 / elementSize);
+    TR::LabelSymbol *loopTopLabel = generateLabelSymbol(cg);
+    generateS390LabelInstruction(cg, TR::InstOpCode::label, node, loopTopLabel);
+    // Shift the leftmost element of the source to the result rightmost.
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, resultReg, resultReg, sourceReg, elementSize, 0);
+    // Move to the next source element if the current element is masked.
+    generateVRRcInstruction(cg, TR::InstOpCode::VSLB, node, sourceReg, sourceReg, shiftCountReg, 0);
+    // Rotate shiftCountReg left for the next loop.
+    generateVRIdInstruction(cg, TR::InstOpCode::VSLDB, node, shiftCountReg, shiftCountReg, shiftCountReg, elementSize,
+        0);
+    // Process the next element.
+    generateS390BranchInstruction(cg, TR::InstOpCode::BRCT, node, loopCountReg, loopTopLabel);
+
+    // Zero the unmasked lanes.
+    generateVRRcInstruction(cg, TR::InstOpCode::VN, node, resultReg, resultReg, maskReg, 0);
+
+    cg->stopUsingRegister(loopCountReg);
+    cg->stopUsingRegister(shiftCountReg);
+    node->setRegister(resultReg);
+    cg->decReferenceCount(node->getFirstChild());
+    cg->decReferenceCount(node->getSecondChild());
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vshlEvaluator(TR::Node *node, TR::CodeGenerator *cg)
