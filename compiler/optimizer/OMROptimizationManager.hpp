@@ -106,7 +106,7 @@ public:
 
     OMR::Optimizations id() { return _id; }
 
-    const char *name() { return OMR::Optimizer::getOptimizationName(_id); }
+    const char *name() { return TR::Optimizer::getOptimizationName(_id); }
 
     const OptimizationStrategy *groupOfOpts() { return _groupOfOpts; }
 

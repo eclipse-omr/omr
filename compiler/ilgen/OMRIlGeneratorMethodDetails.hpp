@@ -39,11 +39,18 @@ typedef OMR::IlGeneratorMethodDetails IlGeneratorMethodDetailsConnector;
 #include "infra/Annotations.hpp"
 
 class TR_FrontEnd;
+class TR_IlGenerator;
+class TR_IlVerifier;
+class TR_InlineBlocks;
 class TR_ResolvedMethod;
 
 namespace TR {
+class Compilation;
 class IlGeneratorMethodDetails;
 class IlVerifier;
+class ResolvedMethod;
+class ResolvedMethodSymbol;
+class SymbolReferenceTable;
 } // namespace TR
 
 namespace OMR {
@@ -57,23 +64,35 @@ class Logger;
  */
 class OMR_EXTENSIBLE IlGeneratorMethodDetails {
 public:
+    IlGeneratorMethodDetails(TR_ResolvedMethod *method);
+
     virtual bool isMethodInProgress() const { return false; }
 
     bool supportsInvalidation() { return false; }
 
-    bool sameAs(TR::IlGeneratorMethodDetails &other) { return false; }
+    TR::ResolvedMethod *getMethod() const { return _method; }
 
-    void print(OMR::Logger *log, TR_FrontEnd *fe) {}
+    TR_ResolvedMethod *getResolvedMethod() const { return (TR_ResolvedMethod *)_method; }
+
+    bool sameAs(TR::IlGeneratorMethodDetails &other, TR_FrontEnd *) const;
+
+    bool sameAs(TR::IlGeneratorMethodDetails &other, TR_FrontEnd *) { return false; }
+
+    void print(OMR::Logger *log, TR_FrontEnd *fe);
 
     inline static TR::IlGeneratorMethodDetails &create(TR::IlGeneratorMethodDetails &target, TR_ResolvedMethod *method);
 
+    void setIlVerifier(TR::IlVerifier *ilVerifier) { _ilVerifier = ilVerifier; }
+
     TR::IlVerifier *getIlVerifier() { return _ilVerifier; }
 
-    void setIlVerifier(TR::IlVerifier *ilVerifier) { _ilVerifier = ilVerifier; }
+    TR_IlGenerator *getIlGenerator(TR::ResolvedMethodSymbol *methodSymbol, TR_FrontEnd *fe, TR::Compilation *comp,
+        TR::SymbolReferenceTable *symRefTab, bool forceClassLookahead, TR_InlineBlocks *blocksToInline);
 
 protected:
     IlGeneratorMethodDetails()
-        : _ilVerifier(NULL)
+        : _method(NULL)
+        , _ilVerifier(NULL)
     {}
 
     inline TR::IlGeneratorMethodDetails *self();
@@ -90,6 +109,7 @@ protected:
 
     void operator delete(void *pMem, size_t size) { ::operator delete(pMem); };
 
+    TR::ResolvedMethod *_method;
     TR::IlVerifier *_ilVerifier;
 };
 

@@ -19,7 +19,7 @@
 # SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
 #############################################################################
 
-compiler_library(optimizer
+SET(OPT_OBJECTS 
 	${CMAKE_CURRENT_LIST_DIR}/AsyncCheckInsertion.cpp
 	${CMAKE_CURRENT_LIST_DIR}/BackwardBitVectorAnalysis.cpp
 	${CMAKE_CURRENT_LIST_DIR}/BackwardIntersectionBitVectorAnalysis.cpp
@@ -70,7 +70,6 @@ compiler_library(optimizer
 	${CMAKE_CURRENT_LIST_DIR}/OMROptimization.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMROptimizationManager.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRTransformUtil.cpp
-	${CMAKE_CURRENT_LIST_DIR}/OMROptimizer.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OrderBlocks.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OSRDefAnalysis.cpp
 	${CMAKE_CURRENT_LIST_DIR}/PartialRedundancy.cpp
@@ -113,4 +112,8 @@ compiler_library(optimizer
 	${CMAKE_CURRENT_LIST_DIR}/abstractinterpreter/InliningMethodSummary.cpp
 	${CMAKE_CURRENT_LIST_DIR}/abstractinterpreter/OMRIDTBuilder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/abstractinterpreter/InliningProposal.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRFullOptimizer.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRSmallOptimizer.cpp
 )
+
+compiler_library(optimizer ${OPT_OBJECTS})

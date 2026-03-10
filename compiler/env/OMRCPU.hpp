@@ -121,6 +121,11 @@ public:
      */
     static void initializeTargetProcessorInfo(bool force = false) {}
 
+    /**
+     * @brief API to deallocate any platform specific target processor info
+     */
+    static void destroyTargetProcessorInfo() {}
+
     TR_Processor setProcessor(TR_Processor p) { return (_processor = p); }
 
     // Processor identity and generation comparisons

@@ -266,9 +266,13 @@ class OpCodesTest : public TestDriver
 
    TR_ASSERT(opCodeInjector, "Didn't select an injector!");
 
-   TR::IlType **argIlTypes = new TR::IlType*[opCodeArgsNum];
+   TR::DataType *argIlTypes = new TR::DataType[opCodeArgsNum];
+   const char **argNames = new const char *[opCodeArgsNum];
    for (auto a=0;a < opCodeArgsNum;a++)
-      argIlTypes[a] = types.PrimitiveType(argTypes[a]);
+      {
+      argIlTypes[a] = types.PrimitiveType(argTypes[a])->getPrimitiveType();
+      argNames[a] = "(unknown parameter name)";
+      }
 
    if (numArgs != 0)
       {
@@ -330,7 +334,7 @@ class OpCodesTest : public TestDriver
           }
       va_end(args);
       }
-   TR::ResolvedMethod opCodeCompilee(__FILE__, LINETOSTR(__LINE__), resolvedMethodName, opCodeArgsNum, argIlTypes, types.PrimitiveType(returnType), 0, opCodeInjector);
+   TR::ResolvedMethod opCodeCompilee(__FILE__, LINETOSTR(__LINE__), resolvedMethodName, opCodeArgsNum, argNames, argIlTypes, types.PrimitiveType(returnType)->getPrimitiveType(), 0, opCodeInjector);
    TR::IlGeneratorMethodDetails opCodeDetails(&opCodeCompilee);
    uint8_t *startPC= compileMethod(opCodeDetails, warm, returnCode);
    EXPECT_TRUE(COMPILATION_SUCCEEDED == returnCode ||
@@ -356,11 +360,15 @@ class OpCodesTest : public TestDriver
       TR::TypeDictionary types;
       ChildlessUnaryOpIlInjector functionIlInjector(&types, this, opCodeCompilee);
 
-      TR::IlType **argIlTypes = new TR::IlType*[opCodeArgsNum];
+      TR::DataType *argIlTypes = new TR::DataType[opCodeArgsNum];
+      const char **argNames =  new const char *[opCodeArgsNum];
       for (int32_t i=0;i < opCodeArgsNum;i++)
-         argIlTypes[i] = types.PrimitiveType(argTypes[i]);
+         {
+         argIlTypes[i] = types.PrimitiveType(argTypes[i])->getPrimitiveType();
+         argNames[i] = "(unknown parameter name)";
+         }
 
-      TR::ResolvedMethod functionCompilee(__FILE__, LINETOSTR(__LINE__), compileeResolvedMethodName, opCodeArgsNum, argIlTypes, types.PrimitiveType(returnType), 0, &functionIlInjector);
+      TR::ResolvedMethod functionCompilee(__FILE__, LINETOSTR(__LINE__), compileeResolvedMethodName, opCodeArgsNum, argNames, argIlTypes, types.PrimitiveType(returnType)->getPrimitiveType(), 0, &functionIlInjector);
       TR::IlGeneratorMethodDetails functionDetails(&functionCompilee);
       switch (returnType)
          {
@@ -396,7 +404,7 @@ class OpCodesTest : public TestDriver
          << "Compiling callee method " << compileeResolvedMethodName << " failed unexpectedly";
 
       CallIlInjector callIlInjector(&types, this, opCode);
-      TR::ResolvedMethod callCompilee(__FILE__, LINETOSTR(__LINE__), testResolvedMethodName, opCodeArgsNum, argIlTypes, types.PrimitiveType(returnType), 0, &callIlInjector);
+      TR::ResolvedMethod callCompilee(__FILE__, LINETOSTR(__LINE__), testResolvedMethodName, opCodeArgsNum, argNames, argIlTypes, types.PrimitiveType(returnType)->getPrimitiveType(), 0, &callIlInjector);
       TR::IlGeneratorMethodDetails callDetails(&callCompilee);
       uint8_t *startPC = compileMethod(callDetails, warm, returnCode);
       EXPECT_TRUE(COMPILATION_SUCCEEDED == returnCode || COMPILATION_REQUESTED == returnCode)

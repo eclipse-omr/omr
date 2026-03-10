@@ -30,6 +30,7 @@
 #include "env/jittypes.h"
 #include "runtime/CodeCache.hpp"
 #include "runtime/CodeCacheConfig.hpp"
+#include "runtime/CodeCacheManager.hpp"
 #include "runtime/Runtime.hpp"
 #include "env/CompilerEnv.hpp"
 

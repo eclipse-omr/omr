@@ -30,35 +30,4 @@ struct OptimizationStrategy {
     uint16_t _options;
 };
 
-// optimization groups
-
-extern const OptimizationStrategy loopAliasRefinerOpts[];
-extern const OptimizationStrategy arrayPrivatizationOpts[];
-extern const OptimizationStrategy reorderArrayIndexOpts[];
-extern const OptimizationStrategy localValuePropagationOpts[];
-extern const OptimizationStrategy cheapObjectAllocationOpts[];
-extern const OptimizationStrategy expensiveObjectAllocationOpts[];
-extern const OptimizationStrategy eachEscapeAnalysisPassOpts[];
-extern const OptimizationStrategy veryCheapGlobalValuePropagationOpts[];
-extern const OptimizationStrategy cheapGlobalValuePropagationOpts[];
-extern const OptimizationStrategy expensiveGlobalValuePropagationOpts[];
-extern const OptimizationStrategy eachExpensiveGlobalValuePropagationOpts[];
-extern const OptimizationStrategy veryExpensiveGlobalValuePropagationOpts[];
-extern const OptimizationStrategy partialRedundancyEliminationOpts[];
-extern const OptimizationStrategy isolatedStoreOpts[];
-extern const OptimizationStrategy globalDeadStoreOpts[];
-extern const OptimizationStrategy finalGlobalOpts[];
-extern const OptimizationStrategy loopSpecializerOpts[];
-extern const OptimizationStrategy loopVersionerOpts[];
-extern const OptimizationStrategy lastLoopVersionerOpts[];
-extern const OptimizationStrategy loopCanonicalizationOpts[];
-extern const OptimizationStrategy blockManipulationOpts[];
-extern const OptimizationStrategy eachLocalAnalysisPassOpts[];
-extern const OptimizationStrategy stripMiningOpts[];
-extern const OptimizationStrategy methodHandleInvokeInliningOpts[];
-
-// arrays of optimizations
-
-extern const OptimizationStrategy *omrCompilationStrategies[];
-
 #endif

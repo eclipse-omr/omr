@@ -22,27 +22,32 @@
 #ifndef TR_OPTIMIZER_INCL
 #define TR_OPTIMIZER_INCL
 
-#include "optimizer/OMROptimizer.hpp"
+#if defined(OMR_OPTIMIZER_SMALL)
 
-#include <stddef.h>
-#include <stdint.h>
-
-namespace TR {
-class Compilation;
-class ResolvedMethodSymbol;
-} // namespace TR
-struct OptimizationStrategy;
+#include "optimizer/SmallOptimizer.hpp"
 
 namespace TR {
-
-class Optimizer : public OMR::OptimizerConnector {
+class Optimizer : public TR::SmallOptimizer {
 public:
-    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
-        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0)
-        : OMR::OptimizerConnector(comp, methodSymbol, isIlGen, strategy, VNType)
+    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen)
+        : TR::SmallOptimizer(comp, methodSymbol, isIlGen)
     {}
 };
-
 } // namespace TR
 
-#endif
+#else // defined(OMR_OPTIMIZER_SMALL)
+
+#include "optimizer/FullOptimizer.hpp"
+
+namespace TR {
+class Optimizer : public TR::FullOptimizer {
+public:
+    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen)
+        : TR::FullOptimizer(comp, methodSymbol, isIlGen)
+    {}
+};
+} // namespace TR
+
+#endif // defined(OMR_OPTIMIZER_SMALL)
+
+#endif // defined(TR_OPTIMIZER_INCL)

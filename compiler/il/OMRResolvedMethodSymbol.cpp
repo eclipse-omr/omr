@@ -1142,7 +1142,7 @@ bool OMR::ResolvedMethodSymbol::genIL(TR_FrontEnd *fe, TR::Compilation *comp, TR
                     && comp->supportsInduceOSR() && !self()->cannotAttemptOSRDuring(siteIndex, comp);
 
                 if (!(comp->getOption(TR_DisableIlgenOpts))) {
-                    optimizer = TR::Optimizer::createOptimizer(comp, self(), true);
+                    optimizer = comp->createOptimizer(self(), true);
                     previousOptimizer = comp->getOptimizer();
                     comp->setOptimizer(optimizer);
                 }

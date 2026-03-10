@@ -19,18 +19,18 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
-#ifndef OMR_OPTIMIZER_INCL
-#define OMR_OPTIMIZER_INCL
+#ifndef OMR_SMALLOPTIMIZER_INCL
+#define OMR_SMALLOPTIMIZER_INCL
 
 /*
  * The following #define and typedef must appear before any #includes in this file
  */
-#ifndef OMR_OPTIMIZER_CONNECTOR
-#define OMR_OPTIMIZER_CONNECTOR
+#ifndef OMR_SMALLOPTIMIZER_CONNECTOR
+#define OMR_SMALLOPTIMIZER_CONNECTOR
 
 namespace OMR {
-class Optimizer;
-typedef OMR::Optimizer OptimizerConnector;
+class SmallOptimizer;
+typedef OMR::SmallOptimizer SmallOptimizerConnector;
 } // namespace OMR
 #endif
 
@@ -57,6 +57,7 @@ class Block;
 class CodeGenerator;
 class Compilation;
 class OptimizationManager;
+class SmallOptimizer;
 class Optimizer;
 class ResolvedMethodSymbol;
 } // namespace TR
@@ -139,21 +140,20 @@ enum {
     MarkLastRun
 };
 
-class Optimizer {
+class SmallOptimizer {
 public:
     TR_ALLOC(TR_Memory::Machine)
 
-    // Create an optimizer object.
-    static TR::Optimizer *createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen);
-
-    Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen,
-        const OptimizationStrategy *strategy = NULL, uint16_t VNType = 0);
+    SmallOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen);
 
     // Optimize the current method
     void optimize();
 
     // Get the method symbol
     TR::ResolvedMethodSymbol *getMethodSymbol() { return _methodSymbol; }
+
+    // used to provide a custom strategy
+    void useCustomStrategy(int32_t srcStrategySize, int32_t *srcStrategy);
 
     // The IL optimizer, performs tree-to-tree optimizing transformations.
     bool isIlGenOpt() { return _isIlGen; }
@@ -174,8 +174,6 @@ public:
 
     static const char *getOptimizationName(OMR::Optimizations opt);
 
-    static const OptimizationStrategy *optimizationStrategy(TR::Compilation *c);
-
     /**
      * Override what #OptimizationStrategy to use. While this has the same
      * functionality as the `optTest=` parameter, it does not require
@@ -189,7 +187,7 @@ public:
 
     static ValueNumberInfoBuildType valueNumberInfoBuildType();
 
-    void enableAllLocalOpts();
+    virtual void enableAllLocalOpts();
 
     bool getAliasSetsAreValid() { return _aliasSetsAreValid; }
 
@@ -355,25 +353,29 @@ public:
 #include "optimizer/OptimizerAnalysisPhasesEnum.hpp"
 
     /**
-     * Given a \ref Optimizer::AnalysisPhase value, returns a descriptive name
+     * Given a \ref OMR::SmallOptimizer::AnalysisPhase value, returns a descriptive name
      * for the phase.  This method is intended to be used for RAS purposes.
      *
-     * \parm[in] phaseId An optimizer \ref Optimizer::AnalysisPhases value
+     * \parm[in] phaseId An optimizer \ref OMR::SmallOptimizer::AnalysisPhases value
      *
      * \returns A NUL-terminated character string giving the name of the phase,
      *          or the string "Unknown analysis phase" if the phase id value is
      *          not recognized.
      */
-    static const char *getAnalysisPhaseName(Optimizer::AnalysisPhases phaseId);
+    static const char *getAnalysisPhaseName(OMR::SmallOptimizer::AnalysisPhases phaseId);
 
 protected:
     TR::OptimizationManager *_opts[OMR::numGroups];
 
     TR::Optimizer *self();
 
+    void setStrategy(const OptimizationStrategy *s) { _strategy = s; }
+
 private:
     int32_t performOptimization(const OptimizationStrategy *, int32_t firstOptIndex, int32_t lastOptIndex,
         int32_t doTiming);
+
+    void dumpStrategy(const OptimizationStrategy *);
 
     TR::Compilation *_compilation;
     TR_Memory *_trMemory;
@@ -435,4 +437,4 @@ private:
 
 } // namespace OMR
 
-#endif
+#endif // defined(OMR_SMALLOPTIMIZER_INCL)

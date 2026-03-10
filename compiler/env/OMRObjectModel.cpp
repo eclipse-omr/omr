@@ -36,11 +36,7 @@ class Node;
 
 OMR::ObjectModel::ObjectModel() {}
 
-int32_t OMR::ObjectModel::sizeofReferenceField()
-{
-    TR_UNIMPLEMENTED();
-    return 0;
-}
+int32_t OMR::ObjectModel::sizeofReferenceField() { return sizeofReferenceAddress(); }
 
 intptr_t OMR::ObjectModel::sizeofReferenceAddress() { return TR::Compiler->target.is64Bit() ? 8 : 4; }
 

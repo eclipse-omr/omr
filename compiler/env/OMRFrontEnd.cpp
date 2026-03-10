@@ -47,12 +47,22 @@ TR::FrontEnd *OMR::FrontEnd::_instance = NULL;
 OMR::FrontEnd::FrontEnd()
     : ::TR_FrontEnd()
     , _config()
-    , _codeCacheManager(TR::Compiler->rawAllocator)
+    , _codeCacheManager(NULL)
     , _persistentMemory(jitConfig(), TR::Compiler->persistentAllocator())
 {
     TR_ASSERT_FATAL(!_instance, "FrontEnd must be initialized only once");
     _instance = static_cast<TR::FrontEnd *>(this);
     ::trPersistentMemory = &_persistentMemory;
+
+    TR::CodeCacheManager *m = reinterpret_cast<TR::CodeCacheManager *>(
+        _persistentMemory.allocatePersistentMemory(sizeof(TR::CodeCacheManager)));
+    _codeCacheManager = new (m) TR::CodeCacheManager(TR::Compiler->rawAllocator);
+}
+
+OMR::FrontEnd::~FrontEnd()
+{
+    _persistentMemory.freePersistentMemory(_codeCacheManager);
+    _codeCacheManager = NULL;
 }
 
 TR::FrontEnd *OMR::FrontEnd::instance()

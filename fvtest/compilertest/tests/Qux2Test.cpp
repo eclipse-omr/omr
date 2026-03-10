@@ -42,10 +42,11 @@ Qux2Test::compileTestMethods()
    TR::TypeDictionary types;
    Qux2IlInjector quxIlInjector(&types, this);
    int32_t numberOfArguments = 1;
-   TR::IlType ** argTypes = new TR::IlType*[numberOfArguments];
-   TR::IlType *Int32 = types.PrimitiveType(TR::Int32);
-   argTypes[0]= Int32;
-   TR::ResolvedMethod qux2Compilee(__FILE__, LINETOSTR(__LINE__), "qux2", numberOfArguments, argTypes, Int32, 0, &quxIlInjector);
+   TR::DataType * argTypes = new TR::DataType[numberOfArguments];
+   const char **argNames = new const char *[numberOfArguments];
+   argTypes[0]= TR::Int32;
+   argNames[0] = "p0";
+   TR::ResolvedMethod qux2Compilee(__FILE__, LINETOSTR(__LINE__), "qux2", numberOfArguments, argNames, argTypes, TR::Int32, 0, &quxIlInjector);
    TR::IlGeneratorMethodDetails qux2Details(&qux2Compilee);
    _qux2 = (testMethodType *)(reinterpret_cast<void *>(compileMethod(qux2Details, warm, rc)));
    }
