@@ -47,6 +47,11 @@
 #include "omrportptb.h"
 #include "ut_omrport.h"
 #include "omrsysinfo_helpers.h"
+#include "winternl.h"
+
+#if !defined(STATUS_SUCCESS)
+#define STATUS_SUCCESS ((NTSTATUS)0)
+#endif /* !defined(STATUS_SUCCESS) */
 
 #define OMRPORT_SYSINFO_WINDOWS_TICK 10000000ULL
 #define OMRPORT_SYSINFO_SEC_TO_UNIX_EPOCH 11644473600ULL
@@ -287,6 +292,58 @@ omrsysinfo_get_env(struct OMRPortLibrary *portLibrary, const char *envVar, char 
 	return result;
 
 }
+
+/**
+ * Retrieve Windows version using RtlGetVersion() dynamically.
+ *
+ * This function first calls RtlGetVersion() dynamically (to avoid a
+ * build-time dependency on wdm.h), and then overrides the result using
+ * version information from kernel32.dll via GetFileVersionInfo().
+ *
+ * Using kernel32.dll ensures the real OS version is obtained, even when
+ * compatibility settings cause APIs like GetVersionEx() or RtlGetVersion()
+ * to return inaccurate values.
+ *
+ * @param[in/out] versionInfo pointer to an OSVERSIONINFOW structure
+ * @return TRUE if version information was successfully retrieved, FALSE otherwise
+ */
+static BOOLEAN
+getWindowsVersion(OSVERSIONINFOW *versionInfo)
+{
+    HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+    if (hMod != NULL) {
+        typedef NTSTATUS (WINAPI *RtlGetVersionPtr)(OSVERSIONINFOW *);
+        RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
+        if (fxPtr != NULL && STATUS_SUCCESS == fxPtr(versionInfo)) {
+            WCHAR path[MAX_PATH];
+            DWORD size = 0;
+            BYTE *buffer = NULL;
+            VS_FIXEDFILEINFO *fileInfo = NULL;
+            UINT len = 0;
+
+            UINT ret = GetSystemDirectoryW(path, MAX_PATH);
+            if (ret != 0 && ret < MAX_PATH - (int)wcslen(L"\\kernel32.dll")) {
+                wcscat_s(path, MAX_PATH, L"\\kernel32.dll");
+
+                size = GetFileVersionInfoSizeW(path, NULL);
+                if (size != 0 && (buffer = (BYTE *)malloc(size)) != NULL) {
+                    if (GetFileVersionInfoW(path, 0, size, buffer) &&
+                        VerQueryValueW(buffer, L"\\", (LPVOID *)&fileInfo, &len))
+                    {
+                        versionInfo->dwMajorVersion = HIWORD(fileInfo->dwProductVersionMS);
+                        versionInfo->dwMinorVersion = LOWORD(fileInfo->dwProductVersionMS);
+                        versionInfo->dwBuildNumber  = HIWORD(fileInfo->dwProductVersionLS);
+                        versionInfo->dwPlatformId   = VER_PLATFORM_WIN32_NT;
+                    }
+                    free(buffer);
+                }
+            }
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 /**
  * Determine the OS type.
  *
@@ -322,7 +379,7 @@ WIN32_WINNT version constants :
 	if (NULL == PPG_si_osType) {
 		char *defaultTypeName = "Windows";
 #if !defined(_WIN32_WINNT_WIN10) || (_WIN32_WINNT_MAXVER < _WIN32_WINNT_WIN10)
-		OSVERSIONINFOEX versionInfo;
+		OSVERSIONINFOEXW versionInfo;
 #endif /* !defined(_WIN32_WINNT_WIN10) || (_WIN32_WINNT_MAXVER < _WIN32_WINNT_WIN10) */
 
 		PPG_si_osType = defaultTypeName; /* by default, use the "unrecognized version" string */
@@ -339,10 +396,9 @@ WIN32_WINNT version constants :
 				isServerMajorVersion10 = TRUE;
 			} else
 #else /* defined(_WIN32_WINNT_WIN10) && (_WIN32_WINNT_MAXVER >= _WIN32_WINNT_WIN10) */
+			memset(&versionInfo, 0, sizeof(versionInfo));
 			versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-/* GetVersionEx() is deprecated, but still needed when using older compilers. Suppress the warning. */
-#pragma warning( suppress : 4996 )
-			if (GetVersionEx((OSVERSIONINFO *) &versionInfo)) {
+			if (getWindowsVersion(&versionInfo)) {
 				if (10 <= versionInfo.dwMajorVersion) {
 					isServerMajorVersion10 = TRUE;
 				}
@@ -371,10 +427,9 @@ WIN32_WINNT version constants :
 				isClientMajorVersion10 = TRUE;
 			} else
 #else /* defined(_WIN32_WINNT_WIN10) && (_WIN32_WINNT_MAXVER >= _WIN32_WINNT_WIN10) */
+			memset(&versionInfo, 0, sizeof(versionInfo));
 			versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-/* GetVersionEx() is deprecated, but still needed when using older compilers. Suppress the warning. */
-#pragma warning( suppress : 4996 )
-			if (GetVersionEx((OSVERSIONINFO *) &versionInfo)) {
+			if (getWindowsVersion(&versionInfo)) {
 				if ((VER_PLATFORM_WIN32_NT == versionInfo.dwPlatformId) && (10 <= versionInfo.dwMajorVersion)) {
 					PPG_si_osType = NULL;
 					if (VER_NT_WORKSTATION == versionInfo.wProductType) {
@@ -411,8 +466,9 @@ WIN32_WINNT version constants :
 			}
 		}
 #else /* defined(_WIN32_WINNT_WINBLUE) && (_WIN32_WINNT_MAXVER >= _WIN32_WINNT_WINBLUE) */
+		memset(&versionInfo, 0, sizeof(versionInfo));
 		versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-		if (!GetVersionEx((OSVERSIONINFO *) &versionInfo)) {
+		if (!getWindowsVersion(&versionInfo)) {
 			return NULL;
 		}
 
@@ -598,6 +654,7 @@ WIN32_WINNT version constants :
 	}
 	return PPG_si_osType;
 }
+
 /**
  * Determine version information from the operating system.
  *
@@ -622,10 +679,9 @@ omrsysinfo_get_OS_version(struct OMRPortLibrary *portLibrary)
 		} else
 #else /* defined(_WIN32_WINNT_WIN10) && (_WIN32_WINNT_MAXVER >= _WIN32_WINNT_WIN10) */
 		OSVERSIONINFOW versionInfo;
+		memset(&versionInfo, 0, sizeof(versionInfo));
 		versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-/* GetVersionEx() is deprecated, but still needed to detect Windows 10 when using older compilers. Suppress the warning. */
-#pragma warning( suppress : 4996 )
-		if (GetVersionExW(&versionInfo) && (10 <= versionInfo.dwMajorVersion)) {
+		if (getWindowsVersion(&versionInfo) && (10 <= versionInfo.dwMajorVersion)) {
 			/* Build information for Windows 10 can't be hard coded, use GetVersionEx() below. */
 			PPG_si_osVersion = NULL;
 		} else
@@ -660,13 +716,12 @@ omrsysinfo_get_OS_version(struct OMRPortLibrary *portLibrary)
 	if (NULL == PPG_si_osVersion) {
 		OSVERSIONINFOW versionInfo;
 		int len = sizeof("0123456789.0123456789 build 0123456789 ") + 1;
-		char *buffer;
-		uintptr_t position;
+		char *buffer = NULL;
+		uintptr_t position = 0;
 
+		memset(&versionInfo, 0, sizeof(versionInfo));
 		versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-/* GetVersionEx() is deprecated, but still useful to get the Windows 10 build information. Suppress the warning. */
-#pragma warning( suppress : 4996 )
-		if (!GetVersionExW(&versionInfo)) {
+		if (!getWindowsVersion(&versionInfo)) {
 			return NULL;
 		}
 
