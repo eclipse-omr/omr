@@ -5637,6 +5637,40 @@ TR::Register *OMR::ARM64::TreeEvaluator::awrtbarEvaluator(TR::Node *node, TR::Co
     return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+/**
+ * @brief Helper to materialize the effective address of a memory reference into a register
+ *
+ * @param[in] cg: CodeGenerator
+ * @param[in] node: node
+ * @param[in] addrReg: target register
+ * @param[in] memRef: memory reference
+ * @param[in] cursor: instruction cursor
+ *
+ * @return instruction cursor
+ */
+static TR::Instruction *generateLoadEffectiveAddress(TR::CodeGenerator *cg, TR::Node *node, TR::Register *addrReg,
+    TR::MemoryReference *memRef, TR::Instruction *cursor = NULL)
+{
+    if (memRef->getIndexRegister() != NULL) {
+        cursor = generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, addrReg, memRef->getBaseRegister(),
+            memRef->getIndexRegister(), cursor);
+    } else if (memRef->hasDelayedOffset()) {
+        cursor = generateTrg1MemInstruction(cg, TR::InstOpCode::addimmx, node, addrReg, memRef, cursor);
+    } else {
+        int32_t offset = memRef->getOffset();
+        if (offset >= 0 && constantIsUnsignedImm12(offset)) {
+            cursor = generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, addrReg,
+                memRef->getBaseRegister(), offset, cursor);
+        } else {
+            cursor = loadConstant64(cg, node, offset, addrReg, cursor);
+            cursor = generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, addrReg, memRef->getBaseRegister(),
+                addrReg, cursor);
+        }
+    }
+
+    return cursor;
+}
+
 TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t size, TR::CodeGenerator *cg)
 {
     TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
@@ -7256,32 +7290,14 @@ TR::Register *OMR::ARM64::TreeEvaluator::loadaddrEvaluator(TR::Node *node, TR::C
             TR_UNIMPLEMENTED();
         }
     } else {
-        if (mref->useIndexedForm()) {
+        if (mref->useIndexedForm() || mref->hasDelayedOffset() || mref->getOffset() != 0) {
             resultReg = sym->isLocalObject() ? cg->allocateCollectedReferenceRegister() : cg->allocateRegister();
-            generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, resultReg, mref->getBaseRegister(),
-                mref->getIndexRegister());
+            generateLoadEffectiveAddress(cg, node, resultReg, mref);
         } else {
-            int32_t offset = mref->getOffset();
-            if (mref->hasDelayedOffset() || offset != 0) {
-                resultReg = sym->isLocalObject() ? cg->allocateCollectedReferenceRegister() : cg->allocateRegister();
-                if (mref->hasDelayedOffset()) {
-                    generateTrg1MemInstruction(cg, TR::InstOpCode::addimmx, node, resultReg, mref);
-                } else {
-                    if (offset >= 0 && constantIsUnsignedImm12(offset)) {
-                        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, resultReg,
-                            mref->getBaseRegister(), offset);
-                    } else {
-                        loadConstant64(cg, node, offset, resultReg);
-                        generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, resultReg, mref->getBaseRegister(),
-                            resultReg);
-                    }
-                }
-            } else {
-                resultReg = mref->getBaseRegister();
-                if (resultReg == cg->getMethodMetaDataRegister()) {
-                    resultReg = cg->allocateRegister();
-                    generateMovInstruction(cg, node, resultReg, mref->getBaseRegister());
-                }
+            resultReg = mref->getBaseRegister();
+            if (resultReg == cg->getMethodMetaDataRegister()) {
+                resultReg = cg->allocateRegister();
+                generateMovInstruction(cg, node, resultReg, mref->getBaseRegister());
             }
         }
     }
