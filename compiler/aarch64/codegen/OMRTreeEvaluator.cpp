@@ -5673,65 +5673,189 @@ static TR::Instruction *generateLoadEffectiveAddress(TR::CodeGenerator *cg, TR::
 
 TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t size, TR::CodeGenerator *cg)
 {
+    TR::Compilation *comp = cg->comp();
+
     TR::MemoryReference *tempMR = TR::MemoryReference::createWithRootLoadOrStore(cg, node);
     tempMR->validateImmediateOffsetAlignment(node, size, cg);
     TR::Symbol *sym = node->getSymbolReference()->getSymbol();
-    TR::Node *valueChild;
 
-    if (node->getOpCode().isIndirect()) {
-        valueChild = node->getSecondChild();
-    } else {
-        valueChild = node->getFirstChild();
-    }
+    bool isIndirect = node->getOpCode().isIndirect();
+    TR::Node *valueChild = isIndirect ? node->getSecondChild() : node->getFirstChild();
 
     if (cg->comp()->target().isSMP() && sym->isAtLeastOrStrongerThanAcquireRelease()) {
         generateSynchronizationInstruction(cg, TR::InstOpCode::dmb, node, TR::InstOpCode::ishst);
     }
 
-    TR::Node *valueChildRoot = NULL;
     /*
-     *  Pattern matching compressed refs sequence of address constant NULL
-     +
+     *  Pattern matching add-and-store sequence
+     *
      *  treetop
-     *    istorei
-     *      aload
-     *      l2i (X==0 )
-     *        lushr (compressionSequence )
-     *          a2l
-     *            aconst NULL (X==0 sharedMemory )
-     *          iconst 3
+     *    istore sym
+     *      isub/iadd
+     *        iload sym
+     *        addend
+     *
+     *  OR
+     *
+     *  treetop
+     *    istorei sym
+     *      addr
+     *      isub/iadd sym
+     *        iloadi
+     *          addr
+     *        addend
      */
-    if (cg->comp()->useCompressedPointers() && (node->getSymbolReference()->getSymbol()->getDataType() == TR::Address)
-        && (valueChild->getDataType() != TR::Address) && (valueChild->getOpCodeValue() == TR::l2i)
-        && (valueChild->isZero())) {
-        TR::Node *tmpNode = valueChild;
-        while (tmpNode->getNumChildren() && tmpNode->getOpCodeValue() != TR::a2l)
-            tmpNode = tmpNode->getFirstChild();
-        if (tmpNode->getNumChildren())
-            tmpNode = tmpNode->getFirstChild();
+    bool usedLDADD = false;
+    static const bool disableLSE = feGetEnv("TR_aarch64DisableLSE") != NULL;
+    static const bool disableIncLDADD = feGetEnv("TR_disableIncLDADD") != NULL;
+    TR::DataType dataType = node->getDataType();
+    if (!disableLSE && !disableIncLDADD && comp->target().cpu.supportsFeature(OMR_FEATURE_ARM64_LSE)
+        && (dataType.isInt32() || dataType.isInt64())) {
+        bool is64Bit = dataType.isInt64();
+        TR::Node *addend = NULL;
+        TR::Node *iload = NULL;
+        TR::Node *addr = isIndirect ? node->getFirstChild() : NULL;
+        TR::SymbolReference *symRef = node->getSymbolReference();
 
-        if (tmpNode->getDataType().isAddress() && tmpNode->isConstZeroValue() && (tmpNode->getRegister() == NULL)) {
-            valueChildRoot = valueChild;
+        bool isSub = false;
+        if (symRef != NULL && !symRef->isUnresolved() && (valueChild->getRegister() == NULL)
+            && (valueChild->getOpCode().isSub() || valueChild->getOpCode().isAdd())) {
+            TR::Node *firstChild = valueChild->getFirstChild();
+            TR::Node *secondChild = valueChild->getSecondChild();
+            isSub = valueChild->getOpCode().isSub();
+            // Check if the child is a load of the same symbol, and if indirect, from the same object
+            if (firstChild->getOpCode().isLoadVar()
+                && ((firstChild->getSymbolReference() == symRef)
+                    && (!isIndirect
+                        || firstChild->getOpCode().isIndirect() && (firstChild->getFirstChild() == addr)))) {
+                addend = secondChild;
+                iload = firstChild;
+            } else if (!isSub && secondChild->getOpCode().isLoadVar()
+                && ((secondChild->getSymbolReference() == symRef)
+                    && (!isIndirect
+                        || secondChild->getOpCode().isIndirect() && (secondChild->getFirstChild() == addr)))) {
+                addend = firstChild;
+                iload = secondChild;
+            }
+        }
+
+        if (addend != NULL && iload->getRegister() == NULL && addend->getRegister() == NULL) {
+            TR::Register *valueReg;
+            bool stopUsingValueReg = false;
+            if (isSub) {
+                if (addend->getOpCode().isLoadConst()) {
+                    valueReg = cg->allocateRegister();
+                    stopUsingValueReg = true;
+                    if (size == 8) {
+                        loadConstant64(cg, addend, -addend->getLongInt(), valueReg);
+                    } else {
+                        loadConstant32(cg, addend, -addend->getInt(), valueReg);
+                    }
+                } else {
+                    TR::Register *addRegister = cg->evaluate(addend);
+                    if (addend->getReferenceCount() == 1) {
+                        valueReg = addRegister;
+                    } else {
+                        valueReg = cg->allocateRegister();
+                        stopUsingValueReg = true;
+                    }
+                    generateNegInstruction(cg, node, valueReg, addRegister, (size == 8));
+                }
+            } else {
+                valueReg = cg->evaluate(addend);
+            }
+
+            // ldadd doesn't support index registers or offsets, so materialize the address if needed
+            TR::MemoryReference *ldaddMR;
+            TR::Register *addrReg = NULL;
+            if (tempMR->getIndexRegister() != NULL || tempMR->getOffset() != 0 || tempMR->hasDelayedOffset()) {
+                addrReg = sym->isLocalObject() ? cg->allocateCollectedReferenceRegister() : cg->allocateRegister();
+                generateLoadEffectiveAddress(cg, node, addrReg, tempMR);
+                ldaddMR = TR::MemoryReference::createWithDisplacement(cg, addrReg, 0);
+            } else {
+                ldaddMR = tempMR;
+            }
+
+            TR::Register *newValueReg = cg->allocateRegister();
+            generateTrg1MemSrc1Instruction(cg, is64Bit ? TR::InstOpCode::ldaddx : TR::InstOpCode::ldaddw, node,
+                valueReg, ldaddMR, newValueReg);
+
+            bool saveLoadValue = iload->getReferenceCount() > 1;
+            if (valueChild->getReferenceCount() > 1) {
+                TR::Register *sumReg = saveLoadValue ? cg->allocateRegister() : newValueReg;
+                generateTrg1Src2Instruction(cg, is64Bit ? TR::InstOpCode::addx : TR::InstOpCode::addw, valueChild,
+                    sumReg, newValueReg, valueReg);
+                valueChild->setRegister(sumReg);
+            }
+
+            if (saveLoadValue) {
+                iload->setRegister(newValueReg);
+            } else {
+                cg->stopUsingRegister(newValueReg);
+            }
+
+            if (stopUsingValueReg) {
+                cg->stopUsingRegister(valueReg);
+            }
+
+            if (addrReg != NULL) {
+                cg->stopUsingRegister(addrReg);
+            }
+
+            cg->decReferenceCount(addend);
+            cg->decReferenceCount(iload);
+
+            usedLDADD = true;
         }
     }
 
-    /*
-     * Use xzr as source register of str instruction
-     * if valueChild is a compressed refs sequence of address constant NULL,
-     * or valueChild is a zero constant integer or address.
-     */
-    if ((valueChildRoot != NULL)
-        || ((valueChild->getDataType().isIntegral() || valueChild->getDataType().isAddress())
-            && valueChild->isConstZeroValue() && (valueChild->getRegister() == NULL))) {
-        TR::Register *zeroReg = cg->allocateRegister();
-        generateMemSrc1Instruction(cg, op, node, tempMR, zeroReg);
-        TR::RegisterDependencyConditions *deps
-            = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 1, cg->trMemory());
-        deps->addPostCondition(zeroReg, TR::RealRegister::xzr);
-        generateLabelInstruction(cg, TR::InstOpCode::label, node, generateLabelSymbol(cg), deps);
-        cg->stopUsingRegister(zeroReg);
-    } else {
-        generateMemSrc1Instruction(cg, op, node, tempMR, cg->evaluate(valueChild));
+    TR::Node *valueChildRoot = NULL;
+    if (!usedLDADD) {
+        /*
+        *  Pattern matching compressed refs sequence of address constant NULL
+        +
+        *  treetop
+        *    istorei
+        *      aload
+        *      l2i (X==0 )
+        *        lushr (compressionSequence )
+        *          a2l
+        *            aconst NULL (X==0 sharedMemory )
+        *          iconst 3
+        */
+        if (cg->comp()->useCompressedPointers()
+            && (node->getSymbolReference()->getSymbol()->getDataType() == TR::Address)
+            && (valueChild->getDataType() != TR::Address) && (valueChild->getOpCodeValue() == TR::l2i)
+            && (valueChild->isZero())) {
+            TR::Node *tmpNode = valueChild;
+            while (tmpNode->getNumChildren() && tmpNode->getOpCodeValue() != TR::a2l)
+                tmpNode = tmpNode->getFirstChild();
+            if (tmpNode->getNumChildren())
+                tmpNode = tmpNode->getFirstChild();
+
+            if (tmpNode->getDataType().isAddress() && tmpNode->isConstZeroValue() && (tmpNode->getRegister() == NULL)) {
+                valueChildRoot = valueChild;
+            }
+        }
+
+        /*
+         * Use xzr as source register of str instruction
+         * if valueChild is a compressed refs sequence of address constant NULL,
+         * or valueChild is a zero constant integer or address.
+         */
+        if ((valueChildRoot != NULL)
+            || ((valueChild->getDataType().isIntegral() || valueChild->getDataType().isAddress())
+                && valueChild->isConstZeroValue() && (valueChild->getRegister() == NULL))) {
+            TR::Register *zeroReg = cg->allocateRegister();
+            generateMemSrc1Instruction(cg, op, node, tempMR, zeroReg);
+            TR::RegisterDependencyConditions *deps
+                = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(0, 1, cg->trMemory());
+            deps->addPostCondition(zeroReg, TR::RealRegister::xzr);
+            generateLabelInstruction(cg, TR::InstOpCode::label, node, generateLabelSymbol(cg), deps);
+            cg->stopUsingRegister(zeroReg);
+        } else {
+            generateMemSrc1Instruction(cg, op, node, tempMR, cg->evaluate(valueChild));
+        }
     }
 
     if (cg->comp()->target().isSMP() && sym->isVolatile()) {
