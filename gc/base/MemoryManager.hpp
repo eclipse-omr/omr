@@ -175,41 +175,6 @@ public:
 	 * @param[in/out] handle pointer to memory handle
 	 */
 	void destroyVirtualMemoryForHeap(MM_EnvironmentBase *env, MM_MemoryHandle *handle);
-	
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	/**
- 	 * Double maps arraylets, arrays that does not fit into one region are split into leaves, 
- 	 * which are then double mapped by this function 
- 	 *
- 	 * @param pointer to memory handle
- 	 * @param env environment
- 	 * @param arrayletLeaveAddrs, list of arraylet leaves addresses
- 	 * @param arrayletLeafCount, number of arraylet leaves
- 	 * @param arrayletLeafSize, size of each arraylet leaf
- 	 * @param byteAmount, total byte amount to be allocate contiguous block of meory to double map 
- 	 * @param newIdentifier, hold information of newly created contiguous block of memory
- 	 * @param pageSize
- 	 * @param category
-  	 */
-	void *doubleMapArraylet(MM_MemoryHandle *handle, MM_EnvironmentBase *env, void *arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize);
-
-	/**
-	 * Double maps regions. Discontiguous regions are double mapped to one contiguous region.
-	 *
-	 * @param pointer to memory handle
-	 * @param env environment
-	 * @param regions list of regions to be double mapped
-	 * @param regionsCount, number of regions to be double mapped
-	 * @param regionSize, size of each region
-	 * @param byteAmount, total byte amount to be allocate contiguous block of meory to double map
-	 * @param newIdentifier, hold information of newly created contiguous block of memory
-	 * @param pageSize
-	 * @param preferredAddress, prefered address of contiguous region to double map
-	 *
-	 * @return pointer to contiguous region to which regions were double mapped into, NULL is returned if unsuccessful
-	 */
-	void *doubleMapRegions(MM_MemoryHandle *handle, MM_EnvironmentBase *env, void *regions[], UDATA regionsCount, UDATA regionSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize, void *preferredAddress);
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 	/**
 	 * Commit memory for range for specified virtual memory instance

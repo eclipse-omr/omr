@@ -76,10 +76,6 @@ protected:
 	virtual void tearDown(MM_EnvironmentBase* env);
 
 	virtual void* reserveMemory(J9PortVmemParams* params);
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	virtual void *doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize);
-	virtual void *doubleMapRegions(MM_EnvironmentBase *env, void* regions[], UDATA regionsCount, UDATA regionSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize, void *preferredAddress);
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 	MM_VirtualMemory(MM_EnvironmentBase* env, uintptr_t heapAlignment, uintptr_t pageSize, uintptr_t pageFlags, uintptr_t tailPadding, uintptr_t mode)
 		: MM_BaseVirtual()

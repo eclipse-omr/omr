@@ -276,10 +276,6 @@ public:
 	bool largePageWarnOnError;
 	bool largePageFailOnError;
 	bool largePageFailedToSatisfy;
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	bool isArrayletDoubleMapRequested;
-	bool isArrayletDoubleMapAvailable;
-#endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
 	bool isVirtualLargeObjectHeapEnabled;
 
 	uintptr_t requestedPageSize;	/**< Memory page size for Object Heap */
@@ -1524,10 +1520,6 @@ public:
 		, largePageWarnOnError(false)
 		, largePageFailOnError(false)
 		, largePageFailedToSatisfy(false)
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-		, isArrayletDoubleMapRequested(false)
-		, isArrayletDoubleMapAvailable(false)
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 		, isVirtualLargeObjectHeapEnabled(false)
 		, requestedPageSize(0)
 		, requestedPageFlags(OMRPORT_VMEM_PAGE_FLAG_NOT_USED)

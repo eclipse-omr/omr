@@ -100,18 +100,6 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase *env, MM_MemoryH
 		}
 	}
 
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	/*
-	 * The decision to create a heap with a shared file descriptor is based on if double map was requested
-	 * or not, because we do not know at this point the actual heap page size (double map does not support
-	 * huge pages). Nonetheless, this is a safe operation because in case page size equals system's huge page
-	 * the mode flag OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN will be ignored.
-	 */
-	if (extensions->isVLHGC() && extensions->isArrayletDoubleMapRequested) {
-		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
-	}
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
-
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	if (extensions->enableSplitHeap) {
 		/* currently (ceiling != NULL) is using to recognize CompressedRefs so must be NULL for 32 bit platforms */
@@ -377,11 +365,6 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase *env, MM_MemoryH
 		instance->incrementConsumerCount();
 		handle->setMemoryBase(instance->getHeapBase());
 		handle->setMemoryTop(instance->getHeapTop());
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-		if (instance->isDoubleMapAvailable()) {
-			extensions->isArrayletDoubleMapAvailable = true;
-		}
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 		/*
 		 * Aligning Nursery location to Concurrent Scavenger Page and calculate Concurrent Scavenger Page start address
@@ -630,26 +613,6 @@ MM_MemoryManager::getHeapFileDescriptor(MM_MemoryHandle *handle)
 	Assert_MM_true(NULL != memory);
 	return memory->getHeapFileDescriptor();
 }
-
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-void *
-MM_MemoryManager::doubleMapArraylet(MM_MemoryHandle *handle, MM_EnvironmentBase *env, void *arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize)
-{
-	Assert_MM_true(NULL != handle);
-	MM_VirtualMemory *memory = handle->getVirtualMemory();
-	Assert_MM_true(NULL != memory);
-	return memory->doubleMapArraylet(env, arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount, newIdentifier, pageSize);
-}
-
-void *
-MM_MemoryManager::doubleMapRegions(MM_MemoryHandle *handle, MM_EnvironmentBase *env, void *regions[], UDATA regionsCount, UDATA regionSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize, void *preferredAddress)
-{
-	Assert_MM_true(NULL != handle);
-	MM_VirtualMemory *memory = handle->getVirtualMemory();
-	Assert_MM_true(NULL != memory);
-	return memory->doubleMapRegions(env, regions, regionsCount, regionSize, byteAmount, newIdentifier, pageSize, preferredAddress);
-}
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 bool
 MM_MemoryManager::commitMemory(MM_MemoryHandle *handle, void *address, uintptr_t size)

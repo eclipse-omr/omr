@@ -116,10 +116,6 @@ public:
 	virtual void *getHeapBase() = 0;
 	virtual void *getHeapTop() = 0;
 	virtual int getHeapFileDescriptor() = 0;
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	virtual void *doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeaves[], UDATA arrayletLeafCount, UDATA arrayletLeafSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize) = 0;
-	virtual void *doubleMapRegions(MM_EnvironmentBase *env, void* regions[], UDATA regionsCount, UDATA regionSize, UDATA byteAmount, struct J9PortVmemIdentifier *newIdentifier, UDATA pageSize, void *preferredAddress) = 0;
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 	virtual uintptr_t getMaximumPhysicalRange() = 0;
 

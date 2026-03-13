@@ -69,13 +69,6 @@ public:
 		Assert_MM_unimplemented();
 		return 0;
 	}
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	MMINLINE bool
-	isDoubleMappingEnabled()
-	{
-		return false;
-	}
-#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 	MMINLINE bool
 	isVirtualLargeObjectHeapEnabled()

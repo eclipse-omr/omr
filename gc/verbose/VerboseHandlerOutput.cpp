@@ -388,11 +388,6 @@ void
 MM_VerboseHandlerOutput::outputInitializedRegion(MM_EnvironmentBase *env, MM_VerboseBuffer *buffer)
 {
 	OMR_VM *omrVM = env->getOmrVM();
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-	bool isArrayletDoubleMapRequested = _extensions->isArrayletDoubleMapRequested;
-	const char *arrayletDoubleMappingStatus = _extensions->indexableObjectModel.isDoubleMappingEnabled() ? "enabled" : "disabled";
-	const char *arrayletDoubleMappingRequested = isArrayletDoubleMapRequested ? "true" : "false";
-#endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
 	buffer->formatAndOutput(env, 1, "<region>");
 	buffer->formatAndOutput(env, 2, "<attribute name=\"regionSize\" value=\"%zu\" />", _extensions->getHeap()->getHeapRegionManager()->getRegionSize());
 	buffer->formatAndOutput(env, 2, "<attribute name=\"regionCount\" value=\"%zu\" />", _extensions->getHeap()->getHeapRegionManager()->getTableRegionCount());
@@ -400,12 +395,6 @@ MM_VerboseHandlerOutput::outputInitializedRegion(MM_EnvironmentBase *env, MM_Ver
 		buffer->formatAndOutput(env, 2, "<attribute name=\"arrayletLeafSize\" value=\"%zu\" />", omrVM->_arrayletLeafSize);
 	}
 	if (_extensions->isVLHGC()) {
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
-		if (!_extensions->isVirtualLargeObjectHeapEnabled) {
-			buffer->formatAndOutput(env, 2, "<attribute name=\"arrayletDoubleMappingRequested\" value=\"%s\"/>", arrayletDoubleMappingRequested);
-			buffer->formatAndOutput(env, 2, "<attribute name=\"arrayletDoubleMapping\" value=\"%s\"/>", arrayletDoubleMappingStatus);
-		}
-#endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
 #if defined(OMR_GC_SPARSE_HEAP_ALLOCATION)
 		if (_extensions->isVirtualLargeObjectHeapEnabled) {
 			MM_SparseVirtualMemory *largeObjectVirtualMemory = _extensions->largeObjectVirtualMemory;
