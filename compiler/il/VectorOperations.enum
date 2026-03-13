@@ -1201,7 +1201,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise left shift */ \
+   /* .description             =    vector lanewise left shift. shift amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vshr, \
@@ -1217,7 +1217,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise right shift */ \
+   /* .description             =    vector lanewise right shift. shift amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vushr, \
@@ -1233,7 +1233,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise unsigned right shift */ \
+   /* .description             =    vector lanewise unsigned right shift. shift amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vrol, \
@@ -1249,7 +1249,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise rotate left */ \
+   /* .description             =    vector lanewise rotate left. rotation amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ mcompress, \
@@ -1849,7 +1849,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise left shift with mask*/ \
+   /* .description             =    vector lanewise left shift with mask. shift amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmshr, \
@@ -1865,7 +1865,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise right shift with mask*/ \
+   /* .description             =    vector lanewise right shift with mask. shift amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmushr, \
@@ -1881,7 +1881,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise unsigned right shift with mask*/ \
+   /* .description             =    vector lanewise unsigned right shift with mask. shift amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmrol, \
@@ -1897,7 +1897,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise rotate left with mask*/ \
+   /* .description             =    vector lanewise rotate left with mask. rotation amount is masked by (element type size) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmnotz, \
