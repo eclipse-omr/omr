@@ -37,6 +37,7 @@
 #undef _WINSOCKAPI_
 #endif
 #include <winsock2.h>
+#include <wdm.h>
 
 #if defined(_WIN32_WINNT_WINBLUE) && (_WIN32_WINNT_MAXVER >= _WIN32_WINNT_WINBLUE)
 #include <VersionHelpers.h>
@@ -598,6 +599,29 @@ WIN32_WINNT version constants :
 	}
 	return PPG_si_osType;
 }
+
+/**
+ * Retrieves the Windows OS version using RtlGetVersion().
+ *
+ * This function first attempts to retrieve the version using
+ * RtlGetVersion(). If that call fails, it falls back to
+ * GetVersionExW().
+ *
+ * @param[in/out] info OSVERSIONINFOW structure to populate
+ *
+ * @return TRUE if version information was successfully retrieved
+ */
+static BOOL
+getWindowsVersion(OSVERSIONINFOW *info)
+{
+	if (STATUS_SUCCESS == RtlGetVersion(info)) {
+		return TRUE;
+	}
+
+#pragma warning(suppress : 4996)
+	return GetVersionExW(info);
+}
+
 /**
  * Determine version information from the operating system.
  *
@@ -624,8 +648,7 @@ omrsysinfo_get_OS_version(struct OMRPortLibrary *portLibrary)
 		OSVERSIONINFOW versionInfo;
 		versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
 /* GetVersionEx() is deprecated, but still needed to detect Windows 10 when using older compilers. Suppress the warning. */
-#pragma warning( suppress : 4996 )
-		if (GetVersionExW(&versionInfo) && (10 <= versionInfo.dwMajorVersion)) {
+		if (getWindowsVersion(&versionInfo) && (10 <= versionInfo.dwMajorVersion)) {
 			/* Build information for Windows 10 can't be hard coded, use GetVersionEx() below. */
 			PPG_si_osVersion = NULL;
 		} else
@@ -660,13 +683,12 @@ omrsysinfo_get_OS_version(struct OMRPortLibrary *portLibrary)
 	if (NULL == PPG_si_osVersion) {
 		OSVERSIONINFOW versionInfo;
 		int len = sizeof("0123456789.0123456789 build 0123456789 ") + 1;
-		char *buffer;
-		uintptr_t position;
+		char *buffer = NULL;
+		uintptr_t position = 0;
 
+		memset(&versionInfo, 0, sizeof(versionInfo));
 		versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
-/* GetVersionEx() is deprecated, but still useful to get the Windows 10 build information. Suppress the warning. */
-#pragma warning( suppress : 4996 )
-		if (!GetVersionExW(&versionInfo)) {
+		if (!getWindowsVersion(&versionInfo)) {
 			return NULL;
 		}
 
