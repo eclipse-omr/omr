@@ -357,6 +357,10 @@ public:
     static TR::Register *vdsetelemHelper(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vcmpHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, bool complement,
         bool switchOperands);
+    static TR::Register *mToLongBitsHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic extractOp,
+        TR::InstOpCode::Mnemonic splatOp, int numElements);
+    static TR::Register *mLongBitsToMaskHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic splatOp,
+        TR::InstOpCode::Mnemonic unpackOp, TR::InstOpCode::Mnemonic subOp, int numElements);
 
     static TR::Register *f2iuEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *f2luEvaluator(TR::Node *node, TR::CodeGenerator *cg);

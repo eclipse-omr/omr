@@ -6824,17 +6824,16 @@
     /*                   PPCOpProp_SyncSideEffectFree, */
     /* }, */
 
-    /* { */
-    /* .mnemonic    =    OMR::InstOpCode::vgbbd, */
-    /* .name        =    "vgbbd", */
-    /* .description =    "Vector Gather Bits by Byte by Dword", */
-    /* .prefix      =    0x00000000, */
-    /* .opcode      =    0x1000050C, */
-    /* .format      =    FORMAT_UNKNOWN, */
-    /* .minimumALS  =    OMR_PROCESSOR_PPC_P8, */
-    /* .properties  =    PPCOpProp_IsVMX | */
-    /*                   PPCOpProp_SyncSideEffectFree, */
-    /* }, */
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::vgbbd,
+        /* .name        = */ "vgbbd",
+        /* .description =    "Vector Gather Bits by Byte by Dword", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x1000050C,
+        /* .format      = */ FORMAT_VRT_VRB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P8,
+        /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
+    },
 
     /* { */
     /* .mnemonic    =    OMR::InstOpCode::vinsertb, */
@@ -7217,6 +7216,39 @@
         /* .description =    "Vector Extract Byte Mask", */
         /* .prefix      = */ 0x00000000,
         /* .opcode      = */ 0x10080642,
+        /* .format      = */ FORMAT_RT_VRB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
+        /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
+    },
+
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::vextracthm,
+        /* .name        = */ "vextracthm",
+        /* .description =    "Vector Extract Halfword Mask", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x10090642,
+        /* .format      = */ FORMAT_RT_VRB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
+        /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
+    },
+
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::vextractwm,
+        /* .name        = */ "vextractwm",
+        /* .description =    "Vector Extract Word Mask", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x100A0642,
+        /* .format      = */ FORMAT_RT_VRB,
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
+        /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
+    },
+
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::vextractdm,
+        /* .name        = */ "vextractdm",
+        /* .description =    "Vector Extract Doubleword Mask", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x100B0642,
         /* .format      = */ FORMAT_RT_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
@@ -13785,8 +13817,8 @@
         /* .name        = */ "vpdepd",
         /* .description =    "Vector Parallel Bits Deposit Doubleword", */
         /* .prefix      = */ 0x00000000,
-        /* .opcode      = */ 0x00000000,
-        /* .format      = */ FORMAT_UNKNOWN,
+        /* .opcode      = */ 0x100005CD,
+        /* .format      = */ FORMAT_VRT_VRA_VRB,
         /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
         /* .properties  = */ PPCOpProp_IsVMX | PPCOpProp_SyncSideEffectFree,
     },

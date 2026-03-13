@@ -611,7 +611,7 @@
 // vextubrx,         // vector extract unsigned byte right-indexed
 // vextuhrx,         // vector extract unsigned hword right-indexed
 // vextuwrx,         // vector extract unsigned word right-indexed
-// vgbbd,            // Vector Gather Bits by Byte by Dword
+   vgbbd,            // Vector Gather Bits by Byte by Dword
 // vinsertb,         // vector insert Byte
 // vinserth,         // vector insert Hword
 // vinsertw,         // vector insert Word
@@ -645,6 +645,9 @@
 // vbpermd,          // vector bit permute DWord
    vbpermq,          // Vector Bit Permute Qword
    vextractbm,       // Vector Extract Byte Mask
+   vextracthm,       // Vector Extract Halfword Mask
+   vextractwm,       // Vector Extract Word Mask
+   vextractdm,       // Vector Extract Doubleword Mask
    vrld,             // Vector Rotate Left Dword
 // vsbox,            // Vector AES SubBytes
    vsel,             // vector conditional select
