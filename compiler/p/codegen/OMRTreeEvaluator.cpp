@@ -964,7 +964,45 @@ TR::Register *OMR::Power::TreeEvaluator::mFirstTrueEvaluator(TR::Node *node, TR:
 
 TR::Register *OMR::Power::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::Node *firstChild = node->getFirstChild();
+
+    TR_ASSERT_FATAL_WITH_NODE(node, firstChild->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    TR::Register *srcReg = cg->evaluate(firstChild);
+    TR::Register *resReg = cg->allocateRegister(TR_GPR);
+
+    // get number of trailing 0 bytes
+    generateTrg1Src1Instruction(cg, OMR::InstOpCode::vctzlsbb, node, resReg, srcReg);
+
+    // we can determine the number of trailing 0 vector elements by dividing by (element size)/(size of byte element)
+    // then, take (numElements-1) - numTrailingZeroes to get the corresponding index
+    switch (firstChild->getDataType().getVectorElementType()) {
+        case (TR::Int8):
+            // no division needed (divide by 1)
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subfic, node, resReg, resReg, 15);
+            break;
+        case (TR::Int16):
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sradi, node, resReg, resReg, 1); // divide by 2
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subfic, node, resReg, resReg, 7);
+            break;
+        case (TR::Int32):
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sradi, node, resReg, resReg, 2); // divide by 4
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subfic, node, resReg, resReg, 3);
+            break;
+        case (TR::Int64):
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sradi, node, resReg, resReg, 3); // divide by 8
+            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::subfic, node, resReg, resReg, 1);
+            break;
+        default:
+            TR_ASSERT_FATAL(false, "Unsupported vector type %s for mLastTrue\n", firstChild->getDataType().toString());
+            return NULL;
+    }
+
+    node->setRegister(resReg);
+    cg->decReferenceCount(firstChild);
+
+    return resReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::mToLongBitsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
