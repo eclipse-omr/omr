@@ -507,6 +507,24 @@ const OptimizationStrategy finalGlobalOpts[] = {
     { endGroup }
 };
 
+const OptimizationStrategy idiomRecognitionOpts[] = {
+    { globalCopyPropagation, IfLoops },
+    { basicBlockOrdering },
+    { inductionVariableAnalysis, IfLoops },
+    { loopCanonicalization, IfLoops },
+    { deadTreesElimination },
+    { treeSimplification },
+    { redundantInductionVarElimination, IfLoops },
+    { basicBlockOrdering, IfLoops },
+    { treesCleansing },
+    { redundantGotoElimination, IfNotJitProfiling },
+    { localCSE, IfEnabled },
+    { globalDeadStoreElimination, IfEnabledAndMoreThanOneBlock },
+    { deadTreesElimination },
+    { idiomRecognition, IfLoopsAndNotProfiling },
+    { endGroup }
+};
+
 // **************************************************************************
 //
 // Strategy that is run for each non-peeking IlGeneration - this allows early
@@ -922,6 +940,8 @@ OMR::Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *metho
         TR::OptimizationManager(self(), NULL, OMR::localValuePropagationGroup, localValuePropagationOpts);
     _opts[OMR::finalGlobalGroup]
         = new (comp->allocator()) TR::OptimizationManager(self(), NULL, OMR::finalGlobalGroup, finalGlobalOpts);
+    _opts[OMR::idiomRecognitionGroup] = new (comp->allocator())
+        TR::OptimizationManager(self(), NULL, OMR::idiomRecognitionGroup, idiomRecognitionOpts);
 
     // NOTE: Please add new OMR optimization groups here!
 #endif
@@ -1458,6 +1478,10 @@ int32_t OMR::Optimizer::performOptimization(const OptimizationStrategy *optimiza
         }
         case IfVectorAPI: {
             if (comp()->getMethodSymbol()->hasVectorAPI() && !comp()->getOption(TR_DisableVectorAPIExpansion))
+                doThisOptimization = true;
+        } break;
+        case IfKnownIdiomRecognitionOpportunity: {
+            if (comp()->getMethodSymbol()->hasIdiomRecognitionOpportunities())
                 doThisOptimization = true;
         } break;
         case IfExceptionHandlers: {

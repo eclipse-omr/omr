@@ -4399,6 +4399,9 @@ static void updateCallersFlags(TR::ResolvedMethodSymbol *callerSymbol, TR::Resol
     if (calleeSymbol->hasVectorAPI())
         callerSymbol->setHasVectorAPI(true);
 
+    if (calleeSymbol->hasIdiomRecognitionOpportunities())
+        callerSymbol->setHasIdiomRecognitionOpportunities(true);
+
     if (calleeSymbol->hasExceptionHandlers())
         callerSymbol->setHasExceptionHandlers(true);
 

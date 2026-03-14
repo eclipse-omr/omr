@@ -136,6 +136,7 @@ enum {
     IfVectorAPI, // JEP414: Extra analysis required to optimize Vector API
     IfExceptionHandlers,
     IfLoopsAndNotCompileTimeSensitive, // If loops and compile time is not that important
+    IfKnownIdiomRecognitionOpportunity,
     MarkLastRun
 };
 

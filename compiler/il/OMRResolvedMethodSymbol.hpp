@@ -307,6 +307,10 @@ public:
 
     void setHasVectorAPI(bool b) { _methodFlags2.set(HasVectorAPI, b); }
 
+    bool hasIdiomRecognitionOpportunities() { return _methodFlags2.testAny(HasIdiomRecognitionOpportunities); }
+
+    void setHasIdiomRecognitionOpportunities(bool b) { _methodFlags2.set(HasIdiomRecognitionOpportunities, b); }
+
     int32_t getNumberOfBackEdges();
 
     bool canDirectNativeCall() { return _properties.testAny(CanDirectNativeCall); }
