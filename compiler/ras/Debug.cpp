@@ -209,7 +209,6 @@ TR_Debug::TR_Debug(TR::Compilation *c)
     if (c) {
         _cg = c->cg();
         _fe = c->fe();
-        _outFile = c->getOutFile();
         _logger = c->log();
         resetDebugData();
 

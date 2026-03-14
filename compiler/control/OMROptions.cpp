@@ -904,8 +904,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "O\tenable transforming StringBuilder constructor to preallocate a buffer for String concatenation operations", SET_OPTION_BIT(TR_DisableStringBuilderTransformer), "F" },
     { "disableStringPeepholes", "O\tdisable stringPeepholes", SET_OPTION_BIT(TR_DisableStringPeepholes), "F" },
     { "disableStripMining", "O\tdisable loop strip mining", SET_OPTION_BIT(TR_DisableStripMining), "F" },
-    { "disableSuffixLogs", "O\tdo not add the date/time/pid suffix to the file name of the logs",
-     RESET_OPTION_BIT(TR_EnablePIDExtension), "F", NOT_IN_SUBSET },
     { "disableSupportForCpuSpentInCompilation", "M\tdo not provide CPU spent in compilation",
      SET_OPTION_BIT(TR_DisableSupportForCpuSpentInCompilation), "F" },
     { "disableSVMDuringStartup", "O\tdisable SVM during startup", SET_OPTION_BIT(TR_DisableSVMDuringStartup), "F",
@@ -1029,6 +1027,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "M\tdo not activate another compilation thread when high priority request is blocked", RESET_OPTION_BIT(TR_ActivateCompThreadWhenHighPriReqIsBlocked), "F", NOT_IN_SUBSET },
     { "dontAddHWPDataToIProfiler", "O\tDont add HW Data to IProfiler", SET_OPTION_BIT(TR_DontAddHWPDataToIProfiler),
      "F", NOT_IN_SUBSET },
+    { "dontApplyLogFileNameSuffix", "O\tdo not add a configurable suffix to log file names",
+     SET_OPTION_BIT(TR_DontApplyLogFileNameSuffix), "F", NOT_IN_SUBSET },
     { "dontCompile=",
      "D{regex}\t regex which specifies a subset of methods not to compile. If the option is passed via -Xaot, then"
         " it is not AOT compiled, but may be jit compiled. The converse is true for -Xjit", TR::Options::setRegex, offsetof(OMR::Options, _dontCompile), 0, "F", NOT_IN_SUBSET },
@@ -1571,8 +1571,10 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      offsetof(OMR::Options, _lockReserveClass), 0, "P" },
     { "lockVecRegs=", "M<nn>\tThe number of vector register to lock (from end) Range: 0-32",
      TR::Options::setStaticNumeric, (intptr_t)&OMR::Options::_numVecRegsToLock, 0, "F%d", NOT_IN_SUBSET },
-    { "log=", "L<filename>\twrite log output to filename", TR::Options::setString, offsetof(OMR::Options, _logFileName),
-     0, "P%s" },
+    { "log=", "L<filename>\twrite log output to filename", TR::Options::setString,
+     offsetof(OMR::Options, _logFileNameBase), 0, "P%s" },
+    { "logFileNameSuffix=", "O\tconfigurable suffix with format specifiers to append to log file names",
+     TR::Options::setStaticString, (intptr_t)(&TR::Options::_logFileNameSuffix), 0, "F%s", NOT_IN_SUBSET },
     { "loi=", "O<nnn>\tindex of the last optimization transformation to perform", TR::Options::set32BitSignedNumeric,
      offsetof(OMR::Options, _lastOptTransformationIndex), 0, "F%d" },
     { "loopyAsyncCheckInsertionMaxEntryFreq=",
@@ -1839,10 +1841,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      SET_OPTION_BIT(TR_SubtractLoopyMethodCounts), "F", NOT_IN_SUBSET },
     { "subtractMethodCountsWhenIprofilerIsOff", "C\tSubtract method counts instead of dividing when Iprofiler is off",
      SET_OPTION_BIT(TR_SubtractMethodCountsWhenIprofilerIsOff), "F", NOT_IN_SUBSET },
-    { "suffixLogs", "O\tadd the date/time/pid suffix to the file name of the logs",
-     SET_OPTION_BIT(TR_EnablePIDExtension), "F", NOT_IN_SUBSET },
-    { "suffixLogsFormat=", "O\tadd the suffix in specified format to the file name of the logs", TR::Options::setString,
-     offsetof(OMR::Options, _suffixLogsFormat), 0, "P%s", NOT_IN_SUBSET },
     { "supportSwitchToInterpeter", "C\tGenerate code to allow each method to switch to the interpreter",
      SET_OPTION_BIT(TR_SupportSwitchToInterpreter), "P" },
     { "suppressEA=",
@@ -2523,7 +2521,7 @@ bool OMR::Options::_optionsTablesValidated = false;
 
 bool OMR::Options::_dualLogging = false; // a log file can be used in two different option sets, or in
                                          // in the main TR::Options object and in an option set
-bool OMR::Options::_logsForOtherCompilationThreadsExist = false;
+bool OMR::Options::_loggersForOtherCompilationThreadsExist = false;
 
 int32_t OMR::Options::_aggressivenessLevel = -1; // -1 means not set
 
@@ -2547,6 +2545,8 @@ int32_t OMR::Options::_TransactionalMemoryRetryCount = 1;
 #endif
 
 int32_t OMR::Options::_minimalNumberOfTreeTopsInsideTMMonitor = 6;
+
+OMR::Logger *OMR::Options::_defaultLogger = NULL;
 
 TR::SimpleRegex *OMR::Options::_debugCounterInsertByteCode = NULL;
 TR::SimpleRegex *OMR::Options::_debugCounterInsertJittedBody = NULL;
@@ -2591,7 +2591,31 @@ bool OMR::Options::createDebug()
     return _debug != 0;
 }
 
-OMR::Logger *OMR::Options::getDefaultLogger() { return OMR::NullLogger::create(); }
+OMR::Logger *OMR::Options::getDefaultLogger()
+{
+    /**
+     * Use an environment variable to control the AssertingLogger selection because
+     * the default Logger may be requested before JIT command-line options are
+     * processed.
+     */
+    static bool installAssertingLogger = feGetEnv("TR_InstallAssertingLoggerAsDefaultLogger") ? true : false;
+
+    if (_defaultLogger == NULL) {
+        /**
+         * Initializing this static field can be an unlikely race between compilation threads.
+         * However, this is unlikely (if not impossible) to occur in practice because it will be
+         * initialized when the top-level Options object is created.  Even if multiple default
+         * Loggers are somehow created, this is perfectly fine from a functional perspective.
+         */
+        if (installAssertingLogger) {
+            _defaultLogger = OMR::AssertingLogger::create(trPersistentMemory);
+        } else {
+            _defaultLogger = OMR::NullLogger::create(trPersistentMemory);
+        }
+    }
+
+    return _defaultLogger;
+}
 
 bool OMR::Options::requiresDebugObject()
 {
@@ -2632,7 +2656,7 @@ OMR::Options::Options(TR_Memory *trMemory, int32_t index, int32_t lineNum, TR_Re
     void *oldStartPC, TR_OptimizationPlan *optimizationPlan, bool isAOT, int32_t compThreadID)
     : _optionSets(NULL)
     , _postRestoreOptionSets(NULL)
-    , _logListForOtherCompThreads(0)
+    , _loggerListForOtherCompThreads(0)
     , _codeCacheKind(TR::CodeCacheKind::DEFAULT_CC)
 {
     TR_ASSERT(optimizationPlan, "Must have an optimization plan when calling this method");
@@ -2654,7 +2678,7 @@ OMR::Options::Options(TR_Memory *trMemory, int32_t index, int32_t lineNum, TR_Re
     // At this point this object contains the log for compThreadId==0
     // If this is a different compilation thread we need to find the right log
     //
-    if (_logFileName && compThreadID > 0 && !_suppressLogFileBecauseDebugObjectNotCreated) {
+    if (getLogFileNameBase() && compThreadID > 0 && !_suppressLogFileBecauseDebugObjectNotCreated) {
         self()->setLogForCompilationThread(compThreadID, mainOptions);
     }
 
@@ -2722,7 +2746,6 @@ OMR::Options::Options(TR_Memory *trMemory, int32_t index, int32_t lineNum, TR_Re
 
     if (optimizationPlan->isLogCompilation()) {
         if (_debug || TR::Options::createDebug()) {
-            _logFile = optimizationPlan->getLogCompilation();
             _logger = optimizationPlan->getLogger();
         }
     }
@@ -2733,7 +2756,6 @@ OMR::Options::Options(TR_Memory *trMemory, int32_t index, int32_t lineNum, TR_Re
      * and thus we don't want to suppress the log.
      */
     if (_suppressLogFileBecauseDebugObjectNotCreated && !optimizationPlan->isLogCompilation()) {
-        _logFile = NULL;
         _logger = TR::Options::getDefaultLogger();
     }
 }
@@ -2741,24 +2763,21 @@ OMR::Options::Options(TR_Memory *trMemory, int32_t index, int32_t lineNum, TR_Re
 OMR::Options::Options(TR::Options &other)
     : _optionSets(NULL)
     , _postRestoreOptionSets(NULL)
-    , _logListForOtherCompThreads(0)
+    , _loggerListForOtherCompThreads(0)
 {
     *this = other;
     if (_suppressLogFileBecauseDebugObjectNotCreated) {
-        _logFile = NULL;
         _logger = TR::Options::getDefaultLogger();
     }
 }
 
-void OMR::Options::init()
+void OMR::Options::initialize()
 {
     _optionSets = NULL;
     _postRestoreOptionSets = NULL;
     _startOptions = NULL;
     _envOptions = NULL;
-    _logFileName = NULL;
-    _suffixLogsFormat = NULL;
-    _logFile = NULL;
+    _logFileNameBase = NULL;
     _logger = TR::Options::getDefaultLogger();
     _optFileName = NULL;
     _customStrategy = NULL;
@@ -2886,7 +2905,7 @@ void OMR::Options::init()
     _jProfilingLoopRecompThreshold = 0;
     _blockShufflingSequence = NULL;
     _randomSeed = 0;
-    _logListForOtherCompThreads = NULL;
+    _loggerListForOtherCompThreads = NULL;
     _induceOSR = NULL;
     _bigCalleeThreshold = 0;
     _bigCalleeThresholdForColdCallsAtWarm = 0;
@@ -3287,34 +3306,34 @@ bool OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig)
             self()->setOption(TR_DisableNoVMAccess);
     } else // option set processing
     {
-        _logFile = NULL;
-        _logger = TR::Options::getDefaultLogger();
+        setLogger(TR::Options::getDefaultLogger());
 
-        if (_logFileName) {
-            if (_logFileName[0])
+        if (getLogFileNameBase()) {
+            if (getLogFileNameBase()[0])
                 _hasLogFile = true; // non-null log file name
             else
-                _logFileName = NULL; // null log file name ... treat as no log file
+                setLogFileNameBase(NULL); // null log file name ... treat as no log file
         }
 
-        if (_logFileName) {
+        if (getLogFileNameBase()) {
             if (!_debug)
                 TR::Options::createDebug();
 
             if (_debug) {
-                _logFile = _debug->findLogFile(TR::Options::getAOTCmdLineOptions(), TR::Options::getJITCmdLineOptions(),
-                    optionSet, _logFileName, _logger);
-                if (_logFile == NULL) {
-                    self()->openLogFileCreateLogger();
-                    if (!_logger) { // openLogFileCreateLogger failed
-                        fprintf(stderr, "Unable to open log file %s\n", _logFileName);
-                        _logger = TR::Options::getDefaultLogger();
-                    }
+                OMR::Logger *logger = self()->findLoggerForLogFileName(TR::Options::getAOTCmdLineOptions(),
+                    TR::Options::getJITCmdLineOptions(), optionSet, getLogFileNameBase());
+
+                if (!logger) {
+                    logger = self()->openLogFileCreateLogger();
+                    TR_ASSERT_FATAL(logger, "A Logger was not created for this option set");
+                } else {
+                    // A log file is used in two different option sets, or
+                    // in the main TR::Options object and in an option set
+                    //
+                    OMR::Options::_dualLogging = true;
                 }
 
-                else
-                    OMR::Options::_dualLogging = true; // a log file is used in two different option sets, or in
-                                                       // in the main TR::Options object and in an option set
+                setLogger(logger);
             }
         } else if (self()->requiresLogFile()) {
             TR_VerboseLog::writeLineLocked(TR_Vlog_INFO,
@@ -3377,10 +3396,10 @@ const char *OMR::Options::processOptionsJIT(const char *jitOptions, void *feBase
     // only do this if this the first time around we're processing options
     //
     if (!_jitCmdLineOptions) {
-        _jitCmdLineOptions = new (PERSISTENT_NEW) TR::Options();
+        _jitCmdLineOptions = TR::Options::create(trPersistentMemory);
         _cmdLineOptions = _jitCmdLineOptions;
     } else {
-        _jitCmdLineOptions->init();
+        _jitCmdLineOptions->initialize();
     }
 
     _feBase = feBase;
@@ -3414,9 +3433,9 @@ const char *OMR::Options::processOptionsAOT(const char *aotOptions, void *feBase
     // only do this if this the first time around we're processing options
     //
     if (!_aotCmdLineOptions)
-        _aotCmdLineOptions = new (PERSISTENT_NEW) TR::Options();
+        _aotCmdLineOptions = TR::Options::create(trPersistentMemory);
     else
-        _aotCmdLineOptions->init();
+        _aotCmdLineOptions->initialize();
 
     _feBase = feBase;
     _fe = fe;
@@ -3499,15 +3518,6 @@ void OMR::Options::jitPreProcess()
     // alignment problem for float/double
     self()->setOption(TR_DisableIntrinsics);
 #endif
-
-#if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-    bool forceSuffixLogs = false;
-#else
-    bool forceSuffixLogs = true;
-#endif
-
-    if (forceSuffixLogs)
-        self()->setOption(TR_EnablePIDExtension);
 
     // The signature-hashing seed algorithm it the best default.
     // Unless the user specifies randomSeed=nosignature, we want to override the
@@ -3782,162 +3792,174 @@ void OMR::Options::jitPreProcess()
 
 void OMR::Options::shutdown(TR_FrontEnd *fe)
 {
-    if (TR::Options::isFullyInitialized()) {
-        if (TR::Options::getAOTCmdLineOptions() && TR::Options::getAOTCmdLineOptions()->getLogFile())
-            TR::Options::closeLogFile(fe, TR::Options::getAOTCmdLineOptions()->getLogFile(),
-                TR::Options::getAOTCmdLineOptions()->getLogger());
+    TR::Options *aotCmdLineOptions = TR::Options::getAOTCmdLineOptions();
+    TR::Options *jitCmdLineOptions = TR::Options::getJITCmdLineOptions();
 
-        if (TR::Options::getAOTCmdLineOptions()) {
-            TR::OptionSet *optionSet, *prev;
-            for (optionSet = TR::Options::getAOTCmdLineOptions()->_optionSets; optionSet;
+    if (TR::Options::isFullyInitialized()) {
+        if (aotCmdLineOptions && aotCmdLineOptions->getLogger())
+            TR::Options::closeLogger(aotCmdLineOptions->getLogger());
+
+        if (aotCmdLineOptions) {
+            for (TR::OptionSet *optionSet = aotCmdLineOptions->_optionSets; optionSet;
                  optionSet = optionSet->getNext()) {
-                TR::FILE *logFile = optionSet->getOptions()->getLogFile();
                 OMR::Logger *logger = optionSet->getOptions()->getLogger();
-                if (logFile == NULL || logFile == TR::Options::getAOTCmdLineOptions()->getLogFile())
+
+                if (logger == NULL || logger == aotCmdLineOptions->getLogger())
                     continue;
-                for (prev = TR::Options::getAOTCmdLineOptions()->_optionSets; prev != optionSet;
-                     prev = prev->getNext()) {
-                    if (prev->getOptions()->getLogFile() == logFile) {
-                        logFile = NULL;
+
+                for (TR::OptionSet *prev = aotCmdLineOptions->_optionSets; prev != optionSet; prev = prev->getNext()) {
+                    if (prev->getOptions()->getLogger() == logger) {
                         logger = NULL;
                         break;
                     }
                 }
-                if (logFile != NULL)
-                    TR::Options::closeLogFile(fe, logFile, logger);
+
+                if (logger)
+                    TR::Options::closeLogger(logger);
             }
         }
 
-        if (TR::Options::getJITCmdLineOptions()) {
-            TR::OptionSet *optionSet, *prev;
-
-            if (TR::Options::getJITCmdLineOptions()->getLogFile()) {
-                TR::FILE *logFile = TR::Options::getJITCmdLineOptions()->getLogFile();
-                OMR::Logger *logger = TR::Options::getJITCmdLineOptions()->getLogger();
-                if (TR::Options::getAOTCmdLineOptions()) {
-                    if (logFile == TR::Options::getAOTCmdLineOptions()->getLogFile()) {
-                        logFile = NULL;
+        if (jitCmdLineOptions) {
+            if (jitCmdLineOptions->getLogger()) {
+                OMR::Logger *logger = jitCmdLineOptions->getLogger();
+                if (aotCmdLineOptions) {
+                    if (logger == aotCmdLineOptions->getLogger()) {
                         logger = NULL;
                     } else {
-                        TR::OptionSet *aotOptionSet;
-
-                        for (aotOptionSet = TR::Options::getAOTCmdLineOptions()->_optionSets; aotOptionSet;
+                        for (TR::OptionSet *aotOptionSet = aotCmdLineOptions->_optionSets; aotOptionSet;
                              aotOptionSet = aotOptionSet->getNext()) {
-                            TR::FILE *aotLogFile = aotOptionSet->getOptions()->getLogFile();
-                            if (aotLogFile == logFile) {
-                                logFile = NULL;
+                            OMR::Logger *aotLogger = aotOptionSet->getOptions()->getLogger();
+                            if (aotLogger == logger) {
                                 logger = NULL;
                                 break;
                             }
                         }
                     }
                 }
-                if (logFile != NULL) {
-                    TR::Options::closeLogFile(fe, logFile, logger);
+
+                if (logger) {
+                    TR::Options::closeLogger(logger);
                 }
             }
-            for (optionSet = TR::Options::getJITCmdLineOptions()->_optionSets; optionSet;
+
+            for (TR::OptionSet *optionSet = jitCmdLineOptions->_optionSets; optionSet;
                  optionSet = optionSet->getNext()) {
-                TR::FILE *logFile = optionSet->getOptions()->getLogFile();
                 OMR::Logger *logger = optionSet->getOptions()->getLogger();
-                if (logFile == NULL || logFile == TR::Options::getJITCmdLineOptions()->getLogFile())
+                if (logger == NULL || logger == jitCmdLineOptions->getLogger())
                     continue;
-                for (prev = TR::Options::getJITCmdLineOptions()->_optionSets; prev != optionSet;
-                     prev = prev->getNext()) {
-                    if (prev->getOptions()->getLogFile() == logFile) {
-                        logFile = NULL;
+
+                for (TR::OptionSet *prev = jitCmdLineOptions->_optionSets; prev != optionSet; prev = prev->getNext()) {
+                    if (prev->getOptions()->getLogger() == logger) {
                         logger = NULL;
                         break;
                     }
                 }
-                if (TR::Options::getAOTCmdLineOptions() && (logFile != NULL)) {
-                    TR::OptionSet *aotOptionSet;
-                    if (logFile == TR::Options::getAOTCmdLineOptions()->getLogFile()) {
-                        logFile = NULL;
+
+                if (aotCmdLineOptions && (logger != NULL)) {
+                    if (logger == aotCmdLineOptions->getLogger()) {
                         logger = NULL;
                         continue;
                     }
-                    for (aotOptionSet = TR::Options::getAOTCmdLineOptions()->_optionSets; aotOptionSet;
+
+                    for (TR::OptionSet *aotOptionSet = aotCmdLineOptions->_optionSets; aotOptionSet;
                          aotOptionSet = aotOptionSet->getNext()) {
-                        TR::FILE *aotLogFile = aotOptionSet->getOptions()->getLogFile();
-                        if (aotLogFile == logFile) {
-                            logFile = NULL;
+                        OMR::Logger *aotLogger = aotOptionSet->getOptions()->getLogger();
+                        if (aotLogger == logger) {
                             logger = NULL;
                             break;
                         }
                     }
                 }
-                if (logFile != NULL) {
-                    TR::Options::closeLogFile(fe, logFile, logger);
+
+                if (logger) {
+                    TR::Options::closeLogger(logger);
                 }
             }
         }
-        if (_logsForOtherCompilationThreadsExist)
-            TR::Options::closeLogsForOtherCompilationThreads(fe);
+
+        if (_loggersForOtherCompilationThreadsExist) {
+            TR::Options::closeLoggersForOtherCompilationThreads(fe);
+        }
     }
 
     if (fe->isSafeToFreeOptionsOnShutdown()) {
-        if (TR::Options::getAOTCmdLineOptions()->_countString) {
+        if (aotCmdLineOptions->_countString) {
             TR::Options::jitPersistentFree(
-                const_cast<void *>(reinterpret_cast<const void *>(TR::Options::getAOTCmdLineOptions()->_countString)));
+                const_cast<void *>(reinterpret_cast<const void *>(aotCmdLineOptions->_countString)));
         }
         TR::Options::jitPersistentFree(_aotCmdLineOptions);
         _aotCmdLineOptions = NULL;
 
-        if (TR::Options::getJITCmdLineOptions()->_countString) {
+        if (jitCmdLineOptions->_countString) {
             TR::Options::jitPersistentFree(
-                const_cast<void *>(reinterpret_cast<const void *>(TR::Options::getJITCmdLineOptions()->_countString)));
+                const_cast<void *>(reinterpret_cast<const void *>(jitCmdLineOptions->_countString)));
         }
+
         TR::Options::jitPersistentFree(_jitCmdLineOptions);
         _jitCmdLineOptions = NULL;
     }
 }
 
-void OMR::Options::safelyCloseLogs(TR::Options *options, TR_MCTLogs *&closedLogs, TR_FrontEnd *fe)
+void OMR::Options::safelyCloseLoggersInner(TR::Options *options, TR_MCTLogs *&closedLoggers, TR_FrontEnd *fe)
 {
-    TR_MCTLogs *logEntry = options->getLogListForOtherCompThreads();
-    while (logEntry) {
-        TR_MCTLogs *nextLogEntry = logEntry->next();
-        // search
-        TR_MCTLogs *logEntry1 = closedLogs;
-        for (; logEntry1; logEntry1 = logEntry1->next()) {
-            if (logEntry->getLogFile() == logEntry1->getLogFile()) {
-                // Log already closed; delete entry
-                TR::Options::jitPersistentFree(logEntry);
+    TR_MCTLogs *loggerEntry = options->getLoggerListForOtherCompThreads();
+    while (loggerEntry) {
+        TR_MCTLogs *nextLoggerEntry = loggerEntry->next();
+
+        TR_MCTLogs *loggerEntry1 = closedLoggers;
+        for (; loggerEntry1; loggerEntry1 = loggerEntry1->next()) {
+            if (loggerEntry->getLogger() == loggerEntry1->getLogger()) {
+                // Logger already closed; free entry
+                //
+                TR::Options::jitPersistentFree(loggerEntry);
                 break;
             }
         }
-        if (!logEntry1) {
-            // This log was not yet closed
-            TR::Options::closeLogFile(fe, logEntry->getLogFile(), logEntry->getLogger());
-            // Add to list of closed logs
-            logEntry->setNext(closedLogs);
-            closedLogs = logEntry;
+
+        if (!loggerEntry1) {
+            // This logger is not yet closed
+            //
+            TR::Options::closeLogger(loggerEntry->getLogger());
+
+            // Add to list of closed loggers
+            //
+            loggerEntry->setNext(closedLoggers);
+            closedLoggers = loggerEntry;
         }
-        logEntry = nextLogEntry;
+
+        loggerEntry = nextLoggerEntry;
     }
 }
 
-void OMR::Options::closeLogsForOtherCompilationThreads(TR_FrontEnd *fe)
+void OMR::Options::safelyCloseLoggers(TR::Options *options, TR_MCTLogs *&closedLoggers, TR_FrontEnd *fe)
 {
-    TR::OptionSet *optionSet;
-    TR_MCTLogs *listOfClosedLogs = NULL;
+    TR::Options::safelyCloseLoggersInner(options, closedLoggers, fe);
+
+    for (TR::OptionSet *optionSet = options->_optionSets; optionSet; optionSet = optionSet->getNext()) {
+        TR::Options::safelyCloseLoggersInner(optionSet->getOptions(), closedLoggers, fe);
+    }
+}
+
+void OMR::Options::closeLoggersForOtherCompilationThreads(TR_FrontEnd *fe)
+{
+    // A running list of Loggers prepended as they are closed during shutdown
+    //
+    TR_MCTLogs *closedLoggers = NULL;
+
     fe->acquireLogMonitor();
-    TR::Options::safelyCloseLogs(TR::Options::getAOTCmdLineOptions(), listOfClosedLogs, fe);
-    for (optionSet = TR::Options::getAOTCmdLineOptions()->_optionSets; optionSet; optionSet = optionSet->getNext())
-        TR::Options::safelyCloseLogs(optionSet->getOptions(), listOfClosedLogs, fe);
 
-    TR::Options::safelyCloseLogs(TR::Options::getJITCmdLineOptions(), listOfClosedLogs, fe);
-    for (optionSet = TR::Options::getJITCmdLineOptions()->_optionSets; optionSet; optionSet = optionSet->getNext())
-        TR::Options::safelyCloseLogs(optionSet->getOptions(), listOfClosedLogs, fe);
+    TR::Options::safelyCloseLoggers(TR::Options::getAOTCmdLineOptions(), closedLoggers, fe);
+    TR::Options::safelyCloseLoggers(TR::Options::getJITCmdLineOptions(), closedLoggers, fe);
 
-    // Now free all the log entries that have been closed
-    TR_MCTLogs *logEntry = listOfClosedLogs;
+    // Free all the log entries that have been closed
+    //
+    TR_MCTLogs *logEntry = closedLoggers;
     while (logEntry) {
         TR_MCTLogs *nextLogEntry = logEntry->next();
         TR::Options::jitPersistentFree(logEntry);
         logEntry = nextLogEntry;
     }
+
     fe->releaseLogMonitor();
 }
 
@@ -4533,11 +4555,11 @@ bool OMR::Options::jitPostProcess()
     _enableDLTBytecodeIndex = -1;
     _disableDLTBytecodeIndex = -1;
 
-    if (_logFileName) {
-        if (_logFileName[0])
+    if (getLogFileNameBase()) {
+        if (getLogFileNameBase()[0])
             _hasLogFile = true; // non-null log file name
         else
-            _logFileName = NULL; // null log file name ... treat as no log file
+            setLogFileNameBase(NULL); // null log file name ... treat as no log file
     }
 
     if (self()->getOption(TR_ForceNonSMP)) {
@@ -4546,12 +4568,15 @@ bool OMR::Options::jitPostProcess()
         TR::Compiler->relocatableTarget.setSMP(false);
     }
 
-    if (_logFileName) {
+    if (getLogFileNameBase()) {
         if (!_debug)
             TR::Options::createDebug();
 
-        if (_debug)
-            self()->openLogFileCreateLogger();
+        if (_debug) {
+            OMR::Logger *logger = self()->openLogFileCreateLogger();
+            TR_ASSERT_FATAL(logger, "A Logger was not created");
+            setLogger(logger);
+        }
     } else if (self()->requiresLogFile()) {
         TR_VerboseLog::writeLineLocked(TR_Vlog_FAILURE,
             "Log file option must be specified when a trace options is used: log=<filename>");
@@ -4672,118 +4697,131 @@ bool OMR::Options::requiresLogFile()
     return false;
 }
 
-void getTimeInSeconds(char *buf, size_t size);
-void getTRPID(char *buf, size_t size);
-
-OMR::Logger *OMR::Options::createLoggerForLogFile(TR::FILE *file)
+OMR::Logger *OMR::Options::createLoggerForLogFileName(const char *logFileName, const char *fileMode)
 {
     OMR::Logger *logger = NULL;
 
     if (self()->getOption(TR_ForceTRIOForLoggers)) {
-        logger = OMR::TRIOStreamLogger::create(file);
+        logger = OMR::TRIOStreamLogger::create(trPersistentMemory, logFileName, fileMode);
     } else {
         // An OMR::CStdIOStreamLogger is the default logger
         //
-        logger = OMR::CStdIOStreamLogger::create((::FILE *)file);
+        logger = OMR::CStdIOStreamLogger::create(trPersistentMemory, logFileName, fileMode);
     }
 
-    if (_traceFileLengthInMiB > 0) {
+    if (logger && _traceFileLengthInMiB > 0) {
         // Wrap the logger in a CircularLogger if requested. The wrapped logger must be enabled first.
         //
         logger->setEnabled_DEPRECATED(true);
-        logger = OMR::CircularLogger::create(logger, _traceFileLengthInMiB << 20);
+        logger = OMR::CircularLogger::create(trPersistentMemory, logger, _traceFileLengthInMiB << 20);
     }
 
     return logger;
 }
 
-void OMR::Options::openLogFileCreateLogger(int32_t idSuffix)
+char *OMR::Options::buildLogFileName(char *buf, int32_t bufSize, const char *baseLogFileName, int32_t idSuffix,
+    const char *logFileNameSuffix, bool applySuffix)
 {
-    _logFile = NULL;
+    char *cursor = buf;
+    int32_t remainingBufSizeChars = bufSize;
 
-    TR_ASSERT_FATAL(_logFileName, "assertion failure");
+    bool truncated;
+    int32_t charsWritten;
 
-    if (_suffixLogsFormat)
-        self()->setOption(TR_EnablePIDExtension);
-
-#define FN_BUF_SIZE 1025
-    char buf0[FN_BUF_SIZE];
-    char buf1[FN_BUF_SIZE];
-    char *destBuf = buf0;
-    char *otherBuf = buf1;
-
-    char *fn = _logFileName;
-
-    if (idSuffix >= 0) // Must add the suffix to the name
-    {
-        size_t len = strlen(_logFileName);
-        bool truncated = TR::snprintfTrunc(destBuf, FN_BUF_SIZE, "%s.%d", _logFileName, idSuffix);
-        if (truncated)
-            return;
-        fn = destBuf;
-        std::swap(destBuf, otherBuf);
-    }
-
-    const char *fmodeString = "wb+";
-    if (self()->getOption(TR_EnablePIDExtension)) {
-        if (!_suffixLogsFormat) {
-            // Append time id. TPO may invoke TR multiple times with different partition
-            size_t len = strlen(fn);
-            char pid_buf[20];
-            char time_buf[20];
-            getTRPID(pid_buf, sizeof(pid_buf));
-            getTimeInSeconds(time_buf, sizeof(time_buf));
-            bool truncated = TR::snprintfTrunc(destBuf, FN_BUF_SIZE, "%s.%s.%s", fn, pid_buf, time_buf);
-            if (truncated)
-                return;
-            fn = destBuf;
-            std::swap(destBuf, otherBuf);
-        }
-
-        fn = _fe->getFormattedName(destBuf, FN_BUF_SIZE, fn, _suffixLogsFormat, true);
-        _logFile = trfopen(fn, fmodeString, false);
+    if (idSuffix >= 0) {
+        truncated = TR::snprintfTrunc(cursor, remainingBufSizeChars, &charsWritten, "%s.%d", baseLogFileName, idSuffix);
     } else {
-        fn = _fe->getFormattedName(destBuf, FN_BUF_SIZE, fn, NULL, false);
-        _logFile = trfopen(fn, fmodeString, false);
+        truncated = TR::snprintfTrunc(cursor, remainingBufSizeChars, &charsWritten, "%s", baseLogFileName);
     }
 
-#undef FN_BUF_SIZE
-
-    /**
-     * Prepare a OMR::Logger wrapper for the newly opened log file and add the
-     * boilerplate header.
-     */
-    if (_logFile) {
-        _logger = self()->createLoggerForLogFile(_logFile);
-        TR_ASSERT_FATAL(_logger, "Unable to create required Logger object");
-        _logger->setEnabled_DEPRECATED(true);
-
-        _logger->prints("<?xml version=\"1.0\" standalone=\"no\"?>\n"
-                        "<jitlog>\n");
-
-        if (_numUsableCompilationThreads > 1) {
-            _logger->prints("<!--\n"
-                            "MULTIPLE LOG FILES MAY EXIST\n"
-                            "Please check for ADDITIONAL log files named:");
-
-            for (int i = 1; i < _numUsableCompilationThreads; i++)
-                _logger->printf("  %s.%d", _logFileName, i);
-
-            _logger->prints("\n-->\n");
-        }
+    if (truncated) {
+        return NULL;
     }
+
+    // Return the log filename built from the base log filename if a suffix is not desired or
+    // provided.
+    //
+    // The port library is required to process format specifiers in the suffix.
+    // Return the log filename built from the base log filename if a port library not available.
+    //
+    if (!applySuffix || !logFileNameSuffix || TR::Compiler->omrPortLib == NULL) {
+        return buf;
+    }
+
+    cursor += charsWritten;
+    remainingBufSizeChars -= charsWritten;
+
+    OMRPORT_ACCESS_FROM_OMRPORT(TR::Compiler->omrPortLib);
+
+    int64_t curTime = omrtime_current_time_millis();
+    J9StringTokens *tokens = omrstr_create_tokens(curTime);
+    if (tokens == NULL) {
+        return NULL;
+    }
+
+    // Write the suffix to the buffer, expanding tokens as necessary
+    //
+    uintptr_t substLength = omrstr_subst_tokens(cursor, remainingBufSizeChars, logFileNameSuffix, tokens);
+    omrstr_free_tokens(tokens);
+
+    // Check for insufficient buffer space for expanded tokens
+    //
+    return (substLength >= remainingBufSizeChars) ? NULL : buf;
 }
 
-void OMR::Options::closeLogFile(TR_FrontEnd *fe, TR::FILE *file, OMR::Logger *log)
+OMR::Logger *OMR::Options::openLogFileCreateLogger(int32_t idSuffix, bool applyLogFileNameSuffix)
 {
-    if (file != NULL)
+    TR_ASSERT_FATAL(getLogFileNameBase(), "expecting base log filename");
+
+    applyLogFileNameSuffix = applyLogFileNameSuffix && !self()->getOption(TR_DontApplyLogFileNameSuffix);
+
+    const int32_t bufSize = 512;
+    char buf[bufSize];
+
+    char *logFileName = TR::Options::buildLogFileName(buf, bufSize, getLogFileNameBase(), idSuffix,
+        TR::Options::getLogFileNameSuffix(), applyLogFileNameSuffix);
+
+    if (!logFileName) {
+        mesg_printf("Could not build log file name for base name: %s", getLogFileNameBase());
+        return NULL;
+    }
+
+    /**
+     * Prepare a OMR::Logger for the generated log file name and add a
+     * boilerplate header.
+     */
+    OMR::Logger *logger = self()->createLoggerForLogFileName(logFileName);
+    if (!logger) {
+        mesg_printf("Unable to create Logger for log file name: %s\n", logFileName);
+        return TR::Options::getDefaultLogger();
+    }
+
+    logger->setEnabled_DEPRECATED(true);
+
+    logger->prints("<?xml version=\"1.0\" standalone=\"no\"?>\n"
+                   "<jitlog>\n");
+
+    if (_numUsableCompilationThreads > 1) {
+        logger->prints("<!--\n"
+                       "MULTIPLE LOG FILES MAY EXIST\n"
+                       "Please check for ADDITIONAL log files named:");
+
+        for (int32_t i = 1; i < _numUsableCompilationThreads; i++)
+            logger->printf("  %s.%d", getLogFileNameBase(), i);
+
+        logger->prints("\n-->\n");
+    }
+
+    return logger;
+}
+
+void OMR::Options::closeLogger(OMR::Logger *log)
+{
+    if (log->isEnabled_DEPRECATED()) {
         log->prints("</jitlog>\n");
+    }
 
-    // The Logger must be closed before the TR::FILE stream because it may flush the stream
-    //
     log->close();
-
-    trfclose(file);
 }
 
 void OMR::Options::printOptions(const char *options, const char *envOptions)
@@ -4802,84 +4840,150 @@ void OMR::Options::printOptions(const char *options, const char *envOptions)
         TR_VerboseLog::writeLineLocked(TR_Vlog_INFO, "disableTraps");
 }
 
-TR_MCTLogs *OMR::Options::findLogFileForCompilationThread(int32_t compThreadID)
+OMR::Logger *OMR::Options::findLoggerForLogFileNameInner(TR::Options *cmdLineOptions, TR::OptionSet *optSet,
+    char *logFileName)
 {
-    for (TR_MCTLogs *logInfo = self()->getLogListForOtherCompThreads(); logInfo; logInfo = logInfo->next())
-        if (logInfo->getID() == compThreadID)
-            return logInfo;
+    OMR::Logger *logger = NULL;
+
+    // Check the top-level command-line options first
+    //
+    char *optionsFileName = cmdLineOptions->getLogFileNameBase();
+
+    if (optionsFileName && !STRICMP(logFileName, optionsFileName)) {
+        logger = cmdLineOptions->getLogger();
+    } else {
+        // Search each option set for the log filename
+        //
+        for (TR::OptionSet *prev = cmdLineOptions->getFirstOptionSet(); prev && prev != optSet;
+             prev = prev->getNext()) {
+            optionsFileName = prev->getOptions() ? prev->getOptions()->getLogFileNameBase() : NULL;
+            if (optionsFileName && !STRICMP(logFileName, optionsFileName)) {
+                logger = prev->getOptions()->getLogger();
+                break;
+            }
+        }
+    }
+
+    return logger;
+}
+
+OMR::Logger *OMR::Options::findLoggerForLogFileName(TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions,
+    TR::OptionSet *optSet, char *logFileName)
+{
+    if (aotCmdLineOptions) {
+        OMR::Logger *logger = self()->findLoggerForLogFileNameInner(aotCmdLineOptions, optSet, logFileName);
+        if (logger)
+            return logger;
+    }
+
+    if (jitCmdLineOptions) {
+        OMR::Logger *logger = self()->findLoggerForLogFileNameInner(jitCmdLineOptions, optSet, logFileName);
+        if (logger)
+            return logger;
+    }
+
     return NULL;
 }
 
-// Side effect this->_logFile and this->_logger are set
+OMR::Logger *OMR::Options::findLoggerForCompilationThread(int32_t compThreadID)
+{
+    for (TR_MCTLogs *logInfo = self()->getLoggerListForOtherCompThreads(); logInfo; logInfo = logInfo->next()) {
+        if (logInfo->getID() == compThreadID) {
+            return logInfo->getLogger();
+        }
+    }
+
+    return NULL;
+}
+
+OMR::Logger *OMR::Options::findLoggerForLogFileNameOnCompilationThreadInner(const char *logFileName,
+    TR::Options *cmdLineOptions, int32_t compThreadID)
+{
+    if (!cmdLineOptions) {
+        return NULL;
+    }
+
+    OMR::Logger *logger = NULL;
+
+    if (cmdLineOptions->getLogFileNameBase() && !STRICMP(logFileName, cmdLineOptions->getLogFileNameBase())) {
+        logger = cmdLineOptions->findLoggerForCompilationThread(compThreadID);
+        if (logger) {
+            return logger;
+        }
+    }
+
+    for (TR::OptionSet *optSet = cmdLineOptions->getFirstOptionSet(); optSet; optSet = optSet->getNext()) {
+        if (optSet->getOptions() && optSet->getOptions()->getLogFileNameBase()
+            && !STRICMP(logFileName, optSet->getOptions()->getLogFileNameBase())) {
+            logger = optSet->getOptions()->findLoggerForCompilationThread(compThreadID);
+            if (logger) {
+                break;
+            }
+        }
+    }
+
+    return logger;
+}
+
+OMR::Logger *OMR::Options::findLoggerForLogFileNameOnCompilationThread(const char *logFileName,
+    TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions, int32_t compThreadID)
+{
+    OMR::Logger *logger
+        = self()->findLoggerForLogFileNameOnCompilationThreadInner(logFileName, aotCmdLineOptions, compThreadID);
+
+    if (!logger) {
+        logger = self()->findLoggerForLogFileNameOnCompilationThreadInner(logFileName, jitCmdLineOptions, compThreadID);
+    }
+
+    return logger;
+}
+
+// Side effect this->_logger is set
 // compThreadID must be greater than 0
 void OMR::Options::setLogForCompilationThread(int32_t compThreadID, TR::Options *mainOptions)
 {
     _fe->acquireLogMonitor();
 
-    // Is the log file for this compilation thread already open?
+    // Is the logger for this compilation thread already open?
     //
-    TR_MCTLogs *optionLogEntry = self()->findLogFileForCompilationThread(compThreadID);
-    if (optionLogEntry) {
-        _logFile = optionLogEntry->getLogFile(); // overwrite the file descriptor for the log
-        _logger = optionLogEntry->getLogger(); // overwrite the Logger object
+    _logger = self()->findLoggerForCompilationThread(compThreadID);
+    if (_logger) {
         _fe->releaseLogMonitor();
         return;
     }
 
-    if (OMR::Options::_dualLogging) // this named log could be open in another option set
-    {
-        if (!_debug)
-            TR::Options::createDebug();
+    if (OMR::Options::_dualLogging) {
+        // This logger could be open in another option set
+        //
+        _logger = self()->findLoggerForLogFileNameOnCompilationThread(getLogFileNameBase(),
+            OMR::Options::getAOTCmdLineOptions(), OMR::Options::getJITCmdLineOptions(), compThreadID);
 
-        if (_debug) {
-// find all the options objects that have a log file with given name
-#define OPTIONS_ARRAY_SIZE 256
-            TR::Options *optionsArray[OPTIONS_ARRAY_SIZE];
-            int32_t reqSize = _debug->findLogFile(_logFileName, OMR::Options::getAOTCmdLineOptions(),
-                OMR::Options::getJITCmdLineOptions(), optionsArray, OPTIONS_ARRAY_SIZE);
-            if (reqSize <= OPTIONS_ARRAY_SIZE) {
-                for (int32_t i = 0; i < reqSize; i++) {
-                    // check if there is any log open for that compilation thread
-                    optionLogEntry = optionsArray[i]->findLogFileForCompilationThread(compThreadID);
-                    if (optionLogEntry) {
-                        _logFile = optionLogEntry->getLogFile(); // overwrite the file descriptor for the log
-                        _logger = optionLogEntry->getLogger(); // overwrite the Logger object
-                        _fe->releaseLogMonitor();
-                        return;
-                    }
-                }
-            } else // TODO: try to allocate an array of reqSize entries
-            {
-                _logFile = NULL; // error case
-                _logger = TR::Options::getDefaultLogger();
-            }
-        } else {
-            _logFile = NULL; // error case
-            _logger = TR::Options::getDefaultLogger();
+        if (_logger) {
             _fe->releaseLogMonitor();
             return;
         }
     }
 
-    // We should open a new log for this compilation thread
-    optionLogEntry = new (PERSISTENT_NEW) TR_MCTLogs(compThreadID, self());
+    // Create a new logger for this compilation thread
+    //
+    TR_MCTLogs *optionLogEntry = new (PERSISTENT_NEW) TR_MCTLogs(compThreadID, self());
     if (optionLogEntry) {
-        self()->openLogFileCreateLogger(compThreadID); // side effect: the open file will be set in this object
-        if (_logFile != NULL) {
-            // Cache the open log file in the mainOptions
-            optionLogEntry->setLogFile(_logFile);
-            optionLogEntry->setLogger(_logger);
+        OMR::Logger *logger = self()->openLogFileCreateLogger(compThreadID);
+        TR_ASSERT_FATAL(logger, "A Logger was not created for this compilation thread");
 
-            // Attach the new logInfo to the list
-            optionLogEntry->setNext(mainOptions->getLogListForOtherCompThreads());
-            mainOptions->setLogListForOtherCompThreads(optionLogEntry);
-            OMR::Options::_logsForOtherCompilationThreadsExist = true;
-        } else {
-            // delete optionLogEntry
-            TR::Options::jitPersistentFree(optionLogEntry);
-        }
+        setLogger(logger);
+
+        // Cache the Logger in the mainOptions
+        //
+        optionLogEntry->setLogger(logger);
+
+        // Attach the new logInfo to the list
+        //
+        optionLogEntry->setNext(mainOptions->getLoggerListForOtherCompThreads());
+        mainOptions->setLoggerListForOtherCompThreads(optionLogEntry);
+        OMR::Options::_loggersForOtherCompilationThreadsExist = true;
     } else {
-        _logFile = NULL; // error
+        mesg_prints("Unable to allocate TR_MCTLogs");
         _logger = TR::Options::getDefaultLogger();
     }
 
@@ -4890,32 +4994,10 @@ TR_MCTLogs::TR_MCTLogs(int32_t compThreadID, TR::Options *options)
     : _next(NULL)
     , _compThreadID(compThreadID)
     , _options(options)
-    , _logFile(NULL)
     , _logger(TR::Options::getDefaultLogger())
 {}
 
-char *TR_MCTLogs::getLogFileName() { return _options->getLogFileName(); }
-
-#include <ctime>
-
-void getTimeInSeconds(char *buf, size_t size)
-{
-    time_t timer = time(NULL);
-    TR::snprintfNoTrunc(buf, size, "%i", (int)(timer % 100000));
-}
-
-#ifdef _MSC_VER
-#include <process.h>
-
-int getTRPID() { return _getpid(); }
-#else
-#include <sys/types.h>
-#include <unistd.h>
-
-int getTRPID() { return (int)getpid(); }
-#endif
-
-void getTRPID(char *buf, size_t size) { TR::snprintfNoTrunc(buf, size, "%i", getTRPID()); }
+char *TR_MCTLogs::getLogFileName() { return _options->getLogFileNameBase(); }
 
 // -----------------------------------------------------------------------------
 // Optlevels and counts
@@ -6054,10 +6136,10 @@ bool OMR::Options::fePostProcessJIT(void *base)
 #if !defined(J9_PROJECT_SPECIFIC)
     auto jitConfig = TR::JitConfig::instance();
     if (jitConfig->options.vLogFileName) {
-        char *fileName;
         char tmp[1025];
-        fileName = _fe->getFormattedName(tmp, 1025, jitConfig->options.vLogFileName, NULL,
-            TR::Options::getCmdLineOptions()->getOption(TR_EnablePIDExtension));
+        char *fileName = TR::Options::buildLogFileName(tmp, 1025, jitConfig->options.vLogFileName, -1,
+            TR::Options::getLogFileNameSuffix(),
+            !TR::Options::getCmdLineOptions()->getOption(TR_DontApplyLogFileNameSuffix));
         jitConfig->options.vLogFile = trfopen(fileName, "w", false);
     } else {
         jitConfig->options.vLogFile = OMR::IO::Stderr;
@@ -6228,3 +6310,26 @@ void OMR::Options::setDefaultsForDeterministicMode()
         }
     }
 }
+
+template<typename AllocatorType> TR::Options *OMR::Options::create(AllocatorType t)
+{
+    TR::Options *opt = new (t) TR::Options();
+    TR_ASSERT_FATAL(opt, "Unable to allocate TR::Options");
+    opt->initialize();
+    return opt;
+}
+
+// Explicit instantiations
+template TR::Options *OMR::Options::create(TR_HeapMemory t);
+template TR::Options *OMR::Options::create(PERSISTENT_NEW_DECLARE t);
+template TR::Options *OMR::Options::create(TR_PersistentMemory *p);
+
+#if !defined(DEBUG) && !defined(PROD_WITH_ASSUMES)
+char *OMR::Options::_logFileNameSuffix = ".%tick.%pid";
+#else
+char *OMR::Options::_logFileNameSuffix = "";
+#endif
+
+char *OMR::Options::getLogFileNameSuffix() { return TR::Options::_logFileNameSuffix; }
+
+void OMR::Options::setLogFileNameSuffix(char *s) { TR::Options::_logFileNameSuffix = s; }

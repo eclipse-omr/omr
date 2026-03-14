@@ -455,10 +455,6 @@ public:
 
     TR_Debug(TR::Compilation *c);
 
-    TR::FILE *getOutFile() { return _outFile; }
-
-    virtual void setOutFile(TR::FILE *f) { _outFile = f; }
-
     OMR::Logger *getLogger() { return _logger; }
 
     void setLogger(OMR::Logger *log) { _logger = log; }
@@ -515,10 +511,6 @@ public:
 
     // Options processing
     //
-    virtual TR::FILE *findLogFile(TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions, TR::OptionSet *optSet,
-        char *logFileName, OMR::Logger *&logger);
-    virtual int32_t findLogFile(const char *logFileName, TR::Options *aotCmdLineOptions, TR::Options *jitCmdLineOptions,
-        TR::Options **optionsArray, int32_t arraySize);
     virtual void dumpOptionHelp(TR::OptionTable *jitOptions, TR::OptionTable *feOptions, TR::SimpleRegex *nameFilter);
 
     static void dumpOptions(const char *optionsType, const char *options, const char *envOptions,
@@ -846,10 +838,6 @@ public:
 
     const char *getShadowName(TR::SymbolReference *);
     const char *getMetaDataName(TR::SymbolReference *);
-
-    TR::FILE *findLogFile(TR::Options *, TR::OptionSet *, char *, OMR::Logger *&logger);
-    void findLogFile(const char *logFileName, TR::Options *cmdOptions, TR::Options **optionArray, int32_t arraySize,
-        int32_t &index);
 
     void printPreds(OMR::Logger *log, TR::CFGNode *);
     void printBaseInfo(OMR::Logger *log, TR_Structure *structure, uint32_t indentation);
@@ -1323,7 +1311,6 @@ public:
     friend class TR_CFGChecker;
 
 protected:
-    TR::FILE *_outFile;
     TR::Compilation *_comp;
     TR_FrontEnd *_fe;
     OMR::Logger *_logger;

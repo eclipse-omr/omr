@@ -138,15 +138,11 @@ public:
 
     bool isLogCompilation() const { return _flags.testAny(LogCompilation); }
 
-    void setLogCompilation(TR::FILE *f)
+    void setLogger(OMR::Logger *log)
     {
         _flags.set(LogCompilation);
-        _logFile = f;
+        _logger = log;
     }
-
-    TR::FILE *getLogCompilation() { return _logFile; }
-
-    void setLogger(OMR::Logger *log) { _logger = log; }
 
     OMR::Logger *getLogger() { return _logger; }
 
@@ -295,7 +291,6 @@ private:
                                // Will be set only for recompilations. <=0 means no info
 
     bool _hwpDoReducedWarm;
-    TR::FILE *_logFile;
     OMR::Logger *_logger;
     static TR_OptimizationPlan *_pool;
     static unsigned long _totalNumAllocatedPlans; // number of elements in the system
