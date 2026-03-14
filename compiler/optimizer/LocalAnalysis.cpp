@@ -82,6 +82,14 @@ bool TR_LocalAnalysis::isSupportedNodeForPREPerformance(TR::Node *node, TR::Comp
         return false;
     }
 
+    if (comp->useConstRefs() && node->getOpCodeValue() == TR::aload
+        && node->getSymbolReference()->hasKnownObjectIndex()) {
+        // Leave const ref loads in place so that the known object index remains
+        // in the IL at the point of use. Later, constRefPrivatization will try
+        // to find opportunities to reuse the load results.
+        return false;
+    }
+
     if (node->getOpCode().hasSymbolReference()
         && (node->getSymbolReference() == comp->getSymRefTab()->findJavaLangClassFromClassSymbolRef())) {
         return false;
