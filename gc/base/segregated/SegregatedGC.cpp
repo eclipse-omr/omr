@@ -300,8 +300,8 @@ MM_SegregatedGC::internalPostCollect(MM_EnvironmentBase *env, MM_MemorySubSpace 
 
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	env->_cycleState->_endTime = omrtime_hires_clock();
-	reportGCCycleFinalIncrementEnding(env);
 	reportGCIncrementEnd(env);
+	reportGCCycleFinalIncrementEnding(env);
 	reportGCEnd(env);
 	reportGCCycleEnd(env);
 }

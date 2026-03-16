@@ -1141,9 +1141,9 @@ MM_ParallelGlobalGC::internalPostCollect(MM_EnvironmentBase *env, MM_MemorySubSp
 
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	env->_cycleState->_endTime = omrtime_hires_clock();
-	reportGCCycleFinalIncrementEnding(env);
 	reportGlobalGCIncrementEnd(env);
 	reportGCIncrementEnd(env);
+	reportGCCycleFinalIncrementEnding(env);
 	reportGCEnd(env);
 	reportGCCycleEnd(env);
 
