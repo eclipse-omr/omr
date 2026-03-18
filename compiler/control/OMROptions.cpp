@@ -3468,6 +3468,9 @@ void OMR::Options::setAggressivenessLevelOpts()
                 case OMR::Options::AGGRESSIVE_THROUGHPUT: // Enabled with -Xtune:throughput
                     self()->setAggressiveThroughput();
                     break;
+                case OMR::Options::AGGRESSIVE_FOOTPRINT:
+                    self()->setAggressiveFootprint();
+                    break;
             } // end switch
         } else // Some message that the aggressivenessLevel is invalid
         {
@@ -5998,6 +6001,8 @@ void OMR::Options::setAggressiveThroughput()
     // Lower counts has the potential of reducing long term throughput, so disable this option
     self()->setOption(TR_UseLowerCountsForNonSCCMethodsDuringStartup, false);
 }
+
+void OMR::Options::setAggressiveFootprint() {}
 
 bool OMR::Options::counterIsEnabled(const char *name, int8_t fidelity, TR::SimpleRegex *nameRegex)
 {

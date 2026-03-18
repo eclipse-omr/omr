@@ -1421,6 +1421,7 @@ public:
         CONSERVATIVE_DEFAULT,
         DEFAULT,
         AGGRESSIVE_THROUGHPUT,
+        AGGRESSIVE_FOOTPRINT,
         LAST_AGGRESSIVENESS_LEVEL
     };
 
@@ -1806,6 +1807,7 @@ public:
     void setInlinerOptionsForAggressiveAOT();
     void setConservativeDefaultBehavior();
     void setAggressiveThroughput();
+    void setAggressiveFootprint();
 
     static bool getCountsAreProvidedByUser() { return _countsAreProvidedByUser; } // set very late in setCounts()
 
