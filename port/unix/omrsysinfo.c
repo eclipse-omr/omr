@@ -8040,14 +8040,15 @@ omrsysinfo_get_process_name(struct OMRPortLibrary *portLibrary, uintptr_t pid)
 int32_t
 omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats)
 {
-	Assert_PRT_true(NULL != device);
-	Assert_PRT_true(NULL != stats);
 #if defined(LINUX) && !defined(OMRZTPF)
 	char pathBuf[PATH_MAX];
 	char contentBuf[1024];
 	intptr_t fd = -1;
 	intptr_t bytesRead = -1;
 	int32_t fieldsScanned = -1;
+
+	Assert_PRT_true(NULL != device);
+	Assert_PRT_true(NULL != stats);
 
 	portLibrary->str_printf(portLibrary, pathBuf, sizeof(pathBuf), "/sys/block/%s/stat", device);
 
