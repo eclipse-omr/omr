@@ -8206,8 +8206,8 @@ getBlockDeviceFromDevNode(struct OMRPortLibrary *portLibrary, const char *path)
 {
 	struct stat st;
 	dev_t rdev;
-	uint32_t majorNum;
-	uint32_t minorNum;
+	uint32_t majorNum = 0;
+	uint32_t minorNum = 0;
 
 	if (0 != stat(path, &st) || !S_ISBLK(st.st_mode)) {
 		return NULL;
