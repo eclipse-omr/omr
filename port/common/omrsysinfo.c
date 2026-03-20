@@ -1237,6 +1237,25 @@ omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char
 }
 
 /**
+ * Read /proc/diskstats and return an array of disk statistics.
+ * 
+ * The /proc/diskstats file contains one line per block device with the following format.
+ * A block device is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ * 
+ * @param[in] portLibrary The port library
+ * @param[out] diskStatsArray Pointer to receive the allocated array of OMRDiskStatsEntry structures.
+ *                            Caller must free this memory using portLibrary->mem_free_memory.
+ * @param[out] numEntries Pointer to receive the number of entries in the array.
+ * 
+ * @return 0 on success, error code on failure
+ */
+int32_t
+omrsysinfo_get_all_diskstats(struct OMRPortLibrary *portLibrary, struct OMRDiskStatsEntry **diskStatsArray, uintptr_t *numEntries)
+{
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
+
+/**
  * Return the block device for the given path.
  *
  * This function returns block device for the given path. A block device

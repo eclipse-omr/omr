@@ -1414,6 +1414,15 @@ typedef struct OMRBlockDeviceStats {
 	uint64_t timeInQueueMs;
 } OMRBlockDeviceStats;
 
+/**
+ * Structure to hold a single block device statistics entry from /proc/diskstats.
+ */
+typedef struct OMRDiskStatsEntry {
+	uint32_t majorNum;
+	uint32_t minorNum;
+	OMRBlockDeviceStats stats;
+} OMRDiskStatsEntry;
+
 /* bitwise flags indicating cgroup subsystems supported by portlibrary */
 #define OMR_CGROUP_SUBSYSTEM_CPU ((uint64_t)0x1)
 #define OMR_CGROUP_SUBSYSTEM_MEMORY ((uint64_t)0x2)
@@ -2666,6 +2675,8 @@ typedef struct OMRPortLibrary {
 	void (*sysinfo_cgroup_subsystem_iterator_destroy)(struct OMRPortLibrary *portLibrary, struct OMRCgroupMetricIteratorState *state);
 	/** see @ref omrsysinfo.c::omrsysinfo_get_block_device_stats "omrsysinfo_get_block_device_stats"*/
 	int32_t (*sysinfo_get_block_device_stats)(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats);
+	/** see @ref omrsysinfo.c::omrsysinfo_get_all_diskstats "omrsysinfo_get_all_diskstats"*/
+	int32_t (*sysinfo_get_all_diskstats)(struct OMRPortLibrary *portLibrary, struct OMRDiskStatsEntry **diskStatsArray, uintptr_t *numEntries);
 	/** see @ref omrsysinfo.c::omrsysinfo_get_block_device_for_path "omrsysinfo_get_block_device_for_path"*/
 	char* (*sysinfo_get_block_device_for_path)(struct OMRPortLibrary *portLibrary, const char *path);
 	/** see @ref omrsysinfo.c::omrsysinfo_get_block_device_for_swap "omrsysinfo_get_block_device_for_swap"*/
@@ -3326,6 +3337,7 @@ extern J9_CFUNC int32_t omrport_getVersion(struct OMRPortLibrary *portLibrary);
 #define omrsysinfo_cgroup_subsystem_iterator_destroy(param1) privateOmrPortLibrary->sysinfo_cgroup_subsystem_iterator_destroy(privateOmrPortLibrary, param1)
 #define omrsysinfo_get_process_start_time(param1, param2) privateOmrPortLibrary->sysinfo_get_process_start_time(privateOmrPortLibrary, param1, param2)
 #define omrsysinfo_get_block_device_stats(param1, param2) privateOmrPortLibrary->sysinfo_get_block_device_stats(privateOmrPortLibrary, (param1), (param2))
+#define omrsysinfo_get_all_diskstats(param1, param2) privateOmrPortLibrary->sysinfo_get_all_diskstats(privateOmrPortLibrary, (param1), (param2))
 #define omrsysinfo_get_block_device_for_path(param1) privateOmrPortLibrary->sysinfo_get_block_device_for_path(privateOmrPortLibrary, (param1))
 #define omrsysinfo_get_block_device_for_swap() privateOmrPortLibrary->sysinfo_get_block_device_for_swap(privateOmrPortLibrary)
 #define omrsysinfo_get_number_context_switches(param1) privateOmrPortLibrary->sysinfo_get_number_context_switches(privateOmrPortLibrary, param1)
