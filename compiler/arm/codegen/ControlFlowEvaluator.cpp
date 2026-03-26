@@ -53,9 +53,9 @@ static void lookupScheme1(TR::CodeGenerator *cg, TR::Node *node, bool unbalanced
 static void lookupScheme2(TR::CodeGenerator *cg, TR::Node *node, bool unbalanced);
 static void lookupScheme3(TR::CodeGenerator *cg, TR::Node *node, bool unbalanced);
 static void lookupScheme4(TR::CodeGenerator *cg, TR::Node *node);
-static bool isGlDepsUnBalanced(TR::CodeGenerator *cg, TR::Node *node);
-static void switchDispatch(TR::CodeGenerator *cg, TR::Node *node);
-static bool virtualGuardHelper(TR::Node *node, TR::CodeGenerator *cg);
+
+
+
 
 TR::Register *OMR::ARM::TreeEvaluator::gotoEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
@@ -119,6 +119,9 @@ static TR::Instruction *compareIntsForOrder(TR_ARMConditionCode branchType, TR::
     TR::Register *src1Reg;
     uint32_t base, rotate;
     TR::LabelSymbol *branchTarget = sr ? NULL : node->getBranchDestination()->getNode()->getLabel();
+#ifdef J9_PROJECT_SPECIFIC
+    bool isAOT = cg->comp()->getOption(TR_AheadOfTimeCompilation);
+#endif
     TR::Instruction *result;
 
     int32_t value = secondChild->getInt();
@@ -141,7 +144,16 @@ static TR::Instruction *compareIntsForOrder(TR_ARMConditionCode branchType, TR::
         TR::Node::recreate(firstChild, TR::icall);
     }
 
-    src1Reg = cg->evaluate(firstChild);
+    src1Reg
+#ifdef J9_PROJECT_SPECIFIC
+    if (isAOT) {
+        TR::Instruction *reloInstr = TR::generateReloSnippetForCompareInt(node, cg, branchType, secondChild->getInt(), branchTarget);
+        if (reloInstr != NULL) {
+            cg->getCurrentInstructionList()->add(reloInstr);
+            return reloInstr;
+        }
+    }
+#endif = cg->evaluate(firstChild);
 
     if (cannotInline) {
         TR::Node::recreate(firstChild, TR:: instanceof);
