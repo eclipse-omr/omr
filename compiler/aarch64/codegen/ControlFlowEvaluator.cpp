@@ -20,6 +20,7 @@
  *******************************************************************************/
 
 #include "codegen/ARM64ConditionCode.hpp"
+#include "openj9/codegenerator/relocation.hpp"
 #include "codegen/ARM64HelperCallSnippet.hpp"
 #include "codegen/ARM64Instruction.hpp"
 #include "codegen/CodeGenerator.hpp"
@@ -146,9 +147,7 @@ static TR::Instruction *ificmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
     TR::LabelSymbol *dstLabel;
     TR::Instruction *result;
     TR::RegisterDependencyConditions *deps;
-    bool secondChildNeedsRelocation = cg->profiledPointersRequireRelocation()
-        && (secondChild->getOpCodeValue() == TR::aconst)
-        && (secondChild->isClassPointerConstant() || secondChild->isMethodPointerConstant());
+    bool secondChildNeedsRelocation = OMR::relocationNeedsProfiledPointerCheck(cg, secondChild);ointerConstant());
     TR_ResolvedMethod *method = comp->getCurrentMethod();
     bool secondChildNeedsPicSite = (secondChild->getOpCodeValue() == TR::aconst)
         && ((secondChild->isClassPointerConstant()
