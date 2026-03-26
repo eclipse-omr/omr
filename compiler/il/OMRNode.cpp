@@ -2668,7 +2668,7 @@ bool OMR::Node::isClassUnloadingConst()
         return false;
 }
 
-TR_OpaqueClassBlock *OMR::Node::getMonitorClass(TR_ResolvedMethod *vmMethod)
+TR_OpaqueClassBlock *(TR_ResolvedMethod *vmMethod)
 {
 #ifdef J9_PROJECT_SPECIFIC
     TR::Compilation *c = TR::comp();
