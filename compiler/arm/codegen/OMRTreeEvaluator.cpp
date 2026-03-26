@@ -23,8 +23,8 @@
 #include "arm/codegen/ARMInstruction.hpp"
 #include "arm/codegen/ARMOperand2.hpp"
 #include "codegen/AheadOfTimeCompile.hpp"
-#ifdef J9_PROJECT_SPECIFIC
-#include "codegen/ARMAOTRelocation.hpp"
+
+
 #include "compile/SymbolReferenceTable.hpp"
 #include "codegen/CallSnippet.hpp"
 #endif
@@ -165,7 +165,7 @@ TR::Register *OMR::ARM::TreeEvaluator::astoreEvaluator(TR::Node *node, TR::CodeG
     return TR::TreeEvaluator::istoreEvaluator(node, cg);
 }
 
-TR::Register *OMR::ARM::TreeEvaluator::iwrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+TR::Register *OMR::ARM::TreeEvaluator::unImpOpEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
