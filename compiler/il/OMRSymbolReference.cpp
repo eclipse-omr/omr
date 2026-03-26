@@ -123,7 +123,7 @@ OMR::SymbolReference::SymbolReference(TR::SymbolReferenceTable *symRefTab, TR::S
 
     TR::Compilation *comp = symRefTab->comp();
     if (_knownObjectIndex != TR::KnownObjectTable::UNKNOWN && comp->useConstRefs()) {
-        TR_ASSERT_FATAL(sym->isAuto(), "known object temp is not an auto");
+        TR_ASSERT_FATAL(sym->isAuto() && parm->getKnownObjectIndex() == _knownObjectIndex, "known object temp is not an auto or has incorrect index");
         auto *owningMethodSym = self()->getOwningMethodSymbol(comp);
         int32_t tempsStart = owningMethodSym->getFirstJitTempIndex();
         int32_t slot = cpIndex;
