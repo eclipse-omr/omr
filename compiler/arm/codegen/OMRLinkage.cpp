@@ -23,8 +23,8 @@
 
 #include "arm/codegen/ARMInstruction.hpp"
 #include "arm/codegen/ARMSystemLinkage.hpp"
-#ifdef J9_PROJECT_SPECIFIC
-#include "codegen/CallSnippet.hpp"
+
+
 #endif
 #include "codegen/CodeGeneratorUtils.hpp"
 #include "codegen/GCStackAtlas.hpp"
