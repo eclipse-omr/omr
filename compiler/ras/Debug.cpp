@@ -145,7 +145,7 @@ TR_Debug *createDebugObject(TR::Compilation *comp)
     TR_Debug *dbg = NULL;
     if (comp)
         dbg = new (comp->trHeapMemory()) TR_Debug(comp);
-    else
+    
         dbg = new (TR::Compiler->regionAllocator) TR_Debug(comp);
     return dbg;
 }
