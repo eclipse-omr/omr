@@ -994,15 +994,12 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
             break;
 
         default:
-            if (sym->getDataType().isVector()) {
-                if (sym->getDataType().getVectorElementType() == TR::Int32
-                    || sym->getDataType().getVectorElementType() == TR::Double) {
-                    isVector = true;
-                    firstIndex = self()->getFirstGlobalVRF();
-                    lastIndex = self()->getLastGlobalVRF();
-                    lastVolIndex = lastIndex; // TODO: preserved VRF's !!
-                    break;
-                }
+            if (sym->getDataType().isVectorOrMask()) {
+                isVector = true;
+                firstIndex = self()->getFirstGlobalVRF();
+                lastIndex = self()->getLastGlobalVRF();
+                lastVolIndex = lastIndex; // TODO: preserved VRF's !!
+                break;
             }
 
             firstIndex = _firstGPR;
@@ -1012,7 +1009,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
     }
 
     bool gprCandidate = true;
-    if ((sym->getDataType() == TR::Float) || (sym->getDataType() == TR::Double) || sym->getDataType().isVector())
+    if ((sym->getDataType() == TR::Float) || (sym->getDataType() == TR::Double) || sym->getDataType().isVectorOrMask())
         gprCandidate = false;
 
     if (gprCandidate) {
@@ -1063,7 +1060,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
             for (prev = candidates->getFirst(); prev; prev = prev->getNext()) {
                 bool gprCandidate = true;
                 if ((prev->getSymbol()->getDataType() == TR::Float) || (prev->getSymbol()->getDataType() == TR::Double)
-                    || sym->getDataType().isVector())
+                    || sym->getDataType().isVectorOrMask())
                     gprCandidate = false;
                 if (gprCandidate && prev->getBlocksLiveOnEntry().get(liveBlockNum)) {
                     numAssignedGlobalRegs++;
@@ -1221,7 +1218,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::getLinkageGlobalRegisterNumbe
             result = -1;
         else
             result = _fprLinkageGlobalRegisterNumbers[linkageRegisterIndex];
-    } else if (type.isVector())
+    } else if (type.isVectorOrMask())
         TR_ASSERT(false, "assertion failure"); // TODO
     else {
         if (linkageRegisterIndex >= self()->getProperties()._numIntegerArgumentRegisters)

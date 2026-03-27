@@ -1043,7 +1043,7 @@ TR_GlobalRegisterNumber OMR::CodeGenerator::pickRegister(TR::RegisterCandidate *
 
         const bool usesFPR = (dtype == TR::Float || dtype == TR::Double);
 
-        const bool usesVRF = dtype.isVector() || dtype.isMask();
+        const bool usesVRF = dtype.isVectorOrMask();
 
         if (terseSimulateTreeEvaluation) {
             log->printf("         { Picking register for %s%s candidate #%d %s\n",

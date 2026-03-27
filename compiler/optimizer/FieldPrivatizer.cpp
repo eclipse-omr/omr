@@ -560,7 +560,7 @@ void TR_FieldPrivatizer::detectFieldsThatCannotBePrivatized(TR::Node *node, vcou
             if (canPrivatize && !sym->isArrayShadowSymbol() && sym->isTransparent()
                 && comp()->cg()->considerTypeForGRA(symRef) && !_neverWritten->get(symRef->getReferenceNumber())
                 && (opCode.isIndirect() ? subtreeIsInvariantInLoop(node->getFirstChild()) : true)
-                && !isFieldAliasAccessed(symRef) && (symSize <= 8 || sym->getType().isVector())) {
+                && !isFieldAliasAccessed(symRef) && (symSize <= 8 || sym->getType().isVectorOrMask())) {
                 bool canPrivatizeBasedOnThisNode = canPrivatizeFieldSymRef(node);
 
                 if (!canPrivatizeBasedOnThisNode) {

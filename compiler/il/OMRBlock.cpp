@@ -822,7 +822,7 @@ static std::pair<TR_GlobalRegisterNumber, TR_GlobalRegisterNumber> findAvailable
     } else if (dt.isFloatingPoint()) {
         start = firstFPR;
         end = lastFPR;
-    } else if (dt.isVector()) {
+    } else if (dt.isVectorOrMask()) {
         start = firstVRF;
         end = lastVRF;
     } else {

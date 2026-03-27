@@ -4248,7 +4248,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
                 else
                     removeNodeFromList(node, &state->_currentlyCommonedFPCandidates, &state->_fpParents, false);
             }
-        } else if (node->getOpCode().isVectorResult()) {
+        } else if (node->getOpCode().isVectorOrMaskResult()) {
             state->_currentlyCommonedVector128Nodes.remove(node);
             if (isRematerializable(parent, node, true) && node->isRematerializeable()) {
                 if (isRematerializableLoad(node, parent))
@@ -4277,7 +4277,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
                 addParentToList(node, &state->_currentlyCommonedFPLoads, parent, &state->_parentsOfCommonedFPLoads);
             else
                 addParentToList(node, &state->_currentlyCommonedFPCandidates, parent, &state->_fpParents);
-        } else if (node->getOpCode().isVectorResult()) {
+        } else if (node->getOpCode().isVectorOrMaskResult()) {
             if (isRematerializableLoad(node, parent))
                 addParentToList(node, &state->_currentlyCommonedVector128Loads, parent,
                     &state->_parentsOfCommonedVector128Loads);
@@ -4324,7 +4324,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
             if (((child->getFutureUseCount() & 0x7fff) == 0) && !child->getOpCode().isLoadConst()) {
                 if (child->getOpCode().isFloatingPoint())
                     fpChildAdjustment++;
-                else if (child->getOpCode().isVectorResult()) {
+                else if (child->getOpCode().isVectorOrMaskResult()) {
                     vector128ChildAdjustment++;
                 } else {
                     childAdjustment++;
@@ -4369,7 +4369,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
             if (((maxChild->getFutureUseCount() & 0x7fff) == 0) && !maxChild->getOpCode().isLoadConst()) {
                 if (maxChild->getOpCode().isFloatingPoint())
                     fpChildAdjustment++;
-                else if (maxChild->getOpCode().isVectorResult()) {
+                else if (maxChild->getOpCode().isVectorOrMaskResult()) {
                     vector128ChildAdjustment++;
                 } else {
                     childAdjustment++;
@@ -4398,7 +4398,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
             if (node->getOpCode().isFloatingPoint())
                 removeNodeFromList(node->getFirstChild(), &state->_currentlyCommonedFPLoads,
                     &state->_parentsOfCommonedFPLoads, true);
-            else if (node->getOpCode().isVectorResult()) {
+            else if (node->getOpCode().isVectorOrMaskResult()) {
                 removeNodeFromList(node->getFirstChild(), &state->_currentlyCommonedVector128Loads,
                     &state->_parentsOfCommonedVector128Loads, true);
             } else
@@ -4442,7 +4442,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
         if (node->getOpCode().isFloatingPoint())
             removeNodeFromList(node, &state->_currentlyCommonedFPLoads, &state->_parentsOfCommonedFPLoads, true,
                 &state->_fpLoadsAlreadyVisited, &state->_fpLoadsAlreadyVisitedThatCannotBeRematerialized, aliases);
-        else if (node->getOpCode().isVectorResult()) {
+        else if (node->getOpCode().isVectorOrMaskResult()) {
             removeNodeFromList(node, &state->_currentlyCommonedVector128Loads, &state->_parentsOfCommonedVector128Loads,
                 true, &state->_vector128LoadsAlreadyVisited,
                 &state->_vector128LoadsAlreadyVisitedThatCannotBeRematerialized, aliases);
@@ -4526,7 +4526,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
             &state->_fpLoadsAlreadyVisitedThatCannotBeRematerialized, rematSpecialNode);
     }
 
-    if (trace() && node->getOpCode().isVectorResult()) {
+    if (trace() && node->getOpCode().isVectorOrMaskResult()) {
         log->printf("At node %p VSR pressure is %d (child adjust %d parent adjust %d) limit is %d\n", node,
             state->_currentlyCommonedVector128Nodes.getSize() + vector128ChildAdjustment
                 + adjustments.vector128AdjustmentFromParent,
@@ -4555,7 +4555,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
             if (parent) {
                 if (node->getOpCode().isFloatingPoint())
                     state->_currentlyCommonedFPNodes.add(node);
-                else if (node->getOpCode().isVectorResult()) {
+                else if (node->getOpCode().isVectorOrMaskResult()) {
                     state->_currentlyCommonedVector128Nodes.add(node);
                 } else
                     state->_currentlyCommonedNodes.add(node);
@@ -4572,7 +4572,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
                             parentList->add(parent);
                             state->_parentsOfCommonedFPLoads.add(parentList);
                         }
-                    } else if (node->getOpCode().isVectorResult()) {
+                    } else if (node->getOpCode().isVectorOrMaskResult()) {
                         if (!state->_vector128LoadsAlreadyVisitedThatCannotBeRematerialized.find(node)) {
                             state->_currentlyCommonedVector128Loads.add(node);
                             TR_ScratchList<TR::Node> *parentList
@@ -4596,7 +4596,7 @@ bool TR_Rematerialization::examineNode(TR::TreeTop *treeTop, TR::Node *parent, T
                             = new (trStackMemory()) TR_ScratchList<TR::Node>(trMemory());
                         parentList->add(parent);
                         state->_fpParents.add(parentList);
-                    } else if (node->getOpCode().isVectorResult()) {
+                    } else if (node->getOpCode().isVectorOrMaskResult()) {
                         state->_currentlyCommonedVector128Candidates.add(node);
                         TR_ScratchList<TR::Node> *parentList
                             = new (trStackMemory()) TR_ScratchList<TR::Node>(trMemory());
