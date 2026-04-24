@@ -406,6 +406,12 @@ public:
      * @return instruction cursor
      */
     virtual uint8_t *generateBinaryEncoding();
+    /**
+     * @brief Estimates binary length
+     * @param[in] currentEstimate : current estimated length
+     * @return estimated binary length
+     */
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate);
 };
 
 class StypeInstruction : public TR::Instruction {
@@ -627,6 +633,13 @@ public:
      * @return instruction cursor
      */
     virtual uint8_t *generateBinaryEncoding();
+
+    /**
+     * @brief Estimates binary length
+     * @param[in] currentEstimate : current estimated length
+     * @return estimated binary length
+     */
+    virtual int32_t estimateBinaryLength(int32_t currentEstimate);
 };
 
 class BtypeInstruction : public StypeInstruction {
