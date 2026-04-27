@@ -5109,6 +5109,30 @@ void OMR::Node::setIsSafeForCGToFastPathUnsafeCall(bool v)
     _flags.set(unsafeFastPathCall);
 }
 
+bool OMR::Node::isSafeForCGToInlineStringIntrinsic()
+{
+    TR_ASSERT_FATAL(self()->getOpCode().isCall(), "Opcode must be call");
+    return _flags.testAny(inlineStringIntrinsic);
+}
+
+void OMR::Node::setIsSafeForCGToInlineStringIntrinsic(bool v)
+{
+    TR_ASSERT_FATAL(self()->getOpCode().isCall(), "Opcode must be call");
+    _flags.set(inlineStringIntrinsic);
+}
+
+bool OMR::Node::checkSkipRecognizedCallTransformation()
+{
+    TR_ASSERT_FATAL(self()->getOpCode().isCall(), "Opcode must be call");
+    return _flags.testAny(skipRecognizedCallTransformation);
+}
+
+void OMR::Node::setSkipRecognizedCallTransformation(bool v)
+{
+    TR_ASSERT_FATAL(self()->getOpCode().isCall(), "Opcode must be call");
+    _flags.set(skipRecognizedCallTransformation);
+}
+
 bool OMR::Node::isCallThatWasRefinedFromKnownObject()
 {
     return self()->getOpCode().isCall() && _flags.testAny(wasRefinedFromKnownObject);
