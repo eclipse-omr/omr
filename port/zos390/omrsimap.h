@@ -163,7 +163,7 @@ typedef struct J9RCE {
  *                             equivalent time on a CP.
  * Source: https://www.ibm.com/docs/en/zos/3.1.0?topic=xtl-svt-information
  */
-typedef _Packed struct J9CVTSVT {
+typedef struct J9CVTSVT {
 	uint8_t svtFiller1[416];          /**< 0:416 Ignore fields not relevant to current implementation */
 	uint32_t svtSupNormalization;     /**< 416:4 SVT_SUP_NORMALIZATION */
 	uint8_t svtFiller2[460];          /**< 420:460 Ignore fields not relevant to current implementation */
@@ -172,7 +172,7 @@ typedef _Packed struct J9CVTSVT {
 } J9CVTSVT;
 
 /* Common system data area (CSD). */
-typedef _Packed struct J9CSD {
+typedef struct J9CSD {
 	uint8_t cvtFiller1[10];           /**< 0:10 Ignore fields not relevant to current implementation */
 	int16_t online_combined_CP_count; /**< 10:2 CSDCPUOL */
 	uint8_t cvtFiller2[200];          /**< 12:200 Ignore fields not relevant to current implementation */
