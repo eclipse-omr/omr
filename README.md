@@ -20,7 +20,7 @@ OpenJDK Assembly Exception [2].
 SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
 -->
 
-# Eclipse OMR
+# Eclipse OMR2
 
 The Eclipse OMR project is a set of open source C and C++ components that can
 be used to build robust language runtimes that support many different hardware
