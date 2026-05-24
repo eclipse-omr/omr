@@ -44,12 +44,14 @@ OMR::X86::AMD64::Machine::Machine(TR::CodeGenerator *cg)
     _lastGPR = TR::RealRegister::r15;
     _lastAssignableGPR = TR::RealRegister::r15;
     _last8BitGPR = TR::RealRegister::r15;
-    _numAssignableGPRs = AMD64_NUM_GPR;
+
+    // Note: this total does not include RSP, nor should it
+    //
+    _numAssignableGPRs = static_cast<uint8_t>(_lastAssignableGPR - _firstGPR);
 
     _firstXMMR = TR::RealRegister::xmm0;
 
-    static const char *enableAVX512ExtendedRegisters = feGetEnv("TR_EnableAVX512ExtendedRegisters");
-    if (enableAVX512ExtendedRegisters && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512F)) {
+    if (cg->enableAVX512ExtendedRegs()) {
         // AVX-512 extended registers have not been created yet.  Use xmm15 until then.
         //
         _lastXMMR = TR::RealRegister::xmm15;
