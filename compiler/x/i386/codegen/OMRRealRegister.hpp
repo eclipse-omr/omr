@@ -42,6 +42,7 @@ typedef OMR::X86::I386::RealRegister RealRegisterConnector;
 #include "x/codegen/OMRRealRegister.hpp"
 
 #include <stdint.h>
+#include "omrformatconsts.h"
 #include "codegen/RegisterConstants.hpp"
 
 namespace TR {
@@ -220,8 +221,7 @@ public:
     bool needsSIB() { return _fullRegisterBinaryEncodings[_registerNumber].needsSIB; }
 
 private:
-    // TODO: Consider making this back into a plain old byte for consistency with other platforms.
-    static const struct TR_RegisterBinaryEncoding _fullRegisterBinaryEncodings[NumRegisters];
+    static const struct RegisterBinaryEncoding _fullRegisterBinaryEncodings[NumRegisters];
 };
 
 }}} // namespace OMR::X86::I386
