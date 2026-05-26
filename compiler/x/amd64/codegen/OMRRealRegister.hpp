@@ -42,6 +42,7 @@ typedef OMR::X86::AMD64::RealRegister RealRegisterConnector;
 #include "x/codegen/OMRRealRegister.hpp"
 
 #include <stdint.h>
+#include "omrformatconsts.h"
 #include "codegen/RegisterConstants.hpp"
 
 namespace TR {
@@ -63,32 +64,13 @@ protected:
 public:
     static RegNum rIndex(uint8_t r)
     {
-        switch (r) {
-            case 8:
-                return OMR::RealRegister::r8;
-            case 9:
-                return OMR::RealRegister::r9;
-            case 10:
-                return OMR::RealRegister::r10;
-            case 11:
-                return OMR::RealRegister::r11;
-            case 12:
-                return OMR::RealRegister::r12;
-            case 13:
-                return OMR::RealRegister::r13;
-            case 14:
-                return OMR::RealRegister::r14;
-            case 15:
-                return OMR::RealRegister::r15;
-            default:
-                TR_ASSERT(false, "rIndex is only valid for registers r8 to r15");
-                return OMR::RealRegister::NoReg;
-        }
+        TR_ASSERT_FATAL(r >= 8 && r <= OMR::RealRegister::NumGPRs, "GPR index %" OMR_PRIu8 " out of range", r);
+        return static_cast<RegNum>(OMR::RealRegister::FirstGPR + r);
     }
 
     static RegNum xmmIndex(uint8_t r)
     {
-        TR_ASSERT_FATAL(r >= 0 && r <= 15, "xmm index is ony valid for xmm 0 to 15");
+        TR_ASSERT_FATAL(r >= 0 && r <= OMR::RealRegister::NumXMMRs, "xmm index %" OMR_PRIu8 " out of range", r);
         return static_cast<RegNum>(OMR::RealRegister::xmm0 + r);
     }
 
