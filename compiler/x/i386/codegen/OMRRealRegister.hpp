@@ -63,27 +63,8 @@ protected:
 public:
     static RegNum xmmIndex(uint8_t r)
     {
-        switch (r) {
-            case 0:
-                return OMR::RealRegister::xmm0;
-            case 1:
-                return OMR::RealRegister::xmm1;
-            case 2:
-                return OMR::RealRegister::xmm2;
-            case 3:
-                return OMR::RealRegister::xmm3;
-            case 4:
-                return OMR::RealRegister::xmm4;
-            case 5:
-                return OMR::RealRegister::xmm5;
-            case 6:
-                return OMR::RealRegister::xmm6;
-            case 7:
-                return OMR::RealRegister::xmm7;
-            default:
-                TR_ASSERT(false, "xmmIndex is only valid for registers xmm0 to xmm7");
-                return OMR::RealRegister::NoReg;
-        }
+        TR_ASSERT_FATAL(r >= 0 && r <= OMR::RealRegister::NumXMMRs, "xmm index %" OMR_PRIu8 " out of range", r);
+        return static_cast<RegNum>(OMR::RealRegister::xmm0 + r);
     }
 
     typedef uint32_t RegMaskUInt;
