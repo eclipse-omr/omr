@@ -222,7 +222,7 @@ public:
     uint8_t rexBits(uint8_t rxbBits, bool isByteOperand)
     {
         uint8_t result;
-        TR_RegisterBinaryEncoding be = _fullRegisterBinaryEncodings[_registerNumber];
+        RegisterBinaryEncoding be = _fullRegisterBinaryEncodings[_registerNumber];
         if (be.needsRexPlusRXB)
             // Basic Rex computation
             result = REX | rxbBits;
@@ -247,8 +247,7 @@ public:
     }
 
 private:
-    // TODO: Consider making this back into a plain old byte for consistency with other platforms.
-    static const struct TR_RegisterBinaryEncoding _fullRegisterBinaryEncodings[NumRegisters];
+    static const struct RegisterBinaryEncoding _fullRegisterBinaryEncodings[NumRegisters];
 };
 
 }}} // namespace OMR::X86::AMD64
