@@ -330,7 +330,7 @@ public:
     static int32_t getStrideForNode(TR::Node *node, TR::CodeGenerator *cg);
 
     uint32_t getBinaryLengthLowerBound(TR::CodeGenerator *cg);
-    virtual uint32_t estimateBinaryLength(TR::CodeGenerator *cg);
+    virtual uint32_t estimateBinaryLength(TR::Instruction *containingInstruction, TR::CodeGenerator *cg);
     virtual OMR::X86::EnlargementResult enlarge(TR::CodeGenerator *cg, int32_t requestedEnlargementSize,
         int32_t maxEnlargementSize, bool allowPartialEnlargement);
 

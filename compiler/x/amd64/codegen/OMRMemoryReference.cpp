@@ -342,7 +342,8 @@ void OMR::X86::AMD64::MemoryReference::assignRegisters(TR::Instruction *currentI
     }
 }
 
-uint32_t OMR::X86::AMD64::MemoryReference::estimateBinaryLength(TR::CodeGenerator *cg)
+uint32_t OMR::X86::AMD64::MemoryReference::estimateBinaryLength(TR::Instruction *containingInstruction,
+    TR::CodeGenerator *cg)
 {
     uint32_t estimate;
 
@@ -359,7 +360,7 @@ uint32_t OMR::X86::AMD64::MemoryReference::estimateBinaryLength(TR::CodeGenerato
         _addressRegister = NULL;
     }
 
-    estimate = OMR::X86::MemoryReference::estimateBinaryLength(cg);
+    estimate = OMR::X86::MemoryReference::estimateBinaryLength(containingInstruction, cg);
 
     // For [disp32], AMD64 needs a SIB byte
     //

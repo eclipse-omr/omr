@@ -1850,7 +1850,7 @@ int32_t TR::X86MemInstruction::estimateBinaryLength(int32_t currentEstimate)
     if (getOpCode().needsLockPrefix() || (barrier & LockPrefix))
         length++;
 
-    length += getMemoryReference()->estimateBinaryLength(cg());
+    length += getMemoryReference()->estimateBinaryLength(this, cg());
 
     if (barrier & NeedsExplicitBarrier)
         length += estimateMemoryBarrierBinaryLength(barrier, cg());
@@ -2015,7 +2015,7 @@ uint8_t TR::X86MemImmInstruction::getBinaryLengthLowerBound()
 
 int32_t TR::X86MemImmInstruction::estimateBinaryLength(int32_t currentEstimate)
 {
-    int32_t length = getMemoryReference()->estimateBinaryLength(cg());
+    int32_t length = getMemoryReference()->estimateBinaryLength(this, cg());
 
     int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
 
@@ -2244,7 +2244,7 @@ uint8_t TR::X86MemRegImmInstruction::getBinaryLengthLowerBound()
 
 int32_t TR::X86MemRegImmInstruction::estimateBinaryLength(int32_t currentEstimate)
 {
-    int32_t length = getMemoryReference()->estimateBinaryLength(cg());
+    int32_t length = getMemoryReference()->estimateBinaryLength(this, cg());
 
     int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
 
@@ -2313,7 +2313,7 @@ int32_t TR::X86RegMemInstruction::estimateBinaryLength(int32_t currentEstimate)
 {
     int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
 
-    int32_t length = getMemoryReference()->estimateBinaryLength(cg());
+    int32_t length = getMemoryReference()->estimateBinaryLength(this, cg());
 
     if (barrier & LockPrefix)
         length++;
@@ -2455,7 +2455,7 @@ int32_t TR::X86RegMemImmInstruction::estimateBinaryLength(int32_t currentEstimat
 {
     int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
 
-    int32_t length = getMemoryReference()->estimateBinaryLength(cg());
+    int32_t length = getMemoryReference()->estimateBinaryLength(this, cg());
 
     if (barrier & LockPrefix)
         length++;

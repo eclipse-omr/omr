@@ -62,7 +62,7 @@ public:
     virtual void decNodeReferenceCounts(TR::CodeGenerator *cg);
     virtual void useRegisters(TR::Instruction *instr, TR::CodeGenerator *cg);
     virtual void assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
-    virtual uint32_t estimateBinaryLength(TR::CodeGenerator *cg);
+    virtual uint32_t estimateBinaryLength(TR::Instruction *containingInstruction, TR::CodeGenerator *cg);
     virtual uint8_t *generateBinaryEncoding(uint8_t *modRM, TR::Instruction *containingInstruction,
         TR::CodeGenerator *cg);
 #endif
