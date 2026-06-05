@@ -87,7 +87,7 @@ protected:
 	MM_SparseVirtualMemory(MM_EnvironmentBase *env, uintptr_t pageSize, uintptr_t pageFlags, MM_Heap *in_heap)
 		: MM_VirtualMemory(
 				env, in_heap->getHeapRegionManager()->getRegionSize(), pageSize, pageFlags, 0,
-				OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_VIRTUAL)
+				OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_VIRTUAL | OMRPORT_VMEM_MEMORY_MODE_GUARDED)
 		, _heap(in_heap)
 		, _sparseDataPool(NULL)
 		, _largeObjectVirtualMemoryMutex(NULL)
