@@ -80,6 +80,15 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase *env, MM_MemoryH
 
 	uintptr_t allocateSize = size;
 
+	/*
+	 * Guard heap memory for Balanced.
+	 * This feature is supported on z/OS only.
+	 * Guarding object heap and sparse heap is necessary to not exceed MEMLIMIT.
+	 */
+	if (extensions->isVLHGC()) {
+		mode |= OMRPORT_VMEM_MEMORY_MODE_GUARDED;
+	}
+
 	uintptr_t concurrentScavengerPageSize = 0;
 	if (extensions->isConcurrentScavengerHWSupported()) {
 		OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
