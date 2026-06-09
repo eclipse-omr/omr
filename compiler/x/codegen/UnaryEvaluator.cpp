@@ -100,6 +100,49 @@ TR::Register *OMR::X86::TreeEvaluator::floatingPointAbsHelper(TR::Node *node, TR
     return resultReg;
 }
 
+TR::Register *OMR::X86::TreeEvaluator::vnotHelper(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::Node *valueNode = node->getChild(0);
+    TR::Register *valueReg = cg->evaluate(valueNode);
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+    TR::Register *onesReg = cg->allocateRegister(TR_VRF);
+    TR::VectorLength vl = node->getType().getVectorLength();
+
+    TR::InstOpCode cmpOpcode = TR::InstOpCode::PCMPEQBRegReg;
+    TR::InstOpCode movOpcode = TR::InstOpCode::MOVDQURegReg;
+    TR::InstOpCode xorOpcode = TR::InstOpCode::PXORRegReg;
+
+    OMR::X86::Encoding cmpEncoding = cmpOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+    OMR::X86::Encoding movEncoding = movOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+    OMR::X86::Encoding xorEncoding = xorOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+    TR_ASSERT_FATAL(cmpEncoding != OMR::X86::Bad, "vnot: No encoding method for cmp opcode");
+    TR_ASSERT_FATAL(movEncoding != OMR::X86::Bad, "vnot: No encoding method for mov opcode");
+    TR_ASSERT_FATAL(xorEncoding != OMR::X86::Bad, "vnot: No encoding method for xor opcode");
+
+    // Generate all ones vector
+    TR::InstOpCode ternOpcode = TR::InstOpCode::VPTERNLOGDRegMaskRegRegImm1;
+    OMR::X86::Encoding ternEncoding = ternOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+    
+    if (xorEncoding >= OMR::X86::EVEX_L128 && ternEncoding != OMR::X86::Bad) {
+        // AVX-512 available
+        Inst_RegRegImm(ternOpcode.getMnemonic(), node, onesReg, onesReg, 0xff, cg, ternEncoding);
+    } else {
+        // SSE/AVX fallback
+        Inst_RegReg(xorOpcode.getMnemonic(), node, onesReg, onesReg, cg, xorEncoding);
+        Inst_RegReg(cmpOpcode.getMnemonic(), node, onesReg, onesReg, cg, cmpEncoding);
+    }
+
+    // Compute NOT
+    Inst_RegReg(movOpcode.getMnemonic(), node, resultReg, valueReg, cg, movEncoding);
+    Inst_RegReg(xorOpcode.getMnemonic(), node, resultReg, onesReg, cg, xorEncoding);
+
+    cg->stopUsingRegister(onesReg);
+    node->setRegister(resultReg);
+    cg->decReferenceCount(valueNode);
+    return resultReg;
+}
+
+
 TR::Register *OMR::X86::TreeEvaluator::unaryVectorArithmeticEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     TR::ILOpCode opcode = node->getOpCode();
@@ -107,6 +150,10 @@ TR::Register *OMR::X86::TreeEvaluator::unaryVectorArithmeticEvaluator(TR::Node *
 
     if (opcode.getVectorOperation() == TR::vabs && type.getVectorElementType().isFloatingPoint()) {
         return TR::TreeEvaluator::floatingPointAbsHelper(node, cg);
+    }
+
+    if (opcode.getVectorOperation() == TR::vnot && !opcode.isVectorMasked()) {
+        return TR::TreeEvaluator::vnotHelper(node, cg);
     }
 
     TR::Node *valueNode = node->getChild(0);
@@ -202,7 +249,6 @@ TR::Register *OMR::X86::TreeEvaluator::integerAbsEvaluator(TR::Node *node, TR::C
     auto child = node->getFirstChild();
     auto value = cg->evaluate(child);
     auto result = cg->allocateRegister(value->getKind());
-
     auto is64Bit = TR::TreeEvaluator::getNodeIs64Bit(node, cg);
     Inst_RegReg(OP::MOVRegReg(is64Bit), node, result, value, cg);
     Inst_Reg(OP::NEGReg(is64Bit), node, result, cg);

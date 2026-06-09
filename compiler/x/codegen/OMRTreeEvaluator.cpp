@@ -6807,6 +6807,14 @@ TR::Register *OMR::X86::TreeEvaluator::SIMDreductionEvaluator(TR::Node *node, TR
 TR::Register *OMR::X86::TreeEvaluator::unaryVectorMaskHelper(TR::InstOpCode opcode, OMR::X86::Encoding encoding,
     TR::Node *node, TR::Register *resultReg, TR::Register *valueReg, TR::Register *maskReg, TR::CodeGenerator *cg)
 {
+    if (node->getOpCode().getVectorOperation() == TR::vnot) {
+        TR::Register *tmpReg = vnotHelper(node, cg);
+        Inst_RegReg(OP::MOVDQURegReg, node, resultReg, valueReg, cg, encoding);
+        vectorMergeMaskHelper(node, resultReg, tmpReg, maskReg, cg);
+        cg->stopUsingRegister(tmpReg);
+        return resultReg;
+    }
+
     TR_ASSERT_FATAL(encoding != OMR::X86::Bad, "No suitable encoding method for opcode");
     bool vectorMask = maskReg->getKind() == TR_VRF;
     TR::Register *tmpReg = vectorMask ? cg->allocateRegister(TR_VRF) : NULL;
@@ -7319,9 +7327,14 @@ TR::Register *OMR::X86::TreeEvaluator::vmnegEvaluator(TR::Node *node, TR::CodeGe
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+TR::Register *OMR::X86::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+{
+    return TR::TreeEvaluator::unaryVectorArithmeticEvaluator(node, cg);
+}
+
 TR::Register *OMR::X86::TreeEvaluator::vmnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::unaryVectorArithmeticEvaluator(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg)

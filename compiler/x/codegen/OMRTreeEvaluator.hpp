@@ -364,6 +364,7 @@ public:
     static TR::Register *vmminEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vmmulEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vmnegEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *vnotEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vmnotEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vmorEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vmorUncheckedEvaluator(TR::Node *node, TR::CodeGenerator *cg);
@@ -459,6 +460,7 @@ public:
     // For unary ILOpcodes that can be translated to a single SSE/AVX instruction
     static TR::Register *unaryVectorArithmeticEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *floatingPointAbsHelper(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *vnotHelper(TR::Node *node, TR::CodeGenerator *cg);
 
     // SIMD evaluators
     static TR::Register *SIMDRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg);
