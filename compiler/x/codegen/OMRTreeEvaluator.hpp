@@ -313,6 +313,7 @@ public:
 
     static TR::Register *mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *mstoreiToArrayHelper(TR::Node *node, TR::CodeGenerator *cg);
 
     static TR::Register *b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *s2mEvaluator(TR::Node *node, TR::CodeGenerator *cg);
