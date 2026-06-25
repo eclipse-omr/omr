@@ -395,5 +395,10 @@ retrieveZosCpuUsageStats(struct OMRPortLibrary *portLibrary, struct CpuUsageStat
 	/* Get CPU usage for current process. Also writes oldest and latest CPU time
 	 * to usageStats struct for manual calculation if needed.
 	 */
-	return calculateZosProcessCpuUtilization(portLibrary, usageStats);
+	int32_t result = calculateZosProcessCpuUtilization(portLibrary, usageStats);
+	if (result != 0) {
+		usageStats->perProcessUtilization = result;
+	}
+
+	return 0;
 }
