@@ -63,7 +63,7 @@
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #if defined(OMR_ARCH_RISCV) && (!defined(__GNUC__) || (__GNUC__ <= 12))
-#pragma message STRINGIZE(__GNUC__)
+#pragma message "Version is " STRINGIZE(__GNUC__)
 #error "GCC version 13 or higher is required on RISC-V" __GNUC__
 #endif /* defined(OMR_ARCH_RISCV) && (!defined(__GNUC__) || (__GNUC__ <= 12)) */
 
