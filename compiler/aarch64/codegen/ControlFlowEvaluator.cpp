@@ -644,39 +644,38 @@ TR::Register *OMR::ARM64::TreeEvaluator::lookupEvaluator(TR::Node *node, TR::Cod
     }
     TR::addDependency(conditions, selectorReg, TR::RealRegister::NoReg, TR_GPR, cg);
 
-/*     for (int32_t i = 2; i < numChildren; i++) {
-        TR::Node *child = node->getChild(i);
-        int32_t caseValue = child->getCaseConstant();
+    /*     for (int32_t i = 2; i < numChildren; i++) {
+            TR::Node *child = node->getChild(i);
+            int32_t caseValue = child->getCaseConstant();
 
-        if (!constantIsUnsignedImm12(caseValue)) {
-            loadConstant32(cg, node, caseValue, tmpRegister);
-            generateCompareInstruction(cg, node, selectorReg, tmpRegister);
-        } else {
-            generateCompareImmInstruction(cg, node, selectorReg, caseValue);
+            if (!constantIsUnsignedImm12(caseValue)) {
+                loadConstant32(cg, node, caseValue, tmpRegister);
+                generateCompareInstruction(cg, node, selectorReg, tmpRegister);
+            } else {
+                generateCompareImmInstruction(cg, node, selectorReg, caseValue);
+            }
+
+            TR::RegisterDependencyConditions *cond = conditions;
+            if (child->getNumChildren() > 0) {
+                // GRA
+                cg->evaluate(child->getFirstChild());
+                cond = cond->clone(cg, RegDeps(cg, child->getFirstChild(), 0));
+            }
+            generateConditionalBranchInstruction(cg, node, child->getBranchDestination()->getNode()->getLabel(),
+       TR::CC_EQ, cond);
         }
 
-        TR::RegisterDependencyConditions *cond = conditions;
-        if (child->getNumChildren() > 0) {
+        // Branch to default
+        if (defaultChild->getNumChildren() > 0) {
             // GRA
-            cg->evaluate(child->getFirstChild());
-            cond = cond->clone(cg, RegDeps(cg, child->getFirstChild(), 0));
+            cg->evaluate(defaultChild->getFirstChild());
+            conditions = conditions->clone(cg, RegDeps(cg, defaultChild->getFirstChild(), 0));
         }
-        generateConditionalBranchInstruction(cg, node, child->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ,
-            cond);
-    }
-
-    // Branch to default
-    if (defaultChild->getNumChildren() > 0) {
-        // GRA
-        cg->evaluate(defaultChild->getFirstChild());
-        conditions = conditions->clone(cg, RegDeps(cg, defaultChild->getFirstChild(), 0));
-    }
-    generateLabelInstruction(cg, TR::InstOpCode::b, node, defaultChild->getBranchDestination()->getNode()->getLabel(),
-        conditions); */
+        generateLabelInstruction(cg, TR::InstOpCode::b, node,
+       defaultChild->getBranchDestination()->getNode()->getLabel(), conditions); */
 
     // binary search
     binarySearchCaseSpace(selectorReg, node, 2, numChildren - 1, tmpRegister, conditions, cg);
-
 
     if (tmpRegister) {
         cg->stopUsingRegister(tmpRegister);
