@@ -1298,11 +1298,6 @@ TR::Register *OMR::X86::I386::TreeEvaluator::PassThroughEvaluator(TR::Node *node
     return TR::TreeEvaluator::passThroughEvaluator(node, cg);
 }
 
-TR::Register *OMR::X86::I386::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
-}
-
 TR::Register *OMR::X86::I386::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     return TR::TreeEvaluator::SIMDsplatsEvaluator(node, cg);

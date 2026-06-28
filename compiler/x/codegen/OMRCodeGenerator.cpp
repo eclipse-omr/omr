@@ -1129,6 +1129,19 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
                     return false;
             }
             break;
+        case TR::vnot:
+        case TR::vmnot:
+            // vnot uses PCMPEQD + PXOR which are available with SSE2
+            switch (ot.getVectorLength()) {
+                case TR::VectorLength128:
+                    return true;
+                case TR::VectorLength256:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX2);
+                case TR::VectorLength512:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F);
+                default:
+                    return false;
+            }
         case TR::vbitselect:
             if (et.isFloatingPoint())
                 return false;

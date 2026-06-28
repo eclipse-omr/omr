@@ -45,6 +45,7 @@ omr_add_executable(comptest NOWARNINGS
 	VectorTest.cpp
 	VectorMaskTest.cpp
 	VectorTestUtils.cpp
+	VnotTest.cpp
 	CallTest.cpp
 	LongAndAsRotateTest.cpp
 	MockStrategyTest.cpp
