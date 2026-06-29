@@ -69,7 +69,7 @@ private:
 
 #if defined(OMR_GC_MODRON_COMPACTION)
 	MM_CompactScheme *_compactScheme;
-	bool _compactThisCycle;		/**< keep a decision should compact run this cycle */
+	CompactReason _compactThisCycle;		/**< keep a decision should compact run this cycle */
 #endif /* OMR_GC_MODRON_COMPACTION */
 
 protected:
@@ -135,14 +135,14 @@ private:
 	 *
 	 * @return true if a compaction is required, false otherwise
 	 */
-	bool shouldCompactThisCycle(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t activeSubspaceMaxExpansionInSpace, MM_GCCode gcCode);
+	CompactReason shouldCompactThisCycle(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t activeSubspaceMaxExpansionInSpace, MM_GCCode gcCode);
 	/**
 	 * Determine if a compact is required to aid contraction.
 	 * A heap contraction is due so decide whether a compaction would be
 	 * beneficial before we attempt to contract the heap.
 	 * @return true if a compaction is required, false otherwise.
 	 */
-	bool compactRequiredBeforeHeapContraction(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t contractionSize);
+	CompactReason compactRequiredBeforeHeapContraction(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t contractionSize);
 #endif /* OMR_GC_MODRON_COMPACTION */
 
 	/**
@@ -345,7 +345,7 @@ public:
 		, _portLibrary(env->getPortLibrary())
 #if defined(OMR_GC_MODRON_COMPACTION)
 		, _compactScheme(NULL)
-		, _compactThisCycle(false)
+		, _compactThisCycle(COMPACT_NONE)
 #endif /* OMR_GC_MODRON_COMPACTION */
 		, _markingScheme(NULL)
 		, _sweepScheme(NULL)

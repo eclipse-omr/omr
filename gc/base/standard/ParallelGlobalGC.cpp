@@ -484,7 +484,7 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 	_extensions->globalGCStats.clear();
 
 #if defined(OMR_GC_MODRON_COMPACTION)
-	_compactThisCycle = false;
+	_compactThisCycle = COMPACT_NONE;
 #endif /* OMR_GC_MODRON_COMPACTION */
 
 	_fixHeapForWalkCompleted = false;
@@ -505,7 +505,7 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 
 #if defined(OMR_GC_MODRON_COMPACTION)
 	/* If a compaction was required, then do one */
-	if (_compactThisCycle) {
+	if (COMPACT_NONE != _compactThisCycle) {
 		_collectionStatistics._tenureFragmentation = MICRO_FRAGMENTATION;
 		if (GLOBALGC_ESTIMATE_FRAGMENTATION == (_extensions->estimateFragmentation & GLOBALGC_ESTIMATE_FRAGMENTATION)) {
 			_collectionStatistics._tenureFragmentation |= MACRO_FRAGMENTATION;
@@ -537,7 +537,7 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 	}
 #endif /* defined(OMR_GC_MODRON_COMPACTION) */	
 
-	bool compactedThisCycle = false;
+	CompactReason compactedThisCycle = COMPACT_NONE;
 #if defined(OMR_GC_MODRON_COMPACTION)
 	compactedThisCycle = _compactThisCycle;
 #endif /* OMR_GC_MODRON_COMPACTION */
@@ -548,7 +548,7 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 	if (_delegate.isAllowUserHeapWalk() || gcCode.isRASDumpGC() || gcCode.shouldClearHeap()) {
 		if (!_fixHeapForWalkCompleted) {
 #if defined(OMR_GC_MODRON_COMPACTION)
-			if (compactedThisCycle) {
+			if (COMPACT_NONE != compactedThisCycle) {
 				getCompactScheme(env)->fixHeapForWalk(env, MEMORY_TYPE_RAM, FIXUP_DEBUG_TOOLING);
 			} else
 #endif /* OMR_GC_MODRON_COMPACTION */
@@ -565,7 +565,7 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 	_delegate.mainThreadGarbageCollectFinished(env, compactedThisCycle);
 
 #if defined(OMR_GC_MODRON_COMPACTION)
-	if (compactedThisCycle) {
+	if (COMPACT_NONE != compactedThisCycle) {
 		/* Free space will have changed as a result of compaction so recalculate
 		 * any expand or contract target.
 		 * Concurrent Scavenger requires this be done after fixup heap for walk pass.
@@ -598,7 +598,7 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 }
 
 #if defined(OMR_GC_MODRON_COMPACTION)
-bool
+CompactReason
 MM_ParallelGlobalGC::shouldCompactThisCycle(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t activeSubspaceMaxExpansionInSpace, MM_GCCode gcCode) 
 {
 	MM_Heap *heap = _extensions->heap;
@@ -805,7 +805,7 @@ nocompact:
 	/* Compaction not required or prevented from running */
 	_extensions->globalGCStats.compactStats._compactReason = compactReason;
 	_extensions->globalGCStats.compactStats._compactPreventedReason = compactPreventedReason;
-	return false;
+	return compactReason;
 	
 compactionReqd:
 	compactPreventedReason = _delegate.checkIfCompactionShouldBePrevented(env);
@@ -816,7 +816,7 @@ compactionReqd:
 	_extensions->globalGCStats.compactStats._compactReason = compactReason;
 	_extensions->globalGCStats.compactStats._compactPreventedReason = compactPreventedReason;
 
-	return true;
+	return compactReason;
 }
 
 /**
@@ -825,7 +825,7 @@ compactionReqd:
  * beneficial before we attempt to contract the heap.
  * @return true if a compaction is required, false otherwise.
  */
-bool
+CompactReason
 MM_ParallelGlobalGC::compactRequiredBeforeHeapContraction(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription, uintptr_t contractionSize)
 {
 	uintptr_t lengthLastFree;
@@ -834,12 +834,12 @@ MM_ParallelGlobalGC::compactRequiredBeforeHeapContraction(MM_EnvironmentBase *en
 	
 	/* if the user specified -XnoCompact then we're done */
 	if (_extensions->noCompactOnGlobalGC) {
-		return false;
+		return COMPACT_NONE;
 	}	
 	
 	if (env->_cycleState->_gcCode.isExplicitGC() && _extensions->nocompactOnSystemGC){
 		/* if the user specified -XnocompactexplicitGC then we don't compact*/
-		return false;
+		return COMPACT_NONE;
 	}
 
 	uintptr_t actualSoftMx = _extensions->heap->getActualSoftMxSize(env);
@@ -862,7 +862,7 @@ MM_ParallelGlobalGC::compactRequiredBeforeHeapContraction(MM_EnvironmentBase *en
 	 */
 	if((_extensions->globalGCStats.compactStats._lastHeapCompaction + 1 ==  _extensions->globalGCStats.gcCount) &&
 	(_extensions->heap->getResizeStats()->getLastHeapContractionGCCount() + 1 ==  _extensions->globalGCStats.gcCount)) {
-		return false;
+		return COMPACT_NONE;
 	}
 
 	/* Determine length of free chunk at top of heap */
@@ -877,14 +877,14 @@ MM_ParallelGlobalGC::compactRequiredBeforeHeapContraction(MM_EnvironmentBase *en
 								 * _extensions->minimumContractionRatio;
 
 		if (lengthLastFree > minContractSize) {
-			return false;
+			return COMPACT_NONE;
 		}
 	}
 
 compactionReqd:
 	_extensions->globalGCStats.compactStats._compactPreventedReason = _delegate.checkIfCompactionShouldBePrevented(env);
 	if (COMPACT_PREVENTED_NONE != _extensions->globalGCStats.compactStats._compactPreventedReason) {
-		return false;
+		return COMPACT_NONE;
 	}
 
 	/* If we get here we need to compact to assist the contraction. 
@@ -892,7 +892,7 @@ compactionReqd:
 	 */
 	_extensions->globalGCStats.compactStats._compactReason = COMPACT_CONTRACT;
 	
-	return true;
+	return COMPACT_CONTRACT;
 }
 #endif /* defined(OMR_GC_MODRON_COMPACTION) */
 
@@ -916,7 +916,7 @@ MM_ParallelGlobalGC::sweep(MM_EnvironmentBase *env, MM_AllocateDescription *allo
 	/* Decide is a compaction is required - this decision must be made after we sweep since we use the largestFreeEntrySize, as changed by sweep, to determine if a compaction should be done */
 	_compactThisCycle = shouldCompactThisCycle(env, allocDescription, activeSubSpace->maxExpansionInSpace(env), env->_cycleState->_gcCode);
 
-	if (!_compactThisCycle)  
+	if (COMPACT_NONE == _compactThisCycle)
 #endif /* OMR_GC_MODRON_COMPACTION */		
 	{
 		/* Decide whether we need to expand or shrink the heap. If the decision is to 
@@ -931,7 +931,7 @@ MM_ParallelGlobalGC::sweep(MM_EnvironmentBase *env, MM_AllocateDescription *allo
 		mainThreadSweepComplete(env, reason);
 			
 #if defined(OMR_GC_MODRON_COMPACTION)
-		if (!_compactThisCycle)  
+		if (COMPACT_NONE == _compactThisCycle)
 #endif /* OMR_GC_MODRON_COMPACTION */		
 		{
 			/* We now have accurate free space statistics so recalculate any expand/contract amount
@@ -1032,7 +1032,9 @@ MM_ParallelGlobalGC::mainThreadCompact(MM_EnvironmentBase *env, MM_AllocateDescr
 
 	reportCompactStart(env);
 	compactStats->_startTime = omrtime_hires_clock();
-	MM_ParallelCompactTask compactTask(env, _dispatcher, _compactScheme, rebuildMarkBits, env->_cycleState->_gcCode.shouldAggressivelyCompact());
+	bool nurseryOnly = (CompactReason::COMPACT_ABORTED_SCAVENGE == compactStats->_compactReason);
+
+	MM_ParallelCompactTask compactTask(env, _dispatcher, _compactScheme, rebuildMarkBits, env->_cycleState->_gcCode.shouldAggressivelyCompact(), nurseryOnly);
 	_dispatcher->run(env, &compactTask);
 	compactStats->_endTime = omrtime_hires_clock();
 	reportCompactEnd(env);

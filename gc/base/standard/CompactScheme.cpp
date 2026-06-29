@@ -352,12 +352,12 @@ MM_CompactScheme::postObjectMove(MM_EnvironmentBase *env, omrobjectptr_t objectP
 }
 
 void
-MM_CompactScheme::workerSetupForGC(MM_EnvironmentStandard *env, bool singleThreaded)
+MM_CompactScheme::workerSetupForGC(MM_EnvironmentStandard *env, bool singleThreaded, bool nurseryOnly)
 {
-	createSubAreaTable(env, singleThreaded);
+	createSubAreaTable(env, singleThreaded, nurseryOnly);
 	setRealLimitsSubAreas(env);
 	removeNullSubAreas(env);
-	completeSubAreaTable(env);
+	completeSubAreaTable(env, nurseryOnly);
 }
 
 void
@@ -385,7 +385,7 @@ MM_CompactScheme::freeChunkEnd(omrobjectptr_t chunk)
  *  Create sub areas table for regions.
  */
 void
-MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThreaded)
+MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThreaded, bool nurseryOnly)
 {
 	/* finding whether there are memory limitations */
 	uintptr_t max_subarea_num = _subAreaTableSize / sizeof(_subAreaTable[0]);
@@ -395,7 +395,7 @@ MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThr
 	GC_HeapRegionIteratorStandard regionCounter(_rootManager);
 	MM_HeapRegionDescriptorStandard *region = NULL;
 	uintptr_t number_of_regions = 0;
-	while(NULL != (region = regionCounter.nextRegion())) {
+	while (NULL != (region = regionCounter.nextRegion())) {
 		if (region->isCommitted()) {
 			number_of_regions += 1;
 		}
@@ -405,7 +405,7 @@ MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThr
 
 	Assert_MM_true(max_subarea_num > 0);
 
-	if(max_subarea_num > necessary_subareas) {
+	if (max_subarea_num > necessary_subareas) {
 		min_subarea_size = _heap->getMaximumPhysicalRange() / (max_subarea_num - necessary_subareas);
 	} else {
 		min_subarea_size = _heap->getMaximumPhysicalRange();
@@ -419,7 +419,7 @@ MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThr
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseMain(env, UNIQUE_ID)) {
 		GC_HeapRegionIteratorStandard regionIterator(_rootManager);
 		uintptr_t i = 0;
-		while(NULL != (region = regionIterator.nextRegion())) {
+		while (NULL != (region = regionIterator.nextRegion())) {
 			if (!region->isCommitted() || (0 == region->getSize())) {
 				continue;
 			}
@@ -428,6 +428,9 @@ MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThr
 			uintptr_t areaSize = region->getSize();
 			MM_MemorySubSpace *memorySubSpace = region->getSubSpace();
 			intptr_t state = SubAreaEntry::init;
+			if (nurseryOnly && (MEMORY_TYPE_OLD == (memorySubSpace->getTypeFlags() & MEMORY_TYPE_OLD))) {
+				state = SubAreaEntry::fixup_only;
+			}
 
 			if (singleThreaded) {
 				size = areaSize;
@@ -437,7 +440,7 @@ MM_CompactScheme::createSubAreaTable(MM_EnvironmentStandard *env, bool singleThr
 			/* Calculate number of sub areas..take care to avoid overflow if size is large */
 			uintptr_t numSubAreas = ((areaSize - 1) / size) + 1;
 
-			for( uintptr_t subAreaNum=0; subAreaNum < numSubAreas; subAreaNum++){
+			for (uintptr_t subAreaNum=0; subAreaNum < numSubAreas; subAreaNum++){
 				uint8_t *p = (uint8_t*)(((uintptr_t)lowAddress) + (subAreaNum * size));
 
 				_subAreaTable[i].freeChunk = (omrobjectptr_t)p;
@@ -517,7 +520,7 @@ MM_CompactScheme::removeNullSubAreas(MM_EnvironmentStandard *env)
  *  Complete setup for each sub area.
  */
 void
-MM_CompactScheme::completeSubAreaTable(MM_EnvironmentStandard *env)
+MM_CompactScheme::completeSubAreaTable(MM_EnvironmentStandard *env, bool nurseryOnly)
 {
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseMain(env, UNIQUE_ID)) {
 		MM_HeapRegionDescriptorStandard *region = NULL;
@@ -526,11 +529,15 @@ MM_CompactScheme::completeSubAreaTable(MM_EnvironmentStandard *env)
 		 * rebuild of free list at end of compaction
 		 */
 		GC_HeapRegionIteratorStandard regionIterator2(_rootManager);
-		while(NULL != (region = regionIterator2.nextRegion())) {
+		while (NULL != (region = regionIterator2.nextRegion())) {
 			if (!region->isCommitted() || (0 == region->getSize())) {
 				continue;
 			}
 			MM_MemorySubSpace *subspace = region->getSubSpace();
+			if (nurseryOnly && (MEMORY_TYPE_OLD == (subspace->getTypeFlags() & MEMORY_TYPE_OLD))) {
+				continue;
+			}
+
 			MM_MemoryPool *memoryPool = subspace->getMemoryPool();
 			memoryPool->reset(MM_MemoryPool::forCompact);
 		}
@@ -540,7 +547,7 @@ MM_CompactScheme::completeSubAreaTable(MM_EnvironmentStandard *env)
 }
 
 void
-MM_CompactScheme::compact(MM_EnvironmentBase *envBase, bool rebuildMarkBits, bool aggressive)
+MM_CompactScheme::compact(MM_EnvironmentBase *envBase, bool rebuildMarkBits, bool aggressive, bool nurseryOnly)
 {
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
 	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
@@ -577,7 +584,7 @@ MM_CompactScheme::compact(MM_EnvironmentBase *envBase, bool rebuildMarkBits, boo
 	}
 
 	env->_compactStats._setupStartTime = omrtime_hires_clock();
-	workerSetupForGC(env, singleThreaded);
+	workerSetupForGC(env, singleThreaded, nurseryOnly);
 	env->_compactStats._setupEndTime = omrtime_hires_clock();
 
 	/* If a single threaded compaction force compact to run on main thread. Required
@@ -595,7 +602,7 @@ MM_CompactScheme::compact(MM_EnvironmentBase *envBase, bool rebuildMarkBits, boo
 
 		env->_compactStats._fixupStartTime = omrtime_hires_clock();
 
-		fixupObjects(env, fixupObjectsCount);
+		fixupObjects(env, fixupObjectsCount, nurseryOnly);
 
 
 		env->_compactStats._fixupEndTime = omrtime_hires_clock();
@@ -607,19 +614,21 @@ MM_CompactScheme::compact(MM_EnvironmentBase *envBase, bool rebuildMarkBits, boo
 
 	/* FixupRoots can always be done in parallel */
 	env->_compactStats._rootFixupStartTime = omrtime_hires_clock();
-	_delegate.fixupRoots(env, this);
+	_delegate.fixupRoots(env, this, nurseryOnly);
 	env->_compactStats._rootFixupEndTime = omrtime_hires_clock();
 
 	MM_AtomicOperations::sync();
 
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseMain(env, UNIQUE_ID)) {
-		rebuildFreelist(env);
+		rebuildFreelist(env, nurseryOnly);
 
 		MM_MemoryPool *memoryPool;
 		MM_HeapMemoryPoolIterator poolIterator(env, _extensions->heap);
 
-		while(NULL != (memoryPool = poolIterator.nextPool())) {
-			memoryPool->postProcess(env, MM_MemoryPool::forCompact);
+		while (NULL != (memoryPool = poolIterator.nextPool())) {
+			if (!nurseryOnly || (MEMORY_TYPE_OLD != (memoryPool->getSubSpace()->getTypeFlags() & MEMORY_TYPE_OLD))) {
+				memoryPool->postProcess(env, MM_MemoryPool::forCompact);
+			}
 		}
 
 		MM_AtomicOperations::sync();
@@ -654,7 +663,7 @@ MM_CompactScheme::flushPool(MM_EnvironmentStandard *env, MM_CompactMemoryPoolSta
 	memoryPool->setLastFreeEntry(poolState->_previousFreeEntry);
 }
 
-void MM_CompactScheme::rebuildFreelist(MM_EnvironmentStandard *env)
+void MM_CompactScheme::rebuildFreelist(MM_EnvironmentStandard *env, bool nurseryOnly)
 {
 	uintptr_t i = 0;
 	MM_HeapRegionManager *regionManager = _heap->getHeapRegionManager();
@@ -662,7 +671,7 @@ void MM_CompactScheme::rebuildFreelist(MM_EnvironmentStandard *env)
 	MM_HeapRegionDescriptorStandard *region = NULL;
 	SubAreaEntry *subAreaTable = _subAreaTable;
 
-	while(NULL != (region = regionIterator.nextRegion())) {
+	while (NULL != (region = regionIterator.nextRegion())) {
 		if (!region->isCommitted() || (0 == region->getSize())) {
 			continue;
 		}
@@ -715,6 +724,10 @@ void MM_CompactScheme::rebuildFreelist(MM_EnvironmentStandard *env)
 				currentFreeSize = 0;
 			}
         } while (subAreaTable[i++].state != SubAreaEntry::end_segment);
+
+		if (nurseryOnly && (MEMORY_TYPE_OLD == (memorySubSpace->getTypeFlags() & MEMORY_TYPE_OLD))) {
+			continue;
+		}
 
 		Assert_MM_true(currentFreeBase == NULL);
 
@@ -1343,7 +1356,7 @@ MM_CompactScheme::getForwardingPtr(omrobjectptr_t objectPtr) const
 }
 
 void
-MM_CompactScheme::fixupObjects(MM_EnvironmentStandard *env, uintptr_t& objectCount)
+MM_CompactScheme::fixupObjects(MM_EnvironmentStandard *env, uintptr_t& objectCount, bool nurseryOnly)
 {
 	MM_HeapRegionManager *regionManager = _heap->getHeapRegionManager();
 	GC_HeapRegionIteratorStandard regionIterator(regionManager);
@@ -1356,6 +1369,10 @@ MM_CompactScheme::fixupObjects(MM_EnvironmentStandard *env, uintptr_t& objectCou
 		}
 		intptr_t i;
         for (i = 0; subAreaTable[i].state != SubAreaEntry::end_segment; i++) {
+			if (nurseryOnly && (MEMORY_TYPE_OLD == (region->getSubSpace()->getTypeFlags() & MEMORY_TYPE_OLD))) {
+				continue;
+			}
+
         	if (changeSubAreaAction(env, &subAreaTable[i], SubAreaEntry::fixing_up)) {
         		fixupSubArea(env, subAreaTable[i].firstObject, subAreaTable[i+1].firstObject, subAreaTable[i].state == SubAreaEntry::fixup_only, objectCount);
 			}
@@ -1492,7 +1509,7 @@ MM_CompactScheme::parallelFixHeapForWalk(MM_EnvironmentBase *env)
         	if (subAreaTable[i].state == SubAreaEntry::fixup_only) {
 	        	if (changeSubAreaAction(env, &subAreaTable[i], SubAreaEntry::fixing_heap_for_walk)) {
 	        		omrobjectptr_t start = subAreaTable[i].firstObject;
-					omrobjectptr_t end   = subAreaTable[i].firstObject;
+					omrobjectptr_t end   = subAreaTable[i + 1].firstObject;
 					omrobjectptr_t alignedEnd = pageStart(pageIndex(end));
 
 					GC_ObjectHeapIteratorAddressOrderedList objectIterator(_extensions, start, end, false);

@@ -160,7 +160,7 @@ protected:
 	virtual bool initialize(MM_EnvironmentBase *env);
 	virtual void tearDown(MM_EnvironmentBase *env);
 
-	void createSubAreaTable(MM_EnvironmentStandard *env, bool singleThreaded);
+	void createSubAreaTable(MM_EnvironmentStandard *env, bool singleThreaded, bool nurseryOnly);
 	/**
 	 * Set the real limits for a specific subArea
 	 *
@@ -168,7 +168,7 @@ protected:
 	 */
 	void setRealLimitsSubAreas(MM_EnvironmentStandard *env);
 	void removeNullSubAreas(MM_EnvironmentStandard *env);
-	void completeSubAreaTable(MM_EnvironmentStandard *env);
+	void completeSubAreaTable(MM_EnvironmentStandard *env, bool nurseryOnly);
 
 	void saveForwardingPtr(class CompactTableEntry&,
 					omrobjectptr_t objectPtr,
@@ -216,9 +216,9 @@ protected:
 	 * @param[in/out] objectCount the number of objects fixed up (accumulated)
 	 */
 	void fixupSubArea(MM_EnvironmentStandard *env, omrobjectptr_t firstObject, omrobjectptr_t finish,  bool markedOnly, uintptr_t& objectCount);
-	void fixupObjects(MM_EnvironmentStandard *env, uintptr_t& objectCount);
+	void fixupObjects(MM_EnvironmentStandard *env, uintptr_t& objectCount, bool nurseryOnly);
 
-	void rebuildFreelist(MM_EnvironmentStandard *env);
+	void rebuildFreelist(MM_EnvironmentStandard *env, bool nurseryOnly);
 
 	void addFreeEntry(MM_EnvironmentStandard *env,
 					MM_MemorySubSpace *memorySubSpace,
@@ -307,9 +307,9 @@ public:
 	
 	void kill(MM_EnvironmentBase *env);
 
-	void workerSetupForGC(MM_EnvironmentStandard *env, bool singleThreaded);
+	void workerSetupForGC(MM_EnvironmentStandard *env, bool singleThreaded, bool nurseryOnly);
 	void mainSetupForGC(MM_EnvironmentStandard *env);
-	virtual void compact(MM_EnvironmentBase *env, bool rebuildMarkBits, bool aggressive);
+	virtual void compact(MM_EnvironmentBase *env, bool rebuildMarkBits, bool aggressive, bool nurseryOnly);
 	omrobjectptr_t getForwardingPtr(omrobjectptr_t objectPtr) const;
 	void flushPool(MM_EnvironmentStandard *env, MM_CompactMemoryPoolState *freeListState);
 	void fixHeapForWalk(MM_EnvironmentBase *env, uintptr_t walkFlags, uintptr_t walkReason);

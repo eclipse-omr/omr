@@ -48,6 +48,7 @@ private:
 	MM_CompactScheme *_compactScheme;
 	bool _rebuildMarkBits;
 	bool _aggressive;
+	bool _nurseryOnly; /**< if true, Nursery is only compacted and Tenure fixed-up via RS, otherwise whole heap is compacted/fixed-up */
 
 public:
 	virtual uintptr_t getVMStateID();
@@ -59,11 +60,12 @@ public:
 	/**
 	 * Create an ParallelCompactTask object.
 	 */
-	MM_ParallelCompactTask(MM_EnvironmentBase *env, MM_ParallelDispatcher *dispatcher, MM_CompactScheme *compactScheme, bool rebuildMarkBits, bool aggressive) :
+	MM_ParallelCompactTask(MM_EnvironmentBase *env, MM_ParallelDispatcher *dispatcher, MM_CompactScheme *compactScheme, bool rebuildMarkBits, bool aggressive, bool nurseryOnly) :
 		MM_ParallelTask(env, dispatcher),
 		_compactScheme(compactScheme),
 		_rebuildMarkBits(rebuildMarkBits),
-		_aggressive(aggressive)
+		_aggressive(aggressive),
+		_nurseryOnly(nurseryOnly)
 	{
 		_typeId = __FUNCTION__;
 	};
