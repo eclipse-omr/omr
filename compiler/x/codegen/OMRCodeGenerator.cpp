@@ -1144,6 +1144,17 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
                 default:
                     return false;
             }
+        case TR::mloadiFromArray:
+        case TR::mstoreiToArray:
+            switch (et) {
+                case TR::Int8:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1);
+                case TR::Int32:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F);
+                default:
+                    return false;
+            }
+            break;
         case TR::mload:
         case TR::mloadi:
         case TR::mstore:

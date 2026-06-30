@@ -6196,6 +6196,47 @@ TR::Register *OMR::X86::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::Co
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+TR::Register *OMR::X86::TreeEvaluator::mstoreiToArrayHelper(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::DataType dt = node->getDataType();
+    TR::DataType et = dt.getVectorElementType();
+    TR::VectorLength vl = dt.getVectorLength();
+    TR::Node *storeValNode = node->getSecondChild();
+    TR_ASSERT_FATAL_WITH_NODE(node, vl == TR::VectorLength128, "mstoreiToArray only supports 128-bit vectors on x86");
+
+    TR::Register *storeValReg = cg->evaluate(storeValNode);
+    TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+
+    Inst_RegReg(OP::MOVDQURegReg, node, tmpReg, storeValReg, cg);
+
+    TR::Register *scalarReg = cg->allocateRegister(TR_GPR);
+    TR::Register *oneReg = cg->allocateRegister(TR_VRF);
+    Inst_RegImm(OP::MOV4RegImm4, node, scalarReg, 0x01010101, cg);
+    Inst_RegReg(OP::MOVDRegReg4, node, oneReg, scalarReg, cg);
+    Inst_RegRegImm(OP::PSHUFDRegRegImm1, node, oneReg, oneReg, 0x00, cg);
+    cg->stopUsingRegister(scalarReg);
+
+    Inst_RegReg(OP::PANDRegReg, node, tmpReg, oneReg, cg);
+    cg->stopUsingRegister(oneReg);
+
+    switch (et) {
+        case TR::Int8: {
+            TR::Node *addressNode = node->getFirstChild();
+            TR::Register *addressReg = cg->evaluate(addressNode);
+            generateArrayElementStore(node, addressReg, 0, tmpReg, 16, cg);
+            cg->decReferenceCount(addressNode);
+            break;
+        }
+        default:
+            TR_ASSERT_FATAL_WITH_NODE(node, false, "Initial x86 mstoreiToArrayHelper only supports Int8");
+            break;
+    }
+
+    cg->stopUsingRegister(tmpReg);
+    cg->decReferenceCount(storeValNode);
+    return NULL;
+}
+
 void OMR::X86::TreeEvaluator::vectorMaskToGPRHelper(TR::Node *node, TR::DataType type, TR::Register *gprReg,
     TR::Register *maskReg, TR::CodeGenerator *cg)
 {
@@ -6394,7 +6435,7 @@ TR::Register *OMR::X86::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, 
 
 TR::Register *OMR::X86::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::mstoreiToArrayHelper(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
