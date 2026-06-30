@@ -773,7 +773,7 @@ void OMR::X86::MemoryReference::assignRegisters(TR::Instruction *currentInstruct
     }
 }
 
-uint32_t OMR::X86::MemoryReference::estimateBinaryLength(TR::CodeGenerator *cg)
+uint32_t OMR::X86::MemoryReference::estimateBinaryLength(TR::Instruction *containingInstruction, TR::CodeGenerator *cg)
 {
     if (self()->getBaseRegister()
         && toRealRegister(self()->getBaseRegister())->getRegisterNumber() == TR::RealRegister::vfp) {
@@ -785,13 +785,29 @@ uint32_t OMR::X86::MemoryReference::estimateBinaryLength(TR::CodeGenerator *cg)
 
     TR::RealRegister *base = toRealRegister(self()->getBaseRegister());
 
-    intptr_t displacement;
     uint32_t addressTypes = (self()->getBaseRegister() != NULL ? 1 : 0) | (self()->getIndexRegister() != NULL ? 2 : 0)
         | ((self()->getSymbolReference().getSymbol() != NULL || self()->getSymbolReference().getOffset() != 0
                || self()->isForceWideDisplacement())
                 ? 4
                 : 0);
     uint32_t length = 0;
+
+    intptr_t displacement;
+    uint8_t displacementDivisor = 0;
+    bool isEvex = false;
+    bool canShortenEVEXDisplacement = false;
+    if (containingInstruction) {
+        isEvex = containingInstruction->getOpCode().info().isEvex()
+            || (containingInstruction->getEncodingMethod() >= OMR::X86::EVEX_L128
+                && containingInstruction->getEncodingMethod() <= OMR::X86::EVEX_L512);
+        if (isEvex) {
+            canShortenEVEXDisplacement = containingInstruction->getOpCode().canShortenEVEXDisplacement();
+            if (canShortenEVEXDisplacement) {
+                displacementDivisor = containingInstruction->getOpCode().getSIMDMemOperandSize(
+                    containingInstruction->getEncodingMethod());
+            }
+        }
+    }
 
     switch (addressTypes) {
         case 1:
@@ -822,6 +838,16 @@ uint32_t OMR::X86::MemoryReference::estimateBinaryLength(TR::CodeGenerator *cg)
 
         case 5:
             displacement = self()->getDisplacement();
+            if (!isForceWideDisplacement() && canShortenEVEXDisplacement && (displacement % displacementDivisor) == 0
+                && IS_8BIT_SIGNED(displacement / displacementDivisor)) {
+                displacement /= displacementDivisor;
+            } else if (isEvex) {
+                length = 4;
+                if (base->needsSIB() || self()->isForceSIBByte()) {
+                    length++;
+                }
+                break;
+            }
             if (displacement == 0 && !base->needsDisp() && !base->needsSIB() && !self()->isForceWideDisplacement()) {
                 length = 0;
             } else if (displacement >= -128 && displacement <= 127 && !self()->isForceWideDisplacement()) {
@@ -840,6 +866,13 @@ uint32_t OMR::X86::MemoryReference::estimateBinaryLength(TR::CodeGenerator *cg)
 
         case 7:
             displacement = self()->getDisplacement();
+            if (!isForceWideDisplacement() && canShortenEVEXDisplacement && (displacement % displacementDivisor) == 0
+                && IS_8BIT_SIGNED(displacement / displacementDivisor)) {
+                displacement /= displacementDivisor;
+            } else if (isEvex) {
+                length = 5;
+                break;
+            }
             if (displacement >= -128 && displacement <= 127 && !self()->isForceWideDisplacement()) {
                 length = 2;
             } else {
@@ -943,10 +976,10 @@ OMR::X86::EnlargementResult OMR::X86::MemoryReference::enlarge(TR::CodeGenerator
 
     int32_t growth = 0;
     if (!self()->isForceWideDisplacement()) {
-        int32_t currentEncodingAllocation = self()->estimateBinaryLength(cg);
+        int32_t currentEncodingAllocation = self()->estimateBinaryLength(NULL, cg);
         int32_t currentPatchSize = self()->getBinaryLengthLowerBound(cg);
         _flags.set(MemRef_ForceWideDisplacement);
-        int32_t potentialEncodingGrowth = self()->estimateBinaryLength(cg) - currentPatchSize;
+        int32_t potentialEncodingGrowth = self()->estimateBinaryLength(NULL, cg) - currentPatchSize;
         int32_t potentialPatchGrowth = self()->getBinaryLengthLowerBound(cg) - currentEncodingAllocation;
 
         if (potentialPatchGrowth > 0 && (potentialPatchGrowth >= requestedEnlargementSize || allowPartialEnlargement)
@@ -957,7 +990,7 @@ OMR::X86::EnlargementResult OMR::X86::MemoryReference::enlarge(TR::CodeGenerator
             return OMR::X86::EnlargementResult(potentialPatchGrowth, potentialEncodingGrowth);
         } else {
             _flags.reset(MemRef_ForceWideDisplacement);
-            self()->estimateBinaryLength(cg);
+            self()->estimateBinaryLength(NULL, cg);
             return OMR::X86::EnlargementResult(0, 0);
         }
     }
