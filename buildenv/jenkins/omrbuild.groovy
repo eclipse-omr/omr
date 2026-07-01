@@ -384,6 +384,8 @@ def build() {
         if (SPECS[buildSpec].ccache) {
             echo 'Output CCACHE stats before running and clear them'
             sh 'ccache -s -z'
+            /* TODO: For debugging purposes, remove in final PR.  */
+            sh 'ls -al /usr/lib/ccache'
         }
 
         for (build in SPECS[buildSpec].builds) {
