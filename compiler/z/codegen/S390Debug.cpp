@@ -615,15 +615,13 @@ void TR_Debug::print(OMR::Logger *log, TR::S390RISInstruction *instr)
 
 void TR_Debug::print(OMR::Logger *log, TR::S390LabelInstruction *instr)
 {
-    TR::LabelSymbol *label = instr->getLabelSymbol();
-    const char *symbolName = getName(label);
     printPrefix(log, instr);
 
     if (instr->getOpCodeValue() == TR::InstOpCode::label) {
-        {
-            log->prints(symbolName);
-            log->printc(':');
-        }
+        TR::LabelSymbol *label = instr->getLabelSymbol();
+        const char *symbolName = getName(label);
+        log->prints(symbolName);
+        log->printc(':');
 
         if (label->isStartInternalControlFlow()) {
             log->prints("\t# (Start of internal control flow)");
@@ -1692,67 +1690,57 @@ void TR_Debug::print(OMR::Logger *log, TR::MemoryReference *mr, TR::Instruction 
 
 void TR_Debug::printSymbolName(OMR::Logger *log, TR::Symbol *sym, TR::SymbolReference *symRef, TR::MemoryReference *mr)
 {
-    char *str;
-    bool sawWCodeName = false;
-#define LSTBUFSZ 1024
-#define MAXBUFSZ LSTBUFSZ - 1
-    char outString[LSTBUFSZ];
-    outString[0] = '\0';
-    outString[MAXBUFSZ] = '\0';
-    int32_t prefixLen = 0;
-
-#define ADD_WITH_PREFIX(s)                           \
-    {                                                \
-        strcpy(outString, internalNamePrefix());     \
-        strncat(outString, s, MAXBUFSZ - prefixLen); \
-    }
-
-    snprintf(outString, MAXBUFSZ, "#%d", symRef ? symRef->getReferenceNumber() : 0);
-
-    if (sym && !sawWCodeName) {
+    if (sym) {
         switch (sym->getKind()) {
             case TR::Symbol::IsAutomatic:
                 if (sym->getAutoSymbol()->getName() == NULL) {
-                    snprintf(outString, MAXBUFSZ, " Auto[%s]", getName(symRef));
+                    log->printf(" Auto[%s]", getName(symRef));
                 } else {
-                    snprintf(outString, MAXBUFSZ, " %s[%s]", sym->getAutoSymbol()->getName(), getName(symRef));
+                    log->printf(" %s[%s]", sym->getAutoSymbol()->getName(), getName(symRef));
                 }
-                break;
+                return;
             case TR::Symbol::IsParameter:
-                snprintf(outString, MAXBUFSZ, " Parm[%s]", getName(symRef));
-                break;
+                log->printf(" Parm[%s]", getName(symRef));
+                return;
             case TR::Symbol::IsStatic:
                 if (mr && mr->getConstantDataSnippet() == NULL) {
-                    snprintf(outString, MAXBUFSZ, " Static[%s]", getName(symRef));
+                    log->printf(" Static[%s]", getName(symRef));
+                    return;
                 }
                 break;
             case TR::Symbol::IsResolvedMethod:
             case TR::Symbol::IsMethod:
-                snprintf(outString, MAXBUFSZ, " Method[%s]", getName(symRef));
-                break;
+                log->printf(" Method[%s]", getName(symRef));
+                return;
             case TR::Symbol::IsShadow:
                 if (mr->getConstantDataSnippet() == NULL) {
                     const char *symRefName = getName(symRef);
-                    if (sym->isNamedShadowSymbol() && sym->getNamedShadowSymbol()->getName() != NULL) {
-                        snprintf(outString, MAXBUFSZ, "   %s[%s]", sym->getNamedShadowSymbol()->getName(), symRefName);
+                    if (sym->isNamedShadowSymbol()) {
+                        const char *namedShadowName = sym->getNamedShadowSymbol()->getName();
+                        if (namedShadowName) {
+                            log->printf("   %s[%s]", namedShadowName, symRefName);
+                        } else {
+                            log->printf(" Shadow[%s]", symRefName);
+                        }
                     } else {
-                        snprintf(outString, MAXBUFSZ, " Shadow[%s]", getName(symRef));
+                        log->printf(" Shadow[%s]", symRefName);
                     }
+                    return;
                 }
                 break;
             case TR::Symbol::IsMethodMetaData:
-                snprintf(outString, MAXBUFSZ, " MethodMeta[%s]", getName(symRef));
-                break;
+                log->printf(" MethodMeta[%s]", getName(symRef));
+                return;
             case TR::Symbol::IsLabel:
-                strncpy(outString, getName(sym->castToLabelSymbol()), MAXBUFSZ);
-                break;
-
+                log->prints(getName(sym->castToLabelSymbol()));
+                return;
             default:
-                TR_ASSERT(0, "unexpected symbol kind");
+                TR_ASSERT_FATAL(0, "unexpected symbol kind");
+                break;
         }
     }
 
-    log->prints(outString);
+    log->printf("#%d", symRef ? symRef->getReferenceNumber() : 0);
 }
 
 void TR_Debug::print(OMR::Logger *log, TR::S390NOPInstruction *instr)

@@ -948,7 +948,11 @@ public:
 
     void setNodeOpCodeLength(int32_t opCodeLen) { _nodeOpCodeLength = opCodeLen; }
 
-    void incrNodeOpCodeLength(int32_t incr) { _nodeOpCodeLength += incr; }
+    void incrNodeOpCodeLength(int32_t incr)
+    {
+        if (incr > 0)
+            _nodeOpCodeLength += incr;
+    }
 
     // ==========================================================================
     // CHTable

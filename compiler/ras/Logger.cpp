@@ -44,6 +44,18 @@ OMR::Logger::Logger()
     setSkipFlush(envSkipLoggerFlushes ? true : false);
 }
 
+int32_t OMR::Logger::prints_len(const char *string)
+{
+    int32_t rc = prints(string);
+    return (rc >= 0) ? static_cast<int32_t>(strlen(string)) : rc;
+}
+
+int32_t OMR::Logger::printc_len(char c)
+{
+    int32_t rc = printc(c);
+    return (rc >= 0) ? 1 : rc;
+}
+
 /*
  * -----------------------------------------------------------------------------
  * NullLogger

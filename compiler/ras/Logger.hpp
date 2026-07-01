@@ -84,6 +84,44 @@
             log->println();   \
     } while (0)
 
+/**
+ * @brief Convenience macro to log a literal string and accumulate the length
+ *     of that string (excluding the trailing NUL-terminator) into a provided
+ *     variable. The length of the string literal is a compile-time constant.
+ *
+ * @details
+ *     No error checking is performed on the result from the \c Logger::prints
+ *     function.
+ *
+ * @param[in] len : int32_t variable to accumulate string length in
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] str : the string literal. This must be a string literal whose
+ *     length can be determined at compile-time.
+ */
+#define len_logprints_literal(len, log, str) \
+    do {                                     \
+        log->prints(str);                    \
+        len += sizeof(str) - 1;              \
+    } while (0)
+
+/**
+ * @brief Convenience macro to log a single char and accumulate the length
+ *     into a provided variable.
+ *
+ * @details
+ *     No error checking is performed on the result from the \c Logger::printc
+ *     function.
+ *
+ * @param[in] len : int32_t variable to accumulate char length in
+ * @param[in] log : (OMR::Logger *) to the log to print to
+ * @param[in] c : the char to log
+ */
+#define len_logprintc(len, log, c) \
+    do {                           \
+        log->printc(c);            \
+        len++;                     \
+    } while (0)
+
 namespace OMR {
 
 /**
@@ -140,11 +178,27 @@ public:
     virtual int32_t prints(const char *string) = 0;
 
     /**
+     * @brief Send a raw `\0`-terminated string to the Logger.
+     *
+     * @return the exact number of characters written on success, or a negative
+     *     value on any error
+     */
+    virtual int32_t prints_len(const char *string);
+
+    /**
      * @brief Send a single `char` to the Logger.
      *
      * @return a nonnegative number on success, or a negative value on any error
      */
     virtual int32_t printc(char c) = 0;
+
+    /**
+     * @brief Send a single `char` to the Logger.
+     *
+     * @return 1 on success (number of chars written), or a negative value on
+     *     any error
+     */
+    virtual int32_t printc_len(char c);
 
     /**
      * @brief
