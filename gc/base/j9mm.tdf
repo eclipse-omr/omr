@@ -1039,4 +1039,4 @@ TraceException=Trc_MM_getSparseAddressAndDecommitLeaves_allocFailed Overhead=1 L
 TraceException=Trc_MM_getSparseAddressAndDecommitLeaves_reserveFailed Overhead=1 Level=1 Group=arraylet Template="Failed to reserve region, ReservedRegionCount: %zu"
 
 TraceEntry=Trc_ParallelGlobalGC_shouldCompactThisCycle_entry Overhead=1 Level=1 Group=compact Template="shouldCompactThisCycle entry: bytesRequested: %zu"
-TraceExit=Trc_ParallelGlobalGC_shouldCompactThisCycle_exit Overhead=1 Level=1 Group=compact Template="shouldCompactThisCycle exit: %s, compactReason: %zu, compactPreventedReason: %zu"
+TraceExit=Trc_ParallelGlobalGC_shouldCompactThisCycle_exit Overhead=1 Level=1 Group=compact Template="shouldCompactThisCycle exit: %s, compactReason: %u, compactPreventedReason: %u"
