@@ -4475,6 +4475,8 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vmshl:
         case TR::vrol:
         case TR::vmrol:
+        case TR::vbyteswap:
+        case TR::vmbyteswap:
             return true;
         default:
             return false;
