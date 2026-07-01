@@ -2423,7 +2423,7 @@ TR::Register *OMR::RV::TreeEvaluator::badILOpEvaluator(TR::Node *node, TR::CodeG
     return OMR::RV::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
-TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t memSize, TR::CodeGenerator *cg)
+TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
 {
     TR::Register *tempReg;
     if (op == OP::_flw) {
@@ -2453,7 +2453,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
 // also handles iloadi
 TR::Register *OMR::RV::TreeEvaluator::iloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonLoadEvaluator(node, OP::_lw, 4, cg);
+    return commonLoadEvaluator(node, OP::_lw, cg);
 }
 
 // also handles aloadi
@@ -2507,19 +2507,19 @@ TR::Register *OMR::RV::TreeEvaluator::aloadEvaluator(TR::Node *node, TR::CodeGen
 // also handles lloadi
 TR::Register *OMR::RV::TreeEvaluator::lloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonLoadEvaluator(node, OP::_ld, 8, cg);
+    return commonLoadEvaluator(node, OP::_ld, cg);
 }
 
 // also handles bloadi
 TR::Register *OMR::RV::TreeEvaluator::bloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonLoadEvaluator(node, OP::_lb, 1, cg);
+    return commonLoadEvaluator(node, OP::_lb, cg);
 }
 
 // also handles sloadi
 TR::Register *OMR::RV::TreeEvaluator::sloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonLoadEvaluator(node, OP::_lh, 2, cg);
+    return commonLoadEvaluator(node, OP::_lh, cg);
 }
 
 TR::Register *OMR::RV::TreeEvaluator::awrtbarEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -2527,7 +2527,7 @@ TR::Register *OMR::RV::TreeEvaluator::awrtbarEvaluator(TR::Node *node, TR::CodeG
     return OMR::RV::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
-TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t memSize, TR::CodeGenerator *cg)
+TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
 {
     TR::MemoryReference *tempMR = MRef_Node(node, cg);
     TR::Node *valueChild;
@@ -2564,25 +2564,25 @@ TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, 
 // also handles lstorei, astore, astorei
 TR::Register *OMR::RV::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonStoreEvaluator(node, OP::_sd, 8, cg);
+    return commonStoreEvaluator(node, OP::_sd, cg);
 }
 
 // also handles bstorei
 TR::Register *OMR::RV::TreeEvaluator::bstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonStoreEvaluator(node, OP::_sb, 1, cg);
+    return commonStoreEvaluator(node, OP::_sb, cg);
 }
 
 // also handles sstorei
 TR::Register *OMR::RV::TreeEvaluator::sstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonStoreEvaluator(node, OP::_sh, 2, cg);
+    return commonStoreEvaluator(node, OP::_sh, cg);
 }
 
 // also handles istorei
 TR::Register *OMR::RV::TreeEvaluator::istoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonStoreEvaluator(node, OP::_sw, 4, cg);
+    return commonStoreEvaluator(node, OP::_sw, cg);
 }
 
 TR::Register *OMR::RV::TreeEvaluator::monentEvaluator(TR::Node *node, TR::CodeGenerator *cg)
