@@ -78,6 +78,7 @@
 #include "optimizer/CatchBlockRemover.hpp"
 #include "optimizer/CompactLocals.hpp"
 #include "optimizer/ConstRefPrivatization.hpp"
+#include "optimizer/ConstRefRematerialization.hpp"
 #include "optimizer/CopyPropagation.hpp"
 #include "optimizer/ExpressionsSimplification.hpp"
 #include "optimizer/GeneralLoopUnroller.hpp"
@@ -109,6 +110,7 @@
 #include "optimizer/ReorderIndexExpr.hpp"
 #include "optimizer/GlobalRegisterAllocator.hpp"
 #include "optimizer/SwitchAnalyzer.hpp"
+#include "optimizer/TrivialDeadStoreElimination.hpp"
 #include "env/RegionProfiler.hpp"
 
 static const OptimizationStrategy localValuePropagationOpts[] = {
@@ -584,6 +586,10 @@ OMR::FullOptimizer::FullOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbo
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_LiveRangeSplitter::create, OMR::liveRangeSplitter);
     _opts[OMR::constRefPrivatization] = new (comp->allocator())
         TR::OptimizationManager(self(), TR::ConstRefPrivatization::create, OMR::constRefPrivatization);
+    _opts[OMR::constRefRematerialization] = new (comp->allocator())
+        TR::OptimizationManager(self(), TR::ConstRefRematerialization::create, OMR::constRefRematerialization);
+    _opts[OMR::trivialDeadStoreElimination] = new (comp->allocator())
+        TR::OptimizationManager(self(), TR::TrivialDeadStoreElimination::create, OMR::trivialDeadStoreElimination);
     _opts[OMR::loopSpecializer]
         = new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopSpecializer::create, OMR::loopSpecializer);
     // NOTE: Please add new OMR optimizations here!

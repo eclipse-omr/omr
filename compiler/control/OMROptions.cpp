@@ -3531,7 +3531,9 @@ void OMR::Options::jitPreProcess()
 
     self()->setOption(TR_RestrictStaticFieldFolding);
 
-    // TODO: enable const refs here
+#ifdef TR_ALLOW_NON_CONST_KNOWN_OBJECTS
+    self()->setOption(TR_EnableConstRefs);
+#endif
 
     if (TR::Compiler->target.cpu.isPower())
         self()->setOption(TR_DisableRegisterPressureSimulation);
