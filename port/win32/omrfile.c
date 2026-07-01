@@ -343,6 +343,11 @@ omrfile_findfirst(struct OMRPortLibrary *portLibrary, const char *path, char *re
 
 	Trc_PRT_file_findfirst_Entry2(path, resultbuf);
 
+	if (strlen(path) >= EsMaxPath) {
+		Trc_PRT_file_findfirst_ExitFail(-1);
+		return (uintptr_t)-1;
+	}
+
 	strcpy(newPath, path);
 	strcat(newPath, "*");
 
