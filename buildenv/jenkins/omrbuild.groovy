@@ -382,6 +382,9 @@ def getSources() {
 def build() {
     stage('Build') {
         if (SPECS[buildSpec].ccache) {
+            /* TODO: For debugging purposes, remove in final PR.  */
+            echo "Update CCACHE symlinks"
+            sh 'sudo update-ccache-symlinks || echo "No update-ccache-symlinks found"'
             echo 'Output CCACHE stats before running and clear them'
             sh 'ccache -s -z'
             /* TODO: For debugging purposes, remove in final PR.  */
