@@ -766,8 +766,6 @@ bool OMR::Power::CodeGenerator::canTransformUnsafeCopyToArrayCopy()
     return !comp()->getOption(TR_DisableArrayCopyOpts);
 }
 
-bool OMR::Power::CodeGenerator::canTransformUnsafeSetMemory() { return (comp()->target().is64Bit()); }
-
 void OMR::Power::CodeGenerator::buildRegisterMapForInstruction(TR_GCStackMap *map)
 {
     TR_InternalPointerMap *internalPtrMap = NULL;

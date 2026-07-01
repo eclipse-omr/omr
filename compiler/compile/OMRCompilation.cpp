@@ -1611,15 +1611,6 @@ bool OMR::Compilation::canTransformUnsafeCopyToArrayCopy()
     return false;
 }
 
-bool OMR::Compilation::canTransformUnsafeSetMemory()
-{
-    if (!self()->getOptions()->realTimeGC() && !TR::Compiler->om.canGenerateArraylets()
-        && !self()->getOption(TR_DisableUnsafe) && self()->cg()->canTransformUnsafeSetMemory())
-        return true;
-
-    return false;
-}
-
 TR_PrefetchInfo *OMR::Compilation::removeExtraPrefetchInfo(TR::Node *node)
 {
     auto iter = self()->getExtraPrefetchInfo().begin();

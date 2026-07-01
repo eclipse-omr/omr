@@ -217,7 +217,6 @@ public:
     int32_t getPreferredLoopUnrollFactor();
 
     bool canTransformUnsafeCopyToArrayCopy();
-    bool canTransformUnsafeSetMemory();
 
     bool supportsMergingGuards() { return false; }
 

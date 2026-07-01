@@ -1696,8 +1696,6 @@ public:
     // J9, X86
     bool canTransformUnsafeCopyToArrayCopy() { return false; }
 
-    bool canTransformUnsafeSetMemory() { return false; }
-
     bool canNullChkBeImplicit(TR::Node *);
     bool canNullChkBeImplicit(TR::Node *, bool doChecks);
 

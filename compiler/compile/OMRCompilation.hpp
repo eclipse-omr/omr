@@ -1105,7 +1105,6 @@ public:
     int32_t findPrefetchInfo(TR::Node *node);
 
     bool canTransformUnsafeCopyToArrayCopy();
-    bool canTransformUnsafeSetMemory();
 
     bool supportsInduceOSR();
     bool canAffordOSRControlFlow();
