@@ -41,8 +41,9 @@ void TR::NodePool::cleanUp() { TR::Region::reset(_nodeRegion, _comp->trMemory()-
 
 TR::Node *TR::NodePool::allocate()
 {
-    TR::Node *newNode = static_cast<TR::Node *>(_nodeRegion.allocate(sizeof(TR::Node)));
-    memset(newNode, 0, sizeof(TR::Node));
+    void *space = _nodeRegion.allocate(sizeof(TR::Node));
+    memset(space, 0, sizeof(TR::Node));
+    TR::Node *newNode = static_cast<TR::Node *>(space);
     newNode->_globalIndex = ++_globalIndex;
     TR_ASSERT(_globalIndex < MAX_NODE_COUNT, "Reached TR::Node allocation limit");
 

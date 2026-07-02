@@ -79,14 +79,16 @@ public:
         _zeroInit = zeroInit;
         _trMemory = m;
         _trPersistentMemory = pm;
+        void *space = NULL;
         if (m)
-            _array = (T *)m->allocateMemory(initialSize * sizeof(T), _allocationKind, TR_MemoryBase::Array);
+            space = m->allocateMemory(initialSize * sizeof(T), _allocationKind, TR_MemoryBase::Array);
         else if (pm)
-            _array = (T *)pm->allocatePersistentMemory(initialSize * sizeof(T));
+            space = pm->allocatePersistentMemory(initialSize * sizeof(T));
         else
             TR_ASSERT(false, "Attempting to allocate an array without a memory object");
         if (zeroInit)
-            memset(_array, 0, initialSize * sizeof(T));
+            memset(space, 0, initialSize * sizeof(T));
+        _array = static_cast<T *>(space);
     }
 
     TR_Array(const TR_Array<T> &other) { copy(other); }

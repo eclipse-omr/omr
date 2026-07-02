@@ -231,7 +231,7 @@ OMR::Node::Node(TR::Node *from, uint16_t numChildren)
     , _unionPropertyA()
 {
     TR::Compilation *comp = TR::comp();
-    memcpy(self(), from, sizeof(TR::Node));
+    memcpy(static_cast<void *>(self()), from, sizeof(TR::Node));
     if (self()->hasDataType())
         self()->setDataType(TR::NoType);
 

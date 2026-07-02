@@ -833,8 +833,7 @@ CS2_HT_TEMP void inline CS2_HT_DECL::GrowAndRehash(HashIndex oldSize, HashTableE
             if (hashIndex > fHighestIndex)
                 fHighestIndex = hashIndex;
 
-            // Just bitwise copy the old element to the new.
-            memcpy(fTable + hashIndex, oldBase + oldIndex, sizeof(HashTableEntry));
+            fTable[hashIndex] = oldBase[oldIndex];
             fTable[hashIndex].SetCollisionChain(0);
         }
     }
@@ -1002,7 +1001,7 @@ CS2_HT_TEMP void inline CS2_HT_DECL::Remove(HashIndex hashIndex)
         if (collisionChain) {
             HashIndex firstCollision = collisionChain;
 
-            memcpy(fTable + hashIndex, fTable + firstCollision, sizeof(HashTableEntry));
+            fTable[hashIndex] = fTable[firstCollision];
             fTable[firstCollision].SetCollisionChain(fNextFree);
             fTable[firstCollision].Invalidate();
             fNextFree = firstCollision;
