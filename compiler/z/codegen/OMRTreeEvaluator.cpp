@@ -2233,14 +2233,101 @@ TR::Register *OMR::Z::TreeEvaluator::vmnolzEvaluator(TR::Node *node, TR::CodeGen
     return TR::TreeEvaluator::vnolzEvaluator(node, cg);
 }
 
+/**
+ * \brief
+ * Swap the bits in vector lanes.
+ *
+ * \details
+ * Reorders the bits in each lane value by reversing their sequence.
+ *
+ * \param node
+ * The node.
+ *
+ * \param cg
+ * The code generator.
+ *
+ * \return
+ * TR::Register with mirrored lane value bits.
+ */
 TR::Register *OMR::Z::TreeEvaluator::vbitswapEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    uint8_t elementSizeMask = getVectorElementSizeMask(node);
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+    TR::Register *sourceReg = NULL;
+    TR::Register *sourceCopyReg = NULL;
+    TR::Node *sourceNode = node->getFirstChild();
+
+    if (elementSizeMask == 0) {
+        sourceReg = cg->evaluate(sourceNode);
+        sourceCopyReg = sourceReg;
+    } else if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z15) && sourceNode->getOpCode().isLoad()
+        && sourceNode->getReferenceCount() == 1 && !node->getOpCode().isVectorMasked()
+        && sourceNode->getRegister() == NULL) {
+        // We can take advantage of VLBR instruction to load byte reversed elements from memory on Z15 or newer
+        // hardware.
+        TR::MemoryReference *srcMemRef = new (cg->trHeapMemory()) TR::MemoryReference(sourceNode, cg);
+        generateVRXInstruction(cg, TR::InstOpCode::VLBR, node, resultReg, srcMemRef, elementSizeMask);
+        sourceCopyReg = resultReg;
+    } else {
+        sourceReg = cg->evaluate(sourceNode);
+        sourceCopyReg = sourceReg;
+        // Swap the upper and lower halves of each lane and reduce the effective lane
+        // size at each step until the lane size reaches a halfword. This process takes
+        // one iteration for 16-bit lanes and three iterations for 64-bit lanes.
+        // example for int64 lane size (two 8 byte lanes):
+        // source:                        [0|1|2|3|4|5|6|7 - 0|1|2|3|4|5|6|7]
+        // result after first iteration:  [4|5|6|7|0|1|2|3 - 4|5|6|7|0|1|2|3]
+        // result after second iteration: [6|7|4|5|2|3|0|1 - 6|7|4|5|2|3|0|1]
+        // result after last iteration:   [7|6|5|4|3|2|1|0 - 7|6|5|4|3|2|1|0]
+        for (; elementSizeMask > 0; elementSizeMask--) {
+            // Rotating the lanes by the half of the number of bits (4 << elementSizeMask) swaps two halves.
+            generateVRSaInstruction(cg, TR::InstOpCode::VERLL, node, resultReg, sourceCopyReg,
+                generateS390MemoryReference(4 << elementSizeMask, cg), elementSizeMask);
+            // After the first iteration, the source must be the result of the previous operation.
+            sourceCopyReg = resultReg;
+        }
+    }
+    // At this point we have the byte reversed elements and need to reverse the bits.
+    // each byte element of sourceCopyReg: [0|1|2|3|4|5|6|7]
+    // Rotate sourceCopyReg left by 7 bits to move LSB to MSB position.
+    generateVRSaInstruction(cg, TR::InstOpCode::VERLL, node, resultReg, sourceCopyReg,
+        generateS390MemoryReference(7, cg), 0);
+    // Each byte element of resultReg: [7|0|1|2|3|4|5|6]
+
+    // Create a bit mask to shuffle bits of result register.
+    TR::Register *bitMaskReg = cg->allocateRegister(TR_VRF);
+    generateVRIaInstruction(cg, TR::InstOpCode::VREPI, node, bitMaskReg, 0b00110011, 0);
+    // Swap bits 2,3 with 6,7
+    generateVRIdInstruction(cg, TR::InstOpCode::VERIM, node, resultReg, resultReg, bitMaskReg, 4, 0);
+    // Each byte element of resultReg: [7|0|5|6|3|4|1|2]
+    generateVRIaInstruction(cg, TR::InstOpCode::VREPI, node, bitMaskReg, 0b01010101, 0);
+    // Rotate odd bits
+    generateVRIdInstruction(cg, TR::InstOpCode::VERIM, node, resultReg, resultReg, bitMaskReg, 2, 0);
+    // Each byte element of resultReg: [7|6|5|4|3|2|1|0]
+    // All bits are swapped!
+
+    cg->stopUsingRegister(bitMaskReg);
+
+    if (node->getOpCode().isVectorMasked()) {
+        TR::Node *maskChild = node->getSecondChild();
+        // The result should reflect the outcome of the operation only if the mask for that lane is true;
+        // otherwise, the first child value remains unchanged in the result register.
+        generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultReg, resultReg, sourceReg,
+            cg->evaluate(maskChild), 0, 0);
+        cg->decReferenceCount(maskChild);
+    }
+
+    node->setRegister(resultReg);
+    cg->decReferenceCount(sourceNode);
+    return resultReg;
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmbitswapEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::vbitswapEvaluator(node, cg);
 }
 
 /**
