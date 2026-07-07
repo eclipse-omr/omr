@@ -4373,13 +4373,6 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
         case TR::vmexpandbits:
         case TR::vfirstNonZero:
         case TR::vmfirstNonZero:
-        case TR::vreductionFirstNonZero:
-        case TR::vmreductionFirstNonZero:
-        case TR::vreductionFirstNonZero:
-        case TR::vindexVector:
-        case TR::vmindexVector:
-        case TR::vmloadi:
-        case TR::vmstorei:
             return true;
         case TR::vmul:
         case TR::vmmul:
