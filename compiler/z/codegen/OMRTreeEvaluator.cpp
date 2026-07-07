@@ -1831,7 +1831,7 @@ TR::Register *OMR::Z::TreeEvaluator::vfirstNonZeroEvaluator(TR::Node *node, TR::
     }
     TR::Register *vb = cg->evaluate(node->getSecondChild());
     // Select result from va unless it is zero and masked.
-    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultReg, vb, va, resultReg, 0, 0);
+    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultReg, vb, vb, resultReg, 0, 0);
     node->setRegister(resultReg);
     cg->decReferenceCount(node->getFirstChild());
     cg->decReferenceCount(node->getSecondChild());
