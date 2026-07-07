@@ -1793,9 +1793,49 @@ TR::Register *OMR::Z::TreeEvaluator::vorUncheckedEvaluator(TR::Node *node, TR::C
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+/**
+ * \brief
+ * Select the value from the first source if it is not zero; otherwise, select the value from the second source.
+ *
+ * \details
+ * For each lane, if the value in the first child vector register is non-zero, it is copied to the result register;
+ * otherwise, the corresponding value from the second child vector register is copied. If a mask is provided, the
+ * operation is applied only to the masked lanes.
+ *
+ * \param node
+ * The node.
+ *
+ * \param cg
+ * The code generator.
+ *
+ * \return
+ * TR::Register with result values.
+ */
 TR::Register *OMR::Z::TreeEvaluator::vfirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "A 128-bit vector was expected as v2m child node but %s was provided!", node->getDataType().toString());
+    TR::Register *resultReg = cg->allocateRegister(TR_VRF);
+    TR::Register *va = cg->evaluate(node->getFirstChild());
+    const uint8_t elementSizeMask = getVectorElementSizeMask(node);
+    // Zero the result register.
+    generateVRIaInstruction(cg, TR::InstOpCode::VREPI, node, resultReg, 0, 0);
+    // Create a mask from elements that are zero in the va.
+    generateVRRbInstruction(cg, TR::InstOpCode::VCEQ, node, resultReg, resultReg, va, 0, elementSizeMask);
+    if (node->getOpCode().isVectorMasked()) {
+        TR::Node *maskChild = node->getChild(3);
+        // The result should reflect the outcome of the operation only if the mask for that lane is true;
+        // otherwise, the first child value remains unchanged in the result register.
+        generateVRRcInstruction(cg, TR::InstOpCode::VN, node, resultReg, resultReg, cg->evaluate(maskChild), 0);
+        cg->decReferenceCount(maskChild);
+    }
+    TR::Register *vb = cg->evaluate(node->getSecondChild());
+    // Select result from va unless it is zero and masked.
+    generateVRReInstruction(cg, TR::InstOpCode::VSEL, node, resultReg, vb, va, resultReg, 0, 0);
+    node->setRegister(resultReg);
+    cg->decReferenceCount(node->getFirstChild());
+    cg->decReferenceCount(node->getSecondChild());
+    return resultReg; 
 }
 
 TR::Register *OMR::Z::TreeEvaluator::vmabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
