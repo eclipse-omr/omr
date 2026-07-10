@@ -29,7 +29,7 @@
 #include "il/Node_inlines.hpp"
 #include <math.h>
 
-static void fpBitsMovHelper(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::Register *trgReg, TR::CodeGenerator *cg)
+static void fpBitsMovHelper(TR::Node *node, OP::Mnemonic op, TR::Register *trgReg, TR::CodeGenerator *cg)
 {
     TR::Node *child = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(child);
@@ -43,7 +43,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::ibits2fEvaluator(TR::Node *node, TR::Co
 {
     TR::Register *trgReg = cg->allocateSinglePrecisionRegister();
 
-    fpBitsMovHelper(node, TR::InstOpCode::fmov_wtos, trgReg, cg);
+    fpBitsMovHelper(node, OP::fmov_wtos, trgReg, cg);
 
     node->setRegister(trgReg);
     return trgReg;
@@ -53,7 +53,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::lbits2dEvaluator(TR::Node *node, TR::Co
 {
     TR::Register *trgReg = cg->allocateRegister(TR_FPR);
 
-    fpBitsMovHelper(node, TR::InstOpCode::fmov_xtod, trgReg, cg);
+    fpBitsMovHelper(node, OP::fmov_xtod, trgReg, cg);
 
     node->setRegister(trgReg);
     return trgReg;
@@ -64,14 +64,14 @@ static TR::Register *fpBits2integerHelper(TR::Node *node, bool is64bit, TR::Code
     TR::Node *child = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(child);
     TR::Register *trgReg = cg->allocateRegister();
-    TR::InstOpCode::Mnemonic movOp = TR::InstOpCode::fmov_stow;
-    TR::InstOpCode::Mnemonic cmpOp = TR::InstOpCode::fcmps;
-    TR::InstOpCode::Mnemonic selOp = TR::InstOpCode::cselw;
+    OP::Mnemonic movOp = OP::fmov_stow;
+    OP::Mnemonic cmpOp = OP::fcmps;
+    OP::Mnemonic selOp = OP::cselw;
 
     if (is64bit) {
-        movOp = TR::InstOpCode::fmov_dtox;
-        cmpOp = TR::InstOpCode::fcmpd;
-        selOp = TR::InstOpCode::cselx;
+        movOp = OP::fmov_dtox;
+        cmpOp = OP::fcmpd;
+        selOp = OP::cselx;
     }
 
     generateTrg1Src1Instruction(cg, movOp, node, trgReg, srcReg);
@@ -198,7 +198,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::fconstEvaluator(TR::Node *node, TR::Cod
     uint16_t imm8 = getImm8forFloat(node->getFloat());
 
     if (imm8 != 256) {
-        generateTrg1ImmInstruction(cg, TR::InstOpCode::fmovimms, node, trgReg, (uint32_t)imm8);
+        generateTrg1ImmInstruction(cg, OP::fmovimms, node, trgReg, (uint32_t)imm8);
     } else {
         union {
             float f;
@@ -208,11 +208,11 @@ TR::Register *OMR::ARM64::TreeEvaluator::fconstEvaluator(TR::Node *node, TR::Cod
         fvalue.f = node->getFloat();
 
         if (fvalue.f == +0.0f && signbit(fvalue.f) == 0) {
-            generateTrg1ImmInstruction(cg, TR::InstOpCode::vmovi2s, node, trgReg, 0);
+            generateTrg1ImmInstruction(cg, OP::vmovi2s, node, trgReg, 0);
         } else {
             TR::Register *tmpReg = cg->allocateRegister();
             loadConstant32(cg, node, fvalue.i, tmpReg);
-            generateTrg1Src1Instruction(cg, TR::InstOpCode::fmov_wtos, node, trgReg, tmpReg);
+            generateTrg1Src1Instruction(cg, OP::fmov_wtos, node, trgReg, tmpReg);
             cg->stopUsingRegister(tmpReg);
         }
     }
@@ -227,7 +227,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::dconstEvaluator(TR::Node *node, TR::Cod
     uint16_t imm8 = getImm8forDouble(node->getDouble());
 
     if (imm8 != 256) {
-        generateTrg1ImmInstruction(cg, TR::InstOpCode::fmovimmd, node, trgReg, (uint32_t)imm8);
+        generateTrg1ImmInstruction(cg, OP::fmovimmd, node, trgReg, (uint32_t)imm8);
     } else {
         union {
             double d;
@@ -237,11 +237,11 @@ TR::Register *OMR::ARM64::TreeEvaluator::dconstEvaluator(TR::Node *node, TR::Cod
         dvalue.d = node->getDouble();
 
         if (dvalue.d == +0.0 && signbit(dvalue.d) == 0) {
-            generateTrg1ImmInstruction(cg, TR::InstOpCode::movid, node, trgReg, 0);
+            generateTrg1ImmInstruction(cg, OP::movid, node, trgReg, 0);
         } else {
             TR::Register *tmpReg = cg->allocateRegister();
             loadConstant64(cg, node, dvalue.l, tmpReg);
-            generateTrg1Src1Instruction(cg, TR::InstOpCode::fmov_xtod, node, trgReg, tmpReg);
+            generateTrg1Src1Instruction(cg, OP::fmov_xtod, node, trgReg, tmpReg);
             cg->stopUsingRegister(tmpReg);
         }
     }
@@ -253,25 +253,25 @@ TR::Register *OMR::ARM64::TreeEvaluator::dconstEvaluator(TR::Node *node, TR::Cod
 // also handles floadi
 TR::Register *OMR::ARM64::TreeEvaluator::floadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonLoadEvaluator(node, TR::InstOpCode::vldrimms, 4, cg);
+    return commonLoadEvaluator(node, OP::vldrimms, 4, cg);
 }
 
 // also handles dloadi
 TR::Register *OMR::ARM64::TreeEvaluator::dloadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonLoadEvaluator(node, TR::InstOpCode::vldrimmd, 8, cg);
+    return commonLoadEvaluator(node, OP::vldrimmd, 8, cg);
 }
 
 // also handles fstorei
 TR::Register *OMR::ARM64::TreeEvaluator::fstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonStoreEvaluator(node, TR::InstOpCode::vstrimms, 4, cg);
+    return commonStoreEvaluator(node, OP::vstrimms, 4, cg);
 }
 
 // also handles dstorei
 TR::Register *OMR::ARM64::TreeEvaluator::dstoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonStoreEvaluator(node, TR::InstOpCode::vstrimmd, 8, cg);
+    return commonStoreEvaluator(node, OP::vstrimmd, 8, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::freturnEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -284,8 +284,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::dreturnEvaluator(TR::Node *node, TR::Co
     return genericReturnEvaluator(node, cg->getProperties().getDoubleReturnRegister(), TR_FPR, TR_DoubleReturn, cg);
 }
 
-static TR::Register *commonFpEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, bool isDouble,
-    TR::CodeGenerator *cg)
+static TR::Register *commonFpEvaluator(TR::Node *node, OP::Mnemonic op, bool isDouble, TR::CodeGenerator *cg)
 {
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
@@ -301,54 +300,54 @@ static TR::Register *commonFpEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic 
     return trgReg;
 }
 
-static TR::Register *singlePrecisionEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+static TR::Register *singlePrecisionEvaluator(TR::Node *node, OP::Mnemonic op, TR::CodeGenerator *cg)
 {
     return commonFpEvaluator(node, op, false, cg);
 }
 
-static TR::Register *doublePrecisionEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+static TR::Register *doublePrecisionEvaluator(TR::Node *node, OP::Mnemonic op, TR::CodeGenerator *cg)
 {
     return commonFpEvaluator(node, op, true, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::faddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionEvaluator(node, TR::InstOpCode::fadds, cg);
+    return singlePrecisionEvaluator(node, OP::fadds, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::daddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionEvaluator(node, TR::InstOpCode::faddd, cg);
+    return doublePrecisionEvaluator(node, OP::faddd, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionEvaluator(node, TR::InstOpCode::fsubs, cg);
+    return singlePrecisionEvaluator(node, OP::fsubs, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::dsubEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionEvaluator(node, TR::InstOpCode::fsubd, cg);
+    return doublePrecisionEvaluator(node, OP::fsubd, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fmulEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionEvaluator(node, TR::InstOpCode::fmuls, cg);
+    return singlePrecisionEvaluator(node, OP::fmuls, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::dmulEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionEvaluator(node, TR::InstOpCode::fmuld, cg);
+    return doublePrecisionEvaluator(node, OP::fmuld, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fdivEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionEvaluator(node, TR::InstOpCode::fdivs, cg);
+    return singlePrecisionEvaluator(node, OP::fdivs, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::ddivEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionEvaluator(node, TR::InstOpCode::fdivd, cg);
+    return doublePrecisionEvaluator(node, OP::fdivd, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fremEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -361,8 +360,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::dremEvaluator(TR::Node *node, TR::CodeG
     return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
-static TR::Register *commonFpUnaryEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, bool isDouble,
-    TR::CodeGenerator *cg)
+static TR::Register *commonFpUnaryEvaluator(TR::Node *node, OP::Mnemonic op, bool isDouble, TR::CodeGenerator *cg)
 {
     TR::Node *firstChild = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(firstChild);
@@ -379,47 +377,47 @@ static TR::Register *commonFpUnaryEvaluator(TR::Node *node, TR::InstOpCode::Mnem
     return trgReg;
 }
 
-static TR::Register *singlePrecisionUnaryEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+static TR::Register *singlePrecisionUnaryEvaluator(TR::Node *node, OP::Mnemonic op, TR::CodeGenerator *cg)
 {
     return commonFpUnaryEvaluator(node, op, false, cg);
 }
 
-static TR::Register *doublePrecisionUnaryEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+static TR::Register *doublePrecisionUnaryEvaluator(TR::Node *node, OP::Mnemonic op, TR::CodeGenerator *cg)
 {
     return commonFpUnaryEvaluator(node, op, true, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionUnaryEvaluator(node, TR::InstOpCode::fabss, cg);
+    return singlePrecisionUnaryEvaluator(node, OP::fabss, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::dabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionUnaryEvaluator(node, TR::InstOpCode::fabsd, cg);
+    return doublePrecisionUnaryEvaluator(node, OP::fabsd, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fnegEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionUnaryEvaluator(node, TR::InstOpCode::fnegs, cg);
+    return singlePrecisionUnaryEvaluator(node, OP::fnegs, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::dnegEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionUnaryEvaluator(node, TR::InstOpCode::fnegd, cg);
+    return doublePrecisionUnaryEvaluator(node, OP::fnegd, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::fsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return singlePrecisionUnaryEvaluator(node, TR::InstOpCode::fsqrts, cg);
+    return singlePrecisionUnaryEvaluator(node, OP::fsqrts, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::dsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return doublePrecisionUnaryEvaluator(node, TR::InstOpCode::fsqrtd, cg);
+    return doublePrecisionUnaryEvaluator(node, OP::fsqrtd, cg);
 }
 
-static TR::Register *intFpTypeConversionHelper(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+static TR::Register *intFpTypeConversionHelper(TR::Node *node, OP::Mnemonic op, TR::CodeGenerator *cg)
 {
     TR::Node *child = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(child);
@@ -441,37 +439,37 @@ static TR::Register *intFpTypeConversionHelper(TR::Node *node, TR::InstOpCode::M
 
 TR::Register *OMR::ARM64::TreeEvaluator::i2fEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::scvtf_wtos, cg);
+    return intFpTypeConversionHelper(node, OP::scvtf_wtos, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::i2dEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::scvtf_wtod, cg);
+    return intFpTypeConversionHelper(node, OP::scvtf_wtod, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::l2fEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::scvtf_xtos, cg);
+    return intFpTypeConversionHelper(node, OP::scvtf_xtos, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::l2dEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::scvtf_xtod, cg);
+    return intFpTypeConversionHelper(node, OP::scvtf_xtod, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::f2dEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::fcvt_stod, cg);
+    return intFpTypeConversionHelper(node, OP::fcvt_stod, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::f2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::fcvtzs_stow, cg);
+    return intFpTypeConversionHelper(node, OP::fcvtzs_stow, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::d2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::fcvtzs_dtow, cg);
+    return intFpTypeConversionHelper(node, OP::fcvtzs_dtow, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::d2cEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -491,17 +489,17 @@ TR::Register *OMR::ARM64::TreeEvaluator::d2bEvaluator(TR::Node *node, TR::CodeGe
 
 TR::Register *OMR::ARM64::TreeEvaluator::f2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::fcvtzs_stox, cg);
+    return intFpTypeConversionHelper(node, OP::fcvtzs_stox, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::d2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::fcvtzs_dtox, cg);
+    return intFpTypeConversionHelper(node, OP::fcvtzs_dtox, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::d2fEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return intFpTypeConversionHelper(node, TR::InstOpCode::fcvt_dtos, cg);
+    return intFpTypeConversionHelper(node, OP::fcvt_dtos, cg);
 }
 
 static TR::Instruction *iffcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, bool isDouble,
@@ -511,13 +509,13 @@ static TR::Instruction *iffcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
     TR::Node *secondChild = node->getSecondChild();
     TR::Node *thirdChild = NULL;
     TR::Register *src1Reg = cg->evaluate(firstChild);
-    TR::InstOpCode::Mnemonic op;
+    OP::Mnemonic op;
     bool useRegCompare = true;
 
     if (secondChild->getOpCode().isLoadConst() && secondChild->getRegister() == NULL) {
         double value = isDouble ? secondChild->getDouble() : secondChild->getFloat();
         if (value == 0.0) {
-            op = isDouble ? TR::InstOpCode::fcmpd_zero : TR::InstOpCode::fcmps_zero;
+            op = isDouble ? OP::fcmpd_zero : OP::fcmps_zero;
             generateSrc1Instruction(cg, op, node, src1Reg);
             useRegCompare = false;
         }
@@ -525,7 +523,7 @@ static TR::Instruction *iffcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
 
     if (useRegCompare) {
         TR::Register *src2Reg = cg->evaluate(secondChild);
-        op = isDouble ? TR::InstOpCode::fcmpd : TR::InstOpCode::fcmps;
+        op = isDouble ? OP::fcmpd : OP::fcmps;
         generateSrc2Instruction(cg, op, node, src1Reg, src2Reg);
     }
 
@@ -547,7 +545,7 @@ static TR::Instruction *iffcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
                 TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
                 generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_VS);
                 generateConditionalBranchInstruction(cg, node, dstLabel, cc, deps);
-                result = generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);
+                result = generateLabelInstruction(cg, OP::label, node, doneLabel);
             } else {
                 generateConditionalBranchInstruction(cg, node, dstLabel, cc);
                 result = generateConditionalBranchInstruction(cg, node, dstLabel, TR::CC_VS, deps);
@@ -562,7 +560,7 @@ static TR::Instruction *iffcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, 
                 TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
                 generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_VS);
                 generateConditionalBranchInstruction(cg, node, dstLabel, cc);
-                result = generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);
+                result = generateLabelInstruction(cg, OP::label, node, doneLabel);
             } else {
                 generateConditionalBranchInstruction(cg, node, dstLabel, cc);
                 result = generateConditionalBranchInstruction(cg, node, dstLabel, TR::CC_VS);
@@ -657,13 +655,13 @@ static TR::Register *fcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, bool 
     TR::Node *firstChild = node->getFirstChild();
     TR::Node *secondChild = node->getSecondChild();
     TR::Register *src1Reg = cg->evaluate(firstChild);
-    TR::InstOpCode::Mnemonic op;
+    OP::Mnemonic op;
     bool useRegCompare = true;
 
     if (secondChild->getOpCode().isLoadConst() && secondChild->getRegister() == NULL) {
         double value = isDouble ? secondChild->getDouble() : secondChild->getFloat();
         if (value == 0.0) {
-            op = isDouble ? TR::InstOpCode::fcmpd_zero : TR::InstOpCode::fcmps_zero;
+            op = isDouble ? OP::fcmpd_zero : OP::fcmps_zero;
             generateSrc1Instruction(cg, op, node, src1Reg);
             useRegCompare = false;
         }
@@ -671,7 +669,7 @@ static TR::Register *fcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, bool 
 
     if (useRegCompare) {
         TR::Register *src2Reg = cg->evaluate(secondChild);
-        op = isDouble ? TR::InstOpCode::fcmpd : TR::InstOpCode::fcmps;
+        op = isDouble ? OP::fcmpd : OP::fcmps;
         generateSrc2Instruction(cg, op, node, src1Reg, src2Reg);
     }
 
@@ -679,7 +677,7 @@ static TR::Register *fcmpHelper(TR::Node *node, TR::ARM64ConditionCode cc, bool 
     if (needsExplicitUnorderedCheck) {
         TR::Register *tmpReg = cg->allocateRegister();
         TR::ARM64ConditionCode ccNan = (cc == TR::CC_NE) ? TR::CC_VC : TR::CC_VS;
-        op = (cc == TR::CC_NE) ? TR::InstOpCode::andx : TR::InstOpCode::orrx;
+        op = (cc == TR::CC_NE) ? OP::andx : OP::orrx;
         generateCSetInstruction(cg, node, tmpReg, ccNan);
         generateTrg1Src2Instruction(cg, op, node, trgReg, trgReg, tmpReg);
         cg->stopUsingRegister(tmpReg);
@@ -762,17 +760,17 @@ static TR::Register *floatThreeWayCompareHelper(TR::Node *node, bool isDouble, b
     TR::Register *src2Reg = cg->evaluate(secondChild);
     TR::Register *trgReg = cg->allocateRegister();
     TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
-    TR::InstOpCode::Mnemonic cmpOp = isDouble ? TR::InstOpCode::fcmpd : TR::InstOpCode::fcmps;
-    TR::InstOpCode::Mnemonic movOp = isCmpl ? TR::InstOpCode::movzx : TR::InstOpCode::movnx;
+    OP::Mnemonic cmpOp = isDouble ? OP::fcmpd : OP::fcmps;
+    OP::Mnemonic movOp = isCmpl ? OP::movzx : OP::movnx;
     uint32_t movVal = isCmpl ? 1 : 0;
     TR::ARM64ConditionCode cc = isCmpl ? TR::CC_GT : TR::CC_MI;
 
     generateSrc2Instruction(cg, cmpOp, node, src1Reg, src2Reg); // compare
-    generateTrg1ImmInstruction(cg, TR::InstOpCode::movzx, node, trgReg, 0);
+    generateTrg1ImmInstruction(cg, OP::movzx, node, trgReg, 0);
     generateConditionalBranchInstruction(cg, node, doneLabel, TR::CC_EQ);
     generateTrg1ImmInstruction(cg, movOp, node, trgReg, movVal); // 1 or -1
-    generateCondTrg1Src2Instruction(cg, TR::InstOpCode::csnegx, node, trgReg, trgReg, trgReg, cc);
-    generateLabelInstruction(cg, TR::InstOpCode::label, node, doneLabel);
+    generateCondTrg1Src2Instruction(cg, OP::csnegx, node, trgReg, trgReg, trgReg, cc);
+    generateLabelInstruction(cg, OP::label, node, doneLabel);
 
     node->setRegister(trgReg);
     cg->decReferenceCount(firstChild);
@@ -822,7 +820,7 @@ static TR::Register *fpMinMaxHelper(TR::Node *node, bool isMax, bool isDouble, T
     TR::Register *src1Reg = cg->evaluate(firstChild);
     TR::Register *src2Reg = cg->evaluate(secondChild);
     TR::Register *trgReg;
-    TR::InstOpCode::Mnemonic op;
+    OP::Mnemonic op;
 
     TR_ASSERT(node->getNumChildren() == 2, "The number of children for fmax/fmin/dmax/dmin must be 2.");
 
@@ -835,9 +833,9 @@ static TR::Register *fpMinMaxHelper(TR::Node *node, bool isMax, bool isDouble, T
     }
 
     if (isMax) {
-        op = isDouble ? TR::InstOpCode::fmaxd : TR::InstOpCode::fmaxs;
+        op = isDouble ? OP::fmaxd : OP::fmaxs;
     } else {
-        op = isDouble ? TR::InstOpCode::fmind : TR::InstOpCode::fmins;
+        op = isDouble ? OP::fmind : OP::fmins;
     }
 
     generateTrg1Src2Instruction(cg, op, node, trgReg, src1Reg, src2Reg);
@@ -1035,7 +1033,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::fselectEvaluator(TR::Node *node, TR::Co
     }
 
     generateCompareImmInstruction(cg, node, condReg, 0, true); // 64-bit compare
-    TR::InstOpCode::Mnemonic fcselOp = isDouble ? TR::InstOpCode::fcseld : TR::InstOpCode::fcsels;
+    OP::Mnemonic fcselOp = isDouble ? OP::fcseld : OP::fcsels;
     generateCondTrg1Src2Instruction(cg, fcselOp, node, resultReg, trueReg, falseReg, TR::CC_NE);
 
     node->setRegister(resultReg);

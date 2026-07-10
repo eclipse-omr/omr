@@ -310,7 +310,7 @@ void OMR::ARM64::Linkage::initARM64RealRegisterLinkage() { /* do nothing */ }
 void OMR::ARM64::Linkage::setParameterLinkageRegisterIndex(TR::ResolvedMethodSymbol *method) { /* do nothing */ }
 
 TR::MemoryReference *OMR::ARM64::Linkage::getOutgoingArgumentMemRef(TR::Register *baseReg, int32_t offset,
-    TR::Register *argReg, TR::InstOpCode::Mnemonic opCode, TR::ARM64MemoryArgument &memArg)
+    TR::Register *argReg, OP::Mnemonic opCode, TR::ARM64MemoryArgument &memArg)
 {
     TR::MemoryReference *result = MRef_disp(cg(), baseReg, offset);
     memArg.argRegister = argReg;
@@ -406,18 +406,18 @@ int32_t OMR::ARM64::Linkage::numArgumentRegisters(TR_RegisterKinds kind)
  *
  * @return The opcode used to load parameters with the given type
  */
-static inline TR::InstOpCode::Mnemonic getOpCodeForParmLoads(TR::DataTypes type)
+static inline OP::Mnemonic getOpCodeForParmLoads(TR::DataTypes type)
 {
     switch (type) {
         case TR::Double:
-            return TR::InstOpCode::vldrimmd;
+            return OP::vldrimmd;
         case TR::Float:
-            return TR::InstOpCode::vldrimms;
+            return OP::vldrimms;
         case TR::Int64:
         case TR::Address:
-            return TR::InstOpCode::ldrimmx;
+            return OP::ldrimmx;
         default:
-            return TR::InstOpCode::ldrimmw;
+            return OP::ldrimmw;
     }
 }
 
@@ -428,18 +428,18 @@ static inline TR::InstOpCode::Mnemonic getOpCodeForParmLoads(TR::DataTypes type)
  *
  * @return The opcode used to store parameters with the given type
  */
-static inline TR::InstOpCode::Mnemonic getOpCodeForParmStores(TR::DataTypes type)
+static inline OP::Mnemonic getOpCodeForParmStores(TR::DataTypes type)
 {
     switch (type) {
         case TR::Double:
-            return TR::InstOpCode::vstrimmd;
+            return OP::vstrimmd;
         case TR::Float:
-            return TR::InstOpCode::vstrimms;
+            return OP::vstrimms;
         case TR::Int64:
         case TR::Address:
-            return TR::InstOpCode::strimmx;
+            return OP::strimmx;
         default:
-            return TR::InstOpCode::strimmw;
+            return OP::strimmw;
     }
 }
 
@@ -621,16 +621,14 @@ TR::Instruction *OMR::ARM64::Linkage::copyParametersToHomeLocation(TR::Instructi
                 TR::Register *trgReg = machine->getRealRegister(regCursor);
                 TR::Register *srcReg = machine->getRealRegister(source);
                 if ((paramType == TR::Double) || (paramType == TR::Float)) {
-                    cursor = generateTrg1Src1Instruction(cg(),
-                        (paramType == TR::Double) ? TR::InstOpCode::fmovd : TR::InstOpCode::fmovs, NULL, trgReg, srcReg,
-                        cursor);
+                    cursor = generateTrg1Src1Instruction(cg(), (paramType == TR::Double) ? OP::fmovd : OP::fmovs, NULL,
+                        trgReg, srcReg, cursor);
                 } else {
                     // generateMovInstruction cannot be used in the binary encoding phase because it relies on RegDep
                     // for assigning xzr for 1st source register.
                     cursor = generateTrg1Src2Instruction(cg(),
-                        (paramType == TR::Int64) || (paramType == TR::Address) ? TR::InstOpCode::orrx
-                                                                               : TR::InstOpCode::orrw,
-                        NULL, trgReg, machine->getRealRegister(TR::RealRegister::xzr), srcReg, cursor);
+                        (paramType == TR::Int64) || (paramType == TR::Address) ? OP::orrx : OP::orrw, NULL, trgReg,
+                        machine->getRealRegister(TR::RealRegister::xzr), srcReg, cursor);
                 }
 
                 // Update movStatus as we go so we don't generate redundant movs

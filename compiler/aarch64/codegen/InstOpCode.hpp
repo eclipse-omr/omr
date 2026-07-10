@@ -44,5 +44,10 @@ public:
     {}
 };
 
+typedef InstOpCode OP;
+
 } // namespace TR
+
+using TR::OP;
+
 #endif

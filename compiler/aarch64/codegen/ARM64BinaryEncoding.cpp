@@ -116,7 +116,7 @@ uint8_t *TR::ARM64ImmSymInstruction::generateBinaryEncoding()
     uint8_t *instructionStart = cg()->getBinaryBufferCursor();
     uint8_t *cursor = getOpCode().copyBinaryToBuffer(instructionStart);
 
-    if (getOpCodeValue() == TR::InstOpCode::bl) {
+    if (getOpCodeValue() == OP::bl) {
         TR::SymbolReference *symRef = getSymbolReference();
         TR::LabelSymbol *label = symRef->getSymbol()->getLabelSymbol();
 
@@ -203,10 +203,10 @@ uint8_t *TR::ARM64LabelInstruction::generateBinaryEncoding()
     uint8_t *cursor = instructionStart;
     TR::LabelSymbol *label = getLabelSymbol();
 
-    if (getOpCodeValue() == OMR::InstOpCode::label) {
+    if (getOpCodeValue() == OP::label) {
         label->setCodeLocation(instructionStart);
     } else {
-        TR_ASSERT(getOpCodeValue() == OMR::InstOpCode::b, "Unsupported opcode in LabelInstruction.");
+        TR_ASSERT(getOpCodeValue() == OP::b, "Unsupported opcode in LabelInstruction.");
 
         intptr_t destination = (intptr_t)label->getCodeLocation();
         cursor = getOpCode().copyBinaryToBuffer(instructionStart);
@@ -231,7 +231,7 @@ uint8_t *TR::ARM64LabelInstruction::generateBinaryEncoding()
 
 int32_t TR::ARM64LabelInstruction::estimateBinaryLength(int32_t currentEstimate)
 {
-    if (getOpCodeValue() == OMR::InstOpCode::label) {
+    if (getOpCodeValue() == OP::label) {
         setEstimatedBinaryLength(0);
         getLabelSymbol()->setEstimatedCodeLocation(currentEstimate);
     } else {
@@ -328,9 +328,9 @@ uint8_t *TR::ARM64RegBranchInstruction::generateBinaryEncoding()
 
 TR::Instruction *TR::ARM64AdminInstruction::expandInstruction()
 {
-    TR::InstOpCode::Mnemonic op = getOpCodeValue();
+    OP::Mnemonic op = getOpCodeValue();
 
-    if (op == TR::InstOpCode::retn) {
+    if (op == OP::retn) {
         /*
          * Generates instructions for epilogue after retn pseudo instruction.
          * We need to call expandInstruction on those instructions because
@@ -345,10 +345,10 @@ TR::Instruction *TR::ARM64AdminInstruction::expandInstruction()
 uint8_t *TR::ARM64AdminInstruction::generateBinaryEncoding()
 {
     uint8_t *instructionStart = cg()->getBinaryBufferCursor();
-    TR::InstOpCode::Mnemonic op = getOpCodeValue();
+    OP::Mnemonic op = getOpCodeValue();
     int32_t i;
 
-    if (op == TR::InstOpCode::fence) {
+    if (op == OP::fence) {
         TR::Node *fenceNode = getFenceNode();
         uint32_t rtype = fenceNode->getRelocationType();
         if (rtype == TR_AbsoluteAddress) {
@@ -441,7 +441,7 @@ uint8_t *TR::ARM64Trg1ImmSymInstruction::generateBinaryEncoding()
             if (label != NULL) {
                 cg()->addRelocation(new (cg()->trHeapMemory()) TR::LabelRelative24BitRelocation(cursor, label));
             }
-        } else if ((getOpCodeValue() == TR::InstOpCode::adr) && (sym->isStartPC() || sym->isGCRPatchPoint())) {
+        } else if ((getOpCodeValue() == OP::adr) && (sym->isStartPC() || sym->isGCRPatchPoint())) {
             intptr_t offset = reinterpret_cast<intptr_t>(
                 reinterpret_cast<uint8_t *>(sym->getStaticSymbol()->getStaticAddress()) - cursor);
             if (!constantIsSignedImm21(offset)) {
@@ -619,10 +619,10 @@ uint8_t *TR::ARM64Trg1Src2ExtendedInstruction::generateBinaryEncoding()
 
 void TR::ARM64Trg1Src2IndexedElementInstruction::insertIndex(uint32_t *instruction)
 {
-    TR::InstOpCode::Mnemonic mnemonic = getOpCodeValue();
-    if ((mnemonic >= TR::InstOpCode::fmulelem_4s) && (mnemonic <= TR::InstOpCode::vfmulelem_2d)) {
+    OP::Mnemonic mnemonic = getOpCodeValue();
+    if ((mnemonic >= OP::fmulelem_4s) && (mnemonic <= OP::vfmulelem_2d)) {
         uint8_t h = 0, l = 0;
-        if ((mnemonic == TR::InstOpCode::fmulelem_4s) || (mnemonic == TR::InstOpCode::vfmulelem_4s)) {
+        if ((mnemonic == OP::fmulelem_4s) || (mnemonic == OP::vfmulelem_4s)) {
             h = (getIndex() >> 1) & 1;
             l = getIndex() & 1;
         } else {
@@ -914,7 +914,7 @@ uint8_t *TR::ARM64VirtualGuardNOPInstruction::generateBinaryEncoding()
     }
 
     setBinaryEncoding(cursor);
-    TR::InstOpCode opCode(TR::InstOpCode::nop);
+    OP opCode(OP::nop);
     opCode.copyBinaryToBuffer(cursor);
     length = ARM64_INSTRUCTION_LENGTH;
     setBinaryLength(length);
