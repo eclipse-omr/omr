@@ -438,8 +438,12 @@ void TR_Debug::print(OMR::Logger *log, TR::X86LabelInstruction *instr)
             printInstructionComment(log, 2, instr);
         }
 
-        if (snippet)
-            log->printf("\t%s (%s)", commentString(), getName(snippet));
+        if (snippet) {
+            log->printf("\t%s ", commentString());
+            log->printc('(');
+            snippet->printName(log);
+            log->printc(')');
+        }
     }
 
     dumpDependencies(log, instr);
@@ -558,12 +562,15 @@ void TR_Debug::print(OMR::Logger *log, TR::AMD64Imm64SymInstruction *instr)
         log->printf("%-24s%s %s (" POINTER_PRINTF_FORMAT ")", name, commentString(), getOpCodeName(&instr->getOpCode()),
             instr->getSourceImmediate());
     } else if (sym->getLabelSymbol() && name) {
-        if (sym->getLabelSymbol()->getSnippet())
-            log->printf("%-24s%s %s (%s)", name, commentString(), getOpCodeName(&instr->getOpCode()),
-                getName(sym->getLabelSymbol()->getSnippet()));
-        else
+        if (sym->getLabelSymbol()->getSnippet()) {
+            log->printf("%-24s%s %s ", name, commentString(), getOpCodeName(&instr->getOpCode()));
+            log->printc('(');
+            sym->getLabelSymbol()->getSnippet()->printName(log);
+            log->printc(')');
+        } else {
             log->printf("%-24s%s %s (" POINTER_PRINTF_FORMAT ")", name, commentString(),
                 getOpCodeName(&instr->getOpCode()), instr->getSourceImmediate());
+        }
     } else {
         printIntConstant(log, instr->getSourceImmediate(), 16, getImmediateSizeFromInstruction(instr), true);
         printInstructionComment(log, 2, instr);
@@ -679,12 +686,15 @@ void TR_Debug::print(OMR::Logger *log, TR::X86ImmSymInstruction *instr)
         log->printf("%s %s (" POINTER_PRINTF_FORMAT ")", commentString(), getOpCodeName(&instr->getOpCode()),
             targetAddress);
     } else if (sym->getLabelSymbol() && name) {
-        if (sym->getLabelSymbol()->getSnippet())
-            log->printf("%s %s (%s)", commentString(), getOpCodeName(&instr->getOpCode()),
-                getName(sym->getLabelSymbol()->getSnippet()));
-        else
+        if (sym->getLabelSymbol()->getSnippet()) {
+            log->printf("%s %s ", commentString(), getOpCodeName(&instr->getOpCode()));
+            log->printc('(');
+            sym->getLabelSymbol()->getSnippet()->printName(log);
+            log->printc(')');
+        } else {
             log->printf("%s %s (" POINTER_PRINTF_FORMAT ")", commentString(), getOpCodeName(&instr->getOpCode()),
                 targetAddress);
+        }
     } else {
         log->printf(" \t\t%s %s", commentString(), getOpCodeName(&instr->getOpCode()));
     }
@@ -2173,7 +2183,7 @@ void TR_Debug::print(OMR::Logger *log, TR::X86CallSnippet *snippet)
     TR::SymbolReference *methodSymRef = callNode->getSymbolReference();
     TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
 
-    printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet));
+    printSnippetLabel(log, snippet, bufferPos);
 
     bool isJitInduceOSRCall = false;
     bool isJitDispatchJ9Method = false;
