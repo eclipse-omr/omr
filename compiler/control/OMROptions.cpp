@@ -3533,7 +3533,7 @@ void OMR::Options::jitPreProcess()
 
     self()->setOption(TR_RestrictStaticFieldFolding);
 
-#ifdef TR_ALLOW_NON_CONST_KNOWN_OBJECTS
+#if defined(TR_ALLOW_NON_CONST_KNOWN_OBJECTS) && !defined(TR_HOST_ARM64)
     self()->setOption(TR_EnableConstRefs);
 #endif
 
