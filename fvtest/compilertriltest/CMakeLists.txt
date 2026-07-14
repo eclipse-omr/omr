@@ -57,6 +57,7 @@ omr_add_executable(comptest NOWARNINGS
 	SelectTest.cpp
 	MinimalTest.cpp
 	ArrayTest.cpp
+	VectorUnaryTest.cpp
 )
 
 target_include_directories(comptest PUBLIC

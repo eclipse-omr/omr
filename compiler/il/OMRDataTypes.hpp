@@ -648,6 +648,8 @@ public:
         return isUnsignedInt8<T>() || isUnsignedInt16<T>() || isUnsignedInt32<T>() || isUnsignedInt64<T>();
     }
 
+    template<typename T> static TR::DataTypes mapPrimitiveType() { return TR::NoType; }
+
 protected:
     inline TR::DataType *self();
     inline const TR::DataType *self() const;
