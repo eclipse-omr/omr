@@ -2373,7 +2373,7 @@ TR::Register *OMR::Z::TreeEvaluator::vcompressbitsEvaluator(TR::Node *node, TR::
         generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, MaskGpr, maskReg,
             generateS390MemoryReference(loopCountReg, 0xfff, cg), elementSizeMask);
         // Compress the value.
-        generateRRFInstruction(cg, TR::InstOpCode::BEXTG, node, sourceGpr, sourceGpr, MaskGpr);
+        generateRRFInstruction(cg, TR::InstOpCode::BEXTG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
         // Compressed bits are in the left of the GPR. Move them to appropriate index.
         const uint32_t shiftAmount = 64 - (getVectorElementSize(node) * 8);
         if (shiftAmount > 0) {
@@ -2522,7 +2522,7 @@ TR::Register *OMR::Z::TreeEvaluator::vexpandbitsEvaluator(TR::Node *node, TR::Co
         if (shiftAmount > 0) {
             generateRSInstruction(cg, TR::InstOpCode::SLL, node, sourceGpr, shiftAmount);
         }
-        generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, sourceGpr, sourceGpr, MaskGpr);
+        generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
         // Copy the expanded value to vector result register.
         generateVRSbInstruction(cg, TR::InstOpCode::VLVG, node, resultReg, sourceGpr,
             generateS390MemoryReference(loopCountReg, 0xfff, cg), elementSizeMask);
