@@ -1245,6 +1245,11 @@ public:
     bool isSafeForCGToFastPathUnsafeCall();
     void setIsSafeForCGToFastPathUnsafeCall(bool v);
 
+    bool isSafeForCGToInlineStringIntrinsic();
+    void setIsSafeForCGToInlineStringIntrinsic(bool v);
+    bool checkSkipRecognizedCallTransformation();
+    void setSkipRecognizedCallTransformation(bool v);
+
     // Flag used by TR::ladd and TR::lsub or by TR::lshl and TR::lshr for compressedPointers
     bool containsCompressionSequence();
     void setContainsCompressionSequence(bool v);
@@ -1946,6 +1951,8 @@ protected:
         desynchronizeCall = 0x00020000,
         preparedForDirectToJNI = 0x00040000, // TODO: make J9_PROJECT_SPECIFIC
         unsafeFastPathCall = 0x00080000, // TODO: make J9_PROJECT_SPECIFIC
+        inlineStringIntrinsic = 0x00100000, // TODO: make J9_PROJECT_SPECIFIC
+        skipRecognizedCallTransformation = 0x00200000, // TODO: make J9_PROJECT_SPECIFIC
 
         // Flag used by TR::ladd and TR::lsub or by TR::lshl and TR::lshr for compressedPointers
         isCompressionSequence = 0x00000800,
