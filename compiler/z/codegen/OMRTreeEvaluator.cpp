@@ -2360,11 +2360,14 @@ TR::Register *OMR::Z::TreeEvaluator::vcompressbitsEvaluator(TR::Node *node, TR::
     controlFlowStartLabel->setStartInternalControlFlow();
     TR::Instruction *branchInstruction = NULL;
 
-    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z17)) {
+    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z15)) {
         // On Z17 hardware, BEXTG instruction was added to compress bits in GPRs.
         // Compress vector lanes element by element using BEXTG on supported hardware.
         TR::Register *sourceGpr = cg->allocateRegister();
         TR::Register *MaskGpr = cg->allocateRegister();
+        static bool breakBefore = feGetEnv("TR_breakBefore1") != NULL;
+        if (breakBefore)
+            generateS390EInstruction(cg, TR::InstOpCode::BREAK, node);
         generateRIInstruction(cg, TR::InstOpCode::LHI, node, loopCountReg, 16 / getVectorElementSize(node));
         generateS390LabelInstruction(cg, TR::InstOpCode::label, node, controlFlowStartLabel);
         // Move vector elements to GPRs.
@@ -2373,7 +2376,8 @@ TR::Register *OMR::Z::TreeEvaluator::vcompressbitsEvaluator(TR::Node *node, TR::
         generateVRScInstruction(cg, TR::InstOpCode::VLGV, node, MaskGpr, maskReg,
             generateS390MemoryReference(loopCountReg, 0xfff, cg), elementSizeMask);
         // Compress the value.
-        generateRRFInstruction(cg, TR::InstOpCode::BEXTG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
+        //generateRRFInstruction(cg, TR::InstOpCode::BEXTG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
+        generateRIInstruction(cg, TR::InstOpCode::LHI, node, sourceGpr, -1);
         // Compressed bits are in the left of the GPR. Move them to appropriate index.
         const uint32_t shiftAmount = 64 - (getVectorElementSize(node) * 8);
         if (shiftAmount > 0) {
@@ -2495,13 +2499,16 @@ TR::Register *OMR::Z::TreeEvaluator::vexpandbitsEvaluator(TR::Node *node, TR::Co
     controlFlowStartLabel->setStartInternalControlFlow();
     TR::Register *maskReg = cg->evaluate(node->getSecondChild());
 
-    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z17)) {
+    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z14)) {
         // On Z17 hardware, BDEPG instruction was added to expand bits in GPRs.
         // Expand vector lanes element by element using BDEPG on supported hardware.
         TR::Register *sourceGpr = cg->allocateRegister();
         TR::Register *MaskGpr = cg->allocateRegister();
         // BDEPG instruction expands bits from the left side, moving the target bits from the right side of the lanes to
         // the left side.
+        static bool breakBefore = feGetEnv("TR_breakBefore2") != NULL;
+        if (breakBefore)
+            generateS390EInstruction(cg, TR::InstOpCode::BREAK, node);
         generateVRIaInstruction(cg, TR::InstOpCode::VGBM, node, scratchReg, -1, 0);
         generateVRRcInstruction(cg, TR::InstOpCode::VX, node, scratchReg, maskReg, scratchReg, 0);
         generateVRRaInstruction(cg, TR::InstOpCode::VPOPCT, node, scratchReg, scratchReg, 0, 0, elementSizeMask);
@@ -2522,7 +2529,8 @@ TR::Register *OMR::Z::TreeEvaluator::vexpandbitsEvaluator(TR::Node *node, TR::Co
         if (shiftAmount > 0) {
             generateRSInstruction(cg, TR::InstOpCode::SLL, node, sourceGpr, shiftAmount);
         }
-        generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
+        //generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
+        generateRIInstruction(cg, TR::InstOpCode::LHI, node, sourceGpr, -1);
         // Copy the expanded value to vector result register.
         generateVRSbInstruction(cg, TR::InstOpCode::VLVG, node, resultReg, sourceGpr,
             generateS390MemoryReference(loopCountReg, 0xfff, cg), elementSizeMask);
