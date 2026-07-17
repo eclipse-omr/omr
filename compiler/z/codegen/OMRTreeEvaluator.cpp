@@ -2527,7 +2527,7 @@ TR::Register *OMR::Z::TreeEvaluator::vexpandbitsEvaluator(TR::Node *node, TR::Co
         // the left side.
         const uint32_t shiftAmount = 64 - (getVectorElementSize(node) * 8);
         if (shiftAmount > 0) {
-            generateRSInstruction(cg, TR::InstOpCode::SLL, node, sourceGpr, shiftAmount);
+            generateRSInstruction(cg, TR::InstOpCode::SLLG, node, sourceGpr, sourceGpr, shiftAmount);
         }
         //generateRRFInstruction(cg, TR::InstOpCode::BDEPG, node, sourceGpr, sourceGpr, MaskGpr, static_cast<uint8_t>(0));
         generateRIInstruction(cg, TR::InstOpCode::LHI, node, sourceGpr, -1);
