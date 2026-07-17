@@ -98,11 +98,11 @@ public:
 
 	/**
 	 * Creates a store barrier.
-	 * Provides the same ordering function as the sync instruction, except that a load caused 
-	 * by an instruction following the storeSync may be performed before a store caused by 
-	 * an instruction that precedes the storeSync, and the ordering does not apply to accesses 
+	 * Provides the same ordering function as the sync instruction, except that a load caused
+	 * by an instruction following the storeSync may be performed before a store caused by
+	 * an instruction that precedes the storeSync, and the ordering does not apply to accesses
 	 * to I/O memory (memory-mapped I/O).
-	 */ 
+	 */
 	MMINLINE_DEBUG static void
 	writeBarrier()
 	{
@@ -111,9 +111,9 @@ public:
 
 	/**
 	 * Creates a load barrier.
-	 * Causes the processor to discard any prefetched (and possibly speculatively executed) 
-	 * instructions and refetch the next following instructions. It is used to ensure that 
-	 * no loads following entry into a critical section can access data (because of aggressive 
+	 * Causes the processor to discard any prefetched (and possibly speculatively executed)
+	 * instructions and refetch the next following instructions. It is used to ensure that
+	 * no loads following entry into a critical section can access data (because of aggressive
 	 * out-of-order and speculative execution in the processor) before the lock is acquired.
 	 */
 	MMINLINE_DEBUG static void
@@ -182,11 +182,11 @@ public:
 	 * Compare the value at memory location pointed to by <b>address</b>. If it is
 	 * equal to <b>oldValue</b> then update this memory location with <b>newValue</b>
 	 * else retain the <b>oldValue</b>.
-	 * 
+	 *
 	 * @param address The memory location to be updated
 	 * @param oldValue The expected value at memory address
 	 * @param newValue The new value to be stored at memory address
-	 * 
+	 *
 	 * @return the value at memory location <b>address</b> BEFORE the store was attempted
 	 */
 	MMINLINE_DEBUG static uintptr_t
@@ -239,7 +239,7 @@ public:
 	 *
 	 * @return The value at memory location <b>address</b>
 	 */
-	MMINLINE_DEBUG static uintptr_t
+	MMINLINE_DEBUG static uint32_t
 	addU32(volatile uint32_t *address, uint32_t addend)
 	{
 		return VM_AtomicSupport::addU32(address, addend);
@@ -281,10 +281,10 @@ public:
 	 * Subtracts a number from the value at a specific memory location as an atomic operation.
 	 * Subtracts the value <b>value</b> from the value stored at memory location pointed
 	 * to by <b>address</b>.
-	 * 
+	 *
 	 * @param address The memory location to be updated
 	 * @param value The value to be subtracted
-	 * 
+	 *
 	 * @return The value at memory location <b>address</b>
 	 */
 	MMINLINE_DEBUG static uintptr_t
@@ -292,15 +292,15 @@ public:
 	{
 		return VM_AtomicSupport::subtract(address, value);
 	}
-	
+
 	/**
 	 * Subtracts a 32-bit number from the value at a specific memory location as an atomic operation.
 	 * Subtracts the value <b>value</b> from the value stored at memory location pointed
 	 * to by <b>address</b>.
-	 * 
+	 *
 	 * @param address The memory location to be updated
 	 * @param value The value to be subtracted
-	 * 
+	 *
 	 * @return The value at memory location <b>address</b>
 	 */
 	MMINLINE_DEBUG static uintptr_t
@@ -328,10 +328,10 @@ public:
 	/**
 	 * Store value at memory location.
 	 * Stores <b>value</b> at memory location pointed to be <b>address</b>.
-	 * 
+	 *
 	 * @param address The memory location to be updated
 	 * @param value The value to be stored
-	 * 
+	 *
 	 * @note This method can spin indefinitely while attempting to write the new value.
 	 */
 	MMINLINE_DEBUG static void
@@ -372,10 +372,10 @@ public:
 	/**
 	 * Subtracts the given subtrahend from the value at a specific memory location, saturating to zero, as an atomic operation.
 	 * Subtracts <b>subtrahend</b> from the value stored at memory location pointed to by <b>address</b>, saturing to zero.
-	 * 
+	 *
 	 * @param address The memory location to be updated
 	 * @param subtrahend The value to be subtracted
-	 * 
+	 *
 	 * @return The value at memory location <b>address</b> AFTER the subtraction operation has been completed
 	 */
 	MMINLINE_DEBUG static uintptr_t
@@ -383,7 +383,7 @@ public:
 	{
 		/* Stop compiler optimizing away load of oldValue */
 		volatile uintptr_t *localAddr = address;
-		
+
 		uintptr_t oldValue = (uintptr_t)*localAddr;
 		uintptr_t newValue = MM_Math::saturatingSubtract(oldValue, subtrahend);
 		while ((lockCompareExchange(localAddr, oldValue, newValue)) != oldValue) {
