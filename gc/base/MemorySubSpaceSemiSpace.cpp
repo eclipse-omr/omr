@@ -674,16 +674,19 @@ void
 MM_MemorySubSpaceSemiSpace::mainTeardownForAbortedGC(MM_EnvironmentBase *env)
 {
 	/* Build free list in survivor. */
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	if (_extensions->isConcurrentScavengerEnabled()) {
 		/* There might be live objects in Survivor (newly allocated one since the start of Concurrent Scavenge cycle)
 		 * Sweep in percolate global will rebuild the free list, so we can skip it here
 		 */
+		omrtty_printf("{SHAD: CS: flip backout\n");
 		flip(env, backout);
 	} else {
 		_memorySubSpaceSurvivor->rebuildFreeList(env);
 		/* Restoring allocation after aborted scavenge will probably not help with re-attempts to allocate immediately after an aborted scavenge,
 		 * but still we have to restore it at some point for attempts after percolate GC. It's simplest to do it right away.
 		 */
+		omrtty_printf("{SHAD: STW: restore_allocation\n");
 		flip(env, restore_allocation);
 	}
 
