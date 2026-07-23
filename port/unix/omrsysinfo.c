@@ -681,7 +681,8 @@ static int32_t scanCgroupIntOrMax(struct OMRPortLibrary *portLibrary, const char
 static int32_t readCgroupMemoryFileIntOrMax(struct OMRPortLibrary *portLibrary, const char *fileName, uint64_t *metric);
 static int32_t getCgroupMemoryLimit(struct OMRPortLibrary *portLibrary, uint64_t *limit);
 static int32_t getCgroupSubsystemMetricMap(struct OMRPortLibrary *portLibrary, uint64_t subsystem, const struct OMRCgroupSubsystemMetricMap **subsystemMetricMap, uint32_t *numElements);
-#endif /* defined(LINUX) */
+static int32_t readPidOneSched(struct OMRPortLibrary *portLibrary, BOOLEAN *schedAvailable, BOOLEAN *pidOneIsHostInit);
+#endif /* defined(LINUX) && !defined(OMRZTPF) */
 
 #if defined(LINUX)
 static int32_t retrieveLinuxMemoryStatsFromProcFS(struct OMRPortLibrary *portLibrary, struct J9MemoryInfo *memInfo);
@@ -6709,6 +6710,72 @@ _end:
 }
 
 /**
+ * @brief Read /proc/1/sched and determine whether PID 1 appears to be the normal host
+ * init process.
+ *
+ * This is used to disambiguate weak cgroup v1 evidence. A non-root cgroup path alone is
+ * not enough to prove that the JVM is running in a container because host-side services
+ * or agents may also use non-root cgroups.
+ *
+ * @param[in] portLibrary The OMR port library
+ * @param[out] schedAvailable Set to TRUE when /proc/1/sched was successfully read
+ * @param[out] pidOneIsHostInit Set to TRUE when PID 1 appears to be init or systemd
+ *
+ * @return 0 on success; non-zero if /proc/1/sched exists but cannot be opened or read
+ */
+static int32_t
+readPidOneSched(struct OMRPortLibrary *portLibrary, BOOLEAN *schedAvailable, BOOLEAN *pidOneIsHostInit)
+{
+	FILE *schedFile = NULL;
+	int32_t rc = 0;
+
+	Assert_PRT_true(NULL != schedAvailable);
+	Assert_PRT_true(NULL != pidOneIsHostInit);
+
+	*schedAvailable = FALSE;
+	*pidOneIsHostInit = FALSE;
+
+	if (0 != access(OMR_PROC_PID_ONE_SCHED_FILE, F_OK)) {
+		goto _end;
+	}
+
+	schedFile = fopen(OMR_PROC_PID_ONE_SCHED_FILE, "r");
+	if (NULL == schedFile) {
+		int32_t osErrCode = errno;
+		Trc_PRT_isRunningInContainer_fopen_failed(OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
+		rc = portLibrary->error_set_last_error_with_message_format(
+			portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_FOPEN_FAILED,
+			"failed to open %s file with errno=%d", OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
+		goto _end;
+	} else {
+		char buffer[PATH_MAX];
+
+		if (NULL == fgets(buffer, sizeof(buffer), schedFile)) {
+			if (0 != ferror(schedFile)) {
+				int32_t osErrCode = errno;
+				Trc_PRT_isRunningInContainer_fgets_failed(OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
+				rc = portLibrary->error_set_last_error_with_message_format(
+					portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
+					"failed to read %s file stream with errno=%d", OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
+				goto _end;
+			}
+		} else {
+#define STARTS_WITH(string, prefix) (0 == strncmp(string, prefix, sizeof(prefix) - 1))
+			*schedAvailable = TRUE;
+			*pidOneIsHostInit = STARTS_WITH(buffer, "init ") || STARTS_WITH(buffer, "systemd ");
+#undef STARTS_WITH
+		}
+	}
+
+_end:
+	if (NULL != schedFile) {
+		fclose(schedFile);
+	}
+
+	return rc;
+}
+
+/**
  * Checks if the process is running inside container
  *
  * @param[in] portLibrary pointer to OMRPortLibrary
@@ -6726,55 +6793,64 @@ isRunningInContainer(struct OMRPortLibrary *portLibrary)
 
 			/* Assume we are not in a container. */
 			BOOLEAN inContainer = FALSE;
+			BOOLEAN weakCgroupContainerEvidence = FALSE;
 
 			/* Check for existence of files that signify running in a container (Docker and Podman respectively).
 			 * Not completely reliable as these files may not be available, but it should work for most cases.
 			 */
 			if ((0 == access("/.dockerenv", F_OK)) || (0 == access("/run/.containerenv", F_OK))) {
 				inContainer = TRUE;
-			} else if (OMR_ARE_ANY_BITS_SET(PPG_sysinfoControlFlags, OMRPORT_SYSINFO_CGROUP_V1_AVAILABLE)) {
-				/* Read PID 1's cgroup file /proc/1/cgroup and check cgroup name for each subsystem.
-				 * If cgroup name for each subsystem points to the root cgroup "/",
-				 * then the process is not running in a container.
-				 * For any other cgroup name, assume we are in a container.
-				 * Note that this will not work if namespaces are enabled in the container as all
-				 * cgroup names will be the root cgroup.
-				 */
-				cgroupFile = fopen(OMR_PROC_PID_ONE_CGROUP_FILE, "r");
-				if (NULL == cgroupFile) {
-					int32_t osErrCode = errno;
-					Trc_PRT_isRunningInContainer_fopen_failed(OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
-					rc = portLibrary->error_set_last_error_with_message_format(
-							portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_FOPEN_FAILED,
-							"failed to open %s file with errno=%d", OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
-					goto _end;
-				}
-
-				while (0 == feof(cgroupFile)) {
-					char buffer[PATH_MAX];
-					char cgroup[PATH_MAX];
-					char subsystems[PATH_MAX];
-					int32_t hierId = -1;
-
-					if (NULL == fgets(buffer, sizeof(buffer), cgroupFile)) {
-						break;
-					}
-					if (0 != ferror(cgroupFile)) {
+			} else {
+				if (OMR_ARE_ANY_BITS_SET(PPG_sysinfoControlFlags, OMRPORT_SYSINFO_CGROUP_V1_AVAILABLE)) {
+					/* Read PID 1's cgroup file /proc/1/cgroup and check cgroup names.
+					 * Root cgroup "/" and systemd init scope "/init.scope" do not provide
+					 * container evidence. Any other cgroup path is treated as weak evidence
+					 * only because host-side services and agents can also place PID 1 or
+					 * selected controllers in non-root cgroups.
+					 */
+					cgroupFile = fopen(OMR_PROC_PID_ONE_CGROUP_FILE, "r");
+					if (NULL == cgroupFile) {
 						int32_t osErrCode = errno;
-						Trc_PRT_isRunningInContainer_fgets_failed(OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
+						Trc_PRT_isRunningInContainer_fopen_failed(OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
 						rc = portLibrary->error_set_last_error_with_message_format(
-								portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
-								"failed to read %s file stream with errno=%d", OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
+								portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_FOPEN_FAILED,
+								"failed to open %s file with errno=%d", OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
 						goto _end;
 					}
-					rc = sscanf(buffer, PROC_PID_CGROUPV1_ENTRY_FORMAT, &hierId, subsystems, cgroup);
 
-					if (EOF == rc) {
-						break;
-					} else if (1 == rc) {
-						rc = sscanf(buffer, PROC_PID_CGROUP_SYSTEMD_ENTRY_FORMAT, &hierId, cgroup);
+					while (0 == feof(cgroupFile)) {
+						char buffer[PATH_MAX];
+						char cgroup[PATH_MAX];
+						char subsystems[PATH_MAX];
+						int32_t hierId = -1;
 
-						if (2 != rc) {
+						if (NULL == fgets(buffer, sizeof(buffer), cgroupFile)) {
+							break;
+						}
+
+						if (0 != ferror(cgroupFile)) {
+							int32_t osErrCode = errno;
+							Trc_PRT_isRunningInContainer_fgets_failed(OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
+							rc = portLibrary->error_set_last_error_with_message_format(
+									portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
+									"failed to read %s file stream with errno=%d", OMR_PROC_PID_ONE_CGROUP_FILE, osErrCode);
+							goto _end;
+						}
+
+						rc = sscanf(buffer, PROC_PID_CGROUPV1_ENTRY_FORMAT, &hierId, subsystems, cgroup);
+						if (EOF == rc) {
+							break;
+						} else if (1 == rc) {
+							rc = sscanf(buffer, PROC_PID_CGROUP_SYSTEMD_ENTRY_FORMAT, &hierId, cgroup);
+							if (2 != rc) {
+								Trc_PRT_isRunningInContainer_unexpected_format(OMR_PROC_PID_ONE_CGROUP_FILE);
+								rc = portLibrary->error_set_last_error_with_message_format(
+										portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
+										"unexpected format of %s file, error code = %d",
+										OMR_PROC_PID_ONE_CGROUP_FILE, rc);
+								goto _end;
+							}
+						} else if (3 != rc) {
 							Trc_PRT_isRunningInContainer_unexpected_format(OMR_PROC_PID_ONE_CGROUP_FILE);
 							rc = portLibrary->error_set_last_error_with_message_format(
 									portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
@@ -6782,71 +6858,48 @@ isRunningInContainer(struct OMRPortLibrary *portLibrary)
 									OMR_PROC_PID_ONE_CGROUP_FILE, rc);
 							goto _end;
 						}
-					} else if (3 != rc) {
-						Trc_PRT_isRunningInContainer_unexpected_format(OMR_PROC_PID_ONE_CGROUP_FILE);
-						rc = portLibrary->error_set_last_error_with_message_format(
-								portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
-								"unexpected format of %s file, error code = %d",
-								OMR_PROC_PID_ONE_CGROUP_FILE, rc);
+
+						if ((0 != strcmp(ROOT_CGROUP, cgroup)) && (0 != strcmp(SYSTEMD_INIT_CGROUP, cgroup))) {
+							/* A non-root cgroup is weak evidence only. Host services and agents can also place
+							 * PID 1 or selected controllers in non-root cgroups.
+							 */
+							weakCgroupContainerEvidence = TRUE;
+							break;
+						}
+					}
+
+					rc = 0;
+				}
+
+				if (0 == rc) {
+					BOOLEAN schedAvailable = FALSE;
+					BOOLEAN pidOneIsHostInit = FALSE;
+
+					rc = readPidOneSched(portLibrary, &schedAvailable, &pidOneIsHostInit);
+					if (0 != rc) {
 						goto _end;
 					}
 
-					if ((0 != strcmp(ROOT_CGROUP, cgroup)) && (0 != strcmp(SYSTEMD_INIT_CGROUP, cgroup))) {
-						inContainer = TRUE;
-						break;
-					}
-				}
-				rc = 0;
-			}
-
-			/* Read the first line in /proc/1/sched if it exists.
-			 * Outside a container, the initialization process is either "init" or "systemd".
-			 * A containerized environment can be assumed for any other initialization process.
-			 */
-			if ((0 == rc) && (!inContainer) && (0 == access(OMR_PROC_PID_ONE_SCHED_FILE, F_OK))) {
-				char buffer[PATH_MAX];
-				FILE *schedFile = fopen(OMR_PROC_PID_ONE_SCHED_FILE, "r");
-
-				if (NULL == schedFile) {
-					int32_t osErrCode = errno;
-					Trc_PRT_isRunningInContainer_fopen_failed(OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
-					rc = portLibrary->error_set_last_error_with_message_format(
-							portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_FOPEN_FAILED,
-							"failed to open %s file with errno=%d", OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
-					goto _end;
-				}
-
-				if (NULL == fgets(buffer, sizeof(buffer), schedFile)) {
-					if (0 != ferror(schedFile)) {
-						int32_t osErrCode = errno;
-						Trc_PRT_isRunningInContainer_fgets_failed(OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
-						rc = portLibrary->error_set_last_error_with_message_format(
-								portLibrary, OMRPORT_ERROR_SYSINFO_PROCESS_CGROUP_FILE_READ_FAILED,
-								"failed to read %s file stream with errno=%d",
-								OMR_PROC_PID_ONE_SCHED_FILE, osErrCode);
-						goto _end;
-					}
-				} else {
-					/* Check if the initialization process is either "init " or "systemd ".
-					 * The space after systemd and init allows us to exactly check for those
-					 * strings and filter any strings which either begin with systemd or init.
-					 *
-					 * The first line of /proc/1/sched in a non-containerized environment:
-					 * - systemd (1, #threads: 1)
-					 * - init (1, #threads: 1)
-					 *
-					 * The first line of /proc/1/sched in a containerized environment:
-					 * - bash (1, #threads: 1)
-					 * - sh (1, #threads: 1)
-					 */
-#define STARTS_WITH(string, prefix) (0 == strncmp(string, prefix, sizeof(prefix) - 1))
-					if (!STARTS_WITH(buffer, "init ") && !STARTS_WITH(buffer, "systemd ")) {
+					if (weakCgroupContainerEvidence) {
+						if (schedAvailable) {
+							/* A host-side cgroup such as /sensor.falcon plus systemd/init as PID 1 should not
+							 * be treated as containerized.
+							 */
+							inContainer = !pidOneIsHostInit;
+						} else {
+							/* Preserve the old conservative behaviour when sched is unavailable and cgroup
+							 * evidence cannot be disambiguated.
+							 */
+							inContainer = TRUE;
+						}
+					} else if (schedAvailable && !pidOneIsHostInit) {
+						/* Keep the existing fallback: if PID 1 does not look like the normal host init process,
+						 * assume a containerized environment.
+						 */
 						inContainer = TRUE;
 					}
-#undef STARTS_WITH
 				}
 			}
-
 _end:
 			if (NULL != cgroupFile) {
 				fclose(cgroupFile);
