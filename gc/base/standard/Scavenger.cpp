@@ -4078,8 +4078,10 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	bool const compressed = _extensions->compressObjectReferences();
 
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-	if (IS_CONCURRENT_ENABLED) {
+//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if 1
+	// DEV: specifying this path to unify abort for concurrent and non-concurrent
+	if (true) {
 		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
 		GC_SublistIterator remSetIterator(&(_extensions->rememberedSet));
 		while((puddle = remSetIterator.nextList()) != NULL) {
@@ -4116,6 +4118,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 				}
 			}
 		}
+	// DEV: dead path. May remove code in future 
 	} else
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	{
@@ -4162,6 +4165,8 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 void
 MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 {
+	// TODO:
+	// - replace IS_CONCURRENT_ENABLED checks with true 
 	/* Work to be done (for non Concurrent Scavenger):
 	 * 1) Flush copy scan caches
 	 * 2) Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space
@@ -4185,7 +4190,8 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 		omrtty_printf("{SCAV: Complete back out(%p)}\n", env->getLanguageVMThread());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
-		if (!IS_CONCURRENT_ENABLED) {
+		// DEV: removing this path to unify abort for concurrent and non-concurrent. May remove code in future 
+		if (false) {
 			/* 1) Flush copy scan caches */
 			omrtty_printf("{SHAD: STW: Flush copy scan caches\n");
 			MM_CopyScanCacheStandard *cache = NULL;
@@ -4212,10 +4218,12 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			omrtty_printf("{SCAV: Handle RS overflow}\n");
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
-			if (IS_CONCURRENT_ENABLED) {
+			// DEV: specifying this path to unify abort for concurrent and non-concurrent
+			if (true) {
 				omrtty_printf("{SHAD: CS: clearRememberedSetLists\n");
 				/* All heap fixup will occur during or after global GC */
 				clearRememberedSetLists(env);
+			// DEV: dead path. May remove code in future 
 			} else {
 				omrtty_printf("{SHAD: STW: Unremember any objects that moved from new space to old\n");
 				/* i) Unremember any objects that moved from new space to old */
@@ -4274,7 +4282,8 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			}
 		} else {
 			/* RS not in overflow */
-			if (!IS_CONCURRENT_ENABLED) {
+			// DEV: removing this path to unify abort for concurrent and non-concurrent. May remove code in future 
+			if (false) {
 				/* Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space */
 				backoutFixupAndReverseForwardPointersInSurvivor(env);
 			}
