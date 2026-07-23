@@ -451,10 +451,11 @@ TR_BitVector *OMR::SymbolReference::getUseDefAliasesBV(bool isDirectCall, bool i
                 return aliases;
             }
 
+            if (resolvedMethodSymbol->isPureFunction())
+                return NULL;
+
             if (!comp->getOption(TR_EnableHCR)
                 || comp->fej9()->isIntrinsicCandidate(resolvedMethodSymbol->getResolvedMethod())) {
-                if (resolvedMethodSymbol->isPureFunction())
-                    return NULL;
 
                 switch (resolvedMethodSymbol->getRecognizedMethod()) {
                     case TR::java_lang_Double_longBitsToDouble:
