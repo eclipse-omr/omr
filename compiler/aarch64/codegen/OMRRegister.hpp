@@ -49,18 +49,21 @@ class OMR_EXTENSIBLE Register : public OMR::Register {
 protected:
     Register(uint32_t f = 0)
         : OMR::Register(f)
+        , _assignZeroRegister(false)
     {
         _liveRegisterInfo._liveRegister = NULL;
     }
 
     Register(TR_RegisterKinds rk)
         : OMR::Register(rk)
+        , _assignZeroRegister(false)
     {
         _liveRegisterInfo._liveRegister = NULL;
     }
 
     Register(TR_RegisterKinds rk, uint16_t ar)
         : OMR::Register(rk, ar)
+        , _assignZeroRegister(false)
     {
         _liveRegisterInfo._liveRegister = NULL;
     }
@@ -77,11 +80,26 @@ public:
 
     uint32_t setInterference(uint64_t i) { return (_liveRegisterInfo._interference = i); }
 
+    /**
+     * @brief Returns the value of "assignZeroRegister" flag
+     * @return true if the flag is set, false otherwise
+     */
+    bool getAssignZeroRegister() { return _assignZeroRegister; }
+
+    /**
+     * @brief Changes the value of "assignZeroRegister" flag
+     * @param[in] b : true if "xzr" must be assigned to the register, false otherwise
+     * @return New value of "assignZeroRegister" flag
+     */
+    bool setAssignZeroRegister(bool b = true) { return (_assignZeroRegister = b); }
+
 private:
     union {
         TR_LiveRegisterInfo *_liveRegister; // Live register entry representing this register
         uint32_t _interference; // Real registers that interfere with this register
     } _liveRegisterInfo;
+
+    bool _assignZeroRegister;
 };
 
 }} // namespace OMR::ARM64

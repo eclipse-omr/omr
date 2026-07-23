@@ -544,7 +544,12 @@ TR::RealRegister *OMR::ARM64::Machine::assignOneRegister(TR::Instruction *curren
         cg->clearRegisterAssignmentFlags();
         cg->setRegisterAssignmentFlag(TR_NormalAssignment);
 
-        if (virtualRegister->getTotalUseCount() != virtualRegister->getFutureUseCount()) {
+        if (virtualRegister->getAssignZeroRegister()) {
+            assignedRegister = getRealRegister(TR::RealRegister::xzr);
+            TR::Register *vr = assignedRegister->getAssignedRegister();
+            TR_ASSERT_FATAL((vr == NULL) || (vr == assignedRegister),
+                "xzr has been already assigned to another register");
+        } else if (virtualRegister->getTotalUseCount() != virtualRegister->getFutureUseCount()) {
             cg->setRegisterAssignmentFlag(TR_RegisterReloaded);
             assignedRegister = self()->reverseSpillState(currentInstruction, virtualRegister, NULL);
         } else {

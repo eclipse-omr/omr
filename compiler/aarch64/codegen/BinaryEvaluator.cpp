@@ -1034,8 +1034,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::imulhEvaluator(TR::Node *node, TR::Code
     TR::Register *tmpReg = NULL;
 
     TR::Register *zeroReg = cg->allocateRegister();
-    auto *cond = RegDeps(1, 1, cg);
-    TR::addDependency(cond, zeroReg, TR::RealRegister::xzr, TR_GPR, cg);
+    zeroReg->setAssignZeroRegister();
 
     // imulh is generated for constant idiv and the second child is the magic number
     // assume magic number is usually a large odd number with little optimization opportunity
@@ -1047,7 +1046,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::imulhEvaluator(TR::Node *node, TR::Code
         src2Reg = cg->evaluate(secondChild);
     }
 
-    generateTrg1Src3Instruction(cg, TR::InstOpCode::smaddl, node, trgReg, src1Reg, src2Reg, zeroReg, cond);
+    generateTrg1Src3Instruction(cg, TR::InstOpCode::smaddl, node, trgReg, src1Reg, src2Reg, zeroReg);
     cg->stopUsingRegister(zeroReg);
     /* logical shift right by 32 bits */
     generateLogicalShiftRightImmInstruction(cg, node, trgReg, trgReg, 32, true);
