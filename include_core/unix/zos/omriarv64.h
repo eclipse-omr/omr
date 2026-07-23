@@ -22,6 +22,15 @@
 #if !defined(OMRIARV64_H_)
 #define OMRIARV64_H_
 
+/*
+ * IARV64 return codes
+ * See https://www.ibm.com/docs/en/zos/3.2.0?topic=allocation-return-reason-codes for more details
+ */
+#define OMRIARV64_SUCCESS 0
+#define OMRIARV64_PARTIAL_SUCCESS 4
+#define OMRIARV64_ERROR_NONSYSTEM_FAILURE 8
+#define OMRIARV64_ERROR_SYSTEM_FAILURE 12
+
 /**
  * On ZOS64 memory allocation above 2G bar can be:
  *	- general: no limitation for OS for memory range
