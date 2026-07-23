@@ -1308,7 +1308,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64LabelInstruction *instr)
         log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
         print(log, label);
         if (snippet) {
-            log->printf(" (%s)", getName(snippet));
+            log->prints(" (");
+            snippet->printName(log);
+            log->printc(')');
         }
     }
     printInstructionComment(log, 1, instr);
@@ -1340,7 +1342,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64ConditionalBranchInstruction *in
     log->printf("b.%s \t", ARM64ConditionNames[instr->getConditionCode()]);
     print(log, label);
     if (snippet) {
-        log->printf(" (%s)", getName(snippet));
+        log->prints(" (");
+        snippet->printName(log);
+        log->printc(')');
     }
     printInstructionComment(log, 1, instr);
     if (instr->getDependencyConditions())
@@ -1363,7 +1367,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64CompareBranchInstruction *instr)
     log->prints(", ");
     print(log, label);
     if (snippet) {
-        log->printf(" (%s)", getName(snippet));
+        log->prints(" (");
+        snippet->printName(log);
+        log->printc(')');
     }
     printInstructionComment(log, 1, instr);
     if (instr->getDependencyConditions())
@@ -1383,7 +1389,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64TestBitBranchInstruction *instr)
     log->printf("#%d, ", instr->getBitPos());
     print(log, label);
     if (snippet) {
-        log->printf(" (%s)", getName(snippet));
+        log->prints(" (");
+        snippet->printName(log);
+        log->printc(')');
     }
     printInstructionComment(log, 1, instr);
     if (instr->getDependencyConditions())
@@ -1561,7 +1569,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ImmSymInstruction *instr)
         print(log, label);
         TR::Snippet *snippet = label->getSnippet();
         if (snippet) {
-            log->printf("(%s)", getName(snippet));
+            log->prints(" (");
+            snippet->printName(log);
+            log->printc(')');
         }
     } else {
         int64_t offset = static_cast<int64_t>(static_cast<int32_t>(instr->getSourceImmediate()));
@@ -3008,53 +3018,6 @@ void TR_Debug::printARM64OOLSequences(OMR::Logger *log)
         log->prints("\n------------ end out-of-line instructions\n");
 
         ++oiIterator;
-    }
-}
-
-const char *TR_Debug::getNamea64(TR::Snippet *snippet)
-{
-    switch (snippet->getKind()) {
-        case TR::Snippet::IsCall:
-            return "Call Snippet";
-            break;
-        case TR::Snippet::IsUnresolvedCall:
-            return "Unresolved Call Snippet";
-            break;
-        case TR::Snippet::IsVirtualUnresolved:
-            return "Unresolved Virtual Call Snippet";
-            break;
-        case TR::Snippet::IsInterfaceCall:
-            return "Interface Call Snippet";
-            break;
-        case TR::Snippet::IsStackCheckFailure:
-            return "Stack Check Failure Snippet";
-            break;
-        case TR::Snippet::IsForceRecompilation:
-            return "Force Recompilation Snippet";
-            break;
-        case TR::Snippet::IsUnresolvedData:
-            return "Unresolved Data Snippet";
-            break;
-        case TR::Snippet::IsConstantData:
-            return "Constant Data Snippet";
-            break;
-        case TR::Snippet::IsRecompilation:
-            return "Recompilation Snippet";
-            break;
-        case TR::Snippet::IsHelperCall:
-            return "Helper Call Snippet";
-            break;
-        case TR::Snippet::IsMonitorEnter:
-            return "MonitorEnter Inc Counter";
-            break;
-        case TR::Snippet::IsMonitorExit:
-            return "MonitorExit Dec Counter";
-            break;
-        case TR::Snippet::IsHeapAlloc:
-            return "Heap Alloc Snippet";
-            break;
-        default:
-            return "<unknown snippet>";
     }
 }
 
