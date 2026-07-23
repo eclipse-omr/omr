@@ -211,6 +211,37 @@ static void lowerNewValue(TR::Compilation *comp, TR::Node *node, TR::TreeTop *tt
     allocFenceTreeTop->join(nextTreeTop);
 }
 
+/**
+ * @brief Lower an aladd/aiadd with a NULL base to a conversion node
+ *
+ * When an array-reference node has a NULL (aconst 0) base, reduce
+ * to an integer-to-address conversion:
+ *
+ *   aladd          l2a         aiadd          i2a
+ *   /   \    =>     |    or    /   \    =>     |
+ * NULL  t           t        NULL  t           t
+ *
+ * This is intentionally deferred to trees lowering not to confuse any
+ * internal-pointer analysis in the optimizer
+ *
+ * @param comp  pointer to the compilation object
+ * @param node  the aladd/aiadd node being lowered (mutated in place)
+ */
+static void lowerNullBaseArrayRef(TR::Compilation *comp, TR::Node *node)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Node *secondChild = node->getSecondChild();
+    TR::ILOpCodes convOp = secondChild->getDataType() == TR::Int64 ? TR::l2a : TR::i2a;
+    if (performTransformation(comp, "%sLowered %s with NULL base to %s in node 0x%p\n", OPT_DETAILS,
+            node->getOpCode().getName(), TR::ILOpCode(convOp).getName(), node)) {
+        TR::Node::recreate(node, convOp);
+        node->setAndIncChild(0, secondChild);
+        firstChild->recursivelyDecReferenceCount();
+        secondChild->recursivelyDecReferenceCount();
+        node->setNumChildren(1);
+    }
+}
+
 void OMR::CodeGenerator::lowerTreesPreChildrenVisit(TR::Node *parent, TR::TreeTop *treeTop, vcount_t visitCount)
 {
     self()->lowerTreesPropagateBlockToNode(parent);
@@ -282,6 +313,14 @@ void OMR::CodeGenerator::lowerTreesPreChildrenVisit(TR::Node *parent, TR::TreeTo
         }
     } else if (parent->getOpCodeValue() == TR::newvalue) {
         lowerNewValue(comp(), parent, treeTop);
+    }
+
+    if (parent->getOpCode().isArrayRef()) {
+        TR::Node *firstChild = parent->getFirstChild();
+        TR::Node *secondChild = parent->getSecondChild();
+        if (firstChild->getOpCodeValue() == TR::aconst && firstChild->getAddress() == 0
+            && (secondChild->getDataType() == TR::Int64 || secondChild->getDataType() == TR::Int32))
+            lowerNullBaseArrayRef(comp(), parent);
     }
 }
 
