@@ -6009,11 +6009,11 @@ void TR_LoopVersioner::buildBoundCheckComparisonsTree(List<TR::TreeTop> *boundCh
                 ListElement<int32_t> *versionableInductionVar = _versionableInductionVariables.getListHead();
                 bool foundInductionVariable = false;
                 while (versionableInductionVar) {
-                    loopDrivingInductionVariable = *(versionableInductionVar->getData());
-                    if (_additionInfo->get(loopDrivingInductionVariable))
-                        isLoopDrivingAddition = true;
-
                     if (indexSymRefNum == *(versionableInductionVar->getData())) {
+                        loopDrivingInductionVariable = *(versionableInductionVar->getData());
+                        if (_additionInfo->get(loopDrivingInductionVariable))
+                            isLoopDrivingAddition = true;
+
                         if (_additionInfo->get(indexSymRefNum))
                             isAddition = true;
                         foundInductionVariable = true;
@@ -6258,6 +6258,20 @@ void TR_LoopVersioner::buildBoundCheckComparisonsTree(List<TR::TreeTop> *boundCh
             prep = createLoopEntryPrep(LoopEntryPrep::TEST, nextComparisonNode);
             dumpOptDetails(comp(), "1: Prep %p has been created for testing if exceed bounds\n", prep);
 
+            if (!((isAddition && !indVarOccursAsSecondChildOfSub) || (!isAddition && indVarOccursAsSecondChildOfSub))) {
+                TR::Node *lowerBoundCheck = TR::Node::createif(TR::ificmplt,
+                    boundCheckNode->getChild(indexChildIndex)->duplicateTreeForCodeMotion(),
+                    TR::Node::create(boundCheckNode, TR::iconst, 0, 0), _exitGotoTarget);
+                lowerBoundCheck->setIsVersionableIfWithMinExpr(comp());
+                logprintf(trace(), log,
+                    "Induction variable subed in each iter, also checking lower bound -> Creating %p (%s)\n",
+                    lowerBoundCheck, lowerBoundCheck->getOpCode().getName());
+                if (comp()->requiresSpineChecks())
+                    findAndReplaceContigArrayLen(NULL, lowerBoundCheck, comp()->incVisitCount());
+                prep = createChainedLoopEntryPrep(LoopEntryPrep::TEST, lowerBoundCheck, prep);
+                dumpOptDetails(comp(), "1b: Prep %p chained for lower bound check\n", prep);
+            }
+
             TR::Node *loopLimit = NULL;
             if (isLoopDrivingInductionVariable || isDerivedInductionVariable)
                 loopLimit = _loopTestTree->getNode()->getSecondChild()->duplicateTree();
@@ -6355,6 +6369,12 @@ void TR_LoopVersioner::buildBoundCheckComparisonsTree(List<TR::TreeTop> *boundCh
             //       iconst adjustmentFactor
             //
             if (isLoopDrivingInductionVariable || isDerivedInductionVariable) {
+                if (isDerivedInductionVariable && loopDrivingInductionVariable == -1) {
+                    dumpOptDetails(comp(),
+                        "Skipping bound check versioning: derived IV with no loop driving IV found\n");
+                    nextTree = nextTree->getNextElement();
+                    continue;
+                }
                 TR::SymbolReference *loopDrivingSymRef = indexSymRef;
                 if (isDerivedInductionVariable)
                     loopDrivingSymRef = comp()->getSymRefTab()->getSymRef(loopDrivingInductionVariable);
