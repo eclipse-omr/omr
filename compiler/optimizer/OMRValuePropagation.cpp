@@ -2246,6 +2246,21 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
 
         sym = defNode->getSymbol();
         defValueNumber = getValueNumber(defNode);
+
+        if (node->getSymbol()->isAutoOrParm()
+            && _curDefinedOnAllPaths->get(defNode->getSymbolReference()->getReferenceNumber())
+            && !findStoreConstraint(defValueNumber, sym)) {
+            /*
+             * Def node has not been found and there are no backedge constraints to consider.
+             * This guarantees an unseen def so NULL is returned.
+             */
+            logprintf(trace(), log,
+                "   %s [%p] looking at def value %d, %s [%p]: no backedge constraints to consider. def was not found.",
+                node->getOpCode().getName(), node, getValueNumber(defNode), defNode->getOpCode().getName(), defNode);
+
+            return NULL;
+        }
+
         // if we haven't seen a def on this iteration along all paths we must consider the backedge constraints
         if (node->getSymbol()->isAutoOrParm() && !unseenDefsFound
             && !_curDefinedOnAllPaths->get(defNode->getSymbolReference()->getReferenceNumber())) {
@@ -2530,11 +2545,11 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
             }
         }
 
-        // check if there are unseen defs even after consulting
-        // backedge store constraints. don't return a
-        // constraint until all defs are seen
-        //
-        if (_loopInfo && lastTimeThrough() && unseenDefsFound)
+        /*
+         * Check if there are unseen defs even after consulting backedge store constraints.
+         * Return NULL if a def has not been found.
+         */
+        if (unseenDefsFound)
             return NULL;
     }
 
