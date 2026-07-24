@@ -6133,15 +6133,15 @@ TR::Register *OMR::X86::TreeEvaluator::msplatsEvaluator(TR::Node *node, TR::Code
         TR::TreeEvaluator::loadConstant(node, 0, rematType, cg, maskGPR);
         TR::TreeEvaluator::loadConstant(node, mask, rematType, cg, tmpGPR);
 
-        // if child (boolean) is true, set mask
+        // if child (boolean) is true, set maskGPR to all-ones; otherwise leave it at zero
         Inst_RegReg(OP::TESTRegReg(), node, boolReg, boolReg, cg);
-        Inst_RegReg(OP::CMOVERegReg(), node, maskGPR, tmpGPR, cg);
+        Inst_RegReg(OP::CMOVNERegReg(), node, maskGPR, tmpGPR, cg);
 
         if (resultReg->getKind() == TR_VMR) {
             TR::InstOpCode movOpcode = (numLanes > 16) ? OP::KMOVQRegMask : OP::KMOVWRegMask;
             Inst_RegReg(movOpcode.getMnemonic(), node, resultReg, maskGPR, cg);
         } else {
-            Inst_RegReg(OP::MOVQRegReg8, node, resultReg, tmpGPR, cg);
+            Inst_RegReg(OP::MOVQRegReg8, node, resultReg, maskGPR, cg);
 
             if (dt.getVectorLength() == TR::VectorLength128) {
                 Inst_RegRegImm(OP::PSHUFDRegRegImm1, node, resultReg, resultReg, 0x44, cg);
@@ -6194,6 +6194,49 @@ TR::Register *OMR::X86::TreeEvaluator::mFirstTrueEvaluator(TR::Node *node, TR::C
 TR::Register *OMR::X86::TreeEvaluator::mLastTrueEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+}
+
+TR::Register *OMR::X86::TreeEvaluator::mstoreiToArrayHelper(TR::Node *node, TR::CodeGenerator *cg)
+{
+    TR::DataType dt = node->getDataType();
+    TR::DataType et = dt.getVectorElementType();
+    TR::VectorLength vl = dt.getVectorLength();
+
+    TR::Node *storeValNode = node->getSecondChild();
+    TR::Register *storeValReg = cg->evaluate(storeValNode);
+    TR::MemoryReference *tempMR = MRef_node(node, cg);
+
+    // Extract the per-lane bits of the mask into a GPR bitmask register.
+    TR::Register *bitmaskReg = cg->allocateRegister(TR_GPR);
+
+    if (cg->supportsOpMaskRegisters()) {
+        // KMOVQ/KMOVW moves all lane bits directly into a GPR.
+        TR_ASSERT_FATAL(storeValReg->getKind() == TR_VMR,
+            "mstoreiToArrayHelper: expected mask register for storeValReg when opmask registers are supported");
+        OP::Mnemonic kmovOp
+            = cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW) ? OP::KMOVQRegMask : OP::KMOVWRegMask;
+        Inst_RegReg(kmovOp, node, bitmaskReg, storeValReg, cg);
+    } else {
+        // vectorMaskToGPRHelper uses MOVMSKPS/PD or PMOVMSKB to extract sign bits into a GPR.
+        TR::TreeEvaluator::vectorMaskToGPRHelper(node, storeValNode->getDataType(), bitmaskReg, storeValReg, cg);
+    }
+
+    // For each lane, test its bit in bitmaskReg, set byteReg to 0 or 1,
+    // then store that byte into the destination boolean array at offset lane.
+    int32_t numLanes = dt.getVectorNumLanes();
+    TR::Register *byteReg = cg->allocateRegister(TR_GPR);
+
+    for (int32_t lane = 0; lane < numLanes; lane++) {
+        Inst_RegImm(OP::TEST4RegImm4, node, bitmaskReg, 1 << lane, cg);
+        Inst_Reg(OP::SETNE1Reg, node, byteReg, cg);
+        Inst_MemReg(OP::S1MemReg, node, MRef_MRefOff(*tempMR, lane, cg), byteReg, cg);
+    }
+
+    cg->stopUsingRegister(byteReg);
+    cg->stopUsingRegister(bitmaskReg);
+    cg->decReferenceCount(storeValNode);
+    tempMR->decNodeReferenceCounts(cg);
+    return NULL;
 }
 
 void OMR::X86::TreeEvaluator::vectorMaskToGPRHelper(TR::Node *node, TR::DataType type, TR::Register *gprReg,
@@ -6394,7 +6437,7 @@ TR::Register *OMR::X86::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, 
 
 TR::Register *OMR::X86::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return TR::TreeEvaluator::mstoreiToArrayHelper(node, cg);
 }
 
 TR::Register *OMR::X86::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)

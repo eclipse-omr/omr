@@ -1150,6 +1150,17 @@ bool OMR::X86::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILO
         case TR::mstorei:
             if (!cpu->supportsFeature(OMR_FEATURE_X86_SSE4_1))
                 return false;
+        case TR::mstoreiToArray:
+            switch (ot.getVectorLength()) {
+                case TR::VectorLength128:
+                    return true;
+                case TR::VectorLength256:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX2);
+                case TR::VectorLength512:
+                    return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F);
+                default:
+                    return false;
+            }
         case TR::vload:
         case TR::vloadi:
         case TR::vstore:
