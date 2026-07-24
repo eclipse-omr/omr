@@ -1567,14 +1567,124 @@ TR::Register *OMR::ARM64::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeG
     return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
 }
 
+static TR::Register *mloadiFromArrayHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic loadOp,
+    TR::InstOpCode::Mnemonic negOp, int numElements)
+{
+    TR::Node *child = node->getFirstChild();
+
+    TR::Register *dstReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(dstReg);
+
+    TR::MemoryReference *tempMR = MRef_node(cg, node);
+    tempMR->validateImmediateOffsetAlignment(node, numElements, cg);
+
+    generateTrg1MemInstruction(cg, loadOp, node, dstReg, tempMR);
+
+    // unpack byte-length elements to halfword-length elements (for Short, Int/Float, and Long/DoubleVector mask load)
+    if (numElements <= 8)
+        generateVectorUXTLInstruction(cg, TR::Int8, node, dstReg, dstReg, false);
+
+    // unpack halfword-length elements to word-length elements (for Int/Float and Long/DoubleVector mask load)
+    if (numElements <= 4)
+        generateVectorUXTLInstruction(cg, TR::Int16, node, dstReg, dstReg, false);
+
+    // unpack word-length elements to doubleword-length elements (for Long/DoubleVector mask load)
+    if (numElements == 2)
+        generateVectorUXTLInstruction(cg, TR::Int32, node, dstReg, dstReg, false);
+
+    // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
+    // all 0/1 mask by negation (subtracting from 0):
+    // 0-1 = -1 = 0xFF...
+    // 0-0 = 0
+    generateTrg1Src1Instruction(cg, negOp, node, dstReg, dstReg);
+
+    cg->decReferenceCount(child);
+
+    return dstReg;
+}
+
 TR::Register *OMR::ARM64::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported but type %s was requested", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::vldrimmq, TR::InstOpCode::vneg16b, 16);
+        case TR::Int16:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::vldrimmd, TR::InstOpCode::vneg8h, 8);
+        case TR::Int32:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::vldrimms, TR::InstOpCode::vneg4s, 4);
+        case TR::Int64:
+            return mloadiFromArrayHelper(node, cg, TR::InstOpCode::vldrimmh, TR::InstOpCode::vneg2d, 2);
+        default:
+            TR_ASSERT(false, "unsupported vector type %s\n", node->getDataType().toString());
+            return NULL;
+    }
+}
+
+static TR::Register *mstoreiToArrayHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic storeOp,
+    TR::InstOpCode::Mnemonic moviOp, int numElements)
+{
+    TR::Node *storeValNode = node->getSecondChild();
+
+    TR::Register *storeValReg = cg->evaluate(storeValNode);
+    TR::Register *tmpVRF = cg->allocateRegister(TR_VRF);
+
+    // set all but least significant bit of each array element to 0
+    if (moviOp == TR::InstOpCode::vmovi2d) {
+        // Int64: Cannot encode "movi vN.2d, #1"
+        TR::Register *tmpGPR = cg->allocateRegister(TR_GPR);
+        loadConstant64(cg, node, 1, tmpGPR);
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vdup2d, node, tmpVRF, tmpGPR);
+        cg->stopUsingRegister(tmpGPR);
+    } else {
+        generateTrg1ImmInstruction(cg, moviOp, node, tmpVRF, 1);
+    }
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vand16b, node, tmpVRF, storeValReg, tmpVRF);
+
+    // pack doubleword-length elements into word-length elements (for Long/DoubleVector mask store)
+    if (numElements == 2)
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vxtn_2s, node, tmpVRF, tmpVRF);
+
+    // pack word-length elements into halfword-length elements (for Int/Float and Long/DoubleVector mask store)
+    if (numElements <= 4)
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vxtn_4h, node, tmpVRF, tmpVRF);
+
+    // pack halfword-length elements into byte-length elements (for Short, Int/Float, and Long/DoubleVector mask store)
+    if (numElements <= 8)
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::vxtn_8b, node, tmpVRF, tmpVRF);
+
+    TR::MemoryReference *tempMR = MRef_node(cg, node);
+    tempMR->validateImmediateOffsetAlignment(node, numElements, cg);
+
+    generateMemSrc1Instruction(cg, storeOp, node, tempMR, tmpVRF);
+
+    cg->stopUsingRegister(tmpVRF);
+    cg->decReferenceCount(storeValNode);
+
+    return NULL;
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported but type %s was requested", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case TR::Int8:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::vstrimmq, TR::InstOpCode::vmovi16b, 16);
+        case TR::Int16:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::vstrimmd, TR::InstOpCode::vmovi8h, 8);
+        case TR::Int32:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::vstrimms, TR::InstOpCode::vmovi4s, 4);
+        case TR::Int64:
+            return mstoreiToArrayHelper(node, cg, TR::InstOpCode::vstrimmh, TR::InstOpCode::vmovi2d, 2);
+        default:
+            TR_ASSERT(false, "unsupported vector type %s\n", node->getDataType().toString());
+            return NULL;
+    }
 }
 
 /* This template function should be declared as constexpr if the compiler supports it. */
