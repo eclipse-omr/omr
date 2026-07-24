@@ -618,6 +618,7 @@ static TR::Node *addSimplifierCommon(TR::Node *node, TR::Block *block, TR::Simpl
         // clang-format on
         //
         else if (isExprInvariant(region, firstChild) && secondChild->getOpCode().isAdd()
+            && !node->getOpCode().isArrayRef()
             && !isExprInvariant(region, secondChild->getFirstChild())
             && isExprInvariant(region, secondChild->getSecondChild())
             && !isSmallConstant(secondChild->getSecondChild(), s)) {
@@ -6272,7 +6273,7 @@ TR::Node *laddSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
         }
     }
     addSimplifierJavaPacked(node, block, s);
-    return node;
+    return addSimplifierCommon(node, block, s);
 }
 
 TR::Node *faddSimplifier(TR::Node *node, TR::Block *block, TR::Simplifier *s)
