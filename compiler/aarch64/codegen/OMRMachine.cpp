@@ -64,7 +64,7 @@ static bool boundNext(TR::Instruction *currentInstruction, int32_t realNum, TR::
     TR::RealRegister::RegNum realReg = static_cast<TR::RealRegister::RegNum>(realNum);
     TR::Node *nodeBBStart = NULL;
 
-    while (cursor->getOpCodeValue() != TR::InstOpCode::proc) {
+    while (cursor->getOpCodeValue() != OP::proc) {
         TR::RegisterDependencyConditions *conditions;
         if ((conditions = cursor->getDependencyConditions()) != NULL) {
             TR::Register *boundReg = conditions->searchPostConditionRegister(realReg);
@@ -256,8 +256,8 @@ TR::RealRegister *OMR::ARM64::Machine::freeBestRegister(TR::Instruction *current
         TR_ASSERT(numCandidates != 0, "All registers are blocked");
 
         cursor = currentInstruction;
-        while (numCandidates > 1 && cursor != NULL && cursor->getOpCodeValue() != TR::InstOpCode::label
-            && cursor->getOpCodeValue() != TR::InstOpCode::proc) {
+        while (numCandidates > 1 && cursor != NULL && cursor->getOpCodeValue() != OP::label
+            && cursor->getOpCodeValue() != OP::proc) {
             for (int i = 0; i < numCandidates; i++) {
                 if (cursor->refsRegister(candidates[i])) {
                     candidates[i] = candidates[--numCandidates];
@@ -361,16 +361,16 @@ void OMR::ARM64::Machine::spillRegister(TR::Instruction *currentInstruction, TR:
         diagnostic("\n\tspilling %s (%s)", best->getAssignedRegister()->getRegisterName(comp),
             best->getRegisterName(comp));
     }
-    TR::InstOpCode::Mnemonic loadOp;
+    OP::Mnemonic loadOp;
     switch (rk) {
         case TR_GPR:
-            loadOp = TR::InstOpCode::ldrimmx;
+            loadOp = OP::ldrimmx;
             break;
         case TR_FPR:
-            loadOp = TR::InstOpCode::vldrimmd;
+            loadOp = OP::vldrimmd;
             break;
         case TR_VRF:
-            loadOp = TR::InstOpCode::vldrimmq;
+            loadOp = OP::vldrimmq;
             break;
         default:
             TR_ASSERT(false, "Unsupported RegisterKind.");
@@ -397,7 +397,7 @@ TR::RealRegister *OMR::ARM64::Machine::reverseSpillState(TR::Instruction *curren
     TR_RegisterKinds rk = spilledRegister->getKind();
     TR_Debug *debugObj = cg()->getDebug();
     int32_t dataSize = 0;
-    TR::InstOpCode::Mnemonic storeOp;
+    OP::Mnemonic storeOp;
 
     if (targetRegister == NULL) {
         targetRegister = self()->findBestFreeRegister(currentInstruction, rk, false, spilledRegister);
@@ -516,13 +516,13 @@ TR::RealRegister *OMR::ARM64::Machine::reverseSpillState(TR::Instruction *curren
     }
     switch (rk) {
         case TR_GPR:
-            storeOp = TR::InstOpCode::strimmx;
+            storeOp = OP::strimmx;
             break;
         case TR_FPR:
-            storeOp = TR::InstOpCode::vstrimmd;
+            storeOp = OP::vstrimmd;
             break;
         case TR_VRF:
-            storeOp = TR::InstOpCode::vstrimmq;
+            storeOp = OP::vstrimmq;
             break;
         default:
             TR_ASSERT(false, "Unsupported RegisterKind.");
@@ -585,11 +585,10 @@ static void registerCopy(TR::Instruction *precedingInstruction, TR_RegisterKinds
             generateMovInstruction(cg, node, targetReg, sourceReg, true, precedingInstruction);
             break;
         case TR_FPR:
-            generateTrg1Src1Instruction(cg, TR::InstOpCode::fmovd, node, targetReg, sourceReg, precedingInstruction);
+            generateTrg1Src1Instruction(cg, OP::fmovd, node, targetReg, sourceReg, precedingInstruction);
             break;
         case TR_VRF:
-            generateTrg1Src2Instruction(cg, TR::InstOpCode::vorr16b, node, targetReg, sourceReg, sourceReg,
-                precedingInstruction);
+            generateTrg1Src2Instruction(cg, OP::vorr16b, node, targetReg, sourceReg, sourceReg, precedingInstruction);
             break;
         default:
             TR_ASSERT(false, "Unsupported RegisterKind.");
@@ -605,19 +604,13 @@ static void registerExchange(TR::Instruction *precedingInstruction, TR_RegisterK
 
     TR::Node *node = precedingInstruction->getNode();
     if (rk == TR_GPR) {
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::eorx, node, targetReg, targetReg, sourceReg,
-            precedingInstruction);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::eorx, node, sourceReg, targetReg, sourceReg,
-            precedingInstruction);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::eorx, node, targetReg, targetReg, sourceReg,
-            precedingInstruction);
+        generateTrg1Src2Instruction(cg, OP::eorx, node, targetReg, targetReg, sourceReg, precedingInstruction);
+        generateTrg1Src2Instruction(cg, OP::eorx, node, sourceReg, targetReg, sourceReg, precedingInstruction);
+        generateTrg1Src2Instruction(cg, OP::eorx, node, targetReg, targetReg, sourceReg, precedingInstruction);
     } else {
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::veor16b, node, targetReg, targetReg, sourceReg,
-            precedingInstruction);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::veor16b, node, sourceReg, targetReg, sourceReg,
-            precedingInstruction);
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::veor16b, node, targetReg, targetReg, sourceReg,
-            precedingInstruction);
+        generateTrg1Src2Instruction(cg, OP::veor16b, node, targetReg, targetReg, sourceReg, precedingInstruction);
+        generateTrg1Src2Instruction(cg, OP::veor16b, node, sourceReg, targetReg, sourceReg, precedingInstruction);
+        generateTrg1Src2Instruction(cg, OP::veor16b, node, targetReg, targetReg, sourceReg, precedingInstruction);
     }
 }
 
@@ -1022,7 +1015,7 @@ void OMR::ARM64::Machine::createRegisterAssociationDirective(TR::Instruction *cu
         associations->addPostCondition(self()->getVirtualAssociatedWithReal(regNum), regNum);
     }
 
-    generateAdminInstruction(cg(), TR::InstOpCode::assocreg, cursor->getNode(), associations, NULL, cursor);
+    generateAdminInstruction(cg(), OP::assocreg, cursor->getNode(), associations, NULL, cursor);
 }
 
 TR::Register *OMR::ARM64::Machine::setVirtualAssociatedWithReal(TR::RealRegister::RegNum regNum, TR::Register *virtReg)

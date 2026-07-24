@@ -63,7 +63,7 @@ public:
      * @param[in] op : opcode
      * @param[in] node : node
      */
-    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node = NULL);
+    Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node = NULL);
     /**
      * @brief Constructor
      * @param[in] cg : CodeGenerator
@@ -71,8 +71,7 @@ public:
      * @param[in] op : opcode
      * @param[in] node : node
      */
-    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
-        TR::Node *node = NULL);
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, OP::Mnemonic op, TR::Node *node = NULL);
     /**
      * @brief Constructor
      * @param[in] cg : CodeGenerator
@@ -80,8 +79,7 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] node : node
      */
-    Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond,
-        TR::Node *node = NULL);
+    Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
     /**
      * @brief Constructor
      * @param[in] cg : CodeGenerator
@@ -90,7 +88,7 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] node : node
      */
-    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, TR::InstOpCode::Mnemonic op,
+    Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, OP::Mnemonic op,
         TR::RegisterDependencyConditions *cond, TR::Node *node = NULL);
 
     /**
@@ -122,7 +120,7 @@ public:
      * @brief Answers if this instruction is a label or not
      * @return true if this instruction is a label, false otherwise
      */
-    virtual bool isLabel() { return _opcode.getMnemonic() == TR::InstOpCode::label; }
+    virtual bool isLabel() { return _opcode.getMnemonic() == OP::label; }
 
     /**
      * @brief Gets the base register of memory access

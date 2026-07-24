@@ -66,7 +66,7 @@ public:
 
     TR::Register *argRegister;
     TR::MemoryReference *argMemory;
-    TR::InstOpCode::Mnemonic opCode;
+    OP::Mnemonic opCode;
 };
 
 // linkage properties
@@ -279,7 +279,7 @@ public:
      * @return MemoryReference for the argument
      */
     virtual TR::MemoryReference *getOutgoingArgumentMemRef(TR::Register *baseReg, int32_t offset, TR::Register *argReg,
-        TR::InstOpCode::Mnemonic opCode, TR::ARM64MemoryArgument &memArg);
+        OP::Mnemonic opCode, TR::ARM64MemoryArgument &memArg);
 
     /**
      * @brief Loads parameters from stack

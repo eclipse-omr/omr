@@ -30,19 +30,19 @@ namespace TR {
 class Register;
 }
 
-OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node)
+OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node)
     : OMR::Instruction(cg, op, node)
     , _conditions(NULL)
 {}
 
-OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction,
-    TR::InstOpCode::Mnemonic op, TR::Node *node)
+OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, OP::Mnemonic op,
+    TR::Node *node)
     : OMR::Instruction(cg, precedingInstruction, op, node)
     , _conditions(NULL)
 {}
 
-OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
-    TR::RegisterDependencyConditions *cond, TR::Node *node)
+OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::RegisterDependencyConditions *cond,
+    TR::Node *node)
     : OMR::Instruction(cg, op, node)
     , _conditions(cond)
 {
@@ -50,8 +50,8 @@ OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnem
         cond->bookKeepingRegisterUses(self(), cg);
 }
 
-OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction,
-    TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node)
+OMR::ARM64::Instruction::Instruction(TR::CodeGenerator *cg, TR::Instruction *precedingInstruction, OP::Mnemonic op,
+    TR::RegisterDependencyConditions *cond, TR::Node *node)
     : OMR::Instruction(cg, precedingInstruction, op, node)
     , _conditions(cond)
 {

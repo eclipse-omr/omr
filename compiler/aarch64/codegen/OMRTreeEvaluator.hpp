@@ -65,7 +65,7 @@ TR::Register *genericReturnEvaluator(TR::Node *node, TR::RealRegister::RegNum rn
  * @param[in] size : size
  * @param[in] cg : CodeGenerator
  */
-TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t size, TR::CodeGenerator *cg);
+TR::Register *commonLoadEvaluator(TR::Node *node, OP::Mnemonic op, int32_t size, TR::CodeGenerator *cg);
 
 /**
  * @brief Helper function for xloadEvaluators
@@ -75,7 +75,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
  * @param[in] targetReg : target register
  * @param[in] cg : CodeGenerator
  */
-TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t size, TR::Register *targetReg,
+TR::Register *commonLoadEvaluator(TR::Node *node, OP::Mnemonic op, int32_t size, TR::Register *targetReg,
     TR::CodeGenerator *cg);
 
 /**
@@ -85,7 +85,7 @@ TR::Register *commonLoadEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, i
  * @param[in] size : size
  * @param[in] cg : CodeGenerator
  */
-TR::Register *commonStoreEvaluator(TR::Node *node, TR::InstOpCode::Mnemonic op, int32_t size, TR::CodeGenerator *cg);
+TR::Register *commonStoreEvaluator(TR::Node *node, OP::Mnemonic op, int32_t size, TR::CodeGenerator *cg);
 
 namespace OMR { namespace ARM64 {
 
@@ -445,7 +445,7 @@ public:
      * @param[in] evaluatorHelper: optional pointer to helper function which generates instruction stream for operation
      * @return vector register containing the result
      */
-    static TR::Register *inlineVectorBinaryOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    static TR::Register *inlineVectorBinaryOp(TR::Node *node, TR::CodeGenerator *cg, OP::Mnemonic op,
         binaryEvaluatorHelper evaluatorHelper = NULL);
     /**
      * @brief Helper function for generating instruction sequence for masked binary operations
@@ -456,7 +456,7 @@ public:
      * @param[in] evaluatorHelper: optional pointer to helper function which generates instruction stream for operation
      * @return vector register containing the result
      */
-    static TR::Register *inlineVectorMaskedBinaryOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    static TR::Register *inlineVectorMaskedBinaryOp(TR::Node *node, TR::CodeGenerator *cg, OP::Mnemonic op,
         binaryEvaluatorHelper evaluatorHelper = NULL);
 
     typedef TR::Register *(
@@ -470,7 +470,7 @@ public:
      * @param[in] evaluatorHelper: optional pointer to helper function which generates instruction stream for operation
      * @return vector register containing the result
      */
-    static TR::Register *inlineVectorUnaryOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    static TR::Register *inlineVectorUnaryOp(TR::Node *node, TR::CodeGenerator *cg, OP::Mnemonic op,
         unaryEvaluatorHelper evaluatorHelper = NULL);
 
     /**
@@ -482,7 +482,7 @@ public:
      * @param[in] evaluatorHelper: optional pointer to helper function which generates instruction stream for operation
      * @return vector register containing the result
      */
-    static TR::Register *inlineVectorMaskedUnaryOp(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
+    static TR::Register *inlineVectorMaskedUnaryOp(TR::Node *node, TR::CodeGenerator *cg, OP::Mnemonic op,
         unaryEvaluatorHelper evaluatorHelper = NULL);
 
     static TR::Register *f2iuEvaluator(TR::Node *node, TR::CodeGenerator *cg);

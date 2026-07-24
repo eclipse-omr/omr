@@ -51,7 +51,7 @@ class SymbolReference;
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Instruction *preced = NULL);
 
 /*
@@ -63,8 +63,8 @@ TR::Instruction *generateInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnem
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::ARM64ImmInstruction *generateImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    uint32_t imm, TR::Instruction *preced = NULL);
+TR::ARM64ImmInstruction *generateImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, uint32_t imm,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates relocatable imm instruction
@@ -76,7 +76,7 @@ TR::ARM64ImmInstruction *generateImmInstruction(TR::CodeGenerator *cg, TR::InstO
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateRelocatableImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateRelocatableImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     uintptr_t imm, TR_ExternalRelocationTargetKind relocationKind, TR::Instruction *preced = NULL);
 
 /*
@@ -90,7 +90,7 @@ TR::Instruction *generateRelocatableImmInstruction(TR::CodeGenerator *cg, TR::In
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateRelocatableImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateRelocatableImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     uintptr_t imm, TR_ExternalRelocationTargetKind relocationKind, TR::SymbolReference *sr,
     TR::Instruction *preced = NULL);
 
@@ -106,9 +106,8 @@ TR::Instruction *generateRelocatableImmInstruction(TR::CodeGenerator *cg, TR::In
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateImmSymInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    uintptr_t imm, TR::RegisterDependencyConditions *cond, TR::SymbolReference *sr, TR::Snippet *s,
-    TR::Instruction *preced = NULL);
+TR::Instruction *generateImmSymInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, uintptr_t imm,
+    TR::RegisterDependencyConditions *cond, TR::SymbolReference *sr, TR::Snippet *s, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates label instruction
@@ -119,8 +118,8 @@ TR::Instruction *generateImmSymInstruction(TR::CodeGenerator *cg, TR::InstOpCode
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateLabelInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::LabelSymbol *sym, TR::Instruction *preced = NULL);
+TR::Instruction *generateLabelInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates label instruction with register dependency
@@ -132,8 +131,8 @@ TR::Instruction *generateLabelInstruction(TR::CodeGenerator *cg, TR::InstOpCode:
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateLabelInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
+TR::Instruction *generateLabelInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
+    TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates conditional branch instruction
@@ -170,7 +169,7 @@ TR::Instruction *generateConditionalBranchInstruction(TR::CodeGenerator *cg, TR:
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *sreg, TR::LabelSymbol *sym, TR::Instruction *preced = NULL);
 
 /*
@@ -184,7 +183,7 @@ TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, TR::Ins
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *sreg, TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
 
 /*
@@ -199,7 +198,7 @@ TR::Instruction *generateCompareBranchInstruction(TR::CodeGenerator *cg, TR::Ins
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTestBitBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTestBitBranchInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *sreg, uint32_t bitpos, TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond,
     TR::Instruction *preced = NULL);
 
@@ -214,7 +213,7 @@ TR::Instruction *generateTestBitBranchInstruction(TR::CodeGenerator *cg, TR::Ins
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTestBitBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTestBitBranchInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *sreg, uint32_t bitpos, TR::LabelSymbol *sym, TR::Instruction *preced = NULL);
 
 /*
@@ -226,7 +225,7 @@ TR::Instruction *generateTestBitBranchInstruction(TR::CodeGenerator *cg, TR::Ins
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateRegBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateRegBranchInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Instruction *preced = NULL);
 
 /*
@@ -239,7 +238,7 @@ TR::Instruction *generateRegBranchInstruction(TR::CodeGenerator *cg, TR::InstOpC
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateRegBranchInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateRegBranchInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
 
 /*
@@ -251,7 +250,7 @@ TR::Instruction *generateRegBranchInstruction(TR::CodeGenerator *cg, TR::InstOpC
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateAdminInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateAdminInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Node *fenceNode = NULL, TR::Instruction *preced = NULL);
 
 /*
@@ -264,7 +263,7 @@ TR::Instruction *generateAdminInstruction(TR::CodeGenerator *cg, TR::InstOpCode:
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateAdminInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateAdminInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::RegisterDependencyConditions *cond, TR::Node *fenceNode = NULL, TR::Instruction *preced = NULL);
 
 /*
@@ -276,8 +275,8 @@ TR::Instruction *generateAdminInstruction(TR::CodeGenerator *cg, TR::InstOpCode:
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrgInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrgInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates imm-to-trg instruction
@@ -289,8 +288,8 @@ TR::Instruction *generateTrgInstruction(TR::CodeGenerator *cg, TR::InstOpCode::M
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1ImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, uint32_t imm, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1ImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    uint32_t imm, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates shifted imm--to-trg instruction
@@ -303,7 +302,7 @@ TR::Instruction *generateTrg1ImmInstruction(TR::CodeGenerator *cg, TR::InstOpCod
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1ImmShiftedInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1ImmShiftedInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, uint32_t imm, uint32_t shiftAmount, TR::Instruction *preced = NULL);
 
 /*
@@ -317,7 +316,7 @@ TR::Instruction *generateTrg1ImmShiftedInstruction(TR::CodeGenerator *cg, TR::In
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1ImmSymInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1ImmSymInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, uint32_t imm, TR::Symbol *sym, TR::Instruction *preced = NULL);
 
 /*
@@ -330,8 +329,8 @@ TR::Instruction *generateTrg1ImmSymInstruction(TR::CodeGenerator *cg, TR::InstOp
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, TR::Register *s1reg, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1Src1Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    TR::Register *s1reg, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates src1-and-imm-to-trg instruction
@@ -344,7 +343,7 @@ TR::Instruction *generateTrg1Src1Instruction(TR::CodeGenerator *cg, TR::InstOpCo
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src1ImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1Src1ImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, uint32_t imm, TR::Instruction *preced = NULL);
 
 /*
@@ -358,8 +357,8 @@ TR::Instruction *generateTrg1Src1ImmInstruction(TR::CodeGenerator *cg, TR::InstO
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src2Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1Src2Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    TR::Register *s1reg, TR::Register *s2reg, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates src2-to-trg instruction (Conditional register)
@@ -373,7 +372,7 @@ TR::Instruction *generateTrg1Src2Instruction(TR::CodeGenerator *cg, TR::InstOpCo
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateCondTrg1Src2Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateCondTrg1Src2Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::ARM64ConditionCode cc,
     TR::Instruction *preced = NULL);
 
@@ -390,7 +389,7 @@ TR::Instruction *generateCondTrg1Src2Instruction(TR::CodeGenerator *cg, TR::Inst
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateCondTrg1Src2Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateCondTrg1Src2Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::ARM64ConditionCode cc,
     TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
 
@@ -406,7 +405,7 @@ TR::Instruction *generateCondTrg1Src2Instruction(TR::CodeGenerator *cg, TR::Inst
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src2ImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1Src2ImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, uint32_t imm, TR::Instruction *preced = NULL);
 
 /*
@@ -422,7 +421,7 @@ TR::Instruction *generateTrg1Src2ImmInstruction(TR::CodeGenerator *cg, TR::InstO
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src2ShiftedInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1Src2ShiftedInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::ARM64ShiftCode shiftType, uint32_t shiftAmount,
     TR::Instruction *preced = NULL);
 
@@ -439,7 +438,7 @@ TR::Instruction *generateTrg1Src2ShiftedInstruction(TR::CodeGenerator *cg, TR::I
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src2ExtendedInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1Src2ExtendedInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::ARM64ExtendCode extendType, uint32_t shiftAmount,
     TR::Instruction *preced = NULL);
 
@@ -455,9 +454,8 @@ TR::Instruction *generateTrg1Src2ExtendedInstruction(TR::CodeGenerator *cg, TR::
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src2IndexedElementInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
-    TR::Node *node, TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, uint32_t index,
-    TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1Src2IndexedElementInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
+    TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, uint32_t index, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates src3-to-trg instruction
@@ -471,8 +469,8 @@ TR::Instruction *generateTrg1Src2IndexedElementInstruction(TR::CodeGenerator *cg
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src3Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::Register *s3reg, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1Src3Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    TR::Register *s1reg, TR::Register *s2reg, TR::Register *s3reg, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates src3-to-trg instruction with register dependency
@@ -487,9 +485,9 @@ TR::Instruction *generateTrg1Src3Instruction(TR::CodeGenerator *cg, TR::InstOpCo
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1Src3Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, TR::Register *s1reg, TR::Register *s2reg, TR::Register *s3reg,
-    TR::RegisterDependencyConditions *cond, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1Src3Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    TR::Register *s1reg, TR::Register *s2reg, TR::Register *s3reg, TR::RegisterDependencyConditions *cond,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates mem-to-trg instruction
@@ -501,8 +499,8 @@ TR::Instruction *generateTrg1Src3Instruction(TR::CodeGenerator *cg, TR::InstOpCo
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1MemInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg, TR::MemoryReference *mr, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg1MemInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg,
+    TR::MemoryReference *mr, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates mem-to-trg2 instruction
@@ -515,8 +513,8 @@ TR::Instruction *generateTrg1MemInstruction(TR::CodeGenerator *cg, TR::InstOpCod
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg2MemInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *treg1, TR::Register *treg2, TR::MemoryReference *mr, TR::Instruction *preced = NULL);
+TR::Instruction *generateTrg2MemInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *treg1,
+    TR::Register *treg2, TR::MemoryReference *mr, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates mem-imm instruction
@@ -528,7 +526,7 @@ TR::Instruction *generateTrg2MemInstruction(TR::CodeGenerator *cg, TR::InstOpCod
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateMemImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateMemImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::MemoryReference *mr, uint32_t imm, TR::Instruction *preced = NULL);
 
 /*
@@ -541,7 +539,7 @@ TR::Instruction *generateMemImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateMemSrc1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateMemSrc1Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::MemoryReference *mr, TR::Register *sreg, TR::Instruction *preced = NULL);
 
 /*
@@ -555,7 +553,7 @@ TR::Instruction *generateMemSrc1Instruction(TR::CodeGenerator *cg, TR::InstOpCod
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateMemSrc2Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateMemSrc2Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::MemoryReference *mr, TR::Register *s1reg, TR::Register *s2reg, TR::Instruction *preced = NULL);
 
 /*
@@ -569,7 +567,7 @@ TR::Instruction *generateMemSrc2Instruction(TR::CodeGenerator *cg, TR::InstOpCod
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateTrg1MemSrc1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateTrg1MemSrc1Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::MemoryReference *mr, TR::Register *sreg, TR::Instruction *preced = NULL);
 
 /*
@@ -581,8 +579,8 @@ TR::Instruction *generateTrg1MemSrc1Instruction(TR::CodeGenerator *cg, TR::InstO
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateSrc1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *s1reg, TR::Instruction *preced = NULL);
+TR::Instruction *generateSrc1Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *s1reg,
+    TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates src2 instruction
@@ -594,8 +592,8 @@ TR::Instruction *generateSrc1Instruction(TR::CodeGenerator *cg, TR::InstOpCode::
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateSrc2Instruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
-    TR::Register *s1reg, TR::Register *s2reg, TR::Instruction *preced = NULL);
+TR::Instruction *generateSrc2Instruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *s1reg,
+    TR::Register *s2reg, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates ASR instruction
@@ -651,7 +649,7 @@ TR::Instruction *generateLogicalShiftLeftImmInstruction(TR::CodeGenerator *cg, T
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateLogicalImmInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateLogicalImmInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *s1reg, bool N, uint32_t imm, TR::Instruction *preced = NULL);
 
 /*
@@ -859,9 +857,8 @@ TR::Instruction *generateCIncInstruction(TR::CodeGenerator *cg, TR::Node *node, 
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::ARM64SynchronizationInstruction *generateSynchronizationInstruction(TR::CodeGenerator *cg,
-    TR::InstOpCode::Mnemonic op, TR::Node *node, TR::InstOpCode::AArch64BarrierLimitation lim,
-    TR::Instruction *preced = NULL);
+TR::ARM64SynchronizationInstruction *generateSynchronizationInstruction(TR::CodeGenerator *cg, OP::Mnemonic op,
+    TR::Node *node, OP::AArch64BarrierLimitation lim, TR::Instruction *preced = NULL);
 
 /*
  * @brief Generates exception generating instruction
@@ -872,8 +869,8 @@ TR::ARM64SynchronizationInstruction *generateSynchronizationInstruction(TR::Code
  * @param[in] preced : preceding instruction
  * @return generated instruction
  */
-TR::ARM64ExceptionInstruction *generateExceptionInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
-    TR::Node *node, uint32_t imm, TR::Instruction *preced = NULL);
+TR::ARM64ExceptionInstruction *generateExceptionInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
+    uint32_t imm, TR::Instruction *preced = NULL);
 
 /**
  * @brief Generates ubfx instruction
@@ -950,8 +947,8 @@ TR::Instruction *generateBFIInstruction(TR::CodeGenerator *cg, TR::Node *node, T
  * @param[in] preced      : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateVectorShiftImmediateInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
-    TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t shiftAmount, TR::Instruction *preced = NULL);
+TR::Instruction *generateVectorShiftImmediateInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
+    TR::Register *treg, TR::Register *sreg, uint32_t shiftAmount, TR::Instruction *preced = NULL);
 
 /**
  * @brief Generates vector unsigned extend long instruction
@@ -979,7 +976,7 @@ TR::Instruction *generateVectorUXTLInstruction(TR::CodeGenerator *cg, TR::DataTy
  * @param[in] preced      : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateVectorDupElementInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateVectorDupElementInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *sreg, uint32_t srcIndex, TR::Instruction *preced = NULL);
 
 /**
@@ -994,8 +991,8 @@ TR::Instruction *generateVectorDupElementInstruction(TR::CodeGenerator *cg, TR::
  * @param[in] preced      : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateMovVectorElementToGPRInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
-    TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t srcIndex, TR::Instruction *preced = NULL);
+TR::Instruction *generateMovVectorElementToGPRInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
+    TR::Register *treg, TR::Register *sreg, uint32_t srcIndex, TR::Instruction *preced = NULL);
 
 /**
  * @brief Generates move general purpose register to vector element instruction
@@ -1009,8 +1006,8 @@ TR::Instruction *generateMovVectorElementToGPRInstruction(TR::CodeGenerator *cg,
  * @param[in] preced      : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateMovGPRToVectorElementInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op,
-    TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t trgIndex, TR::Instruction *preced = NULL);
+TR::Instruction *generateMovGPRToVectorElementInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
+    TR::Register *treg, TR::Register *sreg, uint32_t trgIndex, TR::Instruction *preced = NULL);
 
 /**
  * @brief Generates move vector element instruction
@@ -1025,7 +1022,7 @@ TR::Instruction *generateMovGPRToVectorElementInstruction(TR::CodeGenerator *cg,
  * @param[in] preced      : preceding instruction
  * @return generated instruction
  */
-TR::Instruction *generateMovVectorElementInstruction(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op, TR::Node *node,
+TR::Instruction *generateMovVectorElementInstruction(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node,
     TR::Register *treg, TR::Register *sreg, uint32_t trgIndex, uint32_t srcIndex, TR::Instruction *preced = NULL);
 
 #ifdef J9_PROJECT_SPECIFIC

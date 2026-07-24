@@ -110,12 +110,12 @@ OMR::ARM64::RegisterDependencyConditions::RegisterDependencyConditions(TR::CodeG
                 iCursor = generateMovInstruction(cg, node, copyReg, reg, true, iCursor);
             } else if (kind == TR_VRF) {
                 copyReg = cg->allocateRegister(TR_VRF);
-                iCursor = generateTrg1Src2Instruction(cg, TR::InstOpCode::vorr16b, node, copyReg, reg, reg, iCursor);
+                iCursor = generateTrg1Src2Instruction(cg, OP::vorr16b, node, copyReg, reg, reg, iCursor);
             } else {
                 bool isSinglePrecision = reg->isSinglePrecision();
                 copyReg = isSinglePrecision ? cg->allocateSinglePrecisionRegister() : cg->allocateRegister(TR_FPR);
-                iCursor = generateTrg1Src1Instruction(cg,
-                    isSinglePrecision ? TR::InstOpCode::fmovs : TR::InstOpCode::fmovd, node, copyReg, reg, iCursor);
+                iCursor = generateTrg1Src1Instruction(cg, isSinglePrecision ? OP::fmovs : OP::fmovd, node, copyReg, reg,
+                    iCursor);
             }
 
             reg = copyReg;
@@ -276,7 +276,7 @@ bool OMR::ARM64::RegisterDependencyConditions::usesRegister(TR::Register *r)
 
 void OMR::ARM64::RegisterDependencyConditions::bookKeepingRegisterUses(TR::Instruction *instr, TR::CodeGenerator *cg)
 {
-    if (instr->getOpCodeValue() == TR::InstOpCode::assocreg)
+    if (instr->getOpCodeValue() == OP::assocreg)
         return;
 
     // We create a register association directive for each dependency
@@ -416,16 +416,16 @@ void OMR::ARM64::RegisterDependencyGroup::assignRegisters(TR::Instruction *curre
                 TR::MemoryReference *tempMR = MRef_sym(cg, currentNode,
                     (TR::SymbolReference *)virtReg->getBackingStorage()->getSymbolReference());
                 TR_RegisterKinds rk = virtReg->getKind();
-                TR::InstOpCode::Mnemonic opCode;
+                OP::Mnemonic opCode;
                 switch (rk) {
                     case TR_GPR:
-                        opCode = TR::InstOpCode::ldrimmx;
+                        opCode = OP::ldrimmx;
                         break;
                     case TR_FPR:
-                        opCode = TR::InstOpCode::vldrimmd;
+                        opCode = OP::vldrimmd;
                         break;
                     case TR_VRF:
-                        opCode = TR::InstOpCode::vldrimmq;
+                        opCode = OP::vldrimmq;
                         break;
                     default:
                         TR_ASSERT(0, "\nRegister kind not supported in OOL spill");

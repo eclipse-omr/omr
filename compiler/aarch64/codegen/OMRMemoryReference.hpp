@@ -467,7 +467,7 @@ public:
      * @param[in] mnemonic : mnemonic
      * @return mnemonic
      */
-    TR::InstOpCode::Mnemonic mapOpCode(TR::InstOpCode::Mnemonic op);
+    OP::Mnemonic mapOpCode(OP::Mnemonic op);
 
     /**
      * @brief Assigns registers
@@ -481,7 +481,7 @@ public:
      * @param[in] op : opcode of the instruction to attach this memory reference to
      * @return estimated binary length
      */
-    uint32_t estimateBinaryLength(TR::InstOpCode op);
+    uint32_t estimateBinaryLength(OP op);
 
     /**
      * @brief Generates binary encoding

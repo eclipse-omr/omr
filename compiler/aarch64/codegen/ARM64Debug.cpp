@@ -1085,7 +1085,7 @@ static TR_RegisterSizes getRegisterSizeFromFType(uint32_t ftype)
     }
 }
 
-const char *TR_Debug::getOpCodeName(TR::InstOpCode *opCode) { return opCodeToNameMap[opCode->getMnemonic()]; }
+const char *TR_Debug::getOpCodeName(OP *opCode) { return opCodeToNameMap[opCode->getMnemonic()]; }
 
 void TR_Debug::printMemoryReferenceComment(OMR::Logger *log, TR::MemoryReference *mr)
 {
@@ -1297,7 +1297,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64LabelInstruction *instr)
 
     TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
-    if (instr->getOpCodeValue() == TR::InstOpCode::label) {
+    if (instr->getOpCodeValue() == OP::label) {
         print(log, label);
         log->printc(':');
         if (label->isStartInternalControlFlow())
@@ -1336,7 +1336,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64ConditionalBranchInstruction *in
 
     TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
-    TR_ASSERT(instr->getOpCodeValue() == TR::InstOpCode::b_cond, "Unsupported instruction for conditional branch");
+    TR_ASSERT(instr->getOpCodeValue() == OP::b_cond, "Unsupported instruction for conditional branch");
     log->printf("b.%s \t", ARM64ConditionNames[instr->getConditionCode()]);
     print(log, label);
     if (snippet) {
@@ -1354,8 +1354,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64CompareBranchInstruction *instr)
 
     TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
@@ -1404,7 +1404,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64RegBranchInstruction *instr)
 
 void TR_Debug::print(OMR::Logger *log, TR::ARM64AdminInstruction *instr)
 {
-    if (instr->getOpCodeValue() == TR::InstOpCode::assocreg) {
+    if (instr->getOpCodeValue() == OP::assocreg) {
         printAssocRegDirective(log, instr);
         return;
     }
@@ -1438,12 +1438,12 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Instruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1CondInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
 
-    if (op == TR::InstOpCode::csincx || (op == TR::InstOpCode::csincw)) {
+    if (op == OP::csincx || (op == OP::csincw)) {
         // cset alias
         log->printf("cset%c \t", (sf == 1) ? 'x' : 'w');
         print(log, instr->getTargetRegister(), regSize);
@@ -1479,30 +1479,29 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ImmInstruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    if ((op == TR::InstOpCode::adr) || (op == TR::InstOpCode::adrp)) {
+    OP::Mnemonic op = instr->getOpCodeValue();
+    if ((op == OP::adr) || (op == OP::adrp)) {
         int64_t offset = static_cast<int64_t>(static_cast<int32_t>(instr->getSourceImmediate()));
-        if (instr->getOpCodeValue() == TR::InstOpCode::adrp) {
+        if (instr->getOpCodeValue() == OP::adrp) {
             offset *= 4096;
         }
         print(log, instr->getTargetRegister(), TR_DoubleWordReg);
         log->printf(", " POINTER_PRINTF_FORMAT, (instr->getBinaryEncoding() + offset));
-    } else if (op == TR::InstOpCode::fmovimms || op == TR::InstOpCode::fmovimmd || op == TR::InstOpCode::vfmov4s
-        || op == TR::InstOpCode::vfmov2d) {
+    } else if (op == OP::fmovimms || op == OP::fmovimmd || op == OP::vfmov4s || op == OP::vfmov2d) {
         uint32_t imm = instr->getSourceImmediate() & 0xFF;
         TR_RegisterSizes regSize = TR_VectorReg128; // for vfmov4s and vfmov2d
-        if (op == TR::InstOpCode::fmovimms) {
+        if (op == OP::fmovimms) {
             regSize = TR_FloatReg;
-        } else if (op == TR::InstOpCode::fmovimmd) {
+        } else if (op == OP::fmovimmd) {
             regSize = TR_DoubleReg;
         }
         print(log, instr->getTargetRegister(), regSize);
         log->printf(", 0x%02x (%lf)", imm, getDoubleFromImm8(imm));
-    } else if (op == TR::InstOpCode::movzx || op == TR::InstOpCode::movzw || op == TR::InstOpCode::movnx
-        || op == TR::InstOpCode::movnw || op == TR::InstOpCode::movkx || op == TR::InstOpCode::movkw) {
+    } else if (op == OP::movzx || op == OP::movzw || op == OP::movnx || op == OP::movnw || op == OP::movkx
+        || op == OP::movkw) {
         uint32_t imm = instr->getSourceImmediate() & 0xFFFF;
         uint32_t shift = (instr->getSourceImmediate() & 0x30000) >> 12;
-        uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+        uint32_t enc = OP::getOpCodeBinaryEncoding(op);
         uint32_t sf = getSFbit(enc);
         TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
         print(log, instr->getTargetRegister(), regSize);
@@ -1510,7 +1509,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ImmInstruction *instr)
         if (shift != 0) {
             log->printf(", LSL #%d", shift);
         }
-    } else if (op == TR::InstOpCode::vmovi2d) {
+    } else if (op == OP::vmovi2d) {
         uint8_t imm8 = instr->getSourceImmediate() & 0xFF;
         uint64_t imm = 0;
         for (int i = 0; i < 8; i++) {
@@ -1534,12 +1533,12 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ImmShiftedInstruction *instr
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
     print(log, instr->getTargetRegister(), TR_WordReg);
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
+    OP::Mnemonic op = instr->getOpCodeValue();
     uint32_t imm = instr->getSourceImmediate() & 0xFF;
     uint32_t shift = instr->getShiftAmount();
     log->printf(", 0x%02x", imm);
     if (shift != 0) {
-        if ((op == TR::InstOpCode::vmovi4s_one) || (op == TR::InstOpCode::vmvni4s_one)) {
+        if ((op == OP::vmovi4s_one) || (op == OP::vmvni4s_one)) {
             log->printf(", MSL #%d", shift);
         } else {
             log->printf(", LSL #%d", shift);
@@ -1565,11 +1564,11 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ImmSymInstruction *instr)
         }
     } else {
         int64_t offset = static_cast<int64_t>(static_cast<int32_t>(instr->getSourceImmediate()));
-        if ((instr->getOpCodeValue() != TR::InstOpCode::adr) && (instr->getOpCodeValue() != TR::InstOpCode::adrp)) {
+        if ((instr->getOpCodeValue() != OP::adr) && (instr->getOpCodeValue() != OP::adrp)) {
             // ldr literal variants
             offset *= 4;
         }
-        if (instr->getOpCodeValue() == TR::InstOpCode::adrp) {
+        if (instr->getOpCodeValue() == OP::adrp) {
             offset *= 4096;
         }
         log->printf(POINTER_PRINTF_FORMAT, (instr->getBinaryEncoding() + offset));
@@ -1581,25 +1580,25 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ImmSymInstruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1Instruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    if (op >= TR::InstOpCode::fcvt_stod && op <= TR::InstOpCode::scvtf_xtod) {
+    if (op >= OP::fcvt_stod && op <= OP::scvtf_xtod) {
         TR_RegisterSizes regSize1 = TR_UnknownSizeReg; // trg register size
         TR_RegisterSizes regSize2 = TR_UnknownSizeReg; // src register size
         uint32_t sf = getSFbit(enc);
         uint32_t ftype = getFType(enc);
-        if (op == TR::InstOpCode::fcvt_stod) {
+        if (op == OP::fcvt_stod) {
             regSize1 = TR_DoubleReg;
             regSize2 = TR_FloatReg;
-        } else if (op == TR::InstOpCode::fcvt_dtos) {
+        } else if (op == OP::fcvt_dtos) {
             regSize1 = TR_FloatReg;
             regSize2 = TR_DoubleReg;
-        } else if (op >= TR::InstOpCode::fcvtzs_stow && op <= TR::InstOpCode::fcvtzs_dtox) {
+        } else if (op >= OP::fcvtzs_stow && op <= OP::fcvtzs_dtox) {
             regSize1 = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
             regSize2 = getRegisterSizeFromFType(ftype);
-        } else if (op >= TR::InstOpCode::scvtf_wtos && op <= TR::InstOpCode::scvtf_xtod) {
+        } else if (op >= OP::scvtf_wtos && op <= OP::scvtf_xtod) {
             regSize1 = getRegisterSizeFromFType(ftype);
             regSize2 = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
         }
@@ -1620,7 +1619,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1Instruction *instr)
         log->prints(", ");
         print(log, instr->getSource1Register(), regSize);
 
-        if (op >= TR::InstOpCode::vshll_8h && op <= TR::InstOpCode::vshll2_2d) {
+        if (op >= OP::vshll_8h && op <= OP::vshll2_2d) {
             uint32_t size = (enc >> 22) & 0x3; /* bits 22-23 */
             uint32_t shiftAmount = 8 << size;
             log->printf(", %d", shiftAmount);
@@ -1633,19 +1632,19 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1Instruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ZeroSrc1Instruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     char suffix = (sf == 1) ? 'x' : 'w';
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
 
-    if (op == TR::InstOpCode::orrx || op == TR::InstOpCode::orrw) {
+    if (op == OP::orrx || op == OP::orrw) {
         // mov alias
         log->printf("mov%c \t", suffix);
-    } else if (op == TR::InstOpCode::ornx || op == TR::InstOpCode::ornw) {
+    } else if (op == OP::ornx || op == OP::ornw) {
         // mvn alias
         log->printf("mvn%c \t", suffix);
-    } else if (op == TR::InstOpCode::subx || op == TR::InstOpCode::subw) {
+    } else if (op == OP::subx || op == OP::subw) {
         // neg alias
         log->printf("neg%c \t", suffix);
     } else {
@@ -1661,29 +1660,28 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ZeroSrc1Instruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
     bool done = false;
-    if (op == TR::InstOpCode::subsimmx || op == TR::InstOpCode::subsimmw || op == TR::InstOpCode::addsimmx
-        || op == TR::InstOpCode::addsimmw) {
+    if (op == OP::subsimmx || op == OP::subsimmw || op == OP::addsimmx || op == OP::addsimmw) {
         done = true;
         TR::Register *r = instr->getTargetRegister();
         if (r && r->getRealRegister() && toRealRegister(r)->getRegisterNumber() == TR::RealRegister::xzr) {
             // cmp/cmn alias
             char *mnemonic = NULL;
             switch (op) {
-                case TR::InstOpCode::subsimmx:
+                case OP::subsimmx:
                     mnemonic = "cmpimmx";
                     break;
-                case TR::InstOpCode::subsimmw:
+                case OP::subsimmw:
                     mnemonic = "cmpimmw";
                     break;
-                case TR::InstOpCode::addsimmx:
+                case OP::addsimmx:
                     mnemonic = "cmnimmx";
                     break;
-                case TR::InstOpCode::addsimmw:
+                case OP::addsimmw:
                     mnemonic = "cmnimmw";
                     break;
                 default:
@@ -1703,8 +1701,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
         if (instr->getNbit()) {
             log->printf(", LSL #%d", 12);
         }
-    } else if ((op == TR::InstOpCode::subimmx || op == TR::InstOpCode::subimmw || op == TR::InstOpCode::addimmx
-                   || op == TR::InstOpCode::addimmw)) {
+    } else if ((op == OP::subimmx || op == OP::subimmw || op == OP::addimmx || op == OP::addimmw)) {
         done = true;
         log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
         print(log, instr->getTargetRegister(), regSize);
@@ -1714,11 +1711,11 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
         if (instr->getNbit()) {
             log->printf(", LSL #%d", 12);
         }
-    } else if (op == TR::InstOpCode::sbfmx || op == TR::InstOpCode::sbfmw) {
+    } else if (op == OP::sbfmx || op == OP::sbfmw) {
         uint32_t imm12 = instr->getSourceImmediate();
         auto immr = imm12 >> 6;
         auto imms = imm12 & 0x3f;
-        if (op == TR::InstOpCode::sbfmx) {
+        if (op == OP::sbfmx) {
             if (imms == 63) {
                 // asr alias
                 done = true;
@@ -1735,7 +1732,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
                 log->prints(", ");
                 print(log, instr->getSource1Register(), regSize);
             }
-        } else if ((op == TR::InstOpCode::sbfmw) && ((immr & (1 << 6)) == 0) && ((imms & (1 << 6)) == 0)) {
+        } else if ((op == OP::sbfmw) && ((immr & (1 << 6)) == 0) && ((imms & (1 << 6)) == 0)) {
             if (imms == 31) {
                 // asr alias
                 done = true;
@@ -1761,11 +1758,11 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
             print(log, instr->getSource1Register(), regSize);
             log->printf(", %d, %d", immr, imms);
         }
-    } else if (op == TR::InstOpCode::ubfmx || op == TR::InstOpCode::ubfmw) {
+    } else if (op == OP::ubfmx || op == OP::ubfmw) {
         uint32_t imm12 = instr->getSourceImmediate();
         auto immr = imm12 >> 6;
         auto imms = imm12 & 0x3f;
-        if (op == TR::InstOpCode::ubfmx) {
+        if (op == OP::ubfmx) {
             if (imms == 63) {
                 // lsr alias
                 done = true;
@@ -1799,7 +1796,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
                 print(log, instr->getSource1Register(), regSize);
                 log->printf(", %d, %d", immr, imms + 1 - immr);
             }
-        } else if ((op == TR::InstOpCode::ubfmw) && ((immr & (1 << 6)) == 0) && ((imms & (1 << 6)) == 0)) {
+        } else if ((op == OP::ubfmw) && ((immr & (1 << 6)) == 0) && ((imms & (1 << 6)) == 0)) {
             if (imms == 31) {
                 // lsr alias
                 done = true;
@@ -1849,11 +1846,11 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
             print(log, instr->getSource1Register(), regSize);
             log->printf(", %d, %d", immr, imms);
         }
-    } else if (op == TR::InstOpCode::bfmx || op == TR::InstOpCode::bfmw) {
+    } else if (op == OP::bfmx || op == OP::bfmw) {
         uint32_t imm12 = instr->getSourceImmediate();
         auto immr = imm12 >> 6;
         auto imms = imm12 & 0x3f;
-        if ((op == TR::InstOpCode::bfmx) || (((immr & (1 << 6)) == 0) && ((imms & (1 << 6)) == 0))) {
+        if ((op == OP::bfmx) || (((immr & (1 << 6)) == 0) && ((imms & (1 << 6)) == 0))) {
             char suffix = (sf == 1) ? 'x' : 'w';
             if (imms < immr) {
                 // bfi alias
@@ -1881,15 +1878,13 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
             print(log, instr->getSource1Register(), regSize);
             log->printf(", %d, %d", immr, imms);
         }
-    } else if (op == TR::InstOpCode::andimmx || op == TR::InstOpCode::andimmw || op == TR::InstOpCode::andsimmx
-        || op == TR::InstOpCode::andsimmw || op == TR::InstOpCode::orrimmx || op == TR::InstOpCode::orrimmw
-        || op == TR::InstOpCode::eorimmx || op == TR::InstOpCode::eorimmw) {
+    } else if (op == OP::andimmx || op == OP::andimmw || op == OP::andsimmx || op == OP::andsimmw || op == OP::orrimmx
+        || op == OP::orrimmw || op == OP::eorimmx || op == OP::eorimmw) {
         uint32_t imm12 = instr->getSourceImmediate();
         auto immr = imm12 >> 6;
         auto imms = imm12 & 0x3f;
         auto n = instr->getNbit();
-        if (op == TR::InstOpCode::andimmx || op == TR::InstOpCode::andsimmx || op == TR::InstOpCode::orrimmx
-            || op == TR::InstOpCode::eorimmx) {
+        if (op == OP::andimmx || op == OP::andsimmx || op == OP::orrimmx || op == OP::eorimmx) {
             uint64_t immediate;
             if (decodeBitMasks(n, immr, imms, immediate)) {
                 done = true;
@@ -1910,9 +1905,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
                 log->printf(", 0x%lx", immediate);
             }
         }
-    } else if ((op >= TR::InstOpCode::vshl16b) && (op <= TR::InstOpCode::vsri2d)) {
+    } else if ((op >= OP::vshl16b) && (op <= OP::vsri2d)) {
         done = true;
-        bool isShiftLeft = (op <= TR::InstOpCode::vsli2d);
+        bool isShiftLeft = (op <= OP::vsli2d);
         uint32_t immh = (enc >> 19) & 0xf; /* bits 19-22 */
         uint32_t elementSize = 8 << (31 - leadingZeroes(immh));
         uint32_t imm = instr->getSourceImmediate();
@@ -1922,17 +1917,15 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
         log->prints(", ");
         print(log, instr->getSource1Register(), TR_VectorReg128);
         log->printf(", %d", shiftAmount);
-    } else if ((op >= TR::InstOpCode::vdupe16b) && (op <= TR::InstOpCode::umovxd)) {
+    } else if ((op >= OP::vdupe16b) && (op <= OP::umovxd)) {
         done = true;
-        const uint32_t elementSizeShift = (op <= TR::InstOpCode::vdupe2d)
-            ? (op - TR::InstOpCode::vdupe16b)
-            : ((op <= TR::InstOpCode::smovwh) ? (op - TR::InstOpCode::smovwb)
-                                              : ((op <= TR::InstOpCode::smovxh) ? (op - TR::InstOpCode::smovxb)
-                                                                                : (op - TR::InstOpCode::umovwb)));
+        const uint32_t elementSizeShift = (op <= OP::vdupe2d)
+            ? (op - OP::vdupe16b)
+            : ((op <= OP::smovwh) ? (op - OP::smovwb) : ((op <= OP::smovxh) ? (op - OP::smovxb) : (op - OP::umovwb)));
 
         const uint32_t imm5 = instr->getSourceImmediate() & 0x1f;
         const uint32_t index = imm5 >> (elementSizeShift + 1);
-        if (op <= TR::InstOpCode::vdupe2d) {
+        if (op <= OP::vdupe2d) {
             regSize = TR_VectorReg128;
         } else {
             // SMOV or UMOV
@@ -1943,9 +1936,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
         log->prints(", ");
         print(log, instr->getSource1Register(), TR_VectorReg128);
         log->printf(".[%d]", index);
-    } else if ((op >= TR::InstOpCode::vinswb) && (op <= TR::InstOpCode::vinsxd)) {
+    } else if ((op >= OP::vinswb) && (op <= OP::vinsxd)) {
         done = true;
-        const uint32_t elementSizeShift = op - TR::InstOpCode::vinswb;
+        const uint32_t elementSizeShift = op - OP::vinswb;
         const uint32_t imm5 = instr->getSourceImmediate() & 0x1f;
         const uint32_t index = imm5 >> (elementSizeShift + 1);
 
@@ -1954,9 +1947,9 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
         log->printf(".[%d]", index);
         log->prints(", ");
         print(log, instr->getSource1Register(), ((imm5 % 8) == 0) ? TR_DoubleWordReg : TR_WordReg);
-    } else if ((op >= TR::InstOpCode::vinseb) && (op <= TR::InstOpCode::vinsed)) {
+    } else if ((op >= OP::vinseb) && (op <= OP::vinsed)) {
         done = true;
-        const uint32_t elementSizeShift = op - TR::InstOpCode::vinseb;
+        const uint32_t elementSizeShift = op - OP::vinseb;
         const uint32_t imm5 = (instr->getSourceImmediate() >> 5) & 0x1f;
         const uint32_t imm4 = instr->getSourceImmediate() & 0xf;
         const uint32_t dstIndex = imm5 >> (elementSizeShift + 1);
@@ -1987,15 +1980,15 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src1ImmInstruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ZeroImmInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
+    OP::Mnemonic op = instr->getOpCodeValue();
     bool done = false;
-    if (op == TR::InstOpCode::orrimmx || op == TR::InstOpCode::orrimmw) {
+    if (op == OP::orrimmx || op == OP::orrimmw) {
         // mov (bitmask immediate) alias
         uint32_t imm12 = instr->getSourceImmediate();
         auto immr = imm12 >> 6;
         auto imms = imm12 & 0x3f;
         auto n = instr->getNbit();
-        if (op == TR::InstOpCode::orrimmx) {
+        if (op == OP::orrimmx) {
             uint64_t immediate;
             if (decodeBitMasks(n, immr, imms, immediate)) {
                 done = true;
@@ -2028,13 +2021,13 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1ZeroImmInstruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64ZeroSrc1ImmInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     char suffix = (sf == 1) ? 'x' : 'w';
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
     bool done = false;
-    if (op == TR::InstOpCode::subsimmx || op == TR::InstOpCode::subsimmw) {
+    if (op == OP::subsimmx || op == OP::subsimmw) {
         // cmp alias
         done = true;
         log->printf("cmpimm%c \t", suffix);
@@ -2043,7 +2036,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64ZeroSrc1ImmInstruction *instr)
         if (instr->getNbit()) {
             log->printf(", LSL #%d", 12);
         }
-    } else if (op == TR::InstOpCode::addsimmx || op == TR::InstOpCode::addsimmw) {
+    } else if (op == OP::addsimmx || op == OP::addsimmw) {
         // cmn alias
         done = true;
         log->printf("cmnimm%c \t", suffix);
@@ -2052,13 +2045,13 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64ZeroSrc1ImmInstruction *instr)
         if (instr->getNbit()) {
             log->printf(", LSL #%d", 12);
         }
-    } else if (op == TR::InstOpCode::andsimmx || op == TR::InstOpCode::andsimmw) {
+    } else if (op == OP::andsimmx || op == OP::andsimmw) {
         // tst alias
         uint32_t imm12 = instr->getSourceImmediate();
         auto immr = imm12 >> 6;
         auto imms = imm12 & 0x3f;
         auto n = instr->getNbit();
-        if (op == TR::InstOpCode::andsimmx) {
+        if (op == OP::andsimmx) {
             uint64_t immediate;
             if (decodeBitMasks(n, immr, imms, immediate)) {
                 done = true;
@@ -2089,8 +2082,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64ZeroSrc1ImmInstruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2Instruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     TR_RegisterSizes regSize = TR_UnknownSizeReg;
     uint32_t sf = getSFbit(enc);
     if (useGPR(enc)) {
@@ -2100,7 +2093,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2Instruction *instr)
     }
 
     bool done = false;
-    if (op == TR::InstOpCode::orrx || op == TR::InstOpCode::orrw) {
+    if (op == OP::orrx || op == OP::orrw) {
         TR::Register *r = instr->getSource1Register();
         if (r && r->getRealRegister() && toRealRegister(r)->getRegisterNumber() == TR::RealRegister::xzr) {
             // mov alias
@@ -2111,7 +2104,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2Instruction *instr)
             log->prints(", ");
             print(log, instr->getSource2Register(), regSize);
         }
-    } else if (op == TR::InstOpCode::subsx || op == TR::InstOpCode::subsw) {
+    } else if (op == OP::subsx || op == OP::subsw) {
         TR::Register *r = instr->getTargetRegister();
         if (r && r->getRealRegister() && toRealRegister(r)->getRegisterNumber() == TR::RealRegister::xzr) {
             // cmp alias
@@ -2142,18 +2135,18 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2Instruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64ZeroSrc2Instruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     char suffix = (sf == 1) ? 'x' : 'w';
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
-    if (op == TR::InstOpCode::subsx || op == TR::InstOpCode::subsw) {
+    if (op == OP::subsx || op == OP::subsw) {
         // cmp alias
         log->printf("cmp%c \t", suffix);
-    } else if (op == TR::InstOpCode::addsx || op == TR::InstOpCode::addsw) {
+    } else if (op == OP::addsx || op == OP::addsw) {
         // cmn alias
         log->printf("cmn%c \t", suffix);
-    } else if (op == TR::InstOpCode::andsx || op == TR::InstOpCode::andsw) {
+    } else if (op == OP::andsx || op == OP::andsw) {
         // tst alias
         log->printf("tst%c \t", suffix);
     } else {
@@ -2195,32 +2188,32 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Src2CondInstruction *instr)
     log->flush();
 }
 
-static const char *getBarrierLimitationName(TR::InstOpCode::AArch64BarrierLimitation lim)
+static const char *getBarrierLimitationName(OP::AArch64BarrierLimitation lim)
 {
     switch (lim) {
-        case TR::InstOpCode::sy:
+        case OP::sy:
             return "sy";
-        case TR::InstOpCode::st:
+        case OP::st:
             return "st";
-        case TR::InstOpCode::ld:
+        case OP::ld:
             return "ld";
-        case TR::InstOpCode::ish:
+        case OP::ish:
             return "ish";
-        case TR::InstOpCode::ishst:
+        case OP::ishst:
             return "ishst";
-        case TR::InstOpCode::ishld:
+        case OP::ishld:
             return "ishld";
-        case TR::InstOpCode::nsh:
+        case OP::nsh:
             return "nsh";
-        case TR::InstOpCode::nshst:
+        case OP::nshst:
             return "nshst";
-        case TR::InstOpCode::nshld:
+        case OP::nshld:
             return "nshld";
-        case TR::InstOpCode::osh:
+        case OP::osh:
             return "osh";
-        case TR::InstOpCode::oshst:
+        case OP::oshst:
             return "oshst";
-        case TR::InstOpCode::oshld:
+        case OP::oshld:
             return "oshld";
 
         default:
@@ -2231,8 +2224,7 @@ static const char *getBarrierLimitationName(TR::InstOpCode::AArch64BarrierLimita
 void TR_Debug::print(OMR::Logger *log, TR::ARM64SynchronizationInstruction *instr)
 {
     printPrefix(log, instr);
-    const char *lim
-        = getBarrierLimitationName(static_cast<TR::InstOpCode::AArch64BarrierLimitation>(instr->getSourceImmediate()));
+    const char *lim = getBarrierLimitationName(static_cast<OP::AArch64BarrierLimitation>(instr->getSourceImmediate()));
     log->printf("%s \t%s", getOpCodeName(&instr->getOpCode()), lim);
     log->flush();
 }
@@ -2242,11 +2234,11 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64CondTrg1Src2Instruction *instr)
     printPrefix(log, instr);
     TR::Register *r1 = instr->getSource1Register();
     TR::Register *r2 = instr->getSource2Register();
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
-    if ((r1 == r2) && ((op == TR::InstOpCode::csincx) || (op == TR::InstOpCode::csincw))) {
+    if ((r1 == r2) && ((op == OP::csincx) || (op == OP::csincw))) {
         log->printf("cinc%c \t", (sf == 1) ? 'x' : 'w');
         print(log, instr->getTargetRegister(), regSize);
         log->prints(", ");
@@ -2287,14 +2279,13 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2ImmInstruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2ShiftedInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
-    if ((op == TR::InstOpCode::extrw || op == TR::InstOpCode::extrx)
-        && (instr->getSource1Register() == instr->getSource2Register())) {
+    if ((op == OP::extrw || op == OP::extrx) && (instr->getSource1Register() == instr->getSource2Register())) {
         // ror alias
-        log->printf("ror%c \t", (op == TR::InstOpCode::extrx) ? 'x' : 'w');
+        log->printf("ror%c \t", (op == OP::extrx) ? 'x' : 'w');
         print(log, instr->getTargetRegister(), regSize);
         log->prints(", ");
         print(log, instr->getSource1Register(), regSize);
@@ -2316,8 +2307,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2ShiftedInstruction *inst
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2ExtendedInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
@@ -2349,11 +2340,11 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2IndexedElementInstructio
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2ZeroInstruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t sf = getSFbit(enc);
     TR_RegisterSizes regSize = (sf == 1) ? TR_DoubleWordReg : TR_WordReg;
-    if (op == TR::InstOpCode::maddx || op == TR::InstOpCode::maddw) {
+    if (op == OP::maddx || op == OP::maddw) {
         // mul alias
         log->printf("mul%c \t", (sf == 1) ? 'x' : 'w');
     } else {
@@ -2370,8 +2361,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src2ZeroInstruction *instr)
 void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1Src3Instruction *instr)
 {
     printPrefix(log, instr);
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     TR_RegisterSizes regSize = TR_UnknownSizeReg;
     if (useGPR(enc)) {
         uint32_t sf = getSFbit(enc);
@@ -2399,8 +2390,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg1MemInstruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t vr = getVRbit(enc);
     uint32_t size = getLoadStoreSize(enc);
     TR_RegisterSizes regSize = TR_UnknownSizeReg;
@@ -2445,8 +2436,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Trg2MemInstruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t vr = getVRbit(enc);
     uint32_t opc = (enc >> 30); /* bits 30-31 */
     TR_RegisterSizes regSize = TR_UnknownSizeReg;
@@ -2498,10 +2489,10 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64MemInstruction *instr)
 
 void TR_Debug::print(OMR::Logger *log, TR::ARM64MemImmInstruction *instr)
 {
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
+    OP::Mnemonic op = instr->getOpCodeValue();
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
-    if ((op == TR::InstOpCode::prfmoff || op == TR::InstOpCode::prfmimm)) {
+    if ((op == OP::prfmoff || op == OP::prfmimm)) {
         uint32_t immediate = instr->getImmediate();
         uint32_t typeValue = (immediate >> 3) & 0x3;
         uint32_t targetValue = (immediate >> 1) & 0x3;
@@ -2530,8 +2521,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64MemSrc1Instruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t vr = getVRbit(enc);
     uint32_t size = getLoadStoreSize(enc);
     TR_RegisterSizes regSize = TR_UnknownSizeReg;
@@ -2567,8 +2558,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64MemSrc2Instruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     uint32_t vr = getVRbit(enc);
     uint32_t opc = (enc >> 30); /* bits 30-31 */
     TR_RegisterSizes regSize = TR_UnknownSizeReg;
@@ -2627,8 +2618,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Src1Instruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     TR_RegisterSizes regSize = getRegisterSizeFromFType(getFType(enc));
 
     print(log, instr->getSource1Register(), regSize);
@@ -2640,8 +2631,8 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64Src2Instruction *instr)
     printPrefix(log, instr);
     log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
 
-    TR::InstOpCode::Mnemonic op = instr->getOpCodeValue();
-    uint32_t enc = TR::InstOpCode::getOpCodeBinaryEncoding(op);
+    OP::Mnemonic op = instr->getOpCodeValue();
+    uint32_t enc = OP::getOpCodeBinaryEncoding(op);
     TR_RegisterSizes regSize = getRegisterSizeFromFType(getFType(enc));
 
     print(log, instr->getSource1Register(), regSize);

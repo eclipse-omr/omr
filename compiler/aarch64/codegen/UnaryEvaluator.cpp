@@ -121,16 +121,16 @@ TR::Register *OMR::ARM64::TreeEvaluator::lnegEvaluator(TR::Node *node, TR::CodeG
     return trgReg;
 }
 
-TR::Register *OMR::ARM64::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::CodeGenerator *cg,
-    TR::InstOpCode::Mnemonic op, unaryEvaluatorHelper evaluatorHelper)
+TR::Register *OMR::ARM64::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::CodeGenerator *cg, OP::Mnemonic op,
+    unaryEvaluatorHelper evaluatorHelper)
 {
     TR::Node *firstChild = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(firstChild);
     TR::Register *resReg = cg->allocateRegister(TR_VRF);
 
     node->setRegister(resReg);
-    TR_ASSERT_FATAL_WITH_NODE(node, (op != TR::InstOpCode::bad) || (evaluatorHelper != NULL),
-        "If op is TR::InstOpCode::bad, evaluatorHelper must not be NULL");
+    TR_ASSERT_FATAL_WITH_NODE(node, (op != OP::bad) || (evaluatorHelper != NULL),
+        "If op is OP::bad, evaluatorHelper must not be NULL");
     if (evaluatorHelper != NULL) {
         (*evaluatorHelper)(node, resReg, srcReg, cg);
     } else {
@@ -142,29 +142,29 @@ TR::Register *OMR::ARM64::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR:
 
 TR::Register *OMR::ARM64::TreeEvaluator::vnegEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    TR::InstOpCode::Mnemonic negOp;
+    OP::Mnemonic negOp;
 
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
 
     switch (node->getDataType().getVectorElementType()) {
         case TR::Int8:
-            negOp = TR::InstOpCode::vneg16b;
+            negOp = OP::vneg16b;
             break;
         case TR::Int16:
-            negOp = TR::InstOpCode::vneg8h;
+            negOp = OP::vneg8h;
             break;
         case TR::Int32:
-            negOp = TR::InstOpCode::vneg4s;
+            negOp = OP::vneg4s;
             break;
         case TR::Int64:
-            negOp = TR::InstOpCode::vneg2d;
+            negOp = OP::vneg2d;
             break;
         case TR::Float:
-            negOp = TR::InstOpCode::vfneg4s;
+            negOp = OP::vfneg4s;
             break;
         case TR::Double:
-            negOp = TR::InstOpCode::vfneg2d;
+            negOp = OP::vfneg2d;
             break;
         default:
             TR_ASSERT(false, "unrecognized vector type %s", node->getDataType().toString());
@@ -175,7 +175,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::vnegEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *OMR::ARM64::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    TR::InstOpCode::Mnemonic notOp;
+    OP::Mnemonic notOp;
 
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
@@ -185,7 +185,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeG
         case TR::Int16:
         case TR::Int32:
         case TR::Int64:
-            notOp = TR::InstOpCode::vnot16b;
+            notOp = OP::vnot16b;
             break;
         default:
             TR_ASSERT(false, "unrecognized vector type %s", node->getDataType().toString());
@@ -198,26 +198,26 @@ TR::Register *OMR::ARM64::TreeEvaluator::vabsEvaluator(TR::Node *node, TR::CodeG
 {
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
-    TR::InstOpCode::Mnemonic absOp;
+    OP::Mnemonic absOp;
 
     switch (node->getDataType().getVectorElementType()) {
         case TR::Int8:
-            absOp = TR::InstOpCode::vabs16b;
+            absOp = OP::vabs16b;
             break;
         case TR::Int16:
-            absOp = TR::InstOpCode::vabs8h;
+            absOp = OP::vabs8h;
             break;
         case TR::Int32:
-            absOp = TR::InstOpCode::vabs4s;
+            absOp = OP::vabs4s;
             break;
         case TR::Int64:
-            absOp = TR::InstOpCode::vabs2d;
+            absOp = OP::vabs2d;
             break;
         case TR::Float:
-            absOp = TR::InstOpCode::vfabs4s;
+            absOp = OP::vfabs4s;
             break;
         case TR::Double:
-            absOp = TR::InstOpCode::vfabs2d;
+            absOp = OP::vfabs2d;
             break;
         default:
             TR_ASSERT_FATAL(false, "unrecognized vector type %s", node->getDataType().toString());
@@ -230,14 +230,14 @@ TR::Register *OMR::ARM64::TreeEvaluator::vsqrtEvaluator(TR::Node *node, TR::Code
 {
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
-    TR::InstOpCode::Mnemonic sqrtOp;
+    OP::Mnemonic sqrtOp;
 
     switch (node->getDataType().getVectorElementType()) {
         case TR::Float:
-            sqrtOp = TR::InstOpCode::vfsqrt4s;
+            sqrtOp = OP::vfsqrt4s;
             break;
         case TR::Double:
-            sqrtOp = TR::InstOpCode::vfsqrt2d;
+            sqrtOp = OP::vfsqrt2d;
             break;
         default:
             TR_ASSERT_FATAL(false, "unrecognized vector type %s", node->getDataType().toString());
@@ -253,8 +253,8 @@ static TR::Register *commonIntegerAbsEvaluator(TR::Node *node, TR::CodeGenerator
     TR::Register *tempReg = cg->allocateRegister();
 
     bool is64bit = node->getDataType().isInt64();
-    TR::InstOpCode::Mnemonic eorOp = is64bit ? TR::InstOpCode::eorx : TR::InstOpCode::eorw;
-    TR::InstOpCode::Mnemonic subOp = is64bit ? TR::InstOpCode::subx : TR::InstOpCode::subw;
+    OP::Mnemonic eorOp = is64bit ? OP::eorx : OP::eorw;
+    OP::Mnemonic subOp = is64bit ? OP::subx : OP::subw;
 
     generateArithmeticShiftRightImmInstruction(cg, node, tempReg, reg, is64bit ? 63 : 31, is64bit);
     generateTrg1Src2Instruction(cg, eorOp, node, reg, reg, tempReg);
@@ -276,7 +276,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::labsEvaluator(TR::Node *node, TR::CodeG
     return commonIntegerAbsEvaluator(node, cg);
 }
 
-static TR::Register *commonUnaryHelper(TR::Node *node, TR::InstOpCode::Mnemonic op, TR::CodeGenerator *cg)
+static TR::Register *commonUnaryHelper(TR::Node *node, OP::Mnemonic op, TR::CodeGenerator *cg)
 {
     TR::Node *child = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(child);
@@ -290,19 +290,19 @@ static TR::Register *commonUnaryHelper(TR::Node *node, TR::InstOpCode::Mnemonic 
 
 TR::Register *OMR::ARM64::TreeEvaluator::sbyteswapEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    TR::Register *trgReg = commonUnaryHelper(node, TR::InstOpCode::rev16w, cg);
-    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, trgReg, 15); // sign extension
+    TR::Register *trgReg = commonUnaryHelper(node, OP::rev16w, cg);
+    generateTrg1Src1ImmInstruction(cg, OP::sbfmw, node, trgReg, trgReg, 15); // sign extension
     return trgReg;
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::ibyteswapEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonUnaryHelper(node, TR::InstOpCode::revw, cg);
+    return commonUnaryHelper(node, OP::revw, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::lbyteswapEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonUnaryHelper(node, TR::InstOpCode::revx, cg);
+    return commonUnaryHelper(node, OP::revx, cg);
 }
 
 /*
@@ -314,21 +314,21 @@ static TR::Register *hbitHelper(TR::Node *node, bool is64bit, TR::CodeGenerator 
     TR::Register *srcReg = cg->evaluate(child);
     TR::Register *trgReg = cg->allocateRegister();
     TR::Register *tmpReg = cg->allocateRegister();
-    TR::InstOpCode::Mnemonic op;
+    OP::Mnemonic op;
 
-    op = is64bit ? TR::InstOpCode::clzx : TR::InstOpCode::clzw;
+    op = is64bit ? OP::clzx : OP::clzw;
     generateTrg1Src1Instruction(cg, op, node, tmpReg, srcReg);
     generateCompareImmInstruction(cg, node, srcReg, 0, is64bit);
     if (is64bit) {
         // mov trgReg, #0x80000000
-        generateTrg1ImmInstruction(cg, TR::InstOpCode::movzx, node, trgReg, 0x8000 | TR::MOV_LSL48);
+        generateTrg1ImmInstruction(cg, OP::movzx, node, trgReg, 0x8000 | TR::MOV_LSL48);
     } else {
         // mov trgReg, #0x8000000000000000
-        generateTrg1ImmInstruction(cg, TR::InstOpCode::movzw, node, trgReg, 0x8000 | TR::MOV_LSL16);
+        generateTrg1ImmInstruction(cg, OP::movzw, node, trgReg, 0x8000 | TR::MOV_LSL16);
     }
-    op = is64bit ? TR::InstOpCode::cselx : TR::InstOpCode::cselw;
+    op = is64bit ? OP::cselx : OP::cselw;
     generateCondTrg1Src2Instruction(cg, op, node, trgReg, trgReg, srcReg, TR::CC_NE);
-    op = is64bit ? TR::InstOpCode::lsrvx : TR::InstOpCode::lsrvw;
+    op = is64bit ? OP::lsrvx : OP::lsrvw;
     generateTrg1Src2Instruction(cg, op, node, trgReg, trgReg, tmpReg);
 
     cg->stopUsingRegister(tmpReg);
@@ -357,7 +357,7 @@ static TR::Register *lbitHelper(TR::Node *node, bool is64bit, TR::CodeGenerator 
     TR::Register *srcReg = cg->evaluate(child);
     TR::Register *trgReg = (child->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
     TR::Register *tmpReg = cg->allocateRegister();
-    TR::InstOpCode::Mnemonic op = is64bit ? TR::InstOpCode::andx : TR::InstOpCode::andw;
+    OP::Mnemonic op = is64bit ? OP::andx : OP::andw;
 
     // x & -x
     generateNegInstruction(cg, node, tmpReg, srcReg, is64bit);
@@ -385,12 +385,12 @@ TR::Register *OMR::ARM64::TreeEvaluator::llbitEvaluator(TR::Node *node, TR::Code
  */
 TR::Register *OMR::ARM64::TreeEvaluator::inolzEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonUnaryHelper(node, TR::InstOpCode::clzw, cg);
+    return commonUnaryHelper(node, OP::clzw, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::lnolzEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return commonUnaryHelper(node, TR::InstOpCode::clzx, cg);
+    return commonUnaryHelper(node, OP::clzx, cg);
 }
 
 /*
@@ -401,11 +401,11 @@ static TR::Register *notzHelper(TR::Node *node, bool is64bit, TR::CodeGenerator 
     TR::Node *child = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(child);
     TR::Register *trgReg = (child->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
-    TR::InstOpCode::Mnemonic op;
+    OP::Mnemonic op;
 
-    op = is64bit ? TR::InstOpCode::rbitx : TR::InstOpCode::rbitw;
+    op = is64bit ? OP::rbitx : OP::rbitw;
     generateTrg1Src1Instruction(cg, op, node, trgReg, srcReg);
-    op = is64bit ? TR::InstOpCode::clzx : TR::InstOpCode::clzw;
+    op = is64bit ? OP::clzx : OP::clzw;
     generateTrg1Src1Instruction(cg, op, node, trgReg, trgReg);
 
     node->setRegister(trgReg);
@@ -434,14 +434,14 @@ static TR::Register *popcntHelper(TR::Node *node, bool is64bit, TR::CodeGenerato
     TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
 
     if (is64bit) {
-        generateTrg1Src1Instruction(cg, TR::InstOpCode::fmov_xtod, node, tmpReg, srcReg);
+        generateTrg1Src1Instruction(cg, OP::fmov_xtod, node, tmpReg, srcReg);
     } else {
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::ubfmx, node, trgReg, srcReg, 31); // zero extension
-        generateTrg1Src1Instruction(cg, TR::InstOpCode::fmov_xtod, node, tmpReg, trgReg);
+        generateTrg1Src1ImmInstruction(cg, OP::ubfmx, node, trgReg, srcReg, 31); // zero extension
+        generateTrg1Src1Instruction(cg, OP::fmov_xtod, node, tmpReg, trgReg);
     }
-    generateTrg1Src1Instruction(cg, TR::InstOpCode::vcnt8b, node, tmpReg, tmpReg);
-    generateTrg1Src1Instruction(cg, TR::InstOpCode::vaddv8b, node, tmpReg, tmpReg);
-    generateMovVectorElementToGPRInstruction(cg, TR::InstOpCode::umovwb, node, trgReg, tmpReg, 0);
+    generateTrg1Src1Instruction(cg, OP::vcnt8b, node, tmpReg, tmpReg);
+    generateTrg1Src1Instruction(cg, OP::vaddv8b, node, tmpReg, tmpReg);
+    generateMovVectorElementToGPRInstruction(cg, OP::umovwb, node, trgReg, tmpReg, 0);
 
     cg->stopUsingRegister(tmpReg);
     node->setRegister(trgReg);
@@ -486,7 +486,7 @@ static TR::Register *x2iHelper(TR::Node *node, TR::CodeGenerator *cg, bool isB2i
         TR::Node *intChild = child->getFirstChild();
         srcReg = cg->evaluate(intChild);
         trgReg = (intChild->getReferenceCount() == 1) ? srcReg : cg->allocateRegister();
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, srcReg, sbfmBit);
+        generateTrg1Src1ImmInstruction(cg, OP::sbfmw, node, trgReg, srcReg, sbfmBit);
         node->setRegister(trgReg);
         cg->decReferenceCount(intChild);
         cg->decReferenceCount(child);
@@ -499,7 +499,7 @@ static TR::Register *x2iHelper(TR::Node *node, TR::CodeGenerator *cg, bool isB2i
                 generateMovInstruction(cg, node, trgReg, srcReg);
             }
         } else {
-            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmw, node, trgReg, srcReg, sbfmBit);
+            generateTrg1Src1ImmInstruction(cg, OP::sbfmw, node, trgReg, srcReg, sbfmBit);
         }
         node->setRegister(trgReg);
         cg->decReferenceCount(child);
@@ -517,8 +517,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::s2iEvaluator(TR::Node *node, TR::CodeGe
     return x2iHelper(node, cg, false);
 }
 
-static TR::Register *extendToIntOrLongHelper(TR::Node *node, TR::InstOpCode::Mnemonic op, uint32_t imms,
-    TR::CodeGenerator *cg)
+static TR::Register *extendToIntOrLongHelper(TR::Node *node, OP::Mnemonic op, uint32_t imms, TR::CodeGenerator *cg)
 {
     TR::Node *child = node->getFirstChild();
     TR::Register *srcReg = cg->evaluate(child);
@@ -536,17 +535,17 @@ static TR::Register *extendToIntOrLongHelper(TR::Node *node, TR::InstOpCode::Mne
 
 TR::Register *OMR::ARM64::TreeEvaluator::b2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return extendToIntOrLongHelper(node, TR::InstOpCode::sbfmx, 7, cg);
+    return extendToIntOrLongHelper(node, OP::sbfmx, 7, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::s2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return extendToIntOrLongHelper(node, TR::InstOpCode::sbfmx, 15, cg);
+    return extendToIntOrLongHelper(node, OP::sbfmx, 15, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::i2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return extendToIntOrLongHelper(node, TR::InstOpCode::sbfmx, 31, cg);
+    return extendToIntOrLongHelper(node, OP::sbfmx, 31, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::bu2iEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -557,12 +556,12 @@ TR::Register *OMR::ARM64::TreeEvaluator::bu2iEvaluator(TR::Node *node, TR::CodeG
         && (child->getOpCodeValue() == TR::bload || child->getOpCodeValue() == TR::bloadi)
         && child->getRegister() == NULL) {
         // Use unsigned load
-        TR::Register *trgReg = commonLoadEvaluator(child, TR::InstOpCode::ldrbimm, 1, cg);
+        TR::Register *trgReg = commonLoadEvaluator(child, OP::ldrbimm, 1, cg);
         node->setRegister(trgReg);
         cg->decReferenceCount(child);
         return trgReg;
     } else {
-        return extendToIntOrLongHelper(node, TR::InstOpCode::ubfmw, 7, cg);
+        return extendToIntOrLongHelper(node, OP::ubfmw, 7, cg);
     }
 }
 
@@ -574,23 +573,23 @@ TR::Register *OMR::ARM64::TreeEvaluator::su2iEvaluator(TR::Node *node, TR::CodeG
         && (child->getOpCodeValue() == TR::sload || child->getOpCodeValue() == TR::sloadi)
         && child->getRegister() == NULL) {
         // Use unsigned load
-        TR::Register *trgReg = commonLoadEvaluator(child, TR::InstOpCode::ldrhimm, 2, cg);
+        TR::Register *trgReg = commonLoadEvaluator(child, OP::ldrhimm, 2, cg);
         node->setRegister(trgReg);
         cg->decReferenceCount(child);
         return trgReg;
     } else {
-        return extendToIntOrLongHelper(node, TR::InstOpCode::ubfmw, 15, cg);
+        return extendToIntOrLongHelper(node, OP::ubfmw, 15, cg);
     }
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::bu2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return extendToIntOrLongHelper(node, TR::InstOpCode::ubfmx, 7, cg);
+    return extendToIntOrLongHelper(node, OP::ubfmx, 7, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::su2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return extendToIntOrLongHelper(node, TR::InstOpCode::ubfmx, 15, cg);
+    return extendToIntOrLongHelper(node, OP::ubfmx, 15, cg);
 }
 
 TR::Register *OMR::ARM64::TreeEvaluator::iu2lEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -605,7 +604,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::iu2lEvaluator(TR::Node *node, TR::CodeG
             generateMovInstruction(cg, node, trgReg, srcReg);
         }
     } else {
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::ubfmx, node, trgReg, srcReg, 31);
+        generateTrg1Src1ImmInstruction(cg, OP::ubfmx, node, trgReg, srcReg, 31);
     }
     node->setRegister(trgReg);
     cg->decReferenceCount(child);

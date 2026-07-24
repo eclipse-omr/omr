@@ -179,7 +179,7 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uint32_t imm, TR::CodeGenerator *cg)
+    ARM64ImmInstruction(OP::Mnemonic op, TR::Node *node, uint32_t imm, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _sourceImmediate(imm)
     {}
@@ -192,8 +192,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uint32_t imm,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64ImmInstruction(OP::Mnemonic op, TR::Node *node, uint32_t imm, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _sourceImmediate(imm)
     {}
@@ -251,7 +251,7 @@ public:
      * @param[in] relocationKind : relocation kind
      * @param[in] cg : CodeGenerator
      */
-    ARM64RelocatableImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uintptr_t imm,
+    ARM64RelocatableImmInstruction(OP::Mnemonic op, TR::Node *node, uintptr_t imm,
         TR_ExternalRelocationTargetKind relocationKind, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _sourceImmediate(imm)
@@ -270,7 +270,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64RelocatableImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uintptr_t imm,
+    ARM64RelocatableImmInstruction(OP::Mnemonic op, TR::Node *node, uintptr_t imm,
         TR_ExternalRelocationTargetKind relocationKind, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _sourceImmediate(imm)
@@ -289,7 +289,7 @@ public:
      * @param[in] sr : symbol reference
      * @param[in] cg : CodeGenerator
      */
-    ARM64RelocatableImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uintptr_t imm,
+    ARM64RelocatableImmInstruction(OP::Mnemonic op, TR::Node *node, uintptr_t imm,
         TR_ExternalRelocationTargetKind relocationKind, TR::SymbolReference *sr, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _sourceImmediate(imm)
@@ -309,7 +309,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64RelocatableImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uintptr_t imm,
+    ARM64RelocatableImmInstruction(OP::Mnemonic op, TR::Node *node, uintptr_t imm,
         TR_ExternalRelocationTargetKind relocationKind, TR::SymbolReference *sr, TR::Instruction *precedingInstruction,
         TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
@@ -394,17 +394,16 @@ class ARM64ImmSymInstruction : public TR::Instruction {
     TR::Snippet *_snippet;
 
 public:
-    ARM64ImmSymInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uintptr_t imm,
-        TR::RegisterDependencyConditions *cond, TR::SymbolReference *sr, TR::Snippet *s, TR::CodeGenerator *cg)
+    ARM64ImmSymInstruction(OP::Mnemonic op, TR::Node *node, uintptr_t imm, TR::RegisterDependencyConditions *cond,
+        TR::SymbolReference *sr, TR::Snippet *s, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, cg)
         , _addrImmediate(imm)
         , _symbolReference(sr)
         , _snippet(s)
     {}
 
-    ARM64ImmSymInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uintptr_t imm,
-        TR::RegisterDependencyConditions *cond, TR::SymbolReference *sr, TR::Snippet *s,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64ImmSymInstruction(OP::Mnemonic op, TR::Node *node, uintptr_t imm, TR::RegisterDependencyConditions *cond,
+        TR::SymbolReference *sr, TR::Snippet *s, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, precedingInstruction, cg)
         , _addrImmediate(imm)
         , _symbolReference(sr)
@@ -487,11 +486,11 @@ public:
      * @param[in] sym : label symbol
      * @param[in] cg : CodeGenerator
      */
-    ARM64LabelInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::CodeGenerator *cg)
+    ARM64LabelInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _symbol(sym)
     {
-        if (sym != NULL && op == TR::InstOpCode::label)
+        if (sym != NULL && op == OP::label)
             sym->setInstruction(this);
     }
 
@@ -503,12 +502,12 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64LabelInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64LabelInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _symbol(sym)
     {
-        if (sym != NULL && op == TR::InstOpCode::label)
+        if (sym != NULL && op == OP::label)
             sym->setInstruction(this);
     }
 
@@ -520,12 +519,12 @@ public:
      * @param[in] cond : register dependency condition
      * @param[in] cg : CodeGenerator
      */
-    ARM64LabelInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
+    ARM64LabelInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, cg)
         , _symbol(sym)
     {
-        if (sym != NULL && op == TR::InstOpCode::label)
+        if (sym != NULL && op == OP::label)
             sym->setInstruction(this);
     }
 
@@ -538,12 +537,12 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64LabelInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64LabelInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, precedingInstruction, cg)
         , _symbol(sym)
     {
-        if (sym != NULL && op == TR::InstOpCode::label)
+        if (sym != NULL && op == OP::label)
             sym->setInstruction(this);
     }
 
@@ -620,8 +619,8 @@ public:
      * @param[in] cc : branch condition code
      * @param[in] cg : CodeGenerator
      */
-    ARM64ConditionalBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::ARM64ConditionCode cc, TR::CodeGenerator *cg)
+    ARM64ConditionalBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::ARM64ConditionCode cc,
+        TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cg)
         , _cc(cc)
         , _estimatedBinaryLocation(0)
@@ -636,8 +635,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ConditionalBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::ARM64ConditionCode cc, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64ConditionalBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::ARM64ConditionCode cc,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, precedingInstruction, cg)
         , _cc(cc)
         , _estimatedBinaryLocation(0)
@@ -652,8 +651,8 @@ public:
      * @param[in] cond : register dependency condition
      * @param[in] cg : CodeGenerator
      */
-    ARM64ConditionalBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
+    ARM64ConditionalBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::ARM64ConditionCode cc,
+        TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cond, cg)
         , _cc(cc)
         , _estimatedBinaryLocation(0)
@@ -669,9 +668,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ConditionalBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-        TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction,
-        TR::CodeGenerator *cg)
+    ARM64ConditionalBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym, TR::ARM64ConditionCode cc,
+        TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cond, precedingInstruction, cg)
         , _cc(cc)
         , _estimatedBinaryLocation(0)
@@ -753,7 +751,7 @@ public:
      * @param[in] sym : label symbol
      * @param[in] cg : CodeGenerator
      */
-    ARM64CompareBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
+    ARM64CompareBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
         TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cg)
         , _source1Register(sreg)
@@ -771,7 +769,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64CompareBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
+    ARM64CompareBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, precedingInstruction, cg)
         , _source1Register(sreg)
@@ -789,7 +787,7 @@ public:
      * @param[in] cond : register dependency condition
      * @param[in] cg : CodeGenerator
      */
-    ARM64CompareBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
+    ARM64CompareBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
         TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cond, cg)
         , _source1Register(sreg)
@@ -808,7 +806,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64CompareBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
+    ARM64CompareBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::LabelSymbol *sym,
         TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cond, precedingInstruction, cg)
         , _source1Register(sreg)
@@ -922,7 +920,7 @@ public:
      * @param[in] sym    : label symbol
      * @param[in] cg     : CodeGenerator
      */
-    ARM64TestBitBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
+    ARM64TestBitBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
         TR::LabelSymbol *sym, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cg)
         , _source1Register(sreg)
@@ -942,7 +940,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg                   : CodeGenerator
      */
-    ARM64TestBitBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
+    ARM64TestBitBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
         TR::LabelSymbol *sym, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, precedingInstruction, cg)
         , _source1Register(sreg)
@@ -962,7 +960,7 @@ public:
      * @param[in] cond   : register dependency condition
      * @param[in] cg     : CodeGenerator
      */
-    ARM64TestBitBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
+    ARM64TestBitBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
         TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cond, cg)
         , _source1Register(sreg)
@@ -983,7 +981,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg                   : CodeGenerator
      */
-    ARM64TestBitBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
+    ARM64TestBitBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t bitpos,
         TR::LabelSymbol *sym, TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction,
         TR::CodeGenerator *cg)
         : ARM64LabelInstruction(op, node, sym, cond, precedingInstruction, cg)
@@ -1118,7 +1116,7 @@ public:
      * @param[in] treg : branch target
      * @param[in] cg : CodeGenerator
      */
-    ARM64RegBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::CodeGenerator *cg)
+    ARM64RegBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _register(treg)
     {
@@ -1133,7 +1131,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64RegBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
+    ARM64RegBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _register(treg)
@@ -1149,7 +1147,7 @@ public:
      * @param[in] cond : register dependency condition
      * @param[in] cg : CodeGenerator
      */
-    ARM64RegBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
+    ARM64RegBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
         TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, cg)
         , _register(treg)
@@ -1166,7 +1164,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64RegBranchInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
+    ARM64RegBranchInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
         TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, precedingInstruction, cg)
         , _register(treg)
@@ -1251,7 +1249,7 @@ public:
      * @param[in] fenceNode : fence node
      * @param[in] cg : CodeGenerator
      */
-    ARM64AdminInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Node *fenceNode, TR::CodeGenerator *cg)
+    ARM64AdminInstruction(OP::Mnemonic op, TR::Node *node, TR::Node *fenceNode, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _fenceNode(fenceNode)
     {}
@@ -1264,8 +1262,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64AdminInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Node *fenceNode,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64AdminInstruction(OP::Mnemonic op, TR::Node *node, TR::Node *fenceNode, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _fenceNode(fenceNode)
     {}
@@ -1278,8 +1276,8 @@ public:
      * @param[in] fenceNode : fence node
      * @param[in] cg : CodeGenerator
      */
-    ARM64AdminInstruction(TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node,
-        TR::Node *fenceNode, TR::CodeGenerator *cg)
+    ARM64AdminInstruction(OP::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node, TR::Node *fenceNode,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, cg)
         , _fenceNode(fenceNode)
     {}
@@ -1293,8 +1291,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64AdminInstruction(TR::InstOpCode::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node,
-        TR::Node *fenceNode, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64AdminInstruction(OP::Mnemonic op, TR::RegisterDependencyConditions *cond, TR::Node *node, TR::Node *fenceNode,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, precedingInstruction, cg)
         , _fenceNode(fenceNode)
     {}
@@ -1350,7 +1348,7 @@ public:
      * @param[in] treg : target register
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::CodeGenerator *cg)
+    ARM64Trg1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _target1Register(treg)
     {
@@ -1365,8 +1363,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _target1Register(treg)
     {
@@ -1381,8 +1379,8 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
+    ARM64Trg1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::RegisterDependencyConditions *cond,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, cg)
         , _target1Register(treg)
     {
@@ -1398,8 +1396,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::RegisterDependencyConditions *cond,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cond, precedingInstruction, cg)
         , _target1Register(treg)
     {
@@ -1484,7 +1482,7 @@ public:
      * @param[in] cc : branch condition code
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1CondInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::ARM64ConditionCode cc,
+    ARM64Trg1CondInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::ARM64ConditionCode cc,
         TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cg)
         , _cc(cc)
@@ -1499,7 +1497,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1CondInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::ARM64ConditionCode cc,
+    ARM64Trg1CondInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::ARM64ConditionCode cc,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, precedingInstruction, cg)
         , _cc(cc)
@@ -1560,8 +1558,7 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
-        TR::CodeGenerator *cg)
+    ARM64Trg1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cg)
         , _sourceImmediate(imm)
     {}
@@ -1575,7 +1572,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
+    ARM64Trg1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, precedingInstruction, cg)
         , _sourceImmediate(imm)
@@ -1606,21 +1603,19 @@ public:
      */
     void insertImmediateField(uint32_t *instruction)
     {
-        TR::InstOpCode::Mnemonic op = getOpCodeValue();
+        OP::Mnemonic op = getOpCodeValue();
 
-        if (op == TR::InstOpCode::movzx || op == TR::InstOpCode::movzw || op == TR::InstOpCode::movnx
-            || op == TR::InstOpCode::movnw || op == TR::InstOpCode::movkx || op == TR::InstOpCode::movkw) {
+        if (op == OP::movzx || op == OP::movzw || op == OP::movnx || op == OP::movnw || op == OP::movkx
+            || op == OP::movkw) {
             *instruction |= ((_sourceImmediate & 0x3ffff) << 5);
-        } else if (op == TR::InstOpCode::fmovimms || op == TR::InstOpCode::fmovimmd) {
+        } else if (op == OP::fmovimms || op == OP::fmovimmd) {
             *instruction |= ((_sourceImmediate & 0xFF) << 13);
-        } else if (op == TR::InstOpCode::adr || op == TR::InstOpCode::adrp) {
+        } else if (op == OP::adr || op == OP::adrp) {
             *instruction |= ((_sourceImmediate & 0x1ffffc) << 3) | ((_sourceImmediate & 0x3) << 29);
-        } else if (op == TR::InstOpCode::vmovi16b || op == TR::InstOpCode::vmovi8h || op == TR::InstOpCode::vmovi4s
-            || op == TR::InstOpCode::vmovi4s_one || op == TR::InstOpCode::vmovi2s || op == TR::InstOpCode::movid
-            || op == TR::InstOpCode::vmovi2d || op == TR::InstOpCode::vfmov4s || op == TR::InstOpCode::vfmov2d
-            || op == TR::InstOpCode::vmvni8h || op == TR::InstOpCode::vmvni4s || op == TR::InstOpCode::vmvni4s_one
-            || op == TR::InstOpCode::vbicimm8h || op == TR::InstOpCode::vbicimm4s || op == TR::InstOpCode::vorrimm8h
-            || op == TR::InstOpCode::vorrimm4s) {
+        } else if (op == OP::vmovi16b || op == OP::vmovi8h || op == OP::vmovi4s || op == OP::vmovi4s_one
+            || op == OP::vmovi2s || op == OP::movid || op == OP::vmovi2d || op == OP::vfmov4s || op == OP::vfmov2d
+            || op == OP::vmvni8h || op == OP::vmvni4s || op == OP::vmvni4s_one || op == OP::vbicimm8h
+            || op == OP::vbicimm4s || op == OP::vorrimm8h || op == OP::vorrimm4s) {
             *instruction |= ((_sourceImmediate & 0xe0) << 11) | ((_sourceImmediate & 0x1f) << 5);
         } else {
             TR_ASSERT(false, "Unsupported opcode in ARM64Trg1ImmInstruction.");
@@ -1647,7 +1642,7 @@ public:
      * @param[in] shiftAmount : shiftAmount
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ImmShiftedInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
+    ARM64Trg1ImmShiftedInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
         uint32_t shiftAmount, TR::CodeGenerator *cg)
         : ARM64Trg1ImmInstruction(op, node, treg, imm, cg)
         , _shiftAmount(shiftAmount)
@@ -1663,7 +1658,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ImmShiftedInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
+    ARM64Trg1ImmShiftedInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
         uint32_t shiftAmount, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1ImmInstruction(op, node, treg, imm, precedingInstruction, cg)
         , _shiftAmount(shiftAmount)
@@ -1694,18 +1689,16 @@ public:
      */
     void insertShift(uint32_t *instruction)
     {
-        TR::InstOpCode::Mnemonic op = getOpCodeValue();
-        if ((op == TR::InstOpCode::vmovi8h) || (op == TR::InstOpCode::vmvni8h) || (op == TR::InstOpCode::vbicimm8h)
-            || (op == TR::InstOpCode::vorrimm8h)) {
+        OP::Mnemonic op = getOpCodeValue();
+        if ((op == OP::vmovi8h) || (op == OP::vmvni8h) || (op == OP::vbicimm8h) || (op == OP::vorrimm8h)) {
             TR_ASSERT_FATAL((_shiftAmount == 0) || (_shiftAmount == 8),
                 "shiftAmount other than 0 or 8 is not allowed for vmovi8h, vmvni8h, vbicimm8h and vorrimm8h");
             *instruction |= (_shiftAmount >> 3) << 13;
-        } else if ((op == TR::InstOpCode::vmovi4s) || (op == TR::InstOpCode::vmvni4s)
-            || (op == TR::InstOpCode::vbicimm4s) || (op == TR::InstOpCode::vorrimm4s)) {
+        } else if ((op == OP::vmovi4s) || (op == OP::vmvni4s) || (op == OP::vbicimm4s) || (op == OP::vorrimm4s)) {
             TR_ASSERT_FATAL((_shiftAmount == 0) || (_shiftAmount == 8) || (_shiftAmount == 16) || (_shiftAmount == 24),
                 "shiftAmount other than 0, 8, 16, or 24 is not allowed for vmovi4s, vmvni4s, vbicimm4s and vorrimm4s");
             *instruction |= (_shiftAmount >> 3) << 13;
-        } else if ((op == TR::InstOpCode::vmovi4s_one) || (op == TR::InstOpCode::vmvni4s_one)) {
+        } else if ((op == OP::vmovi4s_one) || (op == OP::vmvni4s_one)) {
             TR_ASSERT_FATAL((_shiftAmount == 8) || (_shiftAmount == 16),
                 "shiftAmount other than 8 or 16 is not allowed for vmovi8h and vmvni8h");
 
@@ -1735,8 +1728,8 @@ public:
      * @param[in] sym : symbol
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ImmSymInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
-        TR::Symbol *sym, TR::CodeGenerator *cg)
+    ARM64Trg1ImmSymInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm, TR::Symbol *sym,
+        TR::CodeGenerator *cg)
         : ARM64Trg1ImmInstruction(op, node, treg, imm, cg)
         , _symbol(sym)
     {}
@@ -1751,8 +1744,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ImmSymInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
-        TR::Symbol *sym, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1ImmSymInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm, TR::Symbol *sym,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1ImmInstruction(op, node, treg, imm, precedingInstruction, cg)
         , _symbol(sym)
     {}
@@ -1776,8 +1769,8 @@ public:
      */
     void insertImmediateField(uint32_t *instruction)
     {
-        TR::InstOpCode::Mnemonic op = getOpCodeValue();
-        if (op == TR::InstOpCode::adr || op == TR::InstOpCode::adrp) {
+        OP::Mnemonic op = getOpCodeValue();
+        if (op == OP::adr || op == OP::adrp) {
             *instruction |= ((getSourceImmediate() & 0x1ffffc) << 3) | ((getSourceImmediate() & 0x3) << 29);
         } else {
             *instruction |= ((getSourceImmediate() & 0x7ffff) << 5);
@@ -1803,7 +1796,7 @@ public:
      * @param[in] sreg : source register
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
+    ARM64Trg1Src1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
         TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cg)
         , _source1Register(sreg)
@@ -1820,7 +1813,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
+    ARM64Trg1Src1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, precedingInstruction, cg)
         , _source1Register(sreg)
@@ -1837,7 +1830,7 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
+    ARM64Trg1Src1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
         TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cond, cg)
         , _source1Register(sreg)
@@ -1855,7 +1848,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
+    ARM64Trg1Src1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
         TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cond, precedingInstruction, cg)
         , _source1Register(sreg)
@@ -1954,7 +1947,7 @@ public:
      * @param[in] sreg : source register
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ZeroSrc1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
+    ARM64Trg1ZeroSrc1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
         TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, cg)
     {}
@@ -1968,7 +1961,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1ZeroSrc1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
+    ARM64Trg1ZeroSrc1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, precedingInstruction, cg)
     {}
@@ -2022,7 +2015,7 @@ public:
      * @param[in]  imm : immediate value
      * @param[in]   cg : CodeGenerator
      */
-    ARM64Trg1ZeroImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
+    ARM64Trg1ZeroImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
         TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cg)
         , _source1Immediate(imm)
@@ -2038,7 +2031,7 @@ public:
      * @param[in]  imm : immediate value
      * @param[in]   cg : CodeGenerator
      */
-    ARM64Trg1ZeroImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, bool N, uint32_t imm,
+    ARM64Trg1ZeroImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, bool N, uint32_t imm,
         TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, cg)
         , _source1Immediate(imm)
@@ -2054,7 +2047,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in]                   cg : CodeGenerator
      */
-    ARM64Trg1ZeroImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
+    ARM64Trg1ZeroImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, uint32_t imm,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, precedingInstruction, cg)
         , _source1Immediate(imm)
@@ -2071,7 +2064,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in]                   cg : CodeGenerator
      */
-    ARM64Trg1ZeroImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, bool N, uint32_t imm,
+    ARM64Trg1ZeroImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, bool N, uint32_t imm,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Instruction(op, node, treg, precedingInstruction, cg)
         , _source1Immediate(imm)
@@ -2161,8 +2154,8 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
-        uint32_t imm, TR::CodeGenerator *cg)
+    ARM64Trg1Src1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t imm,
+        TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, cg)
         , _source1Immediate(imm)
         , _Nbit(false)
@@ -2178,8 +2171,8 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
-        bool N, uint32_t imm, TR::CodeGenerator *cg)
+    ARM64Trg1Src1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg, bool N,
+        uint32_t imm, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, cg)
         , _source1Immediate(imm)
         , _Nbit(N)
@@ -2195,8 +2188,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
-        uint32_t imm, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1Src1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t imm,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, precedingInstruction, cg)
         , _source1Immediate(imm)
         , _Nbit(false)
@@ -2213,8 +2206,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
-        bool N, uint32_t imm, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1Src1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg, bool N,
+        uint32_t imm, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, precedingInstruction, cg)
         , _source1Immediate(imm)
         , _Nbit(N)
@@ -2230,8 +2223,8 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
-        uint32_t imm, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
+    ARM64Trg1Src1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t imm,
+        TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, cond, cg)
         , _source1Immediate(imm)
         , _Nbit(false)
@@ -2248,9 +2241,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg,
-        uint32_t imm, TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction,
-        TR::CodeGenerator *cg)
+    ARM64Trg1Src1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *sreg, uint32_t imm,
+        TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, sreg, cond, precedingInstruction, cg)
         , _source1Immediate(imm)
         , _Nbit(false)
@@ -2294,13 +2286,13 @@ public:
      */
     void insertImmediateField(uint32_t *instruction)
     {
-        TR::InstOpCode::Mnemonic op = getOpCodeValue();
+        OP::Mnemonic op = getOpCodeValue();
 
-        if ((op >= TR::InstOpCode::vshl16b) && (op <= TR::InstOpCode::vsri2d)) {
+        if ((op >= OP::vshl16b) && (op <= OP::vsri2d)) {
             *instruction |= ((_source1Immediate & 0x7f) << 16); /* immh:immb */
-        } else if ((op >= TR::InstOpCode::vdupe16b) && (op <= TR::InstOpCode::vinsxd)) {
+        } else if ((op >= OP::vdupe16b) && (op <= OP::vinsxd)) {
             *instruction |= ((_source1Immediate & 0x1f) << 16); /* imm5 */
-        } else if ((op >= TR::InstOpCode::vinseb) && (op <= TR::InstOpCode::vinsed)) {
+        } else if ((op >= OP::vinseb) && (op <= OP::vinsed)) {
             *instruction |= ((_source1Immediate & 0x3ff) << 11); /* imm5 and imm4 */
         } else {
             *instruction |= ((_source1Immediate & 0xfff) << 10); /* imm12 */
@@ -2338,7 +2330,7 @@ public:
      * @param[in] s2reg : source register 2
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, s1reg, cg)
         , _source2Register(s2reg)
@@ -2356,7 +2348,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, s1reg, precedingInstruction, cg)
         , _source2Register(s2reg)
@@ -2374,7 +2366,7 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, s1reg, cond, cg)
         , _source2Register(s2reg)
@@ -2393,7 +2385,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::RegisterDependencyConditions *cond, TR::Instruction *precedingInstruction,
         TR::CodeGenerator *cg)
         : ARM64Trg1Src1Instruction(op, node, treg, s1reg, cond, precedingInstruction, cg)
@@ -2496,7 +2488,7 @@ public:
      * @param[in] cc : branch condition code
      * @param[in] cg : CodeGenerator
      */
-    ARM64CondTrg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64CondTrg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::ARM64ConditionCode cc, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
         , _cc(cc)
@@ -2513,7 +2505,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64CondTrg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64CondTrg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::ARM64ConditionCode cc, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
         , _cc(cc)
@@ -2530,7 +2522,7 @@ public:
      * @param[in] cond : Register Dependency Condition
      * @param[in] cg : CodeGenerator
      */
-    ARM64CondTrg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64CondTrg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cond, cg)
         , _cc(cc)
@@ -2548,7 +2540,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64CondTrg1Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64CondTrg1Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cond, precedingInstruction, cg)
@@ -2601,7 +2593,7 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, uint32_t imm, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
         , _sourceImmediate(imm)
@@ -2618,7 +2610,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, uint32_t imm, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
         , _sourceImmediate(imm)
@@ -2672,8 +2664,8 @@ public:
      * @param[in] shiftAmount : shift amount
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ShiftedInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Register *s1reg, TR::Register *s2reg, ARM64ShiftCode shiftType, uint32_t shiftAmount, TR::CodeGenerator *cg)
+    ARM64Trg1Src2ShiftedInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+        TR::Register *s2reg, ARM64ShiftCode shiftType, uint32_t shiftAmount, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
         , _shiftType(shiftType)
         , _shiftAmount(shiftAmount)
@@ -2691,9 +2683,9 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ShiftedInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Register *s1reg, TR::Register *s2reg, ARM64ShiftCode shiftType, uint32_t shiftAmount,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1Src2ShiftedInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+        TR::Register *s2reg, ARM64ShiftCode shiftType, uint32_t shiftAmount, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
         , _shiftType(shiftType)
         , _shiftAmount(shiftAmount)
@@ -2763,9 +2755,8 @@ public:
      * @param[in] shiftAmount : shift amount
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ExtendedInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Register *s1reg, TR::Register *s2reg, ARM64ExtendCode extendType, uint32_t shiftAmount,
-        TR::CodeGenerator *cg)
+    ARM64Trg1Src2ExtendedInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+        TR::Register *s2reg, ARM64ExtendCode extendType, uint32_t shiftAmount, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
         , _extendType(extendType)
         , _shiftAmount(shiftAmount)
@@ -2783,9 +2774,9 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ExtendedInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Register *s1reg, TR::Register *s2reg, ARM64ExtendCode extendType, uint32_t shiftAmount,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1Src2ExtendedInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+        TR::Register *s2reg, ARM64ExtendCode extendType, uint32_t shiftAmount, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
         , _extendType(extendType)
         , _shiftAmount(shiftAmount)
@@ -2853,8 +2844,8 @@ public:
      * @param[in] index : index of element in s2reg
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2IndexedElementInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Register *s1reg, TR::Register *s2reg, uint32_t index, TR::CodeGenerator *cg)
+    ARM64Trg1Src2IndexedElementInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+        TR::Register *s2reg, uint32_t index, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
         , _index(index)
     {}
@@ -2870,9 +2861,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2IndexedElementInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::Register *s1reg, TR::Register *s2reg, uint32_t index, TR::Instruction *precedingInstruction,
-        TR::CodeGenerator *cg)
+    ARM64Trg1Src2IndexedElementInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+        TR::Register *s2reg, uint32_t index, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
         , _index(index)
     {}
@@ -2916,7 +2906,7 @@ public:
      * @param[in] s2reg : source register 2
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ZeroInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2ZeroInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
     {}
@@ -2931,7 +2921,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src2ZeroInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src2ZeroInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
     {}
@@ -2973,7 +2963,7 @@ public:
      * @param[in] s3reg : source register 3
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src3Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src3Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::Register *s3reg, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cg)
         , _source3Register(s3reg)
@@ -2992,7 +2982,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src3Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src3Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::Register *s3reg, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, precedingInstruction, cg)
         , _source3Register(s3reg)
@@ -3011,7 +3001,7 @@ public:
      * @param[in] cond : register dependency conditions
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src3Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src3Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::Register *s3reg, TR::RegisterDependencyConditions *cond, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cond, cg)
         , _source3Register(s3reg)
@@ -3031,7 +3021,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1Src3Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
+    ARM64Trg1Src3Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::Register *s1reg,
         TR::Register *s2reg, TR::Register *s3reg, TR::RegisterDependencyConditions *cond,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1Src2Instruction(op, node, treg, s1reg, s2reg, cond, precedingInstruction, cg)
@@ -3134,7 +3124,7 @@ public:
      * @param[in] mr : memory reference
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
+    ARM64Trg1MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
         TR::CodeGenerator *cg);
 
     /*
@@ -3146,7 +3136,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
+    ARM64Trg1MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg);
 
     /**
@@ -3253,7 +3243,7 @@ public:
      * @param[in] mr : memory reference
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg2MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg1, TR::Register *treg2,
+    ARM64Trg2MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg1, TR::Register *treg2,
         TR::MemoryReference *mr, TR::CodeGenerator *cg)
         : ARM64Trg1MemInstruction(op, node, treg1, mr, cg)
         , _target2Register(treg2)
@@ -3271,7 +3261,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg2MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg1, TR::Register *treg2,
+    ARM64Trg2MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg1, TR::Register *treg2,
         TR::MemoryReference *mr, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1MemInstruction(op, node, treg1, mr, precedingInstruction, cg)
         , _target2Register(treg2)
@@ -3363,7 +3353,7 @@ public:
      * @param[in] mr : memory reference
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::CodeGenerator *cg);
+    ARM64MemInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::CodeGenerator *cg);
 
     /*
      * @brief Constructor
@@ -3373,8 +3363,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg);
+    ARM64MemInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg);
 
     /**
      * @brief Gets instruction kind
@@ -3477,7 +3467,7 @@ public:
      * @param[in] sreg : source register
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemSrc1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *sreg,
+    ARM64MemSrc1Instruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *sreg,
         TR::CodeGenerator *cg)
         : ARM64MemInstruction(op, node, mr, cg)
         , _source1Register(sreg)
@@ -3494,7 +3484,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemSrc1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *sreg,
+    ARM64MemSrc1Instruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *sreg,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64MemInstruction(op, node, mr, precedingInstruction, cg)
         , _source1Register(sreg)
@@ -3590,7 +3580,7 @@ public:
      * @param[in] s2reg : source register 2
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemSrc2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *s1reg,
+    ARM64MemSrc2Instruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *s1reg,
         TR::Register *s2reg, TR::CodeGenerator *cg)
         : ARM64MemSrc1Instruction(op, node, mr, s1reg, cg)
         , _source2Register(s2reg)
@@ -3608,7 +3598,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemSrc2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *s1reg,
+    ARM64MemSrc2Instruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, TR::Register *s1reg,
         TR::Register *s2reg, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64MemSrc1Instruction(op, node, mr, s1reg, precedingInstruction, cg)
         , _source2Register(s2reg)
@@ -3705,8 +3695,8 @@ public:
      * @param[in] sreg : source register
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1MemSrc1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::MemoryReference *mr, TR::Register *sreg, TR::CodeGenerator *cg)
+    ARM64Trg1MemSrc1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
+        TR::Register *sreg, TR::CodeGenerator *cg)
         : ARM64Trg1MemInstruction(op, node, treg, mr, cg)
         , _source1Register(sreg)
     {
@@ -3723,8 +3713,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Trg1MemSrc1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
-        TR::MemoryReference *mr, TR::Register *sreg, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Trg1MemSrc1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
+        TR::Register *sreg, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Trg1MemInstruction(op, node, treg, mr, precedingInstruction, cg)
         , _source1Register(sreg)
     {
@@ -3828,7 +3818,7 @@ public:
      * @param[in] immediate : 5bit immediate
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, uint32_t immediate,
+    ARM64MemImmInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, uint32_t immediate,
         TR::CodeGenerator *cg)
         : ARM64MemInstruction(op, node, mr, cg)
         , _immediate(immediate)
@@ -3843,7 +3833,7 @@ public:
      * @param[in] immediate : 5bit immediate
      * @param[in] cg : CodeGenerator
      */
-    ARM64MemImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, uint32_t immediate,
+    ARM64MemImmInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr, uint32_t immediate,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64MemInstruction(op, node, mr, precedingInstruction, cg)
         , _immediate(immediate)
@@ -3892,7 +3882,7 @@ public:
      * @param[in] sreg : source register
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::CodeGenerator *cg)
+    ARM64Src1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::CodeGenerator *cg)
         : TR::Instruction(op, node, cg)
         , _source1Register(sreg)
     {
@@ -3907,8 +3897,8 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src1Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64Src1Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : TR::Instruction(op, node, precedingInstruction, cg)
         , _source1Register(sreg)
     {
@@ -4009,7 +3999,7 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64ZeroSrc1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t imm,
+    ARM64ZeroSrc1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t imm,
         TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, sreg, cg)
         , _source1Immediate(imm)
@@ -4025,7 +4015,7 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64ZeroSrc1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, bool N, uint32_t imm,
+    ARM64ZeroSrc1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, bool N, uint32_t imm,
         TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, sreg, cg)
         , _source1Immediate(imm)
@@ -4041,7 +4031,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ZeroSrc1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t imm,
+    ARM64ZeroSrc1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, uint32_t imm,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, sreg, precedingInstruction, cg)
         , _source1Immediate(imm)
@@ -4058,7 +4048,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ZeroSrc1ImmInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *sreg, bool N, uint32_t imm,
+    ARM64ZeroSrc1ImmInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *sreg, bool N, uint32_t imm,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, sreg, precedingInstruction, cg)
         , _source1Immediate(imm)
@@ -4146,7 +4136,7 @@ public:
      * @param[in] s2reg : source register 2
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
+    ARM64Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
         TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, s1reg, cg)
         , _source2Register(s2reg)
@@ -4163,7 +4153,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
+    ARM64Src2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, s1reg, precedingInstruction, cg)
         , _source2Register(s2reg)
@@ -4264,7 +4254,7 @@ public:
      * @param[in] s2reg : source register 2
      * @param[in] cg : CodeGenerator
      */
-    ARM64ZeroSrc2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
+    ARM64ZeroSrc2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
         TR::CodeGenerator *cg)
         : ARM64Src2Instruction(op, node, s1reg, s2reg, cg)
     {}
@@ -4278,7 +4268,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ZeroSrc2Instruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
+    ARM64ZeroSrc2Instruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
         TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64Src2Instruction(op, node, s1reg, s2reg, precedingInstruction, cg)
     {}
@@ -4375,7 +4365,7 @@ public:
      * @param[in] conditionFlags : 4-bit NZCV condition flags
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src1ImmCondInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, uint32_t imm,
+    ARM64Src1ImmCondInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, uint32_t imm,
         TR::ARM64ConditionCode cc, uint32_t conditionFlags, TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, s1reg, cg)
         , ARM64ConditionalCompareOp(cc, conditionFlags)
@@ -4393,7 +4383,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src1ImmCondInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, uint32_t imm,
+    ARM64Src1ImmCondInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, uint32_t imm,
         TR::ARM64ConditionCode cc, uint32_t conditionFlags, TR::Instruction *precedingInstruction,
         TR::CodeGenerator *cg)
         : ARM64Src1Instruction(op, node, s1reg, precedingInstruction, cg)
@@ -4451,7 +4441,7 @@ public:
      * @param[in] conditionFlags : 4-bit NZCV condition flags
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src2CondInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
+    ARM64Src2CondInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
         TR::ARM64ConditionCode cc, uint32_t conditionFlags, TR::CodeGenerator *cg)
         : ARM64Src2Instruction(op, node, s1reg, s2reg, cg)
         , ARM64ConditionalCompareOp(cc, conditionFlags)
@@ -4468,7 +4458,7 @@ public:
      * @param[in] precedingInstruction : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64Src2CondInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
+    ARM64Src2CondInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *s1reg, TR::Register *s2reg,
         TR::ARM64ConditionCode cc, uint32_t conditionFlags, TR::Instruction *precedingInstruction,
         TR::CodeGenerator *cg)
         : ARM64Src2Instruction(op, node, s1reg, s2reg, precedingInstruction, cg)
@@ -4497,8 +4487,8 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64SynchronizationInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node,
-        TR::InstOpCode::AArch64BarrierLimitation lim, TR::CodeGenerator *cg)
+    ARM64SynchronizationInstruction(OP::Mnemonic op, TR::Node *node, OP::AArch64BarrierLimitation lim,
+        TR::CodeGenerator *cg)
         : ARM64ImmInstruction(op, node, static_cast<uint32_t>(lim), cg)
     {}
 
@@ -4510,8 +4500,8 @@ public:
      * @param[in] preced : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64SynchronizationInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node,
-        TR::InstOpCode::AArch64BarrierLimitation lim, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64SynchronizationInstruction(OP::Mnemonic op, TR::Node *node, OP::AArch64BarrierLimitation lim,
+        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
         : ARM64ImmInstruction(op, node, static_cast<uint32_t>(lim), precedingInstruction, cg)
     {}
 
@@ -4541,7 +4531,7 @@ public:
      * @param[in] imm : immediate value
      * @param[in] cg : CodeGenerator
      */
-    ARM64ExceptionInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uint32_t imm, TR::CodeGenerator *cg)
+    ARM64ExceptionInstruction(OP::Mnemonic op, TR::Node *node, uint32_t imm, TR::CodeGenerator *cg)
         : ARM64ImmInstruction(op, node, imm, cg)
     {}
 
@@ -4553,8 +4543,8 @@ public:
      * @param[in] preced : preceding instruction
      * @param[in] cg : CodeGenerator
      */
-    ARM64ExceptionInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, uint32_t imm,
-        TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
+    ARM64ExceptionInstruction(OP::Mnemonic op, TR::Node *node, uint32_t imm, TR::Instruction *precedingInstruction,
+        TR::CodeGenerator *cg)
         : ARM64ImmInstruction(op, node, imm, precedingInstruction, cg)
     {}
 
@@ -4583,13 +4573,13 @@ private:
 public:
     ARM64VirtualGuardNOPInstruction(TR::Node *node, TR_VirtualGuardSite *site, TR::RegisterDependencyConditions *cond,
         TR::LabelSymbol *sym, TR::CodeGenerator *cg)
-        : TR::ARM64LabelInstruction(TR::InstOpCode::vgnop, node, sym, cond, cg)
+        : TR::ARM64LabelInstruction(OP::vgnop, node, sym, cond, cg)
         , _site(site)
     {}
 
     ARM64VirtualGuardNOPInstruction(TR::Node *node, TR_VirtualGuardSite *site, TR::RegisterDependencyConditions *cond,
         TR::LabelSymbol *sym, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
-        : TR::ARM64LabelInstruction(TR::InstOpCode::vgnop, node, sym, cond, precedingInstruction, cg)
+        : TR::ARM64LabelInstruction(OP::vgnop, node, sym, cond, precedingInstruction, cg)
         , _site(site)
     {}
 

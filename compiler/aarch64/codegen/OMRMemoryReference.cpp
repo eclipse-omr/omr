@@ -77,12 +77,12 @@ static void loadRelocatableConstant(TR::Node *node, TR::SymbolReference *ref, TR
                                         : (uintptr_t)symbol->getMethodSymbol()->getMethodAddress();
 
     if (symbol->isStartPC()) {
-        generateTrg1ImmSymInstruction(cg, TR::InstOpCode::adr, node, reg, addr, symbol);
+        generateTrg1ImmSymInstruction(cg, OP::adr, node, reg, addr, symbol);
         return;
     }
 
     if (symbol->isGCRPatchPoint()) {
-        generateTrg1ImmSymInstruction(cg, TR::InstOpCode::adr, node, reg, addr, symbol);
+        generateTrg1ImmSymInstruction(cg, OP::adr, node, reg, addr, symbol);
         return;
     }
 
@@ -329,14 +329,13 @@ void OMR::ARM64::MemoryReference::validateImmediateOffsetAlignment(TR::Node *nod
 
         if (_baseRegister != NULL) {
             if (constantIsUnsignedImm12(displacement)) {
-                generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, newBase, _baseRegister, displacement);
+                generateTrg1Src1ImmInstruction(cg, OP::addimmx, node, newBase, _baseRegister, displacement);
             } else if (node->getOpCode().isLoadConst() && node->getRegister() && (node->getLongInt() == displacement)) {
-                generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister,
-                    node->getRegister());
+                generateTrg1Src2Instruction(cg, OP::addx, node, newBase, _baseRegister, node->getRegister());
             } else {
                 TR::Register *tempReg = cg->allocateRegister();
                 loadConstant64(cg, node, displacement, tempReg);
-                generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister, tempReg);
+                generateTrg1Src2Instruction(cg, OP::addx, node, newBase, _baseRegister, tempReg);
                 cg->stopUsingRegister(tempReg);
             }
         } else {
@@ -392,16 +391,14 @@ void OMR::ARM64::MemoryReference::normalize(TR::Node *node, TR::CodeGenerator *c
 
             if (_baseRegister != NULL) {
                 if (constantIsUnsignedImm12(displacement)) {
-                    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, newBase, _baseRegister,
-                        displacement);
+                    generateTrg1Src1ImmInstruction(cg, OP::addimmx, node, newBase, _baseRegister, displacement);
                 } else if (node->getOpCode().isLoadConst() && node->getRegister()
                     && (node->getLongInt() == displacement)) {
-                    generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister,
-                        node->getRegister());
+                    generateTrg1Src2Instruction(cg, OP::addx, node, newBase, _baseRegister, node->getRegister());
                 } else {
                     TR::Register *tempReg = cg->allocateRegister();
                     loadConstant64(cg, node, displacement, tempReg);
-                    generateTrg1Src2Instruction(cg, TR::InstOpCode::addx, node, newBase, _baseRegister, tempReg);
+                    generateTrg1Src2Instruction(cg, OP::addx, node, newBase, _baseRegister, tempReg);
                     cg->stopUsingRegister(tempReg);
                 }
             } else {
@@ -717,28 +714,26 @@ void OMR::ARM64::MemoryReference::consolidateRegisters(TR::Node *srcTree, TR::Co
 
     if (_baseRegister != NULL) {
         if (self()->isIndexZeroExtendedWord()) {
-            generateTrg1Src2ExtendedInstruction(cg, TR::InstOpCode::addextx, srcTree, tempTargetRegister, _baseRegister,
+            generateTrg1Src2ExtendedInstruction(cg, OP::addextx, srcTree, tempTargetRegister, _baseRegister,
                 _indexRegister, TR::EXT_UXTW, _scale);
         } else if (self()->isIndexSignExtendedWord()) {
-            generateTrg1Src2ExtendedInstruction(cg, TR::InstOpCode::addextx, srcTree, tempTargetRegister, _baseRegister,
+            generateTrg1Src2ExtendedInstruction(cg, OP::addextx, srcTree, tempTargetRegister, _baseRegister,
                 _indexRegister, TR::EXT_SXTW, _scale);
         } else {
-            generateTrg1Src2ShiftedInstruction(cg, TR::InstOpCode::addx, srcTree, tempTargetRegister, _baseRegister,
-                _indexRegister, TR::SH_LSL, _scale);
+            generateTrg1Src2ShiftedInstruction(cg, OP::addx, srcTree, tempTargetRegister, _baseRegister, _indexRegister,
+                TR::SH_LSL, _scale);
         }
     } else if (_scale != 0) {
         generateLogicalShiftLeftImmInstruction(cg, srcTree, tempTargetRegister, _indexRegister, _scale, true);
         if (self()->isIndexZeroExtendedWord()) {
-            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::ubfmx, srcTree, tempTargetRegister, tempTargetRegister,
-                31);
+            generateTrg1Src1ImmInstruction(cg, OP::ubfmx, srcTree, tempTargetRegister, tempTargetRegister, 31);
         } else if (self()->isIndexSignExtendedWord()) {
-            generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmx, srcTree, tempTargetRegister, tempTargetRegister,
-                31);
+            generateTrg1Src1ImmInstruction(cg, OP::sbfmx, srcTree, tempTargetRegister, tempTargetRegister, 31);
         }
     } else if (self()->isIndexZeroExtendedWord()) {
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::ubfmx, srcTree, tempTargetRegister, _indexRegister, 31);
+        generateTrg1Src1ImmInstruction(cg, OP::ubfmx, srcTree, tempTargetRegister, _indexRegister, 31);
     } else if (self()->isIndexSignExtendedWord()) {
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sbfmx, srcTree, tempTargetRegister, _indexRegister, 31);
+        generateTrg1Src1ImmInstruction(cg, OP::sbfmx, srcTree, tempTargetRegister, _indexRegister, 31);
     } else {
         TR_ASSERT_FATAL(false,
             "consolidateRegister() expects (_baseRegister != NULL) || (_scale != 0) || isIndexZeroExtendedWord() || "
@@ -848,56 +843,56 @@ void OMR::ARM64::MemoryReference::assignRegisters(TR::Instruction *currentInstru
     }
 }
 
-TR::InstOpCode::Mnemonic OMR::ARM64::MemoryReference::mapOpCode(TR::InstOpCode::Mnemonic mnemonic)
+OP::Mnemonic OMR::ARM64::MemoryReference::mapOpCode(OP::Mnemonic mnemonic)
 {
     if (self()->getIndexRegister() != NULL) {
         switch (mnemonic) {
-            case TR::InstOpCode::ldrbimm:
-                return TR::InstOpCode::ldrboff;
-            case TR::InstOpCode::ldrsbimmw:
-                return TR::InstOpCode::ldrsboffw;
-            case TR::InstOpCode::ldrsbimmx:
-                return TR::InstOpCode::ldrsboffx;
-            case TR::InstOpCode::ldrhimm:
-                return TR::InstOpCode::ldrhoff;
-            case TR::InstOpCode::ldrshimmw:
-                return TR::InstOpCode::ldrshoffw;
-            case TR::InstOpCode::ldrshimmx:
-                return TR::InstOpCode::ldrshoffx;
-            case TR::InstOpCode::ldrimmw:
-                return TR::InstOpCode::ldroffw;
-            case TR::InstOpCode::ldrswimm:
-                return TR::InstOpCode::ldrswoff;
-            case TR::InstOpCode::ldrimmx:
-                return TR::InstOpCode::ldroffx;
-            case TR::InstOpCode::vldrimmb:
-                return TR::InstOpCode::vldroffb;
-            case TR::InstOpCode::vldrimmh:
-                return TR::InstOpCode::vldroffh;
-            case TR::InstOpCode::vldrimms:
-                return TR::InstOpCode::vldroffs;
-            case TR::InstOpCode::vldrimmd:
-                return TR::InstOpCode::vldroffd;
-            case TR::InstOpCode::vldrimmq:
-                return TR::InstOpCode::vldroffq;
-            case TR::InstOpCode::strbimm:
-                return TR::InstOpCode::strboff;
-            case TR::InstOpCode::strhimm:
-                return TR::InstOpCode::strhoff;
-            case TR::InstOpCode::strimmw:
-                return TR::InstOpCode::stroffw;
-            case TR::InstOpCode::strimmx:
-                return TR::InstOpCode::stroffx;
-            case TR::InstOpCode::vstrimmb:
-                return TR::InstOpCode::vstroffb;
-            case TR::InstOpCode::vstrimmh:
-                return TR::InstOpCode::vstroffh;
-            case TR::InstOpCode::vstrimms:
-                return TR::InstOpCode::vstroffs;
-            case TR::InstOpCode::vstrimmd:
-                return TR::InstOpCode::vstroffd;
-            case TR::InstOpCode::vstrimmq:
-                return TR::InstOpCode::vstroffq;
+            case OP::ldrbimm:
+                return OP::ldrboff;
+            case OP::ldrsbimmw:
+                return OP::ldrsboffw;
+            case OP::ldrsbimmx:
+                return OP::ldrsboffx;
+            case OP::ldrhimm:
+                return OP::ldrhoff;
+            case OP::ldrshimmw:
+                return OP::ldrshoffw;
+            case OP::ldrshimmx:
+                return OP::ldrshoffx;
+            case OP::ldrimmw:
+                return OP::ldroffw;
+            case OP::ldrswimm:
+                return OP::ldrswoff;
+            case OP::ldrimmx:
+                return OP::ldroffx;
+            case OP::vldrimmb:
+                return OP::vldroffb;
+            case OP::vldrimmh:
+                return OP::vldroffh;
+            case OP::vldrimms:
+                return OP::vldroffs;
+            case OP::vldrimmd:
+                return OP::vldroffd;
+            case OP::vldrimmq:
+                return OP::vldroffq;
+            case OP::strbimm:
+                return OP::strboff;
+            case OP::strhimm:
+                return OP::strhoff;
+            case OP::strimmw:
+                return OP::stroffw;
+            case OP::strimmx:
+                return OP::stroffx;
+            case OP::vstrimmb:
+                return OP::vstroffb;
+            case OP::vstrimmh:
+                return OP::vstroffh;
+            case OP::vstrimms:
+                return OP::vstroffs;
+            case OP::vstrimmd:
+                return OP::vstroffd;
+            case OP::vstrimmq:
+                return OP::vstroffq;
             default:
                 break;
         }
@@ -912,20 +907,18 @@ TR::InstOpCode::Mnemonic OMR::ARM64::MemoryReference::mapOpCode(TR::InstOpCode::
  * @param[in] mnemonic: mnemonic
  * @return true if the scale is valid
  */
-static bool isValidScale(uint8_t scale, TR::InstOpCode::Mnemonic mnemonic)
+static bool isValidScale(uint8_t scale, OP::Mnemonic mnemonic)
 {
     return (((scale == 1)
-                && ((mnemonic == TR::InstOpCode::ldrhoff) || (mnemonic == TR::InstOpCode::ldrshoffw)
-                    || (mnemonic == TR::InstOpCode::ldrshoffx) || (mnemonic == TR::InstOpCode::strhoff)
-                    || (mnemonic == TR::InstOpCode::vldroffh) || (mnemonic == TR::InstOpCode::vstroffh)))
+                && ((mnemonic == OP::ldrhoff) || (mnemonic == OP::ldrshoffw) || (mnemonic == OP::ldrshoffx)
+                    || (mnemonic == OP::strhoff) || (mnemonic == OP::vldroffh) || (mnemonic == OP::vstroffh)))
         || ((scale == 2)
-            && ((mnemonic == TR::InstOpCode::ldroffw) || (mnemonic == TR::InstOpCode::ldrswoff)
-                || (mnemonic == TR::InstOpCode::stroffw) || (mnemonic == TR::InstOpCode::vldroffs)
-                || (mnemonic == TR::InstOpCode::vstroffs)))
+            && ((mnemonic == OP::ldroffw) || (mnemonic == OP::ldrswoff) || (mnemonic == OP::stroffw)
+                || (mnemonic == OP::vldroffs) || (mnemonic == OP::vstroffs)))
         || ((scale == 3)
-            && ((mnemonic == TR::InstOpCode::ldroffx) || (mnemonic == TR::InstOpCode::stroffx)
-                || (mnemonic == TR::InstOpCode::vldroffd) || (mnemonic == TR::InstOpCode::vstroffd)))
-        || ((scale == 4) && ((mnemonic == TR::InstOpCode::vldroffq) || (mnemonic == TR::InstOpCode::vstroffq))));
+            && ((mnemonic == OP::ldroffx) || (mnemonic == OP::stroffx) || (mnemonic == OP::vldroffd)
+                || (mnemonic == OP::vstroffd)))
+        || ((scale == 4) && ((mnemonic == OP::vldroffq) || (mnemonic == OP::vstroffq))));
 }
 
 /* register offset */
@@ -955,129 +948,129 @@ static bool isAtomicOperationInstruction(uint32_t enc) { return ((enc & 0x3b200c
 /* vector memory access: vstrimmq or vldrimmq */
 static bool isImm12VectorMemoryAccess(uint32_t enc) { return ((enc & 0xffb00000) == 0x3d800000); }
 
-static TR::InstOpCode::Mnemonic getEquivalentRegisterOffsetMnemonic(TR::InstOpCode::Mnemonic op)
+static OP::Mnemonic getEquivalentRegisterOffsetMnemonic(OP::Mnemonic op)
 {
     switch (op) {
-        case TR::InstOpCode::ldurb:
-        case TR::InstOpCode::ldrbimm:
-            return TR::InstOpCode::ldrboff;
-        case TR::InstOpCode::ldursbw:
-        case TR::InstOpCode::ldrsbimmw:
-            return TR::InstOpCode::ldrsboffw;
-        case TR::InstOpCode::ldursbx:
-        case TR::InstOpCode::ldrsbimmx:
-            return TR::InstOpCode::ldrsboffx;
-        case TR::InstOpCode::ldurh:
-        case TR::InstOpCode::ldrhimm:
-            return TR::InstOpCode::ldrhoff;
-        case TR::InstOpCode::ldurshw:
-        case TR::InstOpCode::ldrshimmw:
-            return TR::InstOpCode::ldrshoffw;
-        case TR::InstOpCode::ldurshx:
-        case TR::InstOpCode::ldrshimmx:
-            return TR::InstOpCode::ldrshoffx;
-        case TR::InstOpCode::ldurw:
-        case TR::InstOpCode::ldrimmw:
-            return TR::InstOpCode::ldroffw;
-        case TR::InstOpCode::ldurx:
-        case TR::InstOpCode::ldrimmx:
-            return TR::InstOpCode::ldroffx;
-        case TR::InstOpCode::vldurb:
-        case TR::InstOpCode::vldrimmb:
-            return TR::InstOpCode::vldroffb;
-        case TR::InstOpCode::vldurh:
-        case TR::InstOpCode::vldrimmh:
-            return TR::InstOpCode::vldroffh;
-        case TR::InstOpCode::vldurs:
-        case TR::InstOpCode::vldrimms:
-            return TR::InstOpCode::vldroffs;
-        case TR::InstOpCode::vldurd:
-        case TR::InstOpCode::vldrimmd:
-            return TR::InstOpCode::vldroffd;
-        case TR::InstOpCode::vldurq:
-        case TR::InstOpCode::vldrimmq:
-            return TR::InstOpCode::vldroffq;
+        case OP::ldurb:
+        case OP::ldrbimm:
+            return OP::ldrboff;
+        case OP::ldursbw:
+        case OP::ldrsbimmw:
+            return OP::ldrsboffw;
+        case OP::ldursbx:
+        case OP::ldrsbimmx:
+            return OP::ldrsboffx;
+        case OP::ldurh:
+        case OP::ldrhimm:
+            return OP::ldrhoff;
+        case OP::ldurshw:
+        case OP::ldrshimmw:
+            return OP::ldrshoffw;
+        case OP::ldurshx:
+        case OP::ldrshimmx:
+            return OP::ldrshoffx;
+        case OP::ldurw:
+        case OP::ldrimmw:
+            return OP::ldroffw;
+        case OP::ldurx:
+        case OP::ldrimmx:
+            return OP::ldroffx;
+        case OP::vldurb:
+        case OP::vldrimmb:
+            return OP::vldroffb;
+        case OP::vldurh:
+        case OP::vldrimmh:
+            return OP::vldroffh;
+        case OP::vldurs:
+        case OP::vldrimms:
+            return OP::vldroffs;
+        case OP::vldurd:
+        case OP::vldrimmd:
+            return OP::vldroffd;
+        case OP::vldurq:
+        case OP::vldrimmq:
+            return OP::vldroffq;
 
-        case TR::InstOpCode::sturb:
-        case TR::InstOpCode::strbimm:
-            return TR::InstOpCode::strboff;
-        case TR::InstOpCode::sturh:
-        case TR::InstOpCode::strhimm:
-            return TR::InstOpCode::strhoff;
-        case TR::InstOpCode::sturw:
-        case TR::InstOpCode::strimmw:
-            return TR::InstOpCode::stroffw;
-        case TR::InstOpCode::sturx:
-        case TR::InstOpCode::strimmx:
-            return TR::InstOpCode::stroffx;
-        case TR::InstOpCode::vsturb:
-        case TR::InstOpCode::vstrimmb:
-            return TR::InstOpCode::vstroffb;
-        case TR::InstOpCode::vsturh:
-        case TR::InstOpCode::vstrimmh:
-            return TR::InstOpCode::vstroffh;
-        case TR::InstOpCode::vsturs:
-        case TR::InstOpCode::vstrimms:
-            return TR::InstOpCode::vstroffs;
-        case TR::InstOpCode::vsturd:
-        case TR::InstOpCode::vstrimmd:
-            return TR::InstOpCode::vstroffd;
-        case TR::InstOpCode::vsturq:
-        case TR::InstOpCode::vstrimmq:
-            return TR::InstOpCode::vstroffq;
+        case OP::sturb:
+        case OP::strbimm:
+            return OP::strboff;
+        case OP::sturh:
+        case OP::strhimm:
+            return OP::strhoff;
+        case OP::sturw:
+        case OP::strimmw:
+            return OP::stroffw;
+        case OP::sturx:
+        case OP::strimmx:
+            return OP::stroffx;
+        case OP::vsturb:
+        case OP::vstrimmb:
+            return OP::vstroffb;
+        case OP::vsturh:
+        case OP::vstrimmh:
+            return OP::vstroffh;
+        case OP::vsturs:
+        case OP::vstrimms:
+            return OP::vstroffs;
+        case OP::vsturd:
+        case OP::vstrimmd:
+            return OP::vstroffd;
+        case OP::vsturq:
+        case OP::vstrimmq:
+            return OP::vstroffq;
         default:
-            return TR::InstOpCode::bad;
+            return OP::bad;
     }
 }
 
-static TR::InstOpCode::Mnemonic getEquivalentUnscaledOffsetMnemonic(TR::InstOpCode::Mnemonic op)
+static OP::Mnemonic getEquivalentUnscaledOffsetMnemonic(OP::Mnemonic op)
 {
     switch (op) {
-        case TR::InstOpCode::ldrbimm:
-            return TR::InstOpCode::ldurb;
-        case TR::InstOpCode::ldrsbimmw:
-            return TR::InstOpCode::ldursbw;
-        case TR::InstOpCode::ldrsbimmx:
-            return TR::InstOpCode::ldursbx;
-        case TR::InstOpCode::ldrhimm:
-            return TR::InstOpCode::ldurh;
-        case TR::InstOpCode::ldrshimmw:
-            return TR::InstOpCode::ldurshw;
-        case TR::InstOpCode::ldrshimmx:
-            return TR::InstOpCode::ldurshx;
-        case TR::InstOpCode::ldrimmw:
-            return TR::InstOpCode::ldurw;
-        case TR::InstOpCode::ldrimmx:
-            return TR::InstOpCode::ldurx;
-        case TR::InstOpCode::vldrimmb:
-            return TR::InstOpCode::vldurb;
-        case TR::InstOpCode::vldrimmh:
-            return TR::InstOpCode::vldurh;
-        case TR::InstOpCode::vldrimms:
-            return TR::InstOpCode::vldurs;
-        case TR::InstOpCode::vldrimmd:
-            return TR::InstOpCode::vldurd;
-        case TR::InstOpCode::vldrimmq:
-            return TR::InstOpCode::vldurq;
+        case OP::ldrbimm:
+            return OP::ldurb;
+        case OP::ldrsbimmw:
+            return OP::ldursbw;
+        case OP::ldrsbimmx:
+            return OP::ldursbx;
+        case OP::ldrhimm:
+            return OP::ldurh;
+        case OP::ldrshimmw:
+            return OP::ldurshw;
+        case OP::ldrshimmx:
+            return OP::ldurshx;
+        case OP::ldrimmw:
+            return OP::ldurw;
+        case OP::ldrimmx:
+            return OP::ldurx;
+        case OP::vldrimmb:
+            return OP::vldurb;
+        case OP::vldrimmh:
+            return OP::vldurh;
+        case OP::vldrimms:
+            return OP::vldurs;
+        case OP::vldrimmd:
+            return OP::vldurd;
+        case OP::vldrimmq:
+            return OP::vldurq;
 
-        case TR::InstOpCode::strbimm:
-            return TR::InstOpCode::sturb;
-        case TR::InstOpCode::strhimm:
-            return TR::InstOpCode::sturh;
-        case TR::InstOpCode::strimmw:
-            return TR::InstOpCode::sturw;
-        case TR::InstOpCode::strimmx:
-            return TR::InstOpCode::sturx;
-        case TR::InstOpCode::vstrimmh:
-            return TR::InstOpCode::vsturh;
-        case TR::InstOpCode::vstrimms:
-            return TR::InstOpCode::vsturs;
-        case TR::InstOpCode::vstrimmd:
-            return TR::InstOpCode::vsturd;
-        case TR::InstOpCode::vstrimmq:
-            return TR::InstOpCode::vsturq;
+        case OP::strbimm:
+            return OP::sturb;
+        case OP::strhimm:
+            return OP::sturh;
+        case OP::strimmw:
+            return OP::sturw;
+        case OP::strimmx:
+            return OP::sturx;
+        case OP::vstrimmh:
+            return OP::vsturh;
+        case OP::vstrimms:
+            return OP::vsturs;
+        case OP::vstrimmd:
+            return OP::vsturd;
+        case OP::vstrimmq:
+            return OP::vsturq;
         default:
-            return TR::InstOpCode::bad;
+            return OP::bad;
     }
 }
 
@@ -1097,9 +1090,9 @@ uint8_t *OMR::ARM64::MemoryReference::generateBinaryEncoding(TR::Instruction *cu
         TR_ASSERT_FATAL(!((base != NULL) && (index != NULL) && (displacement != 0)),
             "AArch64 does not support [base + index + offset] form of memory access");
 
-        TR::InstOpCode op = currentInstruction->getOpCode();
+        OP op = currentInstruction->getOpCode();
 
-        if (op.getMnemonic() != TR::InstOpCode::addimmx) {
+        if (op.getMnemonic() != OP::addimmx) {
             // load/store instruction
             uint32_t enc = (uint32_t)op.getOpCodeBinaryEncoding();
 
@@ -1209,7 +1202,7 @@ uint8_t *OMR::ARM64::MemoryReference::generateBinaryEncoding(TR::Instruction *cu
                             : TR::RealRegister::x12);
                     stackPtr = cg->getStackPointerRegister();
                     // stur immreg, [sp, -8]
-                    *wcursor = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::sturx) | (0x1F8 << 12);
+                    *wcursor = OP::getOpCodeBinaryEncoding(OP::sturx) | (0x1F8 << 12);
                     immreg->setRegisterFieldRT(wcursor);
                     stackPtr->setRegisterFieldRN(wcursor);
                     wcursor++;
@@ -1221,14 +1214,13 @@ uint8_t *OMR::ARM64::MemoryReference::generateBinaryEncoding(TR::Instruction *cu
                 // movzw immreg, low16bit
                 // movkw immreg, high16bit, LSL #16
                 // addx treg, basereg, immreg, SXTW
-                *wcursor = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::movzw) | (lower << 5);
+                *wcursor = OP::getOpCodeBinaryEncoding(OP::movzw) | (lower << 5);
                 immreg->setRegisterFieldRD(wcursor);
                 wcursor++;
-                *wcursor
-                    = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::movkw) | ((upper | TR::MOV_LSL16) << 5);
+                *wcursor = OP::getOpCodeBinaryEncoding(OP::movkw) | ((upper | TR::MOV_LSL16) << 5);
                 immreg->setRegisterFieldRD(wcursor);
                 wcursor++;
-                *wcursor = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::addextx) | (TR::EXT_SXTW << 13);
+                *wcursor = OP::getOpCodeBinaryEncoding(OP::addextx) | (TR::EXT_SXTW << 13);
                 base->setRegisterFieldRN(wcursor);
                 immreg->setRegisterFieldRM(wcursor);
                 treg->setRegisterFieldRD(wcursor);
@@ -1237,7 +1229,7 @@ uint8_t *OMR::ARM64::MemoryReference::generateBinaryEncoding(TR::Instruction *cu
 
                 if (needSpill) {
                     // ldur immreg, [sp, -8]
-                    *wcursor = TR::InstOpCode::getOpCodeBinaryEncoding(TR::InstOpCode::ldurx) | (0x1F8 << 12);
+                    *wcursor = OP::getOpCodeBinaryEncoding(OP::ldurx) | (0x1F8 << 12);
                     immreg->setRegisterFieldRT(wcursor);
                     stackPtr->setRegisterFieldRN(wcursor);
                     wcursor++;
@@ -1269,8 +1261,8 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
         bool trace = comp->getOption(TR_TraceCG);
         TR_Debug *debugObj = cg->getDebug();
 
-        TR::InstOpCode op = currentInstruction->getOpCode();
-        if (op.getMnemonic() != TR::InstOpCode::addimmx) {
+        OP op = currentInstruction->getOpCode();
+        if (op.getMnemonic() != OP::addimmx) {
             // load/store instruction
             if (self()->getIndexRegister()) {
                 return currentInstruction;
@@ -1285,9 +1277,8 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
                         if (isImm9UnscaledOffsetInstruction(enc)) {
                             if (isBaseModifiable() && constantIsUnsignedImm12(displacement)) {
                                 TR::Instruction *prev = currentInstruction->getPrev();
-                                generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmw,
-                                    currentInstruction->getNode(), self()->getBaseRegister(), self()->getBaseRegister(),
-                                    displacement, prev);
+                                generateTrg1Src1ImmInstruction(cg, OP::addimmw, currentInstruction->getNode(),
+                                    self()->getBaseRegister(), self()->getBaseRegister(), displacement, prev);
                                 self()->setOffset(0);
                                 return currentInstruction;
                             } else {
@@ -1296,10 +1287,10 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
                                 TR::RealRegister *x16 = cg->machine()->getRealRegister(TR::RealRegister::x16);
                                 TR::Instruction *prev = currentInstruction->getPrev();
                                 loadConstant32(cg, currentInstruction->getNode(), displacement, x16, prev);
-                                TR::InstOpCode::Mnemonic newOp = getEquivalentRegisterOffsetMnemonic(op.getMnemonic());
+                                OP::Mnemonic newOp = getEquivalentRegisterOffsetMnemonic(op.getMnemonic());
 
                                 if (trace && debugObj) {
-                                    TR::InstOpCode newOpCode(newOp);
+                                    OP newOpCode(newOp);
                                     log->printf("Replacing opcode of instruction %p from %s to %s\n",
                                         currentInstruction, debugObj->getOpCodeName(&op),
                                         debugObj->getOpCodeName(&newOpCode));
@@ -1324,10 +1315,10 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
                         TR::RealRegister *x16 = cg->machine()->getRealRegister(TR::RealRegister::x16);
                         TR::Instruction *prev = currentInstruction->getPrev();
                         loadConstant32(cg, currentInstruction->getNode(), displacement, x16, prev);
-                        TR::InstOpCode::Mnemonic newOp = getEquivalentRegisterOffsetMnemonic(op.getMnemonic());
+                        OP::Mnemonic newOp = getEquivalentRegisterOffsetMnemonic(op.getMnemonic());
 
                         if (trace && debugObj) {
-                            TR::InstOpCode newOpCode(newOp);
+                            OP newOpCode(newOp);
                             comp->log()->printf("Replacing opcode of instruction %p from %s to %s\n",
                                 currentInstruction, debugObj->getOpCodeName(&op), debugObj->getOpCodeName(&newOpCode));
                         }
@@ -1342,10 +1333,10 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
                     } else {
                         if (displacement < 0 && constantIsImm9(displacement)) {
                             /* rewrite the instruction ldrimm -> ldur  */
-                            TR::InstOpCode::Mnemonic newOp = getEquivalentUnscaledOffsetMnemonic(op.getMnemonic());
+                            OP::Mnemonic newOp = getEquivalentUnscaledOffsetMnemonic(op.getMnemonic());
 
                             if (trace && debugObj) {
-                                TR::InstOpCode newOpCode(newOp);
+                                OP newOpCode(newOp);
                                 log->printf("Replacing opcode of instruction %p from %s to %s\n", currentInstruction,
                                     debugObj->getOpCodeName(&op), debugObj->getOpCodeName(&newOpCode));
                             }
@@ -1357,10 +1348,10 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
                             TR::RealRegister *x16 = cg->machine()->getRealRegister(TR::RealRegister::x16);
                             TR::Instruction *prev = currentInstruction->getPrev();
                             loadConstant32(cg, currentInstruction->getNode(), displacement, x16, prev);
-                            TR::InstOpCode::Mnemonic newOp = getEquivalentRegisterOffsetMnemonic(op.getMnemonic());
+                            OP::Mnemonic newOp = getEquivalentRegisterOffsetMnemonic(op.getMnemonic());
 
                             if (trace && debugObj) {
-                                TR::InstOpCode newOpCode(newOp);
+                                OP newOpCode(newOp);
                                 log->printf("Replacing opcode of instruction %p from %s to %s\n", currentInstruction,
                                     debugObj->getOpCodeName(&op), debugObj->getOpCodeName(&newOpCode));
                             }
@@ -1417,12 +1408,12 @@ TR::Instruction *OMR::ARM64::MemoryReference::expandInstruction(TR::Instruction 
     return currentInstruction;
 }
 
-uint32_t OMR::ARM64::MemoryReference::estimateBinaryLength(TR::InstOpCode op)
+uint32_t OMR::ARM64::MemoryReference::estimateBinaryLength(OP op)
 {
     if (self()->getUnresolvedSnippet() != NULL) {
         TR_UNIMPLEMENTED();
     } else {
-        if (op.getMnemonic() != TR::InstOpCode::addimmx) {
+        if (op.getMnemonic() != OP::addimmx) {
             return ARM64_INSTRUCTION_LENGTH;
         } else {
             // addimmx instruction

@@ -32,9 +32,9 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
     OMR::Logger *log = comp->log();
     bool trace = comp->getOption(TR_TraceRA);
 
-    bool isLabel = getOpCodeValue() == TR::InstOpCode::label;
-    bool isBranch = (getOpCodeValue() == TR::InstOpCode::b) || (getKind() == IsConditionalBranch)
-        || (getKind() == IsCompareBranch) || (getKind() == IsTestBitBranch) || (getKind() == IsVirtualGuardNOP);
+    bool isLabel = getOpCodeValue() == OP::label;
+    bool isBranch = (getOpCodeValue() == OP::b) || (getKind() == IsConditionalBranch) || (getKind() == IsCompareBranch)
+        || (getKind() == IsTestBitBranch) || (getKind() == IsVirtualGuardNOP);
 
     cg()->freeUnlatchedRegisters();
     // this is the return label from OOL
@@ -94,7 +94,7 @@ void TR::ARM64LabelInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigne
 
 void TR::ARM64AdminInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
 {
-    if (getOpCodeValue() != TR::InstOpCode::assocreg) {
+    if (getOpCodeValue() != OP::assocreg) {
         OMR::ARM64::Instruction::assignRegisters(kindToBeAssigned);
     } else if (cg()->enableRegisterAssociations()) {
         TR::Machine *machine = cg()->machine();
@@ -408,7 +408,7 @@ void TR::ARM64MemSrc2Instruction::assignRegisters(TR_RegisterKinds kindToBeAssig
 
 // TR::ARM64Trg1MemInstruction:: member functions
 
-TR::ARM64Trg1MemInstruction::ARM64Trg1MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
+TR::ARM64Trg1MemInstruction::ARM64Trg1MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
     TR::MemoryReference *mr, TR::CodeGenerator *cg)
     /* Choose a correct variant of the opcode for this memory reference. */
     : ARM64Trg1Instruction(mr->mapOpCode(op), node, treg, cg)
@@ -418,7 +418,7 @@ TR::ARM64Trg1MemInstruction::ARM64Trg1MemInstruction(TR::InstOpCode::Mnemonic op
     TR::InstructionDelegate::setupImplicitNullPointerException(cg, this);
 }
 
-TR::ARM64Trg1MemInstruction::ARM64Trg1MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::Register *treg,
+TR::ARM64Trg1MemInstruction::ARM64Trg1MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
     TR::MemoryReference *mr, TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
     /* Choose a correct variant of the opcode for this memory reference. */
     : ARM64Trg1Instruction(mr->mapOpCode(op), node, treg, precedingInstruction, cg)
@@ -516,7 +516,7 @@ void TR::ARM64Trg2MemInstruction::assignRegisters(TR_RegisterKinds kindToBeAssig
 
 // TR::ARM64MemInstruction:: member functions
 
-TR::ARM64MemInstruction::ARM64MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
+TR::ARM64MemInstruction::ARM64MemInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
     TR::CodeGenerator *cg)
     /* Choose a correct variant of the opcode for this memory reference. */
     : TR::Instruction(mr->mapOpCode(op), node, cg)
@@ -526,7 +526,7 @@ TR::ARM64MemInstruction::ARM64MemInstruction(TR::InstOpCode::Mnemonic op, TR::No
     TR::InstructionDelegate::setupImplicitNullPointerException(cg, this);
 }
 
-TR::ARM64MemInstruction::ARM64MemInstruction(TR::InstOpCode::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
+TR::ARM64MemInstruction::ARM64MemInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
     TR::Instruction *precedingInstruction, TR::CodeGenerator *cg)
     /* Choose a correct variant of the opcode for this memory reference. */
     : TR::Instruction(mr->mapOpCode(op), node, precedingInstruction, cg)
