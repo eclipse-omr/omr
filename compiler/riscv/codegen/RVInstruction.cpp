@@ -217,15 +217,22 @@ uint8_t *TR::LoadInstruction::generateBinaryEncoding()
 {
     uint8_t *instructionStart = cg()->getBinaryBufferCursor();
     uint8_t *cursor = instructionStart;
-    uint32_t *iPtr = (uint32_t *)instructionStart;
+    uint32_t *iPtr = (uint32_t *)(getMemoryReference()->generateBinaryEncoding(this, cursor, cg()));
 
     *iPtr = TR_RISCV_ITYPE(getOpCode().getMnemonic(), getTargetRegister(), getMemoryBase(),
         getMemoryReference()->getOffset(true));
 
     cursor += RISCV_INSTRUCTION_LENGTH;
-    setBinaryLength(RISCV_INSTRUCTION_LENGTH);
+
+    setBinaryLength((uintptr_t)cursor - (uintptr_t)instructionStart);
     setBinaryEncoding(instructionStart);
     return cursor;
+}
+
+int32_t TR::LoadInstruction::estimateBinaryLength(int32_t currentEstimate)
+{
+    setEstimatedBinaryLength(getMemoryReference()->estimateBinaryLength(this) + RISCV_INSTRUCTION_LENGTH);
+    return currentEstimate + self()->getEstimatedBinaryLength();
 }
 
 // TR::StypeInstruction:: member functions
@@ -323,15 +330,21 @@ uint8_t *TR::StoreInstruction::generateBinaryEncoding()
 {
     uint8_t *instructionStart = cg()->getBinaryBufferCursor();
     uint8_t *cursor = instructionStart;
-    uint32_t *iPtr = (uint32_t *)instructionStart;
+    uint32_t *iPtr = (uint32_t *)(getMemoryReference()->generateBinaryEncoding(this, cursor, cg()));
 
     *iPtr = TR_RISCV_STYPE(getOpCode().getMnemonic(), getMemoryBase(), getSource1Register(),
         getMemoryReference()->getOffset(true));
 
     cursor += RISCV_INSTRUCTION_LENGTH;
-    setBinaryLength(RISCV_INSTRUCTION_LENGTH);
+    setBinaryLength((uintptr_t)cursor - (uintptr_t)instructionStart);
     setBinaryEncoding(instructionStart);
     return cursor;
+}
+
+int32_t TR::StoreInstruction::estimateBinaryLength(int32_t currentEstimate)
+{
+    setEstimatedBinaryLength(getMemoryReference()->estimateBinaryLength(this) + RISCV_INSTRUCTION_LENGTH);
+    return currentEstimate + self()->getEstimatedBinaryLength();
 }
 
 // TR::BtypeInstruction:: member functions

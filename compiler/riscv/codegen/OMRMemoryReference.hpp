@@ -302,6 +302,24 @@ public:
      * @param[in] cg : CodeGenerator
      */
     void assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
+
+    /**
+     * @brief Generates binary encoding. Note that final load or store instruction
+     *        is generated in LoadInstruction::generateBinaryEncoding() or
+     *        StoreInstruction::generateBinaryEncoding()
+     * @param[in] ci : current instruction
+     * @param[in] cursor : instruction cursor
+     * @param[in] cg : CodeGenerator
+     * @return instruction cursor after encoding
+     */
+    uint8_t *generateBinaryEncoding(TR::Instruction *ci, uint8_t *cursor, TR::CodeGenerator *cg);
+
+    /**
+     * @brief Estimates the length of generated binary. See comment on generateBinaryEncoding()!
+     * @param[in] ci : current instruction
+     * @return estimated binary length
+     */
+    uint32_t estimateBinaryLength(TR::Instruction *ci);
 };
 
 }} // namespace OMR::RV

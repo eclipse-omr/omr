@@ -379,6 +379,13 @@ void OMR::RV::MemoryReference::assignRegisters(TR::Instruction *currentInstructi
     }
 }
 
+uint8_t *OMR::RV::MemoryReference::generateBinaryEncoding(TR::Instruction *ci, uint8_t *cursor, TR::CodeGenerator *cg)
+{
+    return cursor;
+}
+
+uint32_t OMR::RV::MemoryReference::estimateBinaryLength(TR::Instruction *ci) { return 0; }
+
 /* register offset */
 static bool isRegisterOffsetInstruction(uint32_t enc) { return ((enc & 0x3b200c00) == 0x38200800); }
 
