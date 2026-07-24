@@ -47,6 +47,7 @@ omr_add_executable(comptest NOWARNINGS
 	VectorTestUtils.cpp
 	CallTest.cpp
 	LongAndAsRotateTest.cpp
+	LookupTest.cpp
 	MockStrategyTest.cpp
 	LogicalTest.cpp
 	LinkageTest.cpp

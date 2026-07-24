@@ -35,6 +35,7 @@ omr_add_library(tril NOWARNINGS STATIC
 	parser.cpp
 	ilgen.cpp
 	CallConverter.cpp
+	CaseNodeConverter.cpp
 	GenericNodeConverter.cpp
 	simple_compiler.cpp
 )

@@ -18,6 +18,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
+// Assisted-by: Claude (Anthropic)
 
 #include "codegen/ARM64ConditionCode.hpp"
 #include "codegen/ARM64HelperCallSnippet.hpp"
@@ -557,6 +558,66 @@ TR::Register *OMR::ARM64::TreeEvaluator::lcmpEvaluator(TR::Node *node, TR::CodeG
     return trgReg;
 }
 
+// BINARY SEARCH IMPLEMENTATION
+static void binarySearchCaseSpace(TR::Register *selectorReg, TR::Node *lookupNode, int32_t lowChild, int32_t highChild,
+    TR::Register *tmpRegister, TR::RegisterDependencyConditions *conditions, TR::CodeGenerator *cg)
+{
+    int32_t numCases = highChild - lowChild + 1;
+    int32_t pivot = lowChild + (numCases / 2) - 1;
+
+    // lower half
+    if (pivot >= lowChild) {
+        int32_t pivotValue = lookupNode->getChild(pivot)->getCaseConstant();
+
+        if (!constantIsUnsignedImm12(pivotValue)) {
+            loadConstant32(cg, lookupNode, pivotValue, tmpRegister);
+            generateCompareInstruction(cg, lookupNode, selectorReg, tmpRegister);
+        } else {
+            generateCompareImmInstruction(cg, lookupNode, selectorReg, pivotValue);
+        }
+
+        int32_t lowVal = lookupNode->getChild(lowChild)->getCaseConstant();
+        int32_t highVal = lookupNode->getChild(highChild)->getCaseConstant();
+        // Use unsigned comparison (CC_HI) if cases straddle the signed/unsigned boundary
+        // (highVal < lowVal in signed terms), otherwise use signed comparison (CC_GT)
+        TR::ARM64ConditionCode branchCond = (highVal < lowVal) ? TR::CC_HI : TR::CC_GT;
+
+        TR::LabelSymbol *upperLabel = generateLabelSymbol(cg);
+        generateConditionalBranchInstruction(cg, lookupNode, upperLabel, branchCond);
+
+        if (lowChild == pivot) {
+            generateConditionalBranchInstruction(cg, lookupNode,
+                lookupNode->getChild(lowChild)->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ, conditions);
+
+            // default case
+            generateLabelInstruction(cg, TR::InstOpCode::b, lookupNode,
+                lookupNode->getChild(1)->getBranchDestination()->getNode()->getLabel(), conditions);
+        } else {
+            binarySearchCaseSpace(selectorReg, lookupNode, lowChild, pivot, tmpRegister, conditions, cg);
+        }
+        generateLabelInstruction(cg, TR::InstOpCode::label, lookupNode, upperLabel);
+    }
+
+    // upper half
+    if (highChild == pivot + 1) {
+        int32_t highValue = lookupNode->getChild(highChild)->getCaseConstant();
+        if (!constantIsUnsignedImm12(highValue)) {
+            loadConstant32(cg, lookupNode, highValue, tmpRegister);
+            generateCompareInstruction(cg, lookupNode, selectorReg, tmpRegister);
+        } else {
+            generateCompareImmInstruction(cg, lookupNode, selectorReg, highValue);
+        }
+        generateConditionalBranchInstruction(cg, lookupNode,
+            lookupNode->getChild(highChild)->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ, conditions);
+
+        // default case
+        generateLabelInstruction(cg, TR::InstOpCode::b, lookupNode,
+            lookupNode->getChild(1)->getBranchDestination()->getNode()->getLabel(), conditions);
+    } else {
+        binarySearchCaseSpace(selectorReg, lookupNode, pivot + 1, highChild, tmpRegister, conditions, cg);
+    }
+}
+
 TR::Register *OMR::ARM64::TreeEvaluator::lookupEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
     int32_t numChildren = node->getNumChildren();
@@ -578,35 +639,40 @@ TR::Register *OMR::ARM64::TreeEvaluator::lookupEvaluator(TR::Node *node, TR::Cod
 
     OMR::SwitchCaseOrdering *ordering = cg->sortSwitchCases(node);
 
-    for (int32_t i = 2; i < numChildren; i++) {
-        TR::Node *child = node->getChild(ordering[i].index);
-        int32_t caseValue = child->getCaseConstant();
+    static const char *binaryLookup = feGetEnv("TR_BINARY_LOOKUP");
+    if (binaryLookup != NULL) {
+        binarySearchCaseSpace(selectorReg, node, 2, numChildren - 1, tmpRegister, conditions, cg);
+    } else {
+        for (int32_t i = 2; i < numChildren; i++) {
+            TR::Node *child = node->getChild(ordering[i].index);
+            int32_t caseValue = child->getCaseConstant();
 
-        if (!constantIsUnsignedImm12(caseValue)) {
-            loadConstant32(cg, node, caseValue, tmpRegister);
-            generateCompareInstruction(cg, node, selectorReg, tmpRegister);
-        } else {
-            generateCompareImmInstruction(cg, node, selectorReg, caseValue);
+            if (!constantIsUnsignedImm12(caseValue)) {
+                loadConstant32(cg, node, caseValue, tmpRegister);
+                generateCompareInstruction(cg, node, selectorReg, tmpRegister);
+            } else {
+                generateCompareImmInstruction(cg, node, selectorReg, caseValue);
+            }
+
+            TR::RegisterDependencyConditions *cond = conditions;
+            if (child->getNumChildren() > 0) {
+                // GRA
+                cg->evaluate(child->getFirstChild());
+                cond = cond->clone(cg, RegDeps(cg, child->getFirstChild(), 0));
+            }
+            generateConditionalBranchInstruction(cg, node, child->getBranchDestination()->getNode()->getLabel(),
+                TR::CC_EQ, cond);
         }
 
-        TR::RegisterDependencyConditions *cond = conditions;
-        if (child->getNumChildren() > 0) {
+        // Branch to default
+        if (defaultChild->getNumChildren() > 0) {
             // GRA
-            cg->evaluate(child->getFirstChild());
-            cond = cond->clone(cg, RegDeps(cg, child->getFirstChild(), 0));
+            cg->evaluate(defaultChild->getFirstChild());
+            conditions = conditions->clone(cg, RegDeps(cg, defaultChild->getFirstChild(), 0));
         }
-        generateConditionalBranchInstruction(cg, node, child->getBranchDestination()->getNode()->getLabel(), TR::CC_EQ,
-            cond);
+        generateLabelInstruction(cg, TR::InstOpCode::b, node,
+            defaultChild->getBranchDestination()->getNode()->getLabel(), conditions);
     }
-
-    // Branch to default
-    if (defaultChild->getNumChildren() > 0) {
-        // GRA
-        cg->evaluate(defaultChild->getFirstChild());
-        conditions = conditions->clone(cg, RegDeps(cg, defaultChild->getFirstChild(), 0));
-    }
-    generateLabelInstruction(cg, TR::InstOpCode::b, node, defaultChild->getBranchDestination()->getNode()->getLabel(),
-        conditions);
 
     if (tmpRegister) {
         cg->stopUsingRegister(tmpRegister);

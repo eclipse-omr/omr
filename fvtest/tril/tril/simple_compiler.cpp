@@ -21,6 +21,7 @@
 
 #include "simple_compiler.hpp"
 #include "CallConverter.hpp"
+#include "CaseNodeConverter.hpp"
 #include "GenericNodeConverter.hpp"
 
 #include "env/jittypes.h"
@@ -50,7 +51,8 @@ int32_t Tril::SimpleCompiler::compileWithVerifier(TR::IlVerifier* verifier) {
     auto methodInfo = getMethodInfo();
     TR::TypeDictionary types;
     GenericNodeConverter genericNodeConverter;
-    CallConverter callConverter(&genericNodeConverter);
+    CaseNodeConverter caseNodeConverter(&genericNodeConverter);
+    CallConverter callConverter(&caseNodeConverter);
     Tril::TRLangBuilder ilgenerator(methodInfo.getBodyAST(), &types, &callConverter);
 
     // get a list of the method's argument types and transform it
