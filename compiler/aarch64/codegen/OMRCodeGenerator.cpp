@@ -714,6 +714,10 @@ bool OMR::ARM64::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
         case TR::vsqrt:
         case TR::vmsqrt:
             return (et == TR::Float || et == TR::Double);
+        case TR::mand:
+        case TR::mor:
+        case TR::mxor:
+        case TR::msplats:
         case TR::mTrueCount:
         case TR::mFirstTrue:
         case TR::mLastTrue:
