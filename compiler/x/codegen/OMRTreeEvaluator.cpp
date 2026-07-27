@@ -6387,14 +6387,276 @@ TR::Register *OMR::X86::TreeEvaluator::mxorEvaluator(TR::Node *node, TR::CodeGen
     return TR::TreeEvaluator::binaryMaskEvaluator(node, cg);
 }
 
+// Helper function for mloadiFromArray to select move instruction based on number of lanes
+static void loadRawBoolean(TR::Node *node, TR::Register *tmpReg, TR::MemoryReference *sourceMR, int32_t numLanes,
+    TR::CodeGenerator *cg)
+{
+    // raw load is numLanes bytes wide (1 byte per lane), independent of vl
+    switch (numLanes) {
+        case 2: {
+            TR::Register *gprTmp = cg->allocateRegister(TR_GPR);
+            Inst_RegMem(OP::MOVZXReg4Mem2, node, gprTmp, sourceMR, cg);
+            Inst_RegReg(OP::MOVDRegReg4, node, tmpReg, gprTmp, cg);
+            cg->stopUsingRegister(gprTmp);
+            break;
+        }
+        case 4:
+            Inst_RegMem(OP::MOVDRegMem, node, tmpReg, sourceMR, cg);
+            break;
+        case 8:
+            Inst_RegMem(OP::MOVQRegMem, node, tmpReg, sourceMR, cg);
+            break;
+        case 16:
+        case 32:
+        case 64: {
+            TR::VectorLength loadVL = numLanes == 16 ? TR::VectorLength128
+                : numLanes == 32                     ? TR::VectorLength256
+                                                     : TR::VectorLength512;
+            OMR::X86::Encoding enc
+                = TR::InstOpCode(OP::MOVDQURegMem).getSIMDEncoding(&cg->comp()->target().cpu, loadVL);
+            Inst_RegMem(OP::MOVDQURegMem, node, tmpReg, sourceMR, cg, enc);
+            break;
+        }
+        default:
+            TR_ASSERT_FATAL(false, "loadRawBoolean: unsupported numLanes %d", numLanes);
+            break;
+    }
+}
+
 TR::Register *OMR::X86::TreeEvaluator::mloadiFromArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::DataType dt = node->getDataType();
+    TR::DataType et = dt.getVectorElementType();
+    TR::VectorLength vl = dt.getVectorLength();
+    int32_t numLanes = dt.getVectorNumLanes();
+
+    TR::MemoryReference *sourceMR = MRef_node(node, cg);
+
+#if 0
+    // TODO: AVX-512 path (PSUBB on ZMM + VPMOVB2M) is untested — no AVX-512 hardware available.
+    // Re-enable once verified on an AVX-512 machine.
+    if (cg->supportsOpMaskRegisters()) {
+        TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+        loadRawBoolean(node, tmpReg, sourceMR, numLanes, cg);
+
+        TR::VectorLength rawVL = numLanes <= 16 ? TR::VectorLength128
+            : numLanes == 32                    ? TR::VectorLength256
+                                                : TR::VectorLength512;
+
+        TR::Register *zeroReg = cg->allocateRegister(TR_VRF);
+        OMR::X86::Encoding vlenEnc = TR::InstOpCode(OP::PXORRegReg).getSIMDEncoding(&cg->comp()->target().cpu, rawVL);
+        Inst_RegReg(OP::PXORRegReg, node, zeroReg, zeroReg, cg, vlenEnc);
+        Inst_RegReg(OP::PSUBBRegReg, node, zeroReg, tmpReg, cg, vlenEnc); // 0 - nonzero -> sign bit set (e.g. 0-1=0xFF, 0-2=0xFE); 0 - 0 -> 0x00; all nonzero results have sign bit set
+
+        TR::Register *resultReg = cg->allocateRegister(TR_VMR);
+        Inst_RegReg(OP::VPMOVB2MRegReg, node, resultReg, zeroReg, cg); // sign bit of each byte -> mask bit
+
+        cg->stopUsingRegister(tmpReg);
+        cg->stopUsingRegister(zeroReg);
+        node->setRegister(resultReg);
+        sourceMR->decNodeReferenceCounts(cg);
+        return resultReg;
+    } else
+#endif
+    {
+        TR::Register *tmpReg = cg->allocateRegister(TR_VRF);
+        loadRawBoolean(node, tmpReg, sourceMR, numLanes, cg);
+
+        TR::InstOpCode expandOp = OP::bad;
+        switch (et) {
+            case TR::Int8:
+                break;
+            case TR::Int16:
+                expandOp = OP::PMOVZXBWRegReg;
+                break;
+            case TR::Int32:
+            case TR::Float:
+                expandOp = OP::PMOVZXBDRegReg;
+                break;
+            case TR::Int64:
+            case TR::Double:
+                expandOp = OP::PMOVZXBQRegReg;
+                break;
+        }
+
+        if (expandOp.getMnemonic() != OP::bad) {
+            OMR::X86::Encoding expandEncoding = expandOp.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+            TR_ASSERT_FATAL(expandEncoding != OMR::X86::Bad, "No suitable encoding form for pmovzx opcode");
+            Inst_RegReg(expandOp.getMnemonic(), node, tmpReg, tmpReg, cg, expandEncoding);
+        }
+
+        TR::Register *result = cg->allocateRegister(TR_VRF);
+        TR::InstOpCode xorOpcode = OP::PXORRegReg;
+        // Use integer sub to compute 0 - boolByte so that true->all-ones, false->all-zeros.
+        // Float/Double must use the same-width integer sub (Int32/Int64) not SUBPS/SUBPD.
+        TR::DataType integralEt = (et == TR::Float) ? TR::Int32 : (et == TR::Double) ? TR::Int64 : et;
+        TR::InstOpCode subOp = VectorBinaryArithmeticOpCodesForReg[BinaryArithmeticSub][integralEt - 1];
+
+        OMR::X86::Encoding xorEncoding = xorOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding subEncoding = subOp.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        TR_ASSERT_FATAL(xorEncoding != OMR::X86::Bad, "No suitable encoding form for pxor opcode");
+        TR_ASSERT_FATAL(subEncoding != OMR::X86::Bad, "No suitable encoding form for psub opcode");
+
+        // create all-zero or all-one mask by computing 0 - value
+        // 0 - 1 = 0xff, 0 - 0 = 0x00
+        Inst_RegReg(xorOpcode.getMnemonic(), node, result, result, cg, xorEncoding);
+        Inst_RegReg(subOp.getMnemonic(), node, result, tmpReg, cg, subEncoding);
+
+        node->setRegister(result);
+        cg->stopUsingRegister(tmpReg);
+        sourceMR->decNodeReferenceCounts(cg);
+        return result;
+    }
+}
+
+// Helper function for mstoreiToArray to select pack encoding instruction based on vector length
+static void narrowPack(TR::Node *node, TR::Register *result, TR::InstOpCode::Mnemonic packOpcode,
+    TR::InstOpCode::Mnemonic xorOpcode, TR::VectorLength &vl, TR::CodeGenerator *cg)
+{
+    TR::Register *reg = cg->allocateRegister(TR_VRF);
+    if (vl == TR::VectorLength256) {
+        Inst_RegRegImm(OP::VEXTRACTF128RegRegImm1, node, reg, result, 1, cg, OMR::X86::VEX_L256);
+    } else {
+        OMR::X86::Encoding xorEnc
+            = TR::InstOpCode(xorOpcode).getSIMDEncoding(&cg->comp()->target().cpu, TR::VectorLength128);
+        Inst_RegReg(xorOpcode, node, reg, reg, cg, xorEnc);
+    }
+
+    OMR::X86::Encoding packEnc = TR::InstOpCode(packOpcode)
+                                     .getSIMDEncoding(&cg->comp()->target().cpu,
+                                         vl == TR::VectorLength256 ? TR::VectorLength256 : TR::VectorLength128);
+    TR_ASSERT_FATAL(packEnc != OMR::X86::Bad, "No suitable encoding for pack opcode");
+
+    if (packEnc != OMR::X86::Legacy) {
+        Inst_RegRegReg(packOpcode, node, result, result, reg, cg, packEnc);
+    } else {
+        Inst_RegReg(packOpcode, node, result, reg, cg, packEnc);
+    }
+
+    cg->stopUsingRegister(reg);
+    vl = TR::VectorLength128;
 }
 
 TR::Register *OMR::X86::TreeEvaluator::mstoreiToArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::DataType dt = node->getDataType();
+    TR::DataType et = dt.getVectorElementType();
+    TR::VectorLength vl = dt.getVectorLength();
+    int32_t numLanes = dt.getVectorNumLanes();
+
+    TR::MemoryReference *tempMR = MRef_node(node, cg);
+    TR::Node *storeValNode = node->getSecondChild();
+    TR::Register *storeValReg = cg->evaluate(storeValNode);
+    TR::Instruction *storeInstr = NULL;
+
+#if 0
+    // TODO: AVX-512 path (KMOVW/VPMOVM2B) is untested — no AVX-512 hardware available.
+    // Re-enable once verified on an AVX-512 machine.
+    if (cg->supportsOpMaskRegisters()) {
+        TR_ASSERT_FATAL(storeValReg->getKind() == TR_VMR,
+            "mstoreiToArrayHelper: expected mask register for storeValReg when opmask registers are supported");
+
+        if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_AVX512BW)) {
+            // VPMOVM2B: expand each k-bit to a full byte (1→0xFF, 0→0x00), then store all at once.
+            TR::VectorLength rawVL = numLanes <= 16 ? TR::VectorLength128
+                : numLanes == 32                    ? TR::VectorLength256
+                                                    : TR::VectorLength512;
+            TR::Register *byteVecReg = cg->allocateRegister(TR_VRF);
+            OMR::X86::Encoding m2bEnc = TR::InstOpCode(OP::VPMOVM2BRegReg).getSIMDEncoding(
+                &cg->comp()->target().cpu, rawVL);
+            Inst_RegReg(OP::VPMOVM2BRegReg, node, byteVecReg, storeValReg, cg, m2bEnc);
+            OP::Mnemonic storeOp = numLanes <= 16 ? OP::MOVDQUMemReg
+                : numLanes == 32                   ? OP::VMOVDQUMemYmm
+                                                   : OP::VMOVDQUMemZmm;
+            storeInstr = Inst_MemReg(storeOp, node, tempMR, byteVecReg, cg);
+            cg->stopUsingRegister(byteVecReg);
+        }
+    } else
+#endif
+    {
+        int32_t subElement = (et == TR::Int8)      ? TR::Int8 - 1
+            : (et == TR::Int16)                    ? TR::Int16 - 1
+            : (et == TR::Int32 || et == TR::Float) ? TR::Int32 - 1
+                                                   : TR::Int64 - 1;
+        TR_ASSERT_FATAL(et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Float || et == TR::Int64
+                || et == TR::Double,
+            "mstoreiToArrayEvaluator: unsupported element type");
+
+        // clamp the value in register to 0 / 1 per lane
+        TR::Register *result = cg->allocateRegister(TR_VRF);
+        TR::InstOpCode::Mnemonic xorOpcode = OP::PXORRegReg;
+        TR::InstOpCode subOpcode = VectorBinaryArithmeticOpCodesForReg[BinaryArithmeticSub][subElement];
+        OMR::X86::Encoding xorEncoding = TR::InstOpCode(xorOpcode).getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        OMR::X86::Encoding subEncoding = subOpcode.getSIMDEncoding(&cg->comp()->target().cpu, vl);
+        TR_ASSERT_FATAL(xorEncoding != OMR::X86::Bad, "No suitable encoding for pxor opcode");
+        TR_ASSERT_FATAL(subEncoding != OMR::X86::Bad, "No suitable encoding for psub opcode");
+        Inst_RegReg(xorOpcode, node, result, result, cg, xorEncoding);
+        Inst_RegReg(subOpcode.getMnemonic(), node, result, storeValReg, cg, subEncoding);
+
+        // for Int32 types, use first convert dword -> word using PACKSSDWRegReg, and then do word -> byte using PACKSSWBRegReg
+        if (et == TR::Int32 || et == TR::Float) {
+            narrowPack(node, result, OP::PACKSSDWRegReg, xorOpcode, vl, cg);
+            narrowPack(node, result, OP::PACKSSWBRegReg, xorOpcode, vl, cg);
+        }
+
+        if (et == TR::Int64 || et == TR::Double) {
+            OMR::X86::Encoding shuffleEncoding
+                = TR::InstOpCode(OP::PSHUFDRegRegImm1).getSIMDEncoding(&cg->comp()->target().cpu, vl);
+            TR_ASSERT_FATAL(shuffleEncoding != OMR::X86::Bad, "No suitable encoding for pshufd opcode");
+            Inst_RegRegImm(OP::PSHUFDRegRegImm1, node, result, result, 0x08, cg, shuffleEncoding);
+
+            narrowPack(node, result, OP::PACKSSDWRegReg, xorOpcode, vl, cg);
+            narrowPack(node, result, OP::PACKSSWBRegReg, xorOpcode, vl, cg);
+
+            if (numLanes == 4) {
+                static uint8_t GATHER_0145[]
+                    = { 0, 1, 4, 5, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
+                auto snippet = MRef_const(cg->findOrCreate16ByteConstant(node, GATHER_0145), cg);
+                TR::Register *ctlReg = cg->allocateRegister(TR_FPR);
+                Inst_RegMem(OP::MOVDQURegMem, node, ctlReg, snippet, cg);
+                Inst_RegReg(OP::PSHUFBRegReg, node, result, ctlReg, cg);
+                cg->stopUsingRegister(ctlReg);
+            }
+        }
+
+        if (et == TR::Int16) {
+            narrowPack(node, result, OP::PACKSSWBRegReg, xorOpcode, vl, cg);
+        }
+
+        // store exactly numLanes bytes
+        switch (numLanes) {
+            case 32:
+                storeInstr = Inst_MemReg(OP::VMOVDQUMemYmm, node, tempMR, result, cg);
+                break;
+            case 16:
+                storeInstr = Inst_MemReg(OP::MOVDQUMemReg, node, tempMR, result, cg);
+                break;
+            case 8:
+                storeInstr = Inst_MemReg(OP::MOVQMemReg, node, tempMR, result, cg);
+                break;
+            case 4:
+                storeInstr = Inst_MemReg(OP::MOVDMemReg, node, tempMR, result, cg);
+                break;
+            case 2: {
+                TR::Register *tmpGPR = cg->allocateRegister(TR_GPR);
+                Inst_RegReg(OP::MOVDReg4Reg, node, tmpGPR, result, cg);
+                storeInstr = Inst_MemReg(OP::S2MemReg, node, tempMR, tmpGPR, cg);
+                cg->stopUsingRegister(tmpGPR);
+                break;
+            }
+            default:
+                TR_ASSERT_FATAL(false, "mstoreiToArrayEvaluator: unsupported number of lanes %d", numLanes);
+        }
+        cg->stopUsingRegister(result);
+    }
+
+    // registers this store as the fault point so a null array reference raises NullPointerException correctly
+    if (node->getOpCode().isIndirect())
+        cg->setImplicitExceptionPoint(storeInstr);
+
+    cg->decReferenceCount(storeValNode);
+    tempMR->decNodeReferenceCounts(cg);
+    return NULL;
 }
 
 TR::Register *OMR::X86::TreeEvaluator::b2mEvaluator(TR::Node *node, TR::CodeGenerator *cg)
