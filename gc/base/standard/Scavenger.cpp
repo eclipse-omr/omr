@@ -4078,6 +4078,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	bool const compressed = _extensions->compressObjectReferences();
 
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+// DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
 //#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 #if 1
 	// DEV: specifying this path to unify abort for concurrent and non-concurrent
