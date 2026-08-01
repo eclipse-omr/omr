@@ -522,10 +522,6 @@ void OMR::X86::TreeEvaluator::setupProfiledGuardRelocation(TR::X86RegImmInstruct
 {
 #ifdef J9_PROJECT_SPECIFIC
     J9::X86::TreeEvaluator::setupProfiledGuardRelocation(cmpInstruction, node, reloKind);
-#else
-    (void)cmpInstruction;
-    (void)node;
-    (void)reloKind;
 #endif
 }
 
