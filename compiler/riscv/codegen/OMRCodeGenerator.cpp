@@ -391,6 +391,26 @@ void OMR::RV::CodeGenerator::apply32BitLabelRelativeRelocation(int32_t *cursor, 
     *cursor |= ENCODE_UJTYPE_IMM(distance);
 }
 
+void OMR::RV::CodeGenerator::applyR_BRANCH(int32_t *cursor, TR::LabelSymbol *label)
+{
+    TR_ASSERT(label->getCodeLocation(), "Attempt to relocate to a NULL label address!");
+
+    intptr_t distance = (uintptr_t)label->getCodeLocation() - (uintptr_t)cursor;
+
+    TR_ASSERT(VALID_SBTYPE_IMM(distance), "Invalid Branch offset out of range");
+    *cursor |= ENCODE_SBTYPE_IMM(distance);
+}
+
+void OMR::RV::CodeGenerator::applyR_JAL(int32_t *cursor, TR::LabelSymbol *label)
+{
+    TR_ASSERT(label->getCodeLocation(), "Attempt to relocate to a NULL label address!");
+
+    intptr_t distance = (uintptr_t)label->getCodeLocation() - (uintptr_t)cursor;
+
+    TR_ASSERT(VALID_UJTYPE_IMM(distance), "Invalid JAL offset out of range");
+    *cursor |= ENCODE_UJTYPE_IMM(distance);
+}
+
 int64_t OMR::RV::CodeGenerator::getLargestNegConstThatMustBeMaterialized()
 {
     TR_ASSERT(0, "Not Implemented on AArch64");
