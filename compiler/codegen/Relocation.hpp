@@ -94,9 +94,6 @@ public:
 
     void setDebugInfo(TR::RelocationDebugInfo *info);
 
-    /**dumps a trace of the internals - override as required */
-    virtual void trace(TR::Compilation *comp);
-
     virtual void addExternalRelocation(TR::CodeGenerator *cg) {}
 
     virtual void apply(TR::CodeGenerator *cg);
