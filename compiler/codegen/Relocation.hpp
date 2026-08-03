@@ -96,7 +96,7 @@ public:
 
     virtual void addExternalRelocation(TR::CodeGenerator *cg) {}
 
-    virtual void apply(TR::CodeGenerator *cg);
+    virtual void apply(TR::CodeGenerator *cg) = 0;
 };
 
 class LabelRelocation : public TR::Relocation {
