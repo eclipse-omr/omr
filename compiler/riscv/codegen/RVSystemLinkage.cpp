@@ -33,20 +33,6 @@
 #include "il/AutomaticSymbol.hpp"
 #include "il/ParameterSymbol.hpp"
 
-/**
- * @brief Adds dependency
- */
-inline void addDependency(TR::RegisterDependencyConditions *dep, TR::Register *vreg, TR::RealRegister::RegNum rnum,
-    TR_RegisterKinds rk, TR::CodeGenerator *cg)
-{
-    if (vreg == NULL) {
-        vreg = cg->allocateRegister(rk);
-    }
-
-    dep->addPreCondition(vreg, rnum);
-    dep->addPostCondition(vreg, rnum);
-}
-
 TR::RVSystemLinkageProperties::RVSystemLinkageProperties()
 {
     _properties = IntegersInRegisters | FloatsInRegisters | RightToLeft;
