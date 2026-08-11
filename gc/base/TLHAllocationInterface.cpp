@@ -206,6 +206,7 @@ MM_TLHAllocationInterface::allocateObject(MM_EnvironmentBase *env, MM_AllocateDe
 	uintptr_t sizeInBytesAllocated = (_stats.bytesAllocated(false) - _bytesAllocatedBase);
 	env->_oolTraceAllocationBytes += sizeInBytesAllocated;
 	env->_traceAllocationBytes += sizeInBytesAllocated;
+	env->_jfrTraceAllocationBytes += sizeInBytesAllocated;
 	return result;
 }
 
@@ -281,6 +282,7 @@ MM_TLHAllocationInterface::flushCache(MM_EnvironmentBase *env)
 	uintptr_t allocatedSizeInsideTLH = _owningEnv->getAllocatedSizeInsideTLH();
 	_owningEnv->_oolTraceAllocationBytes += allocatedSizeInsideTLH;
 	_owningEnv->_traceAllocationBytes += allocatedSizeInsideTLH;
+	_owningEnv->_jfrTraceAllocationBytes += allocatedSizeInsideTLH;
 
 	if (!_owningEnv->isInlineTLHAllocateEnabled()) {
 		/* Clear out realHeapTop field; tlh code below will take care of rest */
