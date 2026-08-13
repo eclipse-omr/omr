@@ -4735,7 +4735,9 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		return true;
 	}
 
-	if (IS_CONCURRENT_ENABLED && isBackOutFlagRaised()) {
+	// DEV: removing this path to unify abort for concurrent and non-concurrent
+	//if (IS_CONCURRENT_ENABLED && isBackOutFlagRaised()) {
+	if (isBackOutFlagRaised()) {
 		bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 
 		Assert_MM_true(result);
@@ -4883,6 +4885,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 	env->_cycleState->_activeSubSpace = subSpace;
 	_collectorExpandedSize = 0;
 
+	// TODO: do we need any change here?
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (IS_CONCURRENT_ENABLED) {
 		/* this may trigger either start or end of Concurrent Scavenge cycle */
