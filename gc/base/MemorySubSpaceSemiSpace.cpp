@@ -1038,7 +1038,11 @@ MM_MemorySubSpaceSemiSpace::reset(MM_EnvironmentBase *env)
 	 * This is supposed to be called early in Global to restore that allocation.
 	 * It should be done before any findLargestFreeEntry() during Global (like Compact triggers), that are affected by _isAllocatable.
 	 */
-	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	// DEV: specifying this path to unify abort for concurrent and non-concurrent
+	//if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	if (_extensions->isScavengerBackOutFlagRaised()) {
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		omrtty_printf("{SHAD: MM_MemorySubSpaceSemiSpace::reset\n");
 		flip(env, restore_allocate_after_backout);
 	}
 
@@ -1057,7 +1061,9 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 	uintptr_t oldVMState = env->pushVMstate(OMRVMSTATE_GC_CHECK_RESIZE);
 	/* If we are called at the end of percolate global GC, due to aborted Concurrent Scavenge,
 	 * we have to restore tilt (that has been set to 100% to do unified sliding compact of Nursery */
-	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	// DEV: specifying this path to unify abort for concurrent and non-concurrent
+	//if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	if (_extensions->isScavengerBackOutFlagRaised()) {
 		flip(env, restore_tilt_after_percolate);
 	} else {
 		checkSubSpaceMemoryPostCollectTilt(env);

@@ -3936,7 +3936,9 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 		if (isObjectInEvacuateMemory((omrobjectptr_t )rootRegion->getLowAddress())) {
 			/* tell the object iterator to work on the given region */
 			GC_ObjectHeapIteratorAddressOrderedList evacuateHeapIterator(_extensions, rootRegion, false);
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+// DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
+//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if 1
 			evacuateHeapIterator.includeForwardedObjects();
 #endif
 			omrobjectptr_t objectPtr = NULL;
