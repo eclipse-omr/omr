@@ -27,11 +27,24 @@
 #include "codegen/Linkage_inlines.hpp"
 #include "codegen/MemoryReference.hpp"
 #include "codegen/RegisterDependency.hpp"
-#include "codegen/CodeGeneratorUtils.hpp"
 #include "env/StackMemoryRegion.hpp"
 #include "il/Node_inlines.hpp"
 #include "il/AutomaticSymbol.hpp"
 #include "il/ParameterSymbol.hpp"
+
+/**
+ * @brief Adds pre- and post- conditions.
+ */
+static inline void addDependency(TR::RegisterDependencyConditions *preDeps, TR::RegisterDependencyConditions *postDeps,
+    TR::Register *vreg, TR::RealRegister::RegNum rnum, TR_RegisterKinds rk, TR::CodeGenerator *cg)
+{
+    if (vreg == NULL) {
+        vreg = cg->allocateRegister(rk);
+    }
+
+    preDeps->addPreCondition(vreg, rnum);
+    postDeps->addPostCondition(vreg, rnum);
+}
 
 TR::RVSystemLinkageProperties::RVSystemLinkageProperties()
 {
@@ -430,7 +443,8 @@ void TR::RVSystemLinkage::createEpilogue(TR::Instruction *cursor)
     cursor = Inst_ITYPE(OP::_jalr, lastNode, zero, ra, 0, cg, cursor);
 }
 
-int32_t TR::RVSystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies)
+int32_t TR::RVSystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependencyConditions *preDependencies,
+    TR::RegisterDependencyConditions *postDependencies)
 
 {
     const TR::RVLinkageProperties &properties = getProperties();
@@ -538,10 +552,10 @@ int32_t TR::RVSystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependenc
                         else
                             resultReg = cg()->allocateRegister();
 
-                        dependencies->addPreCondition(argRegister, TR::RealRegister::a0);
-                        dependencies->addPostCondition(resultReg, TR::RealRegister::a0);
+                        preDependencies->addPreCondition(argRegister, TR::RealRegister::a0);
+                        postDependencies->addPostCondition(resultReg, TR::RealRegister::a0);
                     } else {
-                        TR::addDependency(dependencies, argRegister,
+                        addDependency(preDependencies, postDependencies, argRegister,
                             properties.getIntegerArgumentRegister(numIntegerArgs + numFloatArgsPassedInGPRs), TR_GPR,
                             cg());
                     }
@@ -581,11 +595,11 @@ int32_t TR::RVSystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependenc
                         else
                             resultReg = cg()->allocateRegister(TR_FPR);
 
-                        dependencies->addPreCondition(argRegister, TR::RealRegister::fa0);
-                        dependencies->addPostCondition(resultReg, TR::RealRegister::fa0);
+                        preDependencies->addPreCondition(argRegister, TR::RealRegister::fa0);
+                        postDependencies->addPostCondition(resultReg, TR::RealRegister::fa0);
                     } else {
-                        TR::addDependency(dependencies, argRegister, properties.getFloatArgumentRegister(numFloatArgs),
-                            TR_FPR, cg());
+                        addDependency(preDependencies, postDependencies, argRegister,
+                            properties.getFloatArgumentRegister(numFloatArgs), TR_FPR, cg());
                     }
                 } else if ((numIntegerArgs + numFloatArgsPassedInGPRs) < properties.getNumIntArgRegs()) {
                     TR::Register *gprRegister = cg()->allocateRegister(TR_GPR);
@@ -593,7 +607,7 @@ int32_t TR::RVSystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependenc
                     op = (childType == TR::Float) ? OP::_fmv_x_s : OP::_fmv_x_d;
                     Inst_RTYPE(op, callNode, gprRegister, argRegister, zero, cg());
 
-                    TR::addDependency(dependencies, gprRegister,
+                    addDependency(preDependencies, postDependencies, gprRegister,
                         properties.getIntegerArgumentRegister(numIntegerArgs + numFloatArgsPassedInGPRs), TR_GPR, cg());
                     numFloatArgsPassedInGPRs++;
                 } else {
@@ -614,30 +628,31 @@ int32_t TR::RVSystemLinkage::buildArgs(TR::Node *callNode, TR::RegisterDependenc
     // NULL deps for unused integer argument registers
     for (auto i = numIntegerArgs + numFloatArgsPassedInGPRs; i < properties.getNumIntArgRegs(); i++) {
         if (i == 0 && resType.isAddress()) {
-            dependencies->addPreCondition(cg()->allocateRegister(), properties.getIntegerArgumentRegister(0));
-            dependencies->addPostCondition(cg()->allocateCollectedReferenceRegister(),
+            preDependencies->addPreCondition(cg()->allocateRegister(), properties.getIntegerArgumentRegister(0));
+            postDependencies->addPostCondition(cg()->allocateCollectedReferenceRegister(),
                 properties.getIntegerArgumentRegister(0));
         } else {
-            TR::addDependency(dependencies, NULL, properties.getIntegerArgumentRegister(i), TR_GPR, cg());
+            addDependency(preDependencies, postDependencies, NULL, properties.getIntegerArgumentRegister(i), TR_GPR,
+                cg());
         }
     }
 
     // NULL deps for non-preserved non-argument integer registers
     for (auto rn = TR::RealRegister::FirstGPR; rn <= TR::RealRegister::LastGPR; rn++) {
         if (!properties.getPreserved(rn) && !properties.getIntegerArgument(rn)) {
-            TR::addDependency(dependencies, NULL, rn, TR_FPR, cg());
+            addDependency(preDependencies, postDependencies, NULL, rn, TR_FPR, cg());
         }
     }
 
     // NULL deps for unused FP argument registers
     for (auto i = numFloatArgs; i < properties.getNumFloatArgRegs(); i++) {
-        TR::addDependency(dependencies, NULL, properties.getFloatArgumentRegister(i), TR_FPR, cg());
+        addDependency(preDependencies, postDependencies, NULL, properties.getFloatArgumentRegister(i), TR_FPR, cg());
     }
 
     // NULL deps for non-preserved non-argument FP registers
     for (auto rn = TR::RealRegister::FirstFPR; rn <= TR::RealRegister::LastFPR; rn++) {
         if (!properties.getPreserved(rn) && !properties.getFloatArgument(rn)) {
-            TR::addDependency(dependencies, NULL, rn, TR_FPR, cg());
+            addDependency(preDependencies, postDependencies, NULL, rn, TR_FPR, cg());
         }
     }
 
@@ -671,7 +686,7 @@ TR::Register *TR::RVSystemLinkage::buildDispatch(TR::Node *callNode)
     TR::RegisterDependencyConditions *dependencies
         = RegDeps(pp.getNumberOfDependencyRegisters(), pp.getNumberOfDependencyRegisters(), cg());
 
-    int32_t totalSize = buildArgs(callNode, dependencies);
+    int32_t totalSize = buildArgs(callNode, dependencies, dependencies);
     if (totalSize > 0) {
         if (VALID_ITYPE_IMM(-totalSize)) {
             Inst_ITYPE(OP::_addi, callNode, sp, sp, -totalSize, cg());
