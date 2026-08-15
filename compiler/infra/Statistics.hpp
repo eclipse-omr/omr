@@ -303,7 +303,15 @@ public:
         NAME_LEN = 31
     };
 
-    TR_StatsEvents() {}
+    TR_StatsEvents()
+        : _binNames(NULL)
+        , _minEventId(0)
+        , _numSamples(0)
+        , _numInvalidSamples(0)
+    {
+        memset(_name, 0, sizeof(_name)); ///< in C++11 notation: _name = {0};
+        memset(_bins, 0, sizeof(_bins)); ///< in C++11 notation: _bins = {0};
+    }
 
     TR_StatsEvents(const char *name, const char **binNames, int minEventId) { init(name, binNames, minEventId); }
 
