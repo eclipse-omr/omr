@@ -4193,8 +4193,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 		omrtty_printf("{SCAV: Complete back out(%p)}\n", env->getLanguageVMThread());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
-		// DEV: removing this path to unify abort for concurrent and non-concurrent. May remove code in future 
-		if (false) {
+		if (!IS_CONCURRENT_ENABLED) {
 			/* 1) Flush copy scan caches */
 			omrtty_printf("{SHAD: STW: Flush copy scan caches\n");
 			MM_CopyScanCacheStandard *cache = NULL;
