@@ -370,6 +370,7 @@ class ARM64ImmInstruction;
 class ARM64RelocatableImmInstruction;
 class ARM64ImmSymInstruction;
 class ARM64LabelInstruction;
+class ARM64BranchInstruction;
 class ARM64ConditionalBranchInstruction;
 class ARM64CompareBranchInstruction;
 class ARM64TestBitBranchInstruction;
@@ -1225,6 +1226,7 @@ public:
     void print(OMR::Logger *log, TR::ARM64RelocatableImmInstruction *);
     void print(OMR::Logger *log, TR::ARM64ImmSymInstruction *);
     void print(OMR::Logger *log, TR::ARM64LabelInstruction *);
+    void print(OMR::Logger *log, TR::ARM64BranchInstruction *);
     void print(OMR::Logger *log, TR::ARM64ConditionalBranchInstruction *);
     void print(OMR::Logger *log, TR::ARM64CompareBranchInstruction *);
     void print(OMR::Logger *log, TR::ARM64TestBitBranchInstruction *);

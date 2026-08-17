@@ -1122,6 +1122,9 @@ void TR_Debug::print(OMR::Logger *log, TR::Instruction *instr)
         case OMR::Instruction::IsLabel:
             print(log, (TR::ARM64LabelInstruction *)instr);
             break;
+        case OMR::Instruction::IsBranch:
+            print(log, (TR::ARM64BranchInstruction *)instr);
+            break;
         case OMR::Instruction::IsConditionalBranch:
             print(log, (TR::ARM64ConditionalBranchInstruction *)instr);
             break;
@@ -1300,20 +1303,28 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64LabelInstruction *instr)
     printPrefix(log, instr);
 
     TR::LabelSymbol *label = instr->getLabelSymbol();
+    print(log, label);
+    log->printc(':');
+    if (label->isStartInternalControlFlow())
+        log->prints("\t; (Start of internal control flow)");
+    else if (label->isEndInternalControlFlow())
+        log->prints("\t; (End of internal control flow)");
+    printInstructionComment(log, 1, instr);
+    if (instr->getDependencyConditions())
+        print(log, instr->getDependencyConditions());
+    log->flush();
+}
+
+void TR_Debug::print(OMR::Logger *log, TR::ARM64BranchInstruction *instr)
+{
+    printPrefix(log, instr);
+
+    TR::LabelSymbol *label = instr->getLabelSymbol();
     TR::Snippet *snippet = label ? label->getSnippet() : NULL;
-    if (instr->getOpCodeValue() == OP::label) {
-        print(log, label);
-        log->printc(':');
-        if (label->isStartInternalControlFlow())
-            log->prints("\t; (Start of internal control flow)");
-        else if (label->isEndInternalControlFlow())
-            log->prints("\t; (End of internal control flow)");
-    } else {
-        log->printf("%s \t", getOpCodeName(&instr->getOpCode()));
-        print(log, label);
-        if (snippet) {
-            log->printf(" (%s)", getName(snippet));
-        }
+    log->printf("b \t");
+    print(log, label);
+    if (snippet) {
+        log->printf(" (%s)", getName(snippet));
     }
     printInstructionComment(log, 1, instr);
     if (instr->getDependencyConditions())

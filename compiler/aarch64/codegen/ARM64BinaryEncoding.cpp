@@ -201,43 +201,48 @@ uint8_t *TR::ARM64LabelInstruction::generateBinaryEncoding()
 {
     uint8_t *instructionStart = cg()->getBinaryBufferCursor();
     uint8_t *cursor = instructionStart;
+
     TR::LabelSymbol *label = getLabelSymbol();
-
-    if (getOpCodeValue() == OP::label) {
-        label->setCodeLocation(instructionStart);
-    } else {
-        TR_ASSERT(getOpCodeValue() == OP::b, "Unsupported opcode in LabelInstruction.");
-
-        intptr_t destination = (intptr_t)label->getCodeLocation();
-        cursor = getOpCode().copyBinaryToBuffer(instructionStart);
-        if (destination != 0) {
-            if (!cg()->directCallRequiresTrampoline(destination, (intptr_t)cursor)) {
-                intptr_t distance = destination - (intptr_t)cursor;
-                insertImmediateField(toARM64Cursor(cursor), distance);
-            } else {
-                TR_ASSERT(false, "Branch destination is too far away. Not implemented yet.");
-            }
-        } else {
-            cg()->addRelocation(new (cg()->trHeapMemory()) TR::LabelRelative32BitRelocation(cursor, label));
-        }
-        cursor += ARM64_INSTRUCTION_LENGTH;
-    }
-
-    setBinaryLength(cursor - instructionStart);
-    cg()->addAccumulatedInstructionLengthError(getEstimatedBinaryLength() - getBinaryLength());
+    label->setCodeLocation(instructionStart);
+    setBinaryLength(0);
     setBinaryEncoding(instructionStart);
     return cursor;
 }
 
 int32_t TR::ARM64LabelInstruction::estimateBinaryLength(int32_t currentEstimate)
 {
-    if (getOpCodeValue() == OP::label) {
-        setEstimatedBinaryLength(0);
-        getLabelSymbol()->setEstimatedCodeLocation(currentEstimate);
+    setEstimatedBinaryLength(0);
+    getLabelSymbol()->setEstimatedCodeLocation(currentEstimate);
+    return currentEstimate + getEstimatedBinaryLength();
+}
+
+uint8_t *TR::ARM64BranchInstruction::generateBinaryEncoding()
+{
+    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
+    uint8_t *cursor = getOpCode().copyBinaryToBuffer(instructionStart);
+
+    TR::LabelSymbol *label = getLabelSymbol();
+    intptr_t destination = (intptr_t)label->getCodeLocation();
+    if (destination != 0) {
+        if (!cg()->directCallRequiresTrampoline(destination, (intptr_t)cursor)) {
+            intptr_t distance = destination - (intptr_t)cursor;
+            insertImmediateField(toARM64Cursor(cursor), distance);
+        } else {
+            TR_ASSERT(false, "Branch destination is too far away. Not implemented yet.");
+        }
     } else {
-        setEstimatedBinaryLength(ARM64_INSTRUCTION_LENGTH);
+        cg()->addRelocation(new (cg()->trHeapMemory()) TR::LabelRelative32BitRelocation(cursor, label));
     }
 
+    cursor += ARM64_INSTRUCTION_LENGTH;
+    setBinaryLength(ARM64_INSTRUCTION_LENGTH);
+    setBinaryEncoding(instructionStart);
+    return cursor;
+}
+
+int32_t TR::ARM64BranchInstruction::estimateBinaryLength(int32_t currentEstimate)
+{
+    setEstimatedBinaryLength(ARM64_INSTRUCTION_LENGTH);
     return currentEstimate + getEstimatedBinaryLength();
 }
 
@@ -261,12 +266,6 @@ uint8_t *TR::ARM64ConditionalBranchInstruction::generateBinaryEncoding()
     setBinaryLength(ARM64_INSTRUCTION_LENGTH);
     setBinaryEncoding(instructionStart);
     return cursor;
-}
-
-int32_t TR::ARM64ConditionalBranchInstruction::estimateBinaryLength(int32_t currentEstimate)
-{
-    setEstimatedBinaryLength(ARM64_INSTRUCTION_LENGTH);
-    return currentEstimate + getEstimatedBinaryLength();
 }
 
 uint8_t *TR::ARM64CompareBranchInstruction::generateBinaryEncoding()

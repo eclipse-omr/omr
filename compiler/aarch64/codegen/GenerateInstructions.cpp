@@ -79,69 +79,50 @@ TR::Instruction *Inst_ImmSym(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *n
     return new (cg->trHeapMemory()) TR::ARM64ImmSymInstruction(op, node, imm, cond, sr, s, cg);
 }
 
-TR::Instruction *Inst_Label(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-    TR::Instruction *preced)
-{
-    TR_ASSERT_FATAL(op == OP::label || op == OP::b, "Unsupported opcode for LabelInstruction");
-    if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(op, node, sym, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(op, node, sym, cg);
-}
-
-TR::Instruction *Inst_Label(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::LabelSymbol *sym,
-    TR::RegisterDependencyConditions *cond, TR::Instruction *preced)
-{
-    TR_ASSERT_FATAL(op == OP::label || op == OP::b, "Unsupported opcode for LabelInstruction");
-    if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(op, node, sym, cond, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(op, node, sym, cond, cg);
-}
-
 TR::Instruction *Inst_Label(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym, TR::Instruction *preced)
 {
     if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::label, node, sym, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::label, node, sym, cg);
+        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(node, sym, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(node, sym, cg);
 }
 
 TR::Instruction *Inst_Label(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym,
     TR::RegisterDependencyConditions *cond, TR::Instruction *preced)
 {
     if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::label, node, sym, cond, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::label, node, sym, cond, cg);
+        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(node, sym, cond, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(node, sym, cond, cg);
 }
 
 TR::Instruction *Inst_Branch(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym, TR::Instruction *preced)
 {
     if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::b, node, sym, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::b, node, sym, cg);
+        return new (cg->trHeapMemory()) TR::ARM64BranchInstruction(OP::b, node, sym, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64BranchInstruction(OP::b, node, sym, cg);
 }
 
 TR::Instruction *Inst_Branch(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym,
     TR::RegisterDependencyConditions *cond, TR::Instruction *preced)
 {
     if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::b, node, sym, cond, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64LabelInstruction(OP::b, node, sym, cond, cg);
+        return new (cg->trHeapMemory()) TR::ARM64BranchInstruction(OP::b, node, sym, cond, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64BranchInstruction(OP::b, node, sym, cond, cg);
 }
 
 TR::Instruction *Inst_ConditionalBranch(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym,
     TR::ARM64ConditionCode cc, TR::Instruction *preced)
 {
     if (preced)
-        return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(OP::b_cond, node, sym, cc, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(OP::b_cond, node, sym, cc, cg);
+        return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(node, sym, cc, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(node, sym, cc, cg);
 }
 
 TR::Instruction *Inst_ConditionalBranch(TR::CodeGenerator *cg, TR::Node *node, TR::LabelSymbol *sym,
     TR::ARM64ConditionCode cc, TR::RegisterDependencyConditions *cond, TR::Instruction *preced)
 {
     if (preced)
-        return new (cg->trHeapMemory())
-            TR::ARM64ConditionalBranchInstruction(OP::b_cond, node, sym, cc, cond, preced, cg);
-    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(OP::b_cond, node, sym, cc, cond, cg);
+        return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(node, sym, cc, cond, preced, cg);
+    return new (cg->trHeapMemory()) TR::ARM64ConditionalBranchInstruction(node, sym, cc, cond, cg);
 }
 
 TR::Instruction *Inst_CompareBranch(TR::CodeGenerator *cg, OP::Mnemonic op, TR::Node *node, TR::Register *sreg,

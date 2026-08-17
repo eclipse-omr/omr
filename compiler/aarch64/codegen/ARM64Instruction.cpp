@@ -26,25 +26,47 @@
 #include "codegen/RegisterDependency.hpp"
 #include "ras/Logger.hpp"
 
+// TR::ARM64LabelInstruction:: member functions
+
 void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_RegisterKinds kindToBeAssigned)
 {
     TR::Compilation *comp = cg()->comp();
     OMR::Logger *log = comp->log();
     bool trace = comp->getOption(TR_TraceRA);
 
-    bool isLabel = getOpCodeValue() == OP::label;
-    bool isBranch = (getOpCodeValue() == OP::b) || (getKind() == IsConditionalBranch) || (getKind() == IsCompareBranch)
-        || (getKind() == IsTestBitBranch) || (getKind() == IsVirtualGuardNOP);
-
     cg()->freeUnlatchedRegisters();
     // this is the return label from OOL
-    if (isLabel && getLabelSymbol()->isEndOfColdInstructionStream()) {
+    if (getLabelSymbol()->isEndOfColdInstructionStream()) {
         TR::Machine *machine = cg()->machine();
         logprints(trace, log, "\nOOL: taking register state snap shot\n");
         cg()->setIsOutOfLineHotPath(true);
         machine->takeRegisterStateSnapShot();
     }
-    if (isBranch && getLabelSymbol()->isStartOfColdInstructionStream()) {
+}
+
+void TR::ARM64LabelInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
+{
+    TR::RegisterDependencyConditions *cond = OMR::ARM64::Instruction::getDependencyConditions();
+
+    if (cond) {
+        cond->assignPostConditionRegisters(self(), kindToBeAssigned, cg());
+        cond->assignPreConditionRegisters(getPrev(), kindToBeAssigned, cg());
+    }
+
+    assignRegistersForOutOfLineCodeSection(kindToBeAssigned);
+}
+
+// TR::ARM64BranchInstruction:: member functions
+
+void TR::ARM64BranchInstruction::assignRegistersForOutOfLineCodeSection(TR_RegisterKinds kindToBeAssigned)
+{
+    TR::Compilation *comp = cg()->comp();
+    OMR::Logger *log = comp->log();
+    bool trace = comp->getOption(TR_TraceRA);
+
+    cg()->freeUnlatchedRegisters();
+    // this is the return label from OOL
+    if (getLabelSymbol()->isStartOfColdInstructionStream()) {
         // Switch to the outlined instruction stream and assign registers.
         //
         TR_ARM64OutOfLineCodeSection *oi = cg()->findARM64OutOfLineCodeSectionFromLabel(getLabelSymbol());
@@ -53,7 +75,7 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
         if (!oi->hasBeenRegisterAssigned())
             oi->assignRegisters(kindToBeAssigned);
     }
-    if (isBranch && getLabelSymbol()->isEndOfColdInstructionStream()) {
+    if (getLabelSymbol()->isEndOfColdInstructionStream()) {
         // This if statement prevents RA to restore register snapshot on regular branches to the
         // OOL section merging point. Register snapshot is a snapshot of register states taken at
         // OOL merge label. Using this snapshot RA can enforce the similarity of register states
@@ -78,7 +100,7 @@ void TR::ARM64LabelInstruction::assignRegistersForOutOfLineCodeSection(TR_Regist
     }
 }
 
-void TR::ARM64LabelInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
+void TR::ARM64BranchInstruction::assignRegisters(TR_RegisterKinds kindToBeAssigned)
 {
     TR::RegisterDependencyConditions *cond = OMR::ARM64::Instruction::getDependencyConditions();
 

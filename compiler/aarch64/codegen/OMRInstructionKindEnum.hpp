@@ -24,9 +24,9 @@
  * definitions are permitted.
  */
 
-IsNotExtended, IsImm, IsSynchronization, IsException, IsRelocatableImm, IsImmSym, IsLabel, IsConditionalBranch,
-    IsCompareBranch, IsTestBitBranch, IsVirtualGuardNOP, IsRegBranch, IsAdmin, IsTrg1, IsTrg1Cond, IsTrg1Imm,
-    IsTrg1ImmShifted, IsTrg1ImmSym, IsTrg1ZeroSrc1, IsTrg1ZeroImm, IsTrg1Src1, IsTrg1Src1Imm, IsTrg1Src2,
+IsNotExtended, IsImm, IsSynchronization, IsException, IsRelocatableImm, IsImmSym, IsLabel, IsBranch,
+    IsConditionalBranch, IsCompareBranch, IsTestBitBranch, IsVirtualGuardNOP, IsRegBranch, IsAdmin, IsTrg1, IsTrg1Cond,
+    IsTrg1Imm, IsTrg1ImmShifted, IsTrg1ImmSym, IsTrg1ZeroSrc1, IsTrg1ZeroImm, IsTrg1Src1, IsTrg1Src1Imm, IsTrg1Src2,
     IsCondTrg1Src2, IsTrg1Src2Imm, IsTrg1Src2Shifted, IsTrg1Src2Extended, IsTrg1Src2IndexedElement, IsTrg1Src2Zero,
     IsTrg1Src3, IsTrg1Mem, IsTrg1MemSrc1, IsTrg2Mem, IsMem, IsMemSrc1, IsMemSrc2, IsMemImm, IsSrc1, IsZeroSrc1Imm,
     IsSrc1ImmCond, IsSrc2, IsZeroSrc2, IsSrc2Cond
