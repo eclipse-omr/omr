@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
+/* Assisted-by: IBM Bob */
+
 /*
  * $RCSfile: si.c,v $
  * $Revision: 1.64 $
@@ -32,6 +34,7 @@
 #include <string.h>
 #include <stdio.h>
 #if defined(LINUX)
+#include <cinttypes>
 #include <linux/magic.h>
 #include <sys/vfs.h>
 #include <sched.h>
@@ -3216,3 +3219,176 @@ TEST(PortSysinfoTest, NumberOfContextSwitchesIncreasesMonotonically)
 	ASSERT_EQ(omrsysinfo_get_number_context_switches(&switches), OMRPORT_ERROR_SYSINFO_NOT_SUPPORTED);
 #endif /* defined(LINUX) */
 }
+
+#if defined(LINUX) && !defined(OMRZTPF)
+/**
+ * Test omrsysinfo_get_all_diskstats: basic call succeeds, returns at least one
+ * entry, and all entries have plausible major device numbers.
+ */
+TEST(PortSysinfoTest, sysinfo_test_get_all_diskstats_basic)
+{
+	OMRPORT_ACCESS_FROM_OMRPORT(portTestEnv->getPortLibrary());
+	const char *testName = "omrsysinfo_test_get_all_diskstats_basic";
+	OMRDiskStatsEntry *entries = NULL;
+	uintptr_t numEntries = 0;
+	int32_t rc = 0;
+
+	reportTestEntry(OMRPORTLIB, testName);
+
+	rc = omrsysinfo_get_all_diskstats(&entries, &numEntries);
+	if (0 != rc) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"omrsysinfo_get_all_diskstats() failed with rc=%d\n", rc);
+		reportTestExit(OMRPORTLIB, testName);
+		return;
+	}
+
+	if (0 == numEntries) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"omrsysinfo_get_all_diskstats() succeeded but returned zero entries\n");
+		omrmem_free_memory(entries);
+		reportTestExit(OMRPORTLIB, testName);
+		return;
+	}
+
+	if (NULL == entries) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"omrsysinfo_get_all_diskstats() returned NULL array with numEntries=%zu\n",
+			numEntries);
+		reportTestExit(OMRPORTLIB, testName);
+		return;
+	}
+
+	portTestEnv->log("omrsysinfo_get_all_diskstats(): found %zu disk entries\n", numEntries);
+
+	/* Spot-check every entry: Linux major device numbers are in [1, 259]; 0 is
+	 * reserved and should not appear in /proc/diskstats. */
+	for (uintptr_t i = 0; i < numEntries; i++) {
+		portTestEnv->log(
+			LEVEL_VERBOSE,
+			"  [%zu] major=%u minor=%u rdIos=%llu wrIos=%llu\n",
+			i,
+			entries[i].majorNum,
+			entries[i].minorNum,
+			(unsigned long long)entries[i].stats.rdIos,
+			(unsigned long long)entries[i].stats.wrIos);
+		if (entries[i].majorNum > 259) {
+			outputErrorMessage(
+				PORTTEST_ERROR_ARGS,
+				"entry[%zu] has unexpected majorNum=%u (expected 1-259)\n",
+				i, entries[i].majorNum);
+		}
+	}
+
+	omrmem_free_memory(entries);
+	reportTestExit(OMRPORTLIB, testName);
+}
+
+#define J9SYSINFO_DISKSTATS_LINE_LENGTH 1024
+/**
+ * Test omrsysinfo_get_all_diskstats: the number of entries returned matches
+ * the number of parseable 13-field (post-sscanf) lines in /proc/diskstats.
+ */
+TEST(PortSysinfoTest, sysinfo_test_get_all_diskstats_count_matches_proc)
+{
+	OMRPORT_ACCESS_FROM_OMRPORT(portTestEnv->getPortLibrary());
+	const char *testName = "omrsysinfo_test_get_all_diskstats_count_matches_proc";
+	OMRDiskStatsEntry *entries = NULL;
+	uintptr_t numEntries = 0;
+	int32_t rc = 0;
+
+	reportTestEntry(OMRPORTLIB, testName);
+
+	rc = omrsysinfo_get_all_diskstats(&entries, &numEntries);
+	if (0 != rc) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"omrsysinfo_get_all_diskstats() failed with rc=%d\n", rc);
+		reportTestExit(OMRPORTLIB, testName);
+		return;
+	}
+
+	/* Independently count parseable lines from /proc/diskstats using the same
+	 * sscanf pattern the implementation uses: major minor name(skipped) + 11
+	 * uint64 fields = 13 values matched by sscanf (name is consumed via %*s
+	 * but not counted in the return value).
+	 */
+	FILE *fp = fopen("/proc/diskstats", "r");
+	if (NULL == fp) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"Could not open /proc/diskstats for cross-check\n");
+		omrmem_free_memory(entries);
+		reportTestExit(OMRPORTLIB, testName);
+		return;
+	}
+
+	uintptr_t lineCount = 0;
+	char line[J9SYSINFO_DISKSTATS_LINE_LENGTH];
+	while (NULL != fgets(line, sizeof(line), fp)) {
+		uint32_t maj = 0;
+		uint32_t min = 0;
+		uint64_t f[11];
+		int matched = sscanf(
+			line,
+			"%" SCNu32 " %" SCNu32 " %*s"
+			" %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64
+			" %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64
+			" %" SCNu64 " %" SCNu64 " %" SCNu64,
+			&maj, &min,
+			&f[0], &f[1], &f[2], &f[3],
+			&f[4], &f[5], &f[6], &f[7],
+			&f[8], &f[9], &f[10]);
+
+#define PROC_DISKSTATS_EXPECTED_NUMBER_OF_FIELDS 13
+
+		if (PROC_DISKSTATS_EXPECTED_NUMBER_OF_FIELDS == matched) {
+			lineCount += 1;
+		}
+	}
+	fclose(fp);
+
+	if (lineCount != numEntries) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"omrsysinfo_get_all_diskstats() returned %zu entries but /proc/diskstats "
+			"has %zu parseable lines\n",
+			numEntries, lineCount);
+	} else {
+		portTestEnv->log(
+			"omrsysinfo_get_all_diskstats(): entry count %zu matches /proc/diskstats\n",
+			numEntries);
+	}
+
+	omrmem_free_memory(entries);
+	reportTestExit(OMRPORTLIB, testName);
+}
+#else /* defined(LINUX) && !defined(OMRZTPF) */
+/**
+ * Test omrsysinfo_get_all_diskstats: on unsupported platforms the function
+ * must return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM.
+ */
+TEST(PortSysinfoTest, sysinfo_test_get_all_diskstats_unsupported)
+{
+	OMRPORT_ACCESS_FROM_OMRPORT(portTestEnv->getPortLibrary());
+	const char *testName = "omrsysinfo_test_get_all_diskstats_unsupported";
+	OMRDiskStatsEntry *entries = NULL;
+	uintptr_t numEntries = 0;
+
+	reportTestEntry(OMRPORTLIB, testName);
+
+	int32_t rc = omrsysinfo_get_all_diskstats(&entries, &numEntries);
+	if (OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM != rc) {
+		outputErrorMessage(
+			PORTTEST_ERROR_ARGS,
+			"omrsysinfo_get_all_diskstats() expected OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM "
+			"(%d), got rc=%d\n",
+			OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM, rc);
+	}
+
+	reportTestExit(OMRPORTLIB, testName);
+}
+#endif /* defined(LINUX) && !defined(OMRZTPF) */
