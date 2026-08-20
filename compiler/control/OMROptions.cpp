@@ -828,6 +828,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
     { "disableRecognizedMethods", "O\tdisable recognized methods", SET_OPTION_BIT(TR_DisableRecognizedMethods), "F" },
     { "disableRecompDueToInlinedMethodRedefinition", "O\tdisable recompilation for method body with patched HCR guard",
      SET_OPTION_BIT(TR_DisableRecompDueToInlinedMethodRedefinition), "F" },
+    { "disableRecompDueToPatchedNopableGuards",
+     "O\tDisable recompilation of high optimization compiles if the nopable guard has been patched", RESET_OPTION_BIT(TR_EnableRecompDueToPatchedNopableGuards), "F" },
     { "disableReducedPriorityForCustomMethodHandleThunks",
      "R\tcompile custom MethodHandle invoke exact thunks at the same priority as normal java methods", SET_OPTION_BIT(TR_DisableReducedPriorityForCustomMethodHandleThunks), "F", NOT_IN_SUBSET },
     { "disableRedundantAsyncCheckRemoval", "O\tdisable redundant async check removal", TR::Options::disableOptimization,
@@ -3685,6 +3687,9 @@ void OMR::Options::jitPreProcess()
         self()->setOption(TR_UseHigherCountsForNonSCCMethods);
         self()->setOption(TR_UseLowerCountsForNonSCCMethodsDuringStartup);
         self()->setOption(TR_UseHigherMethodCountsAfterStartup);
+
+        // Enable insertion of code to recompile method if nopable guards in method are patched
+        self()->setOption(TR_EnableRecompDueToPatchedNopableGuards);
 
         // On Linux we use this option so that, if the application doesn't send a startup hint
         // in the first second, we are allowed to disableSelectiveNoServer
