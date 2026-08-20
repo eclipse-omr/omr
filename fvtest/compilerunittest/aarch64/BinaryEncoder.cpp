@@ -51,7 +51,7 @@ TEST_P(ARM64Trg1ImmEncodingTest, encode) {
     auto trgReg = cg()->machine()->getRealRegister(std::get<1>(GetParam()));
     auto imm = std::get<2>(GetParam());
 
-    auto instr = generateTrg1ImmInstruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, imm);
+    auto instr = Inst_Trg1Imm(cg(), std::get<0>(GetParam()), fakeNode, trgReg, imm);
 
     ASSERT_EQ(std::get<3>(GetParam()), encodeInstruction(instr));
 }
@@ -63,7 +63,7 @@ TEST_P(ARM64Trg1ImmShiftedEncodingTest, encode) {
     auto imm = std::get<2>(GetParam());
     auto shiftAmount = std::get<3>(GetParam());
 
-    auto instr = generateTrg1ImmShiftedInstruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, imm, shiftAmount);
+    auto instr = Inst_Trg1ImmShifted(cg(), std::get<0>(GetParam()), fakeNode, trgReg, imm, shiftAmount);
 
     ASSERT_EQ(std::get<4>(GetParam()), encodeInstruction(instr));
 }
@@ -74,7 +74,7 @@ TEST_P(ARM64Trg1Src1EncodingTest, encode) {
     auto trgReg = cg()->machine()->getRealRegister(std::get<1>(GetParam()));
     auto src1Reg = cg()->machine()->getRealRegister(std::get<2>(GetParam()));
 
-    auto instr = generateTrg1Src1Instruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg);
+    auto instr = Inst_Trg1Src1(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg);
 
     ASSERT_EQ(std::get<3>(GetParam()), encodeInstruction(instr));
 }
@@ -86,7 +86,7 @@ TEST_P(ARM64Trg1Src2EncodingTest, encode) {
     auto src1Reg = cg()->machine()->getRealRegister(std::get<2>(GetParam()));
     auto src2Reg = cg()->machine()->getRealRegister(std::get<3>(GetParam()));
 
-    auto instr = generateTrg1Src2Instruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, src2Reg);
+    auto instr = Inst_Trg1Src2(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, src2Reg);
 
     ASSERT_EQ(std::get<4>(GetParam()), encodeInstruction(instr));
 }
@@ -98,7 +98,7 @@ TEST_P(ARM64Trg1Src2IndexedElementEncodingTest, encode) {
     auto src1Reg = cg()->machine()->getRealRegister(std::get<2>(GetParam()));
     auto src2Reg = cg()->machine()->getRealRegister(std::get<3>(GetParam()));
 
-    auto instr = generateTrg1Src2IndexedElementInstruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, src2Reg, std::get<4>(GetParam()));
+    auto instr = Inst_Trg1Src2IndexedElement(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, src2Reg, std::get<4>(GetParam()));
 
     ASSERT_EQ(std::get<5>(GetParam()), encodeInstruction(instr));
 }
@@ -110,7 +110,7 @@ TEST_P(ARM64Trg1Src2ImmEncodingTest, encode) {
     auto src1Reg = cg()->machine()->getRealRegister(std::get<2>(GetParam()));
     auto src2Reg = cg()->machine()->getRealRegister(std::get<3>(GetParam()));
 
-    auto instr = generateTrg1Src2ImmInstruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, src2Reg, std::get<4>(GetParam()));
+    auto instr = Inst_Trg1Src2Imm(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, src2Reg, std::get<4>(GetParam()));
 
     ASSERT_EQ(std::get<5>(GetParam()), encodeInstruction(instr));
 }
@@ -122,7 +122,7 @@ TEST_P(ARM64VectorShiftImmediateEncodingTest, encode) {
     auto trgReg = cg()->machine()->getRealRegister(std::get<1>(GetParam()));
     auto src1Reg = cg()->machine()->getRealRegister(std::get<2>(GetParam()));
 
-    auto instr = generateVectorShiftImmediateInstruction(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, std::get<3>(GetParam()));
+    auto instr = Inst_VectorShiftImmediate(cg(), std::get<0>(GetParam()), fakeNode, trgReg, src1Reg, std::get<3>(GetParam()));
 
     ASSERT_EQ(std::get<4>(GetParam()), encodeInstruction(instr));
 }
@@ -154,7 +154,7 @@ TEST_P(ARM64VectorDupElementEncodingTest, encode) {
     auto op = std::get<0>(GetParam());
     auto srcIndex = std::get<3>(GetParam());
 
-    auto instr = generateVectorDupElementInstruction(cg(), op, fakeNode, trgReg, srcReg, srcIndex);
+    auto instr = Inst_VectorDupElement(cg(), op, fakeNode, trgReg, srcReg, srcIndex);
 
     ASSERT_EQ(encodeInstruction(instr), std::get<4>(GetParam()));
 }
@@ -167,7 +167,7 @@ TEST_P(ARM64MovVectorElementToGPREncodingTest, encode) {
     auto op = std::get<0>(GetParam());
     auto srcIndex = std::get<3>(GetParam());
 
-    auto instr = generateMovVectorElementToGPRInstruction(cg(), op, fakeNode, trgReg, srcReg, srcIndex);
+    auto instr = Inst_MovVectorElementToGPR(cg(), op, fakeNode, trgReg, srcReg, srcIndex);
 
     ASSERT_EQ(encodeInstruction(instr), std::get<4>(GetParam()));
 }
@@ -180,7 +180,7 @@ TEST_P(ARM64MovGPRToVectorElementEncodingTest, encode) {
     auto op = std::get<0>(GetParam());
     auto trgIndex = std::get<3>(GetParam());
 
-    auto instr = generateMovGPRToVectorElementInstruction(cg(), op, fakeNode, trgReg, srcReg, trgIndex);
+    auto instr = Inst_MovGPRToVectorElement(cg(), op, fakeNode, trgReg, srcReg, trgIndex);
 
     ASSERT_EQ(encodeInstruction(instr), std::get<4>(GetParam()));
 }
@@ -194,7 +194,7 @@ TEST_P(ARM64MovVectorElementEncodingTest, encode) {
     auto trgIndex = std::get<3>(GetParam());
     auto srcIndex = std::get<4>(GetParam());
 
-    auto instr = generateMovVectorElementInstruction(cg(), op, fakeNode, trgReg, srcReg, trgIndex, srcIndex);
+    auto instr = Inst_MovVectorElement(cg(), op, fakeNode, trgReg, srcReg, trgIndex, srcIndex);
 
     ASSERT_EQ(encodeInstruction(instr), std::get<5>(GetParam()));
 }
@@ -210,7 +210,7 @@ TEST_P(ARM64Src1ImmCondEncodingTest, encode) {
     auto isNegative = (op == TR::InstOpCode::ccmnimmx || op == TR::InstOpCode::ccmnimmw);
     auto is64bit = (op == TR::InstOpCode::ccmpimmx || op == TR::InstOpCode::ccmnimmx);
 
-    auto instr = generateConditionalCompareImmInstruction(cg(), fakeNode, srcReg, imm, conditionFlags, cc, is64bit, isNegative);
+    auto instr = Inst_ConditionalCompareImm(cg(), fakeNode, srcReg, imm, conditionFlags, cc, is64bit, isNegative);
     ASSERT_EQ(encodeInstruction(instr), std::get<5>(GetParam()));
 }
 
@@ -225,7 +225,7 @@ TEST_P(ARM64Src2CondEncodingTest, encode) {
     auto isNegative = (op == TR::InstOpCode::ccmnx || op == TR::InstOpCode::ccmnw);
     auto is64bit = (op == TR::InstOpCode::ccmpx || op == TR::InstOpCode::ccmnx);
 
-    auto instr = generateConditionalCompareInstruction(cg(), fakeNode, srcReg1, srcReg2, conditionFlags, cc, is64bit, isNegative);
+    auto instr = Inst_ConditionalCompare(cg(), fakeNode, srcReg1, srcReg2, conditionFlags, cc, is64bit, isNegative);
     ASSERT_EQ(encodeInstruction(instr), std::get<5>(GetParam()));
 }
 
@@ -237,7 +237,7 @@ TEST_P(ARM64CINCEncodingTest, encode) {
     auto is64bit = std::get<0>(GetParam());
     auto cc = std::get<3>(GetParam());
 
-    auto instr = generateCIncInstruction(cg(), fakeNode, trgReg, srcReg, cc, is64bit);
+    auto instr = Inst_CInc(cg(), fakeNode, trgReg, srcReg, cc, is64bit);
     ASSERT_EQ(encodeInstruction(instr), std::get<4>(GetParam()));
 }
 

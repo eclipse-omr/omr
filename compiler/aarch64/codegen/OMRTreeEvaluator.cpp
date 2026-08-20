@@ -7445,7 +7445,7 @@ TR::Register *OMR::ARM64::TreeEvaluator::BBEndEvaluator(TR::Node *node, TR::Code
         TR::Instruction *lastInstruction = cg->getAppendInstruction();
         if (lastInstruction->getOpCodeValue() == OP::bl
             && lastInstruction->getNode()->getSymbolReference()->getReferenceNumber() == TR_aThrow) {
-            lastInstruction = generateInstruction(cg, OP::bad, node, lastInstruction);
+            lastInstruction = Inst(cg, OP::bad, node, lastInstruction);
         }
     }
 
