@@ -464,17 +464,11 @@ uint8_t *TR::JtypeInstruction::generateBinaryEncoding()
     intptr_t offset = 0;
 
     if (getSymbolReference() != nullptr) {
+        TR_ASSERT_FATAL(getOpCode().getMnemonic() == OP::_auipc, "Instruction is not AUIPC");
+        TR_ASSERT_FATAL(getNext()->getOpCode().getMnemonic() == OP::_jalr, "AUIPC is not followed by JALR");
         TR_ASSERT_FATAL(getLabelSymbol() == nullptr, "Both symbol reference and symbol set in J-type instruction");
-        TR::ResolvedMethodSymbol *sym = getSymbolReference()->getSymbol()->getResolvedMethodSymbol();
-        TR_ResolvedMethod *resolvedMethod = sym == NULL ? NULL : sym->getResolvedMethod();
 
-        if (comp()->isRecursiveMethodTarget(resolvedMethod)) {
-            intptr_t jitToJitStart = cg()->getLinkage()->entryPointFromCompiledMethod();
-            offset = jitToJitStart - reinterpret_cast<intptr_t>(cursor);
-        } else {
-            offset = reinterpret_cast<intptr_t>(getSymbolReference()->getMethodAddress())
-                - reinterpret_cast<intptr_t>(cursor);
-        }
+        cg()->addRelocation(new (cg()->trHeapMemory()) TR::R_RISCV_CALL_PLT(cursor, getSymbolReference()));
     } else {
         TR_ASSERT_FATAL(getOpCode().getMnemonic() == OP::_jal, "Instruction is not JAL");
 

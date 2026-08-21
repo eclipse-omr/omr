@@ -33,3 +33,8 @@ void TR::R_RISCV_JAL::apply(TR::CodeGenerator *cg)
     assertLabelDefined();
     cg->applyR_JAL(reinterpret_cast<int32_t *>(getUpdateLocation()), getLabel());
 }
+
+void TR::R_RISCV_CALL_PLT::apply(TR::CodeGenerator *cg)
+{
+    cg->applyR_CALL_PLT(reinterpret_cast<int32_t *>(getUpdateLocation()), getSymbolReference());
+}

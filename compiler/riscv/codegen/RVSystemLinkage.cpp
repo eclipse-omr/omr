@@ -677,16 +677,21 @@ TR::Register *TR::RVSystemLinkage::buildDispatch(TR::Node *callNode)
     const TR::RVLinkageProperties &pp = getProperties();
     TR::RealRegister *sp = cg()->machine()->getRealRegister(pp.getStackPointerRegister());
     TR::RealRegister *ra = cg()->machine()->getRealRegister(TR::RealRegister::ra);
-    TR::Register *target = nullptr;
 
-    if (callNode->getOpCode().isCallIndirect()) {
+    TR::Register *target = nullptr;
+    TR::RegisterDependencyConditions *preDeps = nullptr;
+    TR::RegisterDependencyConditions *postDeps = nullptr;
+
+    if (callNode->getOpCode().isCallIndirect() || callNode->getSymbolReference()->getMethodAddress() != NULL) {
         target = cg()->evaluate(callNode->getFirstChild());
+        preDeps = RegDeps(pp.getNumberOfDependencyRegisters(), pp.getNumberOfDependencyRegisters(), cg());
+        postDeps = preDeps;
+    } else {
+        preDeps = RegDeps(pp.getNumberOfDependencyRegisters(), 0, cg());
+        postDeps = RegDeps(0, pp.getNumberOfDependencyRegisters(), cg());
     }
 
-    TR::RegisterDependencyConditions *dependencies
-        = RegDeps(pp.getNumberOfDependencyRegisters(), pp.getNumberOfDependencyRegisters(), cg());
-
-    int32_t totalSize = buildArgs(callNode, dependencies, dependencies);
+    int32_t totalSize = buildArgs(callNode, preDeps, postDeps);
     if (totalSize > 0) {
         if (VALID_ITYPE_IMM(-totalSize)) {
             Inst_ITYPE(OP::_addi, callNode, sp, sp, -totalSize, cg());
@@ -696,24 +701,27 @@ TR::Register *TR::RVSystemLinkage::buildDispatch(TR::Node *callNode)
     }
 
     if (callNode->getOpCode().isCallIndirect()) {
-        Inst_ITYPE(OP::_jalr, callNode, ra, target, 0, dependencies, cg());
+        Inst_ITYPE(OP::_jalr, callNode, ra, target, 0, preDeps, cg());
     } else {
         auto targetAddr = callNode->getSymbolReference()->getMethodAddress();
 
         if (targetAddr == NULL) {
             /*
-             * If the target address is not known yet, we generate `jal` and hope that the target address
-             * offset would fit into 20bit immediate.
+             * If the target address is not known yet, we generate `auipc` + `jalr` pair and hope that
+             * the target address is within -2GB, +2GB range.
              *
              * This is the case of recursive calls.
+             *
+             * Note that relocation happens in JtypeInstruction::generateBinaryEncoding().
              */
-            Inst_JTYPE(OP::_jal, callNode, ra, 0, dependencies, callNode->getSymbolReference(), NULL, cg());
+            Inst_JTYPE(OP::_auipc, callNode, ra, 0, preDeps, callNode->getSymbolReference(), NULL, cg());
+            Inst_ITYPE(OP::_jalr, callNode, ra, ra, 0, postDeps, cg());
         } else {
             /*
              * If the target address is known, we load it into a register and generate `jalr`. This may be
-             * wasteful in cases the target address offset would fit into 20bit immediate of `jal`. However,
-             * more often than not, non-jitted functions (library / runtime functions) are too far to fit in
-             * the immediate value.
+             * wasteful in cases the target address is within -2GB, +2GB range (so we could have used
+             * `auipc` + `jalr` pair). However, more often than not, non-jitted functions (library / runtime
+             * functions) are too far to fit in the immediate value.
              *
              * So, until a trampolines are implemented, we pay the price and load the target address into
              * register.
@@ -722,7 +730,7 @@ TR::Register *TR::RVSystemLinkage::buildDispatch(TR::Node *callNode)
              * anyways and this way we do not need to allocate another one.
              */
             loadConstant64(cg(), callNode, reinterpret_cast<int64_t>(targetAddr), ra);
-            Inst_ITYPE(OP::_jalr, callNode, ra, ra, 0, dependencies, cg());
+            Inst_ITYPE(OP::_jalr, callNode, ra, ra, 0, preDeps, cg());
         }
     }
 
@@ -740,19 +748,19 @@ TR::Register *TR::RVSystemLinkage::buildDispatch(TR::Node *callNode)
     switch (callNode->getOpCodeValue()) {
         case TR::icall:
         case TR::icalli:
-            retReg = dependencies->searchPostConditionRegister(pp.getIntegerReturnRegister());
+            retReg = postDeps->searchPostConditionRegister(pp.getIntegerReturnRegister());
             break;
         case TR::lcall:
         case TR::lcalli:
         case TR::acall:
         case TR::acalli:
-            retReg = dependencies->searchPostConditionRegister(pp.getLongReturnRegister());
+            retReg = postDeps->searchPostConditionRegister(pp.getLongReturnRegister());
             break;
         case TR::fcall:
         case TR::fcalli:
         case TR::dcall:
         case TR::dcalli:
-            retReg = dependencies->searchPostConditionRegister(pp.getFloatReturnRegister());
+            retReg = postDeps->searchPostConditionRegister(pp.getFloatReturnRegister());
             break;
         case TR::call:
         case TR::calli:
@@ -768,7 +776,8 @@ TR::Register *TR::RVSystemLinkage::buildDispatch(TR::Node *callNode)
         callNode->getFirstChild()->decReferenceCount();
     }
 
-    dependencies->stopUsingDepRegs(cg(), retReg);
+    preDeps->stopUsingDepRegs(cg(), retReg);
+    postDeps->stopUsingDepRegs(cg(), retReg);
 
     return retReg;
 }

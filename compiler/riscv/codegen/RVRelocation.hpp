@@ -23,6 +23,7 @@
 #define RVRELOCATION_INCL
 
 #include "codegen/Relocation.hpp"
+#include "il/SymbolReference.hpp"
 
 namespace TR {
 
@@ -42,6 +43,20 @@ public:
     {}
 
     virtual void apply(TR::CodeGenerator *cg);
+};
+
+class R_RISCV_CALL_PLT : public Relocation {
+    SymbolReference *_symbolReference;
+
+public:
+    R_RISCV_CALL_PLT(uint8_t *p, SymbolReference *s)
+        : TR::Relocation(p)
+        , _symbolReference(s)
+    {}
+
+    virtual void apply(TR::CodeGenerator *cg);
+
+    SymbolReference *getSymbolReference() { return _symbolReference; }
 };
 
 } // namespace TR
