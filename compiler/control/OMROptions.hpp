@@ -1235,19 +1235,18 @@ class TR_FilterBST {
 public:
     void *operator new(size_t size, TR::PersistentAllocator &allocator);
 
-    TR_FilterBST(int32_t type, int32_t optionSet)
+    TR_FilterBST(int32_t type, int32_t optionSet, int32_t lineNumber = 0)
+        : _name(NULL)
+        , _class(NULL)
+        , _signature(NULL)
+        , _regex(NULL)
+        , _optionSet(optionSet)
+        , _lineNumber(lineNumber)
+        , _nameLen(0)
+        , _filterType((char)type)
+        , subGroup(NULL)
     {
-        memset(this, 0, sizeof(TR_FilterBST));
-        _filterType = (char)type;
-        _optionSet = optionSet;
-    }
-
-    TR_FilterBST(int32_t type, int32_t optionSet, int32_t lineNumber)
-    {
-        memset(this, 0, sizeof(TR_FilterBST));
-        _filterType = (char)type;
-        _optionSet = optionSet;
-        _lineNumber = lineNumber;
+        memset(_child, 0, sizeof(_child)); ///< in C++11 notation: _child = {0};
     }
 
     bool isExclude() { return _filterType <= TR_FILTER_EXCLUDE_MAX; }
