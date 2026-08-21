@@ -314,6 +314,7 @@ public:
 	bool doFrequentObjectAllocationSampling; /**< Whether to track object allocations*/
 	uintptr_t oolObjectSamplingBytesGranularity; /**< How often (in bytes) we do allocation sampling as tracked by per thread's local _oolTraceAllocationBytes. */
 	uintptr_t objectSamplingBytesGranularity; /**< How often (in bytes) we do allocation sampling as tracked by per thread's local _traceAllocationBytes. */
+	uintptr_t jfrObjectSamplingBytesGranularity; /**< How often (in bytes) we fire a JFR ObjectAllocationSample event per thread; UDATA_MAX = disabled */
 
 	uintptr_t frequentObjectAllocationSamplingRate; /**< # bytes to sample / # bytes allocated */
 	MM_FrequentObjectsStats* frequentObjectsStats;
@@ -1550,6 +1551,7 @@ public:
 		, doFrequentObjectAllocationSampling(false) /* Finds most frequently allocated classes. Disabled by default. */
 		, oolObjectSamplingBytesGranularity(16*1024*1024) /* Default granularity set to 16M (shows <1% perf loss). */
 		, objectSamplingBytesGranularity(UDATA_MAX) /* default UDATA_MAX (disabled) */
+		, jfrObjectSamplingBytesGranularity(UDATA_MAX) /* default UDATA_MAX (disabled) */
 		, frequentObjectAllocationSamplingRate(100)
 		, frequentObjectsStats(NULL)
 		, frequentObjectAllocationSamplingDepth(0)

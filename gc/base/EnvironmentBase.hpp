@@ -152,6 +152,8 @@ public:
 	uintptr_t _oolTraceAllocationBytes; /**< Tracks the bytes allocated since the last ool object trace */
 	uintptr_t _traceAllocationBytes;  /**< Tracks the bytes allocated since the last object trace */
 	uintptr_t _traceAllocationBytesCurrentTLH; /**< keep the bytes of times of sampling threshold for last object trace(include allocation bytes inside TLH) */
+	uintptr_t _jfrTraceAllocationBytes;           /**< Bytes allocated since the last JFR ObjectAllocationSample event on this thread */
+	uintptr_t _jfrTraceAllocationBytesCurrentTLH; /**< TLH byte offset at which the last JFR sample occurred (mirrors _traceAllocationBytesCurrentTLH) */
 
 	uintptr_t approxScanCacheCount; /**< Local copy of approximate entries in global Cache Scan List. Updated upon allocation of new cache. */
 
@@ -746,6 +748,8 @@ public:
 		,_oolTraceAllocationBytes(0)
 		,_traceAllocationBytes(0)
 		,_traceAllocationBytesCurrentTLH(0)
+		,_jfrTraceAllocationBytes(0)
+		,_jfrTraceAllocationBytesCurrentTLH(0)
 		,approxScanCacheCount(0)
 		,_activeValidator(NULL)
 		,_lastSyncPointReached(NULL)
@@ -804,6 +808,8 @@ public:
 		,_oolTraceAllocationBytes(0)
 		,_traceAllocationBytes(0)
 		,_traceAllocationBytesCurrentTLH(0)
+		,_jfrTraceAllocationBytes(0)
+		,_jfrTraceAllocationBytesCurrentTLH(0)
 		,approxScanCacheCount(0)
 		,_activeValidator(NULL)
 		,_lastSyncPointReached(NULL)
