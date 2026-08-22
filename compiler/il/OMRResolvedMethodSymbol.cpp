@@ -2065,6 +2065,12 @@ void OMR::ResolvedMethodSymbol::removeUnusedLocals()
 #ifdef DEBUG
             removedSize += (uint32_t)local->getSize();
 #endif
+            // If the unused local was used to hold a monitored object, notify
+            // the compilation so it can remove it from any monitor-auto bookkeeping
+            if (local->holdsMonitoredObject()) {
+                self()->comp()->removeMonitorAuto(local);
+            }
+
             _automaticList.removeNext(prev);
 
             if (prev) {

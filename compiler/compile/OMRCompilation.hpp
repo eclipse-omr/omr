@@ -378,6 +378,20 @@ public:
      */
     bool validateTargetToBeInlined(TR_ResolvedMethod *implementer) { return true; }
 
+    /**
+     * @brief removes a monitor temporary from the compilation's bookkeeping.
+     *
+     * A monitor temporary is a local variable (automatic symbol) used to
+     * hold a reference to a monitored object across a synchronized region.
+     * This base implementation is a no-op.  Downstream compilers that track
+     * monitor autos (for example, to support locking-order analysis or
+     * relocatable compilations) should override this method.
+     *
+     * @param sym the automatic symbol representing the monitor temporary
+     *            to be removed
+     */
+    void removeMonitorAuto(TR::RegisterMappedSymbol *sym) {}
+
     // ..........................................................................
     // Optimizer mechanics
     int16_t getOptIndex() { return _currentOptIndex; }
