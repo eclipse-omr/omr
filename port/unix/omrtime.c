@@ -112,21 +112,18 @@ omrtime_current_time_nanos(struct OMRPortLibrary *portLibrary, uintptr_t *succes
 int64_t
 omrtime_nano_time(struct OMRPortLibrary *portLibrary)
 {
-	int64_t hiresTime = 0;
 #if defined(OSX)
-	mach_timespec_t mt;
-	if (KERN_SUCCESS == clock_get_time(cs_t, &mt)) {
-		hiresTime = ((int64_t)mt.tv_sec * OMRPORT_TIME_DELTA_IN_NANOSECONDS) + (int64_t)mt.tv_nsec;
-	}
+	return (int64_t)clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 #else /* defined(OSX) */
+	int64_t hiresTime = 0;
 	struct timespec ts;
 
 	if (0 == clock_gettime(OMRTIME_NANO_CLOCK, &ts)) {
 		hiresTime = ((int64_t)ts.tv_sec * OMRPORT_TIME_DELTA_IN_NANOSECONDS) + (int64_t)ts.tv_nsec;
 	}
-#endif /* defined(OSX) */
 
 	return hiresTime;
+#endif /* defined(OSX) */
 }
 
 /**
