@@ -3860,6 +3860,7 @@ MM_Scavenger::backOutFixSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 
 	if(NULL != objectPtr) {
 		MM_ForwardedHeader forwardHeader(objectPtr, compressed);
+		// TODO: this is failing
 		Assert_MM_false(forwardHeader.isForwardedPointer());
 		if (forwardHeader.isReverseForwardedPointer()) {
 			*slotPtr = forwardHeader.getReverseForwardedPointer();
@@ -4080,11 +4081,13 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	bool const compressed = _extensions->compressObjectReferences();
 
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-// DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-#if 1
-	// DEV: specifying this path to unify abort for concurrent and non-concurrent
-	if (true) {
+	/* DEV: Attempted to unify STW and CS paths here by forcing the CS branch for both. This failed because
+	 * the CS path calls fixupObjectScan/fixupSlot which expect live forward pointers, while the STW path
+	 * leaves reverse forward pointers installed by backoutFixupAndReverseForwardPointersInSurvivor. The two
+	 * paths are coupled to opposite heap states and cannot be merged without first unifying the heap-state
+	 * strategy, which would cascade into openj9 code (ScavengerBackOutScanner.hpp). Keeping branches as-is. */
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+	if (IS_CONCURRENT_ENABLED) {
 		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
 		GC_SublistIterator remSetIterator(&(_extensions->rememberedSet));
 		while((puddle = remSetIterator.nextList()) != NULL) {
@@ -4284,9 +4287,14 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			}
 		} else {
 			/* RS not in overflow */
-			// DEV: removing this path to unify abort for concurrent and non-concurrent. May remove code in future 
-			if (false) {
-				/* Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space */
+			/* DEV: Attempted to unify STW and CS by removing backoutFixupAndReverseForwardPointersInSurvivor for STW
+			 * (mirroring the CS path which skips it). This failed because the entire downstream backout machinery —
+			 * processRememberedSetInBackout (STW branch), backOutObjectScan, backOutFixSlotWithoutCompression, and
+			 * backOutFixSlot — all depend on reverse forward pointers being installed first. Unifying this step would
+			 * require replacing all of those with their CS fixup counterparts (fixupObjectScan, fixupSlot,
+			 * fixupSlotWithoutCompression), cascading into openj9's ScavengerBackOutScanner.hpp which is out of scope.
+			 * Keeping the STW branch here until a decision is made to unify the heap-state strategy itself. */
+			if (!IS_CONCURRENT_ENABLED) {
 				backoutFixupAndReverseForwardPointersInSurvivor(env);
 			}
 
