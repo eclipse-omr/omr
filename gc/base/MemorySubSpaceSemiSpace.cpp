@@ -684,14 +684,23 @@ MM_MemorySubSpaceSemiSpace::mainTeardownForAbortedGC(MM_EnvironmentBase *env)
 {
 	/* Build free list in survivor. */
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	// DEV: specifying this path to unify abort for concurrent and non-concurrent
-	if (true) {
-		/* There might be live objects in Survivor (newly allocated one since the start of Concurrent Scavenge cycle)
-		 * Sweep in percolate global will rebuild the free list, so we can skip it here
+	/* DEV: Attempted to unify STW and CS by using flip(backout) for both. This failed because the two
+	 * paths are doing fundamentally different things:
+	 * - CS: survivor has live objects (allocated since CS cycle start); percolate global GC performs a
+	 *   unified sliding compact of the nursery. flip(backout) tilts the nursery to 100% and disables
+	 *   allocation to set up that compact layout. restore_tilt_after_percolate is then triggered via
+	 *   MemorySubSpaceGenerational::checkResize (CS-only branch at MemorySubSpaceGenerational.cpp:276).
+	 * - STW: backout already reversed all copies; no live objects remain in survivor; percolate global
+	 *   GC does not compact the nursery. Only allocation needs to be re-enabled; tilt is unchanged.
+	 *   restore_tilt_after_percolate is never triggered for STW and asserts in non-CS code if called
+	 *   (PhysicalSubArenaVirtualMemorySemiSpace.cpp:1052).
+	 * Keeping branches. */
+	if (_extensions->isConcurrentScavengerEnabled()) {
+		/* There might be live objects in Survivor (newly allocated since the start of Concurrent Scavenge cycle).
+		 * Sweep in percolate global will rebuild the free list, so we can skip it here.
 		 */
 		omrtty_printf("{SHAD: CS: flip backout\n");
 		flip(env, backout);
-	// DEV: dead path. May remove code in future
 	} else {
 		_memorySubSpaceSurvivor->rebuildFreeList(env);
 		/* Restoring allocation after aborted scavenge will probably not help with re-attempts to allocate immediately after an aborted scavenge,
