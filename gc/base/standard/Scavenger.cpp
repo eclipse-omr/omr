@@ -4919,6 +4919,15 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		if (isBackOutFlagRaised()) {
 			bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 			Assert_MM_true(result);
+			/* Same reasoning as the pre-scavenge percolate at line 4747/4760: the flag must be
+			 * cleared explicitly for STW after the percolate returns. Without this, any subsequent
+			 * internalGarbageCollect call sees the raised flag at the line 4747 check and fires a
+			 * second percolate before mainSetupForGC gets a chance to clear it.
+			 * For CS the flag is cleared inside flip(restore_tilt_after_percolate) via
+			 * MemorySubSpaceGenerational::checkResize (CS-only branch). */
+			if (!IS_CONCURRENT_ENABLED) {
+				setBackOutFlag(env, backOutFlagCleared);
+			}
 			return true;
 		}
 	}
