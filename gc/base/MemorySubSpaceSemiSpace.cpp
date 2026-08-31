@@ -489,7 +489,9 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocation_and_set_survivor");
 		_memorySubSpaceAllocate->isAllocatable(true);
 		_memorySubSpaceSurvivor = _memorySubSpaceEvacuate;
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+// DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
+//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+# if 1
 		_bytesAllocatedDuringConcurrent = _extensions->allocationStats.bytesAllocated();
 		_avgBytesAllocatedDuringConcurrent = (uintptr_t)MM_Math::weightedAverage((float)_avgBytesAllocatedDuringConcurrent,
 											 (float)(_bytesAllocatedDuringConcurrent), 0.7f);
@@ -499,9 +501,12 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 												(float)_deviationBytesAllocatedDuringConcurrent * _deviationBytesAllocatedDuringConcurrent, 0.7f));
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 		break;
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+// DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
+//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if 1
 	case backout:
-		Assert_MM_true(_extensions->concurrentScavenger);
+		// DEV: Assertion no longer appropriate
+		//Assert_MM_true(_extensions->concurrentScavenger);
 		/* We have objects on both sides of Nursery. We will unify the two sides and do a compacting slide (after percolate global GC)
 		 * Enforce Allocate be in low address range, since compact slide in percolate global GC moves objects to low addresses.
 		 * Note: _allocateSpaceBase/Top are stale (not updated in set_allocate), since they are overloaded to point to Evacuate during an active cycle
@@ -534,7 +539,8 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		getMemorySpace()->getTenureMemorySubSpace()->isAllocatable(false);
 		break;
 	case restore_allocate_after_backout:
-		Assert_MM_true(_extensions->concurrentScavenger);
+		// DEV: Assertion no longer appropriate
+		//Assert_MM_true(_extensions->concurrentScavenger);
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocate_after_backout");
 		/* Restore allocation, which we had disabled in the backout step */
 		_memorySubSpaceAllocate->isAllocatable(true);
@@ -542,7 +548,8 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		break;
 	case restore_tilt_after_percolate:
 	{
-		Assert_MM_true(_extensions->concurrentScavenger);
+		// DEV: Assertion no longer appropriate
+		//Assert_MM_true(_extensions->concurrentScavenger);
 		uintptr_t lastFreeEntrySize = 0;
 		MM_HeapLinkedFreeHeader *lastFreeEntry = getDefaultMemorySubSpace()->getMemoryPool()->getLastFreeEntry();
 		if (NULL != lastFreeEntry) {
@@ -564,6 +571,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		Trc_MM_MSSSS_flip_restore_tilt_after_percolate_with_stats(
 			env->getLanguageVMThread(),
 			lastFreeEntrySize,
+			// DEV: This will print a page size of 0 if not concurrent scavenger
 			_extensions->getConcurrentScavengerPageSectionSize(),
 			heapAlignedLastFreeEntrySize);
 		/* allocate/survivor base/top still hold the values from before when we did 100% tilt */
@@ -674,16 +682,30 @@ void
 MM_MemorySubSpaceSemiSpace::mainTeardownForAbortedGC(MM_EnvironmentBase *env)
 {
 	/* Build free list in survivor. */
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+	/* DEV: Attempted to unify STW and CS by using flip(backout) for both. This failed because the two
+	 * paths are doing fundamentally different things:
+	 * - CS: survivor has live objects (allocated since CS cycle start); percolate global GC performs a
+	 *   unified sliding compact of the nursery. flip(backout) tilts the nursery to 100% and disables
+	 *   allocation to set up that compact layout. restore_tilt_after_percolate is then triggered via
+	 *   MemorySubSpaceGenerational::checkResize (CS-only branch at MemorySubSpaceGenerational.cpp:276).
+	 * - STW: backout already reversed all copies; no live objects remain in survivor; percolate global
+	 *   GC does not compact the nursery. Only allocation needs to be re-enabled; tilt is unchanged.
+	 *   restore_tilt_after_percolate is never triggered for STW and asserts in non-CS code if called
+	 *   (PhysicalSubArenaVirtualMemorySemiSpace.cpp:1052).
+	 * Keeping branches. */
 	if (_extensions->isConcurrentScavengerEnabled()) {
-		/* There might be live objects in Survivor (newly allocated one since the start of Concurrent Scavenge cycle)
-		 * Sweep in percolate global will rebuild the free list, so we can skip it here
+		/* There might be live objects in Survivor (newly allocated since the start of Concurrent Scavenge cycle).
+		 * Sweep in percolate global will rebuild the free list, so we can skip it here.
 		 */
+		omrtty_printf("{SHAD: CS: flip backout\n");
 		flip(env, backout);
 	} else {
 		_memorySubSpaceSurvivor->rebuildFreeList(env);
 		/* Restoring allocation after aborted scavenge will probably not help with re-attempts to allocate immediately after an aborted scavenge,
 		 * but still we have to restore it at some point for attempts after percolate GC. It's simplest to do it right away.
 		 */
+		omrtty_printf("{SHAD: STW: restore_allocation\n");
 		flip(env, restore_allocation);
 	}
 
@@ -1025,7 +1047,11 @@ MM_MemorySubSpaceSemiSpace::reset(MM_EnvironmentBase *env)
 	 * This is supposed to be called early in Global to restore that allocation.
 	 * It should be done before any findLargestFreeEntry() during Global (like Compact triggers), that are affected by _isAllocatable.
 	 */
-	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	// DEV: specifying this path to unify abort for concurrent and non-concurrent
+	//if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	if (_extensions->isScavengerBackOutFlagRaised()) {
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		omrtty_printf("{SHAD: MM_MemorySubSpaceSemiSpace::reset\n");
 		flip(env, restore_allocate_after_backout);
 	}
 
@@ -1044,7 +1070,9 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 	uintptr_t oldVMState = env->pushVMstate(OMRVMSTATE_GC_CHECK_RESIZE);
 	/* If we are called at the end of percolate global GC, due to aborted Concurrent Scavenge,
 	 * we have to restore tilt (that has been set to 100% to do unified sliding compact of Nursery */
-	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	// DEV: specifying this path to unify abort for concurrent and non-concurrent
+	//if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	if (_extensions->isScavengerBackOutFlagRaised()) {
 		flip(env, restore_tilt_after_percolate);
 	} else {
 		checkSubSpaceMemoryPostCollectTilt(env);
