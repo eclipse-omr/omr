@@ -666,7 +666,6 @@ MM_MemorySubSpaceSemiSpace::mainTeardownForSuccessfulGC(MM_EnvironmentBase *env)
 	_memorySubSpaceEvacuate->rebuildFreeList(env);
 
 	/* Flip the memory space allocate profile */
-	//TODO: should this change?
 	if (!_extensions->isConcurrentScavengerEnabled()) {
 		flip(env, set_allocate);
 		flip(env, disable_allocation);

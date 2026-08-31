@@ -3860,7 +3860,6 @@ MM_Scavenger::backOutFixSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 
 	if(NULL != objectPtr) {
 		MM_ForwardedHeader forwardHeader(objectPtr, compressed);
-		// TODO: this is failing
 		Assert_MM_false(forwardHeader.isForwardedPointer());
 		if (forwardHeader.isReverseForwardedPointer()) {
 			*slotPtr = forwardHeader.getReverseForwardedPointer();
@@ -4171,8 +4170,6 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 void
 MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 {
-	// TODO:
-	// - replace IS_CONCURRENT_ENABLED checks with true 
 	/* Work to be done (for non Concurrent Scavenger):
 	 * 1) Flush copy scan caches
 	 * 2) Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space
@@ -4903,7 +4900,6 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 	env->_cycleState->_activeSubSpace = subSpace;
 	_collectorExpandedSize = 0;
 
-	// TODO: do we need any change here?
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (IS_CONCURRENT_ENABLED) {
 		/* this may trigger either start or end of Concurrent Scavenge cycle */
