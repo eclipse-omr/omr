@@ -337,20 +337,36 @@ void arm64CodeCacheConfig(int32_t ccSizeInByte, int32_t *numTempTrampolines)
     *numTempTrampolines = 0;
 }
 
+static void arm64CreateTrampoline(void *trampPtr, void *target)
+{
+    int32_t *buffer = reinterpret_cast<int32_t *>(trampPtr);
+
+    *buffer = 0x58000050; // LDR R16 PC+8
+    buffer += 1;
+    *buffer = 0xD61F0200; // BR R16
+    buffer += 1;
+    *((intptr_t *)buffer) = reinterpret_cast<intptr_t>(target);
+    buffer += 2;
+}
+
 void arm64CreateHelperTrampolines(void *trampPtr, int32_t numHelpers)
 {
-    uint32_t *buffer = (uint32_t *)((uint8_t *)trampPtr + TRAMPOLINE_SIZE); // Skip the first trampoline for index 0
+    uint8_t *buffer = (uint8_t *)trampPtr + TRAMPOLINE_SIZE; // Skip the first trampoline for index 0
 
     omrthread_jit_write_protect_disable();
 
-    for (int32_t i = 1; i < numHelpers; i++) {
-        *((int32_t *)buffer) = 0x58000050; // LDR R16 PC+8
-        buffer += 1;
-        *buffer = 0xD61F0200; // BR R16
-        buffer += 1;
-        *((intptr_t *)buffer) = (intptr_t)runtimeHelperValue((TR_RuntimeHelper)i);
-        buffer += 2;
+    for (int32_t i = 1; i < numHelpers; i++, buffer += TRAMPOLINE_SIZE) {
+        arm64CreateTrampoline(buffer, runtimeHelperValue((TR_RuntimeHelper)i));
     }
+
+    omrthread_jit_write_protect_enable();
+}
+
+void arm64CreateMethodTrampoline(void *trampPtr, void *startPC, void *method)
+{
+    omrthread_jit_write_protect_disable();
+
+    arm64CreateTrampoline(trampPtr, startPC);
 
     omrthread_jit_write_protect_enable();
 }
@@ -361,7 +377,7 @@ void arm64CodeCacheParameters(int32_t *trampolineSize, void **callBacks, int32_t
     *trampolineSize = TRAMPOLINE_SIZE;
     callBacks[0] = (void *)&arm64CodeCacheConfig;
     callBacks[1] = (void *)&arm64CreateHelperTrampolines;
-    callBacks[2] = (void *)NULL;
+    callBacks[2] = (void *)&arm64CreateMethodTrampoline;
     callBacks[3] = (void *)NULL;
     callBacks[4] = (void *)0;
     *CCPreLoadedCodeSize = 0;
