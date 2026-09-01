@@ -34,6 +34,11 @@
 #include "runtime/Runtime.hpp"
 #include "env/CompilerEnv.hpp"
 
+#if defined(TR_TARGET_RISCV)
+#include "runtime/CodeSync.hpp"
+#include "codegen/RVInstructionUtils.hpp"
+#endif
+
 namespace TR {
 class CodeGenerator;
 }
@@ -369,6 +374,87 @@ void arm64CodeCacheParameters(int32_t *trampolineSize, void **callBacks, int32_t
 
 #endif /* TR_TARGET_ARM64 */
 
+#if defined(TR_TARGET_RISCV)
+
+#if defined(TR_TARGET_64BIT)
+/**
+ * On RV64, the trampoline is implemented as:
+ *
+ *   auipc t0,   0
+ *   ld    t0,   t0,   16
+ *   jalr  zero, t0,   0
+ *   .4byte 0
+ *   .8byte <target>
+ *
+ * The 4byte padding is there avoid unaligned read
+ * which may or may not be supported.
+ */
+struct RISCVTrampoline {
+    uint32_t code[4];
+    uint64_t target;
+};
+#else
+#error "RV32 not yet supported"
+#endif
+
+static constexpr int TRAMPOLINE_SIZE = sizeof(RISCVTrampoline);
+
+void riscvCodeCacheConfig(int32_t ccSizeInByte, int32_t *numTempTrampolines) { *numTempTrampolines = 0; }
+
+static void riscvCreateTrampoline(void *trampPtr, void *target)
+{
+    RISCVTrampoline *tramp = reinterpret_cast<RISCVTrampoline *>(trampPtr);
+    tramp->code[0] = TR_RISCV_UTYPE(TR::InstOpCode::_auipc, TR::RealRegister::t0, 0);
+    tramp->code[1] = TR_RISCV_ITYPE(TR::InstOpCode::_ld, TR::RealRegister::t0, TR::RealRegister::t0,
+        offsetof(RISCVTrampoline, target));
+    tramp->code[2] = TR_RISCV_ITYPE(TR::InstOpCode::_jalr, TR::RealRegister::zero, TR::RealRegister::t0, 0);
+    tramp->code[3] = 0;
+    tramp->target = reinterpret_cast<uint64_t>(target);
+}
+
+void riscvCreateHelperTrampolines(void *trampPtr, int32_t numHelpers)
+{
+    uint8_t *buffer = reinterpret_cast<uint8_t *>(trampPtr) + TRAMPOLINE_SIZE;
+    for (int32_t i = 1; i < numHelpers; i++, buffer += TRAMPOLINE_SIZE) {
+        riscvCreateTrampoline(buffer, runtimeHelperValue((TR_RuntimeHelper)i));
+    }
+
+#if defined(TR_HOST_RISCV)
+    riscvCodeSync((uint8_t *)trampPtr, TRAMPOLINE_SIZE * numHelpers);
+#endif
+}
+
+void riscvCreateMethodTrampoline(void *trampPtr, void *startPC, void *method)
+{
+    riscvCreateTrampoline(trampPtr, startPC);
+#if defined(TR_HOST_RISCV)
+    riscvCodeSync((uint8_t *)trampPtr, TRAMPOLINE_SIZE);
+#endif
+}
+
+bool riscvCodePatching(void *callee, void *callSite, void *currentPC, void *currentTramp, void *newAddrOfCallee,
+    void *extra)
+{
+    TR_UNIMPLEMENTED();
+}
+
+void riscvCodeCacheParameters(int32_t *trampolineSize, void **callBacks, int32_t *numHelpers,
+    int32_t *CCPreLoadedCodeSize)
+{
+    *trampolineSize = TRAMPOLINE_SIZE;
+    callBacks[0] = (void *)&riscvCodeCacheConfig;
+    callBacks[1] = (void *)&riscvCreateHelperTrampolines;
+    callBacks[2] = (void *)&riscvCreateMethodTrampoline;
+    callBacks[3] = (void *)&riscvCodePatching;
+    callBacks[4] = (void *)0; // CreatePreLoadedCCPreLoadedCode
+    *CCPreLoadedCodeSize = 0;
+    *numHelpers = TR_RISCVnumRuntimeHelpers;
+}
+
+#undef TRAMPOLINE_SIZE
+
+#endif /* TR_TARGET_RISCV */
+
 #if defined(J9ZOS390) && defined(TR_TARGET_S390) && !defined(TR_TARGET_64BIT)
 
 //-----------------------------------------------------------------------------
@@ -545,6 +631,11 @@ void setupCodeCacheParameters(int32_t *trampolineSize, OMR::CodeCacheCodeGenCall
 
 #if defined(TR_TARGET_ARM64)
     arm64CodeCacheParameters(trampolineSize, (void **)callBacks, numHelpers, CCPreLoadedCodeSize);
+    return;
+#endif
+
+#if defined(TR_TARGET_RISCV)
+    riscvCodeCacheParameters(trampolineSize, (void **)callBacks, numHelpers, CCPreLoadedCodeSize);
     return;
 #endif
 
