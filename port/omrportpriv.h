@@ -671,6 +671,8 @@ extern J9_CFUNC void
 omrsysinfo_cgroup_subsystem_iterator_destroy(struct OMRPortLibrary *portLibrary, struct OMRCgroupMetricIteratorState *state);
 extern J9_CFUNC int32_t
 omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats);
+extern J9_CFUNC int32_t
+omrsysinfo_get_all_diskstats(struct OMRPortLibrary *portLibrary, OMRDiskStatsEntry **diskStatsArray, uintptr_t *numEntries);
 extern J9_CFUNC char*
 omrsysinfo_get_block_device_for_path(struct OMRPortLibrary *portLibrary, const char *path);
 extern J9_CFUNC char*

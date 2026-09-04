@@ -2208,6 +2208,12 @@ omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char
 	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 }
 
+int32_t
+omrsysinfo_get_all_diskstats(struct OMRPortLibrary *portLibrary, OMRDiskStatsEntry **diskStatsArray, uintptr_t *numEntries)
+{
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
+
 char *
 omrsysinfo_get_block_device_for_path(struct OMRPortLibrary *portLibrary, const char *path)
 {

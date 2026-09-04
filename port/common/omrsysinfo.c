@@ -1231,7 +1231,26 @@ omrsysinfo_cgroup_subsystem_iterator_destroy(struct OMRPortLibrary *portLibrary,
  * @return 0 on success, error code on failure
  */
 int32_t
-omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats)
+omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, OMRBlockDeviceStats *stats)
+{
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+}
+
+/**
+ * Read /proc/diskstats and return an array of disk statistics.
+ *
+ * The /proc/diskstats file contains one line per block device. To get stats for a single device @see omrsysinfo_get_block_device_stats().
+ * A block device is a device that provides a contiguous sequence of bytes, such as a disk or a partition.
+ *
+ * @param[in] portLibrary The port library
+ * @param[out] diskStatsArray Pointer to receive the allocated array of OMRDiskStatsEntry structures.
+ *                            Caller must free this memory using portLibrary->mem_free_memory.
+ * @param[out] numEntries Pointer to receive the number of entries in the array.
+ *
+ * @return 0 on success, error code on failure
+ */
+int32_t
+omrsysinfo_get_all_diskstats(struct OMRPortLibrary *portLibrary, OMRDiskStatsEntry **diskStatsArray, uintptr_t *numEntries)
 {
 	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 }

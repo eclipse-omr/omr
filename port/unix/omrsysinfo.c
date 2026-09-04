@@ -8040,14 +8040,15 @@ omrsysinfo_get_process_name(struct OMRPortLibrary *portLibrary, uintptr_t pid)
 int32_t
 omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char *device, struct OMRBlockDeviceStats *stats)
 {
-	Assert_PRT_true(NULL != device);
-	Assert_PRT_true(NULL != stats);
 #if defined(LINUX) && !defined(OMRZTPF)
 	char pathBuf[PATH_MAX];
 	char contentBuf[1024];
 	intptr_t fd = -1;
 	intptr_t bytesRead = -1;
 	int32_t fieldsScanned = -1;
+
+	Assert_PRT_true(NULL != device);
+	Assert_PRT_true(NULL != stats);
 
 	portLibrary->str_printf(portLibrary, pathBuf, sizeof(pathBuf), "/sys/block/%s/stat", device);
 
@@ -8086,6 +8087,110 @@ omrsysinfo_get_block_device_stats(struct OMRPortLibrary *portLibrary, const char
 	}
 
 	return 0;
+#else /* defined(LINUX) && !defined(OMRZTPF) */
+	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
+#endif /* defined(LINUX) && !defined(OMRZTPF) */
+}
+
+int32_t
+omrsysinfo_get_all_diskstats(struct OMRPortLibrary *portLibrary, OMRDiskStatsEntry **diskStatsArray, uintptr_t *numEntries)
+{
+#if defined(LINUX) && !defined(OMRZTPF)
+	FILE *fp = NULL;
+	BOOLEAN fileError = FALSE;
+	char line[1024];
+	OMRDiskStatsEntry *entries = NULL;
+	uintptr_t entryCount = 0;
+	uintptr_t entryCapacity = 32; /* Initial capacity */
+
+	Assert_PRT_true(NULL != diskStatsArray);
+	Assert_PRT_true(NULL != numEntries);
+
+	*diskStatsArray = NULL;
+	*numEntries = 0;
+
+	fp = fopen("/proc/diskstats", "r");
+	if (NULL == fp) {
+		return OMRPORT_ERROR_SYSINFO_GET_STATS_FAILED;
+	}
+
+	/* Allocate initial array */
+	entries = portLibrary->mem_allocate_memory(portLibrary, entryCapacity * sizeof(OMRDiskStatsEntry), OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+	if (NULL == entries) {
+		fclose(fp);
+		return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+	}
+
+	while (NULL != fgets(line, sizeof(line), fp)) {
+		OMRDiskStatsEntry *entry = NULL;
+		int32_t fieldsScanned = -1;
+
+		/* Expand array if needed */
+		if (entryCount >= entryCapacity) {
+			OMRDiskStatsEntry *newEntries = NULL;
+			entryCapacity *= 2;
+			newEntries = portLibrary->mem_allocate_memory(portLibrary, entryCapacity * sizeof(OMRDiskStatsEntry), OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
+			if (NULL == newEntries) {
+				portLibrary->mem_free_memory(portLibrary, entries);
+				fclose(fp);
+				return OMRPORT_ERROR_SYSINFO_MEMORY_ALLOC_FAILED;
+			}
+			memcpy(newEntries, entries, entryCount * sizeof(OMRDiskStatsEntry));
+			portLibrary->mem_free_memory(portLibrary, entries);
+			entries = newEntries;
+		}
+
+		entry = &entries[entryCount];
+		memset(entry, 0, sizeof(*entry));
+
+		/**
+		 * /proc/diskstats will contain stats for all block devices, including loopback devices, so for some devices some fields may not have any useful information.
+		 * Example lines:
+		 *    7       0 loop0 14 0 34 0 0 0 0 0 0 12 0 0 0 0 0 0 0
+		 *  253       0 vda 253577 692 10152429 257844 220542 76769 27042797 1186350 0 225343 1452673 58162 3 319974328 3535 17383 4942
+		 *  259       3 nvme0n1 3542726956 60899914 362789954336 1459512716 3910333145 79029193 825867034897 846565026 0 310821636 2306077743 0 0 0 0
+		 * Note: device name (3rd field) is skipped.
+		 */
+		fieldsScanned = sscanf(
+			line,
+			"%" SCNu32 " %" SCNu32 " %*s %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
+			&entry->majorNum,
+			&entry->minorNum,
+			/* The device name appears in this field in the diskstats output but is skipped because we don't need it for anything. */
+			&entry->stats.rdIos,
+			&entry->stats.rdMerges,
+			&entry->stats.rdSectors,
+			&entry->stats.rdTicksMs,
+			&entry->stats.wrIos,
+			&entry->stats.wrMerges,
+			&entry->stats.wrSectors,
+			&entry->stats.wrTicksMs,
+			&entry->stats.inFlight,
+			&entry->stats.ioTicksMs,
+			&entry->stats.timeInQueueMs);
+
+#define PROC_DISKSTATS_EXPECTED_NUMBER_OF_FIELDS 13
+
+		if (PROC_DISKSTATS_EXPECTED_NUMBER_OF_FIELDS == fieldsScanned) {
+			entryCount += 1;
+		}
+	}
+
+	/* Check if fgets() saw an error (as opposed to EOF), before closing the stream. */
+	fileError = (0 != ferror(fp));
+
+	fclose(fp);
+
+	if ((TRUE == fileError) || (0 == entryCount)) {
+		/* Error while reading or no valid entries found. */
+		portLibrary->mem_free_memory(portLibrary, entries);
+		return OMRPORT_ERROR_SYSINFO_GET_STATS_FAILED;
+	}
+
+	*diskStatsArray = entries;
+	*numEntries = entryCount;
+	return 0;
+
 #else /* defined(LINUX) && !defined(OMRZTPF) */
 	return OMRPORT_ERROR_NOT_SUPPORTED_ON_THIS_PLATFORM;
 #endif /* defined(LINUX) && !defined(OMRZTPF) */
@@ -8205,8 +8310,8 @@ getBlockDeviceFromDevNode(struct OMRPortLibrary *portLibrary, const char *path)
 {
 	struct stat st;
 	dev_t rdev;
-	uint32_t majorNum;
-	uint32_t minorNum;
+	uint32_t majorNum = 0;
+	uint32_t minorNum = 0;
 
 	if (0 != stat(path, &st) || !S_ISBLK(st.st_mode)) {
 		return NULL;
@@ -8250,8 +8355,11 @@ omrsysinfo_get_block_device_for_swap(struct OMRPortLibrary *portLibrary)
 
 		int32_t fieldsScanned = sscanf(line, "%s %31s %" SCNu64 " %" SCNu64 " %" SCNd32,
 									   path, type, &size, &used, &priority);
+
+#define PROC_SWAPS_EXPECTED_NUMBER_OF_FIELDS 5
+
 		/* Skip malformed lines */
-		if (5 != fieldsScanned) {
+		if (PROC_SWAPS_EXPECTED_NUMBER_OF_FIELDS != fieldsScanned) {
 			continue;
 		}
 
