@@ -1371,7 +1371,7 @@ TEST_F(PortFileTest2, file_test10)
 		goto exit;
 	}
 
-	/* lets try seeking to a -ve offset */
+	/* lets try seeking to a negative offset */
 	resultingOffset = omrfile_seek(fd, -3, EsSeekSet);
 	if (-1 != resultingOffset) {
 		outputErrorMessage(PORTTEST_ERROR_ARGS, "omrfile_seek() returned %lld expected -1\n", resultingOffset);
