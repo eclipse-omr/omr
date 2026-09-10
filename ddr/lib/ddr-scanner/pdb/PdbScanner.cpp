@@ -728,28 +728,25 @@ PdbScanner::setTypeUDT(IDiaSymbol *typeSymbol, Type **type, NamespaceUDT *outerU
 	if (DDR_RC_OK == rc) {
 		getNamespaceFromName(symbolName, &outerUDT);
 		string name = getSimpleName(symbolName);
-		string fullName = "";
-		if (NULL == outerUDT) {
-			fullName = name;
-		} else {
-			fullName = outerUDT->getFullName() + "::" + name;
-		}
-		unordered_map<string, Type *>::const_iterator map_it = _typeMap.find(fullName);
-		if (!fullName.empty() && _typeMap.end() != map_it) {
-			*type = map_it->second;
-		} else if (fullName.empty() && (NULL != outerUDT)) {
-			/* Anonymous inner union UDTs are missing the parent
-			 * relationship and cannot be added later.
-			 */
+		if (name.empty()) {
+			/* Anonymous types cannot be referred to by name, so create them here. */
 			ClassUDT *newClass = NULL;
 			rc = createClassUDT(typeSymbol, &newClass, outerUDT);
 			if ((DDR_RC_OK == rc) && (NULL != newClass)) {
 				newClass->_name = "";
 				*type = newClass;
 			}
-		} else if (!name.empty()) {
-			PostponedType p = { type, fullName };
-			_postponedFields.push_back(p);
+		} else {
+			string fullName = (NULL == outerUDT)
+						? name
+						: (outerUDT->getFullName() + "::" + name);
+			unordered_map<string, Type *>::const_iterator map_it = _typeMap.find(fullName);
+			if (_typeMap.end() != map_it) {
+				*type = map_it->second;
+			} else {
+				PostponedType p = { type, fullName };
+				_postponedFields.push_back(p);
+			}
 		}
 	}
 

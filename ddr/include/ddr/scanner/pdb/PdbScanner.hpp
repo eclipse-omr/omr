@@ -45,12 +45,6 @@ using std::set;
 using std::string;
 using std::vector;
 
-typedef struct PostponedType
-{
-	Type **type;
-	string name;
-} PostponedType;
-
 class PdbScanner : public Scanner
 {
 public:
@@ -58,6 +52,12 @@ public:
 			vector<string> *debugFiles, const char *excludesFilePath);
 
 private:
+	struct PostponedType
+	{
+		Type **type;
+		string name;
+	};
+
 	Symbol_IR *_ir;
 	unordered_map<string, Type *> _typeMap;
 	vector<PostponedType> _postponedFields;
