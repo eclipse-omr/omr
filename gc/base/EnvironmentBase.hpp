@@ -23,6 +23,16 @@
 #if !defined(ENVIRONMENTBASECORE_HPP_)
 #define ENVIRONMENTBASECORE_HPP_
 
+ // DEV: enable/disable changes
+#define SHAD_UNIFY_SCAVENGE
+
+#if defined(SHAD_UNIFY_SCAVENGE)
+static const bool shadUnifyEnabled = true;
+#else
+static const bool shadUnifyEnabled = false;
+#endif /* SHAD_UNIFY_SCAVENGE */
+
+
 #include "omrcomp.h"
 #include "modronbase.h"
 #include "omr.h"

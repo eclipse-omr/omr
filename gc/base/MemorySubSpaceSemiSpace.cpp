@@ -490,8 +490,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		_memorySubSpaceAllocate->isAllocatable(true);
 		_memorySubSpaceSurvivor = _memorySubSpaceEvacuate;
 // DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-# if 1
+#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 		_bytesAllocatedDuringConcurrent = _extensions->allocationStats.bytesAllocated();
 		_avgBytesAllocatedDuringConcurrent = (uintptr_t)MM_Math::weightedAverage((float)_avgBytesAllocatedDuringConcurrent,
 											 (float)(_bytesAllocatedDuringConcurrent), 0.7f);
@@ -502,11 +501,12 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 		break;
 // DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-#if 1
+#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	case backout:
 		// DEV: Assertion no longer appropriate
-		//Assert_MM_true(_extensions->concurrentScavenger);
+		if(!shadUnifyEnabled){
+			Assert_MM_true(_extensions->concurrentScavenger);
+		}
 		/* We have objects on both sides of Nursery. We will unify the two sides and do a compacting slide (after percolate global GC)
 		 * Enforce Allocate be in low address range, since compact slide in percolate global GC moves objects to low addresses.
 		 * Note: _allocateSpaceBase/Top are stale (not updated in set_allocate), since they are overloaded to point to Evacuate during an active cycle
@@ -540,7 +540,9 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		break;
 	case restore_allocate_after_backout:
 		// DEV: Assertion no longer appropriate
-		//Assert_MM_true(_extensions->concurrentScavenger);
+		if(!shadUnifyEnabled){
+			Assert_MM_true(_extensions->concurrentScavenger);
+		}
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocate_after_backout");
 		/* Restore allocation, which we had disabled in the backout step */
 		_memorySubSpaceAllocate->isAllocatable(true);
@@ -549,7 +551,9 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 	case restore_tilt_after_percolate:
 	{
 		// DEV: Assertion no longer appropriate
-		//Assert_MM_true(_extensions->concurrentScavenger);
+		if(!shadUnifyEnabled){
+			Assert_MM_true(_extensions->concurrentScavenger);
+		}
 		uintptr_t lastFreeEntrySize = 0;
 		MM_HeapLinkedFreeHeader *lastFreeEntry = getDefaultMemorySubSpace()->getMemoryPool()->getLastFreeEntry();
 		if (NULL != lastFreeEntry) {
@@ -1048,8 +1052,7 @@ MM_MemorySubSpaceSemiSpace::reset(MM_EnvironmentBase *env)
 	 * It should be done before any findLargestFreeEntry() during Global (like Compact triggers), that are affected by _isAllocatable.
 	 */
 	// DEV: specifying this path to unify abort for concurrent and non-concurrent
-	//if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
-	if (_extensions->isScavengerBackOutFlagRaised()) {
+	if ((shadUnifyEnabled || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
 		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 		omrtty_printf("{SHAD: MM_MemorySubSpaceSemiSpace::reset\n");
 		flip(env, restore_allocate_after_backout);
@@ -1071,8 +1074,7 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 	/* If we are called at the end of percolate global GC, due to aborted Concurrent Scavenge,
 	 * we have to restore tilt (that has been set to 100% to do unified sliding compact of Nursery */
 	// DEV: specifying this path to unify abort for concurrent and non-concurrent
-	//if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
-	if (_extensions->isScavengerBackOutFlagRaised()) {
+	if ((shadUnifyEnabled || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
 		flip(env, restore_tilt_after_percolate);
 	} else {
 		checkSubSpaceMemoryPostCollectTilt(env);

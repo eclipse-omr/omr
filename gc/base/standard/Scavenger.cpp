@@ -3937,8 +3937,7 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 			/* tell the object iterator to work on the given region */
 			GC_ObjectHeapIteratorAddressOrderedList evacuateHeapIterator(_extensions, rootRegion, false);
 // DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-//#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-#if 1
+#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 			evacuateHeapIterator.includeForwardedObjects();
 #endif
 			omrobjectptr_t objectPtr = NULL;
@@ -4085,6 +4084,8 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	 * leaves reverse forward pointers installed by backoutFixupAndReverseForwardPointersInSurvivor. The two
 	 * paths are coupled to opposite heap states and cannot be merged without first unifying the heap-state
 	 * strategy, which would cascade into openj9 code (ScavengerBackOutScanner.hpp). Keeping branches as-is. */
+
+	 // TODO: See backoutFixupAndReverseForwardPointersInSurvivor first. Will have to remove reverse forward pointer installation from STW. Then unify this part
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (IS_CONCURRENT_ENABLED) {
 		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
@@ -4221,7 +4222,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
 			// DEV: specifying this path to unify abort for concurrent and non-concurrent
-			if (true) {
+			if (shadUnifyEnabled || IS_CONCURRENT_ENABLED) {
 				omrtty_printf("{SHAD: CS: clearRememberedSetLists\n");
 				/* All heap fixup will occur during or after global GC */
 				clearRememberedSetLists(env);
@@ -4291,7 +4292,11 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			 * require replacing all of those with their CS fixup counterparts (fixupObjectScan, fixupSlot,
 			 * fixupSlotWithoutCompression), cascading into openj9's ScavengerBackOutScanner.hpp which is out of scope.
 			 * Keeping the STW branch here until a decision is made to unify the heap-state strategy itself. */
+
+			// TODO: will be removing backoutFixupAndReverseForwardPointersInSurvivor. Make changes as need to rest of code that assumes reverse forward pointers
+			// TODO: processRememberedSetInBackout
 			if (!IS_CONCURRENT_ENABLED) {
+				omrtty_printf("{SHAD: STW: backoutFixupAndReverseForwardPointersInSurvivor\n");
 				backoutFixupAndReverseForwardPointersInSurvivor(env);
 			}
 
@@ -4740,8 +4745,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 	}
 
 	// DEV: removing this path to unify abort for concurrent and non-concurrent
-	//if (IS_CONCURRENT_ENABLED && isBackOutFlagRaised()) {
-	if (isBackOutFlagRaised()) {
+	if ((shadUnifyEnabled || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised()) {
 		bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 
 		Assert_MM_true(result);
@@ -4753,7 +4757,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		 * again, causing a runaway cascade.
 		 * For CS, the flag is cleared inside flip(restore_tilt_after_percolate) via
 		 * MemorySubSpaceGenerational::checkResize, so no explicit clear is needed here. */
-		if (!IS_CONCURRENT_ENABLED) {
+		if (shadUnifyEnabled && !IS_CONCURRENT_ENABLED) {
 			setBackOutFlag(env, backOutFlagCleared);
 		}
 
@@ -4921,7 +4925,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 			 * second percolate before mainSetupForGC gets a chance to clear it.
 			 * For CS the flag is cleared inside flip(restore_tilt_after_percolate) via
 			 * MemorySubSpaceGenerational::checkResize (CS-only branch). */
-			if (!IS_CONCURRENT_ENABLED) {
+			if (shadUnifyEnabled && !IS_CONCURRENT_ENABLED) {
 				setBackOutFlag(env, backOutFlagCleared);
 			}
 			return true;
