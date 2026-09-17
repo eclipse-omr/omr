@@ -4296,6 +4296,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			// TODO: will be removing backoutFixupAndReverseForwardPointersInSurvivor. Make changes as need to rest of code that assumes reverse forward pointers
 			// TODO: processRememberedSetInBackout
 			if (!IS_CONCURRENT_ENABLED) {
+				/* Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space */
 				omrtty_printf("{SHAD: STW: backoutFixupAndReverseForwardPointersInSurvivor\n");
 				backoutFixupAndReverseForwardPointersInSurvivor(env);
 			}
