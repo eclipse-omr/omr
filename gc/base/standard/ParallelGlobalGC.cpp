@@ -238,7 +238,7 @@ hookGlobalGcSweepEndRsoSafetyFixHeap(J9HookInterface** hook, uintptr_t eventNum,
 
 // DEV: specifying this path to unify abort for concurrent and non-concurrent
 //#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-#if 1
+#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 static void
 hookGlobalGcSweepEndAbortedCSFixHeap(J9HookInterface** hook, UDATA eventNum, void* eventData, void* userData)
 {
@@ -376,10 +376,10 @@ MM_ParallelGlobalGC::initialize(MM_EnvironmentBase *env)
 		(*mmPrivateHooks)->J9HookRegisterWithCallSite(mmPrivateHooks, J9HOOK_MM_PRIVATE_SWEEP_END, hookGlobalGcSweepEndRsoSafetyFixHeap, OMR_GET_CALLSITE(), this);
 // DEV: specifying this path to unify abort for concurrent and non-concurrent
 //#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-#if 1
-		//if (_extensions->isConcurrentScavengerEnabled()) {
-		(*mmPrivateHooks)->J9HookRegisterWithCallSite(mmPrivateHooks, J9HOOK_MM_PRIVATE_SWEEP_END, hookGlobalGcSweepEndAbortedCSFixHeap, OMR_GET_CALLSITE(), this);
-		//}
+#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+		if (shadUnifyEnabled || _extensions->isConcurrentScavengerEnabled()) {
+			(*mmPrivateHooks)->J9HookRegisterWithCallSite(mmPrivateHooks, J9HOOK_MM_PRIVATE_SWEEP_END, hookGlobalGcSweepEndAbortedCSFixHeap, OMR_GET_CALLSITE(), this);
+		}
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	}
 #endif /* OMR_GC_MODRON_SCAVENGER */
