@@ -1117,7 +1117,8 @@ static void copyIdentityValueToUnmaskedLanes(TR::Node *node, TR::CodeGenerator *
         // AND the target register with the mask register to zero the unmasked lanes.
         // Masked lanes (mask bit = 1) retain their values, unmasked lanes (mask bit = 0) become 0.
         generateVRRcInstruction(cg, TR::InstOpCode::VN, node, targetReg, targetReg, maskReg, 0, 0, 0);
-    } else if (-1 == identityValue) {
+    } else if (-1 == identityValue
+        && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1)) {
         // Optimized path for identity value of -1 (all bits set):
         // OR the target register with the complement of the mask register to set unmasked lanes to -1.
         // Masked lanes (mask bit = 1) retain their values, unmasked lanes (mask bit = 0) become all 1s.
@@ -1298,7 +1299,8 @@ TR::Register *OMR::Z::TreeEvaluator::mToLongBitsEvaluator(TR::Node *node, TR::Co
      * A bit value of 0 indicates a false lane, and 1 indicates a true lane.
      * The rightmost bit (LSB) in the result corresponds to the first lane of the mask vector.
      */
-    TR_ASSERT_FATAL_WITH_NODE(node, cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_S390_Z14),
+    TR_ASSERT_FATAL_WITH_NODE(node,
+        cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1),
         "mToLongBits opcode is only supported on z14 onwards");
     TR::Node *sourceNode = node->getFirstChild();
     TR_ASSERT_FATAL_WITH_NODE(node, sourceNode->getDataType().getVectorLength() == TR::VectorLength128,
@@ -1690,8 +1692,8 @@ TR::Register *OMR::Z::TreeEvaluator::vnotEvaluator(TR::Node *node, TR::CodeGener
 
     TR::Register *resultReg = TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
     TR::Register *sourceReg = cg->evaluate(node->getFirstChild());
-    // NAND the source with itself to perform NOT operation.
-    generateVRRcInstruction(cg, TR::InstOpCode::VNN, node, resultReg, sourceReg, sourceReg, 0);
+    // NOR the source with itself to perform NOT operation.
+    generateVRRcInstruction(cg, TR::InstOpCode::VNO, node, resultReg, sourceReg, sourceReg, 0);
     node->setRegister(resultReg);
     cg->decReferenceCount(node->getFirstChild());
     return resultReg;
@@ -2190,6 +2192,9 @@ TR::Register *OMR::Z::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::Code
      */
     TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
         "Only 128-bit vectors are supported %s", node->getDataType().toString());
+    TR_ASSERT_FATAL_WITH_NODE(node,
+        cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1),
+        "mcompress opcode is only supported on z14 onward.");
 
     TR::Register *resultReg = cg->allocateRegister(TR_VRF);
     TR::Register *sourceReg = cg->gprClobberEvaluate(node->getFirstChild());
@@ -2198,7 +2203,7 @@ TR::Register *OMR::Z::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::Code
     generateVRRaInstruction(cg, TR::InstOpCode::VPOPCT, node, sourceReg, sourceReg, 0, 0, 3);
 
     // Initialize the result register to all 1 bits.
-    generateVRRcInstruction(cg, TR::InstOpCode::VOC, node, resultReg, resultReg, resultReg, 0);
+    generateVRIaInstruction(cg, TR::InstOpCode::VGBM, node, resultReg, 0xffff, 0);
 
     // VSRLB derives the shift count from bits 1–4 of the 7th byte in the third operand,
     // which effectively divides the 7th byte value by 8 to determine the byte shift amount.
@@ -2216,7 +2221,7 @@ TR::Register *OMR::Z::TreeEvaluator::mcompressEvaluator(TR::Node *node, TR::Code
     generateVRRcInstruction(cg, TR::InstOpCode::VSRLB, node, resultReg, resultReg, sourceReg, 0);
 
     // Since zeros were shifted in, invert the register so zero bits become ones.
-    generateVRRcInstruction(cg, TR::InstOpCode::VNN, node, resultReg, resultReg, resultReg, 0);
+    generateVRRcInstruction(cg, TR::InstOpCode::VNO, node, resultReg, resultReg, resultReg, 0);
 
     node->setRegister(resultReg);
     cg->decReferenceCount(node->getFirstChild());
@@ -14870,6 +14875,7 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::Cod
     TR::Register *returnReg
         = isMasked ? cg->allocateRegister(TR_VRF) : TR::TreeEvaluator::tryToReuseInputVectorRegs(node, cg);
     TR::Register *sourceReg1 = cg->evaluate(firstChild);
+    uint8_t elementSizeMask = getVectorElementSizeMask(node);
 
     switch (op) {
         case TR::InstOpCode::VCDG:
@@ -14879,8 +14885,14 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::Cod
         case TR::InstOpCode::VLP:
         case TR::InstOpCode::VCTZ:
         case TR::InstOpCode::VCLZ:
+            generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, 0, 0, elementSizeMask);
+            break;
         case TR::InstOpCode::VPOPCT:
-            generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, 0, 0, getVectorElementSizeMask(node));
+            TR_ASSERT_FATAL_WITH_NODE(node,
+                (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1)
+                    || (elementSizeMask == 0)),
+                "VPOPCT with element size mask > 0 is only supported on z14 onward.");
+            generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, 0, 0, elementSizeMask);
             break;
         case TR::InstOpCode::VFPSO: {
             /**
@@ -14902,8 +14914,7 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::Cod
                     && (opcode.getVectorOperation() == TR::vabs || opcode.getVectorOperation() == TR::vmabs)
                 ? 2
                 : 0;
-            breakInst = generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, mask5, 0,
-                getVectorElementSizeMask(node));
+            breakInst = generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, mask5, 0, elementSizeMask);
             break;
         }
         case TR::InstOpCode::VFSQ:
@@ -14913,7 +14924,7 @@ TR::Register *OMR::Z::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR::Cod
                         && cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1)),
                 "VFSQ is only supported for VectorElementDataType TR::Double on z13 and onwards and TR::Float on z14 "
                 "onwards");
-            generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, 0, 0, getVectorElementSizeMask(node));
+            generateVRRaInstruction(cg, op, node, returnReg, sourceReg1, 0, 0, elementSizeMask);
             break;
         default:
             TR_ASSERT_FATAL_WITH_NODE(node, false, "Unary Vector IL evaluation unimplemented for node\n");
@@ -16919,7 +16930,14 @@ static TR::Register *logicalReductionHelper(TR::Node *node, TR::CodeGenerator *c
         TR::Register *maskReg = cg->evaluate(maskChild);
         if (setUnmaskedLanes) {
             // Set all bits of unmasked lanes to 1.
-            generateVRRcInstruction(cg, TR::InstOpCode::VOC, node, sourceReg, sourceReg, maskReg, 0, 0, 0);
+            if (cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_1)) {
+                generateVRRcInstruction(cg, TR::InstOpCode::VOC, node, sourceReg, sourceReg, maskReg, 0, 0, 0);
+            } else {
+                TR::Register *vectorScratchReg = cg->allocateRegister(TR_VRF);
+                generateVRRcInstruction(cg, TR::InstOpCode::VNO, node, vectorScratchReg, maskReg, maskReg, 0, 0, 0);
+                generateVRRcInstruction(cg, TR::InstOpCode::VO, node, sourceReg, sourceReg, vectorScratchReg, 0, 0, 0);
+                cg->stopUsingRegister(vectorScratchReg);
+            }
         } else {
             // Zero all bits of unmasked lanes.
             generateVRRcInstruction(cg, TR::InstOpCode::VN, node, sourceReg, sourceReg, maskReg, 0, 0, 0);
