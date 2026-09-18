@@ -137,6 +137,12 @@ bool TR_LocalAnalysis::isSupportedNodeForFunctionality(TR::Node *node, TR::Compi
     if (node->isDataAddrPointer())
         return false;
 
+    if (node->getOpCode().isDiv() || node->getOpCode().isRem()) {
+        if (node->chkSimpleDivCheck() || !node->getSecondChild()->isNonZero()) {
+            return false;
+        }
+    }
+
     if (isSupportedOpCode(node->getOpCode(), comp) || isSupportedStoreNode || node->getOpCode().isLoadConst()) {
         if (node->getDataType() == TR::Address) {
             if (!node->addressPointsAtObject())
