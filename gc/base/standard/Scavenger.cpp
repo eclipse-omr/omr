@@ -4086,8 +4086,8 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	 * strategy, which would cascade into openj9 code (ScavengerBackOutScanner.hpp). Keeping branches as-is. */
 
 	 // TODO: See backoutFixupAndReverseForwardPointersInSurvivor first. Will have to remove reverse forward pointer installation from STW. Then unify this part
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-	if (IS_CONCURRENT_ENABLED) {
+#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+	if (shadUnifyEnabled || IS_CONCURRENT_ENABLED) {
 		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
 		GC_SublistIterator remSetIterator(&(_extensions->rememberedSet));
 		while((puddle = remSetIterator.nextList()) != NULL) {
@@ -4295,7 +4295,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 
 			// TODO: will be removing backoutFixupAndReverseForwardPointersInSurvivor. Make changes as need to rest of code that assumes reverse forward pointers
 			// TODO: processRememberedSetInBackout
-			if (!IS_CONCURRENT_ENABLED) {
+			if (!shadUnifyEnabled &&!IS_CONCURRENT_ENABLED) {
 				/* Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space */
 				omrtty_printf("{SHAD: STW: backoutFixupAndReverseForwardPointersInSurvivor\n");
 				backoutFixupAndReverseForwardPointersInSurvivor(env);

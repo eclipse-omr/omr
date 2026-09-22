@@ -1072,9 +1072,12 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 {
 	uintptr_t oldVMState = env->pushVMstate(OMRVMSTATE_GC_CHECK_RESIZE);
 	/* If we are called at the end of percolate global GC, due to aborted Concurrent Scavenge,
-	 * we have to restore tilt (that has been set to 100% to do unified sliding compact of Nursery */
-	// DEV: specifying this path to unify abort for concurrent and non-concurrent
-	if ((shadUnifyEnabled || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
+	 * we have to restore tilt (that has been set to 100% to do unified sliding compact of Nursery.
+	 * DEV: shadUnifyEnabled intentionally excluded — restore_tilt_after_percolate is CS-only
+	 * infrastructure (undoes the 100% tilt set by mainTeardownForAbortedGC). STW never sets that
+	 * tilt, so it must take the normal resize path. Including shadUnifyEnabled here also clears
+	 * the backout flag mid-GC (inside flip), which breaks fixupForwardedSlot during the mark phase. */
+	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
 		flip(env, restore_tilt_after_percolate);
 	} else {
 		checkSubSpaceMemoryPostCollectTilt(env);
