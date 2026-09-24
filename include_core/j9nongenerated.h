@@ -162,48 +162,49 @@ typedef struct J9MemorySegment {
 	struct J9PortVmemIdentifier vmemIdentifier;
 } J9MemorySegment;
 
-#define MEMORY_TYPE_OLD                     1
-#define MEMORY_TYPE_NEW                     2
-#define MEMORY_TYPE_ROM                     4
-#define MEMORY_TYPE_OLD_ROM                 5
-#define MEMORY_TYPE_RAM                     8
-#define MEMORY_TYPE_OLD_RAM                 9
-#define MEMORY_TYPE_NEW_RAM                 10
-#define MEMORY_TYPE_FIXED                   16
-#define MEMORY_TYPE_FIXED_RAM               24
+#define MEMORY_TYPE_OLD                                      1
+#define MEMORY_TYPE_NEW                                      2
+#define MEMORY_TYPE_ROM                                      4
+#define MEMORY_TYPE_OLD_ROM                                  5
+#define MEMORY_TYPE_RAM                                      8
+#define MEMORY_TYPE_OLD_RAM                                  9
+#define MEMORY_TYPE_NEW_RAM                                  10
+#define MEMORY_TYPE_FIXED                                    16
+#define MEMORY_TYPE_FIXED_RAM                                24
 /* MEMORY_TYPE_CODE is used for virtually allocated JIT code segments, setting MEMORY_TYPE_VIRTUAL is not required. */
-#define MEMORY_TYPE_CODE                    32
-#define MEMORY_TYPE_ALLOCATED               64
-#define MEMORY_TYPE_DISCARDABLE             0x80
-#define MEMORY_TYPE_FIXEDSIZE               0x100
-#define MEMORY_TYPE_DEBUG_INFO              0x200
+#define MEMORY_TYPE_CODE                                     32
+#define MEMORY_TYPE_ALLOCATED                                64
+#define MEMORY_TYPE_DISCARDABLE                              0x80
+#define MEMORY_TYPE_FIXEDSIZE                                0x100
+#define MEMORY_TYPE_DEBUG_INFO                               0x200
 /* MEMORY_TYPE_VIRTUAL is expected to be used along with other types like MEMORY_TYPE_JIT_SCRATCH_SPACE
  * or MEMORY_TYPE_JIT_PERSISTENT to allocate virtual memory instead of malloc'ed memory.
  */
-#define MEMORY_TYPE_VIRTUAL                 0x400
-#define MEMORY_TYPE_UNCOMMITTED             0x800
-#define MEMORY_TYPE_IMMORTAL                0x1000
-#define MEMORY_TYPE_SCOPED                  0x2000
-#define MEMORY_TYPE_NUMA                    0x4000
+#define MEMORY_TYPE_VIRTUAL                                  0x400
+#define MEMORY_TYPE_UNCOMMITTED                              0x800
+#define MEMORY_TYPE_IMMORTAL                                 0x1000
+#define MEMORY_TYPE_SCOPED                                   0x2000
+#define MEMORY_TYPE_NUMA                                     0x4000
 /* MEMORY_TYPE_FIXED_RAM_CLASS is virtually allocated, setting MEMORY_TYPE_VIRTUAL is not required. */
-#define MEMORY_TYPE_FIXED_RAM_CLASS         0x8000
-#define MEMORY_TYPE_RAM_CLASS               0x10000
-#define MEMORY_TYPE_ROM_CLASS               0x20000
-#define MEMORY_TYPE_DYNAMIC_LOADED_CLASSES  0x20040
-#define MEMORY_TYPE_CLASS_FILE_BYTES        0x40000
-#define MEMORY_TYPE_UNDEAD_CLASS            0x80000
-#define MEMORY_TYPE_RAM_CLASS_SUB4G         0x100000
-#define MEMORY_TYPE_BASETYPE_ROM_CLASS      0x200000
-#define MEMORY_TYPE_IGC_SCAN_QUEUE          0x400000
-#define MEMORY_TYPE_JIT_PERSISTENT          0x800000
-#define MEMORY_TYPE_JIT_SCRATCH_SPACE       0x1000000
-#define MEMORY_TYPE_DEFAULT                 0x2000000
-#define MEMORY_TYPE_FROM_JXE                0x4000000
-#define MEMORY_TYPE_SHARED_META             0x8000000
+#define MEMORY_TYPE_FIXED_RAM_CLASS                          0x8000
+#define MEMORY_TYPE_RAM_CLASS                                0x10000
+#define MEMORY_TYPE_ROM_CLASS                                0x20000
+#define MEMORY_TYPE_DYNAMIC_LOADED_CLASSES                   0x20040
+#define MEMORY_TYPE_CLASS_FILE_BYTES                         0x40000
+#define MEMORY_TYPE_UNDEAD_CLASS                             0x80000
+#define MEMORY_TYPE_RAM_CLASS_SUB4G                          0x100000
+#define MEMORY_TYPE_BASETYPE_ROM_CLASS                       0x200000
+#define MEMORY_TYPE_RAM_CLASS_ABOVE4G_FREQUENTLY_ACCESSED    0x400000
+#define MEMORY_TYPE_JIT_PERSISTENT                           0x800000
+#define MEMORY_TYPE_JIT_SCRATCH_SPACE                        0x1000000
+#define MEMORY_TYPE_DEFAULT                                  0x2000000
+#define MEMORY_TYPE_FROM_JXE                                 0x4000000
+#define MEMORY_TYPE_SHARED_META                              0x8000000
 /* On Linux, memory marked as MEMORY_TYPE_DISCLAIMABLE_TO_FILE can be disclaimed
  * to a backing file with madvise().
  */
-#define MEMORY_TYPE_DISCLAIMABLE_TO_FILE    0x10000000
+#define MEMORY_TYPE_DISCLAIMABLE_TO_FILE                     0x10000000
+#define MEMORY_TYPE_RAM_CLASS_ABOVE4G_INFREQUENTLY_ACCESSED  0x20000000
 #define J9MEMORYSEGMENT_LEFTCHILD(base) AVL_SRP_GETNODE((base)->parentAVLTreeNode.leftChild)
 #define J9MEMORYSEGMENT_RIGHTCHILD(base) AVL_SRP_GETNODE((base)->parentAVLTreeNode.rightChild)
 
