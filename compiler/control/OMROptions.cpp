@@ -1835,6 +1835,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      TR::Options::setStaticNumericKBAdjusted, (intptr_t)&OMR::Options::_scratchSpaceLowerBound, 0, "F%d (bytes)" },
     { "searchCount=", "O<nnn>\tcount of the max search to perform", TR::Options::set32BitSignedNumeric,
      offsetof(OMR::Options, _lastSearchCount), 0, "F%d" },
+    { "segregateAOTcodecache", "Store AOT loaded in code in a seperate code cache to prevent fragmentation",
+     SET_OPTION_BIT(TR_SegregateAOTCodeCache), "F" },
     { "slipTrap=", "O{regex}\trecord entry/exit for slit/trap for methods listed", TR::Options::setRegex,
      offsetof(OMR::Options, _slipTrap), 0, "P" },
     { "softFailOnAssume", "M\tfail the compilation quietly and use the interpreter if an assume fails",
