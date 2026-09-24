@@ -320,6 +320,9 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      "F" },
     { "disableAOTCheckCastInlining", "O\tdisable AOT check cast inlining",
      SET_OPTION_BIT(TR_DisableAOTCheckCastInlining), "F" },
+    { "disableAOTCodeCacheDisclaiming",
+     "Prevent the jvm from storing AOT loaded in code in a separate code cache. By default, this happens to prevent "
+        "fragmentation and facilitate memory disclaiming", SET_OPTION_BIT(TR_DisableAOTCodeCacheDisclaiming), "F", NOT_IN_SUBSET },
     { "disableAOTColdCheapTacticalGRA", "O\tdisable AOT cold cheap tactical GRA",
      SET_OPTION_BIT(TR_DisableAOTColdCheapTacticalGRA), "F" },
     { "disableAOTInstanceFieldResolution", "O\tdisable AOT instance field resolution",
@@ -1135,6 +1138,9 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
     { EnableAnnotations, "O\tenable annotation support", SET_OPTION_BIT(TR_EnableAnnotations), "F" },
     { "enableAOTCacheReclamation", "O\tenable AOT reclamation of code and data cache on AOT relocation failures",
      SET_OPTION_BIT(TR_EnableAOTCacheReclamation), "F" },
+    { "enableAOTCodeCacheDisclaiming",
+     "O\tsegregate AOT loaded code into its own code cache and disclaim. This option defaults to true, however, it "
+        "can be used to undo the effects ot disableAOTCodeCacheDisclaiming", RESET_OPTION_BIT(TR_DisableAOTCodeCacheDisclaiming), "F" },
     { "enableAOTInlineSystemMethod", "O\tenable AOT inline methods from system classes",
      SET_OPTION_BIT(TR_EnableAOTInlineSystemMethod), "F" },
     { "enableAOTMethodEnter", "O\tenable AOT method enter", SET_OPTION_BIT(TR_EnableAOTMethodEnter), "F" },
