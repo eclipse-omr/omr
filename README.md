@@ -186,18 +186,11 @@ Presentations about Eclipse OMR
 * Charlie Gracie's slides from Java One in October, 2015:
   [What's in an Object? Java Garbage Collection for the Polyglot](http://www.slideshare.net/charliegracie1/javaone-whats-in-an-object)
 * Angela Lin, Robert Young, Craig Lehmann and Xiaoli Liang CASCON Workshop in November, 2015
-  [Building Your Own Runtime](https://ibm.box.com/s/7xdg25we2ezmdjjbqdys30d7dl1iyo49)
 * Charlie Gracie's talk from FOSDEM in February, 2016:
   [Ruby and OMR: Experiments in utilizing OMR technologies in MRI](http://bofh.nikhef.nl/events/FOSDEM/2016/h2213/ruby-and-omr.mp4)
 * Charlie Gracie's slides from jFokus in February, 2016
   [A JVMs Journey into Polyglot Runtimes](https://t.co/efCKf6aCB4)
 * Mark Stoodley's slides from EclipseCON in March, 2016
   [Eclipse OMR: a modern toolkit for building language runtimes](http://www.slideshare.net/MarkStoodley/omr-a-modern-toolkit-for-building-language-runtimes)
-
-Blog Posts about OMR technologies
----------------------------------
-
-* [Introducing Eclipse OMR: Building Language Runtimes](https://developer.ibm.com/code/2016/03/08/introducing-omr-building-language-runtimes/)
-* [JitBuilder Library and Eclipse OMR: Just-In-Time Compilers made easy](https://developer.ibm.com/code/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/)
 
 Copyright IBM Corp. 2016
