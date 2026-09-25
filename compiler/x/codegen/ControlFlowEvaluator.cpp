@@ -430,6 +430,11 @@ TR::Register *OMR::X86::TreeEvaluator::tableEvaluator(TR::Node *node, TR::CodeGe
         cg->getCurrentEvaluationBlock()->isCold());
 
     TR::Register *selectorReg = cg->evaluate(node->getFirstChild());
+    TR::Register *indexReg = selectorReg;
+    if (cg->comp()->target().is64Bit() && !selectorReg->areUpperBitsZero()) {
+        indexReg = cg->allocateRegister();
+        Inst_RegReg(OP::MOVZXReg8Reg4, node, indexReg, selectorReg, cg);
+    }
     OP::Mnemonic opCode;
 
     bool canSkipBoundTest = node->isSafeToSkipTableBoundCheck();
@@ -443,7 +448,7 @@ TR::Register *OMR::X86::TreeEvaluator::tableEvaluator(TR::Node *node, TR::CodeGe
             opCode = OP::CMP4RegImm4;
         }
 
-        Inst_RegImm(opCode, node, selectorReg, numBranchTableEntries, cg);
+        Inst_RegImm(opCode, node, indexReg, numBranchTableEntries, cg);
 
         // The glRegDep is hung off the default case statement.
         //
@@ -467,9 +472,9 @@ TR::Register *OMR::X86::TreeEvaluator::tableEvaluator(TR::Node *node, TR::CodeGe
         TR::MemoryReference *branchTableLeaMR = MRef_label(label, cg);
         branchTableReg = cg->allocateRegister();
         Inst_RegMem(OP::LEA8RegMem, node, branchTableReg, branchTableLeaMR, cg);
-        jumpMR = MRef_BIS(branchTableReg, selectorReg, 3, cg);
+        jumpMR = MRef_BIS(branchTableReg, indexReg, 3, cg);
     } else {
-        jumpMR = MRef_BISdisp32((TR::Register *)NULL, selectorReg, (uint8_t)(cg->comp()->target().is64Bit() ? 3 : 2),
+        jumpMR = MRef_BISdisp32((TR::Register *)NULL, indexReg, (uint8_t)(cg->comp()->target().is64Bit() ? 3 : 2),
             (intptr_t)branchTable, cg);
 
         jumpMR->setNeedsCodeAbsoluteExternalRelocation();
@@ -503,6 +508,8 @@ TR::Register *OMR::X86::TreeEvaluator::tableEvaluator(TR::Node *node, TR::CodeGe
 
     if (branchTableReg != NULL)
         cg->stopUsingRegister(branchTableReg);
+    if (indexReg != selectorReg)
+        cg->stopUsingRegister(indexReg);
 
     return NULL;
 }
