@@ -4370,10 +4370,7 @@ bool OMR::Z::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::ILOpC
             return true;
         case TR::vmul:
         case TR::vmmul:
-            if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Float || et == TR::Double)
-                return true;
-            else
-                return false;
+            return (et != TR::Int64) || cpu->supportsFeature(OMR_FEATURE_S390_VECTOR_FACILITY_ENHANCEMENT_3);
         case TR::vdiv:
         case TR::vmdiv:
         case TR::vfma:
