@@ -3937,7 +3937,7 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 			/* tell the object iterator to work on the given region */
 			GC_ObjectHeapIteratorAddressOrderedList evacuateHeapIterator(_extensions, rootRegion, false);
 // DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 			evacuateHeapIterator.includeForwardedObjects();
 #endif
 			omrobjectptr_t objectPtr = NULL;
@@ -4086,7 +4086,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	 * strategy, which would cascade into openj9 code (ScavengerBackOutScanner.hpp). Keeping branches as-is. */
 
 	 // TODO: See backoutFixupAndReverseForwardPointersInSurvivor first. Will have to remove reverse forward pointer installation from STW. Then unify this part
-#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) {
 		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
 		GC_SublistIterator remSetIterator(&(_extensions->rememberedSet));

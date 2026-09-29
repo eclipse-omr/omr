@@ -110,6 +110,9 @@ class HeapRegionStateTable;
 #define LOCALGC_ESTIMATE_FRAGMENTATION 		0x1
 #define GLOBALGC_ESTIMATE_FRAGMENTATION 	0x2
 
+// DEV: not sure where to put this
+#define UNIFY_ABORTED_SCAVENGE
+
 enum ExcessiveLevel {
 	excessive_gc_normal = 0,
 	excessive_gc_aggressive,
