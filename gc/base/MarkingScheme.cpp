@@ -416,7 +416,7 @@ MM_MarkingScheme::fixupForwardedSlot(omrobjectptr_t *slotPtr) {
 	bool const compressed = _extensions->compressObjectReferences();
 	// DEV: when unified, we have forwarded pointers that need to be fixed up during percolate even in STW
 	if (_extensions->getGlobalCollector()->isStwCollectionInProgress()
-		|| (shadUnifyEnabled && _extensions->isScavengerBackOutFlagRaised())) {
+		|| (_extensions->enableUnifiedAbort && _extensions->isScavengerBackOutFlagRaised())) {
 		MM_ForwardedHeader forwardHeader(*slotPtr, compressed);
 		omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
 

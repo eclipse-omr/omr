@@ -4087,7 +4087,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 
 	 // TODO: See backoutFixupAndReverseForwardPointersInSurvivor first. Will have to remove reverse forward pointer installation from STW. Then unify this part
 #if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
-	if (shadUnifyEnabled || IS_CONCURRENT_ENABLED) {
+	if (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) {
 		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
 		GC_SublistIterator remSetIterator(&(_extensions->rememberedSet));
 		while((puddle = remSetIterator.nextList()) != NULL) {
@@ -4222,7 +4222,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
 			// DEV: specifying this path to unify abort for concurrent and non-concurrent
-			if (shadUnifyEnabled || IS_CONCURRENT_ENABLED) {
+			if (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) {
 				omrtty_printf("{SHAD: CS: clearRememberedSetLists\n");
 				/* All heap fixup will occur during or after global GC */
 				clearRememberedSetLists(env);
@@ -4295,7 +4295,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 
 			// TODO: will be removing backoutFixupAndReverseForwardPointersInSurvivor. Make changes as need to rest of code that assumes reverse forward pointers
 			// TODO: processRememberedSetInBackout
-			if (!shadUnifyEnabled &&!IS_CONCURRENT_ENABLED) {
+			if (!_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 				/* Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space */
 				omrtty_printf("{SHAD: STW: backoutFixupAndReverseForwardPointersInSurvivor\n");
 				backoutFixupAndReverseForwardPointersInSurvivor(env);
@@ -4746,7 +4746,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 	}
 
 	// DEV: removing this path to unify abort for concurrent and non-concurrent
-	if ((shadUnifyEnabled || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised()) {
+	if ((_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised()) {
 		bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 
 		Assert_MM_true(result);
@@ -4758,7 +4758,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		 * again, causing a runaway cascade.
 		 * For CS, the flag is cleared inside flip(restore_tilt_after_percolate) via
 		 * MemorySubSpaceGenerational::checkResize, so no explicit clear is needed here. */
-		if (shadUnifyEnabled && !IS_CONCURRENT_ENABLED) {
+		if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 			setBackOutFlag(env, backOutFlagCleared);
 		}
 
@@ -4926,7 +4926,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 			 * second percolate before mainSetupForGC gets a chance to clear it.
 			 * For CS the flag is cleared inside flip(restore_tilt_after_percolate) via
 			 * MemorySubSpaceGenerational::checkResize (CS-only branch). */
-			if (shadUnifyEnabled && !IS_CONCURRENT_ENABLED) {
+			if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 				setBackOutFlag(env, backOutFlagCleared);
 			}
 			return true;

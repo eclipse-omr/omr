@@ -504,7 +504,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 #if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	case backout:
 		// DEV: Assertion no longer appropriate
-		if(!shadUnifyEnabled){
+		if (!_extensions->enableUnifiedAbort) {
 			Assert_MM_true(_extensions->concurrentScavenger);
 		}
 		/* We have objects on both sides of Nursery. We will unify the two sides and do a compacting slide (after percolate global GC)
@@ -540,7 +540,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		break;
 	case restore_allocate_after_backout:
 		// DEV: Assertion no longer appropriate
-		if(!shadUnifyEnabled){
+		if (!_extensions->enableUnifiedAbort) {
 			Assert_MM_true(_extensions->concurrentScavenger);
 		}
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocate_after_backout");
@@ -551,7 +551,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 	case restore_tilt_after_percolate:
 	{
 		// DEV: Assertion no longer appropriate
-		if(!shadUnifyEnabled){
+		if (!_extensions->enableUnifiedAbort) {
 			Assert_MM_true(_extensions->concurrentScavenger);
 		}
 		uintptr_t lastFreeEntrySize = 0;
@@ -1052,7 +1052,7 @@ MM_MemorySubSpaceSemiSpace::reset(MM_EnvironmentBase *env)
 	 * It should be done before any findLargestFreeEntry() during Global (like Compact triggers), that are affected by _isAllocatable.
 	 */
 	// DEV: specifying this path to unify abort for concurrent and non-concurrent
-	if ((shadUnifyEnabled || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
+	if ((_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
 		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 		omrtty_printf("{SHAD: MM_MemorySubSpaceSemiSpace::reset\n");
 		flip(env, restore_allocate_after_backout);
@@ -1073,9 +1073,9 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 	uintptr_t oldVMState = env->pushVMstate(OMRVMSTATE_GC_CHECK_RESIZE);
 	/* If we are called at the end of percolate global GC, due to aborted Concurrent Scavenge,
 	 * we have to restore tilt (that has been set to 100% to do unified sliding compact of Nursery.
-	 * DEV: shadUnifyEnabled intentionally excluded — restore_tilt_after_percolate is CS-only
+	 * DEV: enableUnifiedAbort intentionally excluded — restore_tilt_after_percolate is CS-only
 	 * infrastructure (undoes the 100% tilt set by mainTeardownForAbortedGC). STW never sets that
-	 * tilt, so it must take the normal resize path. Including shadUnifyEnabled here also clears
+	 * tilt, so it must take the normal resize path. Including enableUnifiedAbort here also clears
 	 * the backout flag mid-GC (inside flip), which breaks fixupForwardedSlot during the mark phase. */
 	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
 		flip(env, restore_tilt_after_percolate);

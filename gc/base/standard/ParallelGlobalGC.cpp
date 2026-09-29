@@ -377,7 +377,7 @@ MM_ParallelGlobalGC::initialize(MM_EnvironmentBase *env)
 // DEV: specifying this path to unify abort for concurrent and non-concurrent
 //#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 #if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
-		if (shadUnifyEnabled || _extensions->isConcurrentScavengerEnabled()) {
+		if (_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled()) {
 			(*mmPrivateHooks)->J9HookRegisterWithCallSite(mmPrivateHooks, J9HOOK_MM_PRIVATE_SWEEP_END, hookGlobalGcSweepEndAbortedCSFixHeap, OMR_GET_CALLSITE(), this);
 		}
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
