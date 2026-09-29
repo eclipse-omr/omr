@@ -503,6 +503,8 @@ public:
 	bool scavengerRsoScanUnsafe;
 	uintptr_t cacheListSplit; /**< the number of ways to split scanCache lists, set by command line option, or determined heuristically based on the number of GC threads */
 	bool cacheListSplitForced;/**< Flag to distinguish if cacheList is externally enforced (for example, specified by command line) */
+	// DEV: our feature flags here
+	bool enableUnifiedAbort;
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	bool softwareRangeCheckReadBarrier; /**< enable software read barrier instead of hardware guarded loads when running with CS, complimentary to concurrentScavengerHWSupport with CS active */
 	bool softwareRangeCheckReadBarrierForced; /**< true if usage of softwareRangeCheckReadBarrier is requested explicitly */
@@ -1699,6 +1701,8 @@ public:
 		, scavengerRsoScanUnsafe(false)
 		, cacheListSplit(0)
 		, cacheListSplitForced(false)
+		// DEV: should this be true by default?
+		, enableUnifiedAbort(true)
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		, softwareRangeCheckReadBarrier(false)
 		, softwareRangeCheckReadBarrierForced(false)

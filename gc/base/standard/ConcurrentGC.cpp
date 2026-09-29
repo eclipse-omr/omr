@@ -2054,8 +2054,8 @@ MM_ConcurrentGC::internalPreCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *
 			 * zeroed the nursery mark bits but did not purge the packets. Flush them so the
 			 * STW mark phase restarts cleanly from roots and RS scan.
 			 * Under CS this situation cannot arise — CS aborts before CONCURRENT_TRACE_ONLY. */
-			if (shadUnifyEnabled && _extensions->isScavengerBackOutFlagRaised()) {
-				_markingScheme->getWorkPackets()->resetAllPackets(env);
+			if (_extensions->enableUnifiedAbort && _extensions->isScavengerBackOutFlagRaised()) {
+			 _markingScheme->getWorkPackets()->resetAllPackets(env);
 			}
 
 			/* If remembered set if not empty then re-scan any objects in the remembered set */
