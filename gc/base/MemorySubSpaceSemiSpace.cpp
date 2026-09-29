@@ -490,7 +490,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		_memorySubSpaceAllocate->isAllocatable(true);
 		_memorySubSpaceSurvivor = _memorySubSpaceEvacuate;
 // DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 		_bytesAllocatedDuringConcurrent = _extensions->allocationStats.bytesAllocated();
 		_avgBytesAllocatedDuringConcurrent = (uintptr_t)MM_Math::weightedAverage((float)_avgBytesAllocatedDuringConcurrent,
 											 (float)(_bytesAllocatedDuringConcurrent), 0.7f);
@@ -501,7 +501,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 		break;
 // DEV: specifying this path to unify abort for concurrent and non-concurrent. Will eventually remove condition
-#if defined(SHAD_UNIFY_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	case backout:
 		// DEV: Assertion no longer appropriate
 		if (!_extensions->enableUnifiedAbort) {
