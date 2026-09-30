@@ -868,6 +868,10 @@ int32_t OMR::SmallOptimizer::performOptimization(const OptimizationStrategy *opt
             if (comp()->getMethodSymbol()->hasIdiomRecognitionOpportunities())
                 doThisOptimization = true;
         } break;
+        case IfNotKnownIdiomRecognitionOpportunity: {
+            if (!comp()->getMethodSymbol()->hasIdiomRecognitionOpportunities())
+                doThisOptimization = true;
+        } break;
         case IfExceptionHandlers: {
             if (comp()->hasExceptionHandlers())
                 doThisOptimization = true;
