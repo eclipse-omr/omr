@@ -922,9 +922,7 @@ void TR_Debug::printReferencedRegisterInfo(OMR::Logger *log, TR::X86RegRegRegIns
 
 int32_t TR_Debug::printPrefixAndMnemonicWithoutBarrier(OMR::Logger *log, TR::Instruction *instr, int32_t barrier)
 {
-    int32_t barrierLength = ::estimateMemoryBarrierBinaryLength(barrier, _comp->cg());
-    int32_t nonBarrierLength = instr->getBinaryLength() - barrierLength;
-
+    int32_t nonBarrierLength = instr->getBinaryLength();
     printPrefix(log, instr, instr->getBinaryEncoding(), nonBarrierLength);
     log->printf("%s%s\t", (barrier & LockPrefix) ? "lock " : "", getMnemonicName(&instr->getOpCode()));
 
@@ -934,10 +932,8 @@ int32_t TR_Debug::printPrefixAndMnemonicWithoutBarrier(OMR::Logger *log, TR::Ins
 void TR_Debug::printPrefixAndMemoryBarrier(OMR::Logger *log, TR::Instruction *instr, int32_t barrier,
     int32_t barrierOffset)
 {
-    int32_t barrierLength = ::estimateMemoryBarrierBinaryLength(barrier, _comp->cg());
     uint8_t *barrierStart = instr->getBinaryEncoding() ? (instr->getBinaryEncoding() + barrierOffset) : NULL;
-
-    printPrefix(log, instr, barrierStart, barrierLength);
+    printPrefix(log, instr, barrierStart, 0);
 }
 
 void TR_Debug::print(OMR::Logger *log, TR::X86MemInstruction *instr)

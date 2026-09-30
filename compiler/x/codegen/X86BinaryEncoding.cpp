@@ -148,13 +148,6 @@ int32_t memoryBarrierRequired(TR::InstOpCode &op, TR::MemoryReference *mr, TR::C
     return barrier;
 }
 
-int32_t estimateMemoryBarrierBinaryLength(int32_t barrier, TR::CodeGenerator *cg) { return 0; }
-
-uint8_t getMemoryBarrierBinaryLengthLowerBound(int32_t barrier, TR::CodeGenerator *cg)
-{
-    return estimateMemoryBarrierBinaryLength(barrier, cg);
-}
-
 // -----------------------------------------------------------------------------
 // OMR::X86::Instruction:: member functions
 bool OMR::X86::Instruction::needsRepPrefix() { return getOpCode().needsRepPrefix() != 0; }
@@ -1820,10 +1813,6 @@ uint8_t TR::X86MemInstruction::getBinaryLengthLowerBound()
         length++;
 
     length += getMemoryReference()->getBinaryLengthLowerBound(cg());
-
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
     return getOpCode().length(getEncodingMethod(), rexBits()) + length;
 }
 
@@ -1835,9 +1824,6 @@ int32_t TR::X86MemInstruction::estimateBinaryLength(int32_t currentEstimate)
         length++;
 
     length += getMemoryReference()->estimateBinaryLength(this, cg());
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     int32_t patchBoundaryPadding
         = (cg()->comp()->target().isSMP() && getMemoryReference()->getSymbolReference().isUnresolved()) ? 1 : 0;
@@ -1978,14 +1964,8 @@ uint8_t *TR::X86MemImmInstruction::generateOperand(uint8_t *cursor)
 
 uint8_t TR::X86MemImmInstruction::getBinaryLengthLowerBound()
 {
-    int32_t length = getMemoryReference()->getBinaryLengthLowerBound(cg());
-
-    int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
-
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
-    length += getOpCode().length(getEncodingMethod(), rexBits());
+    int32_t length
+        = getMemoryReference()->getBinaryLengthLowerBound(cg()) + getOpCode().length(getEncodingMethod(), rexBits());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2005,9 +1985,6 @@ int32_t TR::X86MemImmInstruction::estimateBinaryLength(int32_t currentEstimate)
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2208,14 +2185,8 @@ uint8_t *TR::X86MemRegImmInstruction::generateOperand(uint8_t *cursor)
 
 uint8_t TR::X86MemRegImmInstruction::getBinaryLengthLowerBound()
 {
-    int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
-
-    int32_t length = getMemoryReference()->getBinaryLengthLowerBound(cg());
-
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
-    length += getOpCode().length(getEncodingMethod(), rexBits());
+    int32_t length
+        = getMemoryReference()->getBinaryLengthLowerBound(cg()) + getOpCode().length(getEncodingMethod(), rexBits());
     if (getOpCode().hasIntImmediate())
         length += 4;
     else if (getOpCode().hasShortImmediate())
@@ -2234,9 +2205,6 @@ int32_t TR::X86MemRegImmInstruction::estimateBinaryLength(int32_t currentEstimat
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2287,9 +2255,6 @@ uint8_t TR::X86RegMemInstruction::getBinaryLengthLowerBound()
     if (barrier & LockPrefix)
         length++;
 
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
     return getOpCode().length(getEncodingMethod(), rexBits()) + length;
 }
 
@@ -2301,9 +2266,6 @@ int32_t TR::X86RegMemInstruction::estimateBinaryLength(int32_t currentEstimate)
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     int32_t patchBoundaryPadding
         = (cg()->comp()->target().isSMP() && getMemoryReference()->getSymbolReference().isUnresolved()) ? 1 : 0;
@@ -2420,9 +2382,6 @@ uint8_t TR::X86RegMemImmInstruction::getBinaryLengthLowerBound()
     if (barrier & LockPrefix)
         length++;
 
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
     length += getOpCode().length(getEncodingMethod(), rexBits());
 
     if (getOpCode().hasIntImmediate())
@@ -2443,9 +2402,6 @@ int32_t TR::X86RegMemImmInstruction::estimateBinaryLength(int32_t currentEstimat
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
