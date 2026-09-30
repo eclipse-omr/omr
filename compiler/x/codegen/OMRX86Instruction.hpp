@@ -158,40 +158,6 @@ public:
     virtual Kind getKind() { return IsPadding; }
 };
 
-class X86PaddingSnippetInstruction : public TR::X86PaddingInstruction {
-    TR::UnresolvedDataSnippet *_unresolvedSnippet;
-
-public:
-    X86PaddingSnippetInstruction(uint8_t length, TR::Node *node, TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(length, node, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    X86PaddingSnippetInstruction(uint8_t length, TR_PaddingProperties properties, TR::Node *node, TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(length, properties, node, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    X86PaddingSnippetInstruction(TR::Instruction *precedingInstruction, uint8_t length, TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(precedingInstruction, length, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    X86PaddingSnippetInstruction(TR::Instruction *precedingInstruction, uint8_t length, TR_PaddingProperties properties,
-        TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(precedingInstruction, length, properties, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    virtual const char *description() { return "PaddingSnippetInstruction"; }
-
-    virtual TR::Snippet *getSnippetForGC();
-
-    TR::UnresolvedDataSnippet *getUnresolvedSnippet() { return _unresolvedSnippet; }
-
-    TR::UnresolvedDataSnippet *setUnresolvedSnippet(TR::UnresolvedDataSnippet *us) { return (_unresolvedSnippet = us); }
-};
-
 class X86BoundaryAvoidanceInstruction : public TR::Instruction {
     // Inserts NOPs to ensure that none of the atomicRegions in the adjacent
     // targetCode cross a boundary (as specified by boundarySpacing).
@@ -2635,10 +2601,6 @@ TR::X86PaddingInstruction *Inst_Padding(uint8_t length, TR::Node *node, TR::Code
 TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, uint8_t length, TR::CodeGenerator *cg);
 TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, uint8_t length,
     TR_PaddingProperties properties, TR::CodeGenerator *cg);
-
-// X86PaddingSnippetInstruction
-//
-TR::X86PaddingSnippetInstruction *Inst_PaddingSnippet(uint8_t length, TR::Node *node, TR::CodeGenerator *cg);
 
 // X86PatchableCodeAlignment
 //

@@ -217,8 +217,6 @@ int32_t TR::X86PaddingInstruction::estimateBinaryLength(int32_t currentEstimate)
     return currentEstimate + getEstimatedBinaryLength();
 }
 
-TR::Snippet *TR::X86PaddingSnippetInstruction::getSnippetForGC() { return _unresolvedSnippet; }
-
 // -----------------------------------------------------------------------------
 // TR::X86BoundaryAvoidanceInstruction:: member functions
 
