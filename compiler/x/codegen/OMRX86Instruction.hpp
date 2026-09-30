@@ -1345,12 +1345,9 @@ public:
             padUnresolvedReferenceInstruction(this, mr, cg);
         }
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
-        }
+        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+        if (barrier)
+            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
 
         // Find out if this instruction clobbers the memory reference associated with
         // a live discardable register.
@@ -1371,12 +1368,9 @@ public:
             padUnresolvedReferenceInstruction(this, mr, cg);
         }
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
-        }
+        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+        if (barrier)
+            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
     }
 
     X86MemInstruction(TR::RegisterDependencyConditions *cond, TR::MemoryReference *mr, TR::Node *node, OP::Mnemonic op,
@@ -1389,12 +1383,9 @@ public:
             padUnresolvedReferenceInstruction(this, mr, cg);
         }
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr);
-        }
+        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+        if (barrier)
+            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr);
 
         // Find out if this instruction clobbers the memory reference associated with
         // a live discardable register.
@@ -1416,9 +1407,8 @@ public:
             padUnresolvedReferenceInstruction(this, mr, cg);
         }
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit()) {
+        if (cg->comp()->target().is32Bit()) {
             int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
             if (barrier)
                 insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr);
         }
@@ -1446,9 +1436,8 @@ public:
             padUnresolvedReferenceInstruction(this, p, cg);
         }
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit()) {
+        if (cg->comp()->target().is32Bit()) {
             int32_t barrier = memoryBarrierRequired(this->getOpCode(), p, cg, true);
-
             if (barrier)
                 insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, p);
         }
@@ -1845,9 +1834,8 @@ public:
             padUnresolvedReferenceInstruction(this, p, cg);
         }
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit()) {
+        if (cg->comp()->target().is32Bit()) {
             int32_t barrier = memoryBarrierRequired(this->getOpCode(), p, cg, true);
-
             if (barrier)
                 insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, p);
         }

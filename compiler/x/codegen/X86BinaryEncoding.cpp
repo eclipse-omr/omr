@@ -148,24 +148,7 @@ int32_t memoryBarrierRequired(TR::InstOpCode &op, TR::MemoryReference *mr, TR::C
     return barrier;
 }
 
-int32_t estimateMemoryBarrierBinaryLength(int32_t barrier, TR::CodeGenerator *cg)
-{
-    int32_t length = 0;
-
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport))
-        return 0;
-
-    if (barrier & LockOR)
-        length = 5;
-    else if ((barrier & kLoadFence) && cg->comp()->target().cpu.requiresLFence())
-        length = TR::InstOpCode(OP::LFENCE).length(OMR::X86::Default);
-    else if ((barrier & kMemoryFence) == kMemoryFence)
-        length = TR::InstOpCode(OP::MFENCE).length(OMR::X86::Default);
-    else if (barrier & kStoreFence)
-        length = TR::InstOpCode(OP::SFENCE).length(OMR::X86::Default);
-
-    return length;
-}
+int32_t estimateMemoryBarrierBinaryLength(int32_t barrier, TR::CodeGenerator *cg) { return 0; }
 
 uint8_t getMemoryBarrierBinaryLengthLowerBound(int32_t barrier, TR::CodeGenerator *cg)
 {

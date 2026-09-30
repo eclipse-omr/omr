@@ -1656,12 +1656,9 @@ TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Me
         padUnresolvedReferenceInstruction(this, mr, cg);
     }
 
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-        if (barrier)
-            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
-    }
+    int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+    if (barrier)
+        insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
 
     // Find out if this instruction clobbers the memory reference associated with
     // a live discardable register.
@@ -1681,12 +1678,9 @@ TR::X86MemInstruction::X86MemInstruction(TR::Instruction *precedingInstruction, 
         padUnresolvedReferenceInstruction(this, mr, cg);
     }
 
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-        if (barrier)
-            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
-    }
+    int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+    if (barrier)
+        insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
 }
 
 TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
@@ -1699,12 +1693,9 @@ TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Me
         padUnresolvedReferenceInstruction(this, mr, cg);
     }
 
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-        if (barrier)
-            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
-    }
+    int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+    if (barrier)
+        insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
 }
 
 bool TR::X86MemInstruction::refsRegister(TR::Register *reg)
