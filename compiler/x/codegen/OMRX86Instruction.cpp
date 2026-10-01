@@ -3349,16 +3349,6 @@ TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(const TR_A
     return new (cg->trHeapMemory()) TR::X86PatchableCodeAlignmentInstruction(atomicRegions, patchableCode, cg);
 }
 
-// X86PatchableCodeAlignmentWithProtectiveNop
-//
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignmentWithProtectiveNop(
-    const TR_AtomicRegion *atomicRegions, TR::Instruction *patchableCode, int32_t sizeOfProtectiveNop,
-    TR::CodeGenerator *cg)
-{
-    return new (cg->trHeapMemory())
-        TR::X86PatchableCodeAlignmentInstruction(atomicRegions, patchableCode, sizeOfProtectiveNop, cg);
-}
-
 // X86RegInstruction
 //
 TR::X86RegInstruction *Inst_Reg(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::CodeGenerator *cg)

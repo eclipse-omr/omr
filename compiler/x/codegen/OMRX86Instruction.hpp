@@ -2526,9 +2526,6 @@ TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, u
 //
 TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(const TR_AtomicRegion *atomicRegions,
     TR::Instruction *patchableCode, TR::CodeGenerator *cg);
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignmentWithProtectiveNop(
-    const TR_AtomicRegion *atomicRegions, TR::Instruction *patchableCode, int32_t protectiveNopSize,
-    TR::CodeGenerator *cg);
 
 // X86RegInstruction
 //
