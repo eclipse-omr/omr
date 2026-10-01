@@ -3349,12 +3349,6 @@ TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(const TR_A
     return new (cg->trHeapMemory()) TR::X86PatchableCodeAlignmentInstruction(atomicRegions, patchableCode, cg);
 }
 
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(TR::Instruction *prev,
-    const TR_AtomicRegion *atomicRegions, TR::CodeGenerator *cg)
-{
-    return new (cg->trHeapMemory()) TR::X86PatchableCodeAlignmentInstruction(prev, atomicRegions, cg);
-}
-
 // X86PatchableCodeAlignmentWithProtectiveNop
 //
 TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignmentWithProtectiveNop(

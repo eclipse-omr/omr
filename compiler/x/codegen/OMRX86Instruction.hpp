@@ -188,26 +188,6 @@ public:
         setNode(targetCode->getNode());
     }
 
-    X86BoundaryAvoidanceInstruction(TR::Instruction *precedingInstruction, const TR_AtomicRegion *atomicRegions,
-        uint8_t boundarySpacing, uint8_t maxPadding, TR::CodeGenerator *cg)
-        : TR::Instruction(OP::bad, precedingInstruction, cg)
-        , _atomicRegions(atomicRegions)
-        , _boundarySpacing(boundarySpacing)
-        , _maxPadding(maxPadding)
-        , _targetCode(NULL)
-        , _sizeOfProtectiveNop(0)
-        , _minPaddingLength(0)
-    {
-        // Note: this constructor is usually not the right one to use, because
-        // when you want to make something patchable, you usually know what
-        // you're patching.  That's why there's no generateXXX function for this.
-        // However, there are unusual cases where we don't care what we're
-        // patching, so we provide this extra constructor.
-        //
-        // Notice that the order of the arguments is crucial to avoid calling the
-        // wrong constructor.
-    }
-
     const TR_AtomicRegion *getAtomicRegions() { return _atomicRegions; }
 
     uint8_t getBoundarySpacing() { return _boundarySpacing; }
@@ -262,16 +242,6 @@ public:
         : TR::X86BoundaryAvoidanceInstruction(sizeOfProtectiveNop, atomicRegions,
               cg->getInstructionPatchAlignmentBoundary(), cg->getInstructionPatchAlignmentBoundary(), patchableCode, cg)
     {}
-
-    X86PatchableCodeAlignmentInstruction(TR::Instruction *precedingInstruction, const TR_AtomicRegion *atomicRegions,
-        TR::CodeGenerator *cg)
-        : TR::X86BoundaryAvoidanceInstruction(precedingInstruction, atomicRegions,
-              cg->getInstructionPatchAlignmentBoundary(), cg->getInstructionPatchAlignmentBoundary(), cg)
-    {
-        // Note: this constructor is usually not the right one to use.  See the
-        // note in the corresponding TR::X86BoundaryAvoidanceInstruction
-        // constructor for more information (search for "generateXXX").
-    }
 
     TR::Instruction *getPatchableCode() { return getTargetCode(); }
 
@@ -2556,8 +2526,6 @@ TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, u
 //
 TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(const TR_AtomicRegion *atomicRegions,
     TR::Instruction *patchableCode, TR::CodeGenerator *cg);
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(TR::Instruction *prev,
-    const TR_AtomicRegion *atomicRegions, TR::CodeGenerator *cg);
 TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignmentWithProtectiveNop(
     const TR_AtomicRegion *atomicRegions, TR::Instruction *patchableCode, int32_t protectiveNopSize,
     TR::CodeGenerator *cg);
