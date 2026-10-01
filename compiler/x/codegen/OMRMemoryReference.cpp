@@ -1405,6 +1405,22 @@ static void rematerializeAddressAdds(TR::Node *rootLoadOrStore, TR::CodeGenerato
     }
 }
 
+void OMR::X86::MemoryReference::finalizeInstrAttachment(TR::Instruction *containingInstr, TR::CodeGenerator *cg)
+{
+    self()->useRegisters(containingInstr, cg);
+    if (getUnresolvedDataSnippet() != NULL) {
+        getUnresolvedDataSnippet()->setDataReferenceInstruction(containingInstr);
+
+        // Instruction order:
+        //
+        // 1) containingInstr->prev
+        // 2) X86BoundaryAvoidanceInstruction
+        // 3) containingInstr (marked as unresolved data reference instruction)
+        //
+        Inst_BoundaryAvoidance(TR::X86BoundaryAvoidanceInstruction::unresolvedAtomicRegions, 8, 8, containingInstr, cg);
+    }
+}
+
 const uint8_t OMR::X86::MemoryReference::_multiplierToStrideMap[HIGHEST_STRIDE_MULTIPLIER + 1] = {
     0, // 0
     0, // 1

@@ -357,6 +357,24 @@ public:
 
     void consolidateRegisters(TR::Node *, TR::CodeGenerator *cg);
 
+    /**
+     * @brief Perform any necessary final tasks when this memory reference is
+     *     attached to an instruction.
+     *
+     * @details
+     *    The provided \c containingInstr should not be considered to be a completely
+     *    initialized object as this function is typically called during the
+     *    Instruction constructor.  For example, basic inquiries and manipulations
+     *    of the prev/next Instruction pointers and the opcode are permitted, but
+     *    calling a virtual function on the \c containingInstr is not.
+     *
+     * @param[in] containingInst : the \c TR::Instruction this memory reference is
+     *     attached to
+     * @param[in] cg : the \c TR::CodeGenerator object
+     *
+     */
+    void finalizeInstrAttachment(TR::Instruction *containingInstr, TR::CodeGenerator *cg);
+
     virtual void assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
 
     virtual uint8_t *generateBinaryEncoding(uint8_t *modRM, TR::Instruction *containingInstruction,

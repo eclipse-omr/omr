@@ -71,7 +71,6 @@ enum TR_X86MemoryBarrierKinds {
 
 extern int32_t memoryBarrierRequired(TR::InstOpCode &op, TR::MemoryReference *mr, TR::CodeGenerator *cg,
     bool onlyAskingAboutFences);
-extern void padUnresolvedReferenceInstruction(TR::Instruction *instr, TR::MemoryReference *mr, TR::CodeGenerator *cg);
 extern void insertUnresolvedReferenceInstructionMemoryBarrier(TR::CodeGenerator *cg, int32_t barrier,
     TR::Instruction *inst, TR::MemoryReference *mr, TR::Register *srcReg = NULL, TR::MemoryReference *anotherMr = NULL);
 
@@ -1305,10 +1304,7 @@ public:
         : TR::Instruction(node, op, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
         int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
         if (barrier)
@@ -1328,10 +1324,7 @@ public:
         : TR::Instruction(op, precedingInstruction, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
         int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
         if (barrier)
@@ -1343,10 +1336,7 @@ public:
         : TR::Instruction(cond, node, op, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
         int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
         if (barrier)
@@ -1367,10 +1357,7 @@ public:
         : TR::Instruction(cond, op, precedingInstruction, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
         if (cg->comp()->target().is32Bit()) {
             int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
@@ -1393,22 +1380,6 @@ public:
     virtual Kind getKind() { return IsMem; }
 
     virtual TR::MemoryReference *getMemoryReference() { return _memoryReference; }
-
-    TR::MemoryReference *setMemoryReference(TR::MemoryReference *p, TR::CodeGenerator *cg)
-    {
-        _memoryReference = p;
-        if (p->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, p, cg);
-        }
-
-        if (cg->comp()->target().is32Bit()) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), p, cg, true);
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, p);
-        }
-
-        return p;
-    }
 
     virtual bool needsLockPrefix();
     virtual uint8_t *generateOperand(uint8_t *cursor);
@@ -1745,10 +1716,7 @@ public:
         : TR::X86RegInstruction(treg, node, op, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
         // Find out if this instruction clobbers the memory reference associated with
         // a live discardable register.
@@ -1765,10 +1733,7 @@ public:
         : TR::X86RegInstruction(treg, op, precedingInstruction, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
     }
 
     X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
@@ -1791,21 +1756,6 @@ public:
     virtual X86RegMemInstruction *getIA32RegMemInstruction() { return this; }
 
     virtual TR::MemoryReference *getMemoryReference() { return _memoryReference; }
-
-    TR::MemoryReference *setMemoryReference(TR::MemoryReference *p, TR::CodeGenerator *cg)
-    {
-        _memoryReference = p;
-        if (p->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, p, cg);
-        }
-
-        if (cg->comp()->target().is32Bit()) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), p, cg, true);
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, p);
-        }
-        return p;
-    }
 
     virtual bool needsLockPrefix();
     virtual uint8_t *generateOperand(uint8_t *cursor);

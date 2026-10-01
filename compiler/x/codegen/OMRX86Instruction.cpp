@@ -1553,12 +1553,6 @@ void TR::X86RegMaskRegRegInstruction::assignRegisters(TR_RegisterKinds kindsToBe
     }
 }
 
-void padUnresolvedReferenceInstruction(TR::Instruction *instr, TR::MemoryReference *mr, TR::CodeGenerator *cg)
-{
-    mr->getUnresolvedDataSnippet()->setDataReferenceInstruction(instr);
-    Inst_BoundaryAvoidance(TR::X86BoundaryAvoidanceInstruction::unresolvedAtomicRegions, 8, 8, instr, cg);
-}
-
 void insertUnresolvedReferenceInstructionMemoryBarrier(TR::CodeGenerator *cg, int32_t barrier, TR::Instruction *inst,
     TR::MemoryReference *mr, TR::Register *srcReg, TR::MemoryReference *anotherMr)
 {
@@ -1651,10 +1645,7 @@ TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Me
     : TR::Instruction(node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
     if (barrier)
@@ -1673,10 +1664,7 @@ TR::X86MemInstruction::X86MemInstruction(TR::Instruction *precedingInstruction, 
     : TR::Instruction(op, precedingInstruction, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
     if (barrier)
@@ -1688,10 +1676,7 @@ TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Me
     : TR::Instruction(cond, node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
     if (barrier)
@@ -2250,10 +2235,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, 
     : TR::X86RegInstruction(treg, node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     // Find out if this instruction clobbers the memory reference associated with
     // a live discardable register.
@@ -2271,10 +2253,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(TR::Instruction *precedingInstruc
     : TR::X86RegInstruction(treg, op, precedingInstruction, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 }
 
 TR::X86RegMemInstruction::X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
@@ -2282,10 +2261,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, 
     : TR::X86RegInstruction(cond, treg, node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     // Find out if this instruction clobbers the memory reference associated with
     // a live discardable register.
@@ -2304,10 +2280,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(TR::Instruction *precedingInstruc
     : TR::X86RegInstruction(cond, treg, op, precedingInstruction, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 }
 
 bool TR::X86RegMemInstruction::refsRegister(TR::Register *reg)
