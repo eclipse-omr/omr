@@ -2581,6 +2581,7 @@ uint8_t *TR::AMD64RegImm64Instruction::generateOperand(uint8_t *cursor)
         applyTargetRegisterToModRMByte(modRM);
     }
     TR_ASSERT(getOpCode().hasLongImmediate(), "Imm64 instructions must have long immediates");
+
     *(uint64_t *)cursor = getSourceImmediate();
 
     addMetaDataForCodeAddress(cursor);
@@ -2710,25 +2711,6 @@ void TR::AMD64RegImm64SymInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
     }
 }
 
-uint8_t *TR::AMD64RegImm64SymInstruction::generateOperand(uint8_t *cursor)
-{
-    uint8_t *modRM = cursor - 1;
-
-    if (getOpCode().hasTargetRegisterIgnored() == 0) {
-        applyTargetRegisterToModRMByte(modRM);
-    }
-
-    TR_ASSERT(getOpCode().hasLongImmediate(), "Imm64 instructions must have long immediates");
-    TR_ASSERT(getSymbolReference(), "expecting a symbol reference for this instruction class");
-    *(uint64_t *)cursor = getSourceImmediate();
-
-    addMetaDataForCodeAddress(cursor);
-
-    cursor += 8;
-
-    return cursor;
-}
-
 // -----------------------------------------------------------------------------
 // TR::AMD64Imm64Instruction:: member functions
 //
@@ -2791,4 +2773,108 @@ uint8_t *TR::AMD64Imm64SymInstruction::generateOperand(uint8_t *cursor)
     cursor += 8;
 
     return cursor;
+}
+
+// -----------------------------------------------------------------------------
+// TR::AMD64MemRefAddrInstruction member functions
+//
+void TR::AMD64MemRefAddrInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
+{
+    if (getNeedsCodeAbsoluteExternalRelocation()) {
+        cg()->addExternalRelocation(
+            TR::ExternalRelocation::create(cursor, (uint8_t *)0, TR_AbsoluteMethodAddress, cg()), __FILE__, __LINE__,
+            getNode());
+    }
+
+    // The address materialization relocations have been processed.  Call the
+    // superclass in case there are others.
+    //
+    TR::AMD64RegImm64Instruction::addMetaDataForCodeAddress(cursor);
+}
+
+// -----------------------------------------------------------------------------
+// TR::AMD64MemRefAddrSymInstruction member functions
+//
+void TR::AMD64MemRefAddrSymInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
+{
+    TR::Compilation *comp = cg()->comp();
+    TR::SymbolReference &sr = *getSymbolReference();
+    TR::Symbol *sym = sr.getSymbol();
+
+    TR_ASSERT_FATAL(sym, "Expecting a symbol");
+
+    if (sr.isUnresolved()) {
+        if (comp->getOption(TR_EnableHCR) && (!sym->isStatic() || !sym->isClassObject())) {
+            cg()->jitAddUnresolvedAddressMaterializationToPatchOnClassRedefinition(
+                cursor - 2); // cursor-2 is the start of the MOV8RegImm64 instruction
+        }
+    } else if ((sym->isClassObject())) {
+        if (sym->isStatic()) {
+            if (cg()->needClassAndMethodPointerRelocations()) {
+                if (comp->getOption(TR_UseSymbolValidationManager)) {
+                    cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor,
+                                                    (uint8_t *)sym->castToStaticSymbol()->getStaticAddress(),
+                                                    (uint8_t *)TR::SymbolType::typeClass, TR_SymbolFromManager, cg()),
+                        __FILE__, __LINE__, getNode());
+                } else {
+                    cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, (uint8_t *)&sr,
+                                                    (uint8_t *)(uintptr_t)getNode()->getInlinedSiteIndex(),
+                                                    TR_ClassAddress, cg()),
+                        __FILE__, __LINE__, getNode());
+                }
+            }
+        }
+    } else if (sym->isCountForRecompile()) {
+        if (cg()->needRelocationsForPersistentInfoData()) {
+            cg()->addExternalRelocation(
+                TR::ExternalRelocation::create(cursor, (uint8_t *)TR_CountForRecompile, TR_GlobalValue, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isRecompilationCounter()) {
+        if (cg()->needRelocationsForBodyInfoData()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_BodyInfoAddress, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isCatchBlockCounter()) {
+        if (cg()->needRelocationsForBodyInfoData()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_CatchBlockCounter, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isGCRPatchPoint()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_AbsoluteMethodAddress, cg()),
+                __FILE__, __LINE__, getNode());
+        }
+    } else if (sym->isCompiledMethod()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_RamMethod, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isStartPC()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_AbsoluteMethodAddress, cg()),
+                __FILE__, __LINE__, getNode());
+        }
+    } else if (sym->isDebugCounter()) {
+        if (cg()->needRelocationsForStatics()) {
+            TR::DebugCounterBase *counter = comp->getCounterFromStaticAddress(&sr);
+            if (counter == NULL) {
+                comp->failCompilation<TR::CompilationException>(
+                    "Could not generate relocation for debug counter in "
+                    "TR::AMD64MemRefAddrSymInstruction::addMetaDataForCodeAddress\n");
+            }
+            TR::DebugCounter::generateRelocation(comp, cursor, getNode(), counter);
+        }
+    } else if (sym->isEnterEventHookAddress() || sym->isExitEventHookAddress()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(
+                TR::ExternalRelocation::create(cursor, (uint8_t *)&sr, NULL, TR_MethodEnterExitHookAddress, cg()),
+                __FILE__, __LINE__, getNode());
+        }
+    }
+
+    // The address materialization relocations have been processed.  Call the
+    // superclass in case there are others.
+    //
+    TR::AMD64RegImm64SymInstruction::addMetaDataForCodeAddress(cursor);
 }

@@ -685,3 +685,19 @@ uint8_t *OMR::X86::AMD64::MemoryReference::generateBinaryEncoding(uint8_t *modRM
     //
     return OMR::X86::MemoryReference::generateBinaryEncoding(modRM, containingInstruction, cg);
 }
+
+void OMR::X86::AMD64::MemoryReference::finalizeInstrAttachment(TR::Instruction *containingInstr, TR::CodeGenerator *cg)
+{
+    self()->useRegisters(containingInstr, cg);
+    if (getUnresolvedDataSnippet() != NULL) {
+        getUnresolvedDataSnippet()->setDataReferenceInstruction(containingInstr);
+
+        // Instruction order:
+        //
+        // 1) containingInstr->prev
+        // 2) X86BoundaryAvoidanceInstruction
+        // 3) containingInstr (marked as unresolved data reference instruction)
+        //
+        Inst_BoundaryAvoidance(TR::X86BoundaryAvoidanceInstruction::unresolvedAtomicRegions, 8, 8, containingInstr, cg);
+    }
+}

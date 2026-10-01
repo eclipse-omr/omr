@@ -2021,7 +2021,73 @@ public:
 
     TR::SymbolReference *setSymbolReference(TR::SymbolReference *sr) { return (_symbolReference = sr); }
 
-    virtual uint8_t *generateOperand(uint8_t *cursor);
+    virtual void addMetaDataForCodeAddress(uint8_t *cursor);
+};
+
+/**
+ * @class AMD64MemRefAddrInstruction
+ *
+ * @brief Materializes a 64-bit immediate address into a register. Use this
+ *     instruction when a Symbol IS NOT available for the MemoryReference. A unique
+ *     instruction kind is required for this because of the the relocation
+ *     requirements from the MemoryReference from which the immediate address is
+ *     derived.
+ */
+class AMD64MemRefAddrInstruction : public TR::AMD64RegImm64Instruction {
+private:
+    bool _needsCodeAbsoluteExternalRelocation;
+
+public:
+    // This instruction is intended to be inserted before an existing
+    // instruction when its MemoryReference has an address immediate
+    // consolidated into a register. That is why the precedingInstr form
+    // constructor is the only one available for this instruction kind.
+    //
+    AMD64MemRefAddrInstruction(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg, uint64_t imm,
+        bool needsCodeAbsoluteReloc, TR::CodeGenerator *cg)
+        : AMD64RegImm64Instruction(precedingInstr, OP::MOV8RegImm64, reg, imm, cg)
+        , _needsCodeAbsoluteExternalRelocation(needsCodeAbsoluteReloc)
+    {
+        setNode(node);
+    }
+
+    virtual const char *description() { return "AMD64MemRefAddr"; }
+
+    virtual Kind getKind() { return IsMemRefAddr; }
+
+    virtual void addMetaDataForCodeAddress(uint8_t *cursor);
+
+    void setNeedsCodeAbsoluteExternalRelocation(bool r) { _needsCodeAbsoluteExternalRelocation = r; }
+
+    bool getNeedsCodeAbsoluteExternalRelocation() { return _needsCodeAbsoluteExternalRelocation; }
+};
+
+/**
+ * @class AMD64MemRefAddrSymInstruction
+ *
+ * @brief Materializes a 64-bit immediate address into a register. Use this
+ *     instruction when a Symbol IS available for the MemoryReference. A unique
+ *     instruction kind is required for this because of the the relocation
+ *     requirements from the MemoryReference from which the immediate address is
+ *     derived.
+ */
+class AMD64MemRefAddrSymInstruction : public TR::AMD64RegImm64SymInstruction {
+public:
+    // This instruction is intended to be inserted before an existing
+    // instruction when its MemoryReference has an address immediate
+    // consolidated into a register. That is why the precedingInstr form
+    // constructor is the only one available for this instruction kind.
+    //
+    AMD64MemRefAddrSymInstruction(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg, uint64_t imm,
+        TR::SymbolReference *sr, TR::CodeGenerator *cg)
+        : AMD64RegImm64SymInstruction(precedingInstr, OP::MOV8RegImm64, reg, imm, sr, cg)
+    {
+        setNode(node);
+    }
+
+    virtual const char *description() { return "AMD64MemRefAddrSym"; }
+
+    virtual Kind getKind() { return IsMemRefAddrSym; }
 
     virtual void addMetaDataForCodeAddress(uint8_t *cursor);
 };
@@ -2568,6 +2634,16 @@ TR::AMD64RegImm64Instruction *Inst_RegImm64(TR::Instruction *precedingInstructio
 TR::AMD64RegImm64SymInstruction *Inst_RegImm64Sym(OP::Mnemonic op, TR::Node *node, TR::Register *reg, uint64_t imm,
     TR::SymbolReference *sr, TR::CodeGenerator *cg);
 TR::AMD64RegImm64SymInstruction *Inst_RegImm64Sym(TR::Instruction *precedingInstruction, OP::Mnemonic op,
+    TR::Register *reg, uint64_t imm, TR::SymbolReference *sr, TR::CodeGenerator *cg);
+
+// AMD64MemRefAddrInstruction
+//
+TR::AMD64MemRefAddrInstruction *Inst_MemRefAddr(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg,
+    uint64_t imm, bool needsCodeAbsoluteReloc, TR::CodeGenerator *cg);
+
+// AMD64MemRefAddrSymInstruction
+//
+TR::AMD64MemRefAddrSymInstruction *Inst_MemRefAddrSym(TR::Instruction *precedingInstr, TR::Node *node,
     TR::Register *reg, uint64_t imm, TR::SymbolReference *sr, TR::CodeGenerator *cg);
 
 // X86RegMaskMemInstruction

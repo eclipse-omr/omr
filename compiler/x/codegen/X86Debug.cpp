@@ -136,6 +136,8 @@ void TR_Debug::printx(OMR::Logger *log, TR::Instruction *instr)
 #ifdef TR_TARGET_64BIT
         case TR::Instruction::IsRegImm64:
         case TR::Instruction::IsRegImm64Sym:
+        case TR::Instruction::IsMemRefAddr:
+        case TR::Instruction::IsMemRefAddrSym:
             print(log, (TR::AMD64RegImm64Instruction *)instr);
             break;
 #endif

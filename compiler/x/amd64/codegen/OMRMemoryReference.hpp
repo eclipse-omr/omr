@@ -173,6 +173,8 @@ public: // Constructors
     OMR_FINAL void addMetaDataForCodeAddressWithLoad(uint8_t *displacementLocation,
         TR::Instruction *containingInstruction, TR::CodeGenerator *cg, TR::SymbolReference *srCopy);
 
+    void finalizeInstrAttachment(TR::Instruction *containingInstr, TR::CodeGenerator *cg);
+
 protected:
 #if defined(TR_TARGET_64BIT)
     OMR_FINAL bool needsAddressLoadInstruction(intptr_t nextInstructionAddress, TR::CodeGenerator *cg);
