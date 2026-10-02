@@ -254,6 +254,68 @@ void OMR::X86::AMD64::MemoryReference::useRegisters(TR::Instruction *instr, TR::
     }
 }
 
+TR_YesNoMaybe OMR::X86::AMD64::MemoryReference::requiresMemRefAddressConsolidation(intptr_t nextInstructionAddress,
+    TR::CodeGenerator *cg)
+{
+    TR::SymbolReference &sr = getSymbolReference();
+    TR::Symbol *sym = sr.getSymbol();
+    intptr_t displacement = getDisplacement();
+
+    if (_forceRIPRelative) {
+        return TR_no;
+    } else if (sym && sr.isUnresolved()) {
+        return sym->isShadow() ? TR_no : TR_yes;
+    } else if (getLabel()) {
+        return TR_no;
+    } else if (_baseRegister || _indexRegister) {
+        return IS_32BIT_SIGNED(displacement) ? TR_no : TR_yes;
+    }
+
+    // At this point, the memory reference is known not to have a base or index register
+    // (a displacement only).
+    //
+    // The displacement holds an address in memory, and the remaining logic determines
+    // whether a 64-bit immediate load instruction is required to materialize the address.
+    // If not, the address is materialized through either a 32-bit RIP-relative form or
+    // a 32-bit absolute form.
+
+    if (cg->needClassAndMethodPointerRelocations()) {
+        return TR_yes;
+    }
+
+    if (sym) {
+        if (sym->isRecompilationCounter() && cg->needRelocationsForBodyInfoData()) {
+            return TR_yes;
+        } else if (sym->isCountForRecompile() && cg->needRelocationsForPersistentInfoData()) {
+            return TR_yes;
+        } else if ((sym->isBlockFrequency() || sym->isRecompQueuedFlag())
+            && cg->needRelocationsForPersistentProfileInfoData()) {
+            return TR_yes;
+        } else if (sym->isCatchBlockCounter() && cg->needRelocationsForBodyInfoData()) {
+            return TR_yes;
+        } else if (cg->comp()->getOption(TR_EnableHCR) && sym->isClassObject()) {
+            return TR_yes; // If a class gets replaced, it may no longer fit in an immediate
+        }
+    }
+
+    if (IS_32BIT_SIGNED(displacement)) {
+        return TR_no;
+    }
+
+    // At this point, the displacement is known to be 64-bit
+
+    if (cg->comp()->isOutOfProcessCompilation() && sym && sym->isStatic()
+        && !sym->isStaticAddressWithinMethodBounds()) {
+        return TR_yes;
+    }
+
+    if (nextInstructionAddress) {
+        return IS_32BIT_RIP(displacement, nextInstructionAddress) ? TR_no : TR_yes;
+    } else {
+        return TR_maybe;
+    }
+}
+
 bool OMR::X86::AMD64::MemoryReference::needsAddressLoadInstruction(intptr_t nextInstructionAddress,
     TR::CodeGenerator *cg)
 {
@@ -537,7 +599,10 @@ uint8_t *OMR::X86::AMD64::MemoryReference::generateBinaryEncoding(uint8_t *modRM
     //
     intptr_t nextInstructionAddress = (intptr_t)(modRM + 5) + containingInstruction->getOpCode().info().ImmediateSize();
 
-    if (needsAddressLoadInstruction(nextInstructionAddress, cg)) {
+    TR_YesNoMaybe materializeMemRefAddr = self()->requiresMemRefAddressConsolidation(nextInstructionAddress, cg);
+    TR_ASSERT_FATAL(materializeMemRefAddr != TR_maybe, "Address materialization decision must be known by now");
+
+    if (materializeMemRefAddr == TR_yes) {
         TR_ASSERT(_addressRegister != NULL,
             "OMR::X86::AMD64::MemoryReference should have allocated an address register");
 

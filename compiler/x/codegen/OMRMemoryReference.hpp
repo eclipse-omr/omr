@@ -358,6 +358,28 @@ public:
     void consolidateRegisters(TR::Node *, TR::CodeGenerator *cg);
 
     /**
+     * @brief Answers whether this memory reference will need to consolidate its
+     *     displacement into a register, usually because it is too large or requires
+     *     a relocation.
+     *
+     * @param[in] nextInstructionAddress : the address in the code cache of the
+     *     instruction following the instruction that contains this memory reference.
+     *     It will be zero (0) if the next instruction address is not known yet.
+     * @param[in] cg : the \c TR::CodeGenerator object
+     *
+     * @return
+     *     TR_yes if a consolidation is required,
+     *     TR_no if consolidation is definitively not required,
+     *     TR_maybe if the consolidation requirement is not certain. This uncertainty
+     *         can happen in some circumstances when this question is asked before
+     *         binary encoding and the address instructions are not known.
+     */
+    TR_YesNoMaybe requiresMemRefAddressConsolidation(intptr_t nextInstructionAddress, TR::CodeGenerator *cg)
+    {
+        return TR_no;
+    }
+
+    /**
      * @brief Perform any necessary final tasks when this memory reference is
      *     attached to an instruction.
      *
