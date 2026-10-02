@@ -154,6 +154,8 @@ public:
 	uintptr_t _traceAllocationBytesCurrentTLH; /**< keep the bytes of times of sampling threshold for last object trace(include allocation bytes inside TLH) */
 	uintptr_t _recorderTraceAllocationBytes;           /**< Bytes allocated since the last recorder ObjectAllocationSample event on this thread */
 	uintptr_t _recorderTraceAllocationBytesCurrentTLH; /**< TLH byte offset at which the last recorder sample occurred (mirrors _traceAllocationBytesCurrentTLH) */
+	uintptr_t _internalTraceAllocationBytes;           /**< Bytes allocated since the last internal ObjectAllocationSample event on this thread */
+	uintptr_t _internalTraceAllocationBytesCurrentTLH; /**< TLH byte offset at which the last internal sample occurred (mirrors _traceAllocationBytesCurrentTLH) */
 
 	uintptr_t approxScanCacheCount; /**< Local copy of approximate entries in global Cache Scan List. Updated upon allocation of new cache. */
 
@@ -750,6 +752,8 @@ public:
 		,_traceAllocationBytesCurrentTLH(0)
 		,_recorderTraceAllocationBytes(0)
 		,_recorderTraceAllocationBytesCurrentTLH(0)
+		,_internalTraceAllocationBytes(0)
+		,_internalTraceAllocationBytesCurrentTLH(0)
 		,approxScanCacheCount(0)
 		,_activeValidator(NULL)
 		,_lastSyncPointReached(NULL)
@@ -810,6 +814,8 @@ public:
 		,_traceAllocationBytesCurrentTLH(0)
 		,_recorderTraceAllocationBytes(0)
 		,_recorderTraceAllocationBytesCurrentTLH(0)
+		,_internalTraceAllocationBytes(0)
+		,_internalTraceAllocationBytesCurrentTLH(0)
 		,approxScanCacheCount(0)
 		,_activeValidator(NULL)
 		,_lastSyncPointReached(NULL)
