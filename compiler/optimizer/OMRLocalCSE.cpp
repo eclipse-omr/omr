@@ -1296,6 +1296,7 @@ void OMR::LocalCSE::killAllAvailableExpressions()
     removeFromHashTable(_hashTableWithSyms, 0);
     _availableLoadExprs.reset(0);
     _availablePinningArrayExprs.reset(0);
+    _killedPinningArrayExprs.set(0);
     _availableCallExprs.reset(0);
     removeFromHashTable(_hashTableWithConsts, 0);
     removeFromHashTable(_hashTableWithCalls, 0);
@@ -1322,6 +1323,7 @@ void OMR::LocalCSE::killAvailableExpressions(int32_t symRefNum)
     removeFromHashTable(_hashTableWithSyms, symRefNum);
     _availableLoadExprs.reset(symRefNum);
     _availablePinningArrayExprs.reset(symRefNum);
+    _killedPinningArrayExprs.set(symRefNum);
     _availableCallExprs.reset(symRefNum);
 }
 
@@ -1345,6 +1347,7 @@ void OMR::LocalCSE::killAvailableExpressionsUsingAliases(TR_BitVector &aliases)
 {
     TR_BitVector tmp(_availableLoadExprs);
     _availableLoadExprs -= aliases;
+    _killedPinningArrayExprs |= aliases;
 
     tmp -= _availableLoadExprs;
 
@@ -1362,6 +1365,8 @@ void OMR::LocalCSE::killAvailableExpressionsUsingAliases(TR_UseDefAliasSetInterf
     TR_BitVector tmp(_availableLoadExprs);
     UseDefAliases.getAliasesAndSubtractFrom(_availableLoadExprs);
     UseDefAliases.getAliasesAndSubtractFrom(_availablePinningArrayExprs);
+    UseDefAliases.getAliasesAndUnionWith(_killedPinningArrayExprs);
+
     tmp -= _availableLoadExprs;
 
     killAvailableExpressionsUsingBitVector(_hashTableWithSyms, tmp);
@@ -1376,6 +1381,8 @@ void OMR::LocalCSE::killAvailableExpressionsUsingAliases(TR_UseDefAliasSetInterf
 void OMR::LocalCSE::killAllDataStructures(TR_BitVector &seenAvailableLoadedSymbolReferences)
 {
     _storeMap->clear();
+
+    _killedPinningArrayExprs |= seenAvailableLoadedSymbolReferences;
 
     seenAvailableLoadedSymbolReferences.empty();
 
@@ -1415,6 +1422,8 @@ void OMR::LocalCSE::killAvailableExpressionsAtGCSafePoints(TR::Node *node, TR::N
         logprintf(trace(), log, "Node %p is detected as a method enter/exit point\n", node);
 
         _storeMap->clear();
+
+        _killedPinningArrayExprs |= seenAvailableLoadedSymbolReferences;
 
         seenAvailableLoadedSymbolReferences.empty();
 
