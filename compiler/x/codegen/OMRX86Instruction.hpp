@@ -2072,6 +2072,9 @@ public:
  *     derived.
  */
 class AMD64MemRefAddrSymInstruction : public TR::AMD64RegImm64SymInstruction {
+private:
+    TR::UnresolvedDataSnippet *_unresolvedDataSnippet;
+
 public:
     // This instruction is intended to be inserted before an existing
     // instruction when its MemoryReference has an address immediate
@@ -2081,6 +2084,7 @@ public:
     AMD64MemRefAddrSymInstruction(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg, uint64_t imm,
         TR::SymbolReference *sr, TR::CodeGenerator *cg)
         : AMD64RegImm64SymInstruction(precedingInstr, OP::MOV8RegImm64, reg, imm, sr, cg)
+        , _unresolvedDataSnippet(NULL)
     {
         setNode(node);
     }
@@ -2090,6 +2094,10 @@ public:
     virtual Kind getKind() { return IsMemRefAddrSym; }
 
     virtual void addMetaDataForCodeAddress(uint8_t *cursor);
+
+    TR::UnresolvedDataSnippet *getUnresolvedDataSnippet() { return _unresolvedDataSnippet; }
+
+    void setUnresolvedDataSnippet(TR::UnresolvedDataSnippet *uds) { _unresolvedDataSnippet = uds; }
 };
 
 class AMD64Imm64Instruction : public TR::Instruction {

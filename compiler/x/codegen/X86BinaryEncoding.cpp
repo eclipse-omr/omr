@@ -2808,6 +2808,9 @@ void TR::AMD64MemRefAddrSymInstruction::addMetaDataForCodeAddress(uint8_t *curso
             cg()->jitAddUnresolvedAddressMaterializationToPatchOnClassRedefinition(
                 cursor - 2); // cursor-2 is the start of the MOV8RegImm64 instruction
         }
+
+        TR_ASSERT_FATAL(getUnresolvedDataSnippet(), "Must have an UnresolvedDataSnippet");
+        getUnresolvedDataSnippet()->setAddressOfDataReference(cursor);
     } else if ((sym->isClassObject())) {
         if (sym->isStatic()) {
             if (cg()->needClassAndMethodPointerRelocations()) {
