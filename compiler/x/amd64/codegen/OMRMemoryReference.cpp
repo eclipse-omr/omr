@@ -316,64 +316,6 @@ TR_YesNoMaybe OMR::X86::AMD64::MemoryReference::requiresMemRefAddressConsolidati
     }
 }
 
-bool OMR::X86::AMD64::MemoryReference::needsAddressLoadInstruction(intptr_t nextInstructionAddress,
-    TR::CodeGenerator *cg)
-{
-    TR::SymbolReference &sr = getSymbolReference();
-    TR::Symbol *sym = sr.getSymbol();
-    intptr_t displacement = getDisplacement();
-
-    if (_forceRIPRelative) {
-        return false;
-    } else if (sym && sr.isUnresolved()) {
-        return sym->isShadow() ? false : true;
-    } else if (_baseRegister || _indexRegister) {
-        return !IS_32BIT_SIGNED(displacement);
-    }
-
-    // At this point, the memory reference is known not to have a base or index register
-    // (a displacement only).
-    //
-    // The displacement holds an address in memory, and the remaining logic determines
-    // whether a 64-bit immediate load instruction is required to materialize the address.
-    // If not, the address is materialized through either a 32-bit RIP-relative form or
-    // a 32-bit absolute form.
-
-    if (cg->needClassAndMethodPointerRelocations()) {
-        return true;
-    }
-
-    if (sym) {
-        if (sym->isRecompilationCounter() && cg->needRelocationsForBodyInfoData()) {
-            return true;
-        } else if (sym->isCountForRecompile() && cg->needRelocationsForPersistentInfoData()) {
-            return true;
-        } else if ((sym->isBlockFrequency() || sym->isRecompQueuedFlag())
-            && cg->needRelocationsForPersistentProfileInfoData()) {
-            return true;
-        } else if (sym->isCatchBlockCounter() && cg->needRelocationsForBodyInfoData()) {
-            return true;
-        } else if (cg->comp()->getOption(TR_EnableHCR) && sym->isClassObject()) {
-            return true; // If a class gets replaced, it may no longer fit in an immediate
-        }
-    }
-
-    if (IS_32BIT_SIGNED(displacement)) {
-        return false;
-    }
-
-    // At this point, the displacement is known to be 64-bit
-
-    if (cg->comp()->isOutOfProcessCompilation() && sym && sym->isStatic()
-        && !sym->isStaticAddressWithinMethodBounds()) {
-        return true;
-    } else if (IS_32BIT_RIP(displacement, nextInstructionAddress)) {
-        return false;
-    } else {
-        return true;
-    }
-}
-
 void OMR::X86::AMD64::MemoryReference::assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg)
 {
     // TODO:AMD64: If currentInstruction has a target register, then we can use
@@ -465,97 +407,85 @@ uint32_t OMR::X86::AMD64::MemoryReference::estimateBinaryLength(TR::Instruction 
     return estimate;
 }
 
-void OMR::X86::AMD64::MemoryReference::addMetaDataForCodeAddressWithLoad(uint8_t *displacementLocation,
-    TR::Instruction *containingInstruction, TR::CodeGenerator *cg, TR::SymbolReference *srCopy)
+TR::Instruction *OMR::X86::AMD64::MemoryReference::consolidateMemRefAddress(TR::Instruction *containingInstruction,
+    TR::Instruction *&addressAddInstruction, TR::CodeGenerator *cg)
 {
+    TR::Compilation *comp = cg->comp();
+    TR::SymbolReference &sr = getSymbolReference();
     intptr_t displacement = getDisplacement();
 
-    if (_symbolReference.getSymbol()) {
-        TR::SymbolReference &sr = *srCopy;
-        if (getUnresolvedDataSnippet()) {
-            TR::Compilation *comp = cg->comp();
-            if (comp->getOption(TR_EnableHCR) && (!sr.getSymbol()->isStatic() || !sr.getSymbol()->isClassObject())) {
-                cg->jitAddUnresolvedAddressMaterializationToPatchOnClassRedefinition(
-                    containingInstruction->getBinaryEncoding());
-            }
-        } else if ((sr.getSymbol()->isClassObject())) {
-            if (sr.getSymbol()->isStatic()) {
-                if (cg->needClassAndMethodPointerRelocations()) {
-                    if (cg->comp()->getOption(TR_UseSymbolValidationManager)) {
-                        cg->addExternalRelocation(
-                            TR::ExternalRelocation::create(displacementLocation,
-                                (uint8_t *)sr.getSymbol()->castToStaticSymbol()->getStaticAddress(),
-                                (uint8_t *)TR::SymbolType::typeClass, TR_SymbolFromManager, cg),
-                            __FILE__, __LINE__, containingInstruction->getNode());
-                    } else {
-                        cg->addExternalRelocation(
-                            TR::ExternalRelocation::create(displacementLocation, (uint8_t *)srCopy,
-                                (uint8_t *)(uintptr_t)containingInstruction->getNode()->getInlinedSiteIndex(),
-                                TR_ClassAddress, cg),
-                            __FILE__, __LINE__, containingInstruction->getNode());
-                    }
-                }
-            }
-        } else if (sr.getSymbol()->isCountForRecompile()) {
-            if (cg->needRelocationsForPersistentInfoData()) {
-                cg->addExternalRelocation(TR::ExternalRelocation::create(displacementLocation,
-                                              (uint8_t *)TR_CountForRecompile, TR_GlobalValue, cg),
-                    __FILE__, __LINE__, containingInstruction->getNode());
-            }
-        } else if (sr.getSymbol()->isRecompilationCounter()) {
-            if (cg->needRelocationsForBodyInfoData()) {
-                cg->addExternalRelocation(
-                    TR::ExternalRelocation::create(displacementLocation, 0, TR_BodyInfoAddress, cg), __FILE__, __LINE__,
-                    containingInstruction->getNode());
-            }
-        } else if (sr.getSymbol()->isCatchBlockCounter()) {
-            if (cg->needRelocationsForBodyInfoData()) {
-                cg->addExternalRelocation(
-                    TR::ExternalRelocation::create(displacementLocation, 0, TR_CatchBlockCounter, cg), __FILE__,
-                    __LINE__, containingInstruction->getNode());
-            }
-        } else if (sr.getSymbol()->isGCRPatchPoint()) {
-            if (cg->needRelocationsForStatics()) {
-                cg->addExternalRelocation(
-                    TR::ExternalRelocation::create(displacementLocation, 0, TR_AbsoluteMethodAddress, cg), __FILE__,
-                    __LINE__, containingInstruction->getNode());
-            }
-        } else if (sr.getSymbol()->isCompiledMethod()) {
-            if (cg->needRelocationsForStatics()) {
-                cg->addExternalRelocation(TR::ExternalRelocation::create(displacementLocation, 0, TR_RamMethod, cg),
-                    __FILE__, __LINE__, containingInstruction->getNode());
-            }
-        } else if (sr.getSymbol()->isStartPC()) {
-            if (cg->needRelocationsForStatics()) {
-                cg->addExternalRelocation(
-                    TR::ExternalRelocation::create(displacementLocation, 0, TR_AbsoluteMethodAddress, cg), __FILE__,
-                    __LINE__, containingInstruction->getNode());
-            }
-        } else if (sr.getSymbol()->isDebugCounter()) {
-            if (cg->needRelocationsForStatics()) {
-                TR::DebugCounterBase *counter = cg->comp()->getCounterFromStaticAddress(&sr);
-                if (counter == NULL) {
-                    cg->comp()->failCompilation<TR::CompilationException>(
-                        "Could not generate relocation for debug counter in "
-                        "OMR::X86::AMD64::MemoryReference::addMetaDataForCodeAddressWithLoad\n");
-                }
-                TR::DebugCounter::generateRelocation(cg->comp(), displacementLocation, containingInstruction->getNode(),
-                    counter);
-            }
-        } else if (sr.getSymbol()->isEnterEventHookAddress() || sr.getSymbol()->isExitEventHookAddress()) {
-            if (cg->needRelocationsForStatics()) {
-                cg->addExternalRelocation(TR::ExternalRelocation::create(displacementLocation, (uint8_t *)srCopy, NULL,
-                                              TR_MethodEnterExitHookAddress, cg),
-                    __FILE__, __LINE__, containingInstruction->getNode());
-            }
+    TR::Instruction *addressLoadInstruction;
+    TR::Node *node = getBaseNode() ? getBaseNode() : containingInstruction->getNode();
+
+    TR::SymbolReference *symRef = NULL;
+    if (sr.getSymbol()) {
+        // Clone the symbol reference because it will be clobbered
+        //
+        symRef = new (cg->trHeapMemory()) TR::SymbolReference(cg->symRefTab(), sr, 0);
+
+        TR::AMD64MemRefAddrSymInstruction *materializeInstr
+            = Inst_MemRefAddrSym(containingInstruction->getPrev(), node, getAddressRegister(),
+                (!getUnresolvedDataSnippet() && sr.getSymbol()->isStatic() && sr.getSymbol()->isClassObject()
+                    && cg->needClassAndMethodPointerRelocations())
+                    ? (uint64_t)TR::Compiler->cls.persistentClassPointerFromClassPointer(comp,
+                          (TR_OpaqueClassBlock *)displacement)
+                    : displacement,
+                symRef, cg);
+
+        if (sr.isUnresolved()) {
+            TR::UnresolvedDataSnippet *uds = getUnresolvedDataSnippet();
+
+            // Transfer the UnresolvedDataSnippet to the materialization instruction
+            // and clear it on the MemoryReference
+            //
+            materializeInstr->setUnresolvedDataSnippet(uds);
+            uds->setDataReferenceInstruction(materializeInstr);
+            uds->setDataSymbolReference(symRef);
+            setUnresolvedDataSnippet(NULL);
         }
+
+        addressLoadInstruction = materializeInstr;
     } else {
-        if (needsCodeAbsoluteExternalRelocation()) {
-            cg->addExternalRelocation(
-                TR::ExternalRelocation::create(displacementLocation, (uint8_t *)0, TR_AbsoluteMethodAddress, cg),
-                __FILE__, __LINE__, containingInstruction->getNode());
-        }
+        addressLoadInstruction = Inst_MemRefAddr(containingInstruction->getPrev(), node, getAddressRegister(),
+            displacement, needsCodeAbsoluteExternalRelocation(), cg);
     }
+
+    // Transform the original MemoryReference to use the materialized
+    // address register most effectively
+
+    addressAddInstruction = NULL;
+    if (!getBaseRegister()) {
+        // Prefer to use the base register position in the MemoryReference
+        // because it generally yields smaller instructions
+        //
+        setBaseRegister(getAddressRegister());
+        setBaseNode(NULL);
+    } else if (!getIndexRegister()) {
+        setIndexRegister(getAddressRegister());
+        setIndexNode(NULL);
+        setStride(0);
+    } else {
+        // Both base and index registers are used in the MemoryReference.
+        // Replace the base register with a new consolidated address.
+        //
+        addressAddInstruction
+            = Inst_RegReg(addressLoadInstruction, OP::ADD8RegReg, getAddressRegister(), getBaseRegister(), cg);
+
+        setBaseRegister(getAddressRegister());
+        setBaseNode(NULL);
+    }
+
+    resetForceWideDisplacement();
+
+    // The external code absolute relocation would have been created for the address
+    // materialization instruction and is no longer needed
+    //
+    resetNeedsCodeAbsoluteExternalRelocation();
+
+    sr.setSymbol(NULL);
+    sr.setOffset(0);
+
+    return addressLoadInstruction;
 }
 
 uint8_t *OMR::X86::AMD64::MemoryReference::generateBinaryEncoding(uint8_t *modRM,
@@ -603,84 +533,9 @@ uint8_t *OMR::X86::AMD64::MemoryReference::generateBinaryEncoding(uint8_t *modRM
     TR_ASSERT_FATAL(materializeMemRefAddr != TR_maybe, "Address materialization decision must be known by now");
 
     if (materializeMemRefAddr == TR_yes) {
-        TR_ASSERT(_addressRegister != NULL,
-            "OMR::X86::AMD64::MemoryReference should have allocated an address register");
-
-        TR::Instruction *addressLoadInstruction;
-
-        // Create a mov immediate to load the address
-        //
-        TR::Node *node = getBaseNode() ? getBaseNode() : containingInstruction->getNode();
-
-        TR::SymbolReference *symRef = NULL;
-        if (sr.getSymbol()) {
-            // Clone the symbol reference because we're going to clobber it shortly
-            //
-            symRef = new (cg->trHeapMemory()) TR::SymbolReference(cg->symRefTab(), sr, 0);
-
-            TR::AMD64MemRefAddrSymInstruction *materializeInstr
-                = Inst_MemRefAddrSym(containingInstruction->getPrev(), node, getAddressRegister(),
-                    (!getUnresolvedDataSnippet() && sr.getSymbol()->isStatic() && sr.getSymbol()->isClassObject()
-                        && cg->needClassAndMethodPointerRelocations())
-                        ? (uint64_t)TR::Compiler->cls.persistentClassPointerFromClassPointer(comp,
-                              (TR_OpaqueClassBlock *)displacement)
-                        : displacement,
-                    symRef, cg);
-
-            if (sr.isUnresolved()) {
-                TR::UnresolvedDataSnippet *uds = getUnresolvedDataSnippet();
-
-                // Transfer the UnresolvedDataSnippet to the materialization instruction
-                // and clear it on the MemoryReference
-                //
-                materializeInstr->setUnresolvedDataSnippet(uds);
-                uds->setDataReferenceInstruction(materializeInstr);
-                uds->setDataSymbolReference(symRef);
-                setUnresolvedDataSnippet(NULL);
-            }
-
-            addressLoadInstruction = materializeInstr;
-        } else {
-            // TR_ASSERT(!getUnresolvedDataSnippet(), "Unresolved references should always have a symbol");
-
-            addressLoadInstruction = Inst_MemRefAddr(containingInstruction->getPrev(), node, getAddressRegister(),
-                displacement, needsCodeAbsoluteExternalRelocation(), cg);
-        }
-
-        // Transform the original MemoryReference to use the materialized
-        // address register most effectively
-
         TR::Instruction *addressAddInstruction = NULL;
-        if (!getBaseRegister()) {
-            // Prefer to use the base register position in the MemoryReference
-            // because it generally yields smaller instructions
-            //
-            setBaseRegister(getAddressRegister());
-            setBaseNode(NULL);
-        } else if (!getIndexRegister()) {
-            setIndexRegister(getAddressRegister());
-            setIndexNode(NULL);
-            setStride(0);
-        } else {
-            // Both base and index registers are used in the MemoryReference.
-            // Replace the base register with a new consolidated address.
-            //
-            addressAddInstruction
-                = Inst_RegReg(addressLoadInstruction, OP::ADD8RegReg, getAddressRegister(), getBaseRegister(), cg);
-
-            setBaseRegister(getAddressRegister());
-            setBaseNode(NULL);
-        }
-
-        resetForceWideDisplacement();
-
-        // The external code absolute relocation would have been created for the address
-        // materialization instruction and is no longer needed
-        //
-        resetNeedsCodeAbsoluteExternalRelocation();
-
-        sr.setSymbol(NULL);
-        sr.setOffset(0);
+        TR::Instruction *addressLoadInstruction
+            = consolidateMemRefAddress(containingInstruction, addressAddInstruction, cg);
 
         // Emit the instruction to load the address over top of the
         // already-emitted binary for containingInstruction
