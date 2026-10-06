@@ -4195,7 +4195,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
 		// DEV: unify
-		if (!_extensions->enableUnifiedAbort || !IS_CONCURRENT_ENABLED) {
+		if (!_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 			/* 1) Flush copy scan caches */
 			omrtty_printf("{SHAD: STW: Flush copy scan caches\n");
 			MM_CopyScanCacheStandard *cache = NULL;
