@@ -3119,8 +3119,8 @@ bool OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig)
         self()->setOption(TR_DisableDynamicLoopTransfer);
     }
 
-    // getFixedOptLevel() asserts command line, optionSet is NULL for command line options
-    // so we can use it to determine if the opt level was set via the command line or not
+    // getFixedOptLevel() should only be called on the global options.
+    // For options in a subset (optionSet != NULL) we should use getFixedOptLevel().
     int32_t inhibitOptLevel = optionSet ? self()->getOptLevel() : self()->getFixedOptLevel();
     if (inhibitOptLevel == -1 && self()->getOption(TR_InhibitRecompilation)) {
         self()->setOption(TR_DisableUpgradingColdCompilations);
