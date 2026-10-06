@@ -541,7 +541,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 	case restore_allocate_after_backout:
 		// DEV: Assertion no longer appropriate
 		if (!_extensions->enableUnifiedAbort) {
-			Assert_MM_true(_extensions->concurrentScavenger);
+			Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->concurrentScavenger);
 		}
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocate_after_backout");
 		/* Restore allocation, which we had disabled in the backout step */
@@ -552,7 +552,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 	{
 		// DEV: Assertion no longer appropriate
 		if (!_extensions->enableUnifiedAbort) {
-			Assert_MM_true(_extensions->concurrentScavenger);
+			Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->concurrentScavenger);
 		}
 		uintptr_t lastFreeEntrySize = 0;
 		MM_HeapLinkedFreeHeader *lastFreeEntry = getDefaultMemorySubSpace()->getMemoryPool()->getLastFreeEntry();
@@ -670,6 +670,7 @@ MM_MemorySubSpaceSemiSpace::mainTeardownForSuccessfulGC(MM_EnvironmentBase *env)
 	_memorySubSpaceEvacuate->rebuildFreeList(env);
 
 	/* Flip the memory space allocate profile */
+	// DEV: not sure if any unification needed here
 	if (!_extensions->isConcurrentScavengerEnabled()) {
 		flip(env, set_allocate);
 		flip(env, disable_allocation);
@@ -698,7 +699,7 @@ MM_MemorySubSpaceSemiSpace::mainTeardownForAbortedGC(MM_EnvironmentBase *env)
 	 *   restore_tilt_after_percolate is never triggered for STW and asserts in non-CS code if called
 	 *   (PhysicalSubArenaVirtualMemorySemiSpace.cpp:1052).
 	 * Keeping branches. */
-	if (_extensions->isConcurrentScavengerEnabled()) {
+	if (_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled()) {
 		/* There might be live objects in Survivor (newly allocated since the start of Concurrent Scavenge cycle).
 		 * Sweep in percolate global will rebuild the free list, so we can skip it here.
 		 */
@@ -1077,7 +1078,7 @@ MM_MemorySubSpaceSemiSpace::checkResize(MM_EnvironmentBase *env, MM_AllocateDesc
 	 * infrastructure (undoes the 100% tilt set by mainTeardownForAbortedGC). STW never sets that
 	 * tilt, so it must take the normal resize path. Including enableUnifiedAbort here also clears
 	 * the backout flag mid-GC (inside flip), which breaks fixupForwardedSlot during the mark phase. */
-	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	if ((_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
 		flip(env, restore_tilt_after_percolate);
 	} else {
 		checkSubSpaceMemoryPostCollectTilt(env);
