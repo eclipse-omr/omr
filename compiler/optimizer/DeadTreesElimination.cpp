@@ -62,19 +62,16 @@
 
 // Local helper functions
 
-static OMR::TreeInfo *findOrCreateTreeInfo(TR::TreeTop *treeTop, List<OMR::TreeInfo> *targetTrees,
-    TR::Compilation *comp)
-{
-    ListIterator<OMR::TreeInfo> trees(targetTrees);
-    OMR::TreeInfo *t;
-    for (t = trees.getFirst(); t; t = trees.getNext()) {
-        if (t->getTreeTop() == treeTop)
-            return t;
-    }
+typedef std::pair<TR::TreeTop * const, OMR::TreeInfo> TIEntry;
+typedef TR::typed_allocator<TIEntry, TR::Region &> TIAlloc;
+typedef std::map<TR::TreeTop *, OMR::TreeInfo, std::less<TR::TreeTop *>, TIAlloc> TreeInfoMap;
 
-    t = new (targetTrees->getRegion()) OMR::TreeInfo(treeTop, 0);
-    targetTrees->add(t);
-    return t;
+static OMR::TreeInfo *findOrCreateTreeInfo(TR::TreeTop *treeTop, TreeInfoMap *targetTrees, TR::Compilation *comp)
+{
+    TreeInfoMap::iterator it = targetTrees->find(treeTop);
+    if (it == targetTrees->end())
+        it = targetTrees->insert(TIEntry(treeTop, OMR::TreeInfo(treeTop, 0))).first;
+    return &it->second;
 }
 
 static inline bool isReadBarrierUnderTreetop(TR::Node *node)
@@ -203,7 +200,7 @@ static bool containsNode(TR::Node *containerNode, TR::Node *nodeToSwingDown, vco
 #define MAX_ALLOWED_HEIGHT 50
 
 static bool isSafeToReplaceNode(TR::Node *currentNode, TR::TreeTop *curTreeTop, bool *seenConditionalBranch,
-    vcount_t visitCount, TR::Compilation *comp, TR::Optimization *opt, List<OMR::TreeInfo> *targetTrees,
+    vcount_t visitCount, TR::Compilation *comp, TR::Optimization *opt, TreeInfoMap *targetTrees,
     bool &cannotBeEliminated, LongestPathMap &longestPaths)
 {
     LexicalTimer tx("safeToReplace", comp->phaseTimer());
@@ -700,7 +697,7 @@ int32_t TR::DeadTreesElimination::process(TR::TreeTop *startTree, TR::TreeTop *e
 {
     TR::StackMemoryRegion stackRegion(*comp()->trMemory());
 
-    List<OMR::TreeInfo> targetTrees(stackRegion);
+    TreeInfoMap targetTrees(std::less<TR::TreeTop *>(), stackRegion);
 
     LongestPathMap longestPaths(std::less<TR::Node *>(), stackRegion);
 
