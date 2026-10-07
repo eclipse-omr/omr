@@ -1886,7 +1886,7 @@ public:
 		, disableInlineAllocationForSamplingBytesGranularity(false)
 		, heapCeiling(0) /* default for normal platforms is 0 (i.e. no ceiling) */
 		, heapInitializationFailureReason(HEAP_INITIALIZATION_FAILURE_REASON_NO_ERROR)
-		, scavengerAlignHotFields(true) /* VM Design 1774: hot field alignment is on by default */
+		, scavengerAlignHotFields(false) /* Old hot field alignment code is being removed.  Set to false by default. */
 		, suballocatorInitialSize(SUBALLOCATOR_INITIAL_SIZE) /* default for heap suballocator initial size is 200 MB */
 		, suballocatorCommitSize(SUBALLOCATOR_COMMIT_SIZE) /* default for heap suballocator commit size is 50 MB */
 		, suballocatorIncrementSize(SUBALLOCATOR_INCREMENT_SIZE) /* default for heap suballocator commit size is 8 MB or 256 MB for AIX */
