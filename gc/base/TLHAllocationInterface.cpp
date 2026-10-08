@@ -207,6 +207,7 @@ MM_TLHAllocationInterface::allocateObject(MM_EnvironmentBase *env, MM_AllocateDe
 	env->_oolTraceAllocationBytes += sizeInBytesAllocated;
 	env->_traceAllocationBytes += sizeInBytesAllocated;
 	env->_recorderTraceAllocationBytes += sizeInBytesAllocated;
+	env->_internalTraceAllocationBytes += sizeInBytesAllocated;
 	return result;
 }
 
@@ -283,6 +284,7 @@ MM_TLHAllocationInterface::flushCache(MM_EnvironmentBase *env)
 	_owningEnv->_oolTraceAllocationBytes += allocatedSizeInsideTLH;
 	_owningEnv->_traceAllocationBytes += allocatedSizeInsideTLH;
 	_owningEnv->_recorderTraceAllocationBytes += allocatedSizeInsideTLH;
+	_owningEnv->_internalTraceAllocationBytes += allocatedSizeInsideTLH;
 
 	if (!_owningEnv->isInlineTLHAllocateEnabled()) {
 		/* Clear out realHeapTop field; tlh code below will take care of rest */

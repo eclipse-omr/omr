@@ -315,6 +315,7 @@ public:
 	uintptr_t oolObjectSamplingBytesGranularity; /**< How often (in bytes) we do allocation sampling as tracked by per thread's local _oolTraceAllocationBytes. */
 	uintptr_t objectSamplingBytesGranularity; /**< How often (in bytes) we do allocation sampling as tracked by per thread's local _traceAllocationBytes. */
 	uintptr_t recorderObjectSamplingBytesGranularity; /**< How often (in bytes) we fire a recorder ObjectAllocationSample event per thread; UDATA_MAX = disabled */
+	uintptr_t internalObjectSamplingBytesGranularity; /**< How often (in bytes) we fire a internal ObjectAllocationSample event per thread; UDATA_MAX = disabled */
 
 	uintptr_t frequentObjectAllocationSamplingRate; /**< # bytes to sample / # bytes allocated */
 	MM_FrequentObjectsStats* frequentObjectsStats;
@@ -1552,6 +1553,7 @@ public:
 		, oolObjectSamplingBytesGranularity(16*1024*1024) /* Default granularity set to 16M (shows <1% perf loss). */
 		, objectSamplingBytesGranularity(UDATA_MAX) /* default UDATA_MAX (disabled) */
 		, recorderObjectSamplingBytesGranularity(UDATA_MAX) /* default UDATA_MAX (disabled) */
+		, internalObjectSamplingBytesGranularity(UDATA_MAX) /* default UDATA_MAX (disabled) */
 		, frequentObjectAllocationSamplingRate(100)
 		, frequentObjectsStats(NULL)
 		, frequentObjectAllocationSamplingDepth(0)

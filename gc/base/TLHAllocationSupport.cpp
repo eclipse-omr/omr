@@ -271,13 +271,25 @@ MM_TLHAllocationSupport::refresh(MM_EnvironmentBase *env, MM_AllocateDescription
 				uintptr_t traceBytes = (env->_traceAllocationBytes + usedSize) % samplingBytesGranularity;
 				samplingBytesGranularity -= traceBytes;
 			}
+
 			uintptr_t recorderSamplingBytesGranularity = env->getExtensions()->recorderObjectSamplingBytesGranularity;
 			if (UDATA_MAX != recorderSamplingBytesGranularity) {
 				uintptr_t traceBytes = (env->_recorderTraceAllocationBytes + usedSize) % recorderSamplingBytesGranularity;
 				recorderSamplingBytesGranularity -= traceBytes;
 			}
-			if ((UDATA_MAX != samplingBytesGranularity) || (UDATA_MAX != recorderSamplingBytesGranularity)) {
-				env->setTLHSamplingTop(OMR_MIN(samplingBytesGranularity, recorderSamplingBytesGranularity));
+
+			uintptr_t internalSamplingBytesGranularity = env->getExtensions()->internalObjectSamplingBytesGranularity;
+			if (UDATA_MAX != internalSamplingBytesGranularity) {
+				uintptr_t traceBytes = (env->_internalTraceAllocationBytes + usedSize) % internalSamplingBytesGranularity;
+				internalSamplingBytesGranularity -= traceBytes;
+			}
+/*
+			if ((UDATA_MAX != samplingBytesGranularity) || (UDATA_MAX != internalSamplingBytesGranularity)) {
+				env->setTLHSamplingTop(OMR_MIN(samplingBytesGranularity, internalSamplingBytesGranularity));
+			}
+*/
+			if ((UDATA_MAX != samplingBytesGranularity) || (UDATA_MAX != internalSamplingBytesGranularity) || (UDATA_MAX != recorderSamplingBytesGranularity)) {
+				env->setTLHSamplingTop(OMR_MIN(samplingBytesGranularity, OMR_MIN(internalSamplingBytesGranularity, recorderSamplingBytesGranularity)));
 			}
 		}
 		/*
