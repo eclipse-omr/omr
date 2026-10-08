@@ -4746,7 +4746,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		return true;
 	}
 
-	// DEV: removing this path to unify abort for concurrent and non-concurrent
+	// TODO: Unifying the percolate after abort. Might have to change the other place where percolate is normally called for stw
 	if ((_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised()) {
 		bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 
@@ -4918,6 +4918,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		/* We want to recursively call percolate gc here in order that the excessive gc
 		 * identifies the outermost gc and records the metrics correctly.
 		 */
+		// TODO: we already unified percolate above. Should we remove this?
 		if (isBackOutFlagRaised()) {
 			bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 			Assert_MM_true(result);
