@@ -3119,7 +3119,10 @@ bool OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig)
         self()->setOption(TR_DisableDynamicLoopTransfer);
     }
 
-    if (self()->getFixedOptLevel() == -1 && self()->getOption(TR_InhibitRecompilation)) {
+    // getFixedOptLevel() should only be called on the global options.
+    // For options in a subset (optionSet != NULL) we should use getFixedOptLevel().
+    int32_t inhibitOptLevel = optionSet ? self()->getOptLevel() : self()->getFixedOptLevel();
+    if (inhibitOptLevel == -1 && self()->getOption(TR_InhibitRecompilation)) {
         self()->setOption(TR_DisableUpgradingColdCompilations);
         self()->setOption(TR_DisableGuardedCountingRecompilations);
         self()->setOption(TR_DisableEDO);
