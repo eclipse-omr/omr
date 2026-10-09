@@ -808,7 +808,8 @@ MM_ParallelGlobalGC::shouldCompactThisCycle(MM_EnvironmentBase *env, MM_Allocate
 	 * In CS, the compact is necessary to clean up partially-copied objects on both sides of the nursery.
 	 * In STW, backout already restores the nursery to a clean state — the forced compact is unnecessary.
 	 * Guard restored. */
-	if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
+	// DEV: unifying this once again. We expect STW to follow the CS abort path completely, meaning STW will not leave nursery in a clean state
+	if ((_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled()) && _extensions->isScavengerBackOutFlagRaised()) {
 		compactReason = COMPACT_ABORTED_SCAVENGE;
 		goto compactionReqd;
 	}
