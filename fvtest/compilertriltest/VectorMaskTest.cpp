@@ -271,6 +271,10 @@ TEST_P(ParameterizedMaskTest, mArrayLoadStore) {
    TR::DataTypes et = std::get<1>(GetParam());
 
    SKIP_IF(vl > TR::NumVectorLengths, MissingImplementation) << "Vector length is not supported by the target platform";
+   SKIP_ON_POWER(KnownBug) << "Disabled on Power due to live register assertion (issue #8457)";
+   SKIP_ON_AARCH64(KnownBug) << "Disabled on AArch64 due to live register assertion (issue #8457)";
+   SKIP_ON_ARM(MissingImplementation);
+   SKIP_ON_RISCV(MissingImplementation);
    SKIP_ON_S390(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
    SKIP_ON_S390X(KnownBug) << "This test is currently disabled on Z platforms because not all Z platforms have vector support (issue #1843)";
 
