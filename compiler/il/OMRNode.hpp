@@ -1466,10 +1466,10 @@ public:
     void setSwappedChildren(bool v);
 
     bool isVersionableIfWithMaxExpr();
-    void setIsVersionableIfWithMaxExpr(TR::Compilation *c);
+    void setIsVersionableIfWithMaxExpr(TR::Compilation *c, bool v = true);
 
     bool isVersionableIfWithMinExpr();
-    void setIsVersionableIfWithMinExpr(TR::Compilation *c);
+    void setIsVersionableIfWithMinExpr(TR::Compilation *c, bool v = true);
 
     // Flags used by indirect stores and wrtbars for references
     bool isStoreAlreadyEvaluated();
