@@ -668,6 +668,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
      SET_OPTION_BIT(TR_DisableLastITableCache), "F" },
     { "disableLeafRoutineDetection", "O\tdisable lleaf routine detection on zlinux",
      SET_OPTION_BIT(TR_DisableLeafRoutineDetection), "F" },
+    { "disableLinearFunctionVersioning",
+     "O\tdisable loop versioning of conditionals on a linear function i*c+k of an int induction variable", SET_OPTION_BIT(TR_DisableLinearFunctionVersioning), "F" },
     { "disableLinkageRegisterAllocation", "O\tdon't turn parm loads into RegLoads in first basic block",
      SET_OPTION_BIT(TR_DisableLinkageRegisterAllocation), "F" },
     { "disableLiveMonitorMetadata", "O\tdisable the creation of live monitor metadata",
