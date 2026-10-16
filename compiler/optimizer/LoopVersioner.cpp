@@ -1090,6 +1090,120 @@ bool TR_LoopVersioner::detectInvariantCheckCasts(List<TR::TreeTop> *trees)
     return foundInvariantTrees;
 }
 
+static bool isInIntList(List<int32_t> &list, int32_t value)
+{
+    for (ListElement<int32_t> *elem = list.getListHead(); elem != NULL; elem = elem->getNextElement()) {
+        if (*elem->getData() == value)
+            return true;
+    }
+
+    return false;
+}
+
+TR::Node *TR_LoopVersioner::findTempDefinition(TR::Node *useNode, TR::TreeTop **defTree)
+{
+    *defTree = NULL;
+
+    if (comp()->getOption(TR_DisableLinearFunctionVersioning))
+        return NULL;
+
+    if (!useNode->getOpCode().isLoadVarDirect() || !useNode->getSymbol()->isAutoOrParm())
+        return NULL;
+
+    TR_UseDefInfo *useDefInfo = optimizer()->getUseDefInfo();
+    if (!useDefInfo)
+        return NULL;
+
+    uint16_t useIndex = useNode->getUseDefIndex();
+    if (!useIndex || !useDefInfo->isUseIndex(useIndex))
+        return NULL;
+
+    TR_UseDefInfo::BitVector defs(comp()->allocator());
+    if (!useDefInfo->getUseDef(defs, useIndex) || defs.PopulationCount() != 1)
+        return NULL;
+
+    TR_UseDefInfo::BitVector::Cursor cursor(defs);
+    cursor.SetToFirstOne();
+    int32_t defIndex = cursor;
+    if (defIndex < useDefInfo->getFirstRealDefIndex())
+        return NULL;
+
+    TR::TreeTop *tree = useDefInfo->getTreeTop(defIndex);
+    if (tree == NULL)
+        return NULL;
+
+    TR::Node *defNode = tree->getNode();
+    if (!defNode->getOpCode().isStoreDirect() || defNode->getSymbolReference() != useNode->getSymbolReference())
+        return NULL;
+
+    // The store must be directly in this loop. A store in a nested loop may
+    // execute many times before the load, with different values of the IV.
+    TR_Structure *defStructure = tree->getEnclosingBlock()->getStructureOf();
+    if (defStructure == NULL || defStructure->getContainingCyclicRegion() != _curLoop->_loop)
+        return NULL;
+
+    *defTree = tree;
+    return defNode->getFirstChild();
+}
+
+bool TR_LoopVersioner::isInvariantThroughTemps(TR::Node *node, int32_t depth)
+{
+    if (isExprInvariant(node))
+        return true;
+
+    if (node->getOpCode().isLoadVarDirect()) {
+        if (depth >= MAX_TEMP_DEPTH
+            || isInIntList(_versionableInductionVariables, node->getSymbolReference()->getReferenceNumber()))
+            return false;
+
+        TR::TreeTop *defTree = NULL;
+        TR::Node *rhs = findTempDefinition(node, &defTree);
+        return rhs != NULL && isInvariantThroughTemps(rhs, depth + 1);
+    }
+
+    // The node's own symbol reference, if any, has already been found to be
+    // not invariant, so only look at the children of nodes without one.
+    if (node->getOpCode().hasSymbolReference() || node->getNumChildren() == 0)
+        return false;
+
+    for (int32_t i = 0; i < node->getNumChildren(); i++) {
+        if (!isInvariantThroughTemps(node->getChild(i), depth))
+            return false;
+    }
+
+    return true;
+}
+
+TR::Node *TR_LoopVersioner::expandTemps(TR::Node *node, int32_t depth)
+{
+    if (isExprInvariant(node))
+        return node->duplicateTree();
+
+    if (node->getOpCode().isLoadVarDirect()) {
+        if (isInIntList(_versionableInductionVariables, node->getSymbolReference()->getReferenceNumber()))
+            return node->duplicateTree();
+
+        TR::TreeTop *defTree = NULL;
+        TR::Node *rhs = depth < MAX_TEMP_DEPTH ? findTempDefinition(node, &defTree) : NULL;
+        TR_ASSERT_FATAL_WITH_NODE(node, rhs != NULL, "cannot expand non-invariant n%un [%p]", node->getGlobalIndex(),
+            node);
+
+        return expandTemps(rhs, depth + 1);
+    }
+
+    TR::Node *result = node->duplicateTree();
+    for (int32_t i = 0; i < node->getNumChildren(); i++) {
+        if (isExprInvariant(node->getChild(i)))
+            continue;
+
+        TR::Node *expanded = expandTemps(node->getChild(i), depth);
+        result->getChild(i)->recursivelyDecReferenceCount();
+        result->setAndIncChild(i, expanded);
+    }
+
+    return result;
+}
+
 /**
  * \brief Determine whether it is possible to version \p ifNode w.r.t. an
  * extremum of a non-invariant function of an IV.
@@ -1124,32 +1238,136 @@ bool TR_LoopVersioner::isVersionableIfWithExtremum(TR::TreeTop *ifTree, Extremum
         || ifNode->getChild(0)->getDataType() != ifNode->getChild(1)->getDataType())
         return false;
 
-    bool invariant0 = isExprInvariant(ifNode->getChild(0));
-    bool invariant1 = isExprInvariant(ifNode->getChild(1));
+    // A child may load temps (e.g. privatized inliner arguments) that are
+    // defined in the loop. Such a child is still invariant when the values
+    // stored into the temps are.
+    bool invariant0 = isInvariantThroughTemps(ifNode->getChild(0), 0);
+    bool invariant1 = isInvariantThroughTemps(ifNode->getChild(1), 0);
     if (invariant0 == invariant1)
         return false;
 
     excond.varyingChildIndex = (int32_t)invariant0;
     TR::Node *varyingChild = ifNode->getChild(excond.varyingChildIndex);
 
+    // ivLoadTree is the tree in which the IV load that we find occurs. It
+    // changes when we look through the definition of a temp.
+    excond.ivLoadTree = ifTree;
+    int32_t tempDepth = 0;
+
     TR::Node *inner = varyingChild;
     bool increasing = true; // Is varyingChild increasing as a function of the IV?
-    while (inner->getOpCode().isAdd() || inner->getOpCode().isSub() || inner->getOpCode().isMul()
-        || inner->getOpCode().isNeg()) {
+
+    const bool linearFunctionEnabled = !comp()->getOption(TR_DisableLinearFunctionVersioning);
+
+    // 64-bit operations that might overflow are allowed only for a function
+    // i * c + k of the IV, with c a positive constant, where overflow is ruled
+    // out by a versioning test (see needsOverflowTest). simpleLinear tracks
+    // whether the function has this form, and scale is the product of the
+    // constants c that multiply it in 64-bit multiplications.
+    //
+    // Claim:
+    // Given a loop
+    // for (int i = i_first; i < i_last +1 ; i += step)
+    //
+    // where:
+    // 1. step > 0
+    // 2. f(i) = c·i + K computed in 64-bit
+    // 3. 0 < c ≤ INT_MAX.
+    //
+    // Then f crosses LONG_MAX inside the loop iff f(i_first) > f(i_last), comparing the computed (wrapped) values.
+    //
+    // Proof:
+    //
+    // 1. i is an int, so −2^31 <= i <= 2^31 − 1.
+    // 2. i_last ≥ i_first, since step > 0. The difference of any two ints is below 2^32, so 0 ≤ i_last − i_first <
+    // 2^32.
+    // 3. 0 < c < 2^31.
+    // 4. The true delta is d = f(i_last) − f(i_first) = c·(i_last − i_first), so 0 ≤ d < 2^31 · 2^32 = 2^63.
+    // f is non-decreasing, and the range of values it covers, d, is less than the full 64-bit range 2^64.
+    // So it can cross LONG_MAX at most once. Two crossings would need d ≥ 2^64.
+    // Therefore, a sufficient overflow test before the loop would be
+    //
+    // if (f(i_first) > f(i_last)) <go to slow loop>
+    //
+    bool simpleLinear = true;
+    int64_t scale = 1;
+    while (true) {
+        if (inner->getOpCode().isLoadVarDirect()
+            && !isInIntList(_versionableInductionVariables, inner->getSymbolReference()->getReferenceNumber())) {
+            // Not an IV, so this must be a temp whose value depends on the IV.
+            // Continue with the value stored into it. Its single definition
+            // runs before this load in the same iteration.
+            TR::TreeTop *defTree = NULL;
+            TR::Node *rhs = tempDepth < MAX_TEMP_DEPTH ? findTempDefinition(inner, &defTree) : NULL;
+            if (rhs == NULL)
+                return false;
+
+            inner = rhs;
+            excond.ivLoadTree = defTree;
+            tempDepth++;
+            continue;
+        }
+
+        if (!(inner->getOpCode().isAdd() || inner->getOpCode().isSub() || inner->getOpCode().isMul()
+                || inner->getOpCode().isNeg() || (linearFunctionEnabled && inner->getOpCodeValue() == TR::i2l)))
+            break;
+
+        // Sign extension is monotonic and cannot overflow, so it preserves
+        // ordering. This lets a 64-bit expression of a 32-bit IV be versioned,
+        // e.g. the (long)i * 4 + base offset of a memory segment access.
+        const bool isWidening = inner->getOpCodeValue() == TR::i2l;
+
         // Overflowing operations do not necessarily preserve ordering in the way
         // that we expect. NOTE: cannotOverflow means that the compiler has ruled
         // out *signed* overflow. We have no flag that indicates the absence of
         // unsigned overflow, so this is a signed analysis, and versioning of
         // unsigned comparisons requires extra care on the part of the caller.
-        if (!inner->cannotOverflow())
-            return false;
+        //
+        // A 64-bit add, sub or mul that might overflow is accepted provisionally:
+        // whether it is acceptable depends on the whole function, so it is
+        // decided after the walk, and a versioning test rules out overflow.
+        if (!isWidening && !inner->cannotOverflow()) {
+            if (linearFunctionEnabled && inner->getDataType().isInt64()
+                && (inner->getOpCode().isAdd() || inner->getOpCode().isSub() || inner->getOpCode().isMul())) {
+                excond.needsOverflowTest = true;
+            } else {
+                logprintf(trace(), comp()->log(),
+                    "Conditional n%un [%p] is not versionable: n%un [%p] (%s) may overflow\n", ifNode->getGlobalIndex(),
+                    ifNode, inner->getGlobalIndex(), inner, inner->getOpCode().getName());
+                return false;
+            }
+        }
+
+        // The overflow test requires a function i * c + k, with a positive
+        // constant c, so no negation, and only multiplications by positive
+        // constants. A bound on the product of the constants guarantees that
+        // the difference between the values of the function in the first and
+        // last iterations is less than 2^64, since the IV is an int.
+        if (inner->getDataType().isInt64()) {
+            if (inner->getOpCode().isNeg()) {
+                simpleLinear = false;
+            } else if (inner->getOpCode().isMul()) {
+                TR::Node *constant = inner->getChild(1);
+                if (!constant->getOpCode().isLoadConst())
+                    constant = inner->getChild(0);
+
+                int64_t value = constant->getOpCode().isLoadConst() ? constant->get64bitIntegralValue() : 0;
+                if (value > 0 && value <= TR::getMaxSigned<TR::Int32>() && scale <= TR::getMaxSigned<TR::Int32>())
+                    scale *= value;
+                else
+                    simpleLinear = false;
+
+                if (scale > TR::getMaxSigned<TR::Int32>())
+                    simpleLinear = false;
+            }
+        }
 
         int32_t nextChildIndex = -1;
-        if (inner->getOpCode().isNeg())
+        if (inner->getOpCode().isNeg() || isWidening)
             nextChildIndex = 0;
-        else if (isExprInvariant(inner->getChild(1)))
+        else if (isInvariantThroughTemps(inner->getChild(1), tempDepth))
             nextChildIndex = 0;
-        else if (isExprInvariant(inner->getChild(0)))
+        else if (isInvariantThroughTemps(inner->getChild(0), tempDepth))
             nextChildIndex = 1;
         else
             return false;
@@ -1208,8 +1426,14 @@ bool TR_LoopVersioner::isVersionableIfWithExtremum(TR::TreeTop *ifTree, Extremum
     TR::Node *newIvValue = ivUpdate->getChild(0);
 
     // It should be perfectly possible to deal with 64-bit, but for now we only
-    // do 32-bit IVs, e.g. the final value calculation is all 32-bit.
+    // do 32-bit IVs, e.g. the final value calculation is all 32-bit. The
+    // compared expression may be wider than the IV (see i2l above), but the IV
+    // itself must be 32-bit. The generated unsigned initial/final sign test is
+    // 32-bit only, so unsigned comparisons of 64-bit values are not supported.
     if (!newIvValue->getType().isInt32())
+        return false;
+
+    if (ifNode->getOpCode().isUnsigned() && ifNode->getChild(0)->getDataType().isInt64())
         return false;
 
     // Find the IV step.
@@ -1246,7 +1470,18 @@ bool TR_LoopVersioner::isVersionableIfWithExtremum(TR::TreeTop *ifTree, Extremum
     bool exprIncreasingWithIters = increasing == (excond.step > 0);
     excond.extremumIsFinalValue = ifNode->isVersionableIfWithMaxExpr() == exprIncreasingWithIters;
 
-    if (excond.extremumIsFinalValue || ifNode->getOpCode().isUnsigned()) {
+    // The overflow test is supported only for an increasing loop, where the
+    // varying child is an increasing function i * c + k of the IV, with c a
+    // positive constant.
+    if (excond.needsOverflowTest && !(simpleLinear && increasing && excond.step > 0)) {
+        logprintf(trace(), comp()->log(),
+            "Conditional n%un [%p] is not versionable: may overflow, and is not an increasing function of an "
+            "increasing IV with a positive constant multiplier\n",
+            ifNode->getGlobalIndex(), ifNode);
+        return false;
+    }
+
+    if (excond.extremumIsFinalValue || excond.needsOverflowTest || ifNode->getOpCode().isUnsigned()) {
         // The final value is needed, so make sure that we can predict it.
         // The LHS of the loop test comparison must be either the old/unchanged
         // or new/updated value of the IV for the iteration. (We could probably
@@ -1312,6 +1547,99 @@ bool TR_LoopVersioner::isVersionableIfWithExtremum(TR::TreeTop *ifTree, Extremum
     return true;
 }
 
+bool TR_LoopVersioner::annotateLinearIf(TR::Node *ifNode)
+{
+    if (comp()->getOption(TR_DisableLinearFunctionVersioning))
+        return false;
+
+    // Must be ificmpge(f(i), length) or ificmplt(f(i), 0), or the long variants.
+    const bool isMax = ifNode->getOpCodeValue() == TR::ificmpge || ifNode->getOpCodeValue() == TR::iflcmpge;
+    const bool isMin = ifNode->getOpCodeValue() == TR::ificmplt || ifNode->getOpCodeValue() == TR::iflcmplt;
+    if (!isMax && !isMin)
+        return false;
+
+    // The lower bound of a valid index is exactly zero.
+    if (isMin
+        && !(ifNode->getSecondChild()->getOpCode().isLoadConst()
+            && ifNode->getSecondChild()->get64bitIntegralValue() == 0))
+        return false;
+
+    // The loop test's shape (direction, branch target, invariant limit) is
+    // validated by isVersionableIfWithExtremum, which the caller re-runs after
+    // we set the flag. We only need the loop test to exist.
+    if (!_loopConditionInvariant || !_loopTestTree)
+        return false;
+
+    // The annotation assumes the *taken* branch is the failing (throw) side,
+    // i.e. it fires when f(i) >= bound ("max") or f(i) < bound ("min"). If the
+    // taken side is not cold, the failing condition is the opposite one, whose
+    // extremum is the other end of the range, so we must not annotate.
+    if (!ifNode->getBranchDestination()->getNode()->getBlock()->isCold())
+        return false;
+
+    // Child 0 must be a function of a loop-driving versionable induction
+    // variable: a direct load of it, possibly widened and combined with
+    // invariants, e.g. (long)i * 4 + base. Find the load. The monotonicity and
+    // overflow requirements on the path to it are checked by
+    // isVersionableIfWithExtremum. The IV must be in the versionable list; that
+    // is the only list isVersionableIfWithExtremum accepts, so there is no point
+    // in annotating on a match in the special or derived lists.
+    TR::Node *lhs = ifNode->getFirstChild();
+    int32_t tempDepth = 0;
+    while (true) {
+        if (lhs->getOpCode().isLoadVarDirect()
+            && !isInIntList(_versionableInductionVariables, lhs->getSymbolReference()->getReferenceNumber())) {
+            // Not an IV, so it must be a temp (e.g. a privatized inliner
+            // argument) holding a function of the IV. Look at its value.
+            TR::TreeTop *defTree = NULL;
+            TR::Node *rhs = tempDepth < MAX_TEMP_DEPTH ? findTempDefinition(lhs, &defTree) : NULL;
+            if (rhs == NULL)
+                return false;
+
+            lhs = rhs;
+            tempDepth++;
+        } else if (lhs->getOpCode().isAdd() || lhs->getOpCode().isSub() || lhs->getOpCode().isMul()
+            || lhs->getOpCode().isNeg() || lhs->getOpCodeValue() == TR::i2l) {
+            if (lhs->getNumChildren() == 1)
+                lhs = lhs->getFirstChild();
+            else if (isInvariantThroughTemps(lhs->getSecondChild(), tempDepth))
+                lhs = lhs->getFirstChild();
+            else if (isInvariantThroughTemps(lhs->getFirstChild(), tempDepth))
+                lhs = lhs->getSecondChild();
+            else
+                return false;
+        } else {
+            break;
+        }
+    }
+
+    // The loop above exits normally only when lhs is a load of a versionable IV
+    // (any other load is looked through as a temp) or a node it cannot look
+    // through, e.g. a constant or a div. All its failure cases return directly.
+    // So a load here is an IV, and anything else means no match.
+    if (!lhs->getOpCode().isLoadVarDirect())
+        return false;
+
+    // Child 1 must be invariant.  Any invariant bound is fine; we do not
+    // require it to match the loop-test bound because isVersionableIfWithExtremum
+    // only needs the RHS to be invariant (which it verifies itself via the
+    // loop-test limit check).
+    if (!isInvariantThroughTemps(ifNode->getSecondChild(), 0))
+        return false;
+
+    // All conditions met: annotate so that isVersionableIfWithExtremum accepts
+    // this node and buildConditionalTree can version it away.
+    dumpOptDetails(comp(), "annotateLinearIf: marking n%un [%p] as versionable with %s expr\n",
+        ifNode->getGlobalIndex(), ifNode, isMax ? "max" : "min");
+    if (isMax) {
+        ifNode->setIsVersionableIfWithMaxExpr(comp());
+        return ifNode->isVersionableIfWithMaxExpr();
+    }
+
+    ifNode->setIsVersionableIfWithMinExpr(comp());
+    return ifNode->isVersionableIfWithMinExpr();
+}
+
 bool TR_LoopVersioner::detectInvariantConditionals(TR_RegionStructure *whileLoop, List<TR::TreeTop> *trees,
     bool onlyDetectHighlyBiasedBranches, bool *containsNonInlineGuard, SharedSparseBitVector &reverseBranchInLoops)
 {
@@ -1336,13 +1664,18 @@ bool TR_LoopVersioner::detectInvariantConditionals(TR_RegionStructure *whileLoop
             TR::Block *nextBlock = nextTree->getData()->getEnclosingBlock();
             TR::Block *targetBlock = node->getBranchDestination()->getNode()->getBlock();
 
-            if (nextBlock->getEdge(targetBlock)->getFrequency() <= MAX_COLD_BLOCK_COUNT + 1
-                && nextBlock->getFrequency() >= HIGH_FREQ_THRESHOLD
+            // Edge frequencies can be inflated (e.g. 17 instead of <= 6) by frequency propagation after the
+            // linear check blocks are introduced, while the target block itself is still cold. A branch whose
+            // target block is cold overall is as biased as one whose edge is cold.
+            bool coldTarget = nextBlock->getEdge(targetBlock)->getFrequency() <= MAX_COLD_BLOCK_COUNT + 1
+                || targetBlock->getFrequency() <= MAX_COLD_BLOCK_COUNT + 1;
+
+            if (coldTarget && nextBlock->getFrequency() >= HIGH_FREQ_THRESHOLD
                 && static_cast<double>(nextBlock->getNextBlock()->getFrequency()) / nextBlock->getFrequency() >= 0.8) {
                 logprintf(trace(), log, "node %p is highly biased\n", node);
                 highlyBiasedBranch = true;
-            } else if (node->isVersionableIfWithMaxExpr() || node->isVersionableIfWithMinExpr()
-                || node->isMaxLoopIterationGuard()) {
+            } else if (annotateLinearIf(node) || node->isVersionableIfWithMaxExpr()
+                || node->isVersionableIfWithMinExpr() || node->isMaxLoopIterationGuard()) {
                 logprintf(trace(), log, "node %p is versionable If\n", node);
                 highlyBiasedBranch = true;
             }
@@ -1515,6 +1848,14 @@ bool TR_LoopVersioner::detectInvariantConditionals(TR_RegionStructure *whileLoop
                         isTreeInvariant = true;
                         if (excond.reverseBranch)
                             reverseBranchInLoops[node->getGlobalIndex()] = true;
+                    } else if (annotateLinearIf(node)) {
+                        // Node is now flagged; re-run isVersionableIfWithExtremum
+                        // which will now succeed.
+                        if (isVersionableIfWithExtremum(nextTree->getData(), &excond)) {
+                            isTreeInvariant = true;
+                            if (excond.reverseBranch)
+                                reverseBranchInLoops[node->getGlobalIndex()] = true;
+                        }
                     }
                 }
             } else
@@ -5244,9 +5585,21 @@ void TR_LoopVersioner::buildConditionalTree(List<TR::TreeTop> *conditionalTrees,
                 indexChildIndex = excond.varyingChildIndex;
                 replaceIndexWithExpr = excond.extremumIsFinalValue;
 
+                // The children may load temps that are defined in the loop.
+                // Loads of those temps mean nothing before the loop, so work
+                // with copies in which they are replaced by the values stored
+                // into them, which depend only on invariants and the IV.
+                copyOnWriteNode(origConditionalNode, &conditionalNode);
+                for (int32_t i = 0; i < 2; i++) {
+                    TR::Node *expanded = expandTemps(origConditionalNode->getChild(i), 0);
+                    conditionalNode->getChild(i)->recursivelyDecReferenceCount();
+                    conditionalNode->setAndIncChild(i, expanded);
+                }
+
                 // The final value is also needed in order to correctly version
-                // unsigned comparisons.
-                if (excond.extremumIsFinalValue || conditionalNode->getOpCode().isUnsigned()) {
+                // unsigned comparisons, and to rule out overflow.
+                if (excond.extremumIsFinalValue || excond.needsOverflowTest
+                    || conditionalNode->getOpCode().isUnsigned()) {
                     chainPrep = true;
 
                     // Ensure that the initial IV value would pass the loop test. If
@@ -5260,6 +5613,9 @@ void TR_LoopVersioner::buildConditionalTree(List<TR::TreeTop> *conditionalTrees,
 
                     TR::Node *preLoopTest = TR::Node::createif(exitCmpOp, initialIv, loopLimit, _exitGotoTarget);
 
+                    dumpOptDetails(comp(),
+                        "%sExtremum versioning of n%un [%p]: adding test that the initial IV passes the loop test\n",
+                        OPT_DETAILS_LOOP_VERSIONER, origConditionalNode->getGlobalIndex(), origConditionalNode);
                     prep = createLoopEntryPrep(LoopEntryPrep::TEST, preLoopTest);
 
                     // Because isVersionableIfWithExtremum has checked that the loop
@@ -5277,6 +5633,10 @@ void TR_LoopVersioner::buildConditionalTree(List<TR::TreeTop> *conditionalTrees,
                     TR::Node *zero = TR::Node::iconst(conditionalNode, 0);
                     TR::Node *overflowTest = TR::Node::createif(wrongSignCmpOp, range, zero, _exitGotoTarget);
 
+                    dumpOptDetails(comp(),
+                        "%sExtremum versioning of n%un [%p]: adding test that (loop limit - initial IV) does not "
+                        "overflow\n",
+                        OPT_DETAILS_LOOP_VERSIONER, origConditionalNode->getGlobalIndex(), origConditionalNode);
                     prep = createChainedLoopEntryPrep(LoopEntryPrep::TEST, overflowTest, prep);
 
                     // Now we can predict the final value of the IV. Really, this is
@@ -5377,7 +5737,7 @@ void TR_LoopVersioner::buildConditionalTree(List<TR::TreeTop> *conditionalTrees,
                     TR::Node *finalIv = TR::Node::create(conditionalNode, TR::iadd, 2, initialIv,
                         TR::Node::create(conditionalNode, TR::imul, 2, finalJ, step));
 
-                    if (ivLoadSeesUpdatedValue(excond.ivLoad, conditionalTree)) {
+                    if (ivLoadSeesUpdatedValue(excond.ivLoad, excond.ivLoadTree)) {
                         // When conditionalNode uses the updated value, the value at
                         // conditionalNode will be the iteration-initial value + step.
                         finalIv = TR::Node::create(conditionalNode, TR::iadd, 2, finalIv, step);
@@ -5401,6 +5761,37 @@ void TR_LoopVersioner::buildConditionalTree(List<TR::TreeTop> *conditionalTrees,
                         copyOnWriteNode(origConditionalNode, &conditionalNode);
                         replaceInductionVariable(conditionalNode, duplicateIndexNode, indexChildIndex, indexSymRefNum,
                             finalIv, visitCount);
+                    }
+
+                    // The varying child, f(i) = i * c + k, is evaluated by the
+                    // versioning test only in the first and last iterations, and
+                    // the test of the extremum assumes that f is monotonic in
+                    // between. That fails if f wraps around. The IV is an int and
+                    // c is a positive constant with c <= 2^31 - 1 (see
+                    // isVersionableIfWithExtremum), so the true value of f changes
+                    // by less than 2^63 between the first and last iterations, and
+                    // it never decreases. Machine values are the true values
+                    // modulo 2^64, so f wraps around in the loop (once, since the
+                    // change is less than 2^64) iff the machine value in the last
+                    // iteration is less than the one in the first iteration.
+                    //
+                    // The true value of f(first) can itself be out of range,
+                    // which is fine: the loop computes the same wrapped value.
+                    if (excond.needsOverflowTest) {
+                        TR_ASSERT_FATAL_WITH_NODE(conditionalNode, duplicateIndexNode != NULL,
+                            "expected an expression for the last iteration");
+
+                        TR::Node *firstValue = conditionalNode->getChild(indexChildIndex)->duplicateTree();
+                        TR::Node *lastValue = duplicateIndexNode->duplicateTree();
+                        TR::Node *wrapTest = TR::Node::createif(TR::iflcmpgt, firstValue, lastValue, _exitGotoTarget);
+                        cleanseIntegralNodeFlagsInSubtree(comp(), wrapTest);
+
+                        dumpOptDetails(comp(),
+                            "%sExtremum versioning of n%un [%p]: adding test that the varying expression does not "
+                            "overflow (first iteration value n%un > last iteration value n%un)\n",
+                            OPT_DETAILS_LOOP_VERSIONER, origConditionalNode->getGlobalIndex(), origConditionalNode,
+                            firstValue->getGlobalIndex(), lastValue->getGlobalIndex());
+                        prep = createChainedLoopEntryPrep(LoopEntryPrep::TEST, wrapTest, prep);
                     }
                 }
 

@@ -968,8 +968,13 @@ protected:
         /// The induction variable
         TR::SymbolReference *iv;
 
-        /// The load of the IV that appears within the conditional
+        /// The load of the IV that appears within the conditional, or within
+        /// the definition of a temp that the conditional (transitively) loads
         TR::Node *ivLoad;
+
+        /// The tree in which ivLoad occurs. This is the conditional's own tree,
+        /// unless ivLoad was reached through the definition of a temp.
+        TR::TreeTop *ivLoadTree;
 
         /// The amount by which the IV increases in each iteration. May be negative.
         int32_t step;
@@ -981,9 +986,19 @@ protected:
         bool reverseBranch;
 
         /**
+         * Does the varying child contain a 64-bit add, sub or mul that might
+         * overflow? If so, the varying child is a function f(i) = i * c + k of
+         * the IV with a positive constant c, the IV is increasing, and a
+         * versioning test is needed to make sure that f does not wrap around
+         * in the loop, i.e. that f(initial IV) <= f(final IV).
+         */
+        bool needsOverflowTest;
+
+        /**
          * Information about the loop test. This data is useful, and therefore
          * set to meaningful values, only when the final IV value will be needed,
-         * i.e. when extremumIsFinalValue or when versioning an unsigned comparison.
+         * i.e. when extremumIsFinalValue, needsOverflowTest, or when versioning
+         * an unsigned comparison.
          */
         struct {
             /// True when the LHS of the comparison is the updated IV value.
@@ -997,6 +1012,94 @@ protected:
     };
 
     bool isVersionableIfWithExtremum(TR::TreeTop *ifTree, ExtremumConditional *out);
+
+    /**
+     * \brief Recognise `if` that checks linear function of induction variable and
+     * exits the loop if it's out of some loop invariant bound.
+     *
+     * A typical pattern:
+     *
+     *   ificmplt(f(i), 0)       ->  throw      (iflcmplt for the long variant)
+     *   ificmpge(f(i), array_size)  ->  throw      (iflcmpge for the long variant)
+     *
+     * where f(i) is a function of the loop's driving induction variable and `array_size`
+     * is loop-invariant. `i` can be an int but the whole function can be long. In this
+     * case, there is i2l of i.
+     *
+     * When f(i) is provably non-negative, Value Propagation has already folded
+     * away the first conditional. Each check fires when f(i) is beyond one end of
+     * the valid range, and the taken side is the cold throw.
+     *
+     * This method recognizes general linear pattern for f(i) and annotates the node
+     * with versionIfWithMinExpr (f(i) < 0) or versionIfWithMaxExpr (f(i) >= length).
+     *
+     * isVersionableIfWithExtremum() does more checking to see if the loop
+     * can be versioned by testing the extreme value of f(i) once before the loop and if
+     * an overflow check is needed/possible.
+     */
+    bool annotateLinearIf(TR::Node *ifNode);
+
+    /// The most temps that may be looked through on a path from a node to a leaf
+    static const int32_t MAX_TEMP_DEPTH = 8;
+
+    /**
+     * \brief Find the definition of the temp loaded by \p useNode.
+     *
+     * The load must be reached by exactly one definition, which must be a real
+     * store (not an entry definition) located directly in the current loop (not in
+     * a nested loop). Entry definitions are tracked by use-def info, so if none
+     * reaches the load, the temp has been stored on every path from the method
+     * entry to the load. Together with the store being in the loop, this means
+     * that the value was stored earlier in the same iteration, not carried around
+     * the back-edge.
+     *
+     * Unlike isDependentOnInductionVariable(), this does not require the temp to be
+     * written exactly once in the loop, so that a temp slot reused by several
+     * inlined bodies can be looked through. The definition tree comes from use-def
+     * info rather than from _storeTrees, which holds just one store per temp.
+     *
+     * \param[in]  useNode A load that may be of a temp
+     * \param[out] defTree The tree of the definition, when the result is not null
+     *
+     * \return the value stored by the definition, or null if \p useNode is not a
+     *         load of a temp with such a definition.
+     */
+    TR::Node *findTempDefinition(TR::Node *useNode, TR::TreeTop **defTree);
+
+    /**
+     * \brief Determine whether \p node is loop-invariant, allowing loads of temps
+     * that are defined in the loop but whose definitions are themselves invariant.
+     *
+     * This is isExprInvariant() extended in one way only: a load of a temp that
+     * isExprInvariant() rejects (because the temp is stored in the loop) is
+     * replaced by its single definition, which is checked in turn. The definition
+     * can itself contain such temps, e.g. "temp4 = temp5 - 15" where temp5 is
+     * also stored in the loop, so nodes with children (and no symbol reference) are
+     * checked child by child. Such a node is accepted only if all of its leaves are
+     * invariant, directly or through temps.
+     *
+     * Induction variables are never accepted or looked through: a load of one
+     * is rejected here, so a function of an IV is not invariant. Recognizing such a
+     * function is done separately, in isVersionableIfWithExtremum().
+     *
+     * \param node  The node to check
+     * \param depth The number of temps already looked through on the way to \p node
+     */
+    bool isInvariantThroughTemps(TR::Node *node, int32_t depth);
+
+    /**
+     * \brief Duplicate \p node, replacing each load of a temp that is not
+     * loop-invariant by a copy of the value stored into it.
+     *
+     * This is the counterpart of isInvariantThroughTemps() and of the walk through
+     * temps in isVersionableIfWithExtremum(), and must follow the same rules so
+     * that every temp that analysis looked through is expanded here. Loads of
+     * induction variables are kept as they are.
+     *
+     * \param node  The node to duplicate
+     * \param depth The number of temps already looked through on the way to \p node
+     */
+    TR::Node *expandTemps(TR::Node *node, int32_t depth);
 
     bool isExprInvariant(TR::Node *, bool ignoreHeapificationStore = false); // ignoreHeapificationStore flags for both
     bool areAllChildrenInvariant(TR::Node *, bool ignoreHeapificationStore = false);
