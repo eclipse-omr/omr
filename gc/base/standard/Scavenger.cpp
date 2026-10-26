@@ -4100,7 +4100,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 				if (NULL == objectPtr) {
 					remSetSlotIterator.removeSlot();
 				} else {
-					omrtty_printf("{SHAD: processRememberedSetInBackout: objectPtr=%zu", objectPtr);
+					omrtty_printf("{SHAD: processRememberedSetInBackout: objectPtr=%p", objectPtr);
 					if((uintptr_t)objectPtr & DEFERRED_RS_REMOVE_FLAG) {
 						/* Is slot flagged for deferred removal ? */
 						/* Yes..so first remove tag bit from object address */
@@ -4118,6 +4118,13 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 							/* No need to inform anybody about creation of old-to-old reference (see regular pruning pass).
 							 * For CS, this is already handled during scanning of old objects
 							 */
+							// DEV: need to notify about old-to-old reference for STW case
+#if defined(OMR_GC_MODRON_CONCURRENT_MARK)
+							if(_extensions->shouldScavengeNotifyGlobalGCOfOldToOldReference() && !IS_CONCURRENT_ENABLED) {
+								oldToOldReferenceCreated(env, objectPtr);
+							}
+#endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */
+
 						} else {
 							/* We are not removing it after all, since the object has Nursery references => reset the deferred flag. */
 							omrtty_printf(", should not remove from RS\n");
