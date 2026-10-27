@@ -23,8 +23,6 @@
 #if !defined(ENVIRONMENTBASECORE_HPP_)
 #define ENVIRONMENTBASECORE_HPP_
 
-
-
 #include "omrcomp.h"
 #include "modronbase.h"
 #include "omr.h"
