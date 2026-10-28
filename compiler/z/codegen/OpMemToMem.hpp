@@ -151,6 +151,8 @@ public:
 
     virtual bool inRemainder() { return _inRemainder; }
 
+    static bool disableMemInitMVCSeedOpt();
+
 protected:
     MemToMemMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg, TR::Node *lenNode,
         TR::Register *itersReg = 0)
@@ -325,7 +327,10 @@ public:
         , _initReg(initReg)
         , _useByteVal(false)
     {
-        updateNeedsLoop();
+        if (!disableMemInitMVCSeedOpt()) {
+            uint64_t largeCopies = ((uint64_t)length) / 256;
+            _needsLoop = !(largeCopies < (uint64_t)_maxCopies);
+        }
     }
 
     MemInitConstLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::CodeGenerator *cg, int64_t length, int8_t byteVal)
@@ -334,7 +339,10 @@ public:
         , _useByteVal(true)
         , _byteVal(byteVal)
     {
-        updateNeedsLoop();
+        if (!disableMemInitMVCSeedOpt()) {
+            uint64_t largeCopies = ((uint64_t)length) / 256;
+            _needsLoop = !(largeCopies < (uint64_t)_maxCopies);
+        }
     }
 
 protected:
@@ -344,11 +352,6 @@ protected:
     virtual TR::Instruction *generateRemainder();
 
 private:
-    /**
-     * Recomputes _needsLoop so it matches the path taken by generateLoop().
-     */
-    void updateNeedsLoop();
-
     TR::Register *_initReg;
     bool _useByteVal;
     int8_t _byteVal;
