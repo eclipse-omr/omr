@@ -151,6 +151,8 @@ public:
 
     virtual bool inRemainder() { return _inRemainder; }
 
+    static bool disableMemInitMVCSeedOpt();
+
 protected:
     MemToMemMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg, TR::Node *lenNode,
         TR::Register *itersReg = 0)

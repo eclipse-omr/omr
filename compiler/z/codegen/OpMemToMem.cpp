@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
 
+// Assisted-by: IBM Bob
+
 #include "z/codegen/OpMemToMem.hpp"
 
 #include <limits.h>
@@ -64,6 +66,12 @@ TR::Register *allocateRegForLiteralPoolBase(TR::CodeGenerator *cg)
         return cg->allocateRegister();
 }
 
+bool MemToMemMacroOp::disableMemInitMVCSeedOpt()
+{
+    static bool disable = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
+    return disable;
+}
+
 /**
  * Generate the loop that will perform a memory-to-memory instruction
  * on 256 bytes.
@@ -83,8 +91,7 @@ TR::Instruction *MemToMemVarLenMacroOp::generateLoop()
     bool needs64BitOpCode = comp->target().is64Bit();
 
     Kind kind = getKind();
-    static bool disableMemInitMVCSeedOpt = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
-    bool useOptimizedMemInit = (kind == MemToMemMacroOp::IsMemInit && !disableMemInitMVCSeedOpt);
+    bool useOptimizedMemInit = (kind == MemToMemMacroOp::IsMemInit && !disableMemInitMVCSeedOpt());
 
     if (useEXForRemainder()) {
         // need to do this before the branch or some
@@ -94,35 +101,25 @@ TR::Instruction *MemToMemVarLenMacroOp::generateLoop()
         generateSrcMemRef(0);
         generateDstMemRef(0);
 
-        if (useOptimizedMemInit) {
-            // Set the condition code for the next BRC condition.
-            if (needs64BitOpCode)
-                generateRRInstruction(_cg, TR::InstOpCode::LTGR, _rootNode, _regLen, _regLen);
-            else
-                generateRRInstruction(_cg, TR::InstOpCode::LTR, _rootNode, _regLen, _regLen);
-
-            _doneLabel = generateLabelSymbol(_cg);
-            // Branch to "done" if length is not higher than 0.
-            _startControlFlow = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_BNH,
-                _rootNode, _doneLabel);
+        // Adjust _regLen and set condition code, then branch to "done" if no work remains.
+        if (useOptimizedMemInit && _lengthMinusOne) {
+            generateRIInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::AGHI : TR::InstOpCode::AHI, _rootNode,
+                _regLen, 1);
+        } else if (!useOptimizedMemInit && !_lengthMinusOne) {
+            generateRIInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::AGHI : TR::InstOpCode::AHI, _rootNode,
+                _regLen, -1);
         } else {
-            // non-Java specialization (initial / legacy implementation)
-            if (!_lengthMinusOne) {
-                generateRIInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::AGHI : TR::InstOpCode::AHI, _rootNode,
-                    _regLen, -1);
-            }
-
-            if (_lengthMinusOne)
-                generateRRInstruction(_cg, TR::InstOpCode::LTR, _rootNode, _regLen,
-                    _regLen); // Because transformLengthMinusOneForMemoryOps uses TR::iadd
-
-            _doneLabel = generateLabelSymbol(_cg);
-            _startControlFlow = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_BL,
-                _rootNode, _doneLabel);
+            // No AGHI, need explicit LTR/LTGR to set CC.
+            generateRRInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::LTGR : TR::InstOpCode::LTR, _rootNode,
+                _regLen, _regLen);
         }
+
+        _doneLabel = generateLabelSymbol(_cg);
+        _startControlFlow = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC,
+            useOptimizedMemInit ? TR::InstOpCode::COND_BNH : TR::InstOpCode::COND_BL, _rootNode, _doneLabel);
     }
     // Don't seed on MemInitMVCSeedOpt path. MVC seed already happens within looping.
-    if (kind == MemToMemMacroOp::IsMemInit && disableMemInitMVCSeedOpt) {
+    if (kind == MemToMemMacroOp::IsMemInit && disableMemInitMVCSeedOpt()) {
         generateInstruction(0, 1);
     }
 
@@ -258,7 +255,7 @@ TR::Instruction *MemToMemConstLenMacroOp::generateLoop()
     // if a series of instructions can be done instead of a loop of them, do so, but only if it will not exceed the 4K
     // displacement on XC
     if (largeCopies != 0 && largeCopies < _maxCopies) {
-        int64_t copies = largeCopies;
+        int64_t totalCopies = largeCopies;
         int32_t remaining = 0;
 
         if (!_srcMR && !_srcReg) {
@@ -316,12 +313,12 @@ TR::Instruction *MemToMemConstLenMacroOp::generateLoop()
         setDependencies(false); // Normal dependencies are definitely not necessary
 
         while (largeCopies > 0) {
-            cursor = generateInstruction(_offset + (copies - largeCopies) * 256, 256, cursor);
+            cursor = generateInstruction(_offset + (totalCopies - largeCopies) * 256, 256, cursor);
             --largeCopies;
         }
-        len = len - copies * 256;
+        len -= totalCopies * 256;
         _length = (int64_t)len;
-        _offset = _offset + copies * 256;
+        _offset += totalCopies * 256;
         _cursor = cursor;
         return cursor;
     }
@@ -453,8 +450,7 @@ TR::Instruction *MemToMemConstLenMacroOp::generateRemainder()
 
 void MemInitConstLenMacroOp::updateNeedsLoop()
 {
-    static bool disableMemInitMVCSeedOpt = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
-    if (disableMemInitMVCSeedOpt)
+    if (disableMemInitMVCSeedOpt())
         return;
 
     // For Optimized Path, get the 256-byte multiple copies, and see whether to take loop.
@@ -483,14 +479,13 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
         _dstMR = generateS390MemoryReference(_cg, _rootNode, _dstNode, _offset, true);
     }
 
-    if (_dstNode == _srcNode && _srcReg == NULL) {
+    if ((_dstNode == _srcNode) && (NULL == _srcReg)) {
         _srcReg = _dstReg;
     }
 
     TR::Instruction *cursor = _cg->getAppendInstruction();
-    static bool disableMemInitMVCSeedOpt = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
 
-    if (disableMemInitMVCSeedOpt) {
+    if (disableMemInitMVCSeedOpt()) {
         // Legacy / Disabled path: pre-loop seed byte 0 at offset
         if (len >= (uint64_t)1) {
             if (_useByteVal)
@@ -510,9 +505,9 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
         }
 
         // if a series of instructions can be done instead of a loop of them, do so, but only if it will not exceed the
-        // 4K displacement on XC
+        // 4K displacement on MVC
         if (largeCopies != 0 && largeCopies < _maxCopies) {
-            int64_t copies = largeCopies;
+            int64_t totalCopies = largeCopies;
 
             // the offset may put the displacement beyond 4K
             if (largeCopies * 256 + _offset >= 4096) {
@@ -523,15 +518,15 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
             int32_t local_offset = 0;
             while (largeCopies > 0) {
-                local_offset = _offset + (copies - largeCopies) * 256;
+                local_offset = _offset + (totalCopies - largeCopies) * 256;
                 cursor = generateSS1Instruction(_cg, TR::InstOpCode::MVC, _rootNode, 255,
                     new (_cg->trHeapMemory()) TR::MemoryReference(_dstReg, local_offset + 1, _cg),
                     new (_cg->trHeapMemory()) TR::MemoryReference(_srcReg, local_offset, _cg), cursor);
                 --largeCopies;
             }
-            len = len - copies * 256;
+            len -= totalCopies * 256;
             _length = (int64_t)len;
-            _offset = _offset + copies * 256;
+            _offset += totalCopies * 256;
             _cursor = cursor;
             setDependencies(false); // Make sure we do not generate dependencies or internalControlFlow
             return cursor;
@@ -566,7 +561,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
         cursor = generateS390LabelInstruction(_cg, TR::InstOpCode::label, _rootNode, bottomOfLoop, cursor);
 
-        len = len - (uint64_t)(largeCopies * 256);
+        len -= (uint64_t)(largeCopies * 256);
         _length = (int64_t)len;
         _cursor = cursor;
 
@@ -585,7 +580,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
         }
 
         if (largeCopies < _maxCopies) {
-            int64_t copies = largeCopies;
+            int64_t totalCopies = largeCopies;
 
             // the offset may put the displacement beyond 4K
             if (largeCopies * 256 + _offset >= 4096) {
@@ -596,7 +591,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
             int32_t local_offset = 0;
             while (largeCopies > 0) {
-                local_offset = _offset + (copies - largeCopies) * 256;
+                local_offset = _offset + (totalCopies - largeCopies) * 256;
                 // Seed byte 0 of this block
                 if (_useByteVal)
                     cursor = generateSIInstruction(_cg, TR::InstOpCode::MVI, _rootNode,
@@ -610,9 +605,9 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
                     new (_cg->trHeapMemory()) TR::MemoryReference(_srcReg, local_offset, _cg), cursor);
                 --largeCopies;
             }
-            len = len - copies * 256;
+            len -= totalCopies * 256;
             _length = (int64_t)len;
-            _offset = _offset + copies * 256;
+            _offset += totalCopies * 256;
             _cursor = cursor;
             setDependencies(false); // Make sure we do not generate dependencies or internalControlFlow
             return cursor;
@@ -1140,8 +1135,7 @@ TR::Instruction *MemInitVarLenMacroOp::generateRemainder()
                 TR::InstOpCode::COND_BNH, _doneLabel, false, false);
 
         if (_firstByteInitialized) {
-            static bool disableMemInitMVCSeedOpt = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
-            if (!disableMemInitMVCSeedOpt) {
+            if (!disableMemInitMVCSeedOpt()) {
                 // SeedOpt path fills 256-byte blocks only. Seed the start of the remainder block.
                 if (_useByteVal)
                     generateSIInstruction(_cg, TR::InstOpCode::MVI, _rootNode,
@@ -1259,12 +1253,11 @@ TR::Instruction *MemInitConstLenMacroOp::generateInstruction(int32_t offset, int
 {
     TR::Compilation *comp = _cg->comp();
     TR::Instruction *cursor = _cg->getAppendInstruction();
-    static bool disableMemInitMVCSeedOpt = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
     if (length == 0) {
         return cursor;
     }
 
-    if (disableMemInitMVCSeedOpt) {
+    if (disableMemInitMVCSeedOpt()) {
         // Legacy / Disabled path: byte 0 at offset already seeded by generateLoop,
         // and length was decremented by 1. Propagate remaining bytes starting at offset + 1.
         if (_dstNode == _srcNode) {
@@ -1454,12 +1447,11 @@ TR::Instruction *MemInitVarLenMacroOp::generateInstruction(int32_t offset, int64
 {
     TR::Compilation *comp = _cg->comp();
     TR::Instruction *cursor = _cg->getAppendInstruction();
-    static bool disableMemInitMVCSeedOpt = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
     if (length == 0) {
         return cursor;
     }
 
-    if (!_firstByteInitialized || !disableMemInitMVCSeedOpt) {
+    if (!_firstByteInitialized || !disableMemInitMVCSeedOpt()) {
         // Seed the current block first byte.
         // If Opt enabled:  every call needs its own seed
         // Opt disabled: only seed on the very first call (legacy impl)
@@ -1474,7 +1466,7 @@ TR::Instruction *MemInitVarLenMacroOp::generateInstruction(int32_t offset, int64
     }
 
     if (length > 1) {
-        int64_t mvcField = disableMemInitMVCSeedOpt ? length - 1 : length - 2;
+        uint16_t mvcField = static_cast<uint16_t>(disableMemInitMVCSeedOpt() ? length - 1 : length - 2);
         cursor = generateSS1Instruction(_cg, TR::InstOpCode::MVC, _rootNode, mvcField,
             new (_cg->trHeapMemory()) TR::MemoryReference(_dstReg, 1 + offset, _cg),
             new (_cg->trHeapMemory()) TR::MemoryReference(_srcReg, offset, _cg), cursor);
