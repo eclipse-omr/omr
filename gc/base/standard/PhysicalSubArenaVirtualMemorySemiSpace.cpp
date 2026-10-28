@@ -1049,9 +1049,7 @@ MM_PhysicalSubArenaVirtualMemorySemiSpace::tilt(MM_EnvironmentBase *env, uintptr
 	if (updateMemoryPools) {
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		if (expandBase > expandTop) {
-			/* DEV: shrinking Allocate back into Survivor only happens when undoing the 100% tilt set by flip(backout)
-			 * (restore_tilt_after_percolate). With unified abort, STW also takes this path. */
-			Assert_MM_true(extensions->concurrentScavenger || extensions->enableUnifiedAbort);
+			Assert_MM_true(extensions->enableUnifiedAbort || extensions->concurrentScavenger);
 			subSpaceAllocate->removeExistingMemory(env, this, ((uintptr_t)expandBase) - ((uintptr_t)expandTop), expandTop, expandBase);
 			subSpaceSurvivor->addExistingMemory(env, this, ((uintptr_t)expandBase) - ((uintptr_t)expandTop), expandTop, expandBase, true);
 		} else
