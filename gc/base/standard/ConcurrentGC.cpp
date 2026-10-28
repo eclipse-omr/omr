@@ -2048,7 +2048,7 @@ MM_ConcurrentGC::internalPreCollect(MM_EnvironmentBase *env, MM_MemorySubSpace *
 			MM_ConcurrentClearNewMarkBitsTask clearNewMarkBitsTask(env, _dispatcher, this);
 			_dispatcher->run(env, &clearNewMarkBitsTask);
 
-			/* DEV: Under the unified STW abort path the scavenge can abort while concurrent
+			/* Under the unified STW abort path the scavenge can abort while concurrent
 			 * tracing is at CONCURRENT_TRACE_ONLY or beyond, meaning work packets may already
 			 * contain nursery addresses that now have forward pointer headers. clearNewMarkBits
 			 * zeroed the nursery mark bits but did not purge the packets. Flush them so the
