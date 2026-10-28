@@ -4184,6 +4184,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 	/* Ensure we've pushed all references from buffers out to the lists and flushed RS fragments*/
 	flushBuffersForGetNextScanCache(env);
@@ -4734,6 +4735,8 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		Assert_MM_true(result);
 		return true;
 	}
+
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 	if ((_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised()) {
 		omrtty_printf("{SHAD: earlier percolateGarbageCollect\n");
