@@ -677,10 +677,13 @@ MM_MemorySubSpaceSemiSpace::mainTeardownForAbortedGC(MM_EnvironmentBase *env)
 	/* Build free list in survivor. */
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	if (_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled()) {
-		/* Doing set_allocate for STW case because flip(backout) assumes set_allocate has already been performed.
-		 * CS already does set_allocate at concurrent_phase_roots.
+		/* There might be live objects in Survivor (newly allocated one since the start of Concurrent Scavenge cycle)
+		 * Sweep in percolate global will rebuild the free list, so we can skip it here
 		 */
 		if (!_extensions->isConcurrentScavengerEnabled()) {
+			/* Doing set_allocate for STW case because flip(backout) assumes set_allocate has already been performed.
+			* CS already does set_allocate at concurrent_phase_roots.
+			*/
 			flip(env, set_allocate);
 		}
 		omrtty_printf("{SHAD: CS: flip backout\n");

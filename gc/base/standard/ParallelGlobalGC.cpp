@@ -514,7 +514,6 @@ MM_ParallelGlobalGC::mainThreadGarbageCollect(MM_EnvironmentBase *env, MM_Alloca
 		 * the clearFreeEntry callback asserts that everything that is not cleared is a marked
 		 * object. So the mark map is also rebuilt before calling the clearFreeEntry callback.
 		 */
-
 		mainThreadCompact(env, allocDescription, rebuildMarkBits || gcCode.shouldClearHeap());
 		_collectionStatistics._tenureFragmentation = NO_FRAGMENTATION;
 		if (_extensions->processLargeAllocateStats) {
