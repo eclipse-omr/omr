@@ -4742,18 +4742,6 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 
 		Assert_MM_true(result);
 
-		/* In the original STW path, the backout flag was cleared lazily by mainSetupForGC at the start
-		 * of the next scavenge. That worked because STW never reached shouldPercolateGarbageCollect with
-		 * the flag raised. Now that STW percolates here, the flag must be cleared explicitly — otherwise
-		 * shouldPercolateGarbageCollect is re-entered before mainSetupForGC runs and immediately percolates
-		 * again, causing a runaway cascade.
-		 * For CS, the flag is cleared inside flip(restore_tilt_after_percolate) via
-		 * MemorySubSpaceGenerational::checkResize, so no explicit clear is needed here. */
-		// DEV: do we need this?
-		/*if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
-			setBackOutFlag(env, backOutFlagCleared);
-		}*/
-
 		return true;
 	}
 
@@ -4912,16 +4900,6 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		if (isBackOutFlagRaised()) {
 			bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 			Assert_MM_true(result);
-			/* Same reasoning as the pre-scavenge percolate at line 4747/4760: the flag must be
-			 * cleared explicitly for STW after the percolate returns. Without this, any subsequent
-			 * internalGarbageCollect call sees the raised flag at the line 4747 check and fires a
-			 * second percolate before mainSetupForGC gets a chance to clear it.
-			 * For CS the flag is cleared inside flip(restore_tilt_after_percolate) via
-			 * MemorySubSpaceGenerational::checkResize (CS-only branch). */
-			// DEV: Do we need this?
-			/*if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
-				setBackOutFlag(env, backOutFlagCleared);
-			}*/
 			return true;
 		}
 	}
