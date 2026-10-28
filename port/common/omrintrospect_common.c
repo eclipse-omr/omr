@@ -18,6 +18,7 @@
  * [2] https://openjdk.org/legal/assembly-exception.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+ * Assisted-by: IBM Bob
  *******************************************************************************/
 
 /**
@@ -42,5 +43,6 @@ const char *error_descriptions[] = {
 	"signal received from external process",
 	"native stacks not available on this platform",
 	"memory fault while constructing backtrace",
-	"thread collection in progress on another thread"
+	"thread collection in progress on another thread",
+	"native stack back chain was corrupt or too deep, backtrace truncated"
 };
