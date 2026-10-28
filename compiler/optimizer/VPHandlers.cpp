@@ -94,6 +94,60 @@
 extern TR::Node *constrainChildren(OMR::ValuePropagation *vp, TR::Node *node);
 extern TR::Node *constrainVcall(OMR::ValuePropagation *vp, TR::Node *node);
 
+/**
+ * \brief Determine whether the result bounds of an arithmetic node rule out overflow.
+ *
+ * A node's value constraint may come from a dominating test or a bound check rather
+ * than from its operands, so it only describes the result. For most operations, a
+ * bounded result does not imply no overflow (e.g. x * 2 == 0 within [0, 99] when
+ * x == INT_MIN). The exceptions are operations that never overflow (and, or, xor,
+ * right-shift, rem), and neg/div, which overflow only when the result equals MIN.
+ * For add, sub, mul, and shl, use operandsPrecludeOverflow() instead.
+ *
+ * \param node the arithmetic node
+ * \param low  the lower bound on the value of \p node
+ * \return true if the operation performed by \p node did not overflow
+ */
+static bool resultBoundsPrecludeOverflow(TR::Node *node, int64_t low)
+{
+    TR::ILOpCode &op = node->getOpCode();
+
+    if (op.isAnd() || op.isOr() || op.isXor() || op.isRightShift() || op.isRem())
+        return true;
+
+    if (op.isNeg() || op.isDiv()) {
+        switch (node->getDataType()) {
+            case TR::Int8:
+                return low > TR::getMinSigned<TR::Int8>();
+            case TR::Int16:
+                return low > TR::getMinSigned<TR::Int16>();
+            case TR::Int32:
+                return low > TR::getMinSigned<TR::Int32>();
+            case TR::Int64:
+                return low > TR::getMinSigned<TR::Int64>();
+            default:
+                return false;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * \brief Determine whether operand-derived bounds rule out overflow for an arithmetic node.
+ *
+ * A constraint computed directly from the operands (rather than looked up from the
+ * node's value, which may have been intersected with unrelated sources) records
+ * whether its bound computation overflowed.
+ *
+ * \param resultFromOperands the result constraint computed from the operands
+ * \return true if the operation cannot overflow
+ */
+static bool operandsPrecludeOverflow(TR::VPConstraint *resultFromOperands)
+{
+    return resultFromOperands->canOverflow() == TR_no;
+}
+
 static void checkForNonNegativeAndOverflowProperties(OMR::ValuePropagation *vp, TR::Node *node,
     TR::VPConstraint *constraint = NULL)
 {
@@ -143,7 +197,8 @@ static void checkForNonNegativeAndOverflowProperties(OMR::ValuePropagation *vp, 
             ///       ((low > TR::getMinSigned<TR::Int32>()) || (high < TR::getMaxSigned<TR::Int32>())))
             if ((node->getOpCode().isLoad()
                     && ((low > TR::getMinSigned<TR::Int32>()) || (high < TR::getMaxSigned<TR::Int32>())))
-                || (node->getOpCode().isArithmetic() && (range->canOverflow() != TR_yes))) {
+                || (node->getOpCode().isArithmetic() && (range->canOverflow() != TR_yes)
+                    && resultBoundsPrecludeOverflow(node, low))) {
                 node->setCannotOverflow(true);
                 // dumpOptDetails(vp->comp(), "Node %p cannot overflow\n", node);
             }
@@ -161,7 +216,8 @@ static void checkForNonNegativeAndOverflowProperties(OMR::ValuePropagation *vp, 
             ///       ((low > TR::getMinSigned<TR::Int64>()) || (high < TR::getMaxSigned<TR::Int64>())))
             if ((node->getOpCode().isLoad()
                     && ((low > TR::getMinSigned<TR::Int64>()) || (high < TR::getMaxSigned<TR::Int64>())))
-                || (node->getOpCode().isArithmetic() && (range->canOverflow() != TR_yes))) {
+                || (node->getOpCode().isArithmetic() && (range->canOverflow() != TR_yes)
+                    && resultBoundsPrecludeOverflow(node, low))) {
                 node->setCannotOverflow(true);
                 // dumpOptDetails(vp->comp(), "Node %p cannot overflow\n", node);
             }
@@ -178,7 +234,8 @@ static void checkForNonNegativeAndOverflowProperties(OMR::ValuePropagation *vp, 
 
             if ((node->getOpCode().isLoad()
                     && ((low > TR::getMinSigned<TR::Int16>()) || (high < TR::getMaxSigned<TR::Int16>())))
-                || (node->getOpCode().isArithmetic() && (range->canOverflow() != TR_yes))) {
+                || (node->getOpCode().isArithmetic() && (range->canOverflow() != TR_yes)
+                    && resultBoundsPrecludeOverflow(node, low))) {
                 node->setCannotOverflow(true);
             }
         }
@@ -568,7 +625,8 @@ static bool findConstant(OMR::ValuePropagation *vp, TR::Node *node)
                     if (constraint->getHighInt() <= 0)
                         node->setIsNonPositive(true);
 
-                    if ((node->getOpCode().isArithmetic() || node->getOpCode().isLoad())
+                    if ((node->getOpCode().isLoad()
+                            || (node->getOpCode().isArithmetic() && resultBoundsPrecludeOverflow(node, value)))
                         && ((value > TR::getMinSigned<TR::Int32>())
                             || (constraint->getHighInt() < TR::getMaxSigned<TR::Int32>()))) {
                         node->setCannotOverflow(true);
@@ -596,7 +654,8 @@ static bool findConstant(OMR::ValuePropagation *vp, TR::Node *node)
                     if (constraint->getHighShort() <= 0)
                         node->setIsNonPositive(true);
 
-                    if ((node->getOpCode().isArithmetic() || node->getOpCode().isLoad())
+                    if ((node->getOpCode().isLoad()
+                            || (node->getOpCode().isArithmetic() && resultBoundsPrecludeOverflow(node, value)))
                         && ((value > TR::getMinSigned<TR::Int16>())
                             || (constraint->getHighShort() < TR::getMaxSigned<TR::Int16>()))) {
                         node->setCannotOverflow(true);
@@ -5004,6 +5063,9 @@ TR::Node *constrainAdd(OMR::ValuePropagation *vp, TR::Node *node)
             // with node
             if (didReduction)
                 return node;
+
+            if (operandsPrecludeOverflow(constraint))
+                node->setCannotOverflow(true);
         }
     }
 
@@ -5087,6 +5149,9 @@ TR::Node *constrainSubtract(OMR::ValuePropagation *vp, TR::Node *node)
             // with node
             if (didReduction)
                 return node;
+
+            if (operandsPrecludeOverflow(constraint))
+                node->setCannotOverflow(true);
         }
     }
 
@@ -5196,6 +5261,10 @@ TR::Node *constrainImul(OMR::ValuePropagation *vp, TR::Node *node)
             }
 
             vp->addBlockOrGlobalConstraint(node, constraint, lhsGlobal);
+
+            // A range is only created above if none of the products of the bounds of the operands overflows
+            if (operandsPrecludeOverflow(constraint))
+                node->setCannotOverflow(true);
         }
     } else if (lhs && lhs->asIntConst() && lhs->asIntConst()->getInt() == 0) {
         vp->replaceByConstant(node, lhs, lhsGlobal);
@@ -5366,6 +5435,10 @@ TR::Node *constrainLmul(OMR::ValuePropagation *vp, TR::Node *node)
                 vp->addBlockOrGlobalConstraint(node, constraint, lhsGlobal);
                 if (didReduction)
                     return node;
+
+                // A range is only created above if none of the products of the bounds of the operands overflows
+                if (operandsPrecludeOverflow(constraint))
+                    node->setCannotOverflow(true);
             }
         }
     } else if (lhs && lhs->asLongConst() && lhs->asLongConst()->getLong() == 0) {
@@ -7600,7 +7673,8 @@ static bool constrainWidenToInt(OMR::ValuePropagation *vp, TR::Node *&node, int3
         if (high <= 0)
             node->setIsNonPositive(true);
 
-        if ((node->getOpCode().isArithmetic() || node->getOpCode().isLoad())
+        if ((node->getOpCode().isLoad()
+                || (node->getOpCode().isArithmetic() && resultBoundsPrecludeOverflow(node, low)))
             && ((low > TR::getMinSigned<TR::Int32>()) || (high < TR::getMaxSigned<TR::Int32>())))
             node->setCannotOverflow(true);
     }
