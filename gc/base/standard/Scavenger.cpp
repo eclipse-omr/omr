@@ -4091,18 +4091,18 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 				if (NULL == objectPtr) {
 					remSetSlotIterator.removeSlot();
 				} else {
-					omrtty_printf("{SHAD: processRememberedSetInBackout: objectPtr=%p", objectPtr);
+					//omrtty_printf("{SHAD: processRememberedSetInBackout: objectPtr=%p", objectPtr);
 					if((uintptr_t)objectPtr & DEFERRED_RS_REMOVE_FLAG) {
 						/* Is slot flagged for deferred removal ? */
 						/* Yes..so first remove tag bit from object address */
-						omrtty_printf(", has defer flag");
+						//omrtty_printf(", has defer flag");
 						objectPtr = (omrobjectptr_t)((uintptr_t)objectPtr & ~(uintptr_t)DEFERRED_RS_REMOVE_FLAG);
 						Assert_MM_false(MM_ForwardedHeader(objectPtr, compressed).isForwardedPointer());
 
 						/* The object did not have Nursery references at initial RS scan, but one could have been added during CS cycle by a mutator. */
-						if (!shouldRememberObject(env, objectPtr)) {
+						if (!IS_CONCURRENT_ENABLED || !shouldRememberObject(env, objectPtr)) {
 							/* A simple mask out can be used - we are guaranteed to be the only manipulator of the object */
-							omrtty_printf(", should remove from RS\n");
+							//omrtty_printf(", should remove from RS\n");
 							_extensions->objectModel.clearRemembered(objectPtr);
 							remSetSlotIterator.removeSlot();
 
@@ -4114,15 +4114,14 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 								oldToOldReferenceCreated(env, objectPtr);
 							}
 #endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */
-
 						} else {
 							/* We are not removing it after all, since the object has Nursery references => reset the deferred flag. */
-							omrtty_printf(", should not remove from RS\n");
+							//omrtty_printf(", should not remove from RS\n");
 							*slotPtr = objectPtr;
 						}
 					} else {
 						/* Fixup newly remembered object */
-						omrtty_printf(", no defer flag\n");
+						//omrtty_printf(", no defer flag\n");
 						fixupObjectScan(env, objectPtr);
 					}
 				}
@@ -4736,10 +4735,9 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		return true;
 	}
 
-	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+	//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
-	if ((_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised()) {
-		omrtty_printf("{SHAD: earlier percolateGarbageCollect\n");
+	if (IS_CONCURRENT_ENABLED && isBackOutFlagRaised()) {
 		bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 
 		Assert_MM_true(result);
@@ -4751,9 +4749,10 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		 * again, causing a runaway cascade.
 		 * For CS, the flag is cleared inside flip(restore_tilt_after_percolate) via
 		 * MemorySubSpaceGenerational::checkResize, so no explicit clear is needed here. */
-		if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
+		// DEV: do we need this?
+		/*if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 			setBackOutFlag(env, backOutFlagCleared);
-		}
+		}*/
 
 		return true;
 	}
@@ -4910,9 +4909,7 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		/* We want to recursively call percolate gc here in order that the excessive gc
 		 * identifies the outermost gc and records the metrics correctly.
 		 */
-		// DEV: we already unified percolate above. Should we remove this?
 		if (isBackOutFlagRaised()) {
-			omrtty_printf("{SHAD: later percolateGarbageCollect\n");
 			bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
 			Assert_MM_true(result);
 			/* Same reasoning as the pre-scavenge percolate at line 4747/4760: the flag must be
@@ -4921,9 +4918,10 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 			 * second percolate before mainSetupForGC gets a chance to clear it.
 			 * For CS the flag is cleared inside flip(restore_tilt_after_percolate) via
 			 * MemorySubSpaceGenerational::checkResize (CS-only branch). */
-			if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
+			// DEV: Do we need this?
+			/*if (_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 				setBackOutFlag(env, backOutFlagCleared);
-			}
+			}*/
 			return true;
 		}
 	}
