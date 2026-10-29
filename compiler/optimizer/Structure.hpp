@@ -473,6 +473,7 @@ public:
         , _exitEdges(c->getFlowGraph()->structureMemoryRegion())
         , _subNodes(c->getFlowGraph()->structureMemoryRegion())
         , _invariantExpressions(NULL)
+        , _computedInvariantExpressions(NULL)
     {}
 
     virtual Kind getKind();
@@ -632,13 +633,17 @@ public:
     void setExprInvariant(TR::Node *expr)
     {
         TR_ASSERT(_invariantExpressions != NULL, "assertion failure");
-        _invariantExpressions->set(expr->getGlobalIndex());
+        int32_t nodeIndex = expr->getGlobalIndex();
+        _invariantExpressions->set(nodeIndex);
+        _computedInvariantExpressions->set(nodeIndex);
     }
 
     void resetExprInvariant(TR::Node *expr)
     {
         TR_ASSERT(_invariantExpressions != NULL, "assertion failure");
-        _invariantExpressions->reset(expr->getGlobalIndex());
+        int32_t nodeIndex = expr->getGlobalIndex();
+        _invariantExpressions->reset(nodeIndex);
+        _computedInvariantExpressions->set(nodeIndex);
     }
 
     bool isSymbolRefInvariant(TR::SymbolReference *);
@@ -764,6 +769,7 @@ private:
     float _frequencyEntryFactor;
 
     TR_BitVector *_invariantExpressions;
+    TR_BitVector *_computedInvariantExpressions;
     uint16_t _unrollFactor;
 };
 

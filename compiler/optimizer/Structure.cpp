@@ -2913,6 +2913,7 @@ void TR_RegionStructure::computeInvariantExpressions()
 
     int32_t nodeCount = comp()->getNodeCount();
     _invariantExpressions = new (trStackMemory()) TR_BitVector(nodeCount, trMemory(), stackAlloc, growable);
+    _computedInvariantExpressions = new (trStackMemory()) TR_BitVector(nodeCount, trMemory(), stackAlloc, growable);
 
     TR_ScratchList<TR::Block> blocksInRegion(trMemory());
     getBlocks(&blocksInRegion);
@@ -2940,8 +2941,12 @@ void TR_RegionStructure::updateInvariantExpressions(TR::Node *node, vcount_t vis
 
     node->setVisitCount(visitCount);
 
+    int32_t nodeIndex = node->getGlobalIndex();
+
     if (isExprTreeInvariant(node))
-        _invariantExpressions->set(node->getGlobalIndex());
+        _invariantExpressions->set(nodeIndex);
+
+    _computedInvariantExpressions->set(nodeIndex);
 
     int32_t i;
     for (i = 0; i < node->getNumChildren(); i++)
@@ -2952,17 +2957,32 @@ void TR_RegionStructure::resetInvariance()
 {
     _invariantSymbols = NULL;
     _invariantExpressions = NULL;
+    _computedInvariantExpressions = NULL;
 }
 
 bool TR_RegionStructure::isExprInvariant(TR::Node *expr, bool usePrecomputed)
 {
     if (_invariantExpressions && usePrecomputed) {
         // A node created after the invariant expressions were precomputed will have a
-        // global index outside the scanned set and its bit will be 0.  Fall back to the
-        // live symbol check so that such nodes are not incorrectly treated as variant.
-        if ((int32_t)expr->getGlobalIndex() < (int32_t)_invariantExpressions->elementCount())
-            return _invariantExpressions->get(expr->getGlobalIndex()) != 0;
-        return isExprTreeInvariant(expr);
+        // global index outside the scanned set, and its bit will be 0.  Use
+        // _computedInvariantExpressions to track whether the invariance status of
+        // the node has already been determined, and if it hasn't calculcate it now
+        // with a call to isExprTreeInvariant.
+        //
+        int32_t nodeIndex = expr->getGlobalIndex();
+
+        if (_computedInvariantExpressions->get(nodeIndex) != 0) {
+            return _invariantExpressions->get(nodeIndex) != 0;
+        }
+        bool result = isExprTreeInvariant(expr);
+
+        if (result) {
+            _invariantExpressions->set(nodeIndex);
+        }
+
+        _computedInvariantExpressions->set(nodeIndex);
+
+        return result;
     }
 
     return isExprTreeInvariant(expr);
