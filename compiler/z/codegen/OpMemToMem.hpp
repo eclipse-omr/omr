@@ -151,6 +151,8 @@ public:
 
     virtual bool inRemainder() { return _inRemainder; }
 
+    static bool disableMemInitMVCSeedOpt();
+
 protected:
     MemToMemMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg, TR::Node *lenNode,
         TR::Register *itersReg = 0)
@@ -324,14 +326,18 @@ public:
         : MemToMemConstLenMacroOp(rootNode, dstNode, dstNode, cg, length)
         , _initReg(initReg)
         , _useByteVal(false)
-    {}
+    {
+        updateNeedsLoop();
+    }
 
     MemInitConstLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::CodeGenerator *cg, int64_t length, int8_t byteVal)
         : MemToMemConstLenMacroOp(rootNode, dstNode, dstNode, cg, length)
         , _initReg(NULL)
         , _useByteVal(true)
         , _byteVal(byteVal)
-    {}
+    {
+        updateNeedsLoop();
+    }
 
 protected:
     virtual TR::Instruction *generateInstruction(int32_t offset, int64_t length, TR::Instruction *cursor);
@@ -340,6 +346,11 @@ protected:
     virtual TR::Instruction *generateRemainder();
 
 private:
+    /**
+     * Recomputes _needsLoop so it matches the path taken by generateLoop().
+     */
+    void updateNeedsLoop();
+
     TR::Register *_initReg;
     bool _useByteVal;
     int8_t _byteVal;
