@@ -1204,7 +1204,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise left shift. shift amount is masked by (element type size) - 1*/ \
+   /* .description             =    vector lanewise left shift. shift amount is taken modulo the element size in bits, i.e. masked by (element size in bits) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vshr, \
@@ -1220,7 +1220,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise right shift. shift amount is masked by (element type size) - 1*/ \
+   /* .description             =    vector lanewise right shift. shift amount is taken modulo the element size in bits, i.e. masked by (element size in bits) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vushr, \
@@ -1236,7 +1236,7 @@ VECTOR_OPERATION_MACRO(\
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise unsigned right shift. shift amount is masked by (element type size) - 1*/ \
+   /* .description             =    vector lanewise unsigned right shift. shift amount is taken modulo the element size in bits, i.e. masked by (element size in bits) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vrol, \
@@ -1847,12 +1847,12 @@ VECTOR_OPERATION_MACRO(\
    /* .properties4             = */ 0, \
    /* .dataType                = */ TR::NoType, \
    /* .typeProperties          = */ ILTypeProp::VectorResult, \
-   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .childProperties         = */ THREE_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
    /* .swapChildrenOperation   = */ TR::vBadOperation, \
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise left shift with mask. shift amount is masked by (element type size) - 1*/ \
+   /* .description             =    vector lanewise left shift with mask. shift amount is taken modulo the element size in bits, i.e. masked by (element size in bits) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmshr, \
@@ -1863,12 +1863,12 @@ VECTOR_OPERATION_MACRO(\
    /* .properties4             = */ 0, \
    /* .dataType                = */ TR::NoType, \
    /* .typeProperties          = */ ILTypeProp::VectorResult, \
-   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .childProperties         = */ THREE_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
    /* .swapChildrenOperation   = */ TR::vBadOperation, \
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise right shift with mask. shift amount is masked by (element type size) - 1*/ \
+   /* .description             =    vector lanewise right shift with mask. shift amount is taken modulo the element size in bits, i.e. masked by (element size in bits) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmushr, \
@@ -1879,12 +1879,12 @@ VECTOR_OPERATION_MACRO(\
    /* .properties4             = */ 0, \
    /* .dataType                = */ TR::NoType, \
    /* .typeProperties          = */ ILTypeProp::VectorResult, \
-   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .childProperties         = */ THREE_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
    /* .swapChildrenOperation   = */ TR::vBadOperation, \
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
    /* .ifCompareOpCode         = */ TR::BadILOp, \
-   /* .description             =    vector lanewise unsigned right shift with mask. shift amount is masked by (element type size) - 1*/ \
+   /* .description             =    vector lanewise unsigned right shift with mask. shift amount is taken modulo the element size in bits, i.e. masked by (element size in bits) - 1*/ \
 )
 VECTOR_OPERATION_MACRO(\
    /* .operation               = */ vmrol, \
@@ -1895,7 +1895,7 @@ VECTOR_OPERATION_MACRO(\
    /* .properties4             = */ 0, \
    /* .dataType                = */ TR::NoType, \
    /* .typeProperties          = */ ILTypeProp::VectorResult, \
-   /* .childProperties         = */ TWO_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
+   /* .childProperties         = */ THREE_SAME_CHILD(ILChildProp::UnspecifiedChildType), \
    /* .swapChildrenOperation   = */ TR::vBadOperation, \
    /* .reverseBranchOperation  = */ TR::vBadOperation, \
    /* .booleanCompareOpCode    = */ TR::BadILOp, \
