@@ -2841,7 +2841,7 @@ MM_Scavenger::shouldRememberSlot(omrobjectptr_t *slotPtr)
 		if (isObjectInNewSpace(slotObjectPtr)) {
 			Assert_MM_true(!isObjectInEvacuateMemory(slotObjectPtr));
 			return true;
-		} else if (IS_CONCURRENT_ENABLED && isBackOutFlagRaised() && isObjectInEvacuateMemory(slotObjectPtr)) {
+		} else if ((_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised() && isObjectInEvacuateMemory(slotObjectPtr)) {
 			/* Could happen if we aborted before completing RS scan */
 			return true;
 		}
@@ -3842,6 +3842,8 @@ MM_Scavenger::setBackOutFlag(MM_EnvironmentBase *env, BackOutState backOutState)
 		/* Ensure that other CPUs see correct _backOutDoneIndex, by the time they see _backOutFlag is set */
 		MM_AtomicOperations::writeBarrier();
 		_extensions->setScavengerBackOutState(backOutState);
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		omrtty_printf("{SHAD: setBackOutFlag: %d\n", backOutState);
 		if (backOutStarted > backOutState) {
 			Trc_MM_ScavengerBackout(env->getLanguageVMThread(), backOutFlagCleared < backOutState ? "true" : "false");
 			TRIGGER_J9HOOK_MM_PRIVATE_SCAVENGER_BACK_OUT(_extensions->privateHookInterface, env->getOmrVM(), backOutFlagCleared < backOutState);
@@ -3861,8 +3863,9 @@ MM_Scavenger::backOutFixSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 		if (forwardHeader.isReverseForwardedPointer()) {
 			*slotPtr = forwardHeader.getReverseForwardedPointer();
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-			OMRPORT_ACCESS_FROM_OMRVM(_omrVM);
-			omrtty_printf("{SCAV: Back out uncompressed slot %p[%p->%p]}\n", slotPtr, objectPtr, *slotPtr);
+			// TODO: Commenting to shorten logs. Reverse before PR
+			//OMRPORT_ACCESS_FROM_OMRVM(_omrVM);
+			//omrtty_printf("{SCAV: Back out uncompressed slot %p[%p->%p]}\n", slotPtr, objectPtr, *slotPtr);
 			Assert_MM_true(isObjectInEvacuateMemory(*slotPtr));
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 			return true;
@@ -3883,8 +3886,9 @@ MM_Scavenger::backOutFixSlot(GC_SlotObject *slotObject)
 		if (forwardHeader.isReverseForwardedPointer()) {
 			slotObject->writeReferenceToSlot(forwardHeader.getReverseForwardedPointer());
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-			OMRPORT_ACCESS_FROM_OMRVM(_omrVM);
-			omrtty_printf("{SCAV: Back out object slot %p[%p->%p]}\n", objectPtr, slotObject->readAddressFromSlot(), slotObject->readReferenceFromSlot());
+			// TODO: Commenting to shorten logs. Reverse before PR
+			//OMRPORT_ACCESS_FROM_OMRVM(_omrVM);
+			//omrtty_printf("{SCAV: Back out object slot %p[%p->%p]}\n", objectPtr, slotObject->readAddressFromSlot(), slotObject->readReferenceFromSlot());
 			Assert_MM_true(isObjectInEvacuateMemory(slotObject->readReferenceFromSlot()));
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 			return true;
@@ -3902,8 +3906,9 @@ MM_Scavenger::backOutObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t obje
 	GC_ObjectScanner *objectScanner = getObjectScanner(env, objectPtr, &objectScannerState, GC_ObjectScanner::scanRoots, SCAN_REASON_BACKOUT, &shouldRemember);
 	if (NULL != objectScanner) {
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-		omrtty_printf("{SCAV: Back out slots in object %p[%p]\n", objectPtr, *objectPtr);
+		// TODO: Commenting to shorten logs. Reverse before PR
+		//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		//omrtty_printf("{SCAV: Back out slots in object %p[%p]\n", objectPtr, *objectPtr);
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 		while (NULL != (slotObject = objectScanner->getNextSlot())) {
 			backOutFixSlot(slotObject);
@@ -3930,7 +3935,7 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 		if (isObjectInEvacuateMemory((omrobjectptr_t )rootRegion->getLowAddress())) {
 			/* tell the object iterator to work on the given region */
 			GC_ObjectHeapIteratorAddressOrderedList evacuateHeapIterator(_extensions, rootRegion, false);
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 			evacuateHeapIterator.includeForwardedObjects();
 #endif
 			omrobjectptr_t objectPtr = NULL;
@@ -3960,7 +3965,8 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 					freeHeader->setNext((MM_HeapLinkedFreeHeader*)originalObject, compressed);
 					freeHeader->setSize(evacuateObjectSizeInBytes);
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-					omrtty_printf("{SCAV: Back out forward pointer %p[%p]@%p -> %p[%p]}\n", objectPtr, *objectPtr, forwardedObject, freeHeader->getNext(env), freeHeader->getSize());
+					// TODO: Commenting to shorten logs. Reverse before PR
+					//omrtty_printf("{SCAV: Back out forward pointer %p[%p]@%p -> %p[%p]}\n", objectPtr, *objectPtr, forwardedObject, freeHeader->getNext(env), freeHeader->getSize());
 					Assert_MM_true(objectPtr == originalObject);
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 				}
@@ -3989,12 +3995,13 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 				while((objectPtr = evacuateHeapIterator.nextObjectNoAdvance()) != NULL) {
 					MM_ForwardedHeader header(objectPtr, compressed);
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-					uint32_t originalOverlap = header.getPreservedOverlap();
+					// TODO: Commenting to shorten logs. Reverse before PR
+					//uint32_t originalOverlap = header.getPreservedOverlap();
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 _delegate.fixupDestroyedSlot(env, &header, _activeSubSpace);
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-					omrobjectptr_t fwdObjectPtr = header.getForwardedObject();
-					omrtty_printf("{SCAV: Fixup destroyed slot %p@%p -> %u->%u}\n", objectPtr, fwdObjectPtr, originalOverlap, header.getPreservedOverlap());
+					//omrobjectptr_t fwdObjectPtr = header.getForwardedObject();
+					//omrtty_printf("{SCAV: Fixup destroyed slot %p@%p -> %u->%u}\n", objectPtr, fwdObjectPtr, originalOverlap, header.getPreservedOverlap());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 				}
 			}
@@ -4071,8 +4078,10 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 	MM_SublistPuddle *puddle;
 	bool const compressed = _extensions->compressObjectReferences();
 
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-	if (IS_CONCURRENT_ENABLED) {
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+	if (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) {
+		omrtty_printf("{SHAD: CS: processRememberedSetInBackout\n");
 		GC_SublistIterator remSetIterator(&(_extensions->rememberedSet));
 		while((puddle = remSetIterator.nextList()) != NULL) {
 			GC_SublistSlotIterator remSetSlotIterator(puddle);
@@ -4082,27 +4091,37 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 				if (NULL == objectPtr) {
 					remSetSlotIterator.removeSlot();
 				} else {
+					//omrtty_printf("{SHAD: processRememberedSetInBackout: objectPtr=%p", objectPtr);
 					if((uintptr_t)objectPtr & DEFERRED_RS_REMOVE_FLAG) {
 						/* Is slot flagged for deferred removal ? */
 						/* Yes..so first remove tag bit from object address */
+						//omrtty_printf(", has defer flag");
 						objectPtr = (omrobjectptr_t)((uintptr_t)objectPtr & ~(uintptr_t)DEFERRED_RS_REMOVE_FLAG);
 						Assert_MM_false(MM_ForwardedHeader(objectPtr, compressed).isForwardedPointer());
 
 						/* The object did not have Nursery references at initial RS scan, but one could have been added during CS cycle by a mutator. */
-						if (!shouldRememberObject(env, objectPtr)) {
+						if (!IS_CONCURRENT_ENABLED || !shouldRememberObject(env, objectPtr)) {
 							/* A simple mask out can be used - we are guaranteed to be the only manipulator of the object */
+							//omrtty_printf(", should remove from RS\n");
 							_extensions->objectModel.clearRemembered(objectPtr);
 							remSetSlotIterator.removeSlot();
 
-							/* No need to inform anybody about creation of old-to-old reference (see regular pruning pass).
-							 * For CS, this is already handled during scanning of old objects
+							/* No need to inform anybody about creation of old-to-old reference (see regular pruning pass) for CS.
+							 * This is already handled during scanning of old objects
 							 */
+#if defined(OMR_GC_MODRON_CONCURRENT_MARK)
+							if(_extensions->shouldScavengeNotifyGlobalGCOfOldToOldReference() && !IS_CONCURRENT_ENABLED) {
+								oldToOldReferenceCreated(env, objectPtr);
+							}
+#endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */
 						} else {
 							/* We are not removing it after all, since the object has Nursery references => reset the deferred flag. */
+							//omrtty_printf(", should not remove from RS\n");
 							*slotPtr = objectPtr;
 						}
 					} else {
 						/* Fixup newly remembered object */
+						//omrtty_printf(", no defer flag\n");
 						fixupObjectScan(env, objectPtr);
 					}
 				}
@@ -4116,7 +4135,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 		 */
 
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+		omrtty_printf("{SHAD: STW: processRememberedSetInBackout\n");
 		omrtty_printf("{SCAV: Back out RS list}\n");
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
@@ -4131,12 +4150,14 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 				if(objectPtr) {
 					if (MM_ForwardedHeader(objectPtr, compressed).isReverseForwardedPointer()) {
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-						omrtty_printf("{SCAV: Back out remove RS object %p[%p]}\n", objectPtr, *objectPtr);
+						// TODO: comment to shorten log. Reverse before PR
+						//omrtty_printf("{SCAV: Back out remove RS object %p[%p]}\n", objectPtr, *objectPtr);
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 						remSetSlotIterator.removeSlot();
 					} else {
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
-						omrtty_printf("{SCAV: Back out fixup RS object %p[%p]}\n", objectPtr, *objectPtr);
+						// TODO: comment to shorten log. Reverse before PR
+						//omrtty_printf("{SCAV: Back out fixup RS object %p[%p]}\n", objectPtr, *objectPtr);
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 						backOutObjectScan(env, objectPtr);
 					}
@@ -4162,6 +4183,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 	/* Ensure we've pushed all references from buffers out to the lists and flushed RS fragments*/
 	flushBuffersForGetNextScanCache(env);
@@ -4174,8 +4196,9 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 		omrtty_printf("{SCAV: Complete back out(%p)}\n", env->getLanguageVMThread());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
-		if (!IS_CONCURRENT_ENABLED) {
+		if (!_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 			/* 1) Flush copy scan caches */
+			omrtty_printf("{SHAD: STW: Flush copy scan caches\n");
 			MM_CopyScanCacheStandard *cache = NULL;
 
 			while (NULL != (cache = _scavengeCacheScanList.popCache(env))) {
@@ -4200,10 +4223,12 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			omrtty_printf("{SCAV: Handle RS overflow}\n");
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
-			if (IS_CONCURRENT_ENABLED) {
+			if (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) {
+				omrtty_printf("{SHAD: CS: clearRememberedSetLists\n");
 				/* All heap fixup will occur during or after global GC */
 				clearRememberedSetLists(env);
 			} else {
+				omrtty_printf("{SHAD: STW: Unremember any objects that moved from new space to old\n");
 				/* i) Unremember any objects that moved from new space to old */
 				while(NULL != (rootRegion = evacuateRegionIterator.nextRegion())) {
 					/* skip survivor regions */
@@ -4260,8 +4285,9 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 			}
 		} else {
 			/* RS not in overflow */
-			if (!IS_CONCURRENT_ENABLED) {
+			if (!_extensions->enableUnifiedAbort && !IS_CONCURRENT_ENABLED) {
 				/* Walk the evacuate space, fixing up objects and installing reverse forward pointers in survivor space */
+				omrtty_printf("{SHAD: STW: backoutFixupAndReverseForwardPointersInSurvivor\n");
 				backoutFixupAndReverseForwardPointersInSurvivor(env);
 			}
 
@@ -4269,6 +4295,7 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 
 		} /* end of 'is RS in overflow' */
 
+		omrtty_printf("{SHAD: completeBackOut: scanAllSlots\n");
 		MM_ScavengerBackOutScanner backOutScanner(env, true, this);
 		backOutScanner.scanAllSlots(env);
 
@@ -4707,6 +4734,8 @@ MM_Scavenger::internalGarbageCollect(MM_EnvironmentBase *envBase, MM_MemorySubSp
 		Assert_MM_true(result);
 		return true;
 	}
+
+	//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 	if (IS_CONCURRENT_ENABLED && isBackOutFlagRaised()) {
 		bool result = percolateGarbageCollect(env, subSpace, NULL, ABORTED_SCAVENGE, J9MMCONSTANT_IMPLICIT_GC_PERCOLATE_ABORTED_SCAVENGE);
