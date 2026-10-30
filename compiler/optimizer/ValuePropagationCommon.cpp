@@ -142,6 +142,15 @@ OMR::ValuePropagation::ValuePropagation(TR::OptimizationManager *manager)
     , _parmMayBeVariant(NULL)
     , _parmTypeValid(NULL)
     , _constNodeInfo(comp()->allocator())
+    , _liveAnewarrays(comp()->allocator())
+    , _forwardedAnewArrayTTs(comp()->allocator())
+    , _arraySlotValueMap(comp()->allocator())
+    , _arraySlotStoreTTMap(comp()->allocator())
+    , _forwardedStoreTreesToRemove(comp()->allocator())
+    , _forwardedLocalStoreTreesToRemove(comp()->allocator())
+    , _coldArrayRebuilds(trMemory())
+    , _pendingAloadiRecreates(trMemory())
+    , _pendingAstoreInsertions(comp()->allocator())
 {
     // DANGER !!!
     // Virtual methods on ValuePropagation should only be called when the most derived class of VP's

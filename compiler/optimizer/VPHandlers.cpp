@@ -39,6 +39,7 @@
 #include "env/IO.hpp"
 #include "env/ObjectModel.hpp"
 #include "env/PersistentInfo.hpp"
+#include "env/TRFrontEnd.hpp"
 #include "env/TRMemory.hpp"
 #include "env/TypeLayout.hpp"
 #include "env/jittypes.h"
@@ -73,6 +74,7 @@
 #include "optimizer/PreExistence.hpp"
 #include "optimizer/TransformUtil.hpp"
 #include "optimizer/UseDefInfo.hpp"
+#include "optimizer/ValueNumberInfo.hpp"
 #include "optimizer/VPConstraint.hpp"
 #include "optimizer/ValuePropagation.hpp"
 #include "ras/Debug.hpp"
@@ -93,6 +95,9 @@
 
 extern TR::Node *constrainChildren(OMR::ValuePropagation *vp, TR::Node *node);
 extern TR::Node *constrainVcall(OMR::ValuePropagation *vp, TR::Node *node);
+static void removeArrayForwardingEntries(OMR::ValuePropagation *vp, TR::Node *node);
+static bool isGuardFailureBlock(TR::Block *block, TR::Compilation *comp);
+static bool isGuardFailureOrOSRBlock(OMR::ValuePropagation *vp);
 
 static void checkForNonNegativeAndOverflowProperties(OMR::ValuePropagation *vp, TR::Node *node,
     TR::VPConstraint *constraint = NULL)
@@ -1863,6 +1868,108 @@ TR::Node *constrainAloadi(OMR::ValuePropagation *vp, TR::Node *node)
     if (refineUnsafeAccess(vp, node))
         return node;
 
+    // Array store-spread elimination: forward array loads from a tracked anewarray.
+    if (vp->_isGlobalPropagation && node->getOpCode().hasSymbolReference() && node->getSymbol()->isArrayShadowSymbol()
+        && !vp->_liveAnewarrays.IsEmpty() && node->getFirstChild()->getOpCode().isArrayRef()
+        && node->getFirstChild()->getSecondChild()->getOpCode().isLoadConst()) {
+        TR::Node *loadAddr = node->getFirstChild();
+        TR::Node *baseNode = loadAddr->getFirstChild();
+        TR::Node *offsetNode = loadAddr->getSecondChild();
+
+        int64_t offset = offsetNode->getOpCode().isLong() ? offsetNode->getLongInt() : (int64_t)offsetNode->getInt();
+
+        uint64_t key = ((uint64_t)(uint32_t)vp->getValueNumber(baseNode) << 32) | (uint64_t)(uint32_t)offset;
+
+        CS2::HashIndex idx;
+        TR::Node *storedValue = NULL;
+        if (vp->_arraySlotValueMap.Locate(key, idx))
+            storedValue = vp->_arraySlotValueMap[idx];
+
+        if (storedValue && vp->trace())
+            logprintf(vp->trace(), vp->comp()->log(),
+                "ARRAY STORE-SPREAD ELIMINATION   map hit [base VN=%d offset %lld] -> value n%dn\n",
+                vp->getValueNumber(baseNode), (long long)offset, storedValue->getGlobalIndex());
+
+        TR::Node *curParent = vp->getCurrentParent();
+        if (storedValue != NULL && curParent != NULL && curParent->getOpCode().isNullCheck()) {
+            // The array is non-escaping, so the base pointer is provably non-null.
+            // Fold the NULLCHK to a treetop and reset the aloadi's visit count so
+            // it is forwarded on the next visit.
+            if (vp->trace())
+                logprintf(vp->trace(), vp->comp()->log(),
+                    "ARRAY STORE-SPREAD ELIMINATION   removing NULLCHK n%dn — base is non-null anewarray,"
+                    " will forward aloadi n%dn at next visit\n",
+                    curParent->getGlobalIndex(), node->getGlobalIndex());
+            TR::Node::recreate(curParent, TR::treetop);
+            vp->setChecksRemoved();
+            node->setVisitCount(0);
+        } else if (storedValue != NULL && storedValue->getNumChildren() == 0
+            && performTransformation(vp->comp(),
+                "%sARRAY STORE-SPREAD ELIMINATION replacing aloadi n%dn with forwarded value n%dn\n", OPT_DETAILS,
+                node->getGlobalIndex(), storedValue->getGlobalIndex())) {
+            // Propagate constraint from the stored value if it was established globally.
+            bool isGlobalFwd = false;
+            TR::VPConstraint *fwdConstraint = vp->getConstraint(storedValue, isGlobalFwd);
+            if (fwdConstraint && isGlobalFwd)
+                vp->addGlobalConstraint(node, fwdConstraint);
+
+            // Queue the awrtbari for deferred removal
+            CS2::HashIndex storeTTIdx;
+            if (vp->_arraySlotStoreTTMap.Locate(key, storeTTIdx)) {
+                TR::TreeTop *storeTT = vp->_arraySlotStoreTTMap[storeTTIdx];
+                if (storeTT != NULL) {
+                    if (vp->trace())
+                        logprintf(vp->trace(), vp->comp()->log(),
+                            "ARRAY STORE-SPREAD ELIMINATION   queuing forwarded store treetop n%dn for removal\n",
+                            storeTT->getNode()->getGlobalIndex());
+
+                    uint32_t arrayVN = (uint32_t)(key >> 32);
+                    CS2::HashIndex fwdListIdx;
+                    TR_ScratchList<TR::TreeTop> *fwdList = NULL;
+                    if (vp->_forwardedStoreTreesToRemove.Locate(arrayVN, fwdListIdx)) {
+                        fwdList = vp->_forwardedStoreTreesToRemove[fwdListIdx];
+                    } else {
+                        fwdList = new (vp->trHeapMemory()) TR_ScratchList<TR::TreeTop>(vp->trMemory());
+                        vp->_forwardedStoreTreesToRemove.Add(arrayVN, fwdList);
+                    }
+                    fwdList->add(storeTT);
+
+                    // null so that multliple loads of the same array slot do not queue the same awrtbari for removal
+                    // more than once
+                    vp->_arraySlotStoreTTMap[storeTTIdx] = NULL;
+
+                    // compressed-ref jvms have a compressedref TreeTop right after an address store
+                    // we need to remove it as well if we are removing the store
+                    if (vp->comp()->useCompressedPointers()) {
+                        TR::TreeTop *nextTT = storeTT->getNextTreeTop();
+                        TR::Node *storeNode = storeTT->getNode();
+                        if (storeNode->getNumChildren() >= 1)
+                            storeNode = storeNode->getFirstChild();
+                        if (nextTT != NULL && nextTT->getNode()->getOpCodeValue() == TR::compressedRefs
+                            && nextTT->getNode()->getNumChildren() >= 1
+                            && (nextTT->getNode()->getFirstChild() == storeTT->getNode()
+                                || nextTT->getNode()->getFirstChild() == storeNode)) {
+                            if (vp->trace())
+                                logprintf(vp->trace(), vp->comp()->log(),
+                                    "ARRAY STORE-SPREAD ELIMINATION   queuing compressedRefs anchor n%dn for removal\n",
+                                    nextTT->getNode()->getGlobalIndex());
+                            fwdList->add(nextTT);
+                        }
+                    }
+                }
+            }
+
+            // Defer the actual aloadi rewrite to doDelayedTransformations so that
+            // escape detection can still cancel it by setting the pair key to NULL.
+            vp->_pendingAloadiRecreates.add(new (vp->trHeapMemory()) TR_Pair<TR::Node, TR::Node>(node, storedValue));
+            if (vp->trace())
+                logprintf(vp->trace(), vp->comp()->log(),
+                    "ARRAY STORE-SPREAD ELIMINATION   queued aloadi n%dn (rc=%d) for deferred morph to %s\n",
+                    node->getGlobalIndex(), node->getReferenceCount(), storedValue->getOpCode().getName());
+            return node;
+        }
+    }
+
     bool isGlobal;
 
     // an indirectly loaded object cannot be a stack object
@@ -2550,6 +2657,47 @@ TR::Node *constrainAstore(OMR::ValuePropagation *vp, TR::Node *node)
         //
         vp->invalidateParmConstraintsIfNeeded(node, constraint);
     }
+
+    // Array store-spread elimination.
+    if (vp->_isGlobalPropagation && !vp->_liveAnewarrays.IsEmpty()) {
+        if (node->getSymbol()->isAutoOrParm() && !node->getOpCode().isIndirect()) {
+            // Track direct stores of the anewarray to a local — dead once the allocation is eliminated.
+            int32_t valueVN = vp->getValueNumber(node->getFirstChild());
+            CS2::HashIndex liveIdx;
+            if (vp->_liveAnewarrays.Locate(valueVN, liveIdx) && vp->_liveAnewarrays[liveIdx] != NULL) {
+                uint32_t arrayVN = (uint32_t)valueVN;
+                CS2::HashIndex localListIdx;
+                TR_ScratchList<TR::TreeTop> *localList = NULL;
+                if (vp->_forwardedLocalStoreTreesToRemove.Locate(arrayVN, localListIdx)) {
+                    localList = vp->_forwardedLocalStoreTreesToRemove[localListIdx];
+                } else {
+                    localList = new (vp->trHeapMemory()) TR_ScratchList<TR::TreeTop>(vp->trMemory());
+                    vp->_forwardedLocalStoreTreesToRemove.Add(arrayVN, localList);
+                }
+                localList->add(vp->_curTree);
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   recording local astore n%dn of anewarray VN=%u for deferred "
+                        "removal\n",
+                        node->getGlobalIndex(), arrayVN);
+            }
+        } else if (!node->getSymbol()->isAutoOrParm()) {
+            // Escape via store to a non-local; awrtbar/awrtbari go through constrainWrtBar.
+            TR::Node *valueChild = node->getOpCode().isIndirect() ? node->getSecondChild() : node->getFirstChild();
+            int32_t valueVN = vp->getValueNumber(valueChild);
+            CS2::HashIndex liveIdx;
+            if (vp->_liveAnewarrays.Locate(valueVN, liveIdx) && vp->_liveAnewarrays[liveIdx] != NULL) {
+                TR::Node *arrNode = vp->_liveAnewarrays[liveIdx];
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   anewarray n%dn escapes via astore n%dn — invalidating\n",
+                        arrNode->getGlobalIndex(), node->getGlobalIndex());
+                removeArrayForwardingEntries(vp, arrNode);
+                vp->_liveAnewarrays[liveIdx] = NULL;
+            }
+        }
+    }
+
     return node;
 }
 
@@ -2828,6 +2976,162 @@ TR::Node *constrainWrtBar(OMR::ValuePropagation *vp, TR::Node *node)
         }
     }
 
+    // do not do array store-spread elimination
+    if (!node->getOpCode().isWrtBar() || !vp->_isGlobalPropagation || vp->_liveAnewarrays.IsEmpty())
+        return node;
+
+    // record awrtbari slot stores; detect escapes.
+    int32_t valueChildIdx = node->getOpCode().isIndirect() ? 1 : 0;
+    if (node->getNumChildren() > valueChildIdx) {
+        int32_t storeValueVN = vp->getValueNumber(node->getChild(valueChildIdx));
+        CS2::HashIndex liveIdx;
+        // Array escapes: the tracked anewarray is stored as the value into any wrtbar.
+        if (vp->_liveAnewarrays.Locate(storeValueVN, liveIdx) && vp->_liveAnewarrays[liveIdx] != NULL) {
+            TR::Node *arrNode = vp->_liveAnewarrays[liveIdx];
+            if (vp->trace())
+                logprintf(vp->trace(), vp->comp()->log(),
+                    "ARRAY STORE-SPREAD ELIMINATION   anewarray n%dn escapes via wrtbar n%dn value child — "
+                    "invalidating\n",
+                    arrNode->getGlobalIndex(), node->getGlobalIndex());
+            removeArrayForwardingEntries(vp, arrNode);
+            vp->_liveAnewarrays[liveIdx] = NULL;
+        }
+    }
+
+    // awrtbari into a constant-offset slot of a tracked array.
+    if (node->getOpCodeValue() == TR::awrtbari && node->getSymbolReference()->getSymbol()->isArrayShadowSymbol()
+        && node->getNumChildren() >= 3 && node->getChild(0)->getOpCode().isArrayRef()) {
+        TR::Node *addrChild = node->getChild(0);
+        TR::Node *storeBase = addrChild->getFirstChild();
+        TR::Node *offsetNode = addrChild->getSecondChild();
+
+        if (!offsetNode->getOpCode().isLoadConst())
+            return node;
+
+        int32_t baseVN = vp->getValueNumber(storeBase);
+        CS2::HashIndex liveIdx;
+        if (vp->_liveAnewarrays.Locate(baseVN, liveIdx) && vp->_liveAnewarrays[liveIdx] != NULL) {
+            TR::Node *arrNode = vp->_liveAnewarrays[liveIdx];
+            TR::Node *valueChild = node->getChild(1);
+
+            // The value forwarded to aloadi's and also used to fill the cold-block clone:
+            // a constant/address (immutable, forwarded directly) or a load from a temp.
+            TR::Node *forwardedValue = NULL;
+
+            if (valueChild->getOpCode().isLoadConst() || valueChild->getOpCodeValue() == TR::loadaddr) {
+                // Constants and addresses of symbols never change and can be forwarded directly.
+                forwardedValue = valueChild;
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   value n%dn is immutable %s — forwarding directly\n",
+                        valueChild->getGlobalIndex(), valueChild->getOpCode().getName());
+            } else {
+                // Determine the anchor treetop after which the temp astore will be
+                // inserted (deferred to doDelayedTransformations):
+                //   - aload of single-def auto  → insert after its defining store
+                //   - anything else             → insert immediately before the wrtbari
+                //                                 (i.e. after its predecessor treetop)
+                TR::TreeTop *anchorTT = vp->_curTree->getPrevTreeTop();
+                TR::Node *storedValue = valueChild;
+                bool anchoredAtDef = false;
+
+                if (valueChild->getOpCode().isLoadVarDirect() && valueChild->getOpCode().hasSymbolReference()
+                    && valueChild->getSymbol()->isAuto()) {
+                    TR_UseDefInfo *useDefInfo = vp->_useDefInfo;
+                    if (useDefInfo && useDefInfo->isUseIndex(valueChild->getUseDefIndex())) {
+                        TR_UseDefInfo::BitVector valDefs(vp->comp()->allocator());
+                        if (useDefInfo->getUseDef(valDefs, valueChild->getUseDefIndex())
+                            && valDefs.PopulationCount() == 1) {
+                            TR_UseDefInfo::BitVector::Cursor vc(valDefs);
+                            vc.SetToFirstOne();
+                            int32_t reachingDefIdx = (int32_t)vc;
+                            if (reachingDefIdx >= useDefInfo->getFirstRealDefIndex()) {
+                                TR::TreeTop *defTT = useDefInfo->getTreeTop(reachingDefIdx);
+                                if (defTT != NULL && defTT->getNode()->getOpCode().isStoreDirect()) {
+                                    anchorTT = defTT;
+                                    anchoredAtDef = true;
+                                    storedValue = TR::Node::createWithSymRef(valueChild->getOpCodeValue(), 0,
+                                        valueChild->getSymbolReference());
+                                    if (vp->trace())
+                                        logprintf(vp->trace(), vp->comp()->log(),
+                                            "ARRAY STORE-SPREAD ELIMINATION   capturing Auto '%s' right after defining "
+                                            "store n%dn\n",
+                                            valueChild->getSymbolReference()->getName(vp->comp()->getDebug()),
+                                            defTT->getNode()->getGlobalIndex());
+                                }
+                            }
+                        }
+                    }
+                }
+
+                TR::SymbolReference *tempSymRef
+                    = vp->comp()->getSymRefTab()->createTemporary(vp->comp()->getMethodSymbol(), TR::Address);
+                TR::Node *astoreNode = TR::Node::createWithSymRef(TR::astore, 1, 1, storedValue, tempSymRef);
+                TR::TreeTop *astoreTT = TR::TreeTop::create(vp->comp(), astoreNode, NULL, NULL);
+
+                TR_ScratchList<OMR::ValuePropagation::VPTreeTopPair> *astoreList = NULL;
+                CS2::HashIndex astoreListIdx;
+                if (vp->_pendingAstoreInsertions.Locate((uint32_t)baseVN, astoreListIdx)) {
+                    astoreList = vp->_pendingAstoreInsertions[astoreListIdx];
+                } else {
+                    astoreList
+                        = new (vp->trHeapMemory()) TR_ScratchList<OMR::ValuePropagation::VPTreeTopPair>(vp->trMemory());
+                    vp->_pendingAstoreInsertions.Add((uint32_t)baseVN, astoreList);
+                }
+                astoreList->add(new (vp->trHeapMemory()) OMR::ValuePropagation::VPTreeTopPair(anchorTT, astoreTT));
+
+                forwardedValue = TR::Node::createWithSymRef(TR::aload, 0, tempSymRef);
+                forwardedValue->setReferenceCount(1);
+
+                // Copy value number and constraints from the original value child
+                if (vp->_isGlobalPropagation && vp->_valueNumberInfo != NULL) {
+                    vp->_valueNumberInfo->setValueNumber(astoreNode, storedValue);
+                    vp->_valueNumberInfo->setValueNumber(forwardedValue, storedValue);
+                }
+
+                bool isGlobal = false;
+                TR::VPConstraint *c = vp->getConstraint(valueChild, isGlobal);
+                if (c != NULL) {
+                    vp->addBlockOrGlobalConstraint(forwardedValue, c, isGlobal);
+                }
+
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   privatized value n%dn into fresh astore/aload temp #%d "
+                        "(%s)\n",
+                        valueChild->getGlobalIndex(), tempSymRef->getReferenceNumber(),
+                        anchoredAtDef ? "after def store" : "before wrtbar");
+            }
+
+            if (forwardedValue != NULL) {
+                int64_t offset
+                    = offsetNode->getOpCode().isLong() ? offsetNode->getLongInt() : (int64_t)offsetNode->getInt();
+
+                uint64_t key = ((uint64_t)(uint32_t)baseVN << 32) | (uint64_t)(uint32_t)offset;
+
+                CS2::HashIndex fwdIdx;
+                if (!vp->_arraySlotValueMap.Locate(key, fwdIdx)) {
+                    vp->_arraySlotValueMap.Add(key, forwardedValue);
+                    vp->_arraySlotStoreTTMap.Add(key, vp->_curTree);
+                    if (vp->trace())
+                        logprintf(vp->trace(), vp->comp()->log(),
+                            "ARRAY STORE-SPREAD ELIMINATION   mapped [anewarray n%dn VN=%d offset %lld] -> value "
+                            "n%dn\n",
+                            arrNode->getGlobalIndex(), baseVN, (long long)offset, forwardedValue->getGlobalIndex());
+                } else {
+                    // Same slot written twice — purge all entries for this array.
+                    if (vp->trace())
+                        logprintf(vp->trace(), vp->comp()->log(),
+                            "ARRAY STORE-SPREAD ELIMINATION   slot [anewarray n%dn offset %lld] written twice (n%dn) — "
+                            "purging\n",
+                            arrNode->getGlobalIndex(), (long long)offset, node->getGlobalIndex());
+                    removeArrayForwardingEntries(vp, arrNode);
+                    vp->_liveAnewarrays[liveIdx] = NULL;
+                }
+            }
+        }
+    }
+
     return node;
 }
 
@@ -2883,6 +3187,23 @@ TR::Node *constrainReturn(OMR::ValuePropagation *vp, TR::Node *node)
     // Remove the current list of block constraints so they don't fall through
     //
     constrainChildren(vp, node);
+
+    // Array store-spread elimination: escape via areturn.
+    if (vp->_isGlobalPropagation && !vp->_liveAnewarrays.IsEmpty() && node->getNumChildren() >= 1
+        && node->getDataType() == TR::Address) {
+        int32_t retVN = vp->getValueNumber(node->getFirstChild());
+        CS2::HashIndex liveIdx;
+        if (vp->_liveAnewarrays.Locate(retVN, liveIdx) && vp->_liveAnewarrays[liveIdx] != NULL) {
+            TR::Node *arrNode = vp->_liveAnewarrays[liveIdx];
+            if (vp->trace())
+                logprintf(vp->trace(), vp->comp()->log(),
+                    "ARRAY STORE-SPREAD ELIMINATION   anewarray n%dn escapes via areturn n%dn — invalidating\n",
+                    arrNode->getGlobalIndex(), node->getGlobalIndex());
+            removeArrayForwardingEntries(vp, arrNode);
+            vp->_liveAnewarrays[liveIdx] = NULL;
+        }
+    }
+
     vp->setUnreachablePath();
     return node;
 }
@@ -3757,6 +4078,64 @@ TR::Node *constrainVariableNewArray(OMR::ValuePropagation *vp, TR::Node *node)
     return node;
 }
 
+// cancels any pending work to be done in doDelayedTransformations.
+// called when the array escapes, or an array element is written to more than once
+static void removeArrayForwardingEntries(OMR::ValuePropagation *vp, TR::Node *arrNode)
+{
+    uint32_t arrayVN = (uint32_t)vp->getValueNumber(arrNode);
+
+    // Collect all slot keys whose upper 32 bits match arrayVN.
+    TR::list<uint64_t, TR::Region &> toRemove(vp->comp()->trMemory()->currentStackRegion());
+    auto fwdCursor = CS2::HashTable<uint64_t, TR::Node *, TR::Allocator>::Cursor(vp->_arraySlotValueMap);
+    for (fwdCursor.SetToFirst(); fwdCursor.Valid(); fwdCursor.SetToNext()) {
+        uint64_t k = vp->_arraySlotValueMap.KeyAt(fwdCursor);
+        if ((k >> 32) == arrayVN)
+            toRemove.push_back(k);
+    }
+
+    // Cancel store and local-astore removal lists for this array — prevents
+    // doDelayedTransformations from removing stores whose loads were cancelled.
+    CS2::HashIndex fwdListIdx;
+    if (vp->_forwardedStoreTreesToRemove.Locate(arrayVN, fwdListIdx))
+        vp->_forwardedStoreTreesToRemove[fwdListIdx] = NULL;
+    CS2::HashIndex localListIdx;
+    if (vp->_forwardedLocalStoreTreesToRemove.Locate(arrayVN, localListIdx))
+        vp->_forwardedLocalStoreTreesToRemove[localListIdx] = NULL;
+
+    // Cancel any pending astore insertions for this array.
+    CS2::HashIndex astoreListIdx;
+    if (vp->_pendingAstoreInsertions.Locate(arrayVN, astoreListIdx))
+        vp->_pendingAstoreInsertions[astoreListIdx] = NULL;
+
+    for (auto k : toRemove) {
+        CS2::HashIndex idx;
+        TR::Node *cancelledValue = NULL;
+        if (vp->_arraySlotValueMap.Locate(k, idx)) {
+            cancelledValue = vp->_arraySlotValueMap[idx];
+            vp->_arraySlotValueMap[idx] = NULL;
+        }
+
+        CS2::HashIndex storeIdx;
+        if (vp->_arraySlotStoreTTMap.Locate(k, storeIdx))
+            vp->_arraySlotStoreTTMap[storeIdx] = NULL;
+
+        // Cancel any pending aloadi morph that used a value from this slot.
+        if (cancelledValue != NULL) {
+            ListIterator<TR_Pair<TR::Node, TR::Node> > recreateList(&vp->_pendingAloadiRecreates);
+            for (TR_Pair<TR::Node, TR::Node> *p = recreateList.getFirst(); p; p = recreateList.getNext()) {
+                if (p->getKey() != NULL && p->getValue() == cancelledValue) {
+                    if (vp->trace())
+                        logprintf(vp->trace(), vp->comp()->log(),
+                            "ARRAY STORE-SPREAD ELIMINATION   cancelling pending morph of aloadi n%dn (escape "
+                            "detected)\n",
+                            p->getKey()->getGlobalIndex());
+                    p->setKey(NULL);
+                }
+            }
+        }
+    }
+}
+
 TR::Node *constrainANewArray(OMR::ValuePropagation *vp, TR::Node *node)
 {
     constrainChildren(vp, node);
@@ -3794,8 +4173,26 @@ TR::Node *constrainANewArray(OMR::ValuePropagation *vp, TR::Node *node)
         if (typeConstraint && typeConstraint->getClassType() && typeConstraint->getClassType()->getClass()) {
             TR_OpaqueClassBlock *arrayClass
                 = vp->fe()->getArrayClassFromComponentClass(typeConstraint->getClassType()->getClass());
-            if (arrayClass)
+            static bool disableArrayStoreSpreadElimination = feGetEnv("TR_disableArrayStoreSpreadElimination") != NULL;
+            if (arrayClass && !disableArrayStoreSpreadElimination && vp->_isGlobalPropagation
+                && sizeNode->getOpCode().isLoadConst() && sizeNode->getInt() <= 3
+                && sizeNode->getInt() > 0
+                // Only track warm-block anewarrays.  Cold-block clones created by constrainCall
+                // are real allocations; re-tracking them would grow the IL unboundedly on subsequent gvp passes.
+                && !isGuardFailureOrOSRBlock(vp)) {
+                int32_t arrayVN = vp->getValueNumber(node);
+                CS2::HashIndex liveIdx;
+                if (!vp->_liveAnewarrays.Locate(arrayVN, liveIdx)) {
+                    vp->_liveAnewarrays.Add(arrayVN, node);
+                    vp->_forwardedAnewArrayTTs.Add(arrayVN, vp->_curTree);
+                    if (vp->trace())
+                        logprintf(vp->trace(), vp->comp()->log(),
+                            "ARRAY STORE-SPREAD ELIMINATION registered anewarray n%dn VN=%d for forwarding\n",
+                            node->getGlobalIndex(), arrayVN);
+                }
+            } else if (arrayClass) {
                 node->setAllocationCanBeRemoved(true);
+            }
         }
     }
 
@@ -4649,10 +5046,105 @@ static bool canFoldNonOverriddenGuard(OMR::ValuePropagation *vp, TR::Node *callN
     return false;
 }
 
+static bool isGuardFailureBlock(TR::Block *block, TR::Compilation *comp)
+{
+    for (auto e = block->getPredecessors().begin(); e != block->getPredecessors().end(); ++e) {
+        TR::Block *pred = toBlock((*e)->getFrom());
+        if (pred == comp->getFlowGraph()->getStart())
+            continue;
+        TR::Node *last = pred->getLastRealTreeTop()->getNode();
+        if (last->isTheVirtualGuardForAGuardedInlinedCall()
+            && last->getBranchDestination()->getEnclosingBlock() == block)
+            return true;
+    }
+    return false;
+}
+
+static bool isGuardFailureOrOSRBlock(OMR::ValuePropagation *vp)
+{
+    TR::Block *block = vp->_curBlock;
+    return block->isOSRCodeBlock() || block->isOSRCatchBlock() || block->isOSRInduceBlock()
+        || isGuardFailureBlock(block, vp->comp());
+}
+
 TR::Node *constrainCall(OMR::ValuePropagation *vp, TR::Node *node)
 {
     OMR::Logger *log = vp->comp()->log();
     constrainChildren(vp, node);
+
+    // Array store-spread elimination: handle escapes through call arguments.
+    if (vp->_isGlobalPropagation && !vp->_liveAnewarrays.IsEmpty()) {
+        bool inColdBlock = isGuardFailureOrOSRBlock(vp);
+
+        int32_t firstArgIndex = node->getFirstArgumentIndex();
+        for (int32_t i = firstArgIndex; i < node->getNumChildren(); ++i) {
+            int32_t argVN = vp->getValueNumber(node->getChild(i));
+            CS2::HashIndex liveIdx;
+            if (!vp->_liveAnewarrays.Locate(argVN, liveIdx) || vp->_liveAnewarrays[liveIdx] == NULL)
+                continue;
+
+            TR::Node *arrNode = vp->_liveAnewarrays[liveIdx];
+
+            if (!inColdBlock) {
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   anewarray n%dn escapes via call arg %d of n%dn — "
+                        "invalidating\n",
+                        arrNode->getGlobalIndex(), i, node->getGlobalIndex());
+                removeArrayForwardingEntries(vp, arrNode);
+                vp->_liveAnewarrays[liveIdx] = NULL;
+            } else {
+                // The call is in a cold (guard-failure/OSR) block.  Clone a fresh
+                // anewarray here and redirect the call arg to it, preserving the
+                // warm-path array for elimination.
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   anewarray n%dn escapes via call arg %d of n%dn in cold block"
+                        " — cloning fresh anewarray\n",
+                        arrNode->getGlobalIndex(), i, node->getGlobalIndex());
+
+                TR::Node *origSize = arrNode->getFirstChild();
+                TR::Node *origType = arrNode->getSecondChild();
+                TR::Node *newSize = TR::Node::create(arrNode, TR::iconst, 0, origSize->getInt());
+                TR::Node *newType = TR::Node::copy(origType);
+                TR::SymbolReference *symRef = vp->comp()->getSymRefTab()->findOrCreateANewArraySymbolRef(
+                    origType->getSymbolReference()->getOwningMethodSymbol(vp->comp()));
+                TR::Node *newArr = TR::Node::createWithSymRef(arrNode, TR::anewarray, 2, symRef);
+                // we do not want stack allocation in the cold path, as this may insert extra instructions in the
+                // prologue
+                newArr->setHeapificationAlloc(true);
+                newArr->setAndIncChild(0, newSize);
+                newArr->setAndIncChild(1, newType);
+
+                // Defer insertion and arg redirect to doDelayedTransformations,
+                // which skips this rebuild if the opt was invalidated later.
+                TR::TreeTop *newArrTT = OMR::TreeTop::create(vp->comp(), TR::Node::create(TR::treetop, 1, newArr));
+
+                uint32_t origArrayVN = (uint32_t)argVN;
+                OMR::ValuePropagation::ColdArrayRebuild *rebuild
+                    = new (vp->trHeapMemory()) OMR::ValuePropagation::ColdArrayRebuild(newArrTT, vp->_curTree, node, i,
+                        origArrayVN, vp->comp()->allocator());
+
+                // Snapshot the slots forwarded so far: only stores that precede this call
+                // may be replayed into the cold clone.
+                auto slotCursor = CS2::HashTable<uint64_t, TR::Node *, TR::Allocator>::Cursor(vp->_arraySlotValueMap);
+                for (slotCursor.SetToFirst(); slotCursor.Valid(); slotCursor.SetToNext()) {
+                    uint64_t slotKey = vp->_arraySlotValueMap.KeyAt(slotCursor);
+                    TR::Node *slotValue = vp->_arraySlotValueMap[slotCursor];
+                    if ((slotKey >> 32) != origArrayVN || slotValue == NULL)
+                        continue;
+                    int64_t slotOffset = (int64_t)(int32_t)(uint32_t)(slotKey & 0xffffffffu);
+                    rebuild->_slotValues.Add(slotOffset, slotValue);
+                }
+
+                vp->_coldArrayRebuilds.add(rebuild);
+                if (vp->trace())
+                    logprintf(vp->trace(), vp->comp()->log(),
+                        "ARRAY STORE-SPREAD ELIMINATION   cold clone n%dn for call arg %d of n%dn deferred\n",
+                        newArr->getGlobalIndex(), i, node->getGlobalIndex());
+            }
+        }
+    }
 
     if (vp->lastTimeThrough() && vp->_isGlobalPropagation) {
         CallNodeToGuardNodesMap *map = vp->_callNodeToGuardNodes;
@@ -9617,8 +10109,46 @@ TR::Node *constrainSwitch(OMR::ValuePropagation *vp, TR::Node *node)
     // if something is known about the selector, some
     // of the cases can be removed
     //
-    // FIXME: process only lookupswitches for now
+
+    // For TR::table with a constant selector, fold to a direct goto.
+    // child 0 = selector, child 1 = default, children 2..N = cases 0..N-3.
     //
+    static bool addTableHandling = feGetEnv("addTableHandling") != NULL;
+    if (node->getOpCodeValue() == TR::table && addTableHandling) {
+        TR::Node *selector = node->getFirstChild();
+        bool isGlobal;
+        TR::VPConstraint *constraint = vp->getConstraint(selector, isGlobal);
+        if (constraint && constraint->asIntConstraint()
+            && constraint->asIntConstraint()->getLow() == constraint->asIntConstraint()->getHigh()
+            && performTransformation(vp->comp(), "%sFolding TR::table n%un with constant selector %d to goto\n",
+                OPT_DETAILS, node->getGlobalIndex(), constraint->asIntConstraint()->getLow())) {
+            int32_t val = constraint->asIntConstraint()->getLow();
+            int32_t numCases = node->getNumChildren() - 2; // excludes selector and default
+            TR::TreeTop *targetTT = (val >= 0 && val < numCases) ? node->getChild(val + 2)->getBranchDestination()
+                                                                 : node->getChild(1)->getBranchDestination(); // default
+            TR::Block *targetBlock = targetTT->getNode()->getBlock();
+
+            // Mark all successor edges except the chosen one as unreachable
+            //
+            TR::CFGEdge *takenEdge = vp->findOutEdge(vp->_curBlock->getSuccessors(), targetBlock);
+            for (auto e = vp->_curBlock->getSuccessors().begin(); e != vp->_curBlock->getSuccessors().end(); ++e) {
+                if (*e != takenEdge) {
+                    vp->setUnreachablePath(*e);
+                    vp->_edgesToBeRemoved->add(*e);
+                }
+            }
+
+            // Replace the switch with a goto to the chosen target
+            //
+            vp->removeChildren(node, false);
+            TR::Node::recreate(node, TR::Goto);
+            node->setBranchDestination(targetTT);
+            vp->setEnableSimplifier();
+            vp->setUnreachablePath();
+            return node;
+        }
+    }
+
     if (node->getOpCodeValue() != TR::table) {
         TR::Node *selector = node->getFirstChild();
         bool isGlobal;

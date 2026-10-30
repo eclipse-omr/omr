@@ -980,6 +980,67 @@ public:
     TR_ValueNumberInfo *_valueNumberInfo; // Cached value number info
     CS2::HashTable<uint64_t, TR::list<TR::Node *> *, TR::Allocator> _constNodeInfo;
 
+    // Array store-spread elimination state.
+    // Warm-block anewarrays under active tracking — VN -> node.  Entries are nulled on escape
+    CS2::HashTable<int32_t, TR::Node *, TR::Allocator> _liveAnewarrays;
+
+    // VN -> treetop of the anewarray, for physical removal once all stores are forwarded.
+    CS2::HashTable<int32_t, TR::TreeTop *, TR::Allocator> _forwardedAnewArrayTTs;
+
+    // (anewarray_VN << 32 | constant_byte_offset) -> leaf value written by the awrtbari.
+    // populated by constrainWrtBar, consumed by constrainAloadi.
+    CS2::HashTable<uint64_t, TR::Node *, TR::Allocator> _arraySlotValueMap;
+
+    // (anewarray_VN << 32 | constant_byte_offset) -> treetop of the awrtbari.  Set to NULL when a second store hits the
+    // same slot, preventing removal of either store.
+    CS2::HashTable<uint64_t, TR::TreeTop *, TR::Allocator> _arraySlotStoreTTMap;
+
+    // arrayVN -> list of awrtbari treetops queued for deferred removal.
+    CS2::HashTable<uint32_t, TR_ScratchList<TR::TreeTop> *, TR::Allocator> _forwardedStoreTreesToRemove;
+
+    // arrayVN -> list of astore-to-local treetops that hold the live anewarray.
+    CS2::HashTable<uint32_t, TR_ScratchList<TR::TreeTop> *, TR::Allocator> _forwardedLocalStoreTreesToRemove;
+
+    // stores the values that must be re-written to a new array in cold blocks
+    struct ColdArrayRebuild {
+        TR_ALLOC(TR_Memory::ValuePropagation)
+
+        ColdArrayRebuild(TR::TreeTop *anewarrayTT, TR::TreeTop *insertBeforeTT, TR::Node *callNode, int32_t argIndex,
+            uint32_t origArrayVN, TR::Allocator allocator)
+            : _anewarrayTT(anewarrayTT)
+            , _insertBeforeTT(insertBeforeTT)
+            , _callNode(callNode)
+            , _argIndex(argIndex)
+            , _origArrayVN(origArrayVN)
+            , _slotValues(allocator)
+        {}
+
+        TR::TreeTop *_anewarrayTT; // uninserted anewarray TreeTop
+        TR::TreeTop *_insertBeforeTT; // insert _anewarrayTT before this treetop
+        TR::Node *_callNode; // the call whose arg is to be redirected
+        int32_t _argIndex; // index of the arg to redirect
+        uint32_t _origArrayVN; // VN of the warm-path original
+
+        // the values stored to the original array, keyed by the offset into the array.
+        // stores a temp slot load node when the value is a non-leaf node, or the value itself when its a leaf node
+        CS2::HashTable<int64_t, TR::Node *, TR::Allocator> _slotValues;
+    };
+
+    // Populated by constrainCall; consumed by doDelayedTransformations.
+    TR_ScratchList<ColdArrayRebuild> _coldArrayRebuilds;
+
+    // Deferred in-place aloadi morphs: key = aloadi to rewrite, value = stored value
+    // whose opcode/symref to adopt.  Escape detection cancels a morph by setting key
+    // to NULL.  Executed after the GVP walk completes to avoid use-def info teardown
+    // while the walk's cached pointer is still live.
+    TR_ScratchList<TR_Pair<TR::Node, TR::Node> > _pendingAloadiRecreates;
+
+    // Deferred astore insertions keyed by array VN.  Each entry is a list of
+    // VPTreeTopPair where _treetop1 is the anchor (insert after) and _treetop2
+    // is the astore treetop to insert.  Populated during the GVP walk; cancelled
+    // per-array by removeArrayForwardingEntries; executed by doDelayedTransformations.
+    CS2::HashTable<uint32_t, TR_ScratchList<VPTreeTopPair> *, TR::Allocator> _pendingAstoreInsertions;
+
     // Flags
     //
     bool lastTimeThrough() { return _lastTimeThrough; }

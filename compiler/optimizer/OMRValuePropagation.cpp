@@ -6603,9 +6603,186 @@ bool OMR::ValuePropagation::canClassBeTrustedAsFixedClass(TR::SymbolReference *s
     return true;
 }
 
+static void markHeapificationAllocs(TR::Node *node)
+{
+    if (node == NULL)
+        return;
+    if (node->getOpCode().isNew())
+        node->setHeapificationAlloc(true);
+    for (int32_t i = 0; i < node->getNumChildren(); ++i)
+        markHeapificationAllocs(node->getChild(i));
+}
+
 void OMR::ValuePropagation::doDelayedTransformations()
 {
     OMR::Logger *log = comp()->log();
+
+    // For each cold-block clone: if the warm array survived, insert the anewarray
+    // treetop, redirect the call arg, and inject fill stores.  If the warm array was
+    // invalidated by a later warm-path escape, discard the rebuild entirely.
+    // Must run before the store-removal loop so forwarded value nodes are still intact.
+    if (!_coldArrayRebuilds.isEmpty()) {
+        const bool is64 = comp()->target().is64Bit();
+        TR::SymbolReference *shadowSymRef = comp()->getSymRefTab()->findOrCreateArrayShadowSymbolRef(TR::Address);
+        ListIterator<ColdArrayRebuild> rebuildIt(&_coldArrayRebuilds);
+        for (ColdArrayRebuild *rebuild = rebuildIt.getFirst(); rebuild; rebuild = rebuildIt.getNext()) {
+            // Check whether the warm array survived the GVP walk. There may be multiple arrays tracked so we must check
+            // each array
+            CS2::HashIndex liveIdx;
+            if (!_liveAnewarrays.Locate((int32_t)rebuild->_origArrayVN, liveIdx) || _liveAnewarrays[liveIdx] == NULL) {
+                if (trace())
+                    logprintf(trace(), log,
+                        "VP ARRAY FORWARD:   (delayed) discarding cold clone n%dn — warm array was invalidated\n",
+                        rebuild->_anewarrayTT->getNode()->getFirstChild()->getGlobalIndex());
+                continue;
+            }
+
+            // array survived: insert the clone treetop and redirect the call arg.
+            rebuild->_insertBeforeTT->insertBefore(rebuild->_anewarrayTT);
+            TR::Node *newArr = rebuild->_anewarrayTT->getNode()->getFirstChild();
+            rebuild->_callNode->getChild(rebuild->_argIndex)->decReferenceCount();
+            rebuild->_callNode->setAndIncChild(rebuild->_argIndex, newArr);
+            if (trace())
+                logprintf(trace(), log,
+                    "VP ARRAY FORWARD:   (delayed) inserted cold clone n%dn; redirected call arg %d of n%dn\n",
+                    newArr->getGlobalIndex(), rebuild->_argIndex, rebuild->_callNode->getGlobalIndex());
+
+            TR::TreeTop *insertAfter = rebuild->_anewarrayTT;
+            auto slotCursor = CS2::HashTable<int64_t, TR::Node *, TR::Allocator>::Cursor(rebuild->_slotValues);
+            for (slotCursor.SetToFirst(); slotCursor.Valid(); slotCursor.SetToNext()) {
+                int64_t slotOffset = rebuild->_slotValues.KeyAt(slotCursor);
+                TR::Node *offsetNode
+                    = is64 ? TR::Node::lconst(newArr, slotOffset) : TR::Node::iconst(newArr, (int32_t)slotOffset);
+                TR::Node *addrNode = TR::Node::create(newArr, is64 ? TR::aladd : TR::aiadd, 2, newArr, offsetNode);
+                TR::Node *valueNode = rebuild->_slotValues[slotCursor]->duplicateTree();
+                markHeapificationAllocs(valueNode);
+                TR::Node *storeNode
+                    = TR::Node::createWithSymRef(TR::awrtbari, 3, 3, addrNode, valueNode, newArr, shadowSymRef);
+
+                TR::TreeTop *storeTT = TR::TreeTop::create(comp(), storeNode);
+                insertAfter->insertAfter(storeTT);
+                insertAfter = storeTT;
+
+                if (comp()->useCompressedPointers()) {
+                    TR::TreeTop *anchorTT
+                        = TR::TreeTop::create(comp(), TR::Node::createCompressedRefsAnchor(storeNode));
+                    insertAfter->insertAfter(anchorTT);
+                    insertAfter = anchorTT;
+                }
+
+                if (trace())
+                    logprintf(trace(), log,
+                        "VP ARRAY FORWARD:   (delayed) cold-block store n%dn at offset %lld into new anewarray n%dn\n",
+                        storeNode->getGlobalIndex(), (long long)slotOffset, newArr->getGlobalIndex());
+            }
+        }
+        _coldArrayRebuilds.init();
+    }
+
+    auto fwdCursor
+        = CS2::HashTable<uint32_t, TR_ScratchList<TR::TreeTop> *, TR::Allocator>::Cursor(_forwardedStoreTreesToRemove);
+    for (fwdCursor.SetToFirst(); fwdCursor.Valid(); fwdCursor.SetToNext()) {
+        TR_ScratchList<TR::TreeTop> *fwdList = _forwardedStoreTreesToRemove.DataAt(fwdCursor);
+        if (fwdList == NULL)
+            continue;
+        ListIterator<TR::TreeTop> fwdIt(fwdList);
+        for (TR::TreeTop *storeTT = fwdIt.getFirst(); storeTT; storeTT = fwdIt.getNext()) {
+            if (trace())
+                logprintf(trace(), log, "VP ARRAY FORWARD:   (delayed) removing forwarded store treetop n%dn\n",
+                    storeTT->getNode() ? storeTT->getNode()->getGlobalIndex() : -1);
+            removeNode(storeTT->getNode(), false);
+            TR::TransformUtil::removeTree(comp(), storeTT);
+        }
+
+        // Remove astore-to-local treetops that held the array reference — dead
+        // once the awrtbari stores are gone.
+        int32_t arrayVN = (int32_t)_forwardedStoreTreesToRemove.KeyAt(fwdCursor);
+        CS2::HashIndex localListIdx;
+        if (_forwardedLocalStoreTreesToRemove.Locate((uint32_t)arrayVN, localListIdx)) {
+            TR_ScratchList<TR::TreeTop> *localStoreList = _forwardedLocalStoreTreesToRemove[localListIdx];
+            if (localStoreList != NULL) {
+                ListIterator<TR::TreeTop> localIt(localStoreList);
+                for (TR::TreeTop *localTT = localIt.getFirst(); localTT; localTT = localIt.getNext()) {
+                    if (trace())
+                        logprintf(trace(), log, "VP ARRAY FORWARD:   (delayed) removing local astore treetop n%dn\n",
+                            localTT->getNode() ? localTT->getNode()->getGlobalIndex() : -1);
+                    removeNode(localTT->getNode(), false);
+                    TR::TransformUtil::removeTree(comp(), localTT);
+                }
+            }
+        }
+
+        // All stores forwarded — remove the anewarray treetop.
+        CS2::HashIndex arrIdx;
+        if (_forwardedAnewArrayTTs.Locate(arrayVN, arrIdx)) {
+            TR::TreeTop *arrTT = _forwardedAnewArrayTTs[arrIdx];
+            if (arrTT != NULL) {
+                TR::Node *wrapperNode = arrTT->getNode();
+                TR::Node *arrNode = (wrapperNode->getNumChildren() > 0) ? wrapperNode->getFirstChild() : wrapperNode;
+                if (trace())
+                    logprintf(trace(), log, "VP ARRAY FORWARD:   (delayed) removing anewarray treetop n%dn (rc=%d)\n",
+                        arrNode->getGlobalIndex(), arrNode->getReferenceCount());
+                TR::TransformUtil::removeTree(comp(), arrTT);
+            }
+        }
+
+        // Null the _liveAnewarrays entry so the pass below skips this VN.
+        CS2::HashIndex liveIdx;
+        if (_liveAnewarrays.Locate(arrayVN, liveIdx))
+            _liveAnewarrays[liveIdx] = NULL;
+    }
+    _forwardedStoreTreesToRemove.MakeEmpty();
+    _forwardedLocalStoreTreesToRemove.MakeEmpty();
+    _forwardedAnewArrayTTs.MakeEmpty();
+
+    _arraySlotValueMap.MakeEmpty();
+    _arraySlotStoreTTMap.MakeEmpty();
+    _liveAnewarrays.MakeEmpty();
+
+    // Execute deferred astore insertions (queued during the GVP walk to avoid
+    // mutating the treetop list while the walk is in progress).
+    // Entries nulled out by removeArrayForwardingEntries are skipped.
+    auto astoreCursor
+        = CS2::HashTable<uint32_t, TR_ScratchList<VPTreeTopPair> *, TR::Allocator>::Cursor(_pendingAstoreInsertions);
+    for (astoreCursor.SetToFirst(); astoreCursor.Valid(); astoreCursor.SetToNext()) {
+        TR_ScratchList<VPTreeTopPair> *astoreList = _pendingAstoreInsertions.DataAt(astoreCursor);
+        if (astoreList == NULL)
+            continue;
+        ListIterator<VPTreeTopPair> astoreIt(astoreList);
+        for (VPTreeTopPair *p = astoreIt.getFirst(); p; p = astoreIt.getNext()) {
+            p->_treetop1->insertAfter(p->_treetop2);
+            if (trace())
+                logprintf(trace(), log, "ARRAY STORE-SPREAD ELIMINATION   (delayed) inserted astore n%dn after n%dn\n",
+                    p->_treetop2->getNode()->getGlobalIndex(), p->_treetop1->getNode()->getGlobalIndex());
+        }
+    }
+    _pendingAstoreInsertions.MakeEmpty();
+
+    // Execute deferred aloadi rewrites (queued during the GVP walk; done here
+    // so removeChildren cannot call setUseDefInfo(NULL) while the walk's cached
+    // pointer is still live).
+    ListIterator<TR_Pair<TR::Node, TR::Node> > recreateList(&_pendingAloadiRecreates);
+    for (TR_Pair<TR::Node, TR::Node> *p = recreateList.getFirst(); p; p = recreateList.getNext()) {
+        TR::Node *load = p->getKey();
+        TR::Node *storedValue = p->getValue();
+        if (load == NULL) // cancelled by escape detection
+            continue;
+        removeChildren(load);
+        if (storedValue->getOpCode().hasSymbolReference())
+            TR::Node::recreateWithSymRef(load, storedValue->getOpCodeValue(), storedValue->getSymbolReference());
+        else
+            TR::Node::recreate(load, storedValue->getOpCodeValue());
+        // recreate() does not transfer _constValue; copy the address for aconst nodes.
+        if (load->getOpCodeValue() == TR::aconst)
+            load->setAddress(storedValue->getAddress());
+        invalidateUseDefInfo();
+        invalidateValueNumberInfo();
+        if (trace())
+            logprintf(trace(), log, "VP ARRAY FORWARD:   (delayed) morphed aloadi n%dn in-place to %s\n",
+                load->getGlobalIndex(), storedValue->getOpCode().getName());
+    }
+    _pendingAloadiRecreates.init();
+
     ListIterator<TR_TreeTopNodePair> treesIt1(&_scalarizedArrayCopies);
     TR_TreeTopNodePair *scalarizedArrayCopy;
     for (scalarizedArrayCopy = treesIt1.getFirst(); scalarizedArrayCopy; scalarizedArrayCopy = treesIt1.getNext()) {
