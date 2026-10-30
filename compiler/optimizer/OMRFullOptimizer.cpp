@@ -643,9 +643,8 @@ OMR::FullOptimizer::FullOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbo
     // NOTE: Please add new OMR optimization groups here!
 
     TR_Hotness hotness = comp->getMethodHotness();
-    TR_ASSERT(hotness <= lastOMRStrategy, "Invalid optimization strategy");
 
-    // Downgrade strategy rather than crashing in prod.
+    // Methods compiled at very-hot or above use the highest supported OMR strategy.
     if (hotness > lastOMRStrategy)
         hotness = lastOMRStrategy;
 
