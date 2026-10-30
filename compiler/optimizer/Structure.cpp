@@ -2913,6 +2913,7 @@ void TR_RegionStructure::computeInvariantExpressions()
 
     int32_t nodeCount = comp()->getNodeCount();
     _invariantExpressions = new (trStackMemory()) TR_BitVector(nodeCount, trMemory(), stackAlloc, growable);
+    _precomputedInvariantsUpperBound = nodeCount;
 
     TR_ScratchList<TR::Block> blocksInRegion(trMemory());
     getBlocks(&blocksInRegion);
@@ -2952,6 +2953,7 @@ void TR_RegionStructure::resetInvariance()
 {
     _invariantSymbols = NULL;
     _invariantExpressions = NULL;
+    _precomputedInvariantsUpperBound = 0;
 }
 
 bool TR_RegionStructure::isExprInvariant(TR::Node *expr, bool usePrecomputed)
@@ -2960,8 +2962,9 @@ bool TR_RegionStructure::isExprInvariant(TR::Node *expr, bool usePrecomputed)
         // A node created after the invariant expressions were precomputed will have a
         // global index outside the scanned set and its bit will be 0.  Fall back to the
         // live symbol check so that such nodes are not incorrectly treated as variant.
-        if ((int32_t)expr->getGlobalIndex() < (int32_t)_invariantExpressions->elementCount())
+        if ((int32_t)expr->getGlobalIndex() < _precomputedInvariantsUpperBound) {
             return _invariantExpressions->get(expr->getGlobalIndex()) != 0;
+        }
         return isExprTreeInvariant(expr);
     }
 

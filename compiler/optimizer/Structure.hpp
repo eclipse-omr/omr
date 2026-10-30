@@ -473,6 +473,7 @@ public:
         , _exitEdges(c->getFlowGraph()->structureMemoryRegion())
         , _subNodes(c->getFlowGraph()->structureMemoryRegion())
         , _invariantExpressions(NULL)
+        , _precomputedInvariantsUpperBound(0)
     {}
 
     virtual Kind getKind();
@@ -764,6 +765,7 @@ private:
     float _frequencyEntryFactor;
 
     TR_BitVector *_invariantExpressions;
+    int32_t _precomputedInvariantsUpperBound;
     uint16_t _unrollFactor;
 };
 
