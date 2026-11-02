@@ -18,6 +18,7 @@
  * [2] https://openjdk.org/legal/assembly-exception.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+ * Assisted-by: IBM Bob
  *******************************************************************************/
 
 /**
@@ -33,6 +34,35 @@
 #include "omrportpriv.h"
 #include "omrintrospect.h"
 #include "omrsignal_context.h"
+
+/* Backstop against corrupt stacks: the strictly-increasing link check should already prevent
+ * cycles, but cap the number of frames walked so a damaged back chain can never make us
+ * allocate without bound.
+ */
+#define AIX_MAX_BACKTRACE_DEPTH 4096
+
+/* AIX stack frames are 16-byte aligned in both 32-bit and 64-bit mode. */
+#define AIX_STACK_FRAME_ALIGNMENT 16
+
+/**
+ * Check that a back chain link is plausible before it is followed. The AIX stack grows
+ * downward and link points from a callee to its caller, so a valid back chain ends in NULL
+ * or moves strictly toward higher, 16-byte aligned addresses. The link is never dereferenced.
+ * @param[in] frame the current stack frame
+ * @param[in] next the link read from the current stack frame
+ * @return TRUE if next is NULL or a plausible caller frame, FALSE otherwise
+ */
+static BOOLEAN
+isValidBackChainLink(const AIXStackFrame *frame, const AIXStackFrame *next)
+{
+	if (NULL == next) {
+		return TRUE;
+	}
+	if ((uintptr_t)frame >= (uintptr_t)next) {
+		return FALSE;
+	}
+	return (0 == ((uintptr_t)next & (AIX_STACK_FRAME_ALIGNMENT - 1))) ? TRUE : FALSE;
+}
 
 char *
 tbtable_name(struct tbtable *table, short *length)
@@ -116,21 +146,35 @@ omrintrospect_backtrace_thread_raw(struct OMRPortLibrary *portLibrary, J9Platfor
 
 	frame = (AIXStackFrame *)threadInfo->context->uc_mcontext.jmp_context.gpr[1];
 
-	if (frame != NULL) {
+	if (NULL != frame) {
 		/* the top frame is always incomplete */
-		frame = frame->link;
+		AIXStackFrame *next = frame->link;
+
+		if (isValidBackChainLink(frame, next)) {
+			frame = next;
+		} else {
+			frame = NULL;
+			if (!threadInfo->error) {
+				threadInfo->error = CORRUPT_STACK;
+			}
+		}
 	}
 
 	nextFrame = &threadInfo->callstack;
 
-	for (num_entries = 0; frame != NULL && frame->iar != NULL; num_entries++) {
+	for (num_entries = 0;
+		(num_entries < AIX_MAX_BACKTRACE_DEPTH) && (NULL != frame) && (NULL != frame->iar);
+		num_entries++
+	) {
+		AIXStackFrame *next = NULL;
+
 		if (heap == NULL) {
 			*nextFrame = portLibrary->mem_allocate_memory(portLibrary, sizeof(J9PlatformStackFrame), OMR_GET_CALLSITE(), OMRMEM_CATEGORY_PORT_LIBRARY);
 		} else {
 			*nextFrame = portLibrary->heap_allocate(portLibrary, heap, sizeof(J9PlatformStackFrame));
 		}
 
-		if (*nextFrame == NULL) {
+		if (NULL == *nextFrame) {
 			if (!threadInfo->error) {
 				threadInfo->error = ALLOCATION_FAILURE;
 			}
@@ -146,7 +190,24 @@ omrintrospect_backtrace_thread_raw(struct OMRPortLibrary *portLibrary, J9Platfor
 
 		nextFrame = &(*nextFrame)->parent_frame;
 
-		frame = frame->link;
+		next = frame->link;
+		if (isValidBackChainLink(frame, next)) {
+			frame = next;
+		} else {
+			frame = NULL;
+			if (!threadInfo->error) {
+				threadInfo->error = CORRUPT_STACK;
+			}
+		}
+	}
+
+	/* Stopped by the depth cap with a frame still pending. Don't read that frame: it is
+	 * unverified and the stack may be corrupt, so conservatively treat it as truncation.
+	 */
+	if ((num_entries >= AIX_MAX_BACKTRACE_DEPTH) && (NULL != frame)) {
+		if (!threadInfo->error) {
+			threadInfo->error = CORRUPT_STACK;
+		}
 	}
 
 	return num_entries;

@@ -18,6 +18,7 @@
  * [2] https://openjdk.org/legal/assembly-exception.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+ * Assisted-by: IBM Bob
  *******************************************************************************/
 
 /**
@@ -43,6 +44,7 @@
 #define UNSUPPORTED_PLATFORM	0xB
 #define FAULT_DURING_BACKTRACE  0xC
 #define CONCURRENT_COLLECTION   0xD
+#define CORRUPT_STACK           0xE
 /* to add errors to this set of defines, include the textual error message in omrintrospect_common.c */
 
 /* we overwrite prior speculation, but not previous errors */
