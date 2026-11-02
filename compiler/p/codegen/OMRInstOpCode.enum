@@ -856,7 +856,7 @@
    stxv,             // Store VSX vector
    stxvb16x,         // Store VSX vector byte*16 indexed
    stxvh8x,          // Store VSX vector Hword*8 indexed
-// stxvll,           // Store VSX vector left-justified with length
+   stxvll,           // Store VSX vector left-justified with length
 // stxvx,            // Store VSX vector indexed
 // xsabsqp,          // VSX scalar absolute QP
 // xsaddqp,          // VSX scalar add QP

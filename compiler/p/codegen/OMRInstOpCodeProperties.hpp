@@ -9679,18 +9679,21 @@
         /* .properties  = */ PPCOpProp_IsStore | PPCOpProp_ExcludeR0ForRA | PPCOpProp_IsVSX,
     },
 
-    /* { */
-    /* .mnemonic    =    OMR::InstOpCode::stxvll, */
-    /* .name        =    "stxvll", */
-    /* .description =    "Store VSX vector left-justified with length", */
-    /* .prefix      =    0x00000000, */
-    /* .opcode      =    0x7C00035A, */
-    /* .format      =    FORMAT_UNKNOWN, */
-    /* .minimumALS  =    OMR_PROCESSOR_PPC_P9, */
-    /* .properties  =    PPCOpProp_IsStore | */
-    /*                   PPCOpProp_ExcludeR0ForRA | */
-    /*                   PPCOpProp_IsVSX, */
-    /* }, */
+    {
+        /* .mnemonic    = */ OMR::InstOpCode::stxvll,
+        /* .name        = */ "stxvll",
+        /* .description =    "Store VSX vector left-justified with length", */
+        /* .prefix      = */ 0x00000000,
+        /* .opcode      = */ 0x7C00035A,
+        // Even though stxvll is a memory instruction, its RB register is *not* an index register, so it
+        // should not be used with a TR::MemoryReference.
+        /* .format      = */ FORMAT_XS_RA_RB,
+        // NOTE: This instruction was technically added in Power 9, but the Power 9 chips have
+        //       functional and performance problems with this instruction. As a result, it should not
+        //       be used until Power 10.
+        /* .minimumALS  = */ OMR_PROCESSOR_PPC_P10,
+        /* .properties  = */ PPCOpProp_IsStore | PPCOpProp_ExcludeR0ForRA | PPCOpProp_IsVSX,
+    },
 
     /* { */
     /* .mnemonic    =    OMR::InstOpCode::stxvx, */
