@@ -10037,6 +10037,7 @@ TR::Node *constrainZeroChk(OMR::ValuePropagation *vp, TR::Node *node)
     constrainChildren(vp, node);
     TR::Node *child = node->getFirstChild();
     bool isGlobal;
+    bool checkRemoved = false;
     TR::VPConstraint *nonzeroConstraint
         = TR::VPLongRange::create(vp, TR::getMinSigned<TR::Int64>(), -1)
               ->merge(TR::VPLongRange::create(vp, 1, TR::getMaxSigned<TR::Int64>()), vp);
@@ -10053,15 +10054,19 @@ TR::Node *constrainZeroChk(OMR::ValuePropagation *vp, TR::Node *node)
                 TR::Node::recreate(node, TR::treetop);
                 node->setNumChildren(1);
                 vp->setChecksRemoved();
+                checkRemoved = true;
             }
         }
+    }
 
-        if (!nonzeroConstraint->intersect(childConstraint, vp)) {
-            // Can't be nonzero
-            if (performTransformation(vp->comp(), "%sRemoving inevitable %s [%p]\n", OPT_DETAILS,
-                    node->getOpCode().getName(), node))
-                vp->mustTakeException();
-        }
+    if (!checkRemoved)
+        vp->createExceptionEdgeConstraints(TR::Block::CanCatchEverything, NULL, node);
+
+    if (childConstraint && !nonzeroConstraint->intersect(childConstraint, vp)) {
+        // always zero
+        if (performTransformation(vp->comp(), "%sRemoving inevitable %s [%p]\n", OPT_DETAILS,
+                node->getOpCode().getName(), node))
+            vp->mustTakeException();
     }
 
     // From here onward we know it's nonzero
