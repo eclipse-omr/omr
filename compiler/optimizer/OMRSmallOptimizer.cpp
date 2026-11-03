@@ -311,9 +311,8 @@ OMR::SmallOptimizer::SmallOptimizer(TR::Compilation *comp, TR::ResolvedMethodSym
     self()->setRequestOptimization(OMR::tacticalGlobalRegisterAllocator, true);
 
     TR_Hotness hotness = comp->getMethodHotness();
-    TR_ASSERT(hotness <= lastOMRStrategy, "Invalid optimization strategy");
 
-    // Downgrade strategy rather than crashing in prod.
+    // Methods compiled at very-hot or above use the highest supported OMR strategy.
     if (hotness > lastOMRStrategy)
         hotness = lastOMRStrategy;
 
