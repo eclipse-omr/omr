@@ -4010,7 +4010,7 @@ _delegate.fixupDestroyedSlot(env, &header, _activeSubSpace);
 #endif /* defined (OMR_GC_COMPRESSED_POINTERS) */
 }
 
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 bool
 MM_Scavenger::fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 {
@@ -4068,7 +4068,7 @@ MM_Scavenger::fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t object
 	}
 }
 
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 void
 MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
