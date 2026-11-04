@@ -17,6 +17,7 @@
  * [2] https://openjdk.org/legal/assembly-exception.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+ * Assisted-by: IBM Bob
  *******************************************************************************/
 
 #ifndef LOCALOPTS_INCL
@@ -59,7 +60,7 @@ template<class T> class TR_LinkHeadAndTail;
 
 bool collectSymbolReferencesInNode(TR::Node *node, TR::SparseBitVector &symbolReferencesInNode,
     int32_t *numDeadSubNodes, vcount_t visitCount, TR::Compilation *c, bool *seenInternalPointer = NULL,
-    bool *seenArraylet = NULL, bool *cantMoveUnderBranch = NULL);
+    bool *seenArraylet = NULL, bool *cantMoveUnderBranch = NULL, bool *seenUnsafeAccess = NULL);
 
 /*
  * Class TR_HoistBlocks
