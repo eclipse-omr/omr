@@ -111,7 +111,7 @@ class HeapRegionStateTable;
 #define GLOBALGC_ESTIMATE_FRAGMENTATION 	0x2
 
 /* feature flag to unify abort method for CS and STW */
-#define UNIFY_ABORTED_SCAVENGE
+#define UNIFY_ABORTED_SCAVENGE OMR_GC_MODRON_SCAVENGER
 
 enum ExcessiveLevel {
 	excessive_gc_normal = 0,
