@@ -377,7 +377,7 @@ public:
 	void processRememberedSetInBackout(MM_EnvironmentStandard *env);
 	void completeBackOut(MM_EnvironmentStandard *env);
 
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	void fixupNurserySlots(MM_EnvironmentStandard *env);
 	void fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr);
 	bool fixupSlot(omrobjectptr_t *slotPtr);
@@ -401,7 +401,7 @@ public:
 	MMINLINE void deactivateTenureCopyScanCache(MM_EnvironmentStandard *currentEnv, MM_EnvironmentStandard *targetEnv, bool flushCaches, bool final);
 	MMINLINE void flushInactiveDeferredCopyScanCache(MM_EnvironmentStandard *currentEnv, MM_EnvironmentStandard *targetEnv, bool flushCaches, bool final);
 	MMINLINE void deactivateDeferredCopyScanCache(MM_EnvironmentStandard *currentEnv, MM_EnvironmentStandard *targetEnv, bool flushCaches, bool final);
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 	/**
  	 * Request for percolate GC
