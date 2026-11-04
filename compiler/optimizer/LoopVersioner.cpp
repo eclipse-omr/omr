@@ -4501,14 +4501,22 @@ void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR
 
 #ifdef J9_PROJECT_SPECIFIC
     // Phase-change recompilation trigger.
-    //
-    if (comp()->getMethodHotness() >= hot && comp()->getRecompilationInfo() != NULL
+    // When cold version of the loop is executed in the method compiled above
+    // hot optLevel, a recompilation with profiling would help in getting more
+    // relevant data about the method. Making the check more conservative, to
+    // cover such case.  If profiling from JIT code is disabled or the method is
+    // compiled at hot optLevel, recompilation may not result in any different
+    // outcome if it is executing a cold version of the loop guarded by a test
+    // generated using profiling data as interpreter profiling data may not have
+    // much changes which risks into generating same compiled body.
+    if (comp()->getMethodHotness() > hot && comp()->getRecompilationInfo() != NULL
+        && !comp()->getOption(TR_DisableProfiling)
         && comp()->getOptions()->getColdPathRecompTriggerCount() > 0
         && !(comp()->getOptimizationPlan()->getDoNotInsertPhaseChangeRecomp() || comp()->isProfilingCompilation())
         && !shouldOnlySpecializeLoops() && !_neitherLoopCold
         && performTransformation(comp(),
             "%s Inserting phase-change recompilation counter into cold loop pre-header block_%d\n",
-            OPT_DETAILS_LOOP_VERSIONER, clonedLoopInvariantBlock)) {
+            OPT_DETAILS_LOOP_VERSIONER, clonedLoopInvariantBlock->getNumber())) {
         TR::TransformUtil::insertColdPathCounterRecompilation(comp(), clonedLoopInvariantBlock);
     }
 #endif
