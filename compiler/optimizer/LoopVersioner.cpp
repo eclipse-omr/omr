@@ -1629,15 +1629,23 @@ bool TR_LoopVersioner::annotateLinearIf(TR::Node *ifNode)
 
     // All conditions met: annotate so that isVersionableIfWithExtremum accepts
     // this node and buildConditionalTree can version it away.
+    //
+    // The node may already carry the opposite flag. Flags are copied onto the
+    // tests that versioning emits, and later passes can rewrite the node (e.g.
+    // swap its children or fold a child to a constant) without updating them,
+    // so a flag from an earlier analysis can be stale. The orientation derived
+    // above from the node's current form is authoritative, so replace it.
     dumpOptDetails(comp(), "annotateLinearIf: marking n%un [%p] as versionable with %s expr\n",
         ifNode->getGlobalIndex(), ifNode, isMax ? "max" : "min");
     if (isMax) {
+        ifNode->setIsVersionableIfWithMinExpr(comp(), false);
         ifNode->setIsVersionableIfWithMaxExpr(comp());
-        return ifNode->isVersionableIfWithMaxExpr();
+        return ifNode->isVersionableIfWithMaxExpr() && !ifNode->isVersionableIfWithMinExpr();
     }
 
+    ifNode->setIsVersionableIfWithMaxExpr(comp(), false);
     ifNode->setIsVersionableIfWithMinExpr(comp());
-    return ifNode->isVersionableIfWithMinExpr();
+    return ifNode->isVersionableIfWithMinExpr() && !ifNode->isVersionableIfWithMaxExpr();
 }
 
 bool TR_LoopVersioner::detectInvariantConditionals(TR_RegionStructure *whileLoop, List<TR::TreeTop> *trees,

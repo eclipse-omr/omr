@@ -5998,11 +5998,12 @@ bool OMR::Node::isVersionableIfWithMaxExpr()
     return _flags.testAny(versionIfWithMaxExpr) && self()->getOpCode().isIf();
 }
 
-void OMR::Node::setIsVersionableIfWithMaxExpr(TR::Compilation *c)
+void OMR::Node::setIsVersionableIfWithMaxExpr(TR::Compilation *c, bool v)
 {
     TR_ASSERT(self()->getOpCode().isIf(), "assertion failure");
-    if (performNodeTransformation1(c, "O^O NODE FLAGS: Setting versionIfWithMaxExpr flag on node %p\n", self()))
-        _flags.set(versionIfWithMaxExpr);
+    if (performNodeTransformation2(c, "O^O NODE FLAGS: Setting versionIfWithMaxExpr flag on node %p to %d\n", self(),
+            v))
+        _flags.set(versionIfWithMaxExpr, v);
 }
 
 bool OMR::Node::isVersionableIfWithMinExpr()
@@ -6010,11 +6011,12 @@ bool OMR::Node::isVersionableIfWithMinExpr()
     return _flags.testAny(versionIfWithMinExpr) && self()->getOpCode().isIf();
 }
 
-void OMR::Node::setIsVersionableIfWithMinExpr(TR::Compilation *c)
+void OMR::Node::setIsVersionableIfWithMinExpr(TR::Compilation *c, bool v)
 {
     TR_ASSERT(self()->getOpCode().isIf(), "assertion failure");
-    if (performNodeTransformation1(c, "O^O NODE FLAGS: Setting versionIfWithMinExpr flag on node %p\n", self()))
-        _flags.set(versionIfWithMinExpr);
+    if (performNodeTransformation2(c, "O^O NODE FLAGS: Setting versionIfWithMinExpr flag on node %p to %d\n", self(),
+            v))
+        _flags.set(versionIfWithMinExpr, v);
 }
 
 bool OMR::Node::isStoreAlreadyEvaluated()
