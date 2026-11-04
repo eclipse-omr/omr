@@ -501,7 +501,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		break;
 #if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	case backout:
-		Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->concurrentScavenger);
+		Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled());
 		/* We have objects on both sides of Nursery. We will unify the two sides and do a compacting slide (after percolate global GC)
 		 * Enforce Allocate be in low address range, since compact slide in percolate global GC moves objects to low addresses.
 		 * Note: _allocateSpaceBase/Top are stale (not updated in set_allocate), since they are overloaded to point to Evacuate during an active cycle
