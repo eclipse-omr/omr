@@ -91,7 +91,7 @@ TR::Instruction *MemToMemVarLenMacroOp::generateLoop()
     bool needs64BitOpCode = comp->target().is64Bit();
 
     Kind kind = getKind();
-    bool useOptimizedMemInit = (kind == MemToMemMacroOp::IsMemInit && !disableMemInitMVCSeedOpt());
+    const bool useOptimizedMemInit = (kind == MemToMemMacroOp::IsMemInit && !disableMemInitMVCSeedOpt());
 
     if (useEXForRemainder()) {
         // need to do this before the branch or some
@@ -469,15 +469,11 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
         _dstMR = generateS390MemoryReference(_cg, _rootNode, _dstNode, _offset, true);
     }
 
-    TR_ASSERT_FATAL(!(_dstNode == _srcNode && _srcReg == NULL),
-        "_srcReg must be set before generateLoop() when _srcNode == _dstNode; "
-        "caller failed to initialise _srcReg for node %p", _srcNode);
-
     TR::Instruction *cursor = _cg->getAppendInstruction();
 
     if (disableMemInitMVCSeedOpt()) {
         // Legacy / Disabled path: pre-loop seed byte 0 at offset
-        if (len >= (uint64_t)1) {
+        if (len >= (1ULL) {
             if (_useByteVal)
                 cursor = generateSIInstruction(_cg, TR::InstOpCode::MVI, _rootNode, _dstMR, _byteVal, cursor);
             else
@@ -569,7 +565,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
             int64_t totalCopies = largeCopies;
 
             // the offset may put the displacement beyond 4K
-            if (largeCopies * 256 + _offset >= 4096) {
+            if (((largeCopies * 256) + _offset) >= 4096) {
                 cursor = generateRXInstruction(_cg, TR::InstOpCode::LA, _srcNode, _srcReg,
                     new (_cg->trHeapMemory()) TR::MemoryReference(_srcReg, _offset, _cg), cursor);
                 _offset = 0;
@@ -577,7 +573,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
             int32_t local_offset = 0;
             while (largeCopies > 0) {
-                local_offset = _offset + (totalCopies - largeCopies) * 256;
+                local_offset = _offset + ((totalCopies - largeCopies) * 256);
                 // Seed byte 0 of this block
                 if (_useByteVal)
                     cursor = generateSIInstruction(_cg, TR::InstOpCode::MVI, _rootNode,
