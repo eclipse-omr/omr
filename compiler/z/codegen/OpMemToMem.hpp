@@ -174,7 +174,7 @@ protected:
         , _inRemainder(false)
     {}
 
-    static bool disableMemInitMVCSeedOpt();
+    static bool enableMemInitMVCSeedOpt();
 
     virtual TR::Instruction *generateLoop() = 0;
     virtual TR::Instruction *generateRemainder() = 0;
@@ -327,7 +327,7 @@ public:
         , _initReg(initReg)
         , _useByteVal(false)
     {
-        if (!disableMemInitMVCSeedOpt()) {
+        if (enableMemInitMVCSeedOpt()) {
             int64_t largeCopies = length / 256;
             _needsLoop = !(largeCopies < _maxCopies);
         }
@@ -339,7 +339,7 @@ public:
         , _useByteVal(true)
         , _byteVal(byteVal)
     {
-        if (!disableMemInitMVCSeedOpt()) {
+        if (enableMemInitMVCSeedOpt()) {
             int64_t largeCopies = length / 256;
             _needsLoop = !(largeCopies < _maxCopies);
         }

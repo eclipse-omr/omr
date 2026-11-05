@@ -66,10 +66,10 @@ TR::Register *allocateRegForLiteralPoolBase(TR::CodeGenerator *cg)
         return cg->allocateRegister();
 }
 
-bool MemToMemMacroOp::disableMemInitMVCSeedOpt()
+bool MemToMemMacroOp::enableMemInitMVCSeedOpt()
 {
-    static bool disable = (feGetEnv("TR_DisableMemInitMVCSeedOpt") != NULL);
-    return disable;
+    static bool enable = (feGetEnv("TR_EnableMemInitMVCSeedOpt") != NULL);
+    return enable;
 }
 
 /**
@@ -91,7 +91,7 @@ TR::Instruction *MemToMemVarLenMacroOp::generateLoop()
     bool needs64BitOpCode = comp->target().is64Bit();
 
     Kind kind = getKind();
-    const bool useOptimizedMemInit = (kind == MemToMemMacroOp::IsMemInit && !disableMemInitMVCSeedOpt());
+    const bool useOptimizedMemInit = (kind == MemToMemMacroOp::IsMemInit && enableMemInitMVCSeedOpt());
 
     if (useEXForRemainder()) {
         // need to do this before the branch or some
@@ -119,7 +119,7 @@ TR::Instruction *MemToMemVarLenMacroOp::generateLoop()
             useOptimizedMemInit ? TR::InstOpCode::COND_BNH : TR::InstOpCode::COND_BL, _rootNode, _doneLabel);
     }
     // Don't seed on MemInitMVCSeedOpt path. MVC seed already happens within looping.
-    if (kind == MemToMemMacroOp::IsMemInit && disableMemInitMVCSeedOpt()) {
+    if (kind == MemToMemMacroOp::IsMemInit && !enableMemInitMVCSeedOpt()) {
         generateInstruction(0, 1);
     }
 
@@ -471,7 +471,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
     TR::Instruction *cursor = _cg->getAppendInstruction();
 
-    if (disableMemInitMVCSeedOpt()) {
+    if (!enableMemInitMVCSeedOpt()) {
         // Legacy / Disabled path: pre-loop seed byte 0 at offset
         if (len >= 1) {
             if (_useByteVal)
@@ -1113,7 +1113,7 @@ TR::Instruction *MemInitVarLenMacroOp::generateRemainder()
                 TR::InstOpCode::COND_BNH, _doneLabel, false, false);
 
         if (_firstByteInitialized) {
-            if (!disableMemInitMVCSeedOpt()) {
+            if (enableMemInitMVCSeedOpt()) {
                 // SeedOpt path fills 256-byte blocks only. Seed the start of the remainder block.
                 if (_useByteVal)
                     generateSIInstruction(_cg, TR::InstOpCode::MVI, _rootNode,
@@ -1235,7 +1235,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateInstruction(int32_t offset, int
         return cursor;
     }
 
-    if (disableMemInitMVCSeedOpt()) {
+    if (!enableMemInitMVCSeedOpt()) {
         // Legacy / Disabled path: byte 0 at offset already seeded by generateLoop,
         // and length was decremented by 1. Propagate remaining bytes starting at offset + 1.
         if (_dstNode == _srcNode) {
@@ -1429,7 +1429,7 @@ TR::Instruction *MemInitVarLenMacroOp::generateInstruction(int32_t offset, int64
         return cursor;
     }
 
-    if (!_firstByteInitialized || !disableMemInitMVCSeedOpt()) {
+    if (!_firstByteInitialized || enableMemInitMVCSeedOpt()) {
         // Seed the current block first byte.
         // If Opt enabled:  every call needs its own seed
         // Opt disabled: only seed on the very first call (legacy impl)
@@ -1444,7 +1444,7 @@ TR::Instruction *MemInitVarLenMacroOp::generateInstruction(int32_t offset, int64
     }
 
     if (length > 1) {
-        uint16_t mvcField = static_cast<uint16_t>(disableMemInitMVCSeedOpt() ? length - 1 : length - 2);
+        uint16_t mvcField = static_cast<uint16_t>(!enableMemInitMVCSeedOpt() ? length - 1 : length - 2);
         cursor = generateSS1Instruction(_cg, TR::InstOpCode::MVC, _rootNode, mvcField,
             new (_cg->trHeapMemory()) TR::MemoryReference(_dstReg, 1 + offset, _cg),
             new (_cg->trHeapMemory()) TR::MemoryReference(_srcReg, offset, _cg), cursor);
