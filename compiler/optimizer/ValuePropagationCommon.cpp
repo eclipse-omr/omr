@@ -142,6 +142,7 @@ OMR::ValuePropagation::ValuePropagation(TR::OptimizationManager *manager)
     , _parmMayBeVariant(NULL)
     , _parmTypeValid(NULL)
     , _constNodeInfo(comp()->allocator())
+    , _arrayStoreForwarding(comp())
 {
     // DANGER !!!
     // Virtual methods on ValuePropagation should only be called when the most derived class of VP's
@@ -4361,6 +4362,8 @@ TR::TreeTop *TR::LocalValuePropagation::processBlock(TR::TreeTop *startTree)
 
 const char *TR::LocalValuePropagation::optDetailString() const throw() { return "O^O LOCAL VALUE PROPAGATION: "; }
 
+extern void checkArrayStoreSpreadEscapes(OMR::ValuePropagation *vp, TR::Node *node);
+
 void OMR::ValuePropagation::launchNode(TR::Node *node, TR::Node *parent, int32_t whichChild)
 {
     TR::Node *newNode = node;
@@ -4376,6 +4379,10 @@ void OMR::ValuePropagation::launchNode(TR::Node *node, TR::Node *parent, int32_t
         ValuePropagationPtr handler = constraintHandlers[node->getOpCodeValue()];
         if (handler) {
             newNode = handler(this, node);
+
+            // Invalidate any tracked store-spread array used in a way the elimination does not handle
+            if (newNode != NULL && !_arrayStoreForwarding.isEmpty())
+                checkArrayStoreSpreadEscapes(this, newNode);
 
             // Replace the node in its parent if it has changed
             //

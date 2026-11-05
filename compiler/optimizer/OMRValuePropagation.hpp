@@ -33,6 +33,7 @@
 #include "il/Node.hpp"
 #include "infra/Link.hpp"
 #include "infra/List.hpp"
+#include "optimizer/ArrayStoreForwarding.hpp"
 #include "optimizer/Optimization.hpp"
 #include "optimizer/OptimizationManager.hpp"
 
@@ -499,6 +500,9 @@ public:
     bool checkAllUnsafeReferences(TR::Node *node, vcount_t visitCount);
     virtual void doDelayedTransformations();
 
+    // Array store-spread elimination part of doDelayedTransformations.
+    void doArrayStoreForwardingTransformations();
+
     /**
      * @brief Look for a likely sub type for a given class
      *
@@ -538,18 +542,6 @@ public:
 
         TR::TreeTop *_treetop;
         TR::Node *_node;
-    };
-
-    struct VPTreeTopPair {
-        TR_ALLOC(TR_Memory::ValuePropagation)
-
-        VPTreeTopPair(TR::TreeTop *treetop1, TR::TreeTop *treetop2)
-            : _treetop1(treetop1)
-            , _treetop2(treetop2)
-        {}
-
-        TR::TreeTop *_treetop1;
-        TR::TreeTop *_treetop2;
     };
 
     struct TR_TreeTopWrtBarFlag {
@@ -979,6 +971,11 @@ public:
     TR_UseDefInfo *_useDefInfo; // Cached use/def info
     TR_ValueNumberInfo *_valueNumberInfo; // Cached value number info
     CS2::HashTable<uint64_t, TR::list<TR::Node *> *, TR::Allocator> _constNodeInfo;
+
+    // Array store-spread elimination state.  Handlers and doDelayedTransformations access it only through this API.
+    OMR::ArrayStoreForwarding _arrayStoreForwarding;
+
+    // Deferred in-place aloadi morphs, astore insertions and store removals are owned by _arrayStoreForwarding.
 
     // Flags
     //
