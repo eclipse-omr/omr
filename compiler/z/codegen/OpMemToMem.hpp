@@ -328,8 +328,8 @@ public:
         , _useByteVal(false)
     {
         if (!disableMemInitMVCSeedOpt()) {
-            uint64_t largeCopies = ((uint64_t)length) / 256;
-            _needsLoop = !(largeCopies < (uint64_t)_maxCopies);
+            int64_t largeCopies = length / 256;
+            _needsLoop = !(largeCopies < _maxCopies);
         }
     }
 
@@ -340,8 +340,8 @@ public:
         , _byteVal(byteVal)
     {
         if (!disableMemInitMVCSeedOpt()) {
-            uint64_t largeCopies = ((uint64_t)length) / 256;
-            _needsLoop = !(largeCopies < (uint64_t)_maxCopies);
+            int64_t largeCopies = length / 256;
+            _needsLoop = !(largeCopies < _maxCopies);
         }
     }
 

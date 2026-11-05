@@ -460,7 +460,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
     // TR_ASSERT(((uint64_t)INT_MAX*8) > _length, "_length should not exceed the maximum array size in bytes,INT_MAX*8 =
     // 0x%x%x, _length = 0x%x%x",(((uint64_t)INT_MAX*8) >>32), (uint32_t)((uint64_t)INT_MAX*8), (_length >> 32),
     // (uint32_t)_length);
-    uint64_t len = uint64_t(_length);
+    int64_t len = _length;
     TR::Compilation *comp = _cg->comp();
 
     if (_dstReg != NULL) {
@@ -473,7 +473,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
     if (disableMemInitMVCSeedOpt()) {
         // Legacy / Disabled path: pre-loop seed byte 0 at offset
-        if (len >= (1ULL) {
+        if (len >= 1) {
             if (_useByteVal)
                 cursor = generateSIInstruction(_cg, TR::InstOpCode::MVI, _rootNode, _dstMR, _byteVal, cursor);
             else
@@ -484,8 +484,8 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
         int64_t largeCopies = (len == 0) ? 0 : (len - 1) / 256;
 
         // if the length is small, just generate one instruction in remainder
-        if (len <= (uint64_t)256) {
-            _length = (int64_t)len;
+        if (len <= 256) {
+            _length = len;
             setDependencies(false); // Make sure we do not generate dependencies or internalControlFlow
             return cursor;
         }
@@ -511,7 +511,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
                 --largeCopies;
             }
             len -= totalCopies * 256;
-            _length = (int64_t)len;
+            _length = len;
             _offset += totalCopies * 256;
             _cursor = cursor;
             setDependencies(false); // Make sure we do not generate dependencies or internalControlFlow
@@ -543,8 +543,8 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
         cursor = generateS390LabelInstruction(_cg, TR::InstOpCode::label, _rootNode, bottomOfLoop, cursor);
 
-        len -= (uint64_t)(largeCopies * 256);
-        _length = (int64_t)len;
+        len -= largeCopies * 256;
+        _length = len;
         _cursor = cursor;
 
         _cg->stopUsingRegister(_itersReg);
@@ -556,7 +556,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
         // sub 256 bytes, loop will skip - remainder will handle
         if (largeCopies == 0) {
-            _length = (int64_t)len;
+            _length = len;
             setDependencies(false);
             return cursor;
         }
@@ -588,7 +588,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
                 --largeCopies;
             }
             len -= totalCopies * 256;
-            _length = (int64_t)len;
+            _length = len;
             _offset += totalCopies * 256;
             _cursor = cursor;
             setDependencies(false); // Make sure we do not generate dependencies or internalControlFlow
@@ -628,8 +628,8 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 
         cursor = generateS390LabelInstruction(_cg, TR::InstOpCode::label, _rootNode, bottomOfLoop, cursor);
 
-        len = len - (uint64_t)(largeCopies * 256);
-        _length = (int64_t)len;
+        len -= (largeCopies * 256);
+        _length = len;
         _cursor = cursor;
 
         _cg->stopUsingRegister(_itersReg);
@@ -641,7 +641,7 @@ TR::Instruction *MemInitConstLenMacroOp::generateLoop()
 TR::Instruction *MemInitConstLenMacroOp::generateRemainder()
 {
     TR::Compilation *comp = _cg->comp();
-    uint64_t len = (uint64_t)_length;
+    int64_t len = _length;
     TR::Instruction *cursor = (_cursor == NULL ? _cg->getAppendInstruction() : _cursor);
 
     if (len >= MemToMemMacroOp::MIN_LENGTH_FOR_SS_INSTRUCTION) {
