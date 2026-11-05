@@ -101,19 +101,30 @@ TR::Instruction *MemToMemVarLenMacroOp::generateLoop()
         generateSrcMemRef(0);
         generateDstMemRef(0);
 
-        // Adjust _regLen and set condition code, then branch to "done" if no work remains.
-        if (useOptimizedMemInit && _lengthMinusOne) {
-            generateRIInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::AGHI : TR::InstOpCode::AHI, _rootNode,
-                _regLen, 1);
-        } else if (!useOptimizedMemInit && !_lengthMinusOne) {
+        // Normal path (!useOptimizedMemInit): the remainder is handled with EX, which encodes length as (bytes - 1),
+        // so we want _regLen pre-decremented.
+        // Optimized MVC Seed path: generateRemainder() derives the tail from (length & 0xFF),
+        // so we want _regLen to be the true length of bytes.
+        const bool wantPreDecrementedLen = !useOptimizedMemInit;
+
+        // Convert _regLen to the desired form we want.
+        if (_regLenIsPreDecremented == wantPreDecrementedLen) {
+            // Already good, no work to do, just call LTGR/LTR to set condition code.
+            generateRRInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::LTGR : TR::InstOpCode::LTR, _rootNode,
+                _regLen, _regLen);
+        } else if (wantPreDecrementedLen) {
+            // We have true length, but want (length - 1).
             generateRIInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::AGHI : TR::InstOpCode::AHI, _rootNode,
                 _regLen, -1);
         } else {
-            // No AGHI, need explicit LTR/LTGR to set CC.
-            generateRRInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::LTGR : TR::InstOpCode::LTR, _rootNode,
-                _regLen, _regLen);
+            // We have (length - 1), but want true length.
+            generateRIInstruction(_cg, (needs64BitOpCode) ? TR::InstOpCode::AGHI : TR::InstOpCode::AHI, _rootNode,
+                _regLen, 1);
         }
 
+        // Branch to "done" if there is no work to do.
+        // Normal path: _regLen is (length - 1), so length == 0 means _regLen < 0 (BL).
+        // MemInit MVC seed opt path: _regLen is the true length, so no work means <= 0 (BNH).
         _doneLabel = generateLabelSymbol(_cg);
         _startControlFlow = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC,
             useOptimizedMemInit ? TR::InstOpCode::COND_BNH : TR::InstOpCode::COND_BL, _rootNode, _doneLabel);
