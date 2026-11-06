@@ -429,7 +429,7 @@ MM_MarkingScheme::fixupForwardedSlot(omrobjectptr_t *slotPtr) {
 			}
 		}
 #if defined(UNIFY_ABORTED_SCAVENGE)
-		else if (_extensions->enableUnifiedAbort()) {
+		else if (_extensions->enableUnifiedAbort) {
 			omrobjectptr_t forwardPtr = forwardHeader.getForwardedObject();
 
 			if (NULL != forwardPtr) {
