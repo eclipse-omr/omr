@@ -174,6 +174,8 @@ protected:
         , _inRemainder(false)
     {}
 
+    static bool enableMemInitMVCSeedOpt();
+
     virtual TR::Instruction *generateLoop() = 0;
     virtual TR::Instruction *generateRemainder() = 0;
     virtual TR::RegisterDependencyConditions *generateDependencies() = 0;
@@ -293,14 +295,14 @@ private:
 class MemToMemVarLenMacroOp : public MemToMemMacroOp {
 protected:
     MemToMemVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg,
-        TR::Register *regLen, TR::Node *lenNode, bool lengthMinusOne = false,
+        TR::Register *regLen, TR::Node *lenNode, bool regLenIsPreDecremented = false,
         TR::InstOpCode::Mnemonic opcode = TR::InstOpCode::MVC, TR::Register *itersReg = 0, TR::Register *raReg = 0)
         : MemToMemMacroOp(rootNode, dstNode, srcNode, cg, lenNode, itersReg)
         , _regLen(regLen)
         , _raReg(raReg)
         , _doneLabel(0)
         , _opcode(opcode)
-        , _lengthMinusOne(lengthMinusOne)
+        , _regLenIsPreDecremented(regLenIsPreDecremented)
     {}
 
     virtual TR::Instruction *generateLoop();
@@ -312,7 +314,7 @@ protected:
     TR::Register *_raReg;
     TR::LabelSymbol *_doneLabel; ///< set and used for the EXForRemainder case
     TR::InstOpCode::Mnemonic _opcode;
-    bool _lengthMinusOne;
+    bool _regLenIsPreDecremented;
 
 private:
 };
@@ -324,14 +326,24 @@ public:
         : MemToMemConstLenMacroOp(rootNode, dstNode, dstNode, cg, length)
         , _initReg(initReg)
         , _useByteVal(false)
-    {}
+    {
+        if (enableMemInitMVCSeedOpt()) {
+            int64_t largeCopies = length / 256;
+            _needsLoop = !(largeCopies < _maxCopies);
+        }
+    }
 
     MemInitConstLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::CodeGenerator *cg, int64_t length, int8_t byteVal)
         : MemToMemConstLenMacroOp(rootNode, dstNode, dstNode, cg, length)
         , _initReg(NULL)
         , _useByteVal(true)
         , _byteVal(byteVal)
-    {}
+    {
+        if (enableMemInitMVCSeedOpt()) {
+            int64_t largeCopies = length / 256;
+            _needsLoop = !(largeCopies < _maxCopies);
+        }
+    }
 
 protected:
     virtual TR::Instruction *generateInstruction(int32_t offset, int64_t length, TR::Instruction *cursor);
@@ -452,8 +464,8 @@ private:
 class MemInitVarLenMacroOp : public MemToMemVarLenMacroOp {
 public:
     MemInitVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::CodeGenerator *cg, TR::Register *regLen,
-        TR::Register *initReg, TR::Node *lenNode, bool lengthMinusOne = false)
-        : MemToMemVarLenMacroOp(rootNode, dstNode, dstNode, cg, regLen, lenNode, lengthMinusOne)
+        TR::Register *initReg, TR::Node *lenNode, bool regLenIsPreDecremented = false)
+        : MemToMemVarLenMacroOp(rootNode, dstNode, dstNode, cg, regLen, lenNode, regLenIsPreDecremented)
         , _initReg(initReg)
         , _useByteVal(false)
         , _firstByteInitialized(false)
@@ -461,8 +473,8 @@ public:
     {}
 
     MemInitVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::CodeGenerator *cg, TR::Register *regLen,
-        int8_t byteVal, TR::Node *lenNode, bool lengthMinusOne = false)
-        : MemToMemVarLenMacroOp(rootNode, dstNode, dstNode, cg, regLen, lenNode, lengthMinusOne)
+        int8_t byteVal, TR::Node *lenNode, bool regLenIsPreDecremented = false)
+        : MemToMemVarLenMacroOp(rootNode, dstNode, dstNode, cg, regLen, lenNode, regLenIsPreDecremented)
         , _initReg(NULL)
         , _useByteVal(true)
         , _byteVal(byteVal)
@@ -492,8 +504,8 @@ private:
 class MemClearVarLenMacroOp : public MemToMemVarLenMacroOp {
 public:
     MemClearVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::CodeGenerator *cg, TR::Register *regLen,
-        TR::Node *lenNode, bool lengthMinusOne = false)
-        : MemToMemVarLenMacroOp(rootNode, dstNode, dstNode, cg, regLen, lenNode, lengthMinusOne)
+        TR::Node *lenNode, bool regLenIsPreDecremented = false)
+        : MemToMemVarLenMacroOp(rootNode, dstNode, dstNode, cg, regLen, lenNode, regLenIsPreDecremented)
     {}
 
 protected:
@@ -511,8 +523,9 @@ private:
 class MemCmpVarLenMacroOp : public MemToMemVarLenMacroOp {
 public:
     MemCmpVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg,
-        TR::Register *regLen, TR::Node *lenNode, bool lengthMinusOne = false, TR::LabelSymbol *doneLabel = NULL)
-        : MemToMemVarLenMacroOp(rootNode, dstNode, srcNode, cg, regLen, lenNode, lengthMinusOne, TR::InstOpCode::CLC)
+        TR::Register *regLen, TR::Node *lenNode, bool regLenIsPreDecremented = false, TR::LabelSymbol *doneLabel = NULL)
+        : MemToMemVarLenMacroOp(rootNode, dstNode, srcNode, cg, regLen, lenNode, regLenIsPreDecremented,
+              TR::InstOpCode::CLC)
     {
         _litPoolReg = NULL;
         _falseLabel = generateLabelSymbol(cg);
@@ -643,10 +656,10 @@ private:
 class MemCpyVarLenMacroOp : public MemToMemVarLenMacroOp {
 public:
     MemCpyVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg,
-        TR::Register *regLen, TR::Node *lenNode, bool lengthMinusOne = false, TR::Register *itersReg = 0,
+        TR::Register *regLen, TR::Node *lenNode, bool regLenIsPreDecremented = false, TR::Register *itersReg = 0,
         TR::Register *raReg = 0)
-        : MemToMemVarLenMacroOp(rootNode, dstNode, srcNode, cg, regLen, lenNode, lengthMinusOne, TR::InstOpCode::MVC,
-              itersReg, raReg)
+        : MemToMemVarLenMacroOp(rootNode, dstNode, srcNode, cg, regLen, lenNode, regLenIsPreDecremented,
+              TR::InstOpCode::MVC, itersReg, raReg)
     {}
 
 protected:
@@ -663,8 +676,8 @@ private:
 class BitOpMemVarLenMacroOp : public MemToMemVarLenMacroOp {
 public:
     BitOpMemVarLenMacroOp(TR::Node *rootNode, TR::Node *dstNode, TR::Node *srcNode, TR::CodeGenerator *cg,
-        TR::InstOpCode::Mnemonic opcode, TR::Register *regLen, TR::Node *lenNode, bool lengthMinusOne = false)
-        : MemToMemVarLenMacroOp(rootNode, dstNode, srcNode, cg, regLen, lenNode, lengthMinusOne, opcode)
+        TR::InstOpCode::Mnemonic opcode, TR::Register *regLen, TR::Node *lenNode, bool regLenIsPreDecremented = false)
+        : MemToMemVarLenMacroOp(rootNode, dstNode, srcNode, cg, regLen, lenNode, regLenIsPreDecremented, opcode)
     {}
 
 protected:
