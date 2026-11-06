@@ -3937,7 +3937,7 @@ MM_Scavenger::backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStan
 			GC_ObjectHeapIteratorAddressOrderedList evacuateHeapIterator(_extensions, rootRegion, false);
 #if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 			evacuateHeapIterator.includeForwardedObjects();
-#endif
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 			omrobjectptr_t objectPtr = NULL;
 
 #if defined(OMR_SCAVENGER_TRACE_BACKOUT)
