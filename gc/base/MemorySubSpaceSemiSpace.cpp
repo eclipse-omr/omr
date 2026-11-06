@@ -534,7 +534,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		getMemorySpace()->getTenureMemorySubSpace()->isAllocatable(false);
 		break;
 	case restore_allocate_after_backout:
-		Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->concurrentScavenger);
+		Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled());
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocate_after_backout");
 		/* Restore allocation, which we had disabled in the backout step */
 		_memorySubSpaceAllocate->isAllocatable(true);
@@ -542,7 +542,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		break;
 	case restore_tilt_after_percolate:
 	{
-		Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->concurrentScavenger);
+		Assert_MM_true(_extensions->enableUnifiedAbort || _extensions->isConcurrentScavengerEnabled());
 		uintptr_t lastFreeEntrySize = 0;
 		MM_HeapLinkedFreeHeader *lastFreeEntry = getDefaultMemorySubSpace()->getMemoryPool()->getLastFreeEntry();
 		if (NULL != lastFreeEntry) {
@@ -588,7 +588,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		_extensions->setScavengerBackOutState(backOutFlagCleared);
 	}
 		break;
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 	default:
 		Assert_MM_unreachable();
 	}
