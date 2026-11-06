@@ -489,7 +489,7 @@ MM_MemorySubSpaceSemiSpace::flip(MM_EnvironmentBase *env, Flip_step step)
 		Trc_MM_MSSSS_flip_step(env->getLanguageVMThread(), "restore_allocation_and_set_survivor");
 		_memorySubSpaceAllocate->isAllocatable(true);
 		_memorySubSpaceSurvivor = _memorySubSpaceEvacuate;
-#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		_bytesAllocatedDuringConcurrent = _extensions->allocationStats.bytesAllocated();
 		_avgBytesAllocatedDuringConcurrent = (uintptr_t)MM_Math::weightedAverage((float)_avgBytesAllocatedDuringConcurrent,
 											 (float)(_bytesAllocatedDuringConcurrent), 0.7f);
