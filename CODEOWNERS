@@ -21,47 +21,50 @@
 ###############################################################################
 
 # Global project leads/owners
-* @charliegracie @mstoodle @0xdaryl
+* @mstoodle @0xdaryl
 
 # Build / Configure and CI
-*.mk @charliegracie
-*.yml @charliegracie
+*.mk @babsingh
+*.yml @babsingh
 
 # CMake
-*.cmake @youngar @charliegracie
-/cmake/ @youngar @charliegracie
-**/CMakeLists.txt @youngar @charliegracie
+*.cmake @babsingh
+/cmake/ @babsingh
+**/CMakeLists.txt @babsingh
 
-# GC
-/gc/ @charliegracie @youngar
-/glue/ @charliegracie @youngar
+# GC 
+/gc/ @hzongaro
+# NON-COMMITTER SMEs
+#/gc/ @amicic @dmitripivkine
 
 # Compiler
-/compiler/ @0xdaryl @mstoodle
-/compiler/control/ @dsouzai
-/compiler/env/ @dsouzai
-/compiler/runtime/ @dsouzai
-/compiler/optimizer/ @vijaysun-omr
-/compiler/il/ @vijaysun-omr @Leonardo2718
-/compiler/arm/ @0xdaryl @knn-k
-/compiler/aarch64/ @0xdaryl @knn-k
-/compiler/p/ @aviansie-ben
-/compiler/z/ @fjeremic
+/compiler/ @0xdaryl
+/compiler/optimizer/ @vijaysun-omr @hzongaro
+/compiler/il/ @vijaysun-omr @0xdaryl
+/compiler/x/ @0xdaryl
+/compiler/arm/ @knn-k
+/compiler/aarch64/ @knn-k
+# NON-COMMITTER SMEs
+#/compiler/p/ @zl-wang
+#/compiler/z/ @r30shah
+#/compiler/control/ @mpirvu
+#/compiler/env/ @mpirvu
+#/compiler/runtime/ @mpirvu
 
 # JitBuilder
-/jitbuilder/ @mstoodle @charliegracie @Leonardo2718
-/compiler/ilgen @mstoodle @Leonardo2718
+/jitbuilder/ @mstoodle
+/compiler/ilgen @mstoodle
 
 # Port Library
-/port/ @charliegracie @youngar @babsingh
+/port/ @babsingh
 
 # Thread Library
-/thread/ @charliegracie @youngar @babsingh
+/thread/ @babsingh
 
 # OMR Core Utilities
-/include_core/OMR/ @youngar @charliegracie @Leonardo2718 @babsingh
+/include_core/OMR/ @babsingh
 
 # Tril and Testing
-/fvtest/tril/ @Leonardo2718 @fjeremic @0xdaryl
-/fvtest/compilertriltest/ @Leonardo2718 @fjeremic @0xdaryl
-/fvtest/jitbuildertest/ @mstoodle @charliegracie @Leonardo2718
+/fvtest/tril/ @0xdaryl
+/fvtest/compilertriltest/ @0xdaryl
+/fvtest/jitbuildertest/ @mstoodle
