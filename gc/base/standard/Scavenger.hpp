@@ -183,7 +183,7 @@ private:
 		bool shouldAbort = false;
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
-		if (IS_CONCURRENT_ENABLED) {
+		if (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) {
 			/* Concurrent Scavenger needs to drain the scan queue in last scan loop before aborted handling starts.
 			 * It is however fine to leave it populated, if we want to yield in a middle of concurrent phase which aborted,
 			 * since there will be at least one scan loop afterwards in complete phase that will drain it. Bottom line,
@@ -377,9 +377,12 @@ public:
 	void processRememberedSetInBackout(MM_EnvironmentStandard *env);
 	void completeBackOut(MM_EnvironmentStandard *env);
 
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+	bool fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr);
+	void fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr);
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	void fixupNurserySlots(MM_EnvironmentStandard *env);
-	void fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr);
 	bool fixupSlot(omrobjectptr_t *slotPtr);
 	MMINLINE bool fixupSlot(GC_SlotObject *slotObject)
 	{
@@ -390,7 +393,6 @@ public:
 		}
 		return false;
 	}
-	bool fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr);
 	
 	void scavengeRememberedSetListIndirect(MM_EnvironmentStandard *env);
 	void scavengeRememberedSetListDirect(MM_EnvironmentStandard *env);

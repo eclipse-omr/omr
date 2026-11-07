@@ -412,22 +412,34 @@ MM_MarkingScheme::createWorkPackets(MM_EnvironmentBase *env)
 
 bool
 MM_MarkingScheme::fixupForwardedSlot(omrobjectptr_t *slotPtr) {
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	bool const compressed = _extensions->compressObjectReferences();
 	if (_extensions->getGlobalCollector()->isStwCollectionInProgress()) {
 		MM_ForwardedHeader forwardHeader(*slotPtr, compressed);
-		omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
 
-		if (NULL != forwardPtr) {
-			if (forwardHeader.isSelfForwardedPointer()) {
-				forwardHeader.restoreSelfForwardedPointer();
-			} else {
+		if(_extensions->isConcurrentScavengerEnabled()) {
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+			omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
+			if (NULL != forwardPtr) {
+				if (forwardHeader.isSelfForwardedPointer()) {
+					forwardHeader.restoreSelfForwardedPointer();
+				} else {
+					*slotPtr = forwardPtr;
+					return true;
+				}
+			}
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+		}
+#if defined(UNIFY_ABORTED_SCAVENGE)
+		else if (_extensions->enableUnifiedAbort) {
+			omrobjectptr_t forwardPtr = forwardHeader.getForwardedObject();
+
+			if (NULL != forwardPtr) {
 				*slotPtr = forwardPtr;
 				return true;
 			}
 		}
+#endif /* UNIFY_ABORTED_SCAVENGE */
 	}
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	return false;
 }
 
