@@ -6603,9 +6603,181 @@ bool OMR::ValuePropagation::canClassBeTrustedAsFixedClass(TR::SymbolReference *s
     return true;
 }
 
+static void markHeapificationAllocs(TR::Node *node)
+{
+    if (node == NULL)
+        return;
+    if (node->getOpCode().isNew())
+        node->setHeapificationAlloc(true);
+    for (int32_t i = 0; i < node->getNumChildren(); ++i)
+        markHeapificationAllocs(node->getChild(i));
+}
+
+// Array store-spread elimination
+// all transformations done here, never in GVP.
+void OMR::ValuePropagation::doArrayStoreForwardingTransformations()
+{
+    OMR::Logger *log = comp()->log();
+    OMR::ArrayStoreForwarding &forwarding = _arrayStoreForwarding;
+
+    // Abort for any array that does not have every slot written and read.
+    OMR::ArrayStoreForwarding::LiveArrayIterator liveIt(forwarding);
+    for (OMR::ArrayStoreForwarding::TrackedArray *array = liveIt.getFirst(); array; array = liveIt.getNext()) {
+        int32_t numSlots, written, read;
+        if (array->isComplete(numSlots, written, read))
+            continue;
+        if (trace())
+            logprintf(trace(), log,
+                "ARRAY STORE-SPREAD ELIMINATION   anewarray n%dn has %d slots but %d written / %d read — "
+                "aborting\n",
+                array->getArrayNode()->getGlobalIndex(), numSlots, written, read);
+        forwarding.invalidateIfLive(array->getArrayVN());
+    }
+
+    // Nothing was registered, or every registered array was invalidated above
+    if (liveIt.getFirst() == NULL) {
+        if (trace())
+            logprintf(trace(), log, "ARRAY STORE-SPREAD ELIMINATION   (delayed) nothing inserted\n");
+        forwarding.reset();
+        return;
+    }
+
+    // if the array survived, insert the anewarray treetop, redirect the call arg, and inject fill stores
+    const bool is64 = comp()->target().is64Bit();
+    TR::SymbolReference *shadowSymRef = comp()->getSymRefTab()->findOrCreateArrayShadowSymbolRef(TR::Address);
+    ListIterator<OMR::ArrayStoreForwarding::ColdArrayRebuild> rebuildIt(&forwarding.getColdRebuilds());
+    for (OMR::ArrayStoreForwarding::ColdArrayRebuild *rebuild = rebuildIt.getFirst(); rebuild;
+         rebuild = rebuildIt.getNext()) {
+        if (!forwarding.isLive((int32_t)rebuild->_origArrayVN)) {
+            if (trace())
+                logprintf(trace(), log,
+                    "ARRAY STORE-SPREAD ELIMINATION   (delayed) discarding cold clone n%dn — warm array was "
+                    "invalidated\n",
+                    rebuild->_anewarrayTT->getNode()->getFirstChild()->getGlobalIndex());
+            continue;
+        }
+
+        // insert the clone treetop and redirect the call arg.
+        rebuild->_insertBeforeTT->insertBefore(rebuild->_anewarrayTT);
+        TR::Node *newArr = rebuild->_anewarrayTT->getNode()->getFirstChild();
+        rebuild->_callNode->getChild(rebuild->_argIndex)->decReferenceCount();
+        rebuild->_callNode->setAndIncChild(rebuild->_argIndex, newArr);
+        if (trace())
+            logprintf(trace(), log,
+                "ARRAY STORE-SPREAD ELIMINATION   (delayed) inserted cold clone n%dn; redirected call arg %d of "
+                "n%dn\n",
+                newArr->getGlobalIndex(), rebuild->_argIndex, rebuild->_callNode->getGlobalIndex());
+
+        TR::TreeTop *insertAfter = rebuild->_anewarrayTT;
+        auto slotCursor = CS2::HashTable<int64_t, TR::Node *, TR::Allocator>::Cursor(rebuild->_slotValues);
+        for (slotCursor.SetToFirst(); slotCursor.Valid(); slotCursor.SetToNext()) {
+            int64_t slotOffset = rebuild->_slotValues.KeyAt(slotCursor);
+            TR::Node *offsetNode
+                = is64 ? TR::Node::lconst(newArr, slotOffset) : TR::Node::iconst(newArr, (int32_t)slotOffset);
+            TR::Node *addrNode = TR::Node::create(newArr, is64 ? TR::aladd : TR::aiadd, 2, newArr, offsetNode);
+            TR::Node *valueNode = rebuild->_slotValues[slotCursor]->duplicateTree();
+            markHeapificationAllocs(valueNode);
+            TR::Node *storeNode
+                = TR::Node::createWithSymRef(TR::awrtbari, 3, 3, addrNode, valueNode, newArr, shadowSymRef);
+
+            TR::TreeTop *storeTT = TR::TreeTop::create(comp(), storeNode);
+            insertAfter->insertAfter(storeTT);
+            insertAfter = storeTT;
+
+            if (comp()->useCompressedPointers()) {
+                TR::TreeTop *anchorTT = TR::TreeTop::create(comp(), TR::Node::createCompressedRefsAnchor(storeNode));
+                insertAfter->insertAfter(anchorTT);
+                insertAfter = anchorTT;
+            }
+
+            if (trace())
+                logprintf(trace(), log,
+                    "ARRAY STORE-SPREAD ELIMINATION   (delayed) cold-block store n%dn at offset %lld into new "
+                    "anewarray n%dn\n",
+                    storeNode->getGlobalIndex(), (long long)slotOffset, newArr->getGlobalIndex());
+        }
+    }
+
+    // Execute deferred astore insertions
+    // these store the array values for non-leaf nodes
+    for (OMR::ArrayStoreForwarding::TrackedArray *array = liveIt.getFirst(); array; array = liveIt.getNext()) {
+        ListIterator<OMR::ArrayStoreForwarding::PendingAstore> astoreIt(&array->getPendingAstores());
+        for (OMR::ArrayStoreForwarding::PendingAstore *p = astoreIt.getFirst(); p; p = astoreIt.getNext()) {
+            p->_anchorTT->insertAfter(p->_astoreTT);
+            if (trace())
+                logprintf(trace(), log, "ARRAY STORE-SPREAD ELIMINATION   (delayed) inserted astore n%dn after n%dn\n",
+                    p->_astoreTT->getNode()->getGlobalIndex(), p->_anchorTT->getNode()->getGlobalIndex());
+        }
+    }
+
+    // Remove the stores, local astores and allocation of every array
+    for (OMR::ArrayStoreForwarding::TrackedArray *array = liveIt.getFirst(); array; array = liveIt.getNext()) {
+        ListIterator<TR::TreeTop> fwdIt(&array->getForwardedStoreTrees());
+        for (TR::TreeTop *storeTT = fwdIt.getFirst(); storeTT; storeTT = fwdIt.getNext()) {
+            if (trace())
+                logprintf(trace(), log,
+                    "ARRAY STORE-SPREAD ELIMINATION   (delayed) removing forwarded store treetop n%dn\n",
+                    storeTT->getNode() ? storeTT->getNode()->getGlobalIndex() : -1);
+            removeNode(storeTT->getNode(), false);
+            TR::TransformUtil::removeTree(comp(), storeTT);
+        }
+
+        // Remove astore-to-local treetops that held the array reference — dead
+        // once the awrtbari stores are gone.
+        ListIterator<TR::TreeTop> localIt(&array->getLocalStoreTrees());
+        for (TR::TreeTop *localTT = localIt.getFirst(); localTT; localTT = localIt.getNext()) {
+            if (trace())
+                logprintf(trace(), log,
+                    "ARRAY STORE-SPREAD ELIMINATION   (delayed) removing local astore treetop n%dn\n",
+                    localTT->getNode() ? localTT->getNode()->getGlobalIndex() : -1);
+            removeNode(localTT->getNode(), false);
+            TR::TransformUtil::removeTree(comp(), localTT);
+        }
+
+        // All stores forwarded — remove the anewarray treetop.
+        TR::TreeTop *arrTT = array->getAnewarrayTreeTop();
+        TR::Node *wrapperNode = arrTT->getNode();
+        TR::Node *arrNode = (wrapperNode->getNumChildren() > 0) ? wrapperNode->getFirstChild() : wrapperNode;
+        if (trace())
+            logprintf(trace(), log,
+                "ARRAY STORE-SPREAD ELIMINATION   (delayed) removing anewarray treetop n%dn (rc=%d)\n",
+                arrNode->getGlobalIndex(), arrNode->getReferenceCount());
+        TR::TransformUtil::removeTree(comp(), arrTT);
+    }
+
+    // Execute deferred aloadi rewrites
+    // changes array loads to loads from the temp, or replaces with a const
+    for (OMR::ArrayStoreForwarding::TrackedArray *array = liveIt.getFirst(); array; array = liveIt.getNext()) {
+        ListIterator<OMR::ArrayStoreForwarding::LoadRewrite> rewriteIt(&array->getLoadRewrites());
+        for (OMR::ArrayStoreForwarding::LoadRewrite *p = rewriteIt.getFirst(); p; p = rewriteIt.getNext()) {
+            TR::Node *load = p->_load;
+            TR::Node *storedValue = p->_value;
+            removeChildren(load);
+            if (storedValue->getOpCode().hasSymbolReference())
+                TR::Node::recreateWithSymRef(load, storedValue->getOpCodeValue(), storedValue->getSymbolReference());
+            else
+                TR::Node::recreate(load, storedValue->getOpCodeValue());
+            // recreate() does not transfer _constValue; copy the address for aconst nodes.
+            if (load->getOpCodeValue() == TR::aconst)
+                load->setAddress(storedValue->getAddress());
+            invalidateUseDefInfo();
+            invalidateValueNumberInfo();
+            if (trace())
+                logprintf(trace(), log,
+                    "ARRAY STORE-SPREAD ELIMINATION   (delayed) morphed aloadi n%dn in-place to %s\n",
+                    load->getGlobalIndex(), storedValue->getOpCode().getName());
+        }
+    }
+
+    forwarding.reset();
+}
+
 void OMR::ValuePropagation::doDelayedTransformations()
 {
     OMR::Logger *log = comp()->log();
+
+    doArrayStoreForwardingTransformations();
+
     ListIterator<TR_TreeTopNodePair> treesIt1(&_scalarizedArrayCopies);
     TR_TreeTopNodePair *scalarizedArrayCopy;
     for (scalarizedArrayCopy = treesIt1.getFirst(); scalarizedArrayCopy; scalarizedArrayCopy = treesIt1.getNext()) {
