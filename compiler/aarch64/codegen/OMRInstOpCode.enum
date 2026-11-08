@@ -619,8 +619,8 @@
 		umsubl,                                                 	/* 0x9BA08000	UMSUBL    	 */
 		smulh,                                                  	/* 0x9B407C00	SMULH     	 */
 		umulh,                                                  	/* 0x9BC07C00	UMULH     	 */
-		fmaddd,                                                 	/* 0X1F000000   FMADD        */
-		fmadds,                                                 	/* 0X1F400000   FMADD        */
+		fmaddd,                                                 	/* 0x1F000000   FMADD     	 */
+		fmadds,                                                 	/* 0x1F400000   FMADD     	 */
 	/* Data-processing (2 source) */
 		crc32x,                                                 	/* 0x9AC04C00	CRC32X    	 */
 		crc32cx,                                                	/* 0x9AC05C00	CRC32CX   	 */
