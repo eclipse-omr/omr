@@ -330,7 +330,15 @@ public:
 	{
 		return _forwardedTag == (getPreservedClassAndTags() & _forwardedTag);
 	}
-	
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+	MMINLINE bool
+	isStrictlyForwardedPointer()
+	{
+		/* only _forwardedTag set ('self forwarded bit' reset) */
+		return _forwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
+	}
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
+
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	/**
 	 * If object is forwarded (isForwardedPointer() returns true) the object can be either
@@ -342,14 +350,7 @@ public:
 	{
 		return _selfForwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
 	}
-	
-	MMINLINE bool
-	isStrictlyForwardedPointer()
-	{
-		/* only _forwardedTag set ('self forwarded bit' reset) */
-		return _forwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
-	}
-	
+
 	omrobjectptr_t setSelfForwardedObject();
 	
 	void restoreSelfForwardedPointer();
