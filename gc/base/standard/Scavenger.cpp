@@ -4046,7 +4046,7 @@ MM_Scavenger::fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 	return false;
 }
 
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 bool
 MM_Scavenger::fixupSlot(omrobjectptr_t *slotPtr)
 {
@@ -4064,9 +4064,7 @@ MM_Scavenger::fixupSlot(omrobjectptr_t *slotPtr)
 	}
 	return false;
 }
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
-#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 void
 MM_Scavenger::fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr)
 {
