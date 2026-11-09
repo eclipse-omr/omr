@@ -330,14 +330,14 @@ public:
 	{
 		return _forwardedTag == (getPreservedClassAndTags() & _forwardedTag);
 	}
-#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+
+	// DEV: removed from if defined(OMR_GC_CONCURRENT_SCAVENGER) to allow working with unified abort path, might be a better solution
 	MMINLINE bool
 	isStrictlyForwardedPointer()
 	{
 		/* only _forwardedTag set ('self forwarded bit' reset) */
 		return _forwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
 	}
-#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	/**
