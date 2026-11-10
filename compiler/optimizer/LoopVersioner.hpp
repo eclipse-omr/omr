@@ -662,6 +662,9 @@ protected:
     typedef TR::typed_allocator<std::pair<const Expr * const, TR::Node *>, TR::Region &> EmitExprMemoAlloc;
     typedef std::map<const Expr *, TR::Node *, std::less<const Expr *>, EmitExprMemoAlloc> EmitExprMemo;
 
+    typedef TR::typed_allocator<std::pair<TR::Node * const, TR::Node *>, TR::Region &> ExpandTempsMemoAlloc;
+    typedef std::map<TR::Node *, TR::Node *, std::less<TR::Node *>, ExpandTempsMemoAlloc> ExpandTempsMemo;
+
     /**
      * \brief Information about the loop currently under consideration by
      * TR_LoopVersioner.
@@ -1088,6 +1091,15 @@ protected:
     bool isInvariantThroughTemps(TR::Node *node, int32_t depth);
 
     /**
+     * \brief Implementation of isInvariantThroughTemps().
+     *
+     * Nodes can be shared (the trees are DAGs), so \p invariant records the
+     * nodes already found to be invariant, and they are not examined again.
+     * Failure is not recorded since it ends the whole query.
+     */
+    bool isInvariantThroughTempsRecursive(TR::Node *node, int32_t depth, TR::NodeChecklist &invariant);
+
+    /**
      * \brief Duplicate \p node, replacing each load of a temp that is not
      * loop-invariant by a copy of the value stored into it.
      *
@@ -1100,6 +1112,17 @@ protected:
      * \param depth The number of temps already looked through on the way to \p node
      */
     TR::Node *expandTemps(TR::Node *node, int32_t depth);
+
+    /**
+     * \brief Implementation of expandTemps().
+     *
+     * Nodes can be shared (the trees are DAGs), so \p memo maps each node
+     * already expanded to its expansion, which is reused rather than rebuilt.
+     * The expansion of a node does not depend on \p depth, which only bounds how
+     * many temps may be looked through (and isInvariantThroughTemps() has
+     * already checked that the bound suffices).
+     */
+    TR::Node *expandTempsRecursive(TR::Node *node, int32_t depth, ExpandTempsMemo &memo);
 
     bool isExprInvariant(TR::Node *, bool ignoreHeapificationStore = false); // ignoreHeapificationStore flags for both
     bool areAllChildrenInvariant(TR::Node *, bool ignoreHeapificationStore = false);

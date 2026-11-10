@@ -1148,8 +1148,19 @@ TR::Node *TR_LoopVersioner::findTempDefinition(TR::Node *useNode, TR::TreeTop **
 
 bool TR_LoopVersioner::isInvariantThroughTemps(TR::Node *node, int32_t depth)
 {
+    TR::NodeChecklist invariant(comp());
+    return isInvariantThroughTempsRecursive(node, depth, invariant);
+}
+
+bool TR_LoopVersioner::isInvariantThroughTempsRecursive(TR::Node *node, int32_t depth, TR::NodeChecklist &invariant)
+{
+    if (invariant.contains(node))
+        return true;
+
     if (isExprInvariant(node))
         return true;
+
+    bool result = true;
 
     if (node->getOpCode().isLoadVarDirect()) {
         if (depth >= MAX_TEMP_DEPTH
@@ -1158,49 +1169,62 @@ bool TR_LoopVersioner::isInvariantThroughTemps(TR::Node *node, int32_t depth)
 
         TR::TreeTop *defTree = NULL;
         TR::Node *rhs = findTempDefinition(node, &defTree);
-        return rhs != NULL && isInvariantThroughTemps(rhs, depth + 1);
+        result = rhs != NULL && isInvariantThroughTempsRecursive(rhs, depth + 1, invariant);
+    } else if (node->getOpCode().hasSymbolReference() || node->getNumChildren() == 0) {
+        // The node's own symbol reference, if any, has already been found to be
+        // not invariant, so only look at the children of nodes without one.
+        result = false;
+    } else {
+        for (int32_t i = 0; i < node->getNumChildren(); i++) {
+            if (!isInvariantThroughTempsRecursive(node->getChild(i), depth, invariant)) {
+                result = false;
+                break;
+            }
+        }
     }
 
-    // The node's own symbol reference, if any, has already been found to be
-    // not invariant, so only look at the children of nodes without one.
-    if (node->getOpCode().hasSymbolReference() || node->getNumChildren() == 0)
-        return false;
+    if (result)
+        invariant.add(node);
 
-    for (int32_t i = 0; i < node->getNumChildren(); i++) {
-        if (!isInvariantThroughTemps(node->getChild(i), depth))
-            return false;
-    }
-
-    return true;
+    return result;
 }
 
 TR::Node *TR_LoopVersioner::expandTemps(TR::Node *node, int32_t depth)
 {
-    if (isExprInvariant(node))
-        return node->duplicateTree();
+    TR::Region memoRegion(comp()->trMemory()->currentStackRegion());
+    ExpandTempsMemo memo(std::less<TR::Node *>(), memoRegion);
+    return expandTempsRecursive(node, depth, memo);
+}
 
-    if (node->getOpCode().isLoadVarDirect()) {
-        if (isInIntList(_versionableInductionVariables, node->getSymbolReference()->getReferenceNumber()))
-            return node->duplicateTree();
+TR::Node *TR_LoopVersioner::expandTempsRecursive(TR::Node *node, int32_t depth, ExpandTempsMemo &memo)
+{
+    ExpandTempsMemo::iterator found = memo.find(node);
+    if (found != memo.end())
+        return found->second;
 
+    TR::Node *result = NULL;
+
+    if (node->getOpCode().isLoadVarDirect() && !isExprInvariant(node)
+        && !isInIntList(_versionableInductionVariables, node->getSymbolReference()->getReferenceNumber())) {
         TR::TreeTop *defTree = NULL;
         TR::Node *rhs = depth < MAX_TEMP_DEPTH ? findTempDefinition(node, &defTree) : NULL;
         TR_ASSERT_FATAL_WITH_NODE(node, rhs != NULL, "cannot expand non-invariant n%un [%p]", node->getGlobalIndex(),
             node);
 
-        return expandTemps(rhs, depth + 1);
+        result = expandTempsRecursive(rhs, depth + 1, memo);
+    } else {
+        // Copy only this node, then replace its children by their expansions.
+        // Children are expanded through the memo so that a node shared by
+        // several parents is expanded once, and stays shared in the result.
+        result = node->duplicateTree(false);
+        for (int32_t i = 0; i < node->getNumChildren(); i++) {
+            TR::Node *expanded = expandTempsRecursive(node->getChild(i), depth, memo);
+            result->getChild(i)->recursivelyDecReferenceCount();
+            result->setAndIncChild(i, expanded);
+        }
     }
 
-    TR::Node *result = node->duplicateTree();
-    for (int32_t i = 0; i < node->getNumChildren(); i++) {
-        if (isExprInvariant(node->getChild(i)))
-            continue;
-
-        TR::Node *expanded = expandTemps(node->getChild(i), depth);
-        result->getChild(i)->recursivelyDecReferenceCount();
-        result->setAndIncChild(i, expanded);
-    }
-
+    memo[node] = result;
     return result;
 }
 
