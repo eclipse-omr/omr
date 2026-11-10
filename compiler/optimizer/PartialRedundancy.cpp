@@ -536,9 +536,9 @@ int32_t TR_PartialRedundancy::perform()
 
                     comp()->AddCopyPropagationRematerializationCandidate(newSymbolReference);
 
-                    if (nextOptimalNode->getOpCode().hasSymbolReference()
-                        && nextOptimalNode->getSymbolReference()->getSymbol()->isNotCollected())
+                    if (nextOptimalNode->isNotCollected()) {
                         newAutoSym->setNotCollected();
+                    }
 
                     _newSymbols[nextOptimalComputation] = newAutoSym;
                     _newSymbolsMap[nextOptimalComputation] = newSymbolReference->getReferenceNumber();
