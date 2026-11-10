@@ -1297,8 +1297,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
     { "enableOldEDO", "O\tenable the old EDO mechanism", SET_OPTION_BIT(TR_EnableOldEDO), "F", NOT_IN_SUBSET },
     { "enableOnsiteCacheForSuperClassTest", "O\tenable onsite cache for super class test",
      SET_OPTION_BIT(TR_EnableOnsiteCacheForSuperClassTest), "F" },
-    { "enableOpMaskRegisters", "O\tenable AVX-512 opmask registers k0-k7", SET_OPTION_BIT(TR_EnableOpMaskRegisters),
-     "F" },
     { "enableOSR", "O\tenable on-stack replacement", SET_OPTION_BIT(TR_EnableOSR), "F", NOT_IN_SUBSET },
     { "enableOSROnGuardFailure", "O\tperform a decompile using on-stack replacement every time a virtual guard fails",
      SET_OPTION_BIT(TR_EnableOSROnGuardFailure), "F" },
