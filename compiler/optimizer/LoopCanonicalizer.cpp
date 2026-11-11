@@ -577,7 +577,7 @@ void TR_LoopTransformer::detectWhileLoops(ListAppender<TR_Structure> &whileLoops
                         // The header's exit target must match the backedge's exit
                         // If they differ the header branch is not the real while-condition.
                         // Find the header's exit target
-                        TR::Block *hdrExitBlock = nullptr;
+                        TR::Block *hdrExitBlock = NULL;
                         for (auto succEdge = hdrBlock->getSuccessors().begin();
                              succEdge != hdrBlock->getSuccessors().end(); ++succEdge) {
                             TR::Block *s = toBlock((*succEdge)->getTo());
