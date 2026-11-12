@@ -4010,6 +4010,7 @@ _delegate.fixupDestroyedSlot(env, &header, _activeSubSpace);
 #endif /* defined (OMR_GC_COMPRESSED_POINTERS) */
 }
 
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 bool
 MM_Scavenger::fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 {
@@ -4018,35 +4019,21 @@ MM_Scavenger::fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 
 	if(NULL != objectPtr) {
 		MM_ForwardedHeader forwardHeader(objectPtr, compressed);
-
-		if(_extensions->isConcurrentScavengerEnabled()) {
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-			omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
-			if (NULL != forwardPtr) {
-				if (forwardHeader.isSelfForwardedPointer()) {
-					forwardHeader.restoreSelfForwardedPointer();
-				} else {
-					*slotPtr = forwardPtr;
-				}
-				return true;
-			}
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
-		}
-#if defined(UNIFY_ABORTED_SCAVENGE)
-		else if (_extensions->enableUnifiedAbort) {
-			omrobjectptr_t forwardPtr = forwardHeader.getForwardedObject();
-
-			if (NULL != forwardPtr) {
+		omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
+		if (NULL != forwardPtr) {
+			if (forwardHeader.isSelfForwardedPointer()) {
+				forwardHeader.restoreSelfForwardedPointer();
+			} else {
 				*slotPtr = forwardPtr;
-				return true;
 			}
+			return true;
 		}
-#endif /* UNIFY_ABORTED_SCAVENGE */
 	}
 	return false;
 }
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
-#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 bool
 MM_Scavenger::fixupSlot(omrobjectptr_t *slotPtr)
 {
@@ -4083,7 +4070,7 @@ MM_Scavenger::fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t object
 	}
 }
 
-#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
 void
 MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
