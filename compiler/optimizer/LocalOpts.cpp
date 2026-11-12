@@ -5912,6 +5912,49 @@ TR_InvariantArgumentPreexistence::TR_InvariantArgumentPreexistence(TR::Optimizat
     _success = false;
 }
 
+/**
+ * \brief
+ *    Check whether every store to the parameter writes the known object that the
+ *    parameter already holds on entry
+ *
+ * \param methodSymbol
+ *    The method whose trees are searched
+ *
+ * \param ordinal
+ *    The ordinal of the parameter
+ *
+ * \param knownObjectIndex
+ *    The known object index of the corresponding argument
+ *
+ * \return
+ *    true if all direct stores to the parameter store the known object
+ *    knownObjectIndex, in which case the parameter always holds that object and
+ *    the argument info does not need to be cleared
+ */
+static bool allStoresToParmKeepKnownObject(TR::ResolvedMethodSymbol *methodSymbol, TR::Compilation *comp,
+    int32_t ordinal, TR::KnownObjectTable::Index knownObjectIndex)
+{
+    for (TR::TreeTopIterator iter(methodSymbol->getFirstTreeTop(), comp); iter != NULL; ++iter) {
+        TR::Node *node = iter.currentTree()->getNode();
+        if ((node->getOpCodeValue() == TR::treetop) || (node->getOpCodeValue() == TR::NULLCHK))
+            node = node->getFirstChild();
+
+        if (!node->getOpCode().isStoreDirect())
+            continue;
+
+        TR::Symbol *symbol = node->getSymbolReference()->getSymbol();
+        if (!symbol->isParm() || symbol->getParmSymbol()->getOrdinal() != ordinal)
+            continue;
+
+        TR::Node *valueNode = node->getFirstChild();
+        if (!valueNode->getOpCode().hasSymbolReference() || !valueNode->getSymbolReference()->hasKnownObjectIndex()
+            || valueNode->getSymbolReference()->getKnownObjectIndex() != knownObjectIndex)
+            return false;
+    }
+
+    return true;
+}
+
 int32_t TR_InvariantArgumentPreexistence::perform()
 {
     TR::ResolvedMethodSymbol *methodSymbol = optimizer()->getMethodSymbol();
@@ -6074,6 +6117,17 @@ int32_t TR_InvariantArgumentPreexistence::perform()
                     TR_OpaqueClassBlock *clazzFromMethod = parmInfo.getClass();
 
                     if (!parmInfo.isInvariant()) {
+                        // If every store to the parm writes the known object that the argument already
+                        // is, the parm always holds that object and the arg info is still valid
+                        if (arg && arg->hasKnownObjectIndex()
+                            && allStoresToParmKeepKnownObject(methodSymbol, comp(), index,
+                                arg->getKnownObjectIndex())) {
+                            logprintf(enableTrace, log,
+                                "PREX:       parm %d is not invariant but always holds obj.%d, keep arg info\n", index,
+                                arg->getKnownObjectIndex());
+                            continue;
+                        }
+
                         // Clear non-invariant arg info
                         argInfo->set(index, NULL);
                         logprintf(enableTrace, log, "PREX:       parm %d is not invariant\n", index);
