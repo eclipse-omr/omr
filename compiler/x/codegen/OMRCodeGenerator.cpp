@@ -908,8 +908,9 @@ bool OMR::X86::CodeGenerator::supportsOpMaskRegisters()
 {
     TR::CPU *cpu = &comp()->target().cpu;
 
-    return cpu->supportsFeature(OMR_FEATURE_X86_AVX512F) && cpu->supportsFeature(OMR_FEATURE_X86_AVX512VL)
-        && cpu->supportsFeature(OMR_FEATURE_X86_AVX512BW) && cpu->supportsFeature(OMR_FEATURE_X86_AVX512DQ);
+    return comp()->getOption(TR_EnableOpMaskRegisters) && cpu->supportsFeature(OMR_FEATURE_X86_AVX512F)
+        && cpu->supportsFeature(OMR_FEATURE_X86_AVX512VL) && cpu->supportsFeature(OMR_FEATURE_X86_AVX512BW)
+        && cpu->supportsFeature(OMR_FEATURE_X86_AVX512DQ);
 }
 
 #define ALLOWED_TO_REMATERIALIZE(x) (getRematerializationOptString() && strstr(getRematerializationOptString(), (x)))
