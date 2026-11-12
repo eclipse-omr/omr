@@ -102,8 +102,8 @@ private:
 	uintptr_t _preserved; 						/**< a backup copy of the header fields which may be modified by this class */
 
 	static const uintptr_t _forwardedTag = OMR_FORWARDED_TAG;	/**< bit mask used to mark forwarding slot value as forwarding pointer */
-	static const uintptr_t _selfForwardedTag = (uintptr_t)(_forwardedTag | OMR_SELF_FORWARDED_TAG);	
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
+	static const uintptr_t _selfForwardedTag = (uintptr_t)(_forwardedTag | OMR_SELF_FORWARDED_TAG);	
 	static const uintptr_t _beingCopiedHint = (uintptr_t)OMR_BEING_COPIED_HINT; /**< used in source object f/w pointer to hint that object might still be being copied */
 	static const uintptr_t _beingCopiedTag = (uintptr_t)OMR_BEING_COPIED_TAG; /**< used in destination object, but using the same bit as _forwardedTag in source object */
 	static const uintptr_t _remainingSizeMask = (uintptr_t)REMAINING_SIZE_MASK; 
@@ -330,15 +330,7 @@ public:
 	{
 		return _forwardedTag == (getPreservedClassAndTags() & _forwardedTag);
 	}
-
-	// DEV: removed from if defined(OMR_GC_CONCURRENT_SCAVENGER) to allow working with unified abort path, might be a better solution
-	MMINLINE bool
-	isStrictlyForwardedPointer()
-	{
-		/* only _forwardedTag set ('self forwarded bit' reset) */
-		return _forwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
-	}
-
+	
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	/**
 	 * If object is forwarded (isForwardedPointer() returns true) the object can be either
@@ -350,7 +342,14 @@ public:
 	{
 		return _selfForwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
 	}
-
+	
+	MMINLINE bool
+	isStrictlyForwardedPointer()
+	{
+		/* only _forwardedTag set ('self forwarded bit' reset) */
+		return _forwardedTag == (getPreservedClassAndTags() & _selfForwardedTag);
+	}
+	
 	omrobjectptr_t setSelfForwardedObject();
 	
 	void restoreSelfForwardedPointer();
