@@ -17,6 +17,7 @@
  * [2] https://openjdk.org/legal/assembly-exception.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+* Assisted-by: IBM Bob
  *******************************************************************************/
 
 #include <stddef.h>
@@ -628,9 +629,23 @@ TR::RegisterDependencyConditions *OMR::Power::RegisterDependencyConditions::clon
     return result;
 }
 
+// The RegisterDependencyMap is built once at the start of assignRegisters() and is not updated as registers are moved 
+// or spilled while other dependencies are assigned, so only trust a source entry whose virtual is still in that register
+static TR::RegisterDependency *getDependencyWithSourceStillAssigned(OMR::RegisterDependencyMap &map,
+    TR::RealRegister::RegNum regNum)
+{
+    TR::RegisterDependency *dep = map.getDependencyWithSourceAssigned(regNum);
+    if (dep) {
+        TR::RealRegister *assignedReg = dep->getRegister()->getAssignedRealRegister();
+        if (!assignedReg || toRealRegister(assignedReg)->getRegisterNumber() != regNum)
+            return NULL;
+    }
+    return dep;
+}
+
 static TR::RegisterDependency *findDependencyChainHead(TR::RegisterDependency *dep, OMR::RegisterDependencyMap &map)
 {
-    TR::RegisterDependency *cursor = map.getDependencyWithSourceAssigned(dep->getRealRegister());
+    TR::RegisterDependency *cursor = getDependencyWithSourceStillAssigned(map, dep->getRealRegister());
 
     // Already at head of chain
     if (!cursor)
@@ -639,7 +654,7 @@ static TR::RegisterDependency *findDependencyChainHead(TR::RegisterDependency *d
     // Follow the chain until we get to a dep who's target isn't assigned to another dep
     // or until we're back at the first dep
     while (cursor != dep) {
-        TR::RegisterDependency *nextDep = map.getDependencyWithSourceAssigned(cursor->getRealRegister());
+        TR::RegisterDependency *nextDep = getDependencyWithSourceStillAssigned(map, cursor->getRealRegister());
         if (!nextDep)
             break;
         cursor = nextDep;
@@ -688,7 +703,7 @@ static void assignContendedRegisters(TR::Instruction *currentInstruction, TR::Re
 
     // Chain of length 2, handled here instead of below to get 3*xor exchange on GPRs
     if (map.getDependencyWithTarget(assignedReg->getRegisterNumber())
-        == map.getDependencyWithSourceAssigned(targetRegNum)) {
+        == getDependencyWithSourceStillAssigned(map, targetRegNum)) {
         TR::Register *targetVirtReg = targetReg->getAssignedRegister();
         machine->coerceRegisterAssignment(currentInstruction, virtReg, targetRegNum);
         virtReg->block();
@@ -901,7 +916,12 @@ void OMR::Power::RegisterDependencyGroup::assignRegisters(TR::Instruction *curre
 
         if (virtReg->getAssignedRealRegister() != NULL) {
             if (_dependencies[i].isNoReg()) {
-                virtReg->block();
+                // Only block if there are any spare registers left so as to avoid blocking all existing registers
+                if ((virtReg->getKind() != TR_GPR || haveSpareGPRs)
+                    && (virtReg->getKind() != TR_FPR || haveSpareFPRs)
+                    && (virtReg->getKind() != TR_VRF || haveSpareVRFs)) {
+                    virtReg->block();
+                }
             } else {
                 TR::RealRegister::RegNum assignedRegNum
                     = toRealRegister(virtReg->getAssignedRealRegister())->getRegisterNumber();
