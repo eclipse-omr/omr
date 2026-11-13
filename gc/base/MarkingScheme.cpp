@@ -416,16 +416,28 @@ MM_MarkingScheme::fixupForwardedSlot(omrobjectptr_t *slotPtr) {
 	bool const compressed = _extensions->compressObjectReferences();
 	if (_extensions->getGlobalCollector()->isStwCollectionInProgress()) {
 		MM_ForwardedHeader forwardHeader(*slotPtr, compressed);
-		omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
 
-		if (NULL != forwardPtr) {
-			if (forwardHeader.isSelfForwardedPointer()) {
-				forwardHeader.restoreSelfForwardedPointer();
-			} else {
+		if(_extensions->isConcurrentScavengerEnabled()) {
+			omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
+			if (NULL != forwardPtr) {
+				if (forwardHeader.isSelfForwardedPointer()) {
+					forwardHeader.restoreSelfForwardedPointer();
+				} else {
+					*slotPtr = forwardPtr;
+					return true;
+				}
+			}
+		}
+#if defined(UNIFY_ABORTED_SCAVENGE)
+		else if (_extensions->enableUnifiedAbort) {
+			omrobjectptr_t forwardPtr = forwardHeader.getForwardedObject();
+
+			if (NULL != forwardPtr) {
 				*slotPtr = forwardPtr;
 				return true;
 			}
 		}
+#endif /* UNIFY_ABORTED_SCAVENGE */
 	}
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	return false;
