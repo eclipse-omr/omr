@@ -17,6 +17,7 @@
  * [2] https://openjdk.org/legal/assembly-exception.html
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
+ * Assisted-by: IBM Bob
  *******************************************************************************/
 
 #include "optimizer/DeadTreesElimination.hpp"
@@ -81,7 +82,7 @@ static inline bool isReadBarrierUnderTreetop(TR::Node *node)
 
 bool collectSymbolReferencesInNode(TR::Node *node, TR::SparseBitVector &symbolReferencesInNode,
     int32_t *numDeadSubNodes, vcount_t visitCount, TR::Compilation *comp, bool *seenInternalPointer, bool *seenArraylet,
-    bool *cantMoveUnderBranch)
+    bool *cantMoveUnderBranch, bool *seenUnsafeAccess)
 {
     // The visit count in the node must be maintained by this method.
     //
@@ -102,7 +103,7 @@ bool collectSymbolReferencesInNode(TR::Node *node, TR::SparseBitVector &symbolRe
             *numDeadSubNodes = (*numDeadSubNodes) + 1;
 
         collectSymbolReferencesInNode(child, symbolReferencesInNode, numDeadSubNodes, visitCount, comp,
-            seenInternalPointer, seenArraylet, cantMoveUnderBranch);
+            seenInternalPointer, seenArraylet, cantMoveUnderBranch, seenUnsafeAccess);
     }
 
     // detect if this is a direct load that shouldn't be moved under a branch (because an update was moved past
@@ -119,6 +120,15 @@ bool collectSymbolReferencesInNode(TR::Node *node, TR::SparseBitVector &symbolRe
             && node->getReferenceCount() > 1) {
             *seenArraylet = true;
         }
+    }
+
+    // An access through an Unsafe shadow (e.g. to off-heap memory owned by a MemorySegment)
+    // must not be swung down past a point where the thread can yield: the memory may be
+    // released while the thread is stopped there (e.g. by ScopedMemoryAccess.closeScope0
+    // closing a shared Arena), so the access has to stay where it was anchored.
+    if (seenUnsafeAccess && node->getOpCode().hasSymbolReference()
+        && node->getSymbolReference()->getSymbol()->isUnsafeShadowSymbol()) {
+        *seenUnsafeAccess = true;
     }
 
     // Add this node's symbol reference to the set
@@ -215,9 +225,10 @@ static bool isSafeToReplaceNode(TR::Node *currentNode, TR::TreeTop *curTreeTop, 
     bool cantMoveUnderBranch = false;
     bool seenInternalPointer = false;
     bool seenArraylet = false;
+    bool seenUnsafeAccess = false;
     int32_t curMaxHeight = getLongestPathOfDAG(currentNode, longestPaths);
     collectSymbolReferencesInNode(currentNode, symbolReferencesInNode, &numDeadSubNodes, visitCount, comp,
-        &seenInternalPointer, &seenArraylet, &cantMoveUnderBranch);
+        &seenInternalPointer, &seenArraylet, &cantMoveUnderBranch, &seenUnsafeAccess);
 
     bool registersScarce = comp->cg()->areAssignableGPRsScarce();
 #ifdef J9_PROJECT_SPECIFIC
@@ -269,7 +280,7 @@ static bool isSafeToReplaceNode(TR::Node *currentNode, TR::TreeTop *curTreeTop, 
         if (cantMoveUnderBranch && (node->getOpCode().isBranch() || node->getOpCode().isJumpWithMultipleTargets()))
             return false;
 
-        if (node->canGCandReturn() && seenInternalPointer)
+        if (node->canGCandReturn() && (seenInternalPointer || seenUnsafeAccess))
             return false;
 
         int32_t tempHeight = 0;
