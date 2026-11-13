@@ -148,30 +148,6 @@ int32_t memoryBarrierRequired(TR::InstOpCode &op, TR::MemoryReference *mr, TR::C
     return barrier;
 }
 
-int32_t estimateMemoryBarrierBinaryLength(int32_t barrier, TR::CodeGenerator *cg)
-{
-    int32_t length = 0;
-
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport))
-        return 0;
-
-    if (barrier & LockOR)
-        length = 5;
-    else if ((barrier & kLoadFence) && cg->comp()->target().cpu.requiresLFence())
-        length = TR::InstOpCode(OP::LFENCE).length(OMR::X86::Default);
-    else if ((barrier & kMemoryFence) == kMemoryFence)
-        length = TR::InstOpCode(OP::MFENCE).length(OMR::X86::Default);
-    else if (barrier & kStoreFence)
-        length = TR::InstOpCode(OP::SFENCE).length(OMR::X86::Default);
-
-    return length;
-}
-
-uint8_t getMemoryBarrierBinaryLengthLowerBound(int32_t barrier, TR::CodeGenerator *cg)
-{
-    return estimateMemoryBarrierBinaryLength(barrier, cg);
-}
-
 // -----------------------------------------------------------------------------
 // OMR::X86::Instruction:: member functions
 bool OMR::X86::Instruction::needsRepPrefix() { return getOpCode().needsRepPrefix() != 0; }
@@ -240,8 +216,6 @@ int32_t TR::X86PaddingInstruction::estimateBinaryLength(int32_t currentEstimate)
     setEstimatedBinaryLength(_length);
     return currentEstimate + getEstimatedBinaryLength();
 }
-
-TR::Snippet *TR::X86PaddingSnippetInstruction::getSnippetForGC() { return _unresolvedSnippet; }
 
 // -----------------------------------------------------------------------------
 // TR::X86BoundaryAvoidanceInstruction:: member functions
@@ -1837,10 +1811,6 @@ uint8_t TR::X86MemInstruction::getBinaryLengthLowerBound()
         length++;
 
     length += getMemoryReference()->getBinaryLengthLowerBound(cg());
-
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
     return getOpCode().length(getEncodingMethod(), rexBits()) + length;
 }
 
@@ -1852,9 +1822,6 @@ int32_t TR::X86MemInstruction::estimateBinaryLength(int32_t currentEstimate)
         length++;
 
     length += getMemoryReference()->estimateBinaryLength(this, cg());
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     int32_t patchBoundaryPadding
         = (cg()->comp()->target().isSMP() && getMemoryReference()->getSymbolReference().isUnresolved()) ? 1 : 0;
@@ -1995,14 +1962,8 @@ uint8_t *TR::X86MemImmInstruction::generateOperand(uint8_t *cursor)
 
 uint8_t TR::X86MemImmInstruction::getBinaryLengthLowerBound()
 {
-    int32_t length = getMemoryReference()->getBinaryLengthLowerBound(cg());
-
-    int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
-
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
-    length += getOpCode().length(getEncodingMethod(), rexBits());
+    int32_t length
+        = getMemoryReference()->getBinaryLengthLowerBound(cg()) + getOpCode().length(getEncodingMethod(), rexBits());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2022,9 +1983,6 @@ int32_t TR::X86MemImmInstruction::estimateBinaryLength(int32_t currentEstimate)
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2225,14 +2183,8 @@ uint8_t *TR::X86MemRegImmInstruction::generateOperand(uint8_t *cursor)
 
 uint8_t TR::X86MemRegImmInstruction::getBinaryLengthLowerBound()
 {
-    int32_t barrier = memoryBarrierRequired(getOpCode(), getMemoryReference(), cg(), false);
-
-    int32_t length = getMemoryReference()->getBinaryLengthLowerBound(cg());
-
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
-    length += getOpCode().length(getEncodingMethod(), rexBits());
+    int32_t length
+        = getMemoryReference()->getBinaryLengthLowerBound(cg()) + getOpCode().length(getEncodingMethod(), rexBits());
     if (getOpCode().hasIntImmediate())
         length += 4;
     else if (getOpCode().hasShortImmediate())
@@ -2251,9 +2203,6 @@ int32_t TR::X86MemRegImmInstruction::estimateBinaryLength(int32_t currentEstimat
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2304,9 +2253,6 @@ uint8_t TR::X86RegMemInstruction::getBinaryLengthLowerBound()
     if (barrier & LockPrefix)
         length++;
 
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
     return getOpCode().length(getEncodingMethod(), rexBits()) + length;
 }
 
@@ -2318,9 +2264,6 @@ int32_t TR::X86RegMemInstruction::estimateBinaryLength(int32_t currentEstimate)
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     int32_t patchBoundaryPadding
         = (cg()->comp()->target().isSMP() && getMemoryReference()->getSymbolReference().isUnresolved()) ? 1 : 0;
@@ -2437,9 +2380,6 @@ uint8_t TR::X86RegMemImmInstruction::getBinaryLengthLowerBound()
     if (barrier & LockPrefix)
         length++;
 
-    if (barrier & NeedsExplicitBarrier)
-        length += getMemoryBarrierBinaryLengthLowerBound(barrier, cg());
-
     length += getOpCode().length(getEncodingMethod(), rexBits());
 
     if (getOpCode().hasIntImmediate())
@@ -2460,9 +2400,6 @@ int32_t TR::X86RegMemImmInstruction::estimateBinaryLength(int32_t currentEstimat
 
     if (barrier & LockPrefix)
         length++;
-
-    if (barrier & NeedsExplicitBarrier)
-        length += estimateMemoryBarrierBinaryLength(barrier, cg());
 
     if (getOpCode().hasIntImmediate())
         length += 4;
@@ -2644,6 +2581,7 @@ uint8_t *TR::AMD64RegImm64Instruction::generateOperand(uint8_t *cursor)
         applyTargetRegisterToModRMByte(modRM);
     }
     TR_ASSERT(getOpCode().hasLongImmediate(), "Imm64 instructions must have long immediates");
+
     *(uint64_t *)cursor = getSourceImmediate();
 
     addMetaDataForCodeAddress(cursor);
@@ -2773,25 +2711,6 @@ void TR::AMD64RegImm64SymInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
     }
 }
 
-uint8_t *TR::AMD64RegImm64SymInstruction::generateOperand(uint8_t *cursor)
-{
-    uint8_t *modRM = cursor - 1;
-
-    if (getOpCode().hasTargetRegisterIgnored() == 0) {
-        applyTargetRegisterToModRMByte(modRM);
-    }
-
-    TR_ASSERT(getOpCode().hasLongImmediate(), "Imm64 instructions must have long immediates");
-    TR_ASSERT(getSymbolReference(), "expecting a symbol reference for this instruction class");
-    *(uint64_t *)cursor = getSourceImmediate();
-
-    addMetaDataForCodeAddress(cursor);
-
-    cursor += 8;
-
-    return cursor;
-}
-
 // -----------------------------------------------------------------------------
 // TR::AMD64Imm64Instruction:: member functions
 //
@@ -2854,4 +2773,111 @@ uint8_t *TR::AMD64Imm64SymInstruction::generateOperand(uint8_t *cursor)
     cursor += 8;
 
     return cursor;
+}
+
+// -----------------------------------------------------------------------------
+// TR::AMD64MemRefAddrInstruction member functions
+//
+void TR::AMD64MemRefAddrInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
+{
+    if (getNeedsCodeAbsoluteExternalRelocation()) {
+        cg()->addExternalRelocation(
+            TR::ExternalRelocation::create(cursor, (uint8_t *)0, TR_AbsoluteMethodAddress, cg()), __FILE__, __LINE__,
+            getNode());
+    }
+
+    // The address materialization relocations have been processed.  Call the
+    // superclass in case there are others.
+    //
+    TR::AMD64RegImm64Instruction::addMetaDataForCodeAddress(cursor);
+}
+
+// -----------------------------------------------------------------------------
+// TR::AMD64MemRefAddrSymInstruction member functions
+//
+void TR::AMD64MemRefAddrSymInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
+{
+    TR::Compilation *comp = cg()->comp();
+    TR::SymbolReference &sr = *getSymbolReference();
+    TR::Symbol *sym = sr.getSymbol();
+
+    TR_ASSERT_FATAL(sym, "Expecting a symbol");
+
+    if (sr.isUnresolved()) {
+        if (comp->getOption(TR_EnableHCR) && (!sym->isStatic() || !sym->isClassObject())) {
+            cg()->jitAddUnresolvedAddressMaterializationToPatchOnClassRedefinition(
+                cursor - 2); // cursor-2 is the start of the MOV8RegImm64 instruction
+        }
+
+        TR_ASSERT_FATAL(getUnresolvedDataSnippet(), "Must have an UnresolvedDataSnippet");
+        getUnresolvedDataSnippet()->setAddressOfDataReference(cursor);
+    } else if ((sym->isClassObject())) {
+        if (sym->isStatic()) {
+            if (cg()->needClassAndMethodPointerRelocations()) {
+                if (comp->getOption(TR_UseSymbolValidationManager)) {
+                    cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor,
+                                                    (uint8_t *)sym->castToStaticSymbol()->getStaticAddress(),
+                                                    (uint8_t *)TR::SymbolType::typeClass, TR_SymbolFromManager, cg()),
+                        __FILE__, __LINE__, getNode());
+                } else {
+                    cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, (uint8_t *)&sr,
+                                                    (uint8_t *)(uintptr_t)getNode()->getInlinedSiteIndex(),
+                                                    TR_ClassAddress, cg()),
+                        __FILE__, __LINE__, getNode());
+                }
+            }
+        }
+    } else if (sym->isCountForRecompile()) {
+        if (cg()->needRelocationsForPersistentInfoData()) {
+            cg()->addExternalRelocation(
+                TR::ExternalRelocation::create(cursor, (uint8_t *)TR_CountForRecompile, TR_GlobalValue, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isRecompilationCounter()) {
+        if (cg()->needRelocationsForBodyInfoData()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_BodyInfoAddress, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isCatchBlockCounter()) {
+        if (cg()->needRelocationsForBodyInfoData()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_CatchBlockCounter, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isGCRPatchPoint()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_AbsoluteMethodAddress, cg()),
+                __FILE__, __LINE__, getNode());
+        }
+    } else if (sym->isCompiledMethod()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_RamMethod, cg()), __FILE__,
+                __LINE__, getNode());
+        }
+    } else if (sym->isStartPC()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(TR::ExternalRelocation::create(cursor, 0, TR_AbsoluteMethodAddress, cg()),
+                __FILE__, __LINE__, getNode());
+        }
+    } else if (sym->isDebugCounter()) {
+        if (cg()->needRelocationsForStatics()) {
+            TR::DebugCounterBase *counter = comp->getCounterFromStaticAddress(&sr);
+            if (counter == NULL) {
+                comp->failCompilation<TR::CompilationException>(
+                    "Could not generate relocation for debug counter in "
+                    "TR::AMD64MemRefAddrSymInstruction::addMetaDataForCodeAddress\n");
+            }
+            TR::DebugCounter::generateRelocation(comp, cursor, getNode(), counter);
+        }
+    } else if (sym->isEnterEventHookAddress() || sym->isExitEventHookAddress()) {
+        if (cg()->needRelocationsForStatics()) {
+            cg()->addExternalRelocation(
+                TR::ExternalRelocation::create(cursor, (uint8_t *)&sr, NULL, TR_MethodEnterExitHookAddress, cg()),
+                __FILE__, __LINE__, getNode());
+        }
+    }
+
+    // The address materialization relocations have been processed.  Call the
+    // superclass in case there are others.
+    //
+    TR::AMD64RegImm64SymInstruction::addMetaDataForCodeAddress(cursor);
 }

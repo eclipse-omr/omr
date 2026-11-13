@@ -1553,12 +1553,6 @@ void TR::X86RegMaskRegRegInstruction::assignRegisters(TR_RegisterKinds kindsToBe
     }
 }
 
-void padUnresolvedReferenceInstruction(TR::Instruction *instr, TR::MemoryReference *mr, TR::CodeGenerator *cg)
-{
-    mr->getUnresolvedDataSnippet()->setDataReferenceInstruction(instr);
-    Inst_BoundaryAvoidance(TR::X86BoundaryAvoidanceInstruction::unresolvedAtomicRegions, 8, 8, instr, cg);
-}
-
 void insertUnresolvedReferenceInstructionMemoryBarrier(TR::CodeGenerator *cg, int32_t barrier, TR::Instruction *inst,
     TR::MemoryReference *mr, TR::Register *srcReg, TR::MemoryReference *anotherMr)
 {
@@ -1651,17 +1645,11 @@ TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Me
     : TR::Instruction(node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-        if (barrier)
-            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
-    }
+    int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+    if (barrier)
+        insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
 
     // Find out if this instruction clobbers the memory reference associated with
     // a live discardable register.
@@ -1676,17 +1664,11 @@ TR::X86MemInstruction::X86MemInstruction(TR::Instruction *precedingInstruction, 
     : TR::Instruction(op, precedingInstruction, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-        if (barrier)
-            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
-    }
+    int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+    if (barrier)
+        insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
 }
 
 TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::MemoryReference *mr,
@@ -1694,17 +1676,11 @@ TR::X86MemInstruction::X86MemInstruction(OP::Mnemonic op, TR::Node *node, TR::Me
     : TR::Instruction(cond, node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
-    if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-        if (barrier)
-            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
-    }
+    int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+    if (barrier)
+        insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, sreg);
 }
 
 bool TR::X86MemInstruction::refsRegister(TR::Register *reg)
@@ -2259,10 +2235,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, 
     : TR::X86RegInstruction(treg, node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     // Find out if this instruction clobbers the memory reference associated with
     // a live discardable register.
@@ -2280,10 +2253,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(TR::Instruction *precedingInstruc
     : TR::X86RegInstruction(treg, op, precedingInstruction, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 }
 
 TR::X86RegMemInstruction::X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg,
@@ -2291,10 +2261,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, 
     : TR::X86RegInstruction(cond, treg, node, op, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 
     // Find out if this instruction clobbers the memory reference associated with
     // a live discardable register.
@@ -2313,10 +2280,7 @@ TR::X86RegMemInstruction::X86RegMemInstruction(TR::Instruction *precedingInstruc
     : TR::X86RegInstruction(cond, treg, op, precedingInstruction, cg, encoding)
     , _memoryReference(mr)
 {
-    mr->useRegisters(this, cg);
-    if (mr->getUnresolvedDataSnippet() != NULL) {
-        padUnresolvedReferenceInstruction(this, mr, cg);
-    }
+    mr->finalizeInstrAttachment(this, cg);
 }
 
 bool TR::X86RegMemInstruction::refsRegister(TR::Register *reg)
@@ -3377,41 +3341,12 @@ TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, u
     return new (cg->trHeapMemory()) TR::X86PaddingInstruction(precedingInstruction, length, cg);
 }
 
-TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, uint8_t length,
-    TR_PaddingProperties properties, TR::CodeGenerator *cg)
-{
-    return new (cg->trHeapMemory()) TR::X86PaddingInstruction(precedingInstruction, length, properties, cg);
-}
-
-// X86PaddingSnippetInstruction
-//
-TR::X86PaddingSnippetInstruction *Inst_PaddingSnippet(uint8_t length, TR::Node *node, TR::CodeGenerator *cg)
-{
-    return new (cg->trHeapMemory()) TR::X86PaddingSnippetInstruction(length, node, cg);
-}
-
 // X86PatchableCodeAlignmentInstruction
 //
 TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(const TR_AtomicRegion *atomicRegions,
     TR::Instruction *patchableCode, TR::CodeGenerator *cg)
 {
     return new (cg->trHeapMemory()) TR::X86PatchableCodeAlignmentInstruction(atomicRegions, patchableCode, cg);
-}
-
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(TR::Instruction *prev,
-    const TR_AtomicRegion *atomicRegions, TR::CodeGenerator *cg)
-{
-    return new (cg->trHeapMemory()) TR::X86PatchableCodeAlignmentInstruction(prev, atomicRegions, cg);
-}
-
-// X86PatchableCodeAlignmentWithProtectiveNop
-//
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignmentWithProtectiveNop(
-    const TR_AtomicRegion *atomicRegions, TR::Instruction *patchableCode, int32_t sizeOfProtectiveNop,
-    TR::CodeGenerator *cg)
-{
-    return new (cg->trHeapMemory())
-        TR::X86PatchableCodeAlignmentInstruction(atomicRegions, patchableCode, sizeOfProtectiveNop, cg);
 }
 
 // X86RegInstruction
@@ -3511,6 +3446,23 @@ TR::AMD64RegImm64SymInstruction *Inst_RegImm64Sym(TR::Instruction *precedingInst
     TR::Register *reg, uint64_t imm, TR::SymbolReference *sr, TR::CodeGenerator *cg)
 {
     return new (cg->trHeapMemory()) TR::AMD64RegImm64SymInstruction(precedingInstruction, op, reg, imm, sr, cg);
+}
+
+// AMD64MemRefAddrInstruction
+//
+TR::AMD64MemRefAddrInstruction *Inst_MemRefAddr(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg,
+    uint64_t imm, bool needsCodeAbsoluteReloc, TR::CodeGenerator *cg)
+{
+    return new (cg->trHeapMemory())
+        TR::AMD64MemRefAddrInstruction(precedingInstr, node, reg, imm, needsCodeAbsoluteReloc, cg);
+}
+
+// AMD64MemRefAddrSymInstruction
+//
+TR::AMD64MemRefAddrSymInstruction *Inst_MemRefAddrSym(TR::Instruction *precedingInstr, TR::Node *node,
+    TR::Register *reg, uint64_t imm, TR::SymbolReference *sr, TR::CodeGenerator *cg)
+{
+    return new (cg->trHeapMemory()) TR::AMD64MemRefAddrSymInstruction(precedingInstr, node, reg, imm, sr, cg);
 }
 
 // X86RegMaskMemInstruction

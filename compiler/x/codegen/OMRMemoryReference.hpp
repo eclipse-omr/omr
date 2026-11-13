@@ -357,6 +357,46 @@ public:
 
     void consolidateRegisters(TR::Node *, TR::CodeGenerator *cg);
 
+    /**
+     * @brief Answers whether this memory reference will need to consolidate its
+     *     displacement into a register, usually because it is too large or requires
+     *     a relocation.
+     *
+     * @param[in] nextInstructionAddress : the address in the code cache of the
+     *     instruction following the instruction that contains this memory reference.
+     *     It will be zero (0) if the next instruction address is not known yet.
+     * @param[in] cg : the \c TR::CodeGenerator object
+     *
+     * @return
+     *     TR_yes if a consolidation is required,
+     *     TR_no if consolidation is definitively not required,
+     *     TR_maybe if the consolidation requirement is not certain. This uncertainty
+     *         can happen in some circumstances when this question is asked before
+     *         binary encoding and the address instructions are not known.
+     */
+    TR_YesNoMaybe requiresMemRefAddressConsolidation(intptr_t nextInstructionAddress, TR::CodeGenerator *cg)
+    {
+        return TR_no;
+    }
+
+    /**
+     * @brief Perform any necessary final tasks when this memory reference is
+     *     attached to an instruction.
+     *
+     * @details
+     *    The provided \c containingInstr should not be considered to be a completely
+     *    initialized object as this function is typically called during the
+     *    Instruction constructor.  For example, basic inquiries and manipulations
+     *    of the prev/next Instruction pointers and the opcode are permitted, but
+     *    calling a virtual function on the \c containingInstr is not.
+     *
+     * @param[in] containingInst : the \c TR::Instruction this memory reference is
+     *     attached to
+     * @param[in] cg : the \c TR::CodeGenerator object
+     *
+     */
+    void finalizeInstrAttachment(TR::Instruction *containingInstr, TR::CodeGenerator *cg);
+
     virtual void assignRegisters(TR::Instruction *currentInstruction, TR::CodeGenerator *cg);
 
     virtual uint8_t *generateBinaryEncoding(uint8_t *modRM, TR::Instruction *containingInstruction,
