@@ -4017,14 +4017,16 @@ MM_Scavenger::fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 	omrobjectptr_t objectPtr = *slotPtr;
 	bool const compressed = _extensions->compressObjectReferences();
 
-	if(NULL != objectPtr) {
+	if (NULL != objectPtr) {
 		MM_ForwardedHeader forwardHeader(objectPtr, compressed);
-		omrobjectptr_t forwardPtr = forwardHeader.getNonStrictForwardedObject();
-		if (NULL != forwardPtr) {
+		if (forwardHeader.isForwardedPointer()) {
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 			if (forwardHeader.isSelfForwardedPointer()) {
 				forwardHeader.restoreSelfForwardedPointer();
-			} else {
-				*slotPtr = forwardPtr;
+			} else
+#endif /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
+			{
+				*slotPtr = forwardHeader.getForwardedObject();
 			}
 			return true;
 		}
