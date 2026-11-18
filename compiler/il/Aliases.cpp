@@ -451,6 +451,13 @@ TR_BitVector *OMR::SymbolReference::getUseDefAliasesBV(bool isDirectCall, bool i
                 return aliases;
             }
 
+            // reachabilityFence is a pure function, but it must still act as a barrier: a memory
+            // access must not be moved below it, or the memory may be released before the access.
+            // Give it the regular call aliases instead of none.
+            if (resolvedMethodSymbol->getRecognizedMethod() == TR::java_lang_ref_Reference_reachabilityFence) {
+                return symRefTab->aliasBuilder.methodAliases(self());
+            }
+
             if (resolvedMethodSymbol->isPureFunction())
                 return NULL;
 
