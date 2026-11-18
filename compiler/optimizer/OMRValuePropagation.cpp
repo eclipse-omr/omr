@@ -2057,7 +2057,19 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
 
             bool mergeConstraint = true;
 #ifdef J9_PROJECT_SPECIFIC
-            // Handle BigDecimal add, subtract, multiply.
+            // Handle BigDecimal add, subtract, multiply.  If this definition represents a direct or indirect call
+            // to one of those methods, and
+            // (i)  the "this" object on the call is the same object referred to by node, or
+            // (ii) the same symbol reference is used to access the "this" object as is used for the node, and
+            //      both have the same definitions,
+            // then defer merging the constraint for this definition.
+            //
+            // If after processing all the definitions - other than the deferred calls - the constraint that's been
+            // accumulated is a FixedClass constraint for java.math.BigDecimal, then all these deferred calls must
+            // return an instance of BigDecimal, and not a subclass of BigDecimal.  The defConstraints for those calls
+            // would be VPResolvedClass instances, so if they were merged in prematurely, it would yield a more
+            // pessimistic result for the accumulated constraint.
+            //
             if (defNode && node) {
                 if (defNode->getOpCode().isStoreDirect()) {
                     TR::Node *firstChild = defNode->getFirstChild();
@@ -2076,18 +2088,18 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
                                 if ((thisChild == node)
                                     || ((thisChild->getOpCodeValue() == node->getOpCodeValue())
                                         && (thisChild->getSymbolReference() == node->getSymbolReference()))) {
-                                    bool avoidMerge = false;
+                                    bool deferMerge = true;
                                     if (thisChild != node) {
                                         uint16_t thisUseDefIndex = thisChild->getUseDefIndex();
                                         if (!thisUseDefIndex || !_useDefInfo->isUseIndex(thisUseDefIndex))
-                                            avoidMerge = true;
+                                            deferMerge = false;
 
                                         TR_UseDefInfo::BitVector thisDefs(comp()->allocator());
                                         if (!_useDefInfo->getUseDef(thisDefs, thisUseDefIndex) || (!(thisDefs == defs)))
-                                            avoidMerge = true;
+                                            deferMerge = false;
                                     }
 
-                                    if (!avoidMerge) {
+                                    if (deferMerge) {
                                         mergeConstraint = false;
                                         bigDecimalConstraints.add(defConstraint);
                                     }
@@ -2114,11 +2126,29 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
 
     if (!bigDecimalConstraints.isEmpty()) {
         bool mergeDeferredConstraints = true;
+        // If the accumulated constraint is a FixedClass constraint, then all the definitions involving
+        // calls to BigDecimal.{add|subtract|multiply} that have been deferred must return instances of
+        // java.math.BigDecimal (despite the fact that their constraints will be VPResolvedClass instances).
+        // Skip merging those constraints in that case to preserve the more optimistic result.
+        //
         if (constraint && constraint->isFixedClass()) {
             TR_ResolvedMethod *owningMethod = comp()->getCurrentMethod();
             TR_OpaqueClassBlock *classObject = fe()->getClassFromSignature("java/math/BigDecimal", 20, owningMethod);
-            if (classObject && (constraint->getClass() == classObject))
+            if (classObject && (constraint->getClass() == classObject)) {
                 mergeDeferredConstraints = false;
+
+                // If the constraint that's been accumulated represents something more precise than a FixedClass
+                // (like a known object constraint), merging in constraints for calls to BigDecimal methods
+                // cannot remain so precise - scale it back to a FixedClass constraint
+                //
+                if (constraint->getKnownObject() != NULL) {
+                    // Propagate whether this reference must be non-null or whether that is not known
+                    TR::VPClassPresence *presence = constraint->asClassPresence();
+
+                    constraint = TR::VPClass::create(this, TR::VPFixedClass::create(this, classObject), presence, NULL,
+                        NULL, TR::VPObjectLocation::create(this, TR::VPObjectLocation::HeapObject));
+                }
+            }
         }
 
         if (constraint && mergeDeferredConstraints) {
@@ -2325,7 +2355,19 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
 
                 bool mergeConstraint = true;
 #ifdef J9_PROJECT_SPECIFIC
-                // Handle BigDecimal add, subtract, multiply.
+                // Handle BigDecimal add, subtract, multiply.  If this definition represents a direct or indirect call
+                // to one of those methods, and
+                // (i)  the "this" object on the call is the same object referred to by node, or
+                // (ii) the same symbol reference is used to access the "this" object as is used for the node, and
+                //      both have the same definitions,
+                // then defer merging the constraint for this definition.
+                //
+                // If after processing all the definitions - other than the deferred calls - the constraint that's been
+                // accumulated is a FixedClass constraint for java.math.BigDecimal, then all these deferred calls must
+                // return an instance of BigDecimal, and not a subclass of BigDecimal.  The defConstraints for those
+                // calls would be VPResolvedClass instances, so if they were merged in prematurely, it would yield a
+                // more pessimistic result for the accumulated constraint.
+                //
                 if (defNode && node) {
                     if (defNode->getOpCode().isStoreDirect()) {
                         TR::Node *firstChild = defNode->getFirstChild();
@@ -2346,19 +2388,19 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
                                     if ((thisChild == node)
                                         || ((thisChild->getOpCodeValue() == node->getOpCodeValue())
                                             && (thisChild->getSymbolReference() == node->getSymbolReference()))) {
-                                        bool avoidMerge = false;
+                                        bool deferMerge = true;
                                         if (thisChild != node) {
                                             uint16_t thisUseDefIndex = thisChild->getUseDefIndex();
                                             if (!thisUseDefIndex || !_useDefInfo->isUseIndex(thisUseDefIndex))
-                                                avoidMerge = true;
+                                                deferMerge = false;
 
                                             TR_UseDefInfo::BitVector thisDefs(comp()->allocator());
                                             if (!_useDefInfo->getUseDef(thisDefs, thisUseDefIndex)
                                                 || (!(thisDefs == defs)))
-                                                avoidMerge = true;
+                                                deferMerge = false;
                                         }
 
-                                        if (!avoidMerge) {
+                                        if (deferMerge) {
                                             mergeConstraint = false;
                                             bigDecimalConstraints.add(defConstraint);
                                         }
@@ -2556,11 +2598,29 @@ TR::VPConstraint *OMR::ValuePropagation::mergeDefConstraints(TR::Node *node, int
 
     if (!bigDecimalConstraints.isEmpty()) {
         bool mergeDeferredConstraints = true;
+        // If the accumulated constraint is a FixedClass constraint, then all the definitions involving
+        // calls to BigDecimal.{add|subtract|multiply} that have been deferred must return instances of
+        // java.math.BigDecimal (despite the fact that their constraints will be VPResolvedClass instances).
+        // Skip merging those constraints in that case to preserve the more optimistic result.
+        //
         if (constraint && constraint->isFixedClass()) {
             TR_ResolvedMethod *owningMethod = comp()->getCurrentMethod();
             TR_OpaqueClassBlock *classObject = fe()->getClassFromSignature("java/math/BigDecimal", 20, owningMethod);
-            if (classObject && (constraint->getClass() == classObject))
+            if (classObject && (constraint->getClass() == classObject)) {
                 mergeDeferredConstraints = false;
+
+                // If the constraint that's been accumulated represents something more precise than a FixedClass
+                // (like a known object constraint), merging in constraints for calls to BigDecimal methods
+                // cannot remain so precise - scale it back to a FixedClass constraint
+                //
+                if (constraint->getKnownObject() != NULL) {
+                    // Propagate whether this reference must be non-null or whether that is not known
+                    TR::VPClassPresence *presence = constraint->asClassPresence();
+
+                    constraint = TR::VPClass::create(this, TR::VPFixedClass::create(this, classObject), presence, NULL,
+                        NULL, TR::VPObjectLocation::create(this, TR::VPObjectLocation::HeapObject));
+                }
+            }
         }
 
         if (constraint && mergeDeferredConstraints) {
