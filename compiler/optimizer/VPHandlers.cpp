@@ -5312,14 +5312,17 @@ TR::Node *constrainLmul(OMR::ValuePropagation *vp, TR::Node *node)
     return node;
 }
 
-static bool isUnsafeDivide(int64_t dividend, int64_t divisor)
+// Dividing the minimum signed value of the operation's data type by -1 overflows
+static bool isUnsafeDivide(int64_t dividend, int64_t divisor, TR::DataTypes type)
 {
-    return (dividend == TR::getMinSigned<TR::Int64>() && divisor == -1);
+    int64_t minValue = (type == TR::Int64) ? TR::getMinSigned<TR::Int64>() : TR::getMinSigned<TR::Int32>();
+    return (dividend == minValue && divisor == -1);
 }
 
-// Given the ranges for a dividend and divisor, compute the range of the result
+// Given the ranges for a dividend and divisor, compute the range of the result.
+// type is the data type of the division operation (TR::Int32 or TR::Int64).
 bool constrainIntegerDivisionRange(int64_t lhsLow, int64_t lhsHigh, int64_t rhsLow, int64_t rhsHigh, int64_t rangeMin,
-    int64_t rangeMax, int64_t &resultLow, int64_t &resultHigh, bool allowZeroInDivisorRange)
+    int64_t rangeMax, int64_t &resultLow, int64_t &resultHigh, bool allowZeroInDivisorRange, TR::DataTypes type)
 {
     // No matter what, division by constant 0 isn't something we'll ever simplify
     if (rhsLow == 0 && rhsHigh == 0)
@@ -5340,12 +5343,12 @@ bool constrainIntegerDivisionRange(int64_t lhsLow, int64_t lhsHigh, int64_t rhsL
     resultLow = rangeMax;
     resultHigh = rangeMin;
 
-    if (isUnsafeDivide(lhsLow, rhsLow) || isUnsafeDivide(lhsLow, rhsHigh) || isUnsafeDivide(lhsHigh, rhsLow)
-        || isUnsafeDivide(lhsHigh, rhsHigh))
+    if (isUnsafeDivide(lhsLow, rhsLow, type) || isUnsafeDivide(lhsLow, rhsHigh, type)
+        || isUnsafeDivide(lhsHigh, rhsLow, type) || isUnsafeDivide(lhsHigh, rhsHigh, type))
         return false;
 
     if (rhsLow < 0 && rhsHigh > 0) {
-        if (isUnsafeDivide(lhsLow, -1) || isUnsafeDivide(lhsHigh, -1))
+        if (isUnsafeDivide(lhsLow, -1, type) || isUnsafeDivide(lhsHigh, -1, type))
             return false;
         int64_t computed[8];
         computed[0] = lhsLow / rhsLow;
@@ -5453,7 +5456,7 @@ TR::Node *constrainIdiv(OMR::ValuePropagation *vp, TR::Node *node)
                 int64_t lo, hi;
 
                 if (constrainIntegerDivisionRange(lhs1, lhs2, rhs1, rhs2, range_min, range_max, lo, hi,
-                        vp->computeDivRangeWhenDivisorCanBeZero(node)))
+                        vp->computeDivRangeWhenDivisorCanBeZero(node), TR::Int32))
                     constraint = TR::VPIntRange::create(vp, (int32_t)lo, (int32_t)hi);
             }
         }
@@ -5564,7 +5567,8 @@ TR::Node *constrainLdiv(OMR::ValuePropagation *vp, TR::Node *node)
             int64_t lo = 0, hi = 0;
             TR::VPConstraint *idivConstraint = NULL;
             if (constrainIntegerDivisionRange(lhs1, lhs2, rhs1, rhs2, TR::getMinSigned<TR::Int32>(),
-                    TR::getMaxSigned<TR::Int32>(), lo, hi, vp->computeDivRangeWhenDivisorCanBeZero(newIdivNode)))
+                    TR::getMaxSigned<TR::Int32>(), lo, hi, vp->computeDivRangeWhenDivisorCanBeZero(newIdivNode),
+                    TR::Int32))
                 idivConstraint = TR::VPIntRange::create(vp, (int32_t)lo, (int32_t)hi);
             if (idivConstraint) {
                 // If constrainIntegerDivisionRange reduced the range to a constant, but the original
@@ -5596,7 +5600,8 @@ TR::Node *constrainLdiv(OMR::ValuePropagation *vp, TR::Node *node)
                 int64_t rhs1 = rhsConstraint->getLowLong(), rhs2 = rhsConstraint->getHighLong();
                 int64_t lo, hi;
                 if (constrainIntegerDivisionRange(lhs1, lhs2, rhs1, rhs2, TR::getMinSigned<TR::Int64>(),
-                        TR::getMaxSigned<TR::Int64>(), lo, hi, vp->computeDivRangeWhenDivisorCanBeZero(node))) {
+                        TR::getMaxSigned<TR::Int64>(), lo, hi, vp->computeDivRangeWhenDivisorCanBeZero(node),
+                        TR::Int64)) {
                     TR::VPConstraint *constraint = TR::VPLongRange::create(vp, lo, hi);
                     if (constraint) {
                         // If constrainIntegerDivisionRange reduced the range to a constant, but the original
