@@ -98,6 +98,7 @@ SET(OPT_OBJECTS
 	${CMAKE_CURRENT_LIST_DIR}/ReorderIndexExpr.cpp
 	${CMAKE_CURRENT_LIST_DIR}/SinkStores.cpp
 	${CMAKE_CURRENT_LIST_DIR}/StripMiner.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ArrayStoreForwarding.cpp
 	${CMAKE_CURRENT_LIST_DIR}/VPConstraint.cpp
 	${CMAKE_CURRENT_LIST_DIR}/VPHandlers.cpp
 	${CMAKE_CURRENT_LIST_DIR}/VPHandlersCommon.cpp

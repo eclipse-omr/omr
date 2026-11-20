@@ -176,6 +176,7 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     $(JIT_OMR_DIRTY_DIR)/optimizer/ReorderIndexExpr.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/SinkStores.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/StripMiner.cpp \
+    $(JIT_OMR_DIRTY_DIR)/optimizer/ArrayStoreForwarding.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/VPConstraint.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/VPHandlers.cpp \
     $(JIT_OMR_DIRTY_DIR)/optimizer/VPHandlersCommon.cpp \
