@@ -1105,8 +1105,8 @@ MM_Scavenger::calculateOptimumCopyScanCacheSize(MM_EnvironmentStandard *env)
 	env->_scavengerStats.countCopyCacheSize(cacheSize, maxCacheSize);
 
 #if defined(J9MODRON_SCAVENGER_TRACE)
-    PORT_ACCESS_FROM_ENVIRONMENT(env);
-    j9tty_printf(PORTLIB, "{SCAV: scanCacheSize %zu}\n", cacheSize);
+	OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
+	omrtty_printf("{SCAV: scanCacheSize %zu}\n", cacheSize);
 #endif /* J9MODRON_SCAVENGER_TRACE */
 
     return cacheSize;
