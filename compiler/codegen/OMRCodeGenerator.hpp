@@ -1881,6 +1881,8 @@ public:
 
     void addCountersToEdges(TR::Block *block);
 
+    int32_t getMaxLengthOfPatchableIncMemoryInstruction() { return 0; }
+
     bool getSupportsBitOpCodes() { return false; }
 
     bool getMappingAutomatics() { return _flags1.testAny(MappingAutomatics); }
