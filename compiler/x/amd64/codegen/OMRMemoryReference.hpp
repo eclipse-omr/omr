@@ -170,16 +170,31 @@ public: // Constructors
         OMR::X86::MemoryReference::unblockRegisters();
     }
 
-    OMR_FINAL void addMetaDataForCodeAddressWithLoad(uint8_t *displacementLocation,
-        TR::Instruction *containingInstruction, TR::CodeGenerator *cg, TR::SymbolReference *srCopy);
+    void finalizeInstrAttachment(TR::Instruction *containingInstr, TR::CodeGenerator *cg);
+
+    /**
+     * @inheritdoc
+     */
+    TR_YesNoMaybe requiresMemRefAddressConsolidation(intptr_t nextInstructionAddress, TR::CodeGenerator *cg);
+
+    /**
+     * @brief Consolidate the computation of this memory reference's displacement
+     *     into a register.
+     *
+     * @param[in] containingInstruction : instruction containing this memory reference
+     * @param[in,out] addressAddInstruction : if non-NULL, it contains a secondary consolidation
+     *     instruction required to complete the overall displacement consolidation
+     * @param[in] cg : the \c TR::CodeGenerator object
+     *
+     * @return The memory reference address consolidation instruction
+     */
+    TR::Instruction *consolidateMemRefAddress(TR::Instruction *containingInstruction,
+        TR::Instruction *&addressAddInstruction, TR::CodeGenerator *cg);
 
 protected:
 #if defined(TR_TARGET_64BIT)
-    OMR_FINAL bool needsAddressLoadInstruction(intptr_t nextInstructionAddress, TR::CodeGenerator *cg);
     void finishInitialization(TR::CodeGenerator *cg, TR_ScratchRegisterManager *srm);
 #else
-    OMR_FINAL bool needsAddressLoadInstruction(intptr_t rip) { return false; }
-
     void finishInitialization(TR::CodeGenerator *cg, TR_ScratchRegisterManager *srm) {}
 #endif
 };

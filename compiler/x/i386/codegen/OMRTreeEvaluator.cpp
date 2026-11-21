@@ -2178,7 +2178,7 @@ TR::Register *OMR::X86::I386::TreeEvaluator::lstoreEvaluator(TR::Node *node, TR:
                     cg->stopUsingRegister(ebxReg);
                 }
             } else if (symRef && symRef->isUnresolved() && symRef->getSymbol()->isVolatile()
-                && (!comp->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit())) {
+                && cg->comp()->target().is32Bit()) {
                 TR_ASSERT_FATAL(cg->comp()->compileRelocatableCode() || cg->comp()->compilePortableCode()
                         || cg->comp()->target().cpu.supportsFeature(OMR_FEATURE_X86_CX8),
                     "Assumption of support of the CMPXCHG8B instruction failed in lstoreEvaluator()");

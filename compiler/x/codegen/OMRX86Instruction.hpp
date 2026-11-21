@@ -71,8 +71,6 @@ enum TR_X86MemoryBarrierKinds {
 
 extern int32_t memoryBarrierRequired(TR::InstOpCode &op, TR::MemoryReference *mr, TR::CodeGenerator *cg,
     bool onlyAskingAboutFences);
-extern int32_t estimateMemoryBarrierBinaryLength(int32_t barrier, TR::CodeGenerator *cg);
-extern void padUnresolvedReferenceInstruction(TR::Instruction *instr, TR::MemoryReference *mr, TR::CodeGenerator *cg);
 extern void insertUnresolvedReferenceInstructionMemoryBarrier(TR::CodeGenerator *cg, int32_t barrier,
     TR::Instruction *inst, TR::MemoryReference *mr, TR::Register *srcReg = NULL, TR::MemoryReference *anotherMr = NULL);
 
@@ -159,40 +157,6 @@ public:
     virtual Kind getKind() { return IsPadding; }
 };
 
-class X86PaddingSnippetInstruction : public TR::X86PaddingInstruction {
-    TR::UnresolvedDataSnippet *_unresolvedSnippet;
-
-public:
-    X86PaddingSnippetInstruction(uint8_t length, TR::Node *node, TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(length, node, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    X86PaddingSnippetInstruction(uint8_t length, TR_PaddingProperties properties, TR::Node *node, TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(length, properties, node, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    X86PaddingSnippetInstruction(TR::Instruction *precedingInstruction, uint8_t length, TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(precedingInstruction, length, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    X86PaddingSnippetInstruction(TR::Instruction *precedingInstruction, uint8_t length, TR_PaddingProperties properties,
-        TR::CodeGenerator *cg)
-        : TR::X86PaddingInstruction(precedingInstruction, length, properties, cg)
-        , _unresolvedSnippet(NULL)
-    {}
-
-    virtual const char *description() { return "PaddingSnippetInstruction"; }
-
-    virtual TR::Snippet *getSnippetForGC();
-
-    TR::UnresolvedDataSnippet *getUnresolvedSnippet() { return _unresolvedSnippet; }
-
-    TR::UnresolvedDataSnippet *setUnresolvedSnippet(TR::UnresolvedDataSnippet *us) { return (_unresolvedSnippet = us); }
-};
-
 class X86BoundaryAvoidanceInstruction : public TR::Instruction {
     // Inserts NOPs to ensure that none of the atomicRegions in the adjacent
     // targetCode cross a boundary (as specified by boundarySpacing).
@@ -222,26 +186,6 @@ public:
         , _minPaddingLength(0)
     {
         setNode(targetCode->getNode());
-    }
-
-    X86BoundaryAvoidanceInstruction(TR::Instruction *precedingInstruction, const TR_AtomicRegion *atomicRegions,
-        uint8_t boundarySpacing, uint8_t maxPadding, TR::CodeGenerator *cg)
-        : TR::Instruction(OP::bad, precedingInstruction, cg)
-        , _atomicRegions(atomicRegions)
-        , _boundarySpacing(boundarySpacing)
-        , _maxPadding(maxPadding)
-        , _targetCode(NULL)
-        , _sizeOfProtectiveNop(0)
-        , _minPaddingLength(0)
-    {
-        // Note: this constructor is usually not the right one to use, because
-        // when you want to make something patchable, you usually know what
-        // you're patching.  That's why there's no generateXXX function for this.
-        // However, there are unusual cases where we don't care what we're
-        // patching, so we provide this extra constructor.
-        //
-        // Notice that the order of the arguments is crucial to avoid calling the
-        // wrong constructor.
     }
 
     const TR_AtomicRegion *getAtomicRegions() { return _atomicRegions; }
@@ -298,16 +242,6 @@ public:
         : TR::X86BoundaryAvoidanceInstruction(sizeOfProtectiveNop, atomicRegions,
               cg->getInstructionPatchAlignmentBoundary(), cg->getInstructionPatchAlignmentBoundary(), patchableCode, cg)
     {}
-
-    X86PatchableCodeAlignmentInstruction(TR::Instruction *precedingInstruction, const TR_AtomicRegion *atomicRegions,
-        TR::CodeGenerator *cg)
-        : TR::X86BoundaryAvoidanceInstruction(precedingInstruction, atomicRegions,
-              cg->getInstructionPatchAlignmentBoundary(), cg->getInstructionPatchAlignmentBoundary(), cg)
-    {
-        // Note: this constructor is usually not the right one to use.  See the
-        // note in the corresponding TR::X86BoundaryAvoidanceInstruction
-        // constructor for more information (search for "generateXXX").
-    }
 
     TR::Instruction *getPatchableCode() { return getTargetCode(); }
 
@@ -1340,17 +1274,11 @@ public:
         : TR::Instruction(node, op, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
-        }
+        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+        if (barrier)
+            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
 
         // Find out if this instruction clobbers the memory reference associated with
         // a live discardable register.
@@ -1366,17 +1294,11 @@ public:
         : TR::Instruction(op, precedingInstruction, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
-        }
+        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+        if (barrier)
+            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr, srcReg);
     }
 
     X86MemInstruction(TR::RegisterDependencyConditions *cond, TR::MemoryReference *mr, TR::Node *node, OP::Mnemonic op,
@@ -1384,17 +1306,11 @@ public:
         : TR::Instruction(cond, node, op, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport)) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr);
-        }
+        int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
+        if (barrier)
+            insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr);
 
         // Find out if this instruction clobbers the memory reference associated with
         // a live discardable register.
@@ -1411,14 +1327,10 @@ public:
         : TR::Instruction(cond, op, precedingInstruction, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit()) {
+        if (cg->comp()->target().is32Bit()) {
             int32_t barrier = memoryBarrierRequired(this->getOpCode(), mr, cg, true);
-
             if (barrier)
                 insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, mr);
         }
@@ -1438,23 +1350,6 @@ public:
     virtual Kind getKind() { return IsMem; }
 
     virtual TR::MemoryReference *getMemoryReference() { return _memoryReference; }
-
-    TR::MemoryReference *setMemoryReference(TR::MemoryReference *p, TR::CodeGenerator *cg)
-    {
-        _memoryReference = p;
-        if (p->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, p, cg);
-        }
-
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit()) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), p, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, p);
-        }
-
-        return p;
-    }
 
     virtual bool needsLockPrefix();
     virtual uint8_t *generateOperand(uint8_t *cursor);
@@ -1791,10 +1686,7 @@ public:
         : TR::X86RegInstruction(treg, node, op, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
 
         // Find out if this instruction clobbers the memory reference associated with
         // a live discardable register.
@@ -1811,10 +1703,7 @@ public:
         : TR::X86RegInstruction(treg, op, precedingInstruction, cg, encoding)
         , _memoryReference(mr)
     {
-        mr->useRegisters(this, cg);
-        if (mr->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, mr, cg);
-        }
+        mr->finalizeInstrAttachment(this, cg);
     }
 
     X86RegMemInstruction(OP::Mnemonic op, TR::Node *node, TR::Register *treg, TR::MemoryReference *mr,
@@ -1837,22 +1726,6 @@ public:
     virtual X86RegMemInstruction *getIA32RegMemInstruction() { return this; }
 
     virtual TR::MemoryReference *getMemoryReference() { return _memoryReference; }
-
-    TR::MemoryReference *setMemoryReference(TR::MemoryReference *p, TR::CodeGenerator *cg)
-    {
-        _memoryReference = p;
-        if (p->getUnresolvedDataSnippet() != NULL) {
-            padUnresolvedReferenceInstruction(this, p, cg);
-        }
-
-        if (!cg->comp()->getOption(TR_DisableNewX86VolatileSupport) && cg->comp()->target().is32Bit()) {
-            int32_t barrier = memoryBarrierRequired(this->getOpCode(), p, cg, true);
-
-            if (barrier)
-                insertUnresolvedReferenceInstructionMemoryBarrier(cg, barrier, this, p);
-        }
-        return p;
-    }
 
     virtual bool needsLockPrefix();
     virtual uint8_t *generateOperand(uint8_t *cursor);
@@ -2148,9 +2021,83 @@ public:
 
     TR::SymbolReference *setSymbolReference(TR::SymbolReference *sr) { return (_symbolReference = sr); }
 
-    virtual uint8_t *generateOperand(uint8_t *cursor);
+    virtual void addMetaDataForCodeAddress(uint8_t *cursor);
+};
+
+/**
+ * @class AMD64MemRefAddrInstruction
+ *
+ * @brief Materializes a 64-bit immediate address into a register. Use this
+ *     instruction when a Symbol IS NOT available for the MemoryReference. A unique
+ *     instruction kind is required for this because of the the relocation
+ *     requirements from the MemoryReference from which the immediate address is
+ *     derived.
+ */
+class AMD64MemRefAddrInstruction : public TR::AMD64RegImm64Instruction {
+private:
+    bool _needsCodeAbsoluteExternalRelocation;
+
+public:
+    // This instruction is intended to be inserted before an existing
+    // instruction when its MemoryReference has an address immediate
+    // consolidated into a register. That is why the precedingInstr form
+    // constructor is the only one available for this instruction kind.
+    //
+    AMD64MemRefAddrInstruction(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg, uint64_t imm,
+        bool needsCodeAbsoluteReloc, TR::CodeGenerator *cg)
+        : AMD64RegImm64Instruction(precedingInstr, OP::MOV8RegImm64, reg, imm, cg)
+        , _needsCodeAbsoluteExternalRelocation(needsCodeAbsoluteReloc)
+    {
+        setNode(node);
+    }
+
+    virtual const char *description() { return "AMD64MemRefAddr"; }
+
+    virtual Kind getKind() { return IsMemRefAddr; }
 
     virtual void addMetaDataForCodeAddress(uint8_t *cursor);
+
+    void setNeedsCodeAbsoluteExternalRelocation(bool r) { _needsCodeAbsoluteExternalRelocation = r; }
+
+    bool getNeedsCodeAbsoluteExternalRelocation() { return _needsCodeAbsoluteExternalRelocation; }
+};
+
+/**
+ * @class AMD64MemRefAddrSymInstruction
+ *
+ * @brief Materializes a 64-bit immediate address into a register. Use this
+ *     instruction when a Symbol IS available for the MemoryReference. A unique
+ *     instruction kind is required for this because of the the relocation
+ *     requirements from the MemoryReference from which the immediate address is
+ *     derived.
+ */
+class AMD64MemRefAddrSymInstruction : public TR::AMD64RegImm64SymInstruction {
+private:
+    TR::UnresolvedDataSnippet *_unresolvedDataSnippet;
+
+public:
+    // This instruction is intended to be inserted before an existing
+    // instruction when its MemoryReference has an address immediate
+    // consolidated into a register. That is why the precedingInstr form
+    // constructor is the only one available for this instruction kind.
+    //
+    AMD64MemRefAddrSymInstruction(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg, uint64_t imm,
+        TR::SymbolReference *sr, TR::CodeGenerator *cg)
+        : AMD64RegImm64SymInstruction(precedingInstr, OP::MOV8RegImm64, reg, imm, sr, cg)
+        , _unresolvedDataSnippet(NULL)
+    {
+        setNode(node);
+    }
+
+    virtual const char *description() { return "AMD64MemRefAddrSym"; }
+
+    virtual Kind getKind() { return IsMemRefAddrSym; }
+
+    virtual void addMetaDataForCodeAddress(uint8_t *cursor);
+
+    TR::UnresolvedDataSnippet *getUnresolvedDataSnippet() { return _unresolvedDataSnippet; }
+
+    void setUnresolvedDataSnippet(TR::UnresolvedDataSnippet *uds) { _unresolvedDataSnippet = uds; }
 };
 
 class AMD64Imm64Instruction : public TR::Instruction {
@@ -2649,19 +2596,10 @@ TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, u
 TR::X86PaddingInstruction *Inst_Padding(TR::Instruction *precedingInstruction, uint8_t length,
     TR_PaddingProperties properties, TR::CodeGenerator *cg);
 
-// X86PaddingSnippetInstruction
-//
-TR::X86PaddingSnippetInstruction *Inst_PaddingSnippet(uint8_t length, TR::Node *node, TR::CodeGenerator *cg);
-
 // X86PatchableCodeAlignment
 //
 TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(const TR_AtomicRegion *atomicRegions,
     TR::Instruction *patchableCode, TR::CodeGenerator *cg);
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignment(TR::Instruction *prev,
-    const TR_AtomicRegion *atomicRegions, TR::CodeGenerator *cg);
-TR::X86PatchableCodeAlignmentInstruction *Inst_PatchableCodeAlignmentWithProtectiveNop(
-    const TR_AtomicRegion *atomicRegions, TR::Instruction *patchableCode, int32_t protectiveNopSize,
-    TR::CodeGenerator *cg);
 
 // X86RegInstruction
 //
@@ -2704,6 +2642,16 @@ TR::AMD64RegImm64Instruction *Inst_RegImm64(TR::Instruction *precedingInstructio
 TR::AMD64RegImm64SymInstruction *Inst_RegImm64Sym(OP::Mnemonic op, TR::Node *node, TR::Register *reg, uint64_t imm,
     TR::SymbolReference *sr, TR::CodeGenerator *cg);
 TR::AMD64RegImm64SymInstruction *Inst_RegImm64Sym(TR::Instruction *precedingInstruction, OP::Mnemonic op,
+    TR::Register *reg, uint64_t imm, TR::SymbolReference *sr, TR::CodeGenerator *cg);
+
+// AMD64MemRefAddrInstruction
+//
+TR::AMD64MemRefAddrInstruction *Inst_MemRefAddr(TR::Instruction *precedingInstr, TR::Node *node, TR::Register *reg,
+    uint64_t imm, bool needsCodeAbsoluteReloc, TR::CodeGenerator *cg);
+
+// AMD64MemRefAddrSymInstruction
+//
+TR::AMD64MemRefAddrSymInstruction *Inst_MemRefAddrSym(TR::Instruction *precedingInstr, TR::Node *node,
     TR::Register *reg, uint64_t imm, TR::SymbolReference *sr, TR::CodeGenerator *cg);
 
 // X86RegMaskMemInstruction
