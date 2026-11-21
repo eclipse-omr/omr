@@ -49,9 +49,10 @@ class GC_ObjectHeapIteratorAddressOrderedList : public GC_ObjectHeapIterator
 	 */
 private:
 	bool _includeDeadObjects;
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+// TODO: this is causing error under unify. Do we change every occurrence of this under macro (4 in this file)?
 	bool _includeForwardedObjects;
-#endif	/* defined(OMR_GC_CONCURRENT_SCAVENGER) */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 	GC_ObjectModel *_objectModel;
 
 	omrobjectptr_t _scanPtr;
@@ -97,9 +98,10 @@ public:
 	GC_ObjectHeapIteratorAddressOrderedList(MM_GCExtensionsBase *extensions, MM_HeapRegionDescriptor *region, bool includeDeadObjects) :
 		/* Iterator base values */
 		_includeDeadObjects(includeDeadObjects),
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+// TODO: this is causing error under unify. Do we change every occurrence of this under macro (4 in this file)?
 		_includeForwardedObjects(false),
-#endif	/* defined(OMR_GC_CONCURRENT_SCAVENGER) */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 		_objectModel(&extensions->objectModel),
 		_isDeadObject(false),
 		_deadObjectSize(0),
@@ -119,9 +121,10 @@ public:
 	GC_ObjectHeapIteratorAddressOrderedList(MM_GCExtensionsBase *extensions, omrobjectptr_t base, omrobjectptr_t top, bool includeDeadObjects, bool skipFirstObject = false) :
 		/* Iterator base values */
 		_includeDeadObjects(includeDeadObjects),
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+// TODO: this is causing error under unify. Do we change every occurrence of this under macro (4 in this file)?
 		_includeForwardedObjects(false),
-#endif	/* defined(OMR_GC_CONCURRENT_SCAVENGER) */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 		_objectModel(&extensions->objectModel),
 		_scanPtr(base),
 		_scanPtrTop(top),
@@ -134,9 +137,10 @@ public:
 	virtual omrobjectptr_t nextObjectNoAdvance();
 	virtual void advance(uintptr_t size);
 	virtual void reset(uintptr_t *base, uintptr_t *top);
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+// TODO: this is causing error under unify. Do we change every occurrence of this under macro (4 in this file)?
 	void includeForwardedObjects() { _includeForwardedObjects = true; }
-#endif
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 	/**
 	 * @see GC_ObjectHeapIterator::nextObject()
