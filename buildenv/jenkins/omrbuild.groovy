@@ -42,8 +42,8 @@ buildSpec = (params.BUILDSPEC) ? params.BUILDSPEC : error("BUILDSPEC not specifi
 cmdLine = params.ghprbCommentBody
 pullId = params.ghprbPullId
 
-cgroupV1Specs = ["linux_x86"]
-cgroupV2Specs = ["linux_x86-64", "linux_ppc-64_le_gcc"]
+cgroupV1Specs = ["linux_x86", "linux_arm"]
+cgroupV2Specs = ["linux_x86-64", "linux_ppc-64_le_gcc", "linux_aarch64"]
 dockerSpecs = ["linux_x86", "linux_x86-64", "linux_riscv64_cross"]
 
 nodeLabels = []
@@ -101,43 +101,45 @@ SPECS = [
     ],
     'linux_aarch64' : [
         'alias': 'aarch64',
-        'label' : 'compile:aarch64:cross',
+        'label' : 'compile:alinux',
         'reference' : defaultReference,
         'environment' : [
-            'PATH+CCACHE=/usr/lib/ccache/:/home/jenkins/aarch64/toolchain/bin',
-            'PLATFORM=aarch64-linux-gcc',
-            'CHOST=aarch64-linux-gnu'
+            'PATH+CCACHE=/usr/lib/ccache/',
+            'GTEST_COLOR=0'
         ],
         'ccache' : true,
-        'buildSystem' : 'autoconf',
+        'buildSystem' : 'cmake',
         'builds' : [
             [
-                'buildDir' : autoconfBuildDir,
-                'configureArgs' : 'SPEC=linux_aarch64',
+                'buildDir' : cmakeBuildDir,
+                'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
                 'compile' : defaultCompile
             ]
         ],
-        'test' : false
+        'test' : true,
+        'testArgs' : '',
+        'junitPublish' : true
     ],
     'linux_arm' : [
         'alias': 'arm',
-        'label' : 'compile:arm:cross',
+        'label' : 'compile:alinux',
         'reference' : defaultReference,
         'environment' : [
-            'PATH+CCACHE=/usr/lib/ccache/:/home/jenkins/arm/toolchain/bin',
-            'PLATFORM=arm-linux-gcc',
-            'CHOST=arm-linux-gnueabihf'
+            'PATH+CCACHE=/usr/lib/ccache/',
+            'GTEST_COLOR=0'
         ],
         'ccache' : true,
-        'buildSystem' : 'autoconf',
+        'buildSystem' : 'cmake',
         'builds' : [
             [
-                'buildDir' : autoconfBuildDir,
-                'configureArgs' : 'SPEC=linux_arm',
+                'buildDir' : cmakeBuildDir,
+                'configureArgs' : '-Wdev -C../cmake/caches/Travis.cmake',
                 'compile' : defaultCompile
             ]
         ],
-        'test' : false
+        'test' : true,
+        'testArgs' : '',
+        'junitPublish' : true
     ],
     'linux_ppc-64_le_gcc' : [
         'alias': 'plinux',
