@@ -66,37 +66,19 @@ protected:
         : _next(NULL)
         , _key(key)
         , _nextAssumptionForSameJittedBody(NULL)
+        , _prevAssumptionForSameJittedBody(NULL)
     {}
 
     void addToRAT(TR_PersistentMemory *persistentMemory, TR_RuntimeAssumptionKind kind, TR_FrontEnd *fe,
         RuntimeAssumption **sentinel);
 
     /**
-     * Directly return the next runtime assumption regardless of whether it is marked for detach or not
-     *
-     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
-     * and must be run under the assumptionTableMutex
-     */
-    RuntimeAssumption *getNextEvenIfDead() { return _next; }
-
-    /**
      * Update the next pointer to point to the specified RuntimeAssumption
      *
-     * Note this API is only intended for use by utility methods of teh RuntimeAssumptionTable
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
      * and must be run under the assumptionTableMutex
      */
     void setNext(RuntimeAssumption *next) { _next = next; }
-
-    /**
-     * Directly return the next runtime assumption in the same jitted body
-     *
-     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
-     * and must be run under the assumptionTableMutex
-     */
-    RuntimeAssumption *getNextAssumptionForSameJittedBodyEvenIfDead() const
-    {
-        return (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
-    }
 
     /**
      * Update the next pointer for the same jitted body to the specified RuntimeAssumption
@@ -109,6 +91,18 @@ protected:
     {
         _nextAssumptionForSameJittedBody = (RuntimeAssumption *)((uintptr_t)link
             | (((uintptr_t)_nextAssumptionForSameJittedBody) & MARK_FOR_DELETE));
+    }
+
+
+    /**
+     * Update the previous pointer for the same jitted body to the specified RuntimeAssumption
+     *
+     * Note this API only intended for use by utility methods of the RuntimeAssumptionTable
+     * and must be run under the assumptionTableMutex
+     */
+    void setPrevAssumptionForSameJittedBody(RuntimeAssumption *link)
+    {
+        _prevAssumptionForSameJittedBody = link;
     }
 
     /**
@@ -131,6 +125,7 @@ protected:
     {
         _key = 0xDEADF00D;
         _nextAssumptionForSameJittedBody = 0;
+        _prevAssumptionForSameJittedBody = 0;
         setNext(NULL);
     }
 
@@ -144,14 +139,6 @@ protected:
     {
         _nextAssumptionForSameJittedBody
             = (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) | MARK_FOR_DELETE);
-    }
-
-    /**
-     * Returns true when the assumption has previously been marked using the markForDetach routine
-     */
-    bool isMarkedForDetach() const
-    {
-        return (((uintptr_t)(_nextAssumptionForSameJittedBody)&MARK_FOR_DELETE) == MARK_FOR_DELETE);
     }
 
     /** \brief
@@ -168,6 +155,25 @@ protected:
 public:
     TR_PERSISTENT_ALLOC_THROW(TR_Memory::Assumption);
 
+    /**
+     * Directly return the next runtime assumption regardless of whether it is marked for detach or not
+     *
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
+     * and must be run under the assumptionTableMutex
+     */
+    RuntimeAssumption *getNextEvenIfDead() { return _next; }
+
+    // Use with care because it gives access to internals of object
+    RuntimeAssumption **getNextFieldLocation() { return &_next; }
+
+    /**
+     * Returns true when the assumption has previously been marked using the markForDetach routine
+     */
+    bool isMarkedForDetach() const
+    {
+        return (((uintptr_t)(_nextAssumptionForSameJittedBody)&MARK_FOR_DELETE) == MARK_FOR_DELETE);
+    }
+
     RuntimeAssumption *getNext()
     {
         RuntimeAssumption *toReturn = _next;
@@ -176,16 +182,28 @@ public:
         return toReturn;
     }
 
-    RuntimeAssumption *getNextAssumptionForSameJittedBody() const
+    /**
+     * Directly return the next runtime assumption in the same jitted body
+     *
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
+     * and must be run under the assumptionTableMutex
+     */
+    RuntimeAssumption *getNextAssumptionForSameJittedBodyEvenIfDead() const
     {
-        RuntimeAssumption *toReturn
-            = (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
-        while (toReturn && toReturn->isMarkedForDetach() && toReturn != this)
-            toReturn
-                = (RuntimeAssumption *)(((uintptr_t)toReturn->_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
-        // handle the case where you have gone full circle
-        return toReturn != this || !toReturn->isMarkedForDetach() ? toReturn : const_cast<RuntimeAssumption *>(this);
+        return (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
     }
+
+    /**
+     * Directly return the previous runtime assumption in the same jitted body
+     *
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
+     * and must be run under the assumptionTableMutex
+     */
+    RuntimeAssumption *getPrevAssumptionForSameJittedBodyEvenIfDead() const
+    {
+        return _prevAssumptionForSameJittedBody;
+    }
+
 
     /**
      * @brief Returns the sentinel for the circular linked list of assumptions associated with a method body.
@@ -283,6 +301,8 @@ private:
         *_nextAssumptionForSameJittedBody; // links assumptions that pertain to the same method body
                                            // These should form a circular linked list with a sentinel
                                            // Lower bit is used to mark assumptions that will be lazily removed
+    RuntimeAssumption
+        *_prevAssumptionForSameJittedBody;
 protected:
     uintptr_t _key; // key for searching in the hashtable
 };
@@ -324,6 +344,7 @@ public:
         , RuntimeAssumption(NULL, 0)
     {
         setNextAssumptionForSameJittedBody(this); // pointing to itself means that the list is empty
+        setPrevAssumptionForSameJittedBody(this);
     }
 
     virtual TR_RuntimeAssumptionKind getAssumptionKind() { return RuntimeAssumptionSentinel; }
