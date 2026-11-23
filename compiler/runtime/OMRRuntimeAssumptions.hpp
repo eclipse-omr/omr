@@ -64,6 +64,7 @@ class RuntimeAssumption {
 protected:
     RuntimeAssumption(TR_PersistentMemory *, uintptr_t key)
         : _next(NULL)
+        , _pprev(NULL)
         , _key(key)
         , _nextAssumptionForSameJittedBody(NULL)
     {}
@@ -86,6 +87,43 @@ protected:
      * and must be run under the assumptionTableMutex
      */
     void setNext(RuntimeAssumption *next) { _next = next; }
+
+    /**
+     * Insert this assumption in a RAT bucket chain at the position described by slot.
+     * slot is either the bucket head (&_htSpineArray[i]) or the _next field of a node
+     * already in the chain (this is what getBucketPtr() returns). The assumption is
+     * inserted before whatever *slot currently points to.
+     *
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
+     * and must be run under the assumptionTableMutex
+     */
+    void linkIntoBucket(RuntimeAssumption **slot)
+    {
+        RuntimeAssumption *first = *slot;
+        _next = first;
+        if (first)
+            first->_pprev = &_next;
+        *slot = this;
+        _pprev = slot;
+    }
+
+    /**
+     * Remove this assumption from the RAT bucket chain in O(1) (Linux hlist_del style).
+     * Works for the first node in a bucket as well because _pprev then points to the bucket head.
+     *
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
+     * and must be run under the assumptionTableMutex
+     */
+    void unlinkFromBucket()
+    {
+        TR_ASSERT_FATAL(_pprev, "Assumption %p is not linked in a RAT bucket", this);
+        RuntimeAssumption *next = _next;
+        *_pprev = next;
+        if (next)
+            next->_pprev = _pprev;
+        _next = NULL;
+        _pprev = NULL;
+    }
 
     /**
      * Directly return the next runtime assumption in the same jitted body
@@ -132,6 +170,7 @@ protected:
         _key = 0xDEADF00D;
         _nextAssumptionForSameJittedBody = 0;
         setNext(NULL);
+        _pprev = NULL;
     }
 
     /**
@@ -279,6 +318,7 @@ public:
 
 private:
     RuntimeAssumption *_next;
+    RuntimeAssumption **_pprev; // points to the pointer that points to this node (bucket head or previous->_next)
     RuntimeAssumption
         *_nextAssumptionForSameJittedBody; // links assumptions that pertain to the same method body
                                            // These should form a circular linked list with a sentinel
