@@ -54,30 +54,20 @@ enum RuntimeAssumptionCategory {
     LastRuntimeAssumptionCategory = SentinelCategory
 };
 
-enum AssumptionSameJittedBodyFlags {
-    MARK_FOR_DELETE = 1
-};
-
 class RuntimeAssumption {
     friend class ::TR_RuntimeAssumptionTable;
 
 protected:
     RuntimeAssumption(TR_PersistentMemory *, uintptr_t key)
         : _next(NULL)
-        , _key(key)
+        , _pprev(NULL)
         , _nextAssumptionForSameJittedBody(NULL)
+        , _prevAssumptionForSameJittedBody(NULL)
+        , _key(key)
     {}
 
     void addToRAT(TR_PersistentMemory *persistentMemory, TR_RuntimeAssumptionKind kind, TR_FrontEnd *fe,
         RuntimeAssumption **sentinel);
-
-    /**
-     * Directly return the next runtime assumption regardless of whether it is marked for detach or not
-     *
-     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
-     * and must be run under the assumptionTableMutex
-     */
-    RuntimeAssumption *getNextEvenIfDead() { return _next; }
 
     /**
      * Update the next pointer to point to the specified RuntimeAssumption
@@ -88,41 +78,77 @@ protected:
     void setNext(RuntimeAssumption *next) { _next = next; }
 
     /**
-     * Directly return the next runtime assumption in the same jitted body
+     * Insert this assumption in a RAT bucket chain at the position described by slot.
+     * slot is either the bucket head (&_htSpineArray[i]) or the _next field of a node
+     * already in the chain (this is what getBucketPtr() returns). The assumption is
+     * inserted before whatever *slot currently points to.
      *
      * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
      * and must be run under the assumptionTableMutex
      */
-    RuntimeAssumption *getNextAssumptionForSameJittedBodyEvenIfDead() const
+    void linkIntoBucket(RuntimeAssumption **slot)
     {
-        return (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
+        RuntimeAssumption *first = *slot;
+        _next = first;
+        if (first)
+            first->_pprev = &_next;
+        *slot = this;
+        _pprev = slot;
     }
 
     /**
-     * Update the next pointer for the same jitted body to the specified RuntimeAssumption
+     * Remove this assumption from the RAT bucket chain in O(1) (Linux hlist_del style).
+     * Works for the first node in a bucket as well because _pprev then points to the bucket head.
      *
-     * This update preserves the MARK_FOR_DELETE bit.
-     * Note this API only intended for use by utility methods of the RuntimeAssumptionTable
+     * Note this API is only intended for use by utility methods of the RuntimeAssumptionTable
      * and must be run under the assumptionTableMutex
      */
-    void setNextAssumptionForSameJittedBody(RuntimeAssumption *link)
+    void unlinkFromBucket()
     {
-        _nextAssumptionForSameJittedBody = (RuntimeAssumption *)((uintptr_t)link
-            | (((uintptr_t)_nextAssumptionForSameJittedBody) & MARK_FOR_DELETE));
+        TR_ASSERT_FATAL(_pprev, "Assumption %p is not linked in a RAT bucket", this);
+        RuntimeAssumption *next = _next;
+        *_pprev = next;
+        if (next)
+            next->_pprev = _pprev;
+        _next = NULL;
+        _pprev = NULL;
     }
 
     /**
+     * Insert this assumption in the circular, doubly linked list of assumptions of a jitted body,
+     * right after the sentinel. The sentinel will be created if *sentinel is NULL.
      *
      * Note this API only intended for use by utility methods of the RuntimeAssumptionTable
      * and must be run under the assumptionTableMutex
      */
     bool enqueueInListOfAssumptionsForJittedBody(RuntimeAssumption **sentinel);
+
     /**
+     * Make this assumption a list of its own (both links point to itself).
+     * Used by the sentinel: a sentinel pointing to itself means that the list of assumptions is empty.
+     */
+    void initCircularList()
+    {
+        _nextAssumptionForSameJittedBody = this;
+        _prevAssumptionForSameJittedBody = this;
+    }
+
+    /**
+     * Remove this assumption from the circular list of assumptions of its jitted body in O(1).
+     * The sentinel is never removed by this method.
      *
      * Note this API only intended for use by utility methods of the RuntimeAssumptionTable
      * and must be run under the assumptionTableMutex
      */
-    void dequeueFromListOfAssumptionsForJittedBody();
+    void dequeueFromListOfAssumptionsForJittedBody()
+    {
+        TR_ASSERT_FATAL(_nextAssumptionForSameJittedBody && _prevAssumptionForSameJittedBody,
+            "Assumption %p is not linked in the list of assumptions of a jitted body", this);
+        _prevAssumptionForSameJittedBody->_nextAssumptionForSameJittedBody = _nextAssumptionForSameJittedBody;
+        _nextAssumptionForSameJittedBody->_prevAssumptionForSameJittedBody = _prevAssumptionForSameJittedBody;
+        _nextAssumptionForSameJittedBody = NULL;
+        _prevAssumptionForSameJittedBody = NULL;
+    }
 
     /**
      * This utility destroys the data in the RuntimeAssumption to facilitate debugging
@@ -130,28 +156,10 @@ protected:
     void paint()
     {
         _key = 0xDEADF00D;
-        _nextAssumptionForSameJittedBody = 0;
+        _nextAssumptionForSameJittedBody = NULL;
+        _prevAssumptionForSameJittedBody = NULL;
         setNext(NULL);
-    }
-
-    /**
-     * Mark this assumption for future removal from the RuntimeAssumptionTable
-     *
-     * Once marked the assumption will not be locatable in the RAT and the entry
-     * will be reclaimed lazily at a future GC start.
-     */
-    void markForDetach()
-    {
-        _nextAssumptionForSameJittedBody
-            = (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) | MARK_FOR_DELETE);
-    }
-
-    /**
-     * Returns true when the assumption has previously been marked using the markForDetach routine
-     */
-    bool isMarkedForDetach() const
-    {
-        return (((uintptr_t)(_nextAssumptionForSameJittedBody)&MARK_FOR_DELETE) == MARK_FOR_DELETE);
+        _pprev = NULL;
     }
 
     /** \brief
@@ -168,40 +176,23 @@ protected:
 public:
     TR_PERSISTENT_ALLOC_THROW(TR_Memory::Assumption);
 
-    RuntimeAssumption *getNext()
-    {
-        RuntimeAssumption *toReturn = _next;
-        while (toReturn && toReturn->isMarkedForDetach())
-            toReturn = toReturn->_next;
-        return toReturn;
-    }
+    RuntimeAssumption *getNext() const { return _next; }
 
-    RuntimeAssumption *getNextAssumptionForSameJittedBody() const
-    {
-        RuntimeAssumption *toReturn
-            = (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
-        while (toReturn && toReturn->isMarkedForDetach() && toReturn != this)
-            toReturn
-                = (RuntimeAssumption *)(((uintptr_t)toReturn->_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
-        // handle the case where you have gone full circle
-        return toReturn != this || !toReturn->isMarkedForDetach() ? toReturn : const_cast<RuntimeAssumption *>(this);
-    }
+    RuntimeAssumption *getNextAssumptionForSameJittedBody() const { return _nextAssumptionForSameJittedBody; }
 
     /**
      * @brief Returns the sentinel for the circular linked list of assumptions associated with a method body.
      *
      * @return Returns the sentinel RuntimeAssumption object.
      */
-    RuntimeAssumption *getSentinel()
+    RuntimeAssumption *getSentinel() const
     {
-        RuntimeAssumption *toReturn
-            = (RuntimeAssumption *)(((uintptr_t)_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
+        RuntimeAssumption *toReturn = _nextAssumptionForSameJittedBody;
         TR_ASSERT_FATAL(toReturn, "toReturn can't be NULL, this=%p\n", this);
         while (toReturn->getAssumptionKind() != RuntimeAssumptionSentinel) {
             TR_ASSERT_FATAL(toReturn != this,
                 "Looped through assumptions for same jitted body without finding sentinel! toReturn=%p\n", toReturn);
-            RuntimeAssumption *next
-                = (RuntimeAssumption *)(((uintptr_t)toReturn->_nextAssumptionForSameJittedBody) & ~MARK_FOR_DELETE);
+            RuntimeAssumption *next = toReturn->_nextAssumptionForSameJittedBody;
             TR_ASSERT_FATAL(next, "next can't be NULL, toReturn=%p\n", toReturn);
             toReturn = next;
         }
@@ -279,10 +270,13 @@ public:
 
 private:
     RuntimeAssumption *_next;
-    RuntimeAssumption
-        *_nextAssumptionForSameJittedBody; // links assumptions that pertain to the same method body
-                                           // These should form a circular linked list with a sentinel
-                                           // Lower bit is used to mark assumptions that will be lazily removed
+    RuntimeAssumption **_pprev; // points to the pointer that points to this node (bucket head or previous->_next)
+    // _nextAssumptionForSameJittedBody/_prevAssumptionForSameJittedBody link the assumptions that pertain to the
+    // same method body. They form a circular, doubly linked list with a sentinel, so that any assumption can be
+    // removed from the list in O(1).
+    RuntimeAssumption *_nextAssumptionForSameJittedBody;
+    RuntimeAssumption *_prevAssumptionForSameJittedBody;
+
 protected:
     uintptr_t _key; // key for searching in the hashtable
 };
@@ -323,7 +317,7 @@ public:
         : _owningMetaData(NULL)
         , RuntimeAssumption(NULL, 0)
     {
-        setNextAssumptionForSameJittedBody(this); // pointing to itself means that the list is empty
+        initCircularList(); // pointing to itself means that the list is empty
     }
 
     virtual TR_RuntimeAssumptionKind getAssumptionKind() { return RuntimeAssumptionSentinel; }
