@@ -4033,9 +4033,7 @@ MM_Scavenger::fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 	}
 	return false;
 }
-#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 bool
 MM_Scavenger::fixupSlot(omrobjectptr_t *slotPtr)
 {
@@ -4043,7 +4041,12 @@ MM_Scavenger::fixupSlot(omrobjectptr_t *slotPtr)
 	bool const compressed = _extensions->compressObjectReferences();
 	if (NULL != objectPtr) {
 		MM_ForwardedHeader forwardHeader(objectPtr, compressed);
-		if (forwardHeader.isStrictlyForwardedPointer()) {
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+		if (forwardHeader.isStrictlyForwardedPointer())
+#else /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
+		if (forwardHeader.isForwardedPointer())
+#endif /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
+		{
 			*slotPtr = forwardHeader.getForwardedObject();
 			Assert_MM_false(isObjectInEvacuateMemory(*slotPtr));
 			return true;
@@ -4072,7 +4075,7 @@ MM_Scavenger::fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t object
 	}
 }
 
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 void
 MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
