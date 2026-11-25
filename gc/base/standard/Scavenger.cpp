@@ -2841,7 +2841,7 @@ MM_Scavenger::shouldRememberSlot(omrobjectptr_t *slotPtr)
 		if (isObjectInNewSpace(slotObjectPtr)) {
 			Assert_MM_true(!isObjectInEvacuateMemory(slotObjectPtr));
 			return true;
-		} else if ((_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isBackOutFlagRaised() && isObjectInEvacuateMemory(slotObjectPtr)) {
+		} else if (isBackOutFlagRaised() && (_extensions->enableUnifiedAbort || IS_CONCURRENT_ENABLED) && isObjectInEvacuateMemory(slotObjectPtr)) {
 			/* Could happen if we aborted before completing RS scan */
 			return true;
 		}
@@ -4117,7 +4117,7 @@ MM_Scavenger::processRememberedSetInBackout(MM_EnvironmentStandard *env)
 							 * This is already handled during scanning of old objects
 							 */
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
-							if(_extensions->shouldScavengeNotifyGlobalGCOfOldToOldReference() && !IS_CONCURRENT_ENABLED) {
+							if (_extensions->shouldScavengeNotifyGlobalGCOfOldToOldReference() && !IS_CONCURRENT_ENABLED) {
 								oldToOldReferenceCreated(env, objectPtr);
 							}
 #endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */

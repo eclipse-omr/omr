@@ -377,7 +377,10 @@ public:
 	void processRememberedSetInBackout(MM_EnvironmentStandard *env);
 	void completeBackOut(MM_EnvironmentStandard *env);
 
-#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+	void fixupNurserySlots(MM_EnvironmentStandard *env);
+
+#if defined(UNIFY_ABORTED_SCAVENGE)
 	bool fixupSlotWithoutCompression(volatile omrobjectptr_t *slotPtr);
 	void fixupObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr);
 	bool fixupSlot(omrobjectptr_t *slotPtr);
@@ -390,9 +393,7 @@ public:
 		}
 		return false;
 	}
-#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
-#if defined(OMR_GC_CONCURRENT_SCAVENGER)
-	void fixupNurserySlots(MM_EnvironmentStandard *env);
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) */
 
 	void scavengeRememberedSetListIndirect(MM_EnvironmentStandard *env);
 	void scavengeRememberedSetListDirect(MM_EnvironmentStandard *env);
