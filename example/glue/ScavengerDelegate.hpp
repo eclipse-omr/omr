@@ -239,12 +239,15 @@ public:
 	 * @param[in] env The environment for the calling thread.
 	 */	 
 	void switchConcurrentForThread(MM_EnvironmentBase *env);
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+
+#if defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER)
 	/**
-	 * After aborted Concurrent Scavenger, handle indirect object references (off heap structures associated with object with refs to Nursery). 
+	 * After aborted Scavenger, handle indirect object references (off heap structures associated with object with refs to Nursery). 
 	 * Fixup should update slots to point to the forwarded version of the object and/or remove self forwarded bit in the object itself.
 	 */
 	void fixupIndirectObjectSlots(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr);
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+#endif /* defined(UNIFY_ABORTED_SCAVENGE) || defined(OMR_GC_CONCURRENT_SCAVENGER) */
 
 	bool initialize(MM_EnvironmentBase* env) { return true; }
 
