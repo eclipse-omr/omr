@@ -15135,7 +15135,11 @@ TR::Node *switchSimplifier(TR::Node *node, TR::Block *block, bool isTableSwitch,
             shiftNode = firstChild->getFirstChild();
         }
 
-        if (node->getOpCode().getOpCodeValue() == TR::lookup && NULL != shiftNode && shiftNode->getOpCode().isShift()) {
+        // If the shift is under a conversion node, the transformation below changes that conversion
+        // node's child. Only do this if the switch is its only user, otherwise its other users would
+        // also lose the shift.
+        if (node->getOpCode().getOpCodeValue() == TR::lookup && NULL != shiftNode && shiftNode->getOpCode().isShift()
+            && (shiftParent == node || shiftParent->getReferenceCount() == 1)) {
             // Shift amount must be constant
             TR::Node *shiftAmtNode = shiftNode->getSecondChild();
             if (NULL != shiftAmtNode && shiftAmtNode->getOpCode().isLoadConst()) {
