@@ -4510,8 +4510,7 @@ void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR
     // generated using profiling data as interpreter profiling data may not have
     // much changes which risks into generating same compiled body.
     if (comp()->getMethodHotness() > hot && comp()->getRecompilationInfo() != NULL
-        && !comp()->getOption(TR_DisableProfiling)
-        && comp()->getOptions()->getColdPathRecompTriggerCount() > 0
+        && !comp()->getOption(TR_DisableProfiling) && comp()->getOptions()->getColdPathRecompTriggerCount() > 0
         && !(comp()->getOptimizationPlan()->getDoNotInsertPhaseChangeRecomp() || comp()->isProfilingCompilation())
         && !shouldOnlySpecializeLoops() && !_neitherLoopCold
         && performTransformation(comp(),
